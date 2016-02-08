@@ -1,9 +1,9 @@
 using System;
 using System.Reflection.Emit;
 using System.Diagnostics;
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
 	/// <summary>
 	/// Base class for assignment expressions (by-value and by-ref).

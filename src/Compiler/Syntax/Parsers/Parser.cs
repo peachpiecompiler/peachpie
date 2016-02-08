@@ -5,10 +5,10 @@ using System.IO;
 using System.Text;
 using System.Linq;
 
-using PHP.Core.AST;
-using FcnParam = System.Tuple<System.Collections.Generic.List<PHP.Core.AST.TypeRef>, System.Collections.Generic.List<PHP.Core.AST.ActualParam>, System.Collections.Generic.List<PHP.Core.AST.Expression>>;
+using Pchp.Syntax.AST;
+using FcnParam = System.Tuple<System.Collections.Generic.List<Pchp.Syntax.AST.TypeRef>, System.Collections.Generic.List<Pchp.Syntax.AST.ActualParam>, System.Collections.Generic.List<Pchp.Syntax.AST.Expression>>;
 
-namespace PHP.Core.Parsers
+namespace Pchp.Syntax.Parsers
 {
 	#region Helpers
     

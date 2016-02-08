@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection;
 
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
 	#region TypeRef
 

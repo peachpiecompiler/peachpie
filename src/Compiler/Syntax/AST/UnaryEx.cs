@@ -1,10 +1,10 @@
 using System;
 using System.Diagnostics;
 
-using PHP.Core;
-using PHP.Core.Parsers;
+using Pchp.Syntax;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
 	/// <summary>
 	/// Unary expression.

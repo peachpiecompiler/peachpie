@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace PHP.Core.Text
+namespace Pchp.Syntax.Text
 {
     #region ILineBreaks
 

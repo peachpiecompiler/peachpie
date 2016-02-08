@@ -1,6 +1,6 @@
 using System;
 
-namespace PHP.Core
+namespace Pchp.Syntax
 {
     #region PhpMemberAttributes
 

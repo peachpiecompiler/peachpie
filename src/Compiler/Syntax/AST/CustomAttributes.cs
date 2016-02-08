@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 using System.Reflection.Emit;
 using System.Reflection;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
     [Flags]
     public enum PhpAttributeTargets

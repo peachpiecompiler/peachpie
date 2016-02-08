@@ -1,4 +1,4 @@
-namespace PHP.Core.Parsers
+namespace Pchp.Syntax.Parsers
 {
 	#region User Code
 	
@@ -10,7 +10,7 @@ namespace PHP.Core.Parsers
  You must not remove this notice from this software.
 */
 using System;
-using PHP.Core;
+using Pchp.Syntax;
 using System.Collections.Generic;
 #endregion
 	

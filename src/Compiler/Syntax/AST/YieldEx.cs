@@ -2,9 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
     /// <summary>
     /// Represents <c>yield</c> expression for the support for PHP Generator.

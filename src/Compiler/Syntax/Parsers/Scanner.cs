@@ -6,11 +6,11 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 
-using PHP.Core;
-using PHP.Core.Parsers.GPPG;
-using PHP.Core.Text;
+using Pchp.Syntax;
+using Pchp.Syntax.Parsers.GPPG;
+using Pchp.Syntax.Text;
 
-namespace PHP.Core.Parsers
+namespace Pchp.Syntax.Parsers
 {
     #region ICommentsSink
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
     /// <summary>
     /// Class visits recursively each AstNode 
@@ -255,7 +255,7 @@ namespace PHP.Core.AST
             // visits adaptation list
             var list = x.TraitAdaptationList;
             if (list != null && list.Any())
-                foreach(PHP.Core.AST.TraitsUse.TraitAdaptation t in list)
+                foreach(Pchp.Syntax.AST.TraitsUse.TraitAdaptation t in list)
                     VisitElement(t);
         }
 

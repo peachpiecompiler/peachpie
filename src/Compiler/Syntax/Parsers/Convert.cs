@@ -8,7 +8,7 @@ using System.Globalization;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
-namespace PHP.Core.Parsers
+namespace Pchp.Syntax.Parsers
 {
     public static class Convert
     {

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Globalization;
 
-namespace PHP.Core.Parsers
+namespace Pchp.Syntax.Parsers
 {
     #region PhpStringBuilder
 
@@ -107,12 +107,12 @@ namespace PHP.Core.Parsers
             }
         }
 
-        public PHP.Core.AST.Literal CreateLiteral()
+        public Pchp.Syntax.AST.Literal CreateLiteral()
         {
             if (IsBinary)
-                return new PHP.Core.AST.BinaryStringLiteral(span, BinaryBuilder.ToArray());
+                return new Pchp.Syntax.AST.BinaryStringLiteral(span, BinaryBuilder.ToArray());
             else
-                return new PHP.Core.AST.StringLiteral(span, UnicodeBuilder.ToString());
+                return new Pchp.Syntax.AST.StringLiteral(span, UnicodeBuilder.ToString());
         }
 
         #endregion

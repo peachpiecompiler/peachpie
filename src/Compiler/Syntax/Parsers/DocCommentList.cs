@@ -1,12 +1,12 @@
-﻿using PHP.Core.AST;
-using PHP.Core.Text;
+﻿using Pchp.Syntax.AST;
+using Pchp.Syntax.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace PHP.Core.Parsers
+namespace Pchp.Syntax.Parsers
 {
     /// <summary>
     /// Helper class containing list of DOC comments during tokenization.

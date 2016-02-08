@@ -3,10 +3,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
-using PHP.Core.Parsers;
-using PHP.Core.AST;
+using Pchp.Syntax.Parsers;
+using Pchp.Syntax.AST;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
 	#region enum Operations
 

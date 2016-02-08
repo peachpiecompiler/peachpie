@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
 	/// <summary>
 	/// Represents a try-catch statement.

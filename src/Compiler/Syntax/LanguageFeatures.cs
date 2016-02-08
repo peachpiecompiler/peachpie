@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace PHP.Core
+namespace Pchp.Syntax
 {
     #region Language Features Enum
 

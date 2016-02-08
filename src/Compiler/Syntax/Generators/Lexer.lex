@@ -11,13 +11,13 @@
 */
 
 using System;
-using PHP.Core;
+using Pchp.Syntax;
 
 using System.Collections.Generic;
 
 %%
 
-%namespace PHP.Core.Parsers
+%namespace Pchp.Syntax.Parsers
 %type Tokens
 %class Lexer
 %eofval Tokens.EOF

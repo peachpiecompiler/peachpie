@@ -6,9 +6,9 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Collections;
 
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
 	#region FunctionCall
 

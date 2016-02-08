@@ -10,7 +10,7 @@ using System.Collections.Specialized; // case-insensitive hashtable
 using System.Runtime.Serialization;
 using System.Reflection;
 
-namespace PHP.Core
+namespace Pchp.Syntax
 {
     #region Strings
 
@@ -393,7 +393,7 @@ namespace PHP.Core
             return result;
         }
 
-        internal static void StringBuilderAppend(PHP.Core.Parsers.PhpStringBuilder/*!*/ dst, StringBuilder/*!*/ src, int startIndex, int length, Text.Span span)
+        internal static void StringBuilderAppend(Pchp.Syntax.Parsers.PhpStringBuilder/*!*/ dst, StringBuilder/*!*/ src, int startIndex, int length, Text.Span span)
         {
             dst.Append(src.ToString(startIndex, length), span);
         }

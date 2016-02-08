@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection.Emit;
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
     #region StaticFieldUse
 

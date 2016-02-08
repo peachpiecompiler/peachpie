@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Diagnostics;
 
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
     /// <summary>
     /// Represents a concatenation expression (dot PHP operator).

@@ -3,9 +3,9 @@ using System.Reflection.Emit;
 using System.Diagnostics;
 using System.Collections.Generic;
 
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
 	#region JumpStmt
 

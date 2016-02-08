@@ -7,9 +7,9 @@ using System.Diagnostics;
 using System.Threading;
 using System.Linq;
 using System.Reflection.Emit;
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core
+namespace Pchp.Syntax
 {
 	// 
 	//  Identifier            Representation

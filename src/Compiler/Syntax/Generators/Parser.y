@@ -9,14 +9,14 @@ distributed with PHP5 and PHP6 interpreter.
 */
 
 using System.Diagnostics;
-using PHP.Core;
-using PHP.Core.AST;
-using PHP.Core.Parsers.GPPG;
-using FcnParam = System.Tuple<System.Collections.Generic.List<PHP.Core.AST.TypeRef>, System.Collections.Generic.List<PHP.Core.AST.ActualParam>, System.Collections.Generic.List<PHP.Core.AST.Expression>>;
+using Pchp.Syntax;
+using Pchp.Syntax.AST;
+using Pchp.Syntax.Parsers.GPPG;
+using FcnParam = System.Tuple<System.Collections.Generic.List<Pchp.Syntax.AST.TypeRef>, System.Collections.Generic.List<Pchp.Syntax.AST.ActualParam>, System.Collections.Generic.List<Pchp.Syntax.AST.Expression>>;
 
 %%
 
-%namespace PHP.Core.Parsers
+%namespace Pchp.Syntax.Parsers
 %valuetype SemanticValueType
 %positiontype Text.Span
 %tokentype Toks

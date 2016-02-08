@@ -6,9 +6,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
-using PHP.Core.Parsers;
-
-namespace PHP.Core
+namespace Pchp.Syntax
 {
     #region Enums: WarningGroups, ErrorSeverity
 

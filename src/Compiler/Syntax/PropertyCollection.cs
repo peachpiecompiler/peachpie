@@ -7,7 +7,7 @@ using System.Text;
 
 using Hashtable = System.Collections.Generic.Dictionary<object, object>;
 
-namespace PHP.Core
+namespace Pchp.Syntax
 {
     /// <summary>
     /// Provides set of keyed properties.

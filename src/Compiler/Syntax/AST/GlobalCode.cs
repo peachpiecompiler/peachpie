@@ -5,11 +5,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using PHP.Core;
-using PHP.Core.Parsers;
-using PHP.Core.Text;
+using Pchp.Syntax;
+using Pchp.Syntax.Parsers;
+using Pchp.Syntax.Text;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
     #region GlobalCode
 
@@ -111,7 +111,7 @@ namespace PHP.Core.AST
             : base(p)
         {
             this.isAnonymous = true;
-            this.qualifiedName = new QualifiedName(Core.Name.EmptyBaseName, Core.Name.EmptyNames);
+            this.qualifiedName = new QualifiedName(Name.EmptyBaseName, Name.EmptyNames);
             this.IsSimpleSyntax = false;
             this.naming = new NamingContext(null, null);
         }

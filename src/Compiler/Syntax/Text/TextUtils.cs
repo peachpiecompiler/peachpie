@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace PHP.Core.Text
+namespace Pchp.Syntax.Text
 {
     #region TextUtils
 

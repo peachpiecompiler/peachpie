@@ -1,4 +1,4 @@
-namespace PHP.Core.Parsers
+namespace Pchp.Syntax.Parsers
 {
 	public enum TokenCategory
 	{

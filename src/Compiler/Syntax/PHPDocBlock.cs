@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-using PHP.Core.Text;
+using Pchp.Syntax.Text;
 using System.Reflection;
 
-namespace PHP.Core
+namespace Pchp.Syntax
 {
     /// <summary>
     /// Structuralized representation of PHPDoc DocBlock.

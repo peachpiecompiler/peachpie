@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace PHP.Core.Parsers
+namespace Pchp.Syntax.Parsers
 {
 	public sealed class Tokenizer : Lexer
 	{

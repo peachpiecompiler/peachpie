@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-using PHP.Core.Parsers;
-using PHP.Core.Text;
+using Pchp.Syntax.Parsers;
+using Pchp.Syntax.Text;
 using System.IO;
 
-namespace PHP.Core
+namespace Pchp.Syntax
 {
     #region SourceUnit
 

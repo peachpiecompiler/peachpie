@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace PHP.Core.Text
+namespace Pchp.Syntax.Text
 {
     /// <summary>
     /// Represents span within text.

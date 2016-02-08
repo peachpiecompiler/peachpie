@@ -25,7 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PHP.Core.Parsers.GPPG
+namespace Pchp.Syntax.Parsers.GPPG
 {
 	#region State, Rule
 

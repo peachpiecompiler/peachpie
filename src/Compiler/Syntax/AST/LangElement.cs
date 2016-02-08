@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using System.Collections.Generic;
-using PHP.Core.Parsers;
-using PHP.Core.AST;
-using PHP.Core;
+using Pchp.Syntax.Parsers;
+using Pchp.Syntax.AST;
+using Pchp.Syntax;
 using System;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
     /// <summary>
     /// Base class for all AST nodes.

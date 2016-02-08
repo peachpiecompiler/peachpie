@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using PHP.Core.Parsers;
+using Pchp.Syntax.Parsers;
 
-namespace PHP.Core.AST
+namespace Pchp.Syntax.AST
 {
 	/// <summary>
 	/// Indirect variable use - a variable or a field access by run-time evaluated name.
