@@ -1,0 +1,2092 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Argument_StringZeroLength" xml:space="preserve">
+    <value>String cannot be of zero length.</value>
+  </data>
+  <data name="Argument_IllegalEnvVarName" xml:space="preserve">
+    <value>Environment variable name cannot contain equal character.</value>
+  </data>
+  <data name="Argument_LongEnvVarValue" xml:space="preserve">
+    <value>Environment variable name or value is too long.</value>
+  </data>
+  <data name="Argument_StringFirstCharIsZero" xml:space="preserve">
+    <value>The first char in the string is the null character.</value>
+  </data>
+  <data name="UnknownError_Num" xml:space="preserve">
+    <value>Unknown error "{0}".</value>
+  </data>
+  <data name="configuration_record_read_only" xml:space="preserve">
+    <value>Configuration record is read only.</value>
+  </data>
+  <data name="invalid_icon_format" xml:space="preserve">
+    <value>The icon has an invalid format.</value>
+  </data>
+  <data name="invalid_array_rank" xml:space="preserve">
+    <value>Invalid array rank.</value>
+  </data>
+  <data name="not_enought_space_in_target_array" xml:space="preserve">
+    <value>Not enought space in the target array.</value>
+  </data>
+  <data name="item_removed_from_empty_array" xml:space="preserve">
+    <value>Cannot remove item from empty array.</value>
+  </data>
+  <data name="enumerator_not_referencing_this_table" xml:space="preserve">
+    <value>Specified enumerator doesn't reference this table.</value>
+  </data>
+  <data name="argument_equals" xml:space="preserve">
+    <value>Argument {0} cannot be equal to {1}.</value>
+  </data>
+  <data name="for_internal_usage_only" xml:space="preserve">
+    <value>{0} is intended for internal usage only.</value>
+  </data>
+  <data name="invalid_node" xml:space="preserve">
+    <value>Invalid node.</value>
+  </data>
+  <data name="missing_attribute" xml:space="preserve">
+    <value>Missing attribute '{0}'.</value>
+  </data>
+  <data name="invalid_attribute_value" xml:space="preserve">
+    <value>The value of attribute '{0}' is invalid.</value>
+  </data>
+  <data name="invalid_attribute_location" xml:space="preserve">
+    <value>Attribute '{0}' cannot be used in configuration file located on virtual path '{0}'.</value>
+  </data>
+  <data name="invalid_node_location" xml:space="preserve">
+    <value>Node cannot be used in configuration file located on virtual path '{0}' because {1}.</value>
+  </data>
+  <data name="defines_app_wide_config" xml:space="preserve">
+    <value>it defines application wide configuration</value>
+  </data>
+  <data name="defines_machine_wide_config" xml:space="preserve">
+    <value>it defines machine wide configuration</value>
+  </data>
+  <data name="library_load_failed" xml:space="preserve">
+    <value>Library '{0}' cannot be loaded; {1}</value>
+  </data>
+  <data name="extension_already_loaded" xml:space="preserve">
+    <value>Extension '{0}' (file '{1}') has alredy been loaded.</value>
+  </data>
+  <data name="library_section_redeclared" xml:space="preserve">
+    <value>Library configuration section '{0}' has already been bound to the library '{1}'.</value>
+  </data>
+  <data name="cannot_change_library_section" xml:space="preserve">
+    <value>Could not change the section of loaded library. The library '{0}' has already been bound to configuration section '{1}'.</value>
+  </data>
+  <data name="library_assembly_loading_failed" xml:space="preserve">
+    <value>Library assembly '{0}' could not be loaded.</value>
+  </data>
+  <data name="dynamic_wrapper_loading_failed" xml:space="preserve">
+    <value>Dynamic wrapper '{0}' could not be loaded.</value>
+  </data>
+  <data name="constant_reimplemented" xml:space="preserve">
+    <value>{0}.{1}: Constant '{2}' is reimplemented. Previously implemented by {3}.{4}.</value>
+  </data>
+  <data name="function_reimplemented" xml:space="preserve">
+    <value>{0}.{1}: Function '{2}' is reimplemented. Previously implemented by {3}.{4}.</value>
+  </data>
+  <data name="invalid_call_context_data" xml:space="preserve">
+    <value>Invalid call context data in slot {0}.</value>
+  </data>
+  <data name="last_is_less_than_first" xml:space="preserve">
+    <value>The last must be greater than or equal to the first.</value>
+  </data>
+  <data name="page_instantiation_failed" xml:space="preserve">
+    <value>Unable to instantiate page '{0}'.</value>
+  </data>
+  <data name="directory_not_exists" xml:space="preserve">
+    <value>Directory '{0}' does not exist.</value>
+  </data>
+  <data name="incomplete_path" xml:space="preserve">
+    <value>Path '{0}' is incomplete. The path is relative or drive specification is missing.</value>
+  </data>
+  <data name="file_not_exists" xml:space="preserve">
+    <value>File '{0}' does not exist.</value>
+  </data>
+  <data name="invalid_regular_expression" xml:space="preserve">
+    <value>Invalid regular expression.</value>
+  </data>
+  <data name="invalid_registering_order" xml:space="preserve">
+    <value>Invalid global variables registering order.</value>
+  </data>
+  <data name="invalid_library_contant_type" xml:space="preserve">
+    <value>Invalid library contant type '{0}'.</value>
+  </data>
+  <data name="missing_configuration" xml:space="preserve">
+    <value>Configuration option {0} has not been defined.</value>
+  </data>
+  <data name="console_only_option" xml:space="preserve">
+    <value>The option is valid only in console application configuration.</value>
+  </data>
+  <data name="web_only_option" xml:space="preserve">
+    <value>The option is valid only in web application configuration.</value>
+  </data>
+  <data name="script_not_found" xml:space="preserve">
+    <value>Script file '{0}' not found.</value>
+  </data>
+  <data name="error_creating_file" xml:space="preserve">
+    <value>Unexpected error creating file '{0}': {1}</value>
+  </data>
+  <data name="library_config_handler_failed" xml:space="preserve">
+    <value>The configuration handler of the library '{0}' has failed.</value>
+  </data>
+  <data name="out_of_range" xml:space="preserve">
+    <value>Value should be between {0} and {1} including.</value>
+  </data>
+  <data name="invalid_base" xml:space="preserve">
+    <value>Invalid base.</value>
+  </data>
+  <data name="configuration_not_loaded" xml:space="preserve">
+    <value>Configuration has not been loaded yet.</value>
+  </data>
+  <data name="cannot_modify_option" xml:space="preserve">
+    <value>Configuration option cannot be modified here since it has been prevented to so by 'allowOverride' attribute in configuration file '{0}'.</value>
+  </data>
+  <data name="unknown_session_handler" xml:space="preserve">
+    <value>Session handler '{0}' is unknown. It hasn't been registered by any loaded library.</value>
+  </data>
+  <data name="invalid_method_implementation" xml:space="preserve">
+    <value>Invalid implementation of method '{0}'.</value>
+  </data>
+  <data name="cant_generate_sys_class_builders" xml:space="preserve">
+    <value>Can't generate builders for system classes.</value>
+  </data>
+  <data name="cant_create_sys_class_types" xml:space="preserve">
+    <value>Can't create types for system classes.</value>
+  </data>
+  <data name="cant_clone_sys_table" xml:space="preserve">
+    <value>Can't clone system classes table.</value>
+  </data>
+  <data name="unable_to_connect_extmanager" xml:space="preserve">
+    <value>Unable to connect to ExtManager.</value>
+  </data>
+  <data name="unable_to_launch_extmanager" xml:space="preserve">
+    <value>Unable to launch ExtManager.</value>
+  </data>
+  <data name="extmanager_path_not_configured" xml:space="preserve">
+    <value>At least one extension is to be run in isolated mode but ExtManager path is not configured.</value>
+  </data>
+  <data name="could_not_create_event" xml:space="preserve">
+    <value>Could not create event.</value>
+  </data>
+  <data name="timeout_waiting_for_extmanager" xml:space="preserve">
+    <value>Timeout when waiting for ExtManager to start up.</value>
+  </data>
+  <data name="cannot_change_target_instance" xml:space="preserve">
+    <value>Changing the target instance is unsupported if the callback is already bound.</value>
+  </data>
+  <data name="must_target_instance_method" xml:space="preserve">
+    <value>Must target an instance method.</value>
+  </data>
+  <data name="must_be_static" xml:space="preserve">
+    <value>Must be static.</value>
+  </data>
+  <data name="must_be_phpobject_subclass" xml:space="preserve">
+    <value>Must be a class derived from PhpObject.</value>
+  </data>
+  <data name="must_be_iphpmemberhandle" xml:space="preserve">
+    <value>Must be an IPhpMemberHandle.</value>
+  </data>
+  <data name="must_be_associated_instance_method" xml:space="preserve">
+    <value>Must be bound to an instance method of the class associated with this table.</value>
+  </data>
+  <data name="must_be_associated_method" xml:space="preserve">
+    <value>Must be bound to a method of the class associated with this table.</value>
+  </data>
+  <data name="must_be_associated_static_method" xml:space="preserve">
+    <value>Must be bound to a static method of the class associated with this table.</value>
+  </data>
+  <data name="must_be_associated_instance_field" xml:space="preserve">
+    <value>Must reflect an instance field of PhpReference type declared in the class assignable from the class associated with this table.</value>
+  </data>
+  <data name="must_be_declaringtype_instance" xml:space="preserve">
+    <value>Must be an instance of DeclaringType.</value>
+  </data>
+  <data name="class_instantiation_failed" xml:space="preserve">
+    <value>Unable to instantiate class '{0}'.</value>
+  </data>
+  <data name="incarnation_type_mismatch" xml:space="preserve">
+    <value>Must be of the same type as this instance.</value>
+  </data>
+  <data name="field_already_exists" xml:space="preserve">
+    <value>A field with the same name already exists in this object.</value>
+  </data>
+  <data name="buffers_must_not_be_empty" xml:space="preserve">
+    <value>Buffers must not be empty.</value>
+  </data>
+  <data name="too_little_data_buffered" xml:space="preserve">
+    <value>Too little data buffered.</value>
+  </data>
+  <data name="casting_to_stream_unsupported" xml:space="preserve">
+    <value>This stream does not support casting as System.IO.Stream.</value>
+  </data>
+  <data name="define_method_unsupported" xml:space="preserve">
+    <value>Method is no longer supported. Use TypeBuilder.DefineMethod instead.</value>
+  </data>
+  <data name="networkutils_unsupported" xml:space="preserve">
+    <value>NetworkUtils are not supported on this system.</value>
+  </data>
+  <data name="class_has_no_unserializer" xml:space="preserve">
+    <value>Class {0} has no unserializer</value>
+  </data>
+  <data name="invalid_script_assembly" xml:space="preserve">
+    <value>The assembly '{0}' is not a valid Phalanger compiled script assembly</value>
+  </data>
+  <data name="unable_to_resolve_script_type" xml:space="preserve">
+    <value>Unable to resolve script type (source path '{0}', referential type '{1}')</value>
+  </data>
+  <data name="instance_disposed" xml:space="preserve">
+    <value>The instance has already been disposed</value>
+  </data>
+  <data name="session_state_unavailable" xml:space="preserve">
+    <value>Session state not available, session operation cannot be performed</value>
+  </data>
+  <data name="empty_path" xml:space="preserve">
+    <value>Path must not be empty.</value>
+  </data>
+  <data name="invalid_path" xml:space="preserve">
+    <value>Path is not valid.</value>
+  </data>
+  <data name="no_suitable_method_overload" xml:space="preserve">
+    <value>No accessible overload of method '{0}::{1}' is compatible with the specified arguments</value>
+  </data>
+  <data name="no_suitable_function_overload" xml:space="preserve">
+    <value>No accessible overload of function '{1}' is compatible with the specified arguments</value>
+  </data>
+  <data name="property_type_mismatch" xml:space="preserve">
+    <value>Unable to assign the specified value to '{0}::{1}'. There is no suitable conversion.</value>
+  </data>
+  <data name="invalid_dynamic_wrapper_format" xml:space="preserve">
+    <value>Invalid format of dynamic wrapper '{0}'.</value>
+  </data>
+  <data name="invalid_class_library" xml:space="preserve">
+    <value>The library '{0}' is not a valid Phalanger Class Library.</value>
+  </data>
+  <data name="invalid_class_library_wrapper" xml:space="preserve">
+    <value>The dynamic wrapper for the library, file '{0}', is invalid. Delete the wrapper file so that it could be regenerated automatically during the next request.</value>
+  </data>
+  <data name="argless_stub_not_found" xml:space="preserve">
+    <value>Argless stub for populated method '{0}' not found.</value>
+  </data>
+  <data name="field_implementor_not_found" xml:space="preserve">
+    <value>Reflected field '{0}' has unknown implementor. PhpPublicFieldAttribute incorrect usage.</value>
+  </data>
+  <data name="not_all_methods_reflected" xml:space="preserve">
+    <value>Not all populated methods have been reflected.</value>
+  </data>
+  <data name="not_all_fields_reflected" xml:space="preserve">
+    <value>Not all populated fields have been reflected.</value>
+  </data>
+  <data name="not_all_constants_reflected" xml:space="preserve">
+    <value>Not all populated constants have been reflected.</value>
+  </data>
+  <data name="precompiled_assembly_corrupted" xml:space="preserve">
+    <value>Precompiled assembly '{0}' is corrupted (unable to resolve type token 0x{1:X8}).</value>
+  </data>
+  <data name="precompiled_assembly_missing_script_attribute" xml:space="preserve">
+    <value>Precompiled assembly '{0}' contains &lt;Script&gt; type that misses ScriptAttribute.</value>
+  </data>
+  <data name="overload_has_different_impl_options" xml:space="preserve">
+    <value>{0}.{1}: This overload of '{2}' has different implementation options than the others.</value>
+  </data>
+  <data name="overload_has_lesser_param_count" xml:space="preserve">
+    <value>{0}.{1}: Overload has lesser mandatory parameter count than another one, even though it has optional arguments.</value>
+  </data>
+  <data name="invalid_function_name" xml:space="preserve">
+    <value>Function name must be a string</value>
+  </data>
+  <data name="invalid_method_modifiers" xml:space="preserve">
+    <value>{0}.{1}: Method implementing PHP function should be public and static.</value>
+  </data>
+  <data name="first_param_not_dictionary" xml:space="preserve">
+    <value>{0}.{1}: First parameter should be of type IDictionary due to NeedsVariables option.</value>
+  </data>
+  <data name="invalid_parameter_type" xml:space="preserve">
+    <value>{0}.{1}: Invalid parameter '{2}' type ({3}).</value>
+  </data>
+  <data name="invalid_return_type" xml:space="preserve">
+    <value>{0}.{1}: Invalid return type ({2}).</value>
+  </data>
+  <data name="overloads_not_contiguous" xml:space="preserve">
+    <value>{0}.{1}: Suboptimal implementation. Overloads of '{2}' are not placed one following the other in metadata table.</value>
+  </data>
+  <data name="invalid_constant_name" xml:space="preserve">
+    <value>{0}.{1}: Invalid constant name '{2}'.</value>
+  </data>
+  <data name="invalid_constant_field" xml:space="preserve">
+    <value>{0}.{1}: Field implementing PHP constant should be public literal.</value>
+  </data>
+  <data name="invalid_constant_type" xml:space="preserve">
+    <value>{0}.{1}: Invalid constant type ({2}).</value>
+  </data>
+  <data name="invalid_type_visibility" xml:space="preserve">
+    <value>{0}: Type implementing PHP function or constant should be public.</value>
+  </data>
+  <data name="invalid_type_namespace" xml:space="preserve">
+    <value>{0}: Type implementing PHP function or constant should be in namespace {1} or its subnamespace.</value>
+  </data>
+  <data name="no_source_files_to_compile" xml:space="preserve">
+    <value>No source files to compile.</value>
+  </data>
+  <data name="configuration_file_not_found" xml:space="preserve">
+    <value>Configuration file '{0}' not found.</value>
+  </data>
+  <data name="source_file_not_found" xml:space="preserve">
+    <value>Source file '{0}' not found.</value>
+  </data>
+  <data name="directory_not_found" xml:space="preserve">
+    <value>Directory '{0}' not found.</value>
+  </data>
+  <data name="invalid_value" xml:space="preserve">
+    <value>Invalid value '{0}'.</value>
+  </data>
+  <data name="invalid_option" xml:space="preserve">
+    <value>Invalid option '{0}'.</value>
+  </data>
+  <data name="application_config_file_copied" xml:space="preserve">
+    <value>Application configuration file copied.</value>
+  </data>
+  <data name="entrypoint_not_specified" xml:space="preserve">
+    <value>Entry point script not specified.</value>
+  </data>
+  <data name="invalid_file_extension" xml:space="preserve">
+    <value>Invalid file extension '{0}'.</value>
+  </data>
+  <data name="cannot_create_config_file" xml:space="preserve">
+    <value>Cannot create configuration file '{0}'. Error: {1}</value>
+  </data>
+  <data name="loaded_libraries" xml:space="preserve">
+    <value>Loaded libraries</value>
+  </data>
+  <data name="configuration_error" xml:space="preserve">
+    <value>Configuration error: {0}</value>
+  </data>
+  <data name="performing_compilation" xml:space="preserve">
+    <value>Performing compilation</value>
+  </data>
+  <data name="reading_configuration" xml:space="preserve">
+    <value>Reading configuration</value>
+  </data>
+  <data name="Arguments" xml:space="preserve">
+    <value>Arguments</value>
+  </data>
+  <data name="option" xml:space="preserve">
+    <value>option</value>
+  </data>
+  <data name="invalid_command_line_argument" xml:space="preserve">
+    <value>Invalid command line argument '/{0}': {1}</value>
+  </data>
+  <data name="invalid_command_line_argument_noname" xml:space="preserve">
+    <value>Invalid command line argument(s): {0}</value>
+  </data>
+  <data name="invalid_source" xml:space="preserve">
+    <value>Invalid source file or directory: {0}</value>
+  </data>
+  <data name="code_generation_error" xml:space="preserve">
+    <value>Error occured during assembly generation: {0}</value>
+  </data>
+  <data name="internal_error" xml:space="preserve">
+    <value>Internal error! 
+Please, report this bug via {0}.
+Additional information: 
+{1}</value>
+  </data>
+  <data name="phpc_arg_help" xml:space="preserve">
+    <value>Displays this usage message.</value>
+  </data>
+  <data name="phpc_arg_debug" xml:space="preserve">
+    <value>Compile in debug mode (debug information is generated to .pdb files, asserts are ignored).</value>
+  </data>
+  <data name="phpc_arg_target_web" xml:space="preserve">
+    <value>Build a web application.</value>
+  </data>
+  <data name="phpc_arg_target_exe" xml:space="preserve">
+    <value>Build an executable console application.</value>
+  </data>
+  <data name="phpc_arg_target_dll" xml:space="preserve">
+    <value>Build a library.</value>
+  </data>
+  <data name="phpc_arg_target_winexe" xml:space="preserve">
+    <value>Build a Windows application.</value>
+  </data>
+  <data name="phpc_arg_lang" xml:space="preserve">
+    <value>Enable language features of the specified PHP language version.</value>
+  </data>
+  <data name="phpc_arg_pure" xml:space="preserve">
+    <value>Build a pure PHP/CLR application.</value>
+  </data>
+  <data name="phpc_arg_mta" xml:space="preserve">
+    <value>Indicates that the COM threading model for the application is multithreaded apartment. Disabled by default.</value>
+  </data>
+  <data name="phpc_arg_out_path" xml:space="preserve">
+    <value>If the target is a web application specifies a directory where the resulting assembly should be stored in.
+Otherwise, specifies a name of the resulting application assembly.</value>
+  </data>
+  <data name="phpc_arg_doc" xml:space="preserve">
+    <value>Generate documentation into XML file named as the resulting assembly and placed to the same directory.</value>
+  </data>
+  <data name="phpc_arg_doc_path" xml:space="preserve">
+    <value>Generate documentation into a specified XML file.</value>
+  </data>
+  <data name="phpc_arg_root_path" xml:space="preserve">
+    <value>A path to a root directory of the compiled web/console/win application or library. Defaults to the current directory.</value>
+  </data>
+  <data name="phpc_arg_config_path" xml:space="preserve">
+    <value>A path to a configuration file to load and process before the compilation. Multiple options can be specified. The order of processed configuration settings:
+1. settings in Machine.config
+2. settings in phpc.exe.config
+3. settings in the file(s) specified by this option if specified
+4. App.config/Web.config file located in the application source root if exists and no /config options specified.</value>
+  </data>
+  <data name="phpc_arg_reference_path" xml:space="preserve">
+    <value>Path to a referenced PHP library assembly. More these options can be stated.</value>
+  </data>
+  <data name="phpc_arg_entrypoint" xml:space="preserve">
+    <value>That one of compiled scripts which will be used as an entry point of a console application.</value>
+  </data>
+  <data name="phpc_arg_static" xml:space="preserve">
+    <value>Enable static inclusions.</value>
+  </data>
+  <data name="phpc_arg_recurse" xml:space="preserve">
+    <value>Directory which to recursively search for files to compile. Can be specified repeatedly.</value>
+  </data>
+  <data name="phpc_arg_ext" xml:space="preserve">
+    <value>Comma separated list of file extensions which to add to compilation when recursively searching directories. Default value is 'php,inc'.</value>
+  </data>
+  <data name="phpc_arg_encoding" xml:space="preserve">
+    <value>Encoding of the scripts. Examples: UTF-8, Windows-1250, Latin1, Latin2, etc. See also method System.Text.Encoding.GetEncoding(string).</value>
+  </data>
+  <data name="phpc_arg_key" xml:space="preserve">
+    <value>File containing key pair generated by sn utility. Makes resulting assembly strongly named.</value>
+  </data>
+  <data name="phpc_arg_version" xml:space="preserve">
+    <value>Version of the resulting assembly. Default version is 1.0.0.0.</value>
+  </data>
+  <data name="phpc_arg_win32icon" xml:space="preserve">
+    <value>File containing an Win32 icon (or multiple icons) that will be included to the resulting assembly.</value>
+  </data>
+  <data name="phpc_arg_resource" xml:space="preserve">
+    <value>File or directory to embed to the resulting assembly as a managed resource (if a directory is specified its content is embedded recursively). Can be specified repeatedly. Optionally can contain specification fo resource name and visibiliy - only for files. Default name is filename and visibility is public.</value>
+  </data>
+  <data name="phpc_arg_nowarn_warning_numbers" xml:space="preserve">
+    <value>Disables one or more warnings by number. Separate multiple warning numbers with a commas.</value>
+  </data>
+  <data name="phpc_arg_dw_DeferredToRuntime" xml:space="preserve">
+    <value>Disables warnings related to deferred compilation.</value>
+  </data>
+  <data name="phpc_arg_dw_InclusionsMapping" xml:space="preserve">
+    <value>Disables warnings reported when inclusion mapping fails. Automatically disabled when /dw:DeferredToRuntime specified.</value>
+  </data>
+  <data name="phpc_arg_dw_CompilerStrict" xml:space="preserve">
+    <value>Disables strict compiler warnings such as unreachable code, using &amp; modifier in function calls, etc.</value>
+  </data>
+  <data name="phpc_arg_dw_AmpModifiers" xml:space="preserve">
+    <value>Disables warnigs regarding ampersand modifiers (references). Automatically disabled when /dw:CompilerStrict specified.</value>
+  </data>
+  <data name="phpc_arg_ew" xml:space="preserve">
+    <value>Enables specified warning(s) (same options as /dw).</value>
+  </data>
+  <data name="phpc_arg_verbose" xml:space="preserve">
+    <value>Whether to report additional infromation about the compilation process.</value>
+  </data>
+  <data name="phpc_arg_at_path" xml:space="preserve">
+    <value>Replace this argument by arguments stated in a specified file.</value>
+  </data>
+  <data name="phpc_arg_quiet" xml:space="preserve">
+    <value>Suppresses display of any messages.</value>
+  </data>
+  <data name="phpc_other_args" xml:space="preserve">
+    <value>Paths to scripts to be compiled should be specified on the command line following the options. The paths can be either absolute or relative to the /root directory.
+If no files are specified nor /recurse option is specified the /root directory is recursively searched for scripts to compile.</value>
+  </data>
+  <data name="default_exception_message" xml:space="preserve">
+    <value>Unknown exception</value>
+  </data>
+  <data name="stringified_exception_debug" xml:space="preserve">
+    <value>exception '{0}' with message '{1}' in {2}:{3}:{4}
+Stack trace:
+{5}</value>
+  </data>
+  <data name="stringified_exception" xml:space="preserve">
+    <value>exception '{0}' with message '{1}'
+Stack trace:
+{2}</value>
+  </data>
+  <data name="getiterator_must_return_traversable" xml:space="preserve">
+    <value>Objects returned by {0}::getIterator() must be traversable or implement interface Iterator</value>
+  </data>
+  <data name="uncaught_exception" xml:space="preserve">
+    <value>Uncaught {0}</value>
+  </data>
+  <data name="exception_cannot_be_thrown" xml:space="preserve">
+    <value>Exception cannot be thrown here: {0}</value>
+  </data>
+  <data name="serialize_must_return_null_or_string" xml:space="preserve">
+    <value>{0}::serialize() must return a string or NULL</value>
+  </data>
+  <data name="__related_location" xml:space="preserve">
+    <value>(related location)</value>
+  </data>
+  <data name="invalid_header" xml:space="preserve">
+    <value>Header '{0}' is invalid: {1}</value>
+  </data>
+  <data name="method_called_on_non_object" xml:space="preserve">
+    <value>Call to a member function {0}() on a non-object</value>
+  </data>
+  <data name="clone_called_on_non_object" xml:space="preserve">
+    <value>__clone method called on non-object</value>
+  </data>
+  <data name="default_object_created" xml:space="preserve">
+    <value>Creating default object from empty value</value>
+  </data>
+  <data name="undefined_method_called" xml:space="preserve">
+    <value>Call to undefined method: {0}::{1}()</value>
+  </data>
+  <data name="protected_method_called" xml:space="preserve">
+    <value>Call to protected method {0}::{1}() from context '{2}'</value>
+  </data>
+  <data name="private_method_called" xml:space="preserve">
+    <value>Call to private method {0}::{1}() from context '{2}'</value>
+  </data>
+  <data name="protected_ctor_called" xml:space="preserve">
+    <value>Call to protected constructor {0}::{1}() from context '{2}'</value>
+  </data>
+  <data name="private_ctor_called" xml:space="preserve">
+    <value>Call to private constructor {0}::{1}() from context '{2}'</value>
+  </data>
+  <data name="circular_base_class_dependency" xml:space="preserve">
+    <value>Circular class inheritance dependency involving '{0}' and '{1}'</value>
+  </data>
+  <data name="circular_base_interface_dependency" xml:space="preserve">
+    <value>Circular interface inheritance dependency involving '{0}' and '{1}'</value>
+  </data>
+  <data name="undefined_property_accessed" xml:space="preserve">
+    <value>Undefined property: {0}::${1}</value>
+  </data>
+  <data name="protected_property_accessed" xml:space="preserve">
+    <value>Cannot access protected property {0}::${1} from context '{2}'</value>
+  </data>
+  <data name="private_property_accessed" xml:space="preserve">
+    <value>Cannot access private property {0}::${1} from context '{2}'</value>
+  </data>
+  <data name="readonly_property_written" xml:space="preserve">
+    <value>Cannot set read-only property {0}::${1}</value>
+  </data>
+  <data name="writeonly_property_read" xml:space="preserve">
+    <value>Cannot read from write-only property {0}::${1}</value>
+  </data>
+  <data name="event_written" xml:space="preserve">
+    <value>Cannot write to event {0}::${1}, use {0}::${1}-&gt;Add() and {0}::${1}-&gt;Remove() to add or remove an event handler</value>
+  </data>
+  <data name="protected_constant_accessed" xml:space="preserve">
+    <value>Cannot access protected constant {0}::{1} from context '{2}'</value>
+  </data>
+  <data name="private_constant_accessed" xml:space="preserve">
+    <value>Cannot access private constant {0}::{1} from context '{2}'</value>
+  </data>
+  <data name="undefined_property_when_access_overloaded" xml:space="preserve">
+    <value>Cannot access undefined property for object with overloaded property access</value>
+  </data>
+  <data name="sleep_must_return_array" xml:space="preserve">
+    <value>__sleep should return an array containing the names of instance-variables to serialize</value>
+  </data>
+  <data name="sleep_returned_bad_field" xml:space="preserve">
+    <value>'{0}' returned as member variable from __sleep() but does not exist</value>
+  </data>
+  <data name="tostring_must_return_string" xml:space="preserve">
+    <value>Method {0}::__toString() must return a string value</value>
+  </data>
+  <data name="clone_cannot_be_static" xml:space="preserve">
+    <value>Clone method {0}::__clone() cannot be static</value>
+  </data>
+  <data name="constructor_cannot_be_static" xml:space="preserve">
+    <value>Constructor {0}::{1}() cannot be static</value>
+  </data>
+  <data name="destructor_cannot_be_static" xml:space="preserve">
+    <value>Destructor {0}::{1}() cannot be static</value>
+  </data>
+  <data name="invalid_class_name" xml:space="preserve">
+    <value>Class name must be a valid object or a string</value>
+  </data>
+  <data name="invalid_method_name" xml:space="preserve">
+    <value>Method name must be a string</value>
+  </data>
+  <data name="abstract_method_called" xml:space="preserve">
+    <value>Cannot call abstract method {0}::{1}()</value>
+  </data>
+  <data name="interface_instantiated" xml:space="preserve">
+    <value>Cannot instantiate interface '{0}'</value>
+  </data>
+  <data name="abstract_class_instantiated" xml:space="preserve">
+    <value>Cannot instantiate abstract class '{0}'</value>
+  </data>
+  <data name="constructor_less_type_instantiated" xml:space="preserve">
+    <value>Cannot instantiate class '{0}' because it has no visible constructor</value>
+  </data>
+  <data name="class_has_no_visible_ctor" xml:space="preserve">
+    <value>Class '{0}' has no visible constructor</value>
+  </data>
+  <data name="type_redeclared" xml:space="preserve">
+    <value>Cannot redeclare class/interface '{0}'</value>
+  </data>
+  <data name="function_redeclared" xml:space="preserve">
+    <value>Cannot redeclare function '{0}'</value>
+  </data>
+  <data name="constant_redeclared" xml:space="preserve">
+    <value>Cannot redeclare constant '{0}'</value>
+  </data>
+  <data name="class_not_found" xml:space="preserve">
+    <value>Class '{0}' not found</value>
+  </data>
+  <data name="ambiguous_name_match" xml:space="preserve">
+    <value>Ambiguous name: '{1}' and '{2}' are both imported as '{0}'</value>
+  </data>
+  <data name="ambiguous_type_match" xml:space="preserve">
+    <value>Ambiguous type name: '{1}' and '{2}' are both imported as '{0}'</value>
+  </data>
+  <data name="ambiguous_function_match" xml:space="preserve">
+    <value>Ambiguous function name: '{1}' and '{2}' are both imported as '{0}'</value>
+  </data>
+  <data name="ambiguous_constant_match" xml:space="preserve">
+    <value>Ambiguous constant name: '{1}' and '{2}' are both imported as '{0}'</value>
+  </data>
+  <data name="this_used_out_of_object" xml:space="preserve">
+    <value>Using $this when not in object context</value>
+  </data>
+  <data name="unserialize_callback_failed" xml:space="preserve">
+    <value>Function {0}() hasn't defined the class it was called for</value>
+  </data>
+  <data name="undefined_class_constant" xml:space="preserve">
+    <value>Undefined class constant '{0}::{1}'</value>
+  </data>
+  <data name="circular_constant_definition_global" xml:space="preserve">
+    <value>Circular constant definition involving global constant '{0}'</value>
+  </data>
+  <data name="circular_constant_definition_class" xml:space="preserve">
+    <value>Circular constant definition involving class constant '{0}::{1}'</value>
+  </data>
+  <data name="nonstatic_method_called_statically" xml:space="preserve">
+    <value>Non-static method {0}::{1}() should not be called statically</value>
+  </data>
+  <data name="self_accessed_out_of_class" xml:space="preserve">
+    <value>Cannot access self:: when no class scope is active</value>
+  </data>
+  <data name="parent_accessed_out_of_class" xml:space="preserve">
+    <value>Cannot access parent:: when no class scope is active</value>
+  </data>
+  <data name="parent_accessed_in_parentless_class" xml:space="preserve">
+    <value>Cannot access parent:: when current class scope has no parent</value>
+  </data>
+  <data name="undeclared_static_property_accessed" xml:space="preserve">
+    <value>Access to undeclared static property: {0}::${1}</value>
+  </data>
+  <data name="static_property_unset" xml:space="preserve">
+    <value>Attempt to unset static property {0}::${1}</value>
+  </data>
+  <data name="cannot_reassign_this" xml:space="preserve">
+    <value>Cannot re-assign $this</value>
+  </data>
+  <data name="incomparable_objects_compared" xml:space="preserve">
+    <value>Incomparable objects have been compared</value>
+  </data>
+  <data name="illegal_key_return_type" xml:space="preserve">
+    <value>Illegal type returned from {0}::key()</value>
+  </data>
+  <data name="dotdot_not_allowed_in_path" xml:space="preserve">
+    <value>No '..' components allowed in path</value>
+  </data>
+  <data name="path_contains_invalid_characters" xml:space="preserve">
+    <value>Path contains invalid characters</value>
+  </data>
+  <data name="generic_call_to_library_function" xml:space="preserve">
+    <value>Cannot use generic arguments when calling a library function</value>
+  </data>
+  <data name="generic_parameters_disallowed_on_ctor" xml:space="preserve">
+    <value>Generic parameters cannot be defined on constructor</value>
+  </data>
+  <data name="missing_entry_point" xml:space="preserve">
+    <value>Missing entry point; no static parameterless method or function '{0}' found</value>
+  </data>
+  <data name="entry_point_redefined" xml:space="preserve">
+    <value>Entry point has already been defined</value>
+  </data>
+  <data name="delegate_unrecognized_ctor_args" xml:space="preserve">
+    <value>Unrecognized constructor arguments were given to delegate '{0}'. Use "function", array($instance, "method"), or array("class", "method")</value>
+  </data>
+  <data name="delegate_target_instance_missing" xml:space="preserve">
+    <value>Object instance must be given for non-static method '{1}::{2}' when creating delegate '{0}'. Use array($instance, "{2}")</value>
+  </data>
+  <data name="event_has_no_add_accessor" xml:space="preserve">
+    <value>Event '{0}::{1}' has no Add accessor method</value>
+  </data>
+  <data name="event_has_no_remove_accessor" xml:space="preserve">
+    <value>Event '{0}::{1}' has no Remove accessor method</value>
+  </data>
+  <data name="constant_value_neither_scalar_nor_null" xml:space="preserve">
+    <value>Cannot define value which is neither scalar nor NULL as a constant</value>
+  </data>
+  <data name="constant_redefined" xml:space="preserve">
+    <value>Attempt to redefine constant '{0}'</value>
+  </data>
+  <data name="undefined_variable" xml:space="preserve">
+    <value>Undefined variable: {0}</value>
+  </data>
+  <data name="undefined_constant" xml:space="preserve">
+    <value>Use of undefined constant {0} - assumed '{0}'</value>
+  </data>
+  <data name="object_used_as_array" xml:space="preserve">
+    <value>An object of type '{0}' used as an array</value>
+  </data>
+  <data name="string_used_as_array" xml:space="preserve">
+    <value>A string used as an array</value>
+  </data>
+  <data name="scalar_used_as_array" xml:space="preserve">
+    <value>A scalar of type '{0}' used as an array</value>
+  </data>
+  <data name="empty_used_as_array" xml:space="preserve">
+    <value>An empty variable used as an array</value>
+  </data>
+  <data name="array_used_as_object" xml:space="preserve">
+    <value>An array used as an object</value>
+  </data>
+  <data name="string_used_as_object" xml:space="preserve">
+    <value>A string used as an object</value>
+  </data>
+  <data name="scalar_used_as_object" xml:space="preserve">
+    <value>A scalar of type '{0}' used as an object</value>
+  </data>
+  <data name="empty_used_as_object" xml:space="preserve">
+    <value>An empty variable used as an object</value>
+  </data>
+  <data name="string_item_used_as_reference" xml:space="preserve">
+    <value>A string item used as a reference</value>
+  </data>
+  <data name="invalid_implicit_cast" xml:space="preserve">
+    <value>Cannot convert {0} to {1} implicitly in a call to function {2}()</value>
+  </data>
+  <data name="array_to_string_conversion" xml:space="preserve">
+    <value>Array to string conversion</value>
+  </data>
+  <data name="string_should_be_single_character" xml:space="preserve">
+    <value>String should consist of a single character</value>
+  </data>
+  <data name="function_not_supported" xml:space="preserve">
+    <value>Function is not supported</value>
+  </data>
+  <data name="undefined_function_called" xml:space="preserve">
+    <value>Call to undefined function: '{0}'</value>
+  </data>
+  <data name="undefined_external_function_called" xml:space="preserve">
+    <value>Call to undefined external function '{0}', extension '{1}' - check configuration</value>
+  </data>
+  <data name="no_function_context" xml:space="preserve">
+    <value>Called from the global scope - no function context</value>
+  </data>
+  <data name="argument_not_passed_to_function" xml:space="preserve">
+    <value>Argument #{0} not passed to the function/method</value>
+  </data>
+  <data name="type_argument_not_passed_to_function" xml:space="preserve">
+    <value>Generic type argument #{0} not passed to the function/method</value>
+  </data>
+  <data name="invalid_callback" xml:space="preserve">
+    <value>Invalid callback</value>
+  </data>
+  <data name="invalid_argument" xml:space="preserve">
+    <value>Invalid argument '{0}'</value>
+  </data>
+  <data name="invalid_argument_value" xml:space="preserve">
+    <value>Value '{1}' is invalid for argument '{0}'</value>
+  </data>
+  <data name="invalid_argument_with_message" xml:space="preserve">
+    <value>Invalid argument: </value>
+  </data>
+  <data name="invalid_argument_count_for_function" xml:space="preserve">
+    <value>Invalid argument count in a call to the function '{0}'</value>
+  </data>
+  <data name="invalid_argument_count_for_method" xml:space="preserve">
+    <value>Invalid argument count in a call to the method '{0}::{1}'</value>
+  </data>
+  <data name="invalid_argument_count" xml:space="preserve">
+    <value>Invalid argument count</value>
+  </data>
+  <data name="invalid_argument_type" xml:space="preserve">
+    <value>Argument '{0}' must be of type '{1}'</value>
+  </data>
+  <data name="argument_null" xml:space="preserve">
+    <value>Argument '{0}' should not be NULL</value>
+  </data>
+  <data name="reference_null" xml:space="preserve">
+    <value>Argument '{0}' is passed by reference and hence should not be NULL</value>
+  </data>
+  <data name="noncallable_callback" xml:space="preserve">
+    <value>A callback '{0}' specified in the argument '{1}' is not callable</value>
+  </data>
+  <data name="argument_not_passed_byref" xml:space="preserve">
+    <value>Argument #{0} should be passed by reference</value>
+  </data>
+  <data name="argument_not_passed_byref_to" xml:space="preserve">
+    <value>Argument #{0} should be passed to {1}() by reference</value>
+  </data>
+  <data name="missing_argument" xml:space="preserve">
+    <value>Missing argument #{0}</value>
+  </data>
+  <data name="missing_argument_for" xml:space="preserve">
+    <value>Missing argument #{0} for {1}()</value>
+  </data>
+  <data name="missing_type_argument" xml:space="preserve">
+    <value>Missing generic type argument #{0}</value>
+  </data>
+  <data name="missing_type_argument_for" xml:space="preserve">
+    <value>Missing generic type argument #{0} for {1}()</value>
+  </data>
+  <data name="parameter_must_be_byref" xml:space="preserve">
+    <value>Parameter '{0}' must be passed by reference</value>
+  </data>
+  <data name="argument_value_not_supported" xml:space="preserve">
+    <value>Value '{0}' of argument '{1}' is not supported</value>
+  </data>
+  <data name="too_many_type_arguments_in_type_use" xml:space="preserve">
+    <value>Use of type '{0}' requires at most {1} generic type arguments</value>
+  </data>
+  <data name="missing_type_argument_in_type_use" xml:space="preserve">
+    <value>Use of type '{0}' requires generic type parameter #{1} ('{2}') to be specified (no default type applicable)</value>
+  </data>
+  <data name="non_generic_type_used_with_type_arguments" xml:space="preserve">
+    <value>Type '{0}' cannot be used with generic type arguments</value>
+  </data>
+  <data name="incompatible_type_parameter_constraints_type" xml:space="preserve">
+    <value>Class/interface '{0}' is incompatible with the constraints imposed on the generic type argument #{1} ('{2}') by type '{3}'</value>
+  </data>
+  <data name="incompatible_type_parameter_constraints_method" xml:space="preserve">
+    <value>Class/interface '{0}' is incompatible with the constraints imposed on the generic type argument #{1} ('{2}') by method '{3}'</value>
+  </data>
+  <data name="operator_array_access_used_for_reading" xml:space="preserve">
+    <value>Cannot use [] for reading</value>
+  </data>
+  <data name="integer_key_reached_max_value" xml:space="preserve">
+    <value>Cannot add item to array - integer key reached maximal possible value (2^31-1)</value>
+  </data>
+  <data name="illegal_offset_type" xml:space="preserve">
+    <value>Illegal offset type</value>
+  </data>
+  <data name="undefined_offset" xml:space="preserve">
+    <value>Undefined offset ({0})</value>
+  </data>
+  <data name="illegal_string_offset" xml:space="preserve">
+    <value>Illegal string offset '{0}'</value>
+  </data>
+  <data name="uninitialized_string_offset" xml:space="preserve">
+    <value>String offset '{0}' hasn't been initialized</value>
+  </data>
+  <data name="unsupported_operand_types" xml:space="preserve">
+    <value>Unsupported operand types</value>
+  </data>
+  <data name="unsupported_operand_type" xml:space="preserve">
+    <value>Unsupported operand type</value>
+  </data>
+  <data name="cannot_unset_string_offsets" xml:space="preserve">
+    <value>Cannot unset string offsets</value>
+  </data>
+  <data name="invalid_exception_object" xml:space="preserve">
+    <value>Exceptions must be valid objects derived from the Exception base class</value>
+  </data>
+  <data name="offsetGet_must_return_byref" xml:space="preserve">
+    <value>Method offsetGet() of objects used with [] operator followed by increment, decrement, assignment to reference, or another [] operators must return by reference</value>
+  </data>
+  <data name="division_by_zero" xml:space="preserve">
+    <value>Division by zero</value>
+  </data>
+  <data name="invalid_query_source" xml:space="preserve">
+    <value>Invalid query source</value>
+  </data>
+  <data name="invalid_stream_resource" xml:space="preserve">
+    <value>Supplied resource is not a valid Stream resource</value>
+  </data>
+  <data name="invalid_socket_stream_resource" xml:space="preserve">
+    <value>Supplied resource is not a valid Socket Stream resource</value>
+  </data>
+  <data name="context_expected" xml:space="preserve">
+    <value>Supplied resource is not a valid Stream-Context resource</value>
+  </data>
+  <data name="wrapper_op_unsupported" xml:space="preserve">
+    <value>{0} operation is not supported by this stream wrapper</value>
+  </data>
+  <data name="stream_read_io_error" xml:space="preserve">
+    <value>An I/O error occured when reading from stream: {0}</value>
+  </data>
+  <data name="stream_write_io_error" xml:space="preserve">
+    <value>An I/O error occured when writing to stream: {0}</value>
+  </data>
+  <data name="stream_read_error" xml:space="preserve">
+    <value>An error occured when reading from stream: {0}</value>
+  </data>
+  <data name="stream_write_error" xml:space="preserve">
+    <value>An error occured when writing to stream: {0}</value>
+  </data>
+  <data name="stream_write_failed" xml:space="preserve">
+    <value>Unable to write to stream (only {0} bytes of {1} written)</value>
+  </data>
+  <data name="stream_read_off" xml:space="preserve">
+    <value>The stream was not opened for reading</value>
+  </data>
+  <data name="stream_write_off" xml:space="preserve">
+    <value>The stream was not opened for writing</value>
+  </data>
+  <data name="stream_bad_wrapper" xml:space="preserve">
+    <value>Unable to find the wrapper '{0}' - did you forget to enable it when you configured PHP?</value>
+  </data>
+  <data name="url_fopen_disabled" xml:space="preserve">
+    <value>URL file-access is disabled in the server configuration</value>
+  </data>
+  <data name="stream_bad_filename" xml:space="preserve">
+    <value>Failed to open stream ({0}): The specified file does not exist</value>
+  </data>
+  <data name="stream_bad_directory" xml:space="preserve">
+    <value>Failed to open stream ({0}): The specified directory does not exist</value>
+  </data>
+  <data name="stream_open_read_unsupported" xml:space="preserve">
+    <value>Unable to open {0} for reading</value>
+  </data>
+  <data name="stream_open_write_unsupported" xml:space="preserve">
+    <value>Unable to open {0} for writing</value>
+  </data>
+  <data name="ambiguous_file_mode" xml:space="preserve">
+    <value>Ambiguous file access mode (binary mode assumed). Specify either '{0}b' or '{0}t' or set Phalanger configuration option DefaultFileOpenMode in file-system section of .config file.</value>
+  </data>
+  <data name="empty_file_mode" xml:space="preserve">
+    <value>Supplied file access mode is empty</value>
+  </data>
+  <data name="invalid_file_mode" xml:space="preserve">
+    <value>Supplied file access mode ({0}) is not valid</value>
+  </data>
+  <data name="url_resource_missing" xml:space="preserve">
+    <value>No URL resource specified</value>
+  </data>
+  <data name="open_basedir_effect" xml:space="preserve">
+    <value>AllowedPathPrefixes restriction in effect. File({0}) is not within the allowed path(s): ({1})</value>
+  </data>
+  <data name="invalid_filter_name" xml:space="preserve">
+    <value>Unable to create filter ({0})</value>
+  </data>
+  <data name="stream_filename_invalid" xml:space="preserve">
+    <value>Unable to access ({0}): The filename is invalid</value>
+  </data>
+  <data name="stream_file_access_denied" xml:space="preserve">
+    <value>Unable to access ({0}): Permission denied</value>
+  </data>
+  <data name="stream_file_invalid" xml:space="preserve">
+    <value>Failed to open stream ({0}): The specified filename is invalid</value>
+  </data>
+  <data name="stream_url_invalid" xml:space="preserve">
+    <value>Failed to open stream ({0}): The specified URL is invalid</value>
+  </data>
+  <data name="stream_url_method_invalid" xml:space="preserve">
+    <value>Failed to open stream ({0}): The specified request method is invalid</value>
+  </data>
+  <data name="stream_file_io_error" xml:space="preserve">
+    <value>Failed to open stream ({0}) due to I/O error: {1}</value>
+  </data>
+  <data name="stream_file_not_exists" xml:space="preserve">
+    <value>The specified file does not exist ({0})</value>
+  </data>
+  <data name="stream_directory_not_exists" xml:space="preserve">
+    <value>The specified directory does not exist ({0})</value>
+  </data>
+  <data name="stream_path_not_exists" xml:space="preserve">
+    <value>The specified path does not exist ({0})</value>
+  </data>
+  <data name="stream_file_exists" xml:space="preserve">
+    <value>The specified file already exists ({0})</value>
+  </data>
+  <data name="stream_stat_invalid_path" xml:space="preserve">
+    <value>Failed to stat ({0}) - invalid filename</value>
+  </data>
+  <data name="stream_unlink_file_not_found" xml:space="preserve">
+    <value>Can not unlink file ({0}): The specified filename is invalid</value>
+  </data>
+  <data name="stream_unlink_io_error" xml:space="preserve">
+    <value>Can not unlink file ({0}) due to I/O error: {1}</value>
+  </data>
+  <data name="stream_unlink_error" xml:space="preserve">
+    <value>Can not unlink file ({0}): unexpected error</value>
+  </data>
+  <data name="stream_rmdir_io_error" xml:space="preserve">
+    <value>Can not remove directory ({0}): directory not empty</value>
+  </data>
+  <data name="stream_rename_file_exists" xml:space="preserve">
+    <value>Can not rename '{0}' to '{1}': target file exists</value>
+  </data>
+  <data name="stream_error" xml:space="preserve">
+    <value>Can not access resource ({0}): {1}</value>
+  </data>
+  <data name="stream_socket_error" xml:space="preserve">
+    <value>Socket error: {0}</value>
+  </data>
+  <data name="stream_directory_access_denied" xml:space="preserve">
+    <value>Unable to make directory ({0}): Permission denied</value>
+  </data>
+  <data name="stream_directory_error" xml:space="preserve">
+    <value>Unable to make directory ({0}): Directory not empty or read-only</value>
+  </data>
+  <data name="stream_directory_make_root" xml:space="preserve">
+    <value>Unable to make directory ({0}): Can not create root directory</value>
+  </data>
+  <data name="stream_directory_make_parent" xml:space="preserve">
+    <value>Unable to make directory ({0}): Use recursive mode to create more than one directory at a time</value>
+  </data>
+  <data name="path_argument_empty" xml:space="preserve">
+    <value>Path argument can not be empty</value>
+  </data>
+  <data name="stream_seek_filtered" xml:space="preserve">
+    <value>Seeking in a {0} stream! It may lead to unpredictable results.</value>
+  </data>
+  <data name="error_message_html_debug" xml:space="preserve">
+    <value>&lt;br/&gt;
+&lt;b&gt;{0}&lt;/b&gt;: {1}{2} in &lt;b&gt;{3}&lt;/b&gt; on line &lt;b&gt;{4}&lt;/b&gt;, column &lt;b&gt;{5}&lt;/b&gt;.&lt;br/&gt;
+</value>
+  </data>
+  <data name="error_message_plain_debug" xml:space="preserve">
+    <value>
+{0}: {1}{2} in {3} on line {4}, column {5}.
+</value>
+  </data>
+  <data name="error_message_html" xml:space="preserve">
+    <value>&lt;br/&gt;
+&lt;b&gt;{0}&lt;/b&gt;: {1}{2}.&lt;br/&gt;
+</value>
+  </data>
+  <data name="error_message_plain" xml:space="preserve">
+    <value>
+{0}: {1}{2}.
+</value>
+  </data>
+  <data name="error_message_html_eval_debug" xml:space="preserve">
+    <value>inside {0} (on line &lt;b&gt;{1}&lt;/b&gt;, column &lt;b&gt;{2}&lt;/b&gt;)</value>
+  </data>
+  <data name="error_message_plain_eval_debug" xml:space="preserve">
+    <value>inside {0} (on line {1}, column {2})</value>
+  </data>
+  <data name="error_message_html_eval" xml:space="preserve">
+    <value>{0} inside {1}</value>
+  </data>
+  <data name="error_message_plain_eval" xml:space="preserve">
+    <value>{0} inside {1}</value>
+  </data>
+  <data name="extensions_not_installed" xml:space="preserve">
+    <value>Native PHP extensions are not installed or properly configured</value>
+  </data>
+  <data name="extensions_not_installed_in_invoke" xml:space="preserve">
+    <value>Call to undefined external function '{0}', extension '{1}' - native PHP extensions are not installed or properly configured</value>
+  </data>
+  <data name="buffering_level_decreased_under_zero" xml:space="preserve">
+    <value>Buffering level couldn't be decresed below zero</value>
+  </data>
+  <data name="output_buffering_disabled" xml:space="preserve">
+    <value>Output buffering is disabled</value>
+  </data>
+  <data name="invalid_foreach_argument" xml:space="preserve">
+    <value>Invalid argument supplied for foreach statement</value>
+  </data>
+  <data name="incomparable_arrays_compared" xml:space="preserve">
+    <value>Arrays which are incomparable have been compared.</value>
+  </data>
+  <data name="lengths_are_different" xml:space="preserve">
+    <value>The number of items in {0} should be the same as in {1}</value>
+  </data>
+  <data name="assertion_failed" xml:space="preserve">
+    <value>Assertion '{0}' failed</value>
+  </data>
+  <data name="multiple_statements_in_assertion" xml:space="preserve">
+    <value>Assertion contains multiple statements but only the first one is relevant</value>
+  </data>
+  <data name="invalid_break_level_count" xml:space="preserve">
+    <value>Cannot break/continue {0} level(s)</value>
+  </data>
+  <data name="could_not_load_extension" xml:space="preserve">
+    <value>Could not load extension: </value>
+  </data>
+  <data name="unable_to_find_extension" xml:space="preserve">
+    <value>Unable to find extension '{0}'</value>
+  </data>
+  <data name="web_server_not_available" xml:space="preserve">
+    <value>Web server context is not available.</value>
+  </data>
+  <data name="script_inclusion_failed" xml:space="preserve">
+    <value>Script '{0}' inclusion failed. Cause: {1} Search paths: include_path is '{2}', working directory is '{3}' </value>
+  </data>
+  <data name="assembly_script_inclusion_failed" xml:space="preserve">
+    <value>Script '{0}' inclusion failed. Script not found in the application's script libraries</value>
+  </data>
+  <data name="function_needs_variables" xml:space="preserve">
+    <value>Function needs a table of defined variables</value>
+  </data>
+  <data name="execution_timed_out" xml:space="preserve">
+    <value>Maximum execution time of {0} seconds exceeded</value>
+  </data>
+  <data name="generating_assembly" xml:space="preserve">
+    <value>Generating assembly ...</value>
+  </data>
+  <data name="info_directive" xml:space="preserve">
+    <value>Directive</value>
+  </data>
+  <data name="info_script_dependent" xml:space="preserve">
+    <value>Script Dependent</value>
+  </data>
+  <data name="info_shared" xml:space="preserve">
+    <value>Shared</value>
+  </data>
+  <data name="info_script_value" xml:space="preserve">
+    <value>Script's Value</value>
+  </data>
+  <data name="info_master_value" xml:space="preserve">
+    <value>Master Value</value>
+  </data>
+  <data name="info_value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="info_variable" xml:space="preserve">
+    <value>Variable</value>
+  </data>
+  <data name="info_config" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="info_credits" xml:space="preserve">
+    <value>Credits</value>
+  </data>
+  <data name="info_loaded_extensions" xml:space="preserve">
+    <value>Loaded Native Extensions</value>
+  </data>
+  <data name="info_environment_variables" xml:space="preserve">
+    <value>Environment</value>
+  </data>
+  <data name="info_global_variables" xml:space="preserve">
+    <value>Global Variables</value>
+  </data>
+  <data name="info_license" xml:space="preserve">
+    <value>License</value>
+  </data>
+  <data name="info_license_text" xml:space="preserve">
+    <value>
+    &lt;p align='justify'&gt;
+      This program can be used and distributed only under the terms of the license included in the distribution in the file License.txt and also published on
+      &lt;a href="http://phalanger.codeplex.com/license"&gt;http://phalanger.codeplex.com/license&lt;/a&gt;.
+    &lt;/p&gt;
+    &lt;p align='justify'&gt;
+      The software is licensed "as-is". You bear the risk of using it. The Licensor
+gives no express warranties, guarantees or conditions. You may have additional
+consumer rights under your local laws which this license cannot change. To the
+extent permitted under your local laws, the Licensor excludes the implied
+warranties of merchantability, fitness for a particular purpose and
+non-infringement.
+    &lt;/p&gt;
+    </value>
+  </data>
+  <data name="credits_overall_concept" xml:space="preserve">
+    <value>Overall Concept</value>
+  </data>
+  <data name="credits_specific_features_compilation" xml:space="preserve">
+    <value>Specific PHP Language Features Compilation</value>
+  </data>
+  <data name="credits_oo_features_compilation" xml:space="preserve">
+    <value>Object Oriented PHP Language Features Compilation</value>
+  </data>
+  <data name="credits_php_clr" xml:space="preserve">
+    <value>PHP/CLR Language Extensions</value>
+  </data>
+  <data name="credits_overall_compiler_design" xml:space="preserve">
+    <value>Overall Compiler Design</value>
+  </data>
+  <data name="credits_code_analysis" xml:space="preserve">
+    <value>Code Analysis</value>
+  </data>
+  <data name="credits_extmgr_wrappers" xml:space="preserve">
+    <value>Extensions Manager and Wrappers</value>
+  </data>
+  <data name="credits_ast" xml:space="preserve">
+    <value>Abstract Syntax Tree</value>
+  </data>
+  <data name="credits_compiler_tables" xml:space="preserve">
+    <value>Compiler's Tables</value>
+  </data>
+  <data name="credits_code_generator" xml:space="preserve">
+    <value>Code Generator</value>
+  </data>
+  <data name="credits_configuration" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="credits_aspnet" xml:space="preserve">
+    <value>ASP.NET Integration, CodeDom</value>
+  </data>
+  <data name="credits_automatic_tests" xml:space="preserve">
+    <value>Automatic Tests</value>
+  </data>
+  <data name="credits_core_functionality" xml:space="preserve">
+    <value>Core Functionality</value>
+  </data>
+  <data name="credits_lexical_syntactic_analysis" xml:space="preserve">
+    <value>Lexical and Syntactic Analysis</value>
+  </data>
+  <data name="credits_semantic_analysis" xml:space="preserve">
+    <value>Semantic Analysis</value>
+  </data>
+  <data name="credits_code_generation" xml:space="preserve">
+    <value>Code Generation</value>
+  </data>
+  <data name="credits_clr_features" xml:space="preserve">
+    <value>CLR Features Integration</value>
+  </data>
+  <data name="credits_extensions_management" xml:space="preserve">
+    <value>Extensions Management</value>
+  </data>
+  <data name="credits_vsnet" xml:space="preserve">
+    <value>VS.NET Integration</value>
+  </data>
+  <data name="credits_streams" xml:space="preserve">
+    <value>Streams, IO Wrappers, and Filters</value>
+  </data>
+  <data name="credits_interactive_tests" xml:space="preserve">
+    <value>Interactive Tests</value>
+  </data>
+  <data name="credits_automatic_tester" xml:space="preserve">
+    <value>Automatic Tester</value>
+  </data>
+  <data name="credits_utilities" xml:space="preserve">
+    <value>Utilities</value>
+  </data>
+  <data name="credits_installation" xml:space="preserve">
+    <value>Installation</value>
+  </data>
+  <data name="credits_implementation" xml:space="preserve">
+    <value>Implementation</value>
+  </data>
+  <data name="credits_design" xml:space="preserve">
+    <value>Design</value>
+  </data>
+  <data name="credits_authors" xml:space="preserve">
+    <value>Authors</value>
+  </data>
+  <data name="credits_contribution" xml:space="preserve">
+    <value>Contribution</value>
+  </data>
+  <data name="property_declared_abstract" xml:space="preserve">
+    <value>Properties cannot be declared abstract</value>
+  </data>
+  <data name="property_declared_final" xml:space="preserve">
+    <value>Properties cannot be declared final</value>
+  </data>
+  <data name="conditionally_redeclared" xml:space="preserve">
+    <value>Declaration of {0} {1} will issue a run-time error if executed since the {0} will already be declared here</value>
+  </data>
+  <data name="conditionally_redeclared_by_inclusion" xml:space="preserve">
+    <value>Inclusion will issue a run-time error if executed - a redeclaration of {0} {1}</value>
+  </data>
+  <data name="redeclared_previous_decl" xml:space="preserve">
+    <value>Cannot redeclare {0} '{1}' previously declared in {2}{3}</value>
+  </data>
+  <data name="redeclared_previous_decl_include" xml:space="preserve">
+    <value>Inclusion of '{2}{3}' redeclares {0} '{1}' declared in {2}{3}</value>
+  </data>
+  <data name="class_redeclared_runtime" xml:space="preserve">
+    <value>Cannot redeclare class/interface {0}</value>
+  </data>
+  <data name="class_redeclared_runtime_include" xml:space="preserve">
+    <value>Inclusion redeclares class/interface {0}</value>
+  </data>
+  <data name="library_class_redeclared" xml:space="preserve">
+    <value>Cannot redeclare library class/interface {0}</value>
+  </data>
+  <data name="library_class_redeclared_by_inclusion" xml:space="preserve">
+    <value>Inclusion will issue a run-time error if executed as it redeclares library class/interface {0}</value>
+  </data>
+  <data name="method_redeclared" xml:space="preserve">
+    <value>Cannot redeclare method {0}::{1}</value>
+  </data>
+  <data name="property_redeclared" xml:space="preserve">
+    <value>Cannot redeclare property {0}::${1}</value>
+  </data>
+  <data name="cannot_use_reserved_name" xml:space="preserve">
+    <value>Name '{0}' is reserved and cannot be used here</value>
+  </data>
+  <data name="non_interface_implemented" xml:space="preserve">
+    <value>Cannot implement '{0}' because it is not an interface</value>
+  </data>
+  <data name="non_interface_extended" xml:space="preserve">
+    <value>Cannot extend '{0}' because it is not an interface</value>
+  </data>
+  <data name="non_class_extended" xml:space="preserve">
+    <value>Cannot extend '{0}' because it is not a class</value>
+  </data>
+  <data name="final_class_extended" xml:space="preserve">
+    <value>Cannot inherit from final class '{0}'</value>
+  </data>
+  <data name="abstract_final_method_declared" xml:space="preserve">
+    <value>Abstract method cannot be declared final</value>
+  </data>
+  <data name="abstract_private_method_declared" xml:space="preserve">
+    <value>Abstract method cannot be declared private</value>
+  </data>
+  <data name="clone_cannot_take_arguments" xml:space="preserve">
+    <value>Clone method {0}::__clone() cannot accept any arguments</value>
+  </data>
+  <data name="destruct_cannot_take_arguments" xml:space="preserve">
+    <value>Destructor {0}::__destruct() cannot take arguments</value>
+  </data>
+  <data name="destruct_cannot_be_static" xml:space="preserve">
+    <value>Destructor {0}::__destruct() cannot be static</value>
+  </data>
+  <data name="construct_cannot_be_static" xml:space="preserve">
+    <value>Constructor {0}::{1}() cannot be static</value>
+  </data>
+  <data name="interface_method_non_public" xml:space="preserve">
+    <value>Access type for interface method {0}::{1}() must be omitted or declared public</value>
+  </data>
+  <data name="override_final_method" xml:space="preserve">
+    <value>Cannot override final method {0}::{1}()</value>
+  </data>
+  <data name="make_static_method_non_static" xml:space="preserve">
+    <value>Cannot make static method {0}::{1}() non-static in class '{2}'</value>
+  </data>
+  <data name="make_nonstatic_method_static" xml:space="preserve">
+    <value>Cannot make non-static method {0}::{1}() static in class '{2}'</value>
+  </data>
+  <data name="nonabstract_method_overridden_with_abstract" xml:space="preserve">
+    <value>Cannot make non-abstract method {0}::{1}() abstract in class '{2}'</value>
+  </data>
+  <data name="overriding_method_restrict_visibility" xml:space="preserve">
+    <value>{0}::{1}() must be at least as visible as '{2}' specified in class/interface '{3}'</value>
+  </data>
+  <data name="make_static_property_nonstatic" xml:space="preserve">
+    <value>Cannot redeclare static property {0}::${1} as non static {2}::${1} (static declared in '{3}')</value>
+  </data>
+  <data name="make_nonstatic_property_static" xml:space="preserve">
+    <value>Cannot redeclare non-static property {0}::${1} as static {2}::${1} (non-static declared in '{3}')</value>
+  </data>
+  <data name="overriding_property_restrict_visibility" xml:space="preserve">
+    <value>{0}::${1} must be at least as visible as '{2}' specified in class/interface '{3}'</value>
+  </data>
+  <data name="overriding_static_field_with_static" xml:space="preserve">
+    <value>Cannot redeclare property static '{3}' {0}::${1} in class '{2}' (previously declared in '{4}')</value>
+  </data>
+  <data name="overriding_interface_constant" xml:space="preserve">
+    <value>Cannot override constant '{0}' defined in interface '{1}'</value>
+  </data>
+  <data name="inheriting_previously_inherited_constant" xml:space="preserve">
+    <value>Cannot inherit constant {0}::{1} previously declared in interface '{2}'</value>
+  </data>
+  <data name="redeclaring_inherited_constant" xml:space="preserve">
+    <value>Cannot declare inherited constant '{0}' from interface '{1}' in class/interface '{2}'</value>
+  </data>
+  <data name="overriding_protected_static_with_init_value" xml:space="preserve">
+    <value>Cannot change initial value of property static protected {0}::${1} in class '{2}' (previously declared in {3})</value>
+  </data>
+  <data name="class_redeclared_in_assembly" xml:space="preserve">
+    <value>A class or an interface '{0}' is redeclared in the assembly scope</value>
+  </data>
+  <data name="method_not_compatible" xml:space="preserve">
+    <value>Declaration of {0}::{1}() must be compatible with that of {2}::{1}()</value>
+  </data>
+  <data name="abstract_method_not_implemented" xml:space="preserve">
+    <value>Class '{0}' doesn't implement abstract method {1}::{2}()</value>
+  </data>
+  <data name="abstract_property_not_implemented" xml:space="preserve">
+    <value>Class '{0}' doesn't implement abstract property {1}::${2}</value>
+  </data>
+  <data name="extension_loading_error" xml:space="preserve">
+    <value>Error while loading library (extension) classes: </value>
+  </data>
+  <data name="library_func_redeclared" xml:space="preserve">
+    <value>Cannot redeclare library function '{0}'</value>
+  </data>
+  <data name="nonabstract_bodyless_method" xml:space="preserve">
+    <value>Non-abstract method {0}::{1}() must contain body</value>
+  </data>
+  <data name="abstract_bodyful_method" xml:space="preserve">
+    <value>Abstract method {0}::{1}() cannot contain body</value>
+  </data>
+  <data name="interface_bodyful_method" xml:space="preserve">
+    <value>Interface method {0}::{1}() cannot contain body</value>
+  </data>
+  <data name="abstract_method_name_not_matching_implementation" xml:space="preserve">
+    <value>Names of the abstract method {0}::{1}() and its implementation {2}::{3}() must be the same (case sensitively) in the current version of Phalanger</value>
+  </data>
+  <data name="conflicting_type_aliases" xml:space="preserve">
+    <value>Type '{0}' has already been imported</value>
+  </data>
+  <data name="conflicting_function_aliases" xml:space="preserve">
+    <value>Function '{0}' has already been imported</value>
+  </data>
+  <data name="conflicting_constant_aliases" xml:space="preserve">
+    <value>Constant '{0}' has already been imported</value>
+  </data>
+  <data name="expecting_parent_ctor_invocation" xml:space="preserve">
+    <value>Expecting parent constructor call</value>
+  </data>
+  <data name="unexpected_parent_ctor_invocation" xml:space="preserve">
+    <value>Unexpected parent constructor call (such call is allowed only in the constructor of the class extending a CLR type)</value>
+  </data>
+  <data name="missing_ctor_in_clr_subclass" xml:space="preserve">
+    <value>Missing constructor - class '{0}' extends a CLR type without a default constructor and therefore must implement a constructor</value>
+  </data>
+  <data name="missing_imported_entity" xml:space="preserve">
+    <value>Expecting kind of imported subject (specify one of 'namespace', 'class', 'interface', 'function', 'const')</value>
+  </data>
+  <data name="duplicate_parameter_name" xml:space="preserve">
+    <value>Duplicate parameter name '{0}'</value>
+  </data>
+  <data name="invalid_escape_sequence_length" xml:space="preserve">
+    <value>Escape sequence '{0}' requires exactly {1} hexadecimal digits</value>
+  </data>
+  <data name="invalid_code_point" xml:space="preserve">
+    <value>Value '{0}' doesn't encode a valid Unicode character</value>
+  </data>
+  <data name="invalid_code_point_name" xml:space="preserve">
+    <value>Value '{0}' doesn't encode a valid Unicode character name</value>
+  </data>
+  <data name="inclusion_in_pure_unit" xml:space="preserve">
+    <value>Inclusions are not allowed in the pure unit.</value>
+  </data>
+  <data name="invalid_line_pragma" xml:space="preserve">
+    <value>Line pragma has an invalid value</value>
+  </data>
+  <data name="global_code_in_pure_unit" xml:space="preserve">
+    <value>Global code is not allowed in the pure unit.</value>
+  </data>
+  <data name="construct_not_supported" xml:space="preserve">
+    <value>The '{0}' construct is not supported</value>
+  </data>
+  <data name="key_alias" xml:space="preserve">
+    <value>Key element cannot be a reference</value>
+  </data>
+  <data name="multiple_visibility_modifiers" xml:space="preserve">
+    <value>Multiple access type modifiers are not allowed</value>
+  </data>
+  <data name="invalid_interface_modifier" xml:space="preserve">
+    <value>Modifier cannot be applied on the interface</value>
+  </data>
+  <data name="generic_parameter_must_be_type" xml:space="preserve">
+    <value>Generic parameter must refer to a type in this context</value>
+  </data>
+  <data name="generic_parameter_is_reserved_identifier" xml:space="preserve">
+    <value>Generic type parameter must be an identifier different from 'self' and 'parent' in this context</value>
+  </data>
+  <data name="duplicate_generic_parameter" xml:space="preserve">
+    <value>Duplicate generic type parameter</value>
+  </data>
+  <data name="generic_parameter_collides_with_declarer" xml:space="preserve">
+    <value>Generic type parameter '{0}' has the same name as the containing class/interface</value>
+  </data>
+  <data name="cannot_derive_from_type_parameter" xml:space="preserve">
+    <value>Cannot derive from '{0}' because it is a generic type parameter</value>
+  </data>
+  <data name="private_class_in_global_ns" xml:space="preserve">
+    <value>Cannot declare a private class in the global namespace</value>
+  </data>
+  <data name="missing_partial_modifier" xml:space="preserve">
+    <value>Missing 'partial' modifier on declaration of class/interface '{0}' - another partial declaration of this type exists</value>
+  </data>
+  <data name="partial_transient_declaration" xml:space="preserve">
+    <value>The 'partial' modifier cannot be used in an evaluated code</value>
+  </data>
+  <data name="partial_conditional_declaration" xml:space="preserve">
+    <value>The 'partial' modifier cannot be used on a conditional declaration</value>
+  </data>
+  <data name="partial_impure_declaration" xml:space="preserve">
+    <value>The 'partial' modifier can be used only in pure unit</value>
+  </data>
+  <data name="incompatible_partial_declarations" xml:space="preserve">
+    <value>Partial declarations of '{0}' must be all classes or all interfaces</value>
+  </data>
+  <data name="conflicting_partial_visibility" xml:space="preserve">
+    <value>All partial declarations of '{0}' must have the same visibility</value>
+  </data>
+  <data name="partial_declarations_differ_in_base" xml:space="preserve">
+    <value>All partial declarations of '{0}' must not specify different base classes</value>
+  </data>
+  <data name="partial_declarations_differ_in_type_parameter" xml:space="preserve">
+    <value>All partial declarations of '{0}' must have the same type parameter definitions</value>
+  </data>
+  <data name="partial_declarations_differ_in_type_parameter_count" xml:space="preserve">
+    <value>All partial declarations of '{0}' must have the same number of type parameters</value>
+  </data>
+  <data name="unknown_custom_attribute" xml:space="preserve">
+    <value>Unknown custom attribute; neither of types '{0}' and '{1}' exists</value>
+  </data>
+  <data name="not_custom_attribute_class" xml:space="preserve">
+    <value>'{0}' is not a custom attribute class</value>
+  </data>
+  <data name="invalid_attribute_usage" xml:space="preserve">
+    <value>Invalid use of attribute '{0}'</value>
+  </data>
+  <data name="invalid_attribute_target_selector" xml:space="preserve">
+    <value>'{0}' is not a valid attribute target selector (specify one of 'return', 'assembly', 'module')</value>
+  </data>
+  <data name="invalid_attribute_expression" xml:space="preserve">
+    <value>An attribute argument must be a constant expression</value>
+  </data>
+  <data name="duplicate_attribute_usage" xml:space="preserve">
+    <value>Duplicate attribute '{0}'</value>
+  </data>
+  <data name="out_attribute_on_byval_param" xml:space="preserve">
+    <value>Attribute 'Out' can be used only on parameters passed by reference; add '&amp;' modifier to the parameter '${0}'</value>
+  </data>
+  <data name="export_attribute_in_non_pure" xml:space="preserve">
+    <value>Attribute 'Export' can be used only in pure unit</value>
+  </data>
+  <data name="class_behavior_may_be_unexpected" xml:space="preserve">
+    <value>Use of the class '{0}' in PHP code is not recommended as the resulting effect will probably be different than expected</value>
+  </data>
+  <data name="dll_import_body_ignored" xml:space="preserve">
+    <value>Body of function decorated with the DllImportAttribute is ignored. System provides this body.</value>
+  </data>
+  <data name="syntax_error" xml:space="preserve">
+    <value>Syntax error: {0}</value>
+  </data>
+  <data name="unexpected_token" xml:space="preserve">
+    <value>unexpected token '{0}'</value>
+  </data>
+  <data name="act_param_with_ampersand" xml:space="preserve">
+    <value>'&amp;' modifier ignored in the function call, use '&amp;' modifier in function declaration to pass the argument by reference</value>
+  </data>
+  <data name="semicolon_ignored" xml:space="preserve">
+    <value>Semicolon ignored, using it in this context is possible in PHP 5, but depracated in PHP.NET</value>
+  </data>
+  <data name="unterminated_comment" xml:space="preserve">
+    <value>Unterminated comment starting line {0}</value>
+  </data>
+  <data name="too_big_int_conversion" xml:space="preserve">
+    <value>The integer number {0} is too big, converting to double instead</value>
+  </data>
+  <data name="php_track_vars_not_supported" xml:space="preserve">
+    <value>&lt;?php_track_vars?&gt; is not supported</value>
+  </data>
+  <data name="invalid_identifier" xml:space="preserve">
+    <value>'{0}' is not a valid identifier; an identifier cannot be non-empty and cannot contain any of the characters '&lt;', '&gt;' and '#'.</value>
+  </data>
+  <data name="check_varuse_fault" xml:space="preserve">
+    <value>Can't use function/method return value in write context</value>
+  </data>
+  <data name="field_in_interface" xml:space="preserve">
+    <value>Interfaces cannot have properties</value>
+  </data>
+  <data name="nonvar_passed_by_ref" xml:space="preserve">
+    <value>Only variables can be passed by reference</value>
+  </data>
+  <data name="method_body_in_interface" xml:space="preserve">
+    <value>Method declared in interface cannot have body</value>
+  </data>
+  <data name="empty_index_in_read_context" xml:space="preserve">
+    <value>Cannot use [] for reading</value>
+  </data>
+  <data name="self_used_out_of_class" xml:space="preserve">
+    <value>'self' used out of class declaration</value>
+  </data>
+  <data name="parent_used_out_of_class" xml:space="preserve">
+    <value>'parent' used out of class declaration</value>
+  </data>
+  <data name="class_has_no_parent" xml:space="preserve">
+    <value>The class '{0}' has no parent</value>
+  </data>
+  <data name="array_in_cls_const" xml:space="preserve">
+    <value>Arrays are not allowed in class constants</value>
+  </data>
+  <data name="formal_param_redeclaration" xml:space="preserve">
+    <value>The function already has parametr {0}</value>
+  </data>
+  <data name="incomplete_class" xml:space="preserve">
+    <value>The class '{0}' is incomplete - its base class or interface is unknown</value>
+  </data>
+  <data name="unknown_method_called" xml:space="preserve">
+    <value>Class '{0}' does not contain definition of method '{1}'</value>
+  </data>
+  <data name="too_few_method_params" xml:space="preserve">
+    <value>Missing parameter(s) to the call of '{0}::{1}' - at least {2} required but only {3} provided</value>
+  </data>
+  <data name="too_few_ctor_params" xml:space="preserve">
+    <value>Missing parameter(s) to the call of the class '{0}' constructor - at least {1} required but only {2} provided</value>
+  </data>
+  <data name="too_few_function_params" xml:space="preserve">
+    <value>Missing parameter(s) to the call of '{0}' - at least {1} required but only {2} provided</value>
+  </data>
+  <data name="too_many_local_variables_function" xml:space="preserve">
+    <value>Function '{0}' declares too many local variables ({1}) which may lead to suboptimal performace</value>
+  </data>
+  <data name="too_many_local_variables_method" xml:space="preserve">
+    <value>Method '{0}::{1}' declares too many local variables ({2}) which may lead to suboptimal performace</value>
+  </data>
+  <data name="unused_label" xml:space="preserve">
+    <value>The label '{0}' is defined but not used within the current scope</value>
+  </data>
+  <data name="undefined_label" xml:space="preserve">
+    <value>Use of undefined label '{0}'</value>
+  </data>
+  <data name="label_redeclared" xml:space="preserve">
+    <value>The label '{0}' is already declared</value>
+  </data>
+  <data name="bad_system_fcn_params_count" xml:space="preserve">
+    <value>Library function '{0}' called with wrong number of parameters</value>
+  </data>
+  <data name="more_switch_cases_with_same_value" xml:space="preserve">
+    <value>The 'case' label with value {0} has already been declared</value>
+  </data>
+  <data name="more_then_one_default_in_switch" xml:space="preserve">
+    <value>The 'switch' already contains a 'default' section</value>
+  </data>
+  <data name="unknown_class_used" xml:space="preserve">
+    <value>Class '{0}' is unknown at this point at compile-time</value>
+  </data>
+  <data name="unknown_class_used_with_alias" xml:space="preserve">
+    <value>Class '{0}' (imported as '{1}') is unknown at this point at compile-time</value>
+  </data>
+  <data name="unknown_function_used" xml:space="preserve">
+    <value>Function '{0}' is unknown at this point at compile-time</value>
+  </data>
+  <data name="unknown_function_used_with_alias" xml:space="preserve">
+    <value>Function '{0}' (imported as '{1}') is unknown at this point at compile-time</value>
+  </data>
+  <data name="unknown_constant_used" xml:space="preserve">
+    <value>Constant '{0}' is unknown at this point at compile-time</value>
+  </data>
+  <data name="unknown_constant_used_with_alias" xml:space="preserve">
+    <value>Constant '{0}' (imported as '{1}') is unknown at this point at compile-time</value>
+  </data>
+  <data name="unreachable_code" xml:space="preserve">
+    <value>Unreachable code detected</value>
+  </data>
+  <data name="no_ctor_defined" xml:space="preserve">
+    <value>Class '{0}' has no constructor defined - using default constructor and ignoring arguments</value>
+  </data>
+  <data name="inclusion_deferred_to_runtime" xml:space="preserve">
+    <value>Inclusion of file '{0}' deferred to runtime because: {1}</value>
+  </data>
+  <data name="inclusion_replacement_failed" xml:space="preserve">
+    <value>No inclusion pattern does match expression '{0}'</value>
+  </data>
+  <data name="cyclic_inclusion" xml:space="preserve">
+    <value>Cyclic inclusion between files '{0}' and '{1}' detected, inclusion of file '{0}' deferred to runtime</value>
+  </data>
+  <data name="mandatory_behind_optional_param" xml:space="preserve">
+    <value>Mandatory parameter '{0}' declared behind optional parameter</value>
+  </data>
+  <data name="abstract_class_or_interface_instantiated" xml:space="preserve">
+    <value>Instantiation of abstract class or interface '{0}'</value>
+  </data>
+  <data name="this_out_of_method" xml:space="preserve">
+    <value>The variable $this used out of method</value>
+  </data>
+  <data name="this_in_write_context" xml:space="preserve">
+    <value>The variable $this used in write context</value>
+  </data>
+  <data name="begin_compile" xml:space="preserve">
+    <value>Compiling {0} ...</value>
+  </data>
+  <data name="end_compile" xml:space="preserve">
+    <value>{0} compiled successfully</value>
+  </data>
+  <data name="skip_compile" xml:space="preserve">
+    <value>Compilation of {0} skipped, file is already compiled</value>
+  </data>
+  <data name="invalid_resource_visibility" xml:space="preserve">
+    <value>Invalid resource visibility. Must be private or public</value>
+  </data>
+  <data name="cdp_unsup_global_method_func" xml:space="preserve">
+    <value>Functions declared at global- or method-level are not supported for generating CodeDOM</value>
+  </data>
+  <data name="cdp_unsup_global_constants" xml:space="preserve">
+    <value>Global constants are not supported for generating CodeDOM</value>
+  </data>
+  <data name="cdp_unsup_global_statement" xml:space="preserve">
+    <value>Global PHP statement is not supported for generating CodeDOM</value>
+  </data>
+  <data name="cdp_unsup_unknown_statement" xml:space="preserve">
+    <value>Unknown PHP statement {0} is not supported for generating CodeDOM</value>
+  </data>
+  <data name="cdp_start_must_be_less_tahn_number_of_conditions" xml:space="preserve">
+    <value>Start must be less than number of conditions</value>
+  </data>
+  <data name="cdp_unsup_else_separatelly" xml:space="preserve">
+    <value>Cannot translate 'else' clausule separatelly.</value>
+  </data>
+  <data name="cdp_unsup_else_last" xml:space="preserve">
+    <value>The 'else' clausule must be last clausule of if statement.</value>
+  </data>
+  <data name="cdp_unsup_ref_assign" xml:space="preserve">
+    <value>Reference assignments are not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_empty_ex" xml:space="preserve">
+    <value>Empty expressions are not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_eval" xml:space="preserve">
+    <value>Eval is not supported</value>
+  </data>
+  <data name="cdp_unsup_include_require" xml:space="preserve">
+    <value>Includes and requires are not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_LINQ" xml:space="preserve">
+    <value>LINQ is not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_unsup_ex" xml:space="preserve">
+    <value>Unsupported type of expression {0} reached. This type of expression is not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_unsup_binop" xml:space="preserve">
+    <value>Unsupported binary operator {0} ({1}) reached. Not a binary operator?</value>
+  </data>
+  <data name="cdp_unsup_unsup_assign" xml:space="preserve">
+    <value>Unsupported assign operator {0} ({1}) reached. Not an assign operator?</value>
+  </data>
+  <data name="cdp_unsup_unsup_unop" xml:space="preserve">
+    <value>Unsupported unary operator {0:F} ({0:D} reached. This operator is not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_unsup_delegate_creartion" xml:space="preserve">
+    <value>Unsupported delegate creation reached. Delegate must be created using NewEx with only one parameter type ArrayEx that consits of 2 ValueItem-s without index where ValueExpr of 2nd item is StringLiteral.</value>
+  </data>
+  <data name="cdp_unsup_CodeVariableReferenceExpression_excpected" xml:space="preserve">
+    <value>CodeVariableReferenceExpression was expected as result of TranslateVariableUse for DirectVarUse. Note: Static variables are not supported as DirectVarUse (e.g. Catch statement exception variable).</value>
+  </data>
+  <data name="cdp_unsup_static_var" xml:space="preserve">
+    <value>Static variables can be used only inside methods that are members of clases</value>
+  </data>
+  <data name="cdp_unsup_unknown_var_kind" xml:space="preserve">
+    <value>Unknown kind of variable use {0} reached. This kind of variable use is not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_null" xml:space="preserve">
+    <value>use.IsMemberOf must not be null.</value>
+  </data>
+  <data name="cdp_unsup_nonobj_func" xml:space="preserve">
+    <value>Function calls that are not members of object cannot be translated.</value>
+  </data>
+  <data name="cdp_unsup_unknown_varlike_construct_use" xml:space="preserve">
+    <value>Unknown kind of variabele-like construct use {0} reached. This kind of use is not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_array_item_reference" xml:space="preserve">
+    <value>Array items passed by reference are not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_unsup_unknown_array_item_type" xml:space="preserve">
+    <value>Array item of unknown type {0} reached. This kind of array item is not supported for PHP-to-CodeDOM translation.</value>
+  </data>
+  <data name="cdp_unsup_assoc_arr_init_context" xml:space="preserve">
+    <value>PHP associative array initialization cannot be done in place where additional statements cannot be inserted.</value>
+  </data>
+  <data name="cdp_unsup_pseudoconstant_type" xml:space="preserve">
+    <value>Unsupported type of pseudo-constant {0} ({1}) reached. This type is not supported for PHP-to-CodeDOM translation.</value>
+  </data>
+  <data name="cdp_unsup_list_context" xml:space="preserve">
+    <value>List expressions cannot be created in places outside methods</value>
+  </data>
+  <data name="cdp_unsup_isset_no_var" xml:space="preserve">
+    <value>isset with no variable is not supported for PHP-to-CodeDOM translation</value>
+  </data>
+  <data name="cdp_not_enough_items_in_list" xml:space="preserve">
+    <value>There is not enough items in list</value>
+  </data>
+  <data name="cdp_start_less_than_zero" xml:space="preserve">
+    <value>start canot be less than zero</value>
+  </data>
+  <data name="cdp_unsup_not_enough_expressions_in_list" xml:space="preserve">
+    <value>There is not enough expressions in list</value>
+  </data>
+  <data name="cdp_start_greater_than_zero" xml:space="preserve">
+    <value>Start must be greater than or equal to zero</value>
+  </data>
+  <data name="cdp_unsup_empty_ex_list" xml:space="preserve">
+    <value>Cannot translate empty expression list</value>
+  </data>
+  <data name="cdp_unsup_indirect_type_ref" xml:space="preserve">
+    <value>Indirect type references are not supported for PHP-to-CodeDOM translation.</value>
+  </data>
+  <data name="cdp_unsup_unknown_ref_kind" xml:space="preserve">
+    <value>Unknown kind of type reference {0} reached. This type reference is not supported for PHP-to-CodeDOM translation.</value>
+  </data>
+  <data name="cdp_unsup_unknown_switch" xml:space="preserve">
+    <value>Unknown switch statement item {0}. This kind of switch items is not supported fro PHP-to-CodeDOM translation.</value>
+  </data>
+  <data name="cdp_unsup_unknown_event_op" xml:space="preserve">
+    <value>Unknown event operation reached. Only Add and Remove operations are supported.</value>
+  </data>
+  <data name="cdp_unsup_invalid_event" xml:space="preserve">
+    <value>Invalid expression for event translation</value>
+  </data>
+  <data name="cdp_unsup_break_non_constant" xml:space="preserve">
+    <value>The break statement with non-constant argument is not supported fro PHP-toCodeDOM translation.</value>
+  </data>
+  <data name="cdp_unsup_no_jump_label" xml:space="preserve">
+    <value>Containing block returned no label to jump to for break statement</value>
+  </data>
+  <data name="cdp_unsup_2_stat_vars_with_same_name" xml:space="preserve">
+    <value>Two static variables with same name</value>
+  </data>
+  <data name="cdp_unsup_static_var_otside_method" xml:space="preserve">
+    <value>Cannot add static variables when not in method</value>
+  </data>
+  <data name="cdp_unsup_loc_var_context" xml:space="preserve">
+    <value>Local variable declarations are not supported at this level (e.g. namespace or class).</value>
+  </data>
+  <data name="cdp_unsup_loc_var_class_namespace" xml:space="preserve">
+    <value>Cannot add local variable at this level (eg. namespace or class)</value>
+  </data>
+  <data name="cdp_unsup_levels_0" xml:space="preserve">
+    <value>Number of levels to break must be 1 or more</value>
+  </data>
+  <data name="cdp_unsup_break_continue_only" xml:space="preserve">
+    <value>CodeTargetRequest supports only break and continue</value>
+  </data>
+  <data name="cdp_statement_not_found" xml:space="preserve">
+    <value>Statement not found</value>
+  </data>
+  <data name="cdp_unsup_not_allowed_at_block_level" xml:space="preserve">
+    <value>Object of type {0} is not allowed at block-statement level</value>
+  </data>
+  <data name="cdp_unsup_only_loop_jump" xml:space="preserve">
+    <value>Only loops can provide jump labels</value>
+  </data>
+  <data name="cdp_unsup_not_allowed_at_method_level" xml:space="preserve">
+    <value>Object of type {0} is not allowed at method level</value>
+  </data>
+  <data name="cdp_index_not_within_catch_calusules" xml:space="preserve">
+    <value>Index is not within catch clausules</value>
+  </data>
+  <data name="cdp_unsup_not_allowed_at_file_level" xml:space="preserve">
+    <value>Object of type {0} is not supported at file level</value>
+  </data>
+  <data name="cdp_unsup_not_allowed_at_namespace_level" xml:space="preserve">
+    <value>Object of type {0} is not supported at namespace level</value>
+  </data>
+  <data name="cdp_unsup_anything_delegate" xml:space="preserve">
+    <value>Cannot add anything into delegate</value>
+  </data>
+  <data name="cdp_unsup_filed_delegate" xml:space="preserve">
+    <value>Cannot add field into interface</value>
+  </data>
+  <data name="cdp_unsup_in_enum" xml:space="preserve">
+    <value>Only constant static fields can be added into enumerations</value>
+  </data>
+  <data name="cdp_unsup_in_enum_other" xml:space="preserve">
+    <value>Only fields can be added into enumerations</value>
+  </data>
+  <data name="cdp_unsup_unsupported_at_type_level" xml:space="preserve">
+    <value>Object of type {0} is not supported at type level</value>
+  </data>
+  <data name="dll_import_must_be_static" xml:space="preserve">
+    <value>Function decorated with DllImportAttribute must be static.</value>
+  </data>
+  <data name="dll_import_cannot_be_abstract" xml:space="preserve">
+    <value>Method decorated with DllImportAttribute cannot be abstract.</value>
+  </data>
+  <data name="static_property_as_nonstatic" xml:space="preserve">
+    <value>Accessing static property {0}::${1} as non static</value>
+  </data>
+  <data name="assign_new_as_ref_is_deprecated" xml:space="preserve">
+    <value>Assigning the return value of new by reference is deprecated</value>
+  </data>
+  <data name="function_is_deprecated" xml:space="preserve">
+    <value>Function {0}() is deprecated</value>
+  </data>
+  <data name="only_vars_assigned_by_ref" xml:space="preserve">
+    <value>Only variables should be assigned by reference</value>
+  </data>
+  <data name="declaration_should_be_compatible" xml:space="preserve">
+    <value>Declaration of {0}::{1}() should be compatible with that of {2}::{3}()</value>
+  </data>
+  <data name="script_library_assembly_loading_failed" xml:space="preserve">
+    <value>Script library "{0}" could not be loaded.</value>
+  </data>
+  <data name="undefined_external_module_called" xml:space="preserve">
+    <value>Call to undefined external function '{0}', extension '{1}' (extension not found)</value>
+  </data>
+  <data name="notsupported_function_called" xml:space="preserve">
+    <value>Function '{0}' is not supported</value>
+  </data>
+  <data name="phpc_arg_skip" xml:space="preserve">
+    <value>File or directory which will be skipped during compilation. This also prevents a file(s) to be included statically if /static+ option is specified.</value>
+  </data>
+  <data name="method_must_take_exact_args_count" xml:space="preserve">
+    <value>Method {0}::{1}() must take exactly {2} arguments</value>
+  </data>
+  <data name="callstat_must_be_public_static" xml:space="preserve">
+    <value>The magic method __callStatic() must have public visibility and be static</value>
+  </data>
+  <data name="magic_method_must_be_public_nonstatic" xml:space="preserve">
+    <value>The magic method {0}() must have public visibility and cannot be static</value>
+  </data>
+  <data name="unoptimized_local_variables_function" xml:space="preserve">
+    <value>Function {0} requires access to local variables and prevents optimizing them. To improve performance, separate this function call into small function.</value>
+  </data>
+  <data name="constant_not_found" xml:space="preserve">
+    <value>Couldn't find constant {0}</value>
+  </data>
+  <data name="method_cannot_take_arguments" xml:space="preserve">
+    <value>Method {0}::{1}() cannot take arguments</value>
+  </data>
+  <data name="namespace_keyword_outside_namespace" xml:space="preserve">
+    <value>Namespace keyword used outside namespace declaration</value>
+  </data>
+  <data name="alias_in_use" xml:space="preserve">
+    <value>Cannot use {0} as {1} because the name is already in use</value>
+  </data>
+  <data name="class_in_use" xml:space="preserve">
+    <value>Cannot declare class {0} because the name is already in use</value>
+  </data>
+  <data name="generic_in_use" xml:space="preserve">
+    <value>Cannot declare generic type parameter {0} because the name is already in use</value>
+  </data>
+  <data name="import_only_in_pure" xml:space="preserve">
+    <value>Import statement is only available in pure mode</value>
+  </data>
+  <data name="import_deprecated" xml:space="preserve">
+    <value>Import statement is deprecated and will be removed in future versions. Use PHP aliasing instead.</value>
+  </data>
+  <data name="object_could_not_be_converted" xml:space="preserve">
+    <value>Object of class {0} could not be converted to {1}</value>
+  </data>
+  <data name="error_place" xml:space="preserve">
+    <value> in {0} on line {1}, column {2}</value>
+  </data>
+  <data name="class_could_not_be_loaded" xml:space="preserve">
+    <value>Class {0} could not be loaded</value>
+  </data>
+  <data name="argsaware_routine_needs_args" xml:space="preserve">
+    <value>Function '{0}'() is ArgsAware. It requires to be called via ArgLess stub, but was called via ArgFull. It requires arguments to be loaded on PhpStack.</value>
+  </data>
+  <data name="isolated_extensions_unsupported" xml:space="preserve">
+    <value>Isolated extensions are not supported anymore.</value>
+  </data>
+  <data name="spl_index_invalid" xml:space="preserve">
+    <value>Index invalid or out of range</value>
+  </data>
+  <data name="spl_empty_iterator_key_access" xml:space="preserve">
+    <value>Accessing the key of an EmptyIterator</value>
+  </data>
+  <data name="spl_empty_iterator_value_access" xml:space="preserve">
+    <value>Accessing the value of an EmptyIterator</value>
+  </data>
+  <data name="instantiation_not_allowed" xml:space="preserve">
+    <value>Instantiation of '{0}' is not allowed</value>
+  </data>
+  <data name="static_used_out_of_class" xml:space="preserve">
+    <value>Cannot access static:: when no class scope is active</value>
+  </data>
+  <data name="nowdoc_expected" xml:space="preserve">
+    <value>Expecting constant value within heredoc.</value>
+  </data>
+  <data name="incomparable_objects_compared_exception" xml:space="preserve">
+    <value>Incomparable objects ({0} and {1}) have been compared</value>
+  </data>
+  <data name="try_without_catch_or_finally" xml:space="preserve">
+    <value>Cannot use try without catch or finally</value>
+  </data>
+</root>
