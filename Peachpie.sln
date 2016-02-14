@@ -13,12 +13,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpSyntax", "src\Compiler\P
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpCodeAnalysis", "src\Compiler\PhpCodeAnalysis\PhpCodeAnalysis.csproj", "{1A060993-2FED-42C2-A9BB-1EF9DE9CBF83}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{664C373F-DAA4-4E03-B250-C64CDCA3C71E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pchp", "src\Compiler\pchp\pchp.csproj", "{5CDE7685-F997-4515-86D2-CAE834FF3ED3}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		roslyn\src\Compilers\Core\SharedCollections\SharedCollections.projitems*{1a060993-2fed-42c2-a9bb-1ef9de9cbf83}*SharedItemsImports = 4
 		roslyn\src\Compilers\Core\SharedCollections\SharedCollections.projitems*{1ee8cad3-55f9-4d91-96b2-084641da9a6c}*SharedItemsImports = 4
 		roslyn\src\Compilers\Core\AnalyzerDriver\AnalyzerDriver.projitems*{1ee8cad3-55f9-4d91-96b2-084641da9a6c}*SharedItemsImports = 4
-		roslyn\src\Compilers\Core\SharedCollections\SharedCollections.projitems*{3775018b-7f9f-4cb1-8b0a-18cfb589a54b}*SharedItemsImports = 4
 		roslyn\src\Compilers\Core\SharedCollections\SharedCollections.projitems*{c1930979-c824-496b-a630-70f5369a636f}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -94,6 +96,26 @@ Global
 		{1A060993-2FED-42C2-A9BB-1EF9DE9CBF83}.Release|x64.Build.0 = Release|Any CPU
 		{1A060993-2FED-42C2-A9BB-1EF9DE9CBF83}.Release|x86.ActiveCfg = Release|Any CPU
 		{1A060993-2FED-42C2-A9BB-1EF9DE9CBF83}.Release|x86.Build.0 = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|ARM.Build.0 = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|x64.Build.0 = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Debug|x86.Build.0 = Debug|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|ARM.ActiveCfg = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|ARM.Build.0 = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|x64.ActiveCfg = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|x64.Build.0 = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|x86.ActiveCfg = Release|Any CPU
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -103,5 +125,6 @@ Global
 		{1EE8CAD3-55F9-4D91-96B2-084641DA9A6C} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
 		{3775018B-7F9F-4CB1-8B0A-18CFB589A54B} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
 		{1A060993-2FED-42C2-A9BB-1EF9DE9CBF83} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
+		{5CDE7685-F997-4515-86D2-CAE834FF3ED3} = {664C373F-DAA4-4E03-B250-C64CDCA3C71E}
 	EndGlobalSection
 EndGlobal
