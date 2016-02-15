@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.Errors
         {
             get
             {
-                throw new NotImplementedException();
+                return "PHP";
             }
         }
 
@@ -65,7 +65,7 @@ namespace Pchp.CodeAnalysis.Errors
         {
             get
             {
-                throw new NotImplementedException();
+                return -1;//throw new NotImplementedException();
             }
         }
 
@@ -73,7 +73,7 @@ namespace Pchp.CodeAnalysis.Errors
         {
             get
             {
-                throw new NotImplementedException();
+                return -1;//throw new NotImplementedException();
             }
         }
 

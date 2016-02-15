@@ -35,7 +35,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(SolutionDir)build\StrongKeys\core.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)build\StrongKeys\core.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
@@ -52,9 +52,15 @@
     <Compile Include="CommandLine\PhpCommandLineArguments.cs" />
     <Compile Include="CommandLine\PhpCommandLineParser.cs" />
     <Compile Include="CommandLine\PhpCompiler.cs" />
+    <Compile Include="CommandLine\PhpParseOptions.cs" />
     <Compile Include="Compilation\PhpCompilation.cs" />
     <Compile Include="Compilation\PhpCompilationOptions.cs" />
+    <Compile Include="Compilation\ReferenceManager.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Emitter\Model\PEAssemblyBuilder.cs" />
+    <Compile Include="Emitter\Model\PEModuleBuilder.cs" />
+    <Compile Include="Emitter\Model\PENetModuleBuilder.cs" />
+    <Compile Include="Emitter\Model\SymbolAdapter.cs" />
     <Compile Include="Errors\MessageProvider.cs" />
     <Compile Include="PhpResources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -62,6 +68,9 @@
       <DependentUpon>PhpResources.resx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Symbols\Source\SourceAssemblySymbol.cs" />
+    <Compile Include="Symbols\Source\SourceModuleSymbol.cs" />
+    <Compile Include="Symbols\Symbol.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

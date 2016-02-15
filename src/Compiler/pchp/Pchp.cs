@@ -10,8 +10,6 @@ namespace Pchp.CodeAnalysis.CommandLine
 {
     class Pchp : PhpCompiler
     {
-        
-
         public Pchp(string[] args, IAnalyzerAssemblyLoader analyzerLoader)
             :base(
                  PhpCommandLineParser.Default,

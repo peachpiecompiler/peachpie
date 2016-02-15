@@ -13,11 +13,57 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Threading;
+using Pchp.Syntax;
+using System.Diagnostics;
+using Pchp.CodeAnalysis.Emit;
 
 namespace Pchp.CodeAnalysis
 {
     internal sealed partial class PhpCompilation : Compilation
     {
+        readonly PhpCompilationOptions _options;
+
+        /// <summary>
+        /// The <see cref="SourceAssemblySymbol"/> for this compilation. Do not access directly, use Assembly property
+        /// instead. This field is lazily initialized by ReferenceManager, ReferenceManager.CacheLockObject must be locked
+        /// while ReferenceManager "calculates" the value and assigns it, several threads must not perform duplicate
+        /// "calculation" simultaneously.
+        /// </summary>
+        private /*SourceAssemblySymbol*/IAssemblySymbol _lazyAssemblySymbol;
+
+        /// <summary>
+        /// Holds onto data related to reference binding.
+        /// The manager is shared among multiple compilations that we expect to have the same result of reference binding.
+        /// In most cases this can be determined without performing the binding. If the compilation however contains a circular 
+        /// metadata reference (a metadata reference that refers back to the compilation) we need to avoid sharing of the binding results.
+        /// We do so by creating a new reference manager for such compilation. 
+        /// </summary>
+        private ReferenceManager _referenceManager;
+
+        //private readonly SyntaxAndDeclarationManager _syntaxAndDeclarations;
+
+        ///// <summary>
+        ///// Contains the main method of this assembly, if there is one.
+        ///// </summary>
+        //private EntryPoint _lazyEntryPoint;
+
+        /// <summary>
+        /// The AssemblySymbol that represents the assembly being created.
+        /// </summary>
+        internal IAssemblySymbol SourceAssembly // TODO: SourceAssemblySymbol
+        {
+            get
+            {
+                GetBoundReferenceManager();
+                return _lazyAssemblySymbol;
+            }
+        }
+
+        /// <summary>
+        /// The AssemblySymbol that represents the assembly being created.
+        /// </summary>
+        internal new IAssemblySymbol Assembly => SourceAssembly;
+
         private PhpCompilation(
             string assemblyName,
             PhpCompilationOptions options,
@@ -28,7 +74,8 @@ namespace Pchp.CodeAnalysis
             )
             : base(assemblyName, references, SyntaxTreeCommonFeatures(ImmutableArray<SyntaxTree>.Empty), false, eventQueue)
         {
-
+            _options = options;
+            _referenceManager = new ReferenceManager();
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences
@@ -39,23 +86,17 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        public override bool IsCaseSensitive
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        /// <summary>
+        /// Returns true if this is a case sensitive compilation, false otherwise.  Case sensitivity
+        /// affects compilation features such as name lookup as well as choosing what names to emit
+        /// when there are multiple different choices (for example between a virtual method and an
+        /// override).
+        /// </summary>
+        public override bool IsCaseSensitive => false;
 
         public override string Language { get; } = Constants.PhpLanguageName;
             
-        public override IEnumerable<AssemblyIdentity> ReferencedAssemblyNames
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override IEnumerable<AssemblyIdentity> ReferencedAssemblyNames => Assembly.Modules.SelectMany(module => module.ReferencedAssemblies);
 
         protected override IAssemblySymbol CommonAssembly
         {
@@ -89,13 +130,7 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        protected override CompilationOptions CommonOptions
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        protected override CompilationOptions CommonOptions => _options;
 
         protected override INamedTypeSymbol CommonScriptClass
         {
@@ -133,7 +168,7 @@ namespace Pchp.CodeAnalysis
         {
             get
             {
-                throw new NotImplementedException();
+                return null; // throw new NotImplementedException();
             }
         }
 
@@ -141,25 +176,36 @@ namespace Pchp.CodeAnalysis
         {
             get
             {
-                throw new NotImplementedException();
+                return false; // throw new NotImplementedException(); // SourceAssembly.IsDelaySigned
             }
         }
 
-        internal override byte LinkerMajorVersion
+        internal static PhpCompilation Create(
+            string assemblyName,
+            IEnumerable<SourceUnit> syntaxTrees = null,
+            IEnumerable<MetadataReference> references = null,
+            PhpCompilationOptions options = null)
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            Debug.Assert(options != null);
+            CheckAssemblyName(assemblyName);
+
+            var compilation = new PhpCompilation(
+                assemblyName,
+                options,
+                ValidateReferences<CompilationReference>(references));
+
+            // TODO: AddSyntaxTrees(syntaxTrees)
+            //if (syntaxTrees != null)
+            //{
+            //    compilation = compilation.AddSyntaxTrees(syntaxTrees);
+            //}
+
+            return compilation;
         }
 
-        internal override CommonMessageProvider MessageProvider
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override byte LinkerMajorVersion => 0x0;
+
+        internal override CommonMessageProvider MessageProvider => Errors.MessageProvider.Instance;
 
         internal override IDictionary<ValueTuple<string, string>, MetadataReference> ReferenceDirectiveMap
         {
@@ -173,7 +219,7 @@ namespace Pchp.CodeAnalysis
         {
             get
             {
-                throw new NotImplementedException();
+                return ImmutableArray<ReferenceDirective>.Empty; // throw new NotImplementedException();
             }
         }
 
@@ -181,12 +227,24 @@ namespace Pchp.CodeAnalysis
         {
             get
             {
-                throw new NotImplementedException();
+                return StrongNameKeys.None;
             }
         }
 
         public override bool ContainsSymbolsWithName(Func<string, bool> predicate, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            if (filter == SymbolFilter.None)
+            {
+                //throw new ArgumentException(CSharpResources.NoNoneSearchCriteria, nameof(filter));
+            }
+
+            //return this.Declarations.ContainsName(predicate, filter, cancellationToken);
+
             throw new NotImplementedException();
         }
 
@@ -197,7 +255,7 @@ namespace Pchp.CodeAnalysis
 
         public override ImmutableArray<Diagnostic> GetDeclarationDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return ImmutableArray<Diagnostic>.Empty;
         }
 
         public override ImmutableArray<Diagnostic> GetDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
@@ -212,11 +270,24 @@ namespace Pchp.CodeAnalysis
 
         public override ImmutableArray<Diagnostic> GetParseDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            //return GetDiagnostics(CompilationStage.Parse, false, cancellationToken);
+            return ImmutableArray<Diagnostic>.Empty;
         }
 
         public override IEnumerable<ISymbol> GetSymbolsWithName(Func<string, bool> predicate, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (predicate == null)
+            {
+                throw new ArgumentNullException(nameof(predicate));
+            }
+
+            if (filter == SymbolFilter.None)
+            {
+                //throw new ArgumentException(CSharpResources.NoNoneSearchCriteria, nameof(filter));
+            }
+
+            //return new SymbolSearcher(this).GetSymbolsWithName(predicate, filter, cancellationToken);
+
             throw new NotImplementedException();
         }
 
@@ -227,7 +298,26 @@ namespace Pchp.CodeAnalysis
 
         protected override void AppendDefaultVersionResource(Stream resourceStream)
         {
-            throw new NotImplementedException();
+            var sourceAssembly = SourceAssembly;
+            string fileVersion = //sourceAssembly.FileVersion ?? 
+                sourceAssembly.Identity.Version.ToString();
+
+            // TODO: uncomment when SourceAssemblySymbol is implemented
+
+            Win32ResourceConversions.AppendVersionToResourceStream(resourceStream,
+                !this.Options.OutputKind.IsApplication(),
+                fileVersion: fileVersion,
+                originalFileName: this.SourceModule.Name,
+                internalName: this.SourceModule.Name,
+                productVersion: /*sourceAssembly.InformationalVersion ??*/ fileVersion,
+                //fileDescription: sourceAssembly.Title ?? " ", //alink would give this a blank if nothing was supplied.
+                //legalCopyright: sourceAssembly.Copyright ?? " ", //alink would give this a blank if nothing was supplied.
+                //legalTrademarks: sourceAssembly.Trademark,
+                //productName: sourceAssembly.Product,
+                //comments: sourceAssembly.Description,
+                //companyName: sourceAssembly.Company
+                assemblyVersion: sourceAssembly.Identity.Version
+                );
         }
 
         protected override Compilation CommonAddSyntaxTrees(IEnumerable<SyntaxTree> trees)
@@ -327,7 +417,15 @@ namespace Pchp.CodeAnalysis
 
         internal override CommonReferenceManager CommonGetBoundReferenceManager()
         {
-            throw new NotImplementedException();
+            if (_lazyAssemblySymbol == null)
+            {
+                _referenceManager.CreateSourceAssemblyForCompilation(this);
+                Debug.Assert(_lazyAssemblySymbol != null);
+            }
+
+            // referenceManager can only be accessed after we initialized the lazyAssemblySymbol.
+            // In fact, initialization of the assembly symbol might change the reference manager.
+            return _referenceManager;
         }
 
         internal override ISymbol CommonGetWellKnownTypeMember(WellKnownMember member)
@@ -342,12 +440,175 @@ namespace Pchp.CodeAnalysis
 
         internal override bool CompileImpl(CommonPEModuleBuilder moduleBuilder, Stream win32Resources, Stream xmlDocStream, bool emittingPdb, DiagnosticBag diagnostics, Predicate<ISymbol> filterOpt, CancellationToken cancellationToken)
         {
+            // The diagnostics should include syntax and declaration errors. We insert these before calling Emitter.Emit, so that the emitter
+            // does not attempt to emit if there are declaration errors (but we do insert all errors from method body binding...)
+            bool hasDeclarationErrors = false;  // !FilterAndAppendDiagnostics(diagnostics, GetDiagnostics(CompilationStage.Declare, true, cancellationToken));
+
+            var moduleBeingBuilt = (PEModuleBuilder)moduleBuilder;
+
+            if (moduleBeingBuilt.EmitOptions.EmitMetadataOnly)
+            {
+                throw new NotImplementedException();
+            }
+
+            // Perform initial bind of method bodies in spite of earlier errors. This is the same
+            // behavior as when calling GetDiagnostics()
+
+            // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
+            DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
+
+            //MethodCompiler.CompileMethodBodies(
+            //    this,
+            //    moduleBeingBuilt,
+            //    emittingPdb,
+            //    hasDeclarationErrors,
+            //    diagnostics: methodBodyDiagnosticBag,
+            //    filterOpt: filterOpt,
+            //    cancellationToken: cancellationToken);
+
+            SetupWin32Resources(moduleBeingBuilt, win32Resources, methodBodyDiagnosticBag);
+
+            ReportManifestResourceDuplicates(
+                moduleBeingBuilt.ManifestResources,
+                SourceAssembly.Modules.Skip(1).Select((m) => m.Name),   //all modules except the first one
+                AddedModulesResourceNames(methodBodyDiagnosticBag),
+                methodBodyDiagnosticBag);
+
+            bool hasMethodBodyErrorOrWarningAsError = !FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag);
+
+            if (hasDeclarationErrors || hasMethodBodyErrorOrWarningAsError)
+            {
+                return false;
+            }
+        
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
+            DiagnosticBag xmlDiagnostics = DiagnosticBag.GetInstance();
+
+            //string assemblyName = FileNameUtilities.ChangeExtension(moduleBeingBuilt.EmitOptions.OutputNameOverride, extension: null);
+            //DocumentationCommentCompiler.WriteDocumentationCommentXml(this, assemblyName, xmlDocStream, xmlDiagnostics, cancellationToken);
+
+            if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref xmlDiagnostics))
+            {
+                return false;
+            }
+
+            //// Use a temporary bag so we don't have to refilter pre-existing diagnostics.
+            //DiagnosticBag importDiagnostics = DiagnosticBag.GetInstance();
+            //this.ReportUnusedImports(importDiagnostics, cancellationToken);
+
+            //if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref importDiagnostics))
+            //{
+            //    Debug.Assert(false, "Should never produce an error");
+            //    return false;
+            //}
+
+            return true;
+        }
+
+        private IEnumerable<string> AddedModulesResourceNames(DiagnosticBag diagnostics)
+        {
+            //ImmutableArray<ModuleSymbol> modules = SourceAssembly.Modules;
+
+            //for (int i = 1; i < modules.Length; i++)
+            //{
+            //    var m = (Symbols.Metadata.PE.PEModuleSymbol)modules[i];
+            //    ImmutableArray<EmbeddedResource> resources;
+
+            //    try
+            //    {
+            //        resources = m.Module.GetEmbeddedResourcesOrThrow();
+            //    }
+            //    catch (BadImageFormatException)
+            //    {
+            //        diagnostics.Add(new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, m), NoLocation.Singleton);
+            //        continue;
+            //    }
+
+            //    foreach (var resource in resources)
+            //    {
+            //        yield return resource.Name;
+            //    }
+            //}
+
+            yield break;
+        }
+
+        private void SetupWin32Resources(PEModuleBuilder moduleBeingBuilt, Stream win32Resources, DiagnosticBag diagnostics)
+        {
+            if (win32Resources == null)
+                return;
+
             throw new NotImplementedException();
+            //switch (DetectWin32ResourceForm(win32Resources))
+            //{
+            //    case Win32ResourceForm.COFF:
+            //        moduleBeingBuilt.Win32ResourceSection = MakeWin32ResourcesFromCOFF(win32Resources, diagnostics);
+            //        break;
+            //    case Win32ResourceForm.RES:
+            //        moduleBeingBuilt.Win32Resources = MakeWin32ResourceList(win32Resources, diagnostics);
+            //        break;
+            //    default:
+            //        diagnostics.Add(ErrorCode.ERR_BadWin32Res, NoLocation.Singleton, "Unrecognized file format.");
+            //        break;
+            //}
         }
 
         internal override CommonPEModuleBuilder CreateModuleBuilder(EmitOptions emitOptions, IMethodSymbol debugEntryPoint, IEnumerable<ResourceDescription> manifestResources, CompilationTestData testData, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            Debug.Assert(!IsSubmission || HasCodeToEmit());
+            
+            var runtimeMDVersion = emitOptions.RuntimeMetadataVersion; // GetRuntimeMetadataVersion(emitOptions, diagnostics);
+            if (runtimeMDVersion == null)
+            {
+                Debug.Assert(runtimeMDVersion != null, "Set PhpCommandLineArguments.EmitOptions");
+                return null;
+            }
+
+            var moduleProps = ConstructModuleSerializationProperties(emitOptions, runtimeMDVersion);
+
+            if (manifestResources == null)
+            {
+                manifestResources = SpecializedCollections.EmptyEnumerable<ResourceDescription>();
+            }
+
+            PEModuleBuilder moduleBeingBuilt;
+            if (_options.OutputKind.IsNetModule())
+            {
+                moduleBeingBuilt = new PENetModuleBuilder(
+                    this,
+                    SourceModule,
+                    emitOptions,
+                    moduleProps,
+                    manifestResources);
+            }
+            else
+            {
+                var kind = _options.OutputKind.IsValid() ? _options.OutputKind : OutputKind.DynamicallyLinkedLibrary;
+                moduleBeingBuilt = new PEAssemblyBuilder(
+                    this,
+                    SourceAssembly.Modules.First(),
+                    moduleProps,
+                    manifestResources,
+                    kind,
+                    emitOptions);
+            }
+
+            if (debugEntryPoint != null)
+            {
+                moduleBeingBuilt.SetDebugEntryPoint(debugEntryPoint, diagnostics);
+            }
+
+            // testData is only passed when running tests.
+            if (testData != null)
+            {
+                //moduleBeingBuilt.SetMethodTestData(testData.Methods);
+                //testData.Module = moduleBeingBuilt;
+                throw new NotImplementedException();
+            }
+
+            return moduleBeingBuilt;
         }
 
         internal override EmitDifferenceResult EmitDifference(EmitBaseline baseline, IEnumerable<SemanticEdit> edits, Func<ISymbol, bool> isAddedSymbol, Stream metadataStream, Stream ilStream, Stream pdbStream, ICollection<MethodDefinitionHandle> updatedMethodHandles, CompilationTestData testData, CancellationToken cancellationToken)
@@ -367,6 +628,17 @@ namespace Pchp.CodeAnalysis
 
         internal override bool HasCodeToEmit()
         {
+            //foreach (var syntaxTree in this.SyntaxTrees)
+            //{
+            //    var unit = syntaxTree.GetCompilationUnitRoot();
+            //    if (unit.Members.Count > 0)
+            //    {
+            //        return true;
+            //    }
+            //}
+
+            //return false;
+
             throw new NotImplementedException();
         }
 

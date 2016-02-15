@@ -272,7 +272,7 @@ namespace Pchp.Syntax
         /// </summary>
         /// <param name="code">Source code to be parsed.</param>
         /// <param name="filePath">Source file used for error reporting.</param>
-        /// <param name="errors">Errors sink. Can be <c>null</c>.</param>
+        /// <param name="errors">Errors sink.</param>
         /// <param name="reductionsSink">Reduction sink. Can be <c>null</c>.</param>
         /// <param name="features">Optional. Language features.</param>
         /// <param name="initialState">
