@@ -23,6 +23,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _sourceAssembly;
 
+        internal override IModuleSymbol ContainingModule => null;
+
         public override Accessibility DeclaredAccessibility => Accessibility.NotApplicable;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences

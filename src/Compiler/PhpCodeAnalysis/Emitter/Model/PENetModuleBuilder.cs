@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis.Emit
             EmitOptions emitOptions,
             Microsoft.Cci.ModulePropertiesForSerialization serializationProperties,
             IEnumerable<ResourceDescription> manifestResources)
-            : base(compilation, sourceModule, serializationProperties, manifestResources, OutputKind.NetModule, emitOptions)
+            : base(compilation, (Symbols.SourceModuleSymbol)sourceModule, serializationProperties, manifestResources, OutputKind.NetModule, emitOptions)
         {
         }
     }

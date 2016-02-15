@@ -57,6 +57,8 @@
     <Compile Include="Compilation\PhpCompilationOptions.cs" />
     <Compile Include="Compilation\ReferenceManager.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Emitter\Model\NamedTypeSymbolAdapter.cs" />
+    <Compile Include="Emitter\Model\NamespaceSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\PEAssemblyBuilder.cs" />
     <Compile Include="Emitter\Model\PEModuleBuilder.cs" />
     <Compile Include="Emitter\Model\PENetModuleBuilder.cs" />
@@ -69,9 +71,14 @@
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Symbols\AssemblySymbol.cs" />
+    <Compile Include="Symbols\NamedTypeSymbol.cs" />
+    <Compile Include="Symbols\NamespaceOrTypeSymbol.cs" />
+    <Compile Include="Symbols\NamespaceSymbol.cs" />
     <Compile Include="Symbols\Source\SourceAssemblySymbol.cs" />
     <Compile Include="Symbols\Source\SourceModuleSymbol.cs" />
+    <Compile Include="Symbols\Source\SourceNamedTypeSymbol.cs" />
     <Compile Include="Symbols\Symbol.cs" />
+    <Compile Include="Symbols\TypeSymbol.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

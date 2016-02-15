@@ -941,7 +941,8 @@ namespace Pchp.CodeAnalysis
 
         public string ToDisplayString(SymbolDisplayFormat format = null)
         {
-            throw new NotImplementedException();
+            return this.Name;
+            //throw new NotImplementedException();
             //return SymbolDisplay.ToDisplayString(this, format);
         }
 
@@ -1160,12 +1161,12 @@ namespace Pchp.CodeAnalysis
             return ImmutableArray<AttributeData>.Empty; // StaticCast<AttributeData>.From(this.GetAttributes());
         }
 
-        public void Accept(SymbolVisitor visitor)
+        public virtual void Accept(SymbolVisitor visitor)
         {
             throw new NotImplementedException();
         }
 
-        public TResult Accept<TResult>(SymbolVisitor<TResult> visitor)
+        public virtual TResult Accept<TResult>(SymbolVisitor<TResult> visitor)
         {
             throw new NotImplementedException();
         }

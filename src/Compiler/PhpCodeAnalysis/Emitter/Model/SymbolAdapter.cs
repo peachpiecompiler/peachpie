@@ -28,6 +28,16 @@ namespace Pchp.CodeAnalysis
             //             (this.Kind == SymbolKind.NetModule && this is SourceModuleSymbol));
         }
 
+        /// <summary>
+        /// Return whether the symbol is either the original definition
+        /// or distinct from the original. Intended for use in Debug.Assert
+        /// only since it may include a deep comparison.
+        /// </summary>
+        internal bool IsDefinitionOrDistinct()
+        {
+            return this.IsDefinition || !this.Equals(this.OriginalDefinition);
+        }
+
         Cci.IDefinition Cci.IReference.AsDefinition(EmitContext context)
         {
             throw new NotSupportedException();

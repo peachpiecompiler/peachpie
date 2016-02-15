@@ -196,11 +196,10 @@ namespace Pchp.CodeAnalysis
                 options,
                 ValidateReferences<CompilationReference>(references));
 
-            // TODO: AddSyntaxTrees(syntaxTrees)
-            //if (syntaxTrees != null)
-            //{
-            //    compilation = compilation.AddSyntaxTrees(syntaxTrees);
-            //}
+            if (syntaxTrees != null)
+            {
+                compilation = compilation.AddSyntaxTrees(syntaxTrees);
+            }
 
             return compilation;
         }
@@ -320,6 +319,14 @@ namespace Pchp.CodeAnalysis
                 //companyName: sourceAssembly.Company
                 assemblyVersion: sourceAssembly.Identity.Version
                 );
+        }
+
+        internal ImmutableArray<SourceUnit> _syntaxtreestmp;
+
+        public PhpCompilation AddSyntaxTrees(IEnumerable<SourceUnit> syntaxTrees)
+        {
+            _syntaxtreestmp = syntaxTrees.AsImmutable();
+            return this;
         }
 
         protected override Compilation CommonAddSyntaxTrees(IEnumerable<SyntaxTree> trees)

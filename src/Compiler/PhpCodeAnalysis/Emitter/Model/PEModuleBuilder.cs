@@ -14,12 +14,13 @@ using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
 using Cci = Microsoft.Cci;
 using Microsoft.CodeAnalysis.Emit.NoPia;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Emit
 {
     internal class PEModuleBuilder : CommonPEModuleBuilder, Cci.IModule, ITokenDeferral
     {
-        private readonly IModuleSymbol _sourceModule;
+        private readonly SourceModuleSymbol _sourceModule;
         private readonly PhpCompilation _compilation;
         private readonly OutputKind _outputKind;
         private readonly EmitOptions _emitOptions;
@@ -27,7 +28,10 @@ namespace Pchp.CodeAnalysis.Emit
 
         readonly StringTokenMap _stringsInILMap = new StringTokenMap();
         readonly TokenMap<Cci.IReference> _referencesInILMap = new TokenMap<Cci.IReference>();
+        readonly Cci.RootModuleType _rootModuleType = new Cci.RootModuleType();
         Cci.IMethodReference _peEntryPoint, _debugEntryPoint;
+        PrivateImplementationDetails _privateImplementationDetails;
+        HashSet<string> _namesOfTopLevelTypes;  // initialized with set of type names within first call to GetTopLevelTypes()
 
         internal readonly IEnumerable<ResourceDescription> ManifestResources;
         internal readonly CommonModuleCompilationState CompilationState;
@@ -42,7 +46,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         protected PEModuleBuilder(
             PhpCompilation compilation,
-            IModuleSymbol sourceModule,
+            SourceModuleSymbol sourceModule,
             Cci.ModulePropertiesForSerialization serializationProperties,
             IEnumerable<ResourceDescription> manifestResources,
             OutputKind outputKind,
@@ -60,6 +64,8 @@ namespace Pchp.CodeAnalysis.Emit
             this.CompilationState = new CommonModuleCompilationState();
             _debugDocuments = new ConcurrentDictionary<string, Cci.DebugSourceDocument>(compilation.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
         }
+
+        public IModuleSymbol SourceModule => _sourceModule;
 
         public ArrayMethods ArrayMethods
         {
@@ -135,7 +141,9 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
-                yield break; // throw new NotImplementedException();
+                // Let's not add any module references explicitly,
+                // PeWriter will implicitly add those needed.
+                return SpecializedCollections.EmptyEnumerable<Cci.IModuleReference>();
             }
         }
 
@@ -204,14 +212,6 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         internal override EmitOptions EmitOptions => _emitOptions;
-
-        internal override bool SupportsPrivateImplClass
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
 
         public Cci.IDefinition AsDefinition(EmitContext context)
         {
@@ -356,7 +356,233 @@ namespace Pchp.CodeAnalysis.Emit
 
         public IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypes(EmitContext context)
         {
-            return ImmutableArray<Cci.INamespaceTypeDefinition>.Empty; //throw new NotImplementedException();
+            Cci.NoPiaReferenceIndexer noPiaIndexer = null;
+
+            // First time through, we need to collect emitted names of all top level types.
+            HashSet<string> names = (_namesOfTopLevelTypes == null) ? new HashSet<string>() : null;
+
+            //// First time through, we need to push things through NoPiaReferenceIndexer
+            //// to make sure we collect all to be embedded NoPia types and members.
+            //if (EmbeddedTypesManagerOpt != null && !EmbeddedTypesManagerOpt.IsFrozen)
+            //{
+            //    noPiaIndexer = new Cci.NoPiaReferenceIndexer(context);
+            //    Debug.Assert(names != null);
+            //    this.Dispatch(noPiaIndexer);
+            //}
+
+            AddTopLevelType(names, _rootModuleType);
+            VisitTopLevelType(noPiaIndexer, _rootModuleType);
+            yield return _rootModuleType;
+
+            foreach (var type in this.GetAnonymousTypes())
+            {
+                AddTopLevelType(names, type);
+                VisitTopLevelType(noPiaIndexer, type);
+                yield return type;
+            }
+
+            foreach (var type in this.GetTopLevelTypesCore(context))
+            {
+                AddTopLevelType(names, type);
+                VisitTopLevelType(noPiaIndexer, type);
+                yield return type;
+            }
+
+            var privateImpl = this.PrivateImplClass;
+            if (privateImpl != null)
+            {
+                AddTopLevelType(names, privateImpl);
+                VisitTopLevelType(noPiaIndexer, privateImpl);
+                yield return privateImpl;
+            }
+
+            //if (EmbeddedTypesManagerOpt != null)
+            //{
+            //    foreach (var embedded in EmbeddedTypesManagerOpt.GetTypes(context.Diagnostics, names))
+            //    {
+            //        AddTopLevelType(names, embedded);
+            //        yield return embedded;
+            //    }
+            //}
+
+            if (names != null)
+            {
+                Debug.Assert(_namesOfTopLevelTypes == null);
+                _namesOfTopLevelTypes = names;
+            }
+        }
+
+        // DEBUG: to declarations map
+        List<SourceNamedTypeSymbol> _types = null;
+        
+
+        internal virtual IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypesCore(EmitContext context)
+        {
+            //foreach (var type in GetAdditionalTopLevelTypes())
+            //{
+            //    yield return type;
+            //}
+
+            if (_types == null)
+            {
+                // DEBUG: to declarations map
+                _types = new List<SourceNamedTypeSymbol>();
+                foreach (var t in _compilation._syntaxtreestmp.SelectMany(u => u.Ast.Statements).OfType<Syntax.AST.TypeDecl>())
+                {
+                    _types.Add(new SourceNamedTypeSymbol(_sourceModule, t));
+                }
+            }
+
+            foreach (var t in _types)
+                yield return t;
+
+            //var namespacesToProcess = new Stack<INamespaceSymbol>();
+            //namespacesToProcess.Push(this.SourceModule.GlobalNamespace);
+
+            //while (namespacesToProcess.Count != 0)
+            //{
+            //    var ns = namespacesToProcess.Pop();
+            //    foreach (var member in ns.GetMembers())
+            //    {
+            //        var memberNamespace = member as INamespaceSymbol;
+            //        if (memberNamespace != null)
+            //        {
+            //            namespacesToProcess.Push(memberNamespace);
+            //        }
+            //        else
+            //        {
+            //            var type = (NamedTypeSymbol)member;
+            //            yield return type;
+            //        }
+            //    }
+            //}
+        }
+
+        public static Cci.TypeMemberVisibility MemberVisibility(Symbol symbol)
+        {
+            //
+            // We need to relax visibility of members in interactive submissions since they might be emitted into multiple assemblies.
+            // 
+            // Top-level:
+            //   private                       -> public
+            //   protected                     -> public (compiles with a warning)
+            //   public                         
+            //   internal                      -> public
+            // 
+            // In a nested class:
+            //   
+            //   private                       
+            //   protected                     
+            //   public                         
+            //   internal                      -> public
+            //
+            switch (symbol.DeclaredAccessibility)
+            {
+                case Accessibility.Public:
+                    return Cci.TypeMemberVisibility.Public;
+
+                case Accessibility.Private:
+                    if (symbol.ContainingType.TypeKind == TypeKind.Submission)
+                    {
+                        // top-level private member:
+                        return Cci.TypeMemberVisibility.Public;
+                    }
+                    else
+                    {
+                        return Cci.TypeMemberVisibility.Private;
+                    }
+
+                case Accessibility.Internal:
+                    if (symbol.ContainingAssembly.IsInteractive)
+                    {
+                        // top-level or nested internal member:
+                        return Cci.TypeMemberVisibility.Public;
+                    }
+                    else
+                    {
+                        return Cci.TypeMemberVisibility.Assembly;
+                    }
+
+                case Accessibility.Protected:
+                    if (symbol.ContainingType.TypeKind == TypeKind.Submission)
+                    {
+                        // top-level protected member:
+                        return Cci.TypeMemberVisibility.Public;
+                    }
+                    else
+                    {
+                        return Cci.TypeMemberVisibility.Family;
+                    }
+
+                case Accessibility.ProtectedAndInternal: // Not supported by language, but we should be able to import it.
+                    Debug.Assert(symbol.ContainingType.TypeKind != TypeKind.Submission);
+                    return Cci.TypeMemberVisibility.FamilyAndAssembly;
+
+                case Accessibility.ProtectedOrInternal:
+                    if (symbol.ContainingAssembly.IsInteractive)
+                    {
+                        // top-level or nested protected internal member:
+                        return Cci.TypeMemberVisibility.Public;
+                    }
+                    else
+                    {
+                        return Cci.TypeMemberVisibility.FamilyOrAssembly;
+                    }
+
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(symbol.DeclaredAccessibility);
+            }
+        }
+
+        #region Private Implementation Details Type
+
+        internal PrivateImplementationDetails GetPrivateImplClass(SyntaxNode syntaxNodeOpt, DiagnosticBag diagnostics)
+        {
+            var result = _privateImplementationDetails;
+
+            if ((result == null) && this.SupportsPrivateImplClass)
+            {
+                //result = new PrivateImplementationDetails(
+                //        this,
+                //        _sourceModule.Name,
+                //        _compilation.GetSubmissionSlotIndex(),
+                //        this.GetSpecialType(SpecialType.System_Object, syntaxNodeOpt, diagnostics),
+                //        this.GetSpecialType(SpecialType.System_ValueType, syntaxNodeOpt, diagnostics),
+                //        this.GetSpecialType(SpecialType.System_Byte, syntaxNodeOpt, diagnostics),
+                //        this.GetSpecialType(SpecialType.System_Int16, syntaxNodeOpt, diagnostics),
+                //        this.GetSpecialType(SpecialType.System_Int32, syntaxNodeOpt, diagnostics),
+                //        this.GetSpecialType(SpecialType.System_Int64, syntaxNodeOpt, diagnostics),
+                //        SynthesizeAttribute(WellKnownMember.System_Runtime_CompilerServices_CompilerGeneratedAttribute__ctor));
+
+                if (Interlocked.CompareExchange(ref _privateImplementationDetails, result, null) != null)
+                {
+                    result = _privateImplementationDetails;
+                }
+            }
+
+            return result;
+        }
+
+        internal PrivateImplementationDetails PrivateImplClass
+        {
+            get { return _privateImplementationDetails; }
+        }
+
+        internal override bool SupportsPrivateImplClass
+        {
+            get { return false; }   // TODO: true when GetSpecialType() will be implemented
+        }
+
+        #endregion
+
+        static void AddTopLevelType(HashSet<string> names, Cci.INamespaceTypeDefinition type)
+        {
+            names?.Add(MetadataHelpers.BuildQualifiedName(type.NamespaceName, Cci.MetadataWriter.GetMangledName(type)));
+        }
+
+        static void VisitTopLevelType(Cci.NoPiaReferenceIndexer noPiaIndexer, Cci.INamespaceTypeDefinition type)
+        {
+            noPiaIndexer?.Visit((Cci.ITypeDefinition)type);
         }
 
         public bool IsPlatformType(Cci.ITypeReference typeRef, Cci.PlatformType t)
@@ -381,7 +607,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal override ImmutableArray<Cci.INamespaceTypeDefinition> GetAnonymousTypes()
         {
-            throw new NotImplementedException();
+            return ImmutableArray<Cci.INamespaceTypeDefinition>.Empty; // throw new NotImplementedException();
         }
 
         internal override ImmutableDictionary<Cci.ITypeDefinition, ImmutableArray<Cci.ITypeDefinitionMember>> GetSynthesizedMembers()

@@ -43,7 +43,7 @@ namespace Pchp.CodeAnalysis.Emit
             IEnumerable<ResourceDescription> manifestResources,
             OutputKind outputKind,
             EmitOptions emitOptions)
-            :base(sourceAssembly.DeclaringCompilation, sourceAssembly.Modules[0], serializationProperties, manifestResources, outputKind, emitOptions)
+            :base(sourceAssembly.DeclaringCompilation, (SourceModuleSymbol)sourceAssembly.Modules[0], serializationProperties, manifestResources, outputKind, emitOptions)
         {
             _sourceAssembly = sourceAssembly;
             _metadataName = (emitOptions.OutputNameOverride == null) ? sourceAssembly.MetadataName : FileNameUtilities.ChangeExtension(emitOptions.OutputNameOverride, extension: null);
