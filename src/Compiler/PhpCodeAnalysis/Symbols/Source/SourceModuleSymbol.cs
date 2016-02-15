@@ -10,21 +10,20 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal sealed class SourceModuleSymbol : Symbol, IModuleSymbol
     {
-        public override Symbol ContainingSymbol
+        readonly SourceAssemblySymbol _sourceAssembly;
+        readonly string _name;
+
+        public SourceModuleSymbol(SourceAssemblySymbol sourceAssembly, string name)
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            _sourceAssembly = sourceAssembly;
+            _name = name;
         }
 
-        public override Accessibility DeclaredAccessibility
-        {
-            get
-            {
-                return Accessibility.NotApplicable;
-            }
-        }
+        public override string Name => _name;
+
+        public override Symbol ContainingSymbol => _sourceAssembly;
+
+        public override Accessibility DeclaredAccessibility => Accessibility.NotApplicable;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
@@ -86,13 +85,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override PhpCompilation DeclaringCompilation
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override PhpCompilation DeclaringCompilation => _sourceAssembly.DeclaringCompilation;
 
         internal override ObsoleteAttributeData ObsoleteAttributeData
         {

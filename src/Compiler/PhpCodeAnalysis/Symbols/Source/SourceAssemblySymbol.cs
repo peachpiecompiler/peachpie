@@ -7,26 +7,54 @@ using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Threading;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed class SourceAssemblySymbol : Symbol, IAssemblySymbol
+    internal sealed class SourceAssemblySymbol : AssemblySymbol
     {
-        public override Symbol ContainingSymbol
+        readonly string _simpleName;
+        readonly PhpCompilation _compilation;
+
+        /// <summary>
+        /// A list of modules the assembly consists of. 
+        /// The first (index=0) module is a SourceModuleSymbol, which is a primary module, the rest are net-modules.
+        /// </summary>
+        readonly ImmutableArray<IModuleSymbol> _modules;
+
+        AssemblyIdentity _lazyIdentity;
+
+        public SourceAssemblySymbol(
+            PhpCompilation compilation,
+            string assemblySimpleName,
+            string moduleName)
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            Debug.Assert(compilation != null);
+            Debug.Assert(!String.IsNullOrWhiteSpace(assemblySimpleName));
+            Debug.Assert(!String.IsNullOrWhiteSpace(moduleName));
+            
+            _compilation = compilation;
+            _simpleName = assemblySimpleName;
+
+            var moduleBuilder = new ArrayBuilder<IModuleSymbol>(1);
+
+            moduleBuilder.Add(new SourceModuleSymbol(this, /*compilation.Declarations,*/ moduleName));
+
+            //var importOptions = (compilation.Options.MetadataImportOptions == MetadataImportOptions.All) ?
+            //    MetadataImportOptions.All : MetadataImportOptions.Internal;
+
+            //foreach (PEModule netModule in netModules)
+            //{
+            //    moduleBuilder.Add(new PEModuleSymbol(this, netModule, importOptions, moduleBuilder.Count));
+            //    // SetReferences will be called later by the ReferenceManager (in CreateSourceAssemblyFullBind for 
+            //    // a fresh manager, in CreateSourceAssemblyReuseData for a reused one).
+            //}
+
+            _modules = moduleBuilder.ToImmutableAndFree();
         }
 
-        public override Accessibility DeclaredAccessibility
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override ImmutableArray<IModuleSymbol> Modules => _modules;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
@@ -36,7 +64,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public INamespaceSymbol GlobalNamespace
+        internal override PhpCompilation DeclaringCompilation => _compilation;
+
+        public override INamespaceSymbol GlobalNamespace
         {
             get
             {
@@ -44,118 +74,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public AssemblyIdentity Identity
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool IsAbstract
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool IsExtern
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public bool IsInteractive
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool IsOverride
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool IsSealed
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool IsStatic
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool IsVirtual
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override SymbolKind Kind
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override ImmutableArray<Location> Locations
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public bool MightContainExtensionMethods
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public IEnumerable<IModuleSymbol> Modules
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public ICollection<string> NamespaceNames
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public ICollection<string> TypeNames
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
+        public override AssemblyIdentity Identity => _lazyIdentity ?? (_lazyIdentity = ComputeIdentity());
+        
         internal override ObsoleteAttributeData ObsoleteAttributeData
         {
             get
@@ -164,24 +84,60 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public AssemblyMetadata GetMetadata()
+        internal override ImmutableArray<byte> PublicKey
         {
-            throw new NotImplementedException();
+            get { return _compilation.StrongNameKeys.PublicKey; }
         }
 
-        public INamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
+        internal string SignatureKey
         {
-            throw new NotImplementedException();
+            get
+            {
+                string key = null; // GetWellKnownAttributeDataStringField(data => data.AssemblySignatureKeyAttributeSetting);
+                return key;
+            }
         }
 
-        public bool GivesAccessTo(IAssemblySymbol toAssembly)
+        /// <summary>
+        /// This represents what the user claimed in source through the AssemblyFlagsAttribute.
+        /// It may be modified as emitted due to presence or absence of the public key.
+        /// </summary>
+        internal AssemblyNameFlags Flags
         {
-            throw new NotImplementedException();
+            get
+            {
+                var fieldValue = default(AssemblyNameFlags);
+
+                //var data = GetSourceDecodedWellKnownAttributeData();
+                //if (data != null)
+                //{
+                //    fieldValue = data.AssemblyFlagsAttributeSetting;
+                //}
+
+                //data = GetNetModuleDecodedWellKnownAttributeData();
+                //if (data != null)
+                //{
+                //    fieldValue |= data.AssemblyFlagsAttributeSetting;
+                //}
+
+                return fieldValue;
+            }
         }
 
-        public INamedTypeSymbol ResolveForwardedType(string fullyQualifiedMetadataName)
+        Version AssemblyVersionAttributeSetting => new Version(1, 0, 0, 0);
+
+        string AssemblyCultureAttributeSetting => null;
+
+        public AssemblyHashAlgorithm HashAlgorithm => AssemblyHashAlgorithm.Sha1;
+
+        AssemblyIdentity ComputeIdentity()
         {
-            throw new NotImplementedException();
+            return new AssemblyIdentity(
+                _simpleName,
+                this.AssemblyVersionAttributeSetting,
+                this.AssemblyCultureAttributeSetting,
+                _compilation.StrongNameKeys.PublicKey,
+                hasPublicKey: !_compilation.StrongNameKeys.PublicKey.IsDefault);
         }
     }
 }

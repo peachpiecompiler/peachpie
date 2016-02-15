@@ -28,6 +28,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var metadataReferences = new List<CommandLineReference>();
             var analyzers = new List<CommandLineAnalyzerReference>();
             var additionalFiles = new List<CommandLineSourceFile>();
+            var managedResources = new List<ResourceDescription>();
             string outputFileName = null;
             string moduleName = null;
             string compilationName = null;
@@ -128,7 +129,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //NoWin32Manifest = noWin32Manifest,
                 //DisplayLogo = displayLogo,
                 //DisplayHelp = displayHelp,
-                //ManifestResources = managedResources.AsImmutable(),
+                ManifestResources = managedResources.AsImmutable(),
                 CompilationOptions = options,
                 ParseOptions = IsScriptRunner ? scriptParseOptions : parseOptions,
                 EmitOptions = emitOptions,

@@ -9,103 +9,154 @@ using Microsoft.CodeAnalysis.Emit;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
 using Cci = Microsoft.Cci;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Emit
 {
     internal sealed class PEAssemblyBuilder : PEModuleBuilder, Cci.IAssembly
     {
+        readonly SourceAssemblySymbol _sourceAssembly;
+        ImmutableArray<Cci.IFileReference> _lazyFiles;
+
+        /// <summary>
+        /// The behavior of the C# command-line compiler is as follows:
+        ///   1) If the /out switch is specified, then the explicit assembly name is used.
+        ///   2) Otherwise,
+        ///      a) if the assembly is executable, then the assembly name is derived from
+        ///         the name of the file containing the entrypoint;
+        ///      b) otherwise, the assembly name is derived from the name of the first input
+        ///         file.
+        /// 
+        /// Since we don't know which method is the entrypoint until well after the
+        /// SourceAssemblySymbol is created, in case 2a, its name will not reflect the
+        /// name of the file containing the entrypoint.  We leave it to our caller to
+        /// provide that name explicitly.
+        /// </summary>
+        /// <remarks>
+        /// In cases 1 and 2b, we expect (metadataName == sourceAssembly.MetadataName).
+        /// </remarks>
+        readonly string _metadataName;
+
         public PEAssemblyBuilder(
-            PhpCompilation compilation,
-            IModuleSymbol sourceModule,
+            SourceAssemblySymbol sourceAssembly,
             Cci.ModulePropertiesForSerialization serializationProperties,
             IEnumerable<ResourceDescription> manifestResources,
             OutputKind outputKind,
             EmitOptions emitOptions)
-            :base(compilation, sourceModule, serializationProperties, manifestResources, outputKind, emitOptions)
+            :base(sourceAssembly.DeclaringCompilation, sourceAssembly.Modules[0], serializationProperties, manifestResources, outputKind, emitOptions)
         {
-
+            _sourceAssembly = sourceAssembly;
+            _metadataName = (emitOptions.OutputNameOverride == null) ? sourceAssembly.MetadataName : FileNameUtilities.ChangeExtension(emitOptions.OutputNameOverride, extension: null);
         }
 
-        public AssemblyContentType ContentType
+        public override void Dispatch(Cci.MetadataVisitor visitor)
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            visitor.Visit((Cci.IAssembly)this);
         }
 
-        public string Culture
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public AssemblyContentType ContentType => _sourceAssembly.Identity.ContentType;
+
+        public string Culture => _sourceAssembly.Identity.CultureName;
 
         public uint Flags
         {
             get
             {
-                throw new NotImplementedException();
+                AssemblyNameFlags result = _sourceAssembly.Flags & ~AssemblyNameFlags.PublicKey;
+
+                if (!this.PublicKey.IsDefaultOrEmpty)
+                    result |= AssemblyNameFlags.PublicKey;
+
+                return (uint)result;
             }
         }
 
-        public AssemblyHashAlgorithm HashAlgorithm
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public AssemblyHashAlgorithm HashAlgorithm => _sourceAssembly.HashAlgorithm;
 
-        public bool IsRetargetable
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public bool IsRetargetable => _sourceAssembly.Identity.IsRetargetable;
 
-        public ImmutableArray<byte> PublicKey
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public ImmutableArray<byte> PublicKey => _sourceAssembly.Identity.PublicKey;
 
-        public ImmutableArray<byte> PublicKeyToken
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public ImmutableArray<byte> PublicKeyToken => _sourceAssembly.Identity.PublicKeyToken;
 
-        public string SignatureKey
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public string SignatureKey => _sourceAssembly.SignatureKey;
 
-        public Version Version
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public Version Version => _sourceAssembly.Identity.Version;
 
-        public string GetDisplayName()
-        {
-            throw new NotImplementedException();
-        }
+        public string GetDisplayName() => _sourceAssembly.Identity.GetDisplayName();
 
+        public override string Name => _metadataName;
+
+        /// <summary>
+        /// A list of the files that constitute the assembly. These are not the source language files that may have been
+        /// used to compile the assembly, but the files that contain constituent modules of a multi-module assembly as well
+        /// as any external resources. It corresponds to the File table of the .NET assembly file format.
+        /// </summary>
         public IEnumerable<Cci.IFileReference> GetFiles(EmitContext context)
         {
-            throw new NotImplementedException();
+            if (_lazyFiles.IsDefault)
+            {
+                var builder = ArrayBuilder<Cci.IFileReference>.GetInstance();
+                try
+                {
+                    var modules = _sourceAssembly.Modules;
+                    for (int i = 1; i < modules.Length; i++)
+                    {
+                        builder.Add((Cci.IFileReference)Translate(modules[i] as IAssemblySymbol, context.Diagnostics));
+                    }
+
+                    foreach (ResourceDescription resource in ManifestResources)
+                    {
+                        if (!resource.IsEmbedded)
+                        {
+                            builder.Add(resource);
+                        }
+                    }
+
+                    // Dev12 compilers don't report ERR_CryptoHashFailed if there are no files to be hashed.
+                    if (ImmutableInterlocked.InterlockedInitialize(ref _lazyFiles, builder.ToImmutable()) && _lazyFiles.Length > 0)
+                    {
+                        //if (!CryptographicHashProvider.IsSupportedAlgorithm(_sourceAssembly.AssemblyHashAlgorithm))
+                        //{
+                        //    context.Diagnostics.Add(new CSDiagnostic(new CSDiagnosticInfo(ErrorCode.ERR_CryptoHashFailed), NoLocation.Singleton));
+                        //}
+                    }
+                }
+                finally
+                {
+                    builder.Free();
+                }
+            }
+
+            return _lazyFiles;
+        }
+
+        protected override void AddEmbeddedResourcesFromAddedModules(ArrayBuilder<Cci.ManagedResource> builder, DiagnosticBag diagnostics)
+        {
+            var modules = _sourceAssembly.Modules;
+            int count = modules.Length;
+
+            for (int i = 1; i < count; i++)
+            {
+                var file = (Cci.IFileReference)Translate(modules[i] as IAssemblySymbol, diagnostics);
+
+                //try
+                //{
+                //    foreach (EmbeddedResource resource in ((Symbols.Metadata.PE.PEModuleSymbol)modules[i]).Module.GetEmbeddedResourcesOrThrow())
+                //    {
+                //        builder.Add(new Cci.ManagedResource(
+                //            resource.Name,
+                //            (resource.Attributes & ManifestResourceAttributes.Public) != 0,
+                //            null,
+                //            file,
+                //            resource.Offset));
+                //    }
+                //}
+                //catch (BadImageFormatException)
+                //{
+                //    diagnostics.Add(new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, modules[i]), NoLocation.Singleton);
+                //}
+            }
         }
     }
 }

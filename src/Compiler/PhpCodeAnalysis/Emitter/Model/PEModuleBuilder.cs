@@ -25,6 +25,10 @@ namespace Pchp.CodeAnalysis.Emit
         private readonly EmitOptions _emitOptions;
         private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
 
+        readonly StringTokenMap _stringsInILMap = new StringTokenMap();
+        readonly TokenMap<Cci.IReference> _referencesInILMap = new TokenMap<Cci.IReference>();
+        Cci.IMethodReference _peEntryPoint, _debugEntryPoint;
+
         internal readonly IEnumerable<ResourceDescription> ManifestResources;
         internal readonly CommonModuleCompilationState CompilationState;
 
@@ -57,15 +61,6 @@ namespace Pchp.CodeAnalysis.Emit
             _debugDocuments = new ConcurrentDictionary<string, Cci.DebugSourceDocument>(compilation.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
         }
 
-        internal void SetDebugEntryPoint(IMethodSymbol method, DiagnosticBag diagnostics)
-        {
-            //Debug.Assert(method == null || IsSourceDefinition((IMethodSymbol)method));
-
-            //_debugEntryPoint = Translate(method, diagnostics, needDeclaration: true);
-
-            throw new NotImplementedException();
-        }
-
         public ArrayMethods ArrayMethods
         {
             get
@@ -74,19 +69,13 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        public Cci.IAssembly AsAssembly
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public Cci.IAssembly AsAssembly => this as Cci.IAssembly;
 
         public IEnumerable<Cci.ICustomAttribute> AssemblyAttributes
         {
             get
             {
-                throw new NotImplementedException();
+                yield break; // throw new NotImplementedException();
             }
         }
 
@@ -94,15 +83,7 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
-                throw new NotImplementedException();
-            }
-        }
-
-        public Cci.IMethodReference DebugEntryPoint
-        {
-            get
-            {
-                throw new NotImplementedException();
+                yield break; // throw new NotImplementedException();
             }
         }
 
@@ -126,17 +107,11 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
-                throw new NotImplementedException();
+                return 0; // throw new NotImplementedException();
             }
         }
 
-        public OutputKind Kind
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public OutputKind Kind => _outputKind;
 
         public IEnumerable<string> LinkedAssembliesDebugInfo
         {
@@ -150,53 +125,49 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
-                throw new NotImplementedException();
+                yield break; // throw new NotImplementedException();
             }
         }
 
-        public string ModuleName
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public string ModuleName => Name;
 
         public IEnumerable<Cci.IModuleReference> ModuleReferences
         {
             get
             {
-                throw new NotImplementedException();
+                yield break; // throw new NotImplementedException();
             }
         }
 
-        public string Name
+        public virtual string Name => _sourceModule.Name;
+
+        Cci.IMethodReference Cci.IModule.PEEntryPoint => _peEntryPoint;
+        Cci.IMethodReference Cci.IModule.DebugEntryPoint => _debugEntryPoint;
+
+        internal void SetPEEntryPoint(IMethodSymbol method, DiagnosticBag diagnostics)
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            Debug.Assert(method == null || IsSourceDefinition((IMethodSymbol)method));
+            Debug.Assert(_outputKind.IsApplication());
+
+            _peEntryPoint = Translate(method, diagnostics, needDeclaration: true);
         }
 
-        public Cci.IMethodReference PEEntryPoint
+        internal void SetDebugEntryPoint(IMethodSymbol method, DiagnosticBag diagnostics)
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            Debug.Assert(method == null || IsSourceDefinition((IMethodSymbol)method));
+
+            _debugEntryPoint = Translate(method, diagnostics, needDeclaration: true);
         }
 
-        public Cci.ModulePropertiesForSerialization Properties
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public Cci.ModulePropertiesForSerialization Properties => _serializationProperties;
 
         public IEnumerable<Cci.IWin32Resource> Win32Resources
         {
             get
+            {
+                return ImmutableArray<Cci.IWin32Resource>.Empty; // throw new NotImplementedException();
+            }
+            private set
             {
                 throw new NotImplementedException();
             }
@@ -206,17 +177,15 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
-                throw new NotImplementedException();
+                return null; // throw new NotImplementedException();
             }
-        }
-
-        internal override Compilation CommonCompilation
-        {
-            get
+            private set
             {
                 throw new NotImplementedException();
             }
         }
+
+        internal override Compilation CommonCompilation => _compilation;
 
         internal override CommonEmbeddedTypesManager CommonEmbeddedTypesManagerOpt
         {
@@ -234,13 +203,7 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        internal override EmitOptions EmitOptions
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        internal override EmitOptions EmitOptions => _emitOptions;
 
         internal override bool SupportsPrivateImplClass
         {
@@ -255,9 +218,9 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
-        public void Dispatch(Cci.MetadataVisitor visitor)
+        public virtual void Dispatch(Cci.MetadataVisitor visitor)
         {
-            throw new NotImplementedException();
+            visitor.Visit((Cci.IModule)this);
         }
 
         public ImmutableArray<Cci.AssemblyReferenceAlias> GetAssemblyReferenceAliases(EmitContext context)
@@ -267,7 +230,25 @@ namespace Pchp.CodeAnalysis.Emit
 
         public IEnumerable<Cci.IAssemblyReference> GetAssemblyReferences(EmitContext context)
         {
-            throw new NotImplementedException();
+            //Cci.IAssemblyReference corLibrary = GetCorLibraryReferenceToEmit(context);
+
+            //// Only add Cor Library reference explicitly, PeWriter will add
+            //// other references implicitly on as needed basis.
+            //if (corLibrary != null)
+            //{
+            //    yield return corLibrary;
+            //}
+
+            if (_outputKind != OutputKind.NetModule)
+            {
+                //// Explicitly add references from added modules
+                //foreach (var aRef in GetAssemblyReferencesFromAddedModules(context.Diagnostics))
+                //{
+                //    yield return aRef;
+                //}
+            }
+
+            yield break;
         }
 
         public IEnumerable<Cci.ICustomAttribute> GetAttributes(EmitContext context)
@@ -277,7 +258,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         public Cci.IAssembly GetContainingAssembly(EmitContext context)
         {
-            throw new NotImplementedException();
+            return _outputKind.IsNetModule() ? null : (Cci.IAssembly)this;
         }
 
         public Cci.IAssemblyReference GetCorLibrary(EmitContext context)
@@ -287,17 +268,23 @@ namespace Pchp.CodeAnalysis.Emit
 
         public IEnumerable<Cci.ITypeReference> GetExportedTypes(EmitContext context)
         {
-            throw new NotImplementedException();
+            return ImmutableArray<Cci.ITypeReference>.Empty; // throw new NotImplementedException();
         }
 
         public uint GetFakeStringTokenForIL(string value)
         {
-            throw new NotImplementedException();
+            return _stringsInILMap.GetOrAddTokenFor(value);
         }
 
-        public uint GetFakeSymbolTokenForIL(Cci.IReference value, SyntaxNode syntaxNode, DiagnosticBag diagnostics)
+        public uint GetFakeSymbolTokenForIL(Cci.IReference symbol, SyntaxNode syntaxNode, DiagnosticBag diagnostics)
         {
-            throw new NotImplementedException();
+            bool added;
+            uint token = _referencesInILMap.GetOrAddTokenFor(symbol, out added);
+            if (added)
+            {
+                ReferenceDependencyWalker.VisitReference(symbol, new EmitContext(this, syntaxNode, diagnostics));
+            }
+            return token;
         }
 
         public Cci.IFieldReference GetFieldForData(ImmutableArray<byte> data, SyntaxNode syntaxNode, DiagnosticBag diagnostics)
@@ -307,7 +294,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         public ImmutableArray<Cci.UsedNamespaceOrType> GetImports()
         {
-            throw new NotImplementedException();
+            return ImmutableArray<Cci.UsedNamespaceOrType>.Empty; // throw new NotImplementedException();
         }
 
         public Cci.IMethodReference GetInitArrayHelper()
@@ -322,23 +309,45 @@ namespace Pchp.CodeAnalysis.Emit
 
         public Cci.IReference GetReferenceFromToken(uint token)
         {
-            throw new NotImplementedException();
+            return _referencesInILMap.GetItem(token);
         }
+
+        IEnumerable<Cci.ManagedResource> _lazyManagedResources;
 
         public IEnumerable<Cci.ManagedResource> GetResources(EmitContext context)
         {
-            throw new NotImplementedException();
+            if (_lazyManagedResources == null)
+            {
+                var builder = ArrayBuilder<Cci.ManagedResource>.GetInstance();
+
+                foreach (ResourceDescription r in ManifestResources)
+                {
+                    builder.Add(r.ToManagedResource(this));
+                }
+
+                if (_outputKind != OutputKind.NetModule)
+                {
+                    // Explicitly add resources from added modules
+                    AddEmbeddedResourcesFromAddedModules(builder, context.Diagnostics);
+                }
+
+                _lazyManagedResources = builder.ToImmutableAndFree();
+            }
+
+            return _lazyManagedResources;
+        }
+
+        protected virtual void AddEmbeddedResourcesFromAddedModules(ArrayBuilder<Cci.ManagedResource> builder, DiagnosticBag diagnostics)
+        {
+            throw new NotSupportedException(); // override
         }
 
         public string GetStringFromToken(uint token)
         {
-            throw new NotImplementedException();
+            return _stringsInILMap.GetItem(token);
         }
-
-        public IEnumerable<string> GetStrings()
-        {
-            throw new NotImplementedException();
-        }
+        
+        public IEnumerable<string> GetStrings() => _stringsInILMap.GetAllItems();
 
         public MultiDictionary<Cci.DebugSourceDocument, Cci.DefinitionWithLocation> GetSymbolToLocationMap()
         {
@@ -347,7 +356,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         public IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypes(EmitContext context)
         {
-            throw new NotImplementedException();
+            return ImmutableArray<Cci.INamespaceTypeDefinition>.Empty; //throw new NotImplementedException();
         }
 
         public bool IsPlatformType(Cci.ITypeReference typeRef, Cci.PlatformType t)
@@ -357,12 +366,12 @@ namespace Pchp.CodeAnalysis.Emit
 
         public IEnumerable<Cci.IReference> ReferencesInIL(out int count)
         {
-            throw new NotImplementedException();
+            return _referencesInILMap.GetAllItemsAndCount(out count);
         }
 
         internal override void CompilationFinished()
         {
-            throw new NotImplementedException();
+            this.CompilationState.Freeze();
         }
 
         internal override Cci.ITypeReference EncTranslateType(ITypeSymbol type, DiagnosticBag diagnostics)
@@ -398,6 +407,11 @@ namespace Pchp.CodeAnalysis.Emit
         Cci.IAssemblyReference Cci.IModuleReference.GetContainingAssembly(EmitContext context)
         {
             throw new NotImplementedException();
+        }
+
+        private bool IsSourceDefinition(IMethodSymbol method)
+        {
+            return (object)method.ContainingModule == _sourceModule && method.IsDefinition;
         }
     }
 }

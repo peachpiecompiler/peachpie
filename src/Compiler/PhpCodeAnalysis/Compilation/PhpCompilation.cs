@@ -16,6 +16,7 @@ using System.Threading;
 using Pchp.Syntax;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis
 {
@@ -29,7 +30,7 @@ namespace Pchp.CodeAnalysis
         /// while ReferenceManager "calculates" the value and assigns it, several threads must not perform duplicate
         /// "calculation" simultaneously.
         /// </summary>
-        private /*SourceAssemblySymbol*/IAssemblySymbol _lazyAssemblySymbol;
+        private SourceAssemblySymbol _lazyAssemblySymbol;
 
         /// <summary>
         /// Holds onto data related to reference binding.
@@ -50,7 +51,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// The AssemblySymbol that represents the assembly being created.
         /// </summary>
-        internal IAssemblySymbol SourceAssembly // TODO: SourceAssemblySymbol
+        internal SourceAssemblySymbol SourceAssembly // TODO: SourceAssemblySymbol
         {
             get
             {
@@ -63,6 +64,8 @@ namespace Pchp.CodeAnalysis
         /// The AssemblySymbol that represents the assembly being created.
         /// </summary>
         internal new IAssemblySymbol Assembly => SourceAssembly;
+
+        internal new PhpCompilationOptions Options => _options;
 
         private PhpCompilation(
             string assemblyName,
@@ -98,13 +101,7 @@ namespace Pchp.CodeAnalysis
             
         public override IEnumerable<AssemblyIdentity> ReferencedAssemblyNames => Assembly.Modules.SelectMany(module => module.ReferencedAssemblies);
 
-        protected override IAssemblySymbol CommonAssembly
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        protected override IAssemblySymbol CommonAssembly => SourceAssembly;
 
         protected override ITypeSymbol CommonDynamicType
         {
@@ -140,11 +137,16 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        /// <summary>
+        /// Get a ModuleSymbol that refers to the module being created by compiling all of the code.
+        /// By getting the GlobalNamespace property of that module, all of the namespaces and types
+        /// defined in source code can be obtained.
+        /// </summary>
         protected override IModuleSymbol CommonSourceModule
         {
             get
             {
-                throw new NotImplementedException();
+                return _lazyAssemblySymbol.Modules[0];
             }
         }
 
@@ -540,19 +542,18 @@ namespace Pchp.CodeAnalysis
             if (win32Resources == null)
                 return;
 
-            throw new NotImplementedException();
-            //switch (DetectWin32ResourceForm(win32Resources))
-            //{
-            //    case Win32ResourceForm.COFF:
-            //        moduleBeingBuilt.Win32ResourceSection = MakeWin32ResourcesFromCOFF(win32Resources, diagnostics);
-            //        break;
-            //    case Win32ResourceForm.RES:
-            //        moduleBeingBuilt.Win32Resources = MakeWin32ResourceList(win32Resources, diagnostics);
-            //        break;
-            //    default:
-            //        diagnostics.Add(ErrorCode.ERR_BadWin32Res, NoLocation.Singleton, "Unrecognized file format.");
-            //        break;
-            //}
+            switch (DetectWin32ResourceForm(win32Resources))
+            {
+                case Win32ResourceForm.COFF:
+                    //moduleBeingBuilt.Win32ResourceSection = MakeWin32ResourcesFromCOFF(win32Resources, diagnostics);
+                    break;
+                case Win32ResourceForm.RES:
+                    //moduleBeingBuilt.Win32Resources = MakeWin32ResourceList(win32Resources, diagnostics);
+                    break;
+                default:
+                    //diagnostics.Add(ErrorCode.ERR_BadWin32Res, NoLocation.Singleton, "Unrecognized file format.");
+                    break;
+            }
         }
 
         internal override CommonPEModuleBuilder CreateModuleBuilder(EmitOptions emitOptions, IMethodSymbol debugEntryPoint, IEnumerable<ResourceDescription> manifestResources, CompilationTestData testData, DiagnosticBag diagnostics, CancellationToken cancellationToken)
@@ -587,8 +588,7 @@ namespace Pchp.CodeAnalysis
             {
                 var kind = _options.OutputKind.IsValid() ? _options.OutputKind : OutputKind.DynamicallyLinkedLibrary;
                 moduleBeingBuilt = new PEAssemblyBuilder(
-                    this,
-                    SourceAssembly.Modules.First(),
+                    SourceAssembly,
                     moduleProps,
                     manifestResources,
                     kind,
@@ -618,7 +618,8 @@ namespace Pchp.CodeAnalysis
 
         internal override bool FilterAndAppendAndFreeDiagnostics(DiagnosticBag accumulator, ref DiagnosticBag incoming)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            return true;
         }
 
         internal override int GetSyntaxTreeOrdinal(SyntaxTree tree)

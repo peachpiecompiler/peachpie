@@ -68,6 +68,7 @@
       <DependentUpon>PhpResources.resx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Symbols\AssemblySymbol.cs" />
     <Compile Include="Symbols\Source\SourceAssemblySymbol.cs" />
     <Compile Include="Symbols\Source\SourceModuleSymbol.cs" />
     <Compile Include="Symbols\Symbol.cs" />
