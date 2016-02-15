@@ -74,11 +74,18 @@
     <Compile Include="Symbols\NamedTypeSymbol.cs" />
     <Compile Include="Symbols\NamespaceOrTypeSymbol.cs" />
     <Compile Include="Symbols\NamespaceSymbol.cs" />
+    <Compile Include="Symbols\Source\MemberAttributesAdapter.cs" />
     <Compile Include="Symbols\Source\SourceAssemblySymbol.cs" />
     <Compile Include="Symbols\Source\SourceModuleSymbol.cs" />
     <Compile Include="Symbols\Source\SourceNamedTypeSymbol.cs" />
+    <Compile Include="Symbols\Source\SourceNamespaceSymbol.cs" />
+    <Compile Include="Symbols\Source\SourceSymbolTables.cs" />
     <Compile Include="Symbols\Symbol.cs" />
+    <Compile Include="Symbols\ISymbolTables.cs" />
     <Compile Include="Symbols\TypeSymbol.cs" />
+    <Compile Include="Utilities\Contract.cs" />
+    <Compile Include="Utilities\EnumeratorExtension.cs" />
+    <Compile Include="Utilities\NameUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -87,7 +94,6 @@
     <Folder Include="Binder\" />
     <Folder Include="BoundTree\" />
     <Folder Include="CodeGen\" />
-    <Folder Include="Utilities\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="PhpResources.resx">

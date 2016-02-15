@@ -435,10 +435,6 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        // DEBUG: to declarations map
-        List<SourceNamedTypeSymbol> _types = null;
-        
-
         internal virtual IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypesCore(EmitContext context)
         {
             //foreach (var type in GetAdditionalTopLevelTypes())
@@ -446,18 +442,9 @@ namespace Pchp.CodeAnalysis.Emit
             //    yield return type;
             //}
 
-            if (_types == null)
-            {
-                // DEBUG: to declarations map
-                _types = new List<SourceNamedTypeSymbol>();
-                foreach (var t in _compilation._syntaxtreestmp.SelectMany(u => u.Ast.Statements).OfType<Syntax.AST.TypeDecl>())
-                {
-                    _types.Add(new SourceNamedTypeSymbol(_sourceModule, t));
-                }
-            }
-
-            foreach (var t in _types)
-                yield return t;
+            return _sourceModule.SymbolTables
+                .GetTypes()
+                .Cast<Cci.INamespaceTypeDefinition>();
 
             //var namespacesToProcess = new Stack<INamespaceSymbol>();
             //namespacesToProcess.Push(this.SourceModule.GlobalNamespace);

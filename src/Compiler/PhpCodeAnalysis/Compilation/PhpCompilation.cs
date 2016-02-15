@@ -22,6 +22,8 @@ namespace Pchp.CodeAnalysis
 {
     internal sealed partial class PhpCompilation : Compilation
     {
+        readonly SourceSymbolTables _tables;
+
         readonly PhpCompilationOptions _options;
 
         /// <summary>
@@ -41,7 +43,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         private ReferenceManager _referenceManager;
 
-        //private readonly SyntaxAndDeclarationManager _syntaxAndDeclarations;
+        /// <summary>
+        /// Tables containing all source symbols to be compiled.
+        /// Used for enumeration and lookup.
+        /// </summary>
+        public ISymbolTables SourceSymbolTables => _tables;
 
         ///// <summary>
         ///// Contains the main method of this assembly, if there is one.
@@ -51,7 +57,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// The AssemblySymbol that represents the assembly being created.
         /// </summary>
-        internal SourceAssemblySymbol SourceAssembly // TODO: SourceAssemblySymbol
+        internal SourceAssemblySymbol SourceAssembly
         {
             get
             {
@@ -59,6 +65,8 @@ namespace Pchp.CodeAnalysis
                 return _lazyAssemblySymbol;
             }
         }
+
+        internal new SourceModuleSymbol SourceModule => (SourceModuleSymbol)this.SourceAssembly.Modules[0];
 
         /// <summary>
         /// The AssemblySymbol that represents the assembly being created.
@@ -79,6 +87,7 @@ namespace Pchp.CodeAnalysis
         {
             _options = options;
             _referenceManager = new ReferenceManager();
+            _tables = new SourceSymbolTables();
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences
@@ -142,13 +151,7 @@ namespace Pchp.CodeAnalysis
         /// By getting the GlobalNamespace property of that module, all of the namespaces and types
         /// defined in source code can be obtained.
         /// </summary>
-        protected override IModuleSymbol CommonSourceModule
-        {
-            get
-            {
-                return _lazyAssemblySymbol.Modules[0];
-            }
-        }
+        protected override IModuleSymbol CommonSourceModule => this.SourceModule;
 
         protected override IEnumerable<SyntaxTree> CommonSyntaxTrees
         {
@@ -196,11 +199,10 @@ namespace Pchp.CodeAnalysis
                 options,
                 ValidateReferences<CompilationReference>(references));
 
-            if (syntaxTrees != null)
-            {
-                compilation = compilation.AddSyntaxTrees(syntaxTrees);
-            }
+            //
+            compilation._tables.PopulateTables(compilation, syntaxTrees);
 
+            //
             return compilation;
         }
 
@@ -319,14 +321,6 @@ namespace Pchp.CodeAnalysis
                 //companyName: sourceAssembly.Company
                 assemblyVersion: sourceAssembly.Identity.Version
                 );
-        }
-
-        internal ImmutableArray<SourceUnit> _syntaxtreestmp;
-
-        public PhpCompilation AddSyntaxTrees(IEnumerable<SourceUnit> syntaxTrees)
-        {
-            _syntaxtreestmp = syntaxTrees.AsImmutable();
-            return this;
         }
 
         protected override Compilation CommonAddSyntaxTrees(IEnumerable<SyntaxTree> trees)

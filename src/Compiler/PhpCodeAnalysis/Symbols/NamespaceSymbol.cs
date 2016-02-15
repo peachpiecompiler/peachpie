@@ -101,13 +101,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets the kind of this symbol.
         /// </summary>
-        public sealed override SymbolKind Kind
-        {
-            get
-            {
-                return SymbolKind.Namespace;
-            }
-        }
+        public sealed override SymbolKind Kind => SymbolKind.Namespace;
 
         public override sealed bool IsImplicitlyDeclared
         {

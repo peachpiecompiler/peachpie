@@ -39,7 +39,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             var moduleBuilder = new ArrayBuilder<IModuleSymbol>(1);
 
-            moduleBuilder.Add(new SourceModuleSymbol(this, /*compilation.Declarations,*/ moduleName));
+            moduleBuilder.Add(new SourceModuleSymbol(this, compilation.SourceSymbolTables, moduleName));
 
             //var importOptions = (compilation.Options.MetadataImportOptions == MetadataImportOptions.All) ?
             //    MetadataImportOptions.All : MetadataImportOptions.Internal;

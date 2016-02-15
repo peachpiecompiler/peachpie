@@ -13,29 +13,24 @@ namespace Pchp.CodeAnalysis.Symbols
     internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol
     {
         readonly TypeDecl _syntax;
-        readonly SourceModuleSymbol _sourceModule;
+        readonly Symbol _container;
 
-        public SourceNamedTypeSymbol(SourceModuleSymbol module, TypeDecl syntax)
+        public SourceNamedTypeSymbol(Symbol container, TypeDecl syntax)
         {
             _syntax = syntax;
-            _sourceModule = module;
+            _container = container;
         }
 
-        internal override IModuleSymbol ContainingModule => _sourceModule;
+        internal override IModuleSymbol ContainingModule
+            => (_container is IModuleSymbol) ? (IModuleSymbol)_container : _container.ContainingModule;
 
-        public override Symbol ContainingSymbol => _sourceModule;
+        public override Symbol ContainingSymbol => _container;
 
         public override string Name => _syntax.Name.Value;
 
         public override TypeKind TypeKind => TypeKind.Class;
 
-        public override Accessibility DeclaredAccessibility
-        {
-            get
-            {
-                return Accessibility.Public;
-            }
-        }
+        public override Accessibility DeclaredAccessibility => _syntax.MemberAttributes.GetAccessibility();
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
@@ -45,11 +40,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override bool IsAbstract => (_syntax.MemberAttributes & PhpMemberAttributes.Abstract) != 0;
+        public override bool IsAbstract => _syntax.MemberAttributes.IsAbstract();
 
-        public override bool IsSealed => (_syntax.MemberAttributes & PhpMemberAttributes.Final) != 0;
+        public override bool IsSealed => _syntax.MemberAttributes.IsSealed();
 
-        public override bool IsStatic => (_syntax.MemberAttributes & PhpMemberAttributes.Static) != 0;
+        public override bool IsStatic => _syntax.MemberAttributes.IsStatic();
 
         public override SymbolKind Kind => SymbolKind.NamedType;
 

@@ -1034,8 +1034,9 @@ namespace Pchp.CodeAnalysis
 
         string ISymbol.ToDisplayString(SymbolDisplayFormat format)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
             //return SymbolDisplay.ToDisplayString(this, format);
+            return this.Name;
         }
 
         ImmutableArray<SymbolDisplayPart> ISymbol.ToDisplayParts(SymbolDisplayFormat format)
