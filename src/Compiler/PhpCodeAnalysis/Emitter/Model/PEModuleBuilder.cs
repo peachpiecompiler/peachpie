@@ -1,6 +1,4 @@
-﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
-
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -27,6 +25,7 @@ namespace Pchp.CodeAnalysis.Emit
         private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
 
         readonly StringTokenMap _stringsInILMap = new StringTokenMap();
+        readonly ConcurrentDictionary<IMethodSymbol, Cci.IMethodBody> _methodBodyMap = new ConcurrentDictionary<IMethodSymbol, Cci.IMethodBody>(ReferenceEqualityComparer.Instance);
         readonly TokenMap<Cci.IReference> _referencesInILMap = new TokenMap<Cci.IReference>();
         readonly Cci.RootModuleType _rootModuleType = new Cci.RootModuleType();
         Cci.IMethodReference _peEntryPoint, _debugEntryPoint;
@@ -109,13 +108,7 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        public int HintNumberOfMethodDefinitions
-        {
-            get
-            {
-                return 0; // throw new NotImplementedException();
-            }
-        }
+        public int HintNumberOfMethodDefinitions => _methodBodyMap.Count;
 
         public OutputKind Kind => _outputKind;
 
@@ -166,6 +159,36 @@ namespace Pchp.CodeAnalysis.Emit
 
             _debugEntryPoint = Translate(method, diagnostics, needDeclaration: true);
         }
+
+        #region Method Body Map
+
+        internal Cci.IMethodBody GetMethodBody(IMethodSymbol methodSymbol)
+        {
+            Debug.Assert(((IMethodSymbol)methodSymbol).ContainingModule == this.SourceModule);
+            Debug.Assert(((IMethodSymbol)methodSymbol).IsDefinition);
+            Debug.Assert(((IMethodSymbol)methodSymbol).PartialDefinitionPart == null); // Must be definition.
+
+            Cci.IMethodBody body;
+
+            if (_methodBodyMap.TryGetValue(methodSymbol, out body))
+            {
+                return body;
+            }
+
+            return null;
+        }
+
+        public void SetMethodBody(IMethodSymbol methodSymbol, Cci.IMethodBody body)
+        {
+            Debug.Assert(((IMethodSymbol)methodSymbol).ContainingModule == this.SourceModule);
+            Debug.Assert(((IMethodSymbol)methodSymbol).IsDefinition);
+            Debug.Assert(((IMethodSymbol)methodSymbol).PartialDefinitionPart == null); // Must be definition.
+            Debug.Assert(body == null || (object)methodSymbol == body.MethodDefinition);
+
+            _methodBodyMap.Add(methodSymbol, body);
+        }
+
+        #endregion
 
         public Cci.ModulePropertiesForSerialization Properties => _serializationProperties;
 

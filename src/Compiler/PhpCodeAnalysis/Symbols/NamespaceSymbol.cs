@@ -2,12 +2,12 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Cci = Microsoft.Cci;
+using Microsoft.CodeAnalysis;
+using System;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    using Microsoft.CodeAnalysis;
-    using System;
-    using Cci = Microsoft.Cci;
+
     /// <summary>
     /// Represents a namespace.
     /// </summary>
