@@ -54,6 +54,8 @@ namespace Pchp.CodeAnalysis.Symbols
             _modules = moduleBuilder.ToImmutableAndFree();
         }
 
+        internal SourceModuleSymbol SourceModule => (SourceModuleSymbol)_modules[0];
+
         public override ImmutableArray<IModuleSymbol> Modules => _modules;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences

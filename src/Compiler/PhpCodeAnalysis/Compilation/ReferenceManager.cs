@@ -54,8 +54,10 @@ namespace Pchp.CodeAnalysis
             {
                 if (compilation._lazyAssemblySymbol == null)
                 {
-                    compilation._lazyAssemblySymbol = new SourceAssemblySymbol(compilation, compilation.Options.ModuleName, compilation.Options.ModuleName);
-                    //throw new NotImplementedException();
+                    var assembly = new SourceAssemblySymbol(compilation, compilation.Options.ModuleName, compilation.Options.ModuleName);
+                    compilation._lazyAssemblySymbol = assembly;
+
+                    assembly.SourceModule.SetReferences(new ModuleReferences<AssemblySymbol>(ImmutableArray<AssemblyIdentity>.Empty, ImmutableArray<AssemblySymbol>.Empty, ImmutableArray<UnifiedAssembly<AssemblySymbol>>.Empty), assembly);
                 }
             }
         }

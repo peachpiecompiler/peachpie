@@ -68,5 +68,13 @@ namespace Pchp.CodeAnalysis.Symbols
             _modules = modules.AsImmutableOrNull();
             _isLinked = isLinked;
         }
+
+        internal static PEAssemblySymbol CreateFromFile(string path)
+        {
+            var data = AssemblyMetadata.CreateFromFile(path);
+            var ass = data.GetAssembly();
+
+            return new PEAssemblySymbol(ass, DocumentationProvider.Default, true, MetadataImportOptions.Public);
+        }
     }
 }

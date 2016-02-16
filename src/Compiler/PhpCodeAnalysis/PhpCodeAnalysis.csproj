@@ -57,10 +57,11 @@
     <Compile Include="Compilation\PhpCompilationOptions.cs" />
     <Compile Include="Compilation\ReferenceManager.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Emitter\Model\AssemblyReference.cs" />
     <Compile Include="Emitter\Model\MethodSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\NamedTypeSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\NamespaceSymbolAdapter.cs" />
-    <Compile Include="Emitter\Model\ParameterSymbol.cs" />
+    <Compile Include="Emitter\Model\ParameterSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\PEAssemblyBuilder.cs" />
     <Compile Include="Emitter\Model\PEModuleBuilder.cs" />
     <Compile Include="Emitter\Model\PENetModuleBuilder.cs" />

@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis;
 using Cci = Microsoft.Cci;
 using Microsoft.CodeAnalysis.Emit.NoPia;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.CodeAnalysis.Emitter;
 
 namespace Pchp.CodeAnalysis.Emit
 {
@@ -24,6 +25,7 @@ namespace Pchp.CodeAnalysis.Emit
         private readonly EmitOptions _emitOptions;
         private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
 
+        protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly StringTokenMap _stringsInILMap = new StringTokenMap();
         readonly ConcurrentDictionary<IMethodSymbol, Cci.IMethodBody> _methodBodyMap = new ConcurrentDictionary<IMethodSymbol, Cci.IMethodBody>(ReferenceEqualityComparer.Instance);
         readonly TokenMap<Cci.IReference> _referencesInILMap = new TokenMap<Cci.IReference>();
@@ -62,6 +64,8 @@ namespace Pchp.CodeAnalysis.Emit
             _emitOptions = emitOptions;
             this.CompilationState = new CommonModuleCompilationState();
             _debugDocuments = new ConcurrentDictionary<string, Cci.DebugSourceDocument>(compilation.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+
+            AssemblyOrModuleSymbolToModuleRefMap.Add(sourceModule, this);
         }
 
         public IModuleSymbol SourceModule => _sourceModule;
@@ -264,14 +268,25 @@ namespace Pchp.CodeAnalysis.Emit
 
             if (_outputKind != OutputKind.NetModule)
             {
-                //// Explicitly add references from added modules
-                //foreach (var aRef in GetAssemblyReferencesFromAddedModules(context.Diagnostics))
-                //{
-                //    yield return aRef;
-                //}
+                // Explicitly add references from added modules
+                foreach (var aRef in GetAssemblyReferencesFromAddedModules(context.Diagnostics))
+                {
+                    yield return aRef;
+                }
             }
 
             yield break;
+        }
+
+        protected IEnumerable<Cci.IAssemblyReference> GetAssemblyReferencesFromAddedModules(DiagnosticBag diagnostics)
+        {
+            foreach (ModuleSymbol m in _sourceModule.ContainingAssembly.Modules)
+            {
+                foreach (AssemblySymbol aRef in m.ReferencedAssemblySymbols)
+                {
+                    yield return Translate(aRef, diagnostics);
+                }
+            }
         }
 
         public IEnumerable<Cci.ICustomAttribute> GetAttributes(EmitContext context)
@@ -625,9 +640,81 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
-        internal override Cci.IAssemblyReference Translate(IAssemblySymbol symbol, DiagnosticBag diagnostics)
+        internal override Cci.IAssemblyReference Translate(IAssemblySymbol iassembly, DiagnosticBag diagnostics)
         {
-            throw new NotImplementedException();
+            var assembly = (AssemblySymbol)iassembly;
+
+            if (ReferenceEquals(SourceModule.ContainingAssembly, assembly))
+            {
+                return (Cci.IAssemblyReference)this;
+            }
+
+            Cci.IModuleReference reference;
+
+            if (AssemblyOrModuleSymbolToModuleRefMap.TryGetValue(assembly, out reference))
+            {
+                return (Cci.IAssemblyReference)reference;
+            }
+
+            AssemblyReference asmRef = new AssemblyReference(assembly);
+
+            AssemblyReference cachedAsmRef = (AssemblyReference)AssemblyOrModuleSymbolToModuleRefMap.GetOrAdd(assembly, asmRef);
+
+            if (cachedAsmRef == asmRef)
+            {
+                ValidateReferencedAssembly(assembly, cachedAsmRef, diagnostics);
+            }
+
+            // TryAdd because whatever is associated with assembly should be associated with Modules[0]
+            AssemblyOrModuleSymbolToModuleRefMap.TryAdd((ModuleSymbol)assembly.Modules[0], cachedAsmRef);
+
+            return cachedAsmRef;
+        }
+
+        private void ValidateReferencedAssembly(AssemblySymbol assembly, AssemblyReference asmRef, DiagnosticBag diagnostics)
+        {
+            //AssemblyIdentity asmIdentity = SourceModule.ContainingAssembly.Identity;
+            //AssemblyIdentity refIdentity = asmRef.MetadataIdentity;
+
+            //if (asmIdentity.IsStrongName && !refIdentity.IsStrongName &&
+            //    ((Cci.IAssemblyReference)asmRef).ContentType != System.Reflection.AssemblyContentType.WindowsRuntime)
+            //{
+            //    // Dev12 reported error, we have changed it to a warning to allow referencing libraries 
+            //    // built for platforms that don't support strong names.
+            //    diagnostics.Add(new CSDiagnosticInfo(ErrorCode.WRN_ReferencedAssemblyDoesNotHaveStrongName, assembly), NoLocation.Singleton);
+            //}
+
+            //if (OutputKind != OutputKind.NetModule &&
+            //   !string.IsNullOrEmpty(refIdentity.CultureName) &&
+            //   !string.Equals(refIdentity.CultureName, asmIdentity.CultureName, StringComparison.OrdinalIgnoreCase))
+            //{
+            //    diagnostics.Add(new CSDiagnosticInfo(ErrorCode.WRN_RefCultureMismatch, assembly, refIdentity.CultureName), NoLocation.Singleton);
+            //}
+
+            //var refMachine = assembly.Machine;
+            //// If other assembly is agnostic this is always safe
+            //// Also, if no mscorlib was specified for back compat we add a reference to mscorlib
+            //// that resolves to the current framework directory. If the compiler is 64-bit
+            //// this is a 64-bit mscorlib, which will produce a warning if /platform:x86 is
+            //// specified. A reference to the default mscorlib should always succeed without
+            //// warning so we ignore it here.
+            //if ((object)assembly != (object)assembly.CorLibrary &&
+            //    !(refMachine == Machine.I386 && !assembly.Bit32Required))
+            //{
+            //    var machine = SourceModule.Machine;
+
+            //    if (!(machine == Machine.I386 && !SourceModule.Bit32Required) &&
+            //        machine != refMachine)
+            //    {
+            //        // Different machine types, and neither is agnostic
+            //        diagnostics.Add(new CSDiagnosticInfo(ErrorCode.WRN_ConflictingMachineAssembly, assembly), NoLocation.Singleton);
+            //    }
+            //}
+
+            //if (_embeddedTypesManagerOpt != null && _embeddedTypesManagerOpt.IsFrozen)
+            //{
+            //    _embeddedTypesManagerOpt.ReportIndirectReferencesToLinkedAssemblies(assembly, diagnostics);
+            //}
         }
 
         internal override Cci.IMethodReference Translate(IMethodSymbol symbol, DiagnosticBag diagnostics, bool needDeclaration)

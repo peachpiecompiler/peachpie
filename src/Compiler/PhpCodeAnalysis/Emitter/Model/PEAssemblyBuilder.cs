@@ -45,6 +45,8 @@ namespace Pchp.CodeAnalysis.Emit
         {
             _sourceAssembly = sourceAssembly;
             _metadataName = (emitOptions.OutputNameOverride == null) ? sourceAssembly.MetadataName : FileNameUtilities.ChangeExtension(emitOptions.OutputNameOverride, extension: null);
+
+            AssemblyOrModuleSymbolToModuleRefMap.Add(sourceAssembly, this);
         }
 
         public override void Dispatch(Cci.MetadataVisitor visitor)

@@ -5,11 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     internal abstract partial class ModuleSymbol : Symbol, IModuleSymbol
     {
+        ModuleReferences<AssemblySymbol> _moduleReferences;
+
         internal override IModuleSymbol ContainingModule => null;
 
         public override Accessibility DeclaredAccessibility => Accessibility.NotApplicable;
@@ -50,20 +53,29 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual ImmutableArray<AssemblyIdentity> ReferencedAssemblies
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public virtual ImmutableArray<AssemblyIdentity> ReferencedAssemblies => _moduleReferences.Identities;
 
-        public virtual ImmutableArray<IAssemblySymbol> ReferencedAssemblySymbols
+        /// <summary>
+        /// Returns an array of AssemblySymbol objects corresponding to assemblies referenced 
+        /// by this module. Items at the same position from ReferencedAssemblies and 
+        /// from ReferencedAssemblySymbols correspond to each other. If reference is 
+        /// not resolved by compiler, GetReferencedAssemblySymbols returns MissingAssemblySymbol in the
+        /// corresponding item.
+        /// 
+        /// The array and its content is provided by ReferenceManager and must not be modified.
+        /// </summary>
+        public virtual ImmutableArray<IAssemblySymbol> ReferencedAssemblySymbols => StaticCast<IAssemblySymbol>.From(_moduleReferences.Symbols);
+
+        /// <summary>
+        /// A helper method for ReferenceManager to set assembly identities for assemblies 
+        /// referenced by this module and corresponding AssemblySymbols.
+        /// </summary>
+        internal void SetReferences(ModuleReferences<AssemblySymbol> moduleReferences, SourceAssemblySymbol originatingSourceAssemblyDebugOnly = null)
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            Debug.Assert(_moduleReferences == null);
+            Debug.Assert(moduleReferences != null);
+
+            _moduleReferences = moduleReferences;
         }
 
         public virtual ModuleMetadata GetMetadata()
