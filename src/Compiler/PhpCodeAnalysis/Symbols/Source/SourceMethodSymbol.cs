@@ -16,6 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly NamedTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;
+        readonly ImmutableArray<ParameterSymbol> _params;
 
         public SourceMethodSymbol(NamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
         {
@@ -24,6 +25,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _type = type;
             _syntax = syntax;
+            _params = BuildParameters().ToImmutableArray();
+        }
+
+        IEnumerable<ParameterSymbol> BuildParameters()
+        {
+            int index = 0;
+
+            foreach (var p in _syntax.Signature.FormalParams)
+            {
+                yield return new SourceParameterSymbol(this, p, index++);
+            }
         }
 
         public override Symbol ContainingSymbol => _type;
@@ -76,19 +88,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override ImmutableArray<IParameterSymbol> Parameters
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override ImmutableArray<IParameterSymbol> Parameters => StaticCast<IParameterSymbol>.From(_params);
 
         public override bool ReturnsVoid
         {
             get
             {
-                throw new NotImplementedException();
+                return false; // throw new NotImplementedException();
             }
         }
 

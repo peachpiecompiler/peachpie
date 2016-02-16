@@ -24,6 +24,18 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// Should the name returned by Name property be mangled with [`arity] suffix in order to get metadata name.
+        /// Must return False for a type with Arity == 0.
+        /// </summary>
+        internal abstract bool MangleName
+        {
+            // Intentionally no default implementation to force consideration of appropriate implementation for each new subclass
+            get;
+        }
+
+        public override SymbolKind Kind => SymbolKind.NamedType;
+
         public ISymbol AssociatedSymbol => null;
 
         public virtual INamedTypeSymbol ConstructedFrom

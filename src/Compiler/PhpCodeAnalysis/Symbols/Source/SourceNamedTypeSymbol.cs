@@ -81,6 +81,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal override bool MangleName => false;
+
         public override ImmutableArray<Symbol> GetMembers()
         {
             return StaticCast<Symbol>.From(_methods);   // TODO: + props, constants
