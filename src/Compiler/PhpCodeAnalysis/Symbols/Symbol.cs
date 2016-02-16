@@ -95,13 +95,13 @@ namespace Pchp.CodeAnalysis
         /// Gets the nearest enclosing namespace for this namespace or type. For a nested type,
         /// returns the namespace that contains its container.
         /// </summary>
-        public virtual INamespaceSymbol ContainingNamespace
+        public virtual NamespaceSymbol ContainingNamespace
         {
             get
             {
                 for (var container = this.ContainingSymbol; (object)container != null; container = container.ContainingSymbol)
                 {
-                    var ns = container as INamespaceSymbol;
+                    var ns = container as NamespaceSymbol;
                     if ((object)ns != null)
                     {
                         return ns;

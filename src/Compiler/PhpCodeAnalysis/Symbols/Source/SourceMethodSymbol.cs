@@ -1,0 +1,109 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Pchp.Syntax.AST;
+
+namespace Pchp.CodeAnalysis.Symbols
+{
+    /// <summary>
+    /// Represents a PHP class method.
+    /// </summary>
+    internal sealed class SourceMethodSymbol : MethodSymbol
+    {
+        readonly NamedTypeSymbol _type;
+        readonly MethodDecl/*!*/_syntax;
+
+        public SourceMethodSymbol(NamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
+        {
+            Contract.ThrowIfNull(type);
+            Contract.ThrowIfNull(syntax);
+
+            _type = type;
+            _syntax = syntax;
+        }
+
+        public override Symbol ContainingSymbol => _type;
+
+        public override Accessibility DeclaredAccessibility => _syntax.Modifiers.GetAccessibility();
+
+        public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override bool IsAbstract => _syntax.Modifiers.IsAbstract();
+
+        public override bool IsExtern => false;
+
+        public override bool IsOverride
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override bool IsSealed => _syntax.Modifiers.IsSealed();
+
+        public override bool IsStatic => _syntax.Modifiers.IsStatic();
+
+        public override bool IsVirtual => !IsSealed && !_type.IsSealed && !IsStatic;
+
+        public override SymbolKind Kind => SymbolKind.Method;
+
+        public override ImmutableArray<Location> Locations
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override MethodKind MethodKind
+        {
+            get
+            {
+                // TODO: ctor, dtor, props, magic, ...
+
+                return MethodKind.Ordinary;
+            }
+        }
+
+        public override ImmutableArray<IParameterSymbol> Parameters
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override bool ReturnsVoid
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override ITypeSymbol ReturnType
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
+
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
+
+        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => false;
+    }
+}

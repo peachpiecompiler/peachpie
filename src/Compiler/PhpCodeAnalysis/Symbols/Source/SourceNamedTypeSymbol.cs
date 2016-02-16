@@ -13,17 +13,30 @@ namespace Pchp.CodeAnalysis.Symbols
     internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol
     {
         readonly TypeDecl _syntax;
-        readonly SourceModuleSymbol _module;
+        readonly PhpCompilation _compilation;
 
-        public SourceNamedTypeSymbol(SourceModuleSymbol module, TypeDecl syntax)
+        readonly ImmutableArray<SourceMethodSymbol> _methods;
+
+        public SourceNamedTypeSymbol(PhpCompilation compilation, TypeDecl syntax)
         {
             _syntax = syntax;
-            _module = module;
+            _compilation = compilation;
+            _methods = GenerateMethods().ToImmutableArray();
         }
 
-        internal override IModuleSymbol ContainingModule => _module;
+        IEnumerable<SourceMethodSymbol> GenerateMethods()
+        {
+            foreach (var m in _syntax.Members.OfType<MethodDecl>())
+            {
+                yield return new SourceMethodSymbol(this, m);
+            }
+        }
 
-        public override Symbol ContainingSymbol => _module;
+        internal override IModuleSymbol ContainingModule => _compilation.SourceModule;
+
+        public override Symbol ContainingSymbol => _compilation.SourceModule;
+
+        internal override PhpCompilation DeclaringCompilation => _compilation;
 
         public override string Name => _syntax.Name.Value;
 
@@ -70,7 +83,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers()
         {
-            return ImmutableArray<Symbol>.Empty;
+            return StaticCast<Symbol>.From(_methods);   // TODO: + props, constants
         }
 
         public override ImmutableArray<Symbol> GetMembers(string name)

@@ -640,6 +640,11 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
+        internal ImmutableArray<Cci.IParameterTypeInformation> Translate(ImmutableArray<IParameterSymbol> @params)
+        {
+            return @params.Cast<Cci.IParameterTypeInformation>().ToImmutableArray();
+        }
+
         Cci.IAssemblyReference Cci.IModuleReference.GetContainingAssembly(EmitContext context)
         {
             throw new NotImplementedException();
@@ -648,6 +653,21 @@ namespace Pchp.CodeAnalysis.Emit
         private bool IsSourceDefinition(IMethodSymbol method)
         {
             return (object)method.ContainingModule == _sourceModule && method.IsDefinition;
+        }
+
+        public static bool IsGenericType(INamedTypeSymbol toCheck)
+        {
+            while ((object)toCheck != null)
+            {
+                if (toCheck.Arity > 0)
+                {
+                    return true;
+                }
+
+                toCheck = toCheck.ContainingType;
+            }
+
+            return false;
         }
     }
 }

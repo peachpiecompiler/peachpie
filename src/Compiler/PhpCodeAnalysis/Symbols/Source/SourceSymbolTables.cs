@@ -42,12 +42,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public override void VisitFunctionDecl(FunctionDecl x)
             {
-                // _tables._functions.Add ...
+                _tables._functions.Add(NameUtils.MakeQualifiedName(x.Name, x.Namespace), new SourceFunctionSymbol(_compilation, x));
             }
 
             public override void VisitTypeDecl(TypeDecl x)
             {
-                _tables._types.Add(x.MakeQualifiedName(), new SourceNamedTypeSymbol(_compilation.SourceModule, x));
+                _tables._types.Add(x.MakeQualifiedName(), new SourceNamedTypeSymbol(_compilation, x));
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -19,13 +20,13 @@ namespace Pchp.CodeAnalysis
         [Conditional("DEBUG")]
         internal protected void CheckDefinitionInvariant()
         {
-            //// can't be generic instantiation
-            //Debug.Assert(this.IsDefinition);
+            // can't be generic instantiation
+            Debug.Assert(this.IsDefinition);
 
-            //// must be declared in the module we are building
-            //Debug.Assert(this.ContainingModule is SourceModuleSymbol ||
-            //             (this.Kind == SymbolKind.Assembly && this is SourceAssemblySymbol) ||
-            //             (this.Kind == SymbolKind.NetModule && this is SourceModuleSymbol));
+            // must be declared in the module we are building
+            Debug.Assert(this.ContainingModule is SourceModuleSymbol ||
+                         (this.Kind == SymbolKind.Assembly && this is SourceAssemblySymbol) ||
+                         (this.Kind == SymbolKind.NetModule && this is SourceModuleSymbol));
         }
 
         /// <summary>
