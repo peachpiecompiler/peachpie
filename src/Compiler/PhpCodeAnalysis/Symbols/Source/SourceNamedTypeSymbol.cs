@@ -13,20 +13,22 @@ namespace Pchp.CodeAnalysis.Symbols
     internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol
     {
         readonly TypeDecl _syntax;
-        readonly Symbol _container;
+        readonly SourceModuleSymbol _module;
 
-        public SourceNamedTypeSymbol(Symbol container, TypeDecl syntax)
+        public SourceNamedTypeSymbol(SourceModuleSymbol module, TypeDecl syntax)
         {
             _syntax = syntax;
-            _container = container;
+            _module = module;
         }
 
-        internal override IModuleSymbol ContainingModule
-            => (_container is IModuleSymbol) ? (IModuleSymbol)_container : _container.ContainingModule;
+        internal override IModuleSymbol ContainingModule => _module;
 
-        public override Symbol ContainingSymbol => _container;
+        public override Symbol ContainingSymbol => _module;
 
         public override string Name => _syntax.Name.Value;
+
+        public override string NamespaceName
+            => (_syntax.Namespace != null) ? _syntax.Namespace.QualifiedName.ClrName() : string.Empty;
 
         public override TypeKind TypeKind => TypeKind.Class;
 

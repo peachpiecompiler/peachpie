@@ -23,9 +23,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             readonly SourceSymbolTables _tables;
             readonly PhpCompilation _compilation;
-
-            ConcurrentDictionary<NamespaceDecl, SourceNamespaceSymbol> _nss;
-
+            
             public PopulatorVisitor(PhpCompilation compilation, SourceSymbolTables tables)
             {
                 _tables = tables;
@@ -34,11 +32,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public void VisitSourceUnit(SourceUnit unit)
             {
-                _nss = new ConcurrentDictionary<NamespaceDecl, SourceNamespaceSymbol>();
+                if (unit != null && unit.Ast != null)
+                {
+                    _tables._files.Add(unit.FilePath, unit.Ast);
 
-                _tables._files.Add(unit.FilePath, unit.Ast);
-
-                VisitGlobalCode(unit.Ast);
+                    VisitGlobalCode(unit.Ast);
+                }
             }
 
             public override void VisitFunctionDecl(FunctionDecl x)
@@ -48,11 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public override void VisitTypeDecl(TypeDecl x)
             {
-                var container = (x.Namespace != null)
-                    ? (Symbol)_nss.GetOrAdd(x.Namespace, (ns) => new SourceNamespaceSymbol(_compilation.SourceModule, ns))
-                    : _compilation.SourceModule;
-
-                _tables._types.Add(x.MakeQualifiedName(), new SourceNamedTypeSymbol(container, x));
+                _tables._types.Add(x.MakeQualifiedName(), new SourceNamedTypeSymbol(_compilation.SourceModule, x));
             }
         }
 

@@ -744,7 +744,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return moduleBeingBuilt.Translate(this.ContainingAssembly, context.Diagnostics);
         }
 
-        string Cci.INamespaceTypeReference.NamespaceName
+        public virtual string NamespaceName
         {
             get
             {
