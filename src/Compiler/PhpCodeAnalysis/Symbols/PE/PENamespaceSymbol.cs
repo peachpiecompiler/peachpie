@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                 }
 
-                var typesDict = children.ToDictionary(c => c.Name);
+                var typesDict = children.ToDictionary(c => MetadataHelpers.BuildQualifiedName(c.NamespaceName, c.Name));
                 children.Free();
 
                 //if (noPiaLocalTypes != null)

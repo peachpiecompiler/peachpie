@@ -32,6 +32,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly bool _isLinked;
 
         /// <summary>
+        /// Whether this assembly is the COR library.
+        /// </summary>
+        readonly bool _isCorLibrary;
+
+        /// <summary>
         /// A DocumentationProvider that provides XML documentation comments for this assembly.
         /// </summary>
         readonly DocumentationProvider _documentationProvider;
@@ -50,6 +55,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<byte> PublicKey => this.Identity.PublicKey;
 
+        public override bool IsCorLibrary => _isCorLibrary;
+
         internal PEAssemblySymbol(PEAssembly assembly, DocumentationProvider documentationProvider, bool isLinked, MetadataImportOptions importOptions)
         {
             Debug.Assert(assembly != null);
@@ -67,11 +74,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _modules = modules.AsImmutableOrNull();
             _isLinked = isLinked;
+            _isCorLibrary = assembly.AssemblyReferences.Length == 0 && assembly.DeclaresTheObjectClass;
         }
 
-        internal static PEAssemblySymbol CreateFromFile(string path)
+        internal static PEAssemblySymbol Create(PortableExecutableReference reference)
         {
-            var data = AssemblyMetadata.CreateFromFile(path);
+            var data = (AssemblyMetadata)reference.GetMetadata();
+            //var data = AssemblyMetadata.CreateFromFile(reference.FilePath);
             var ass = data.GetAssembly();
 
             return new PEAssemblySymbol(ass, DocumentationProvider.Default, true, MetadataImportOptions.Public);

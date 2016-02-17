@@ -48,11 +48,15 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// True if this method is hidden if a derived type declares a method with the same name and signature. 
+        /// If false, any method with the same name hides this method. This flag is ignored by the runtime and is only used by compilers.
+        /// </summary>
         public bool HidesBaseMethodsByName
         {
             get
             {
-                throw new NotImplementedException();
+                return true;
             }
         }
 
@@ -121,10 +125,7 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
-        public DllImportData GetDllImportData()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual DllImportData GetDllImportData() => null;
 
         public ImmutableArray<AttributeData> GetReturnTypeAttributes()
         {

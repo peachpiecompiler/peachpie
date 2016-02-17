@@ -460,6 +460,14 @@ namespace Pchp.CodeAnalysis
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
             DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
 
+            moduleBeingBuilt.SourceModule.SymbolTables.GetFunctions()
+                .Concat(moduleBeingBuilt.SourceModule.SymbolTables.GetTypes().SelectMany(t => t.GetMembers().OfType<MethodSymbol>()))
+                .Foreach((m) =>
+                {
+                    var body = CodeGen.MethodGenerator.GenerateMethodBody(moduleBeingBuilt, (MethodSymbol)m, 0, null, methodBodyDiagnosticBag, false);
+                    moduleBeingBuilt.SetMethodBody(m, body);
+                });
+
             //MethodCompiler.CompileMethodBodies(
             //    this,
             //    moduleBeingBuilt,

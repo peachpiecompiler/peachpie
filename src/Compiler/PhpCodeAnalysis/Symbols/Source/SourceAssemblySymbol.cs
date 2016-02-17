@@ -16,6 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly string _simpleName;
         readonly PhpCompilation _compilation;
+        readonly AssemblySymbol _corLibraryOpt;
 
         /// <summary>
         /// A list of modules the assembly consists of. 
@@ -27,6 +28,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SourceAssemblySymbol(
             PhpCompilation compilation,
+            AssemblySymbol corLibraryOpt,
             string assemblySimpleName,
             string moduleName)
         {
@@ -36,6 +38,7 @@ namespace Pchp.CodeAnalysis.Symbols
             
             _compilation = compilation;
             _simpleName = assemblySimpleName;
+            _corLibraryOpt = corLibraryOpt;
 
             var moduleBuilder = new ArrayBuilder<IModuleSymbol>(1);
 
@@ -53,6 +56,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _modules = moduleBuilder.ToImmutableAndFree();
         }
+
+        public override AssemblySymbol CorLibrary => _corLibraryOpt;
 
         internal SourceModuleSymbol SourceModule => (SourceModuleSymbol)_modules[0];
 

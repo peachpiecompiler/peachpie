@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.Emit
             AssemblyOrModuleSymbolToModuleRefMap.Add(sourceModule, this);
         }
 
-        public IModuleSymbol SourceModule => _sourceModule;
+        internal SourceModuleSymbol SourceModule => _sourceModule;
 
         public ArrayMethods ArrayMethods
         {
@@ -77,6 +77,8 @@ namespace Pchp.CodeAnalysis.Emit
                 throw new NotImplementedException();
             }
         }
+
+        internal virtual int CurrentGenerationOrdinal => 0; // used for EditAndContinue
 
         public Cci.IAssembly AsAssembly => this as Cci.IAssembly;
 
@@ -94,6 +96,32 @@ namespace Pchp.CodeAnalysis.Emit
             {
                 yield break; // throw new NotImplementedException();
             }
+        }
+
+        internal Cci.DebugSourceDocument GetOrAddDebugDocument(string path, string basePath, Func<string, Cci.DebugSourceDocument> factory)
+        {
+            return _debugDocuments.GetOrAdd(NormalizeDebugDocumentPath(path, basePath), factory);
+        }
+
+        private string NormalizeDebugDocumentPath(string path, string basePath)
+        {
+            //var resolver = _compilation.Options.SourceReferenceResolver;
+            //if (resolver == null)
+            //{
+            //    return path;
+            //}
+
+            //var key = ValueTuple.Create(path, basePath);
+            //string normalizedPath;
+            //if (!_normalizedPathsCache.TryGetValue(key, out normalizedPath))
+            //{
+            //    normalizedPath = resolver.NormalizePath(path, basePath) ?? path;
+            //    _normalizedPathsCache.TryAdd(key, normalizedPath);
+            //}
+
+            //return normalizedPath;
+
+            return path;
         }
 
         public string DefaultNamespace
@@ -221,6 +249,8 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         internal override Compilation CommonCompilation => _compilation;
+
+        internal PhpCompilation Compilation => _compilation;
 
         internal override CommonEmbeddedTypesManager CommonEmbeddedTypesManagerOpt
         {
@@ -610,9 +640,21 @@ namespace Pchp.CodeAnalysis.Emit
             noPiaIndexer?.Visit((Cci.ITypeDefinition)type);
         }
 
-        public bool IsPlatformType(Cci.ITypeReference typeRef, Cci.PlatformType t)
+        public bool IsPlatformType(Cci.ITypeReference typeRef, Cci.PlatformType platformType)
         {
-            throw new NotImplementedException();
+            var namedType = typeRef as PENamedTypeSymbol;
+            if (namedType != null)
+            {
+                if (platformType == Cci.PlatformType.SystemType)
+                {
+                    throw new NotImplementedException(); // below is sufficient ?
+                    //return (object)namedType == (object)Compilation.GetWellKnownType(WellKnownType.System_Type);
+                }
+
+                return namedType.SpecialType == (SpecialType)platformType;
+            }
+
+            return false;
         }
 
         public IEnumerable<Cci.IReference> ReferencesInIL(out int count)

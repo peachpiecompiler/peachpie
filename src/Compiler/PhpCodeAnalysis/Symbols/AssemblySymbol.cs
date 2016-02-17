@@ -34,6 +34,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual AssemblyIdentity Identity { get { throw new NotImplementedException(); } }
 
+        /// <summary>
+        /// Gets COR library assembly symbol. Valid for source assembly.
+        /// </summary>
+        public virtual AssemblySymbol CorLibrary { get { throw new InvalidOperationException(); } }
+
+        public virtual bool IsCorLibrary => false;
+
         public override bool IsAbstract => false;
 
         public override bool IsExtern => false;

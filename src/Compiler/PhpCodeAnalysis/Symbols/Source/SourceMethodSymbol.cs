@@ -14,11 +14,11 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed class SourceMethodSymbol : MethodSymbol
     {
-        readonly NamedTypeSymbol _type;
+        readonly SourceNamedTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;
         readonly ImmutableArray<ParameterSymbol> _params;
 
-        public SourceMethodSymbol(NamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
+        public SourceMethodSymbol(SourceNamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(syntax);
@@ -37,6 +37,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return new SourceParameterSymbol(this, p, index++);
             }
         }
+
+        public override string Name => _syntax.Name.Value;
 
         public override Symbol ContainingSymbol => _type;
 
@@ -102,7 +104,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                throw new NotImplementedException();
+                var objtype = _type.DeclaringCompilation.SourceAssembly.CorLibrary.Modules[0].GlobalNamespace.GetTypeMembers("System.Object");
+
+                //throw new NotImplementedException();
+                return objtype[0];
             }
         }
 

@@ -266,11 +266,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        TypeDefinitionHandle _handle;
-        NamespaceOrTypeSymbol _container;
-        TypeAttributes _flags;
-        string _name;
-        SpecialType _corTypeId;
+        readonly TypeDefinitionHandle _handle;
+        readonly NamespaceOrTypeSymbol _container;
+        readonly TypeAttributes _flags;
+        readonly string _name;
+        string _ns;
+        readonly SpecialType _corTypeId;
+
         TypeKind _lazyKind;
 
         private PENamedTypeSymbol(
@@ -292,6 +294,7 @@ namespace Pchp.CodeAnalysis.Symbols
             
             _handle = handle;
             _container = container;
+            _ns = emittedNamespaceName;
 
             try
             {
@@ -317,6 +320,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // check if this is one of the COR library types
             if (emittedNamespaceName != null &&
+                ((AssemblySymbol)moduleSymbol.ContainingAssembly).IsCorLibrary &&
                 //moduleSymbol.ContainingAssembly.KeepLookingForDeclaredSpecialTypes &&
                 this.DeclaredAccessibility == Accessibility.Public) // NB: this.flags was set above.
             {
@@ -378,6 +382,10 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override SpecialType SpecialType => _corTypeId;
+
+        public override string Name => _name;
+
+        public override string NamespaceName => _ns;
 
         internal PEModuleSymbol ContainingPEModule
         {

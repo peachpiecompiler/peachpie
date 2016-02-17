@@ -30,6 +30,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _compilation.SourceModule;
 
+        internal override IModuleSymbol ContainingModule => _compilation.SourceModule;
+
+        public override IAssemblySymbol ContainingAssembly => _compilation.SourceAssembly;
+
         public override Accessibility DeclaredAccessibility => Accessibility.Public;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
