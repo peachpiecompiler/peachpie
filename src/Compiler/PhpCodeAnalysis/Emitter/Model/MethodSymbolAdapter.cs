@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis.Symbols
             else
             {
                 PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)visitor.Context.Module;
-                if (this.ContainingModule == moduleBeingBuilt.SourceModule)
+                if (object.ReferenceEquals(this.ContainingModule, moduleBeingBuilt.SourceModule))
                 {
                     Debug.Assert(((Cci.IMethodReference)this).GetResolvedMethod(visitor.Context) != null);
                     visitor.Visit((Cci.IMethodDefinition)this);
@@ -150,7 +150,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
 
             if (this.IsDefinition && // can't be generic instantiation
-                this.ContainingModule == moduleBeingBuilt.SourceModule) // must be declared in the module we are building
+                object.ReferenceEquals(this.ContainingModule, moduleBeingBuilt.SourceModule)) // must be declared in the module we are building
             {
                 Debug.Assert((object)this.PartialDefinitionPart == null); // must be definition
                 return this;
@@ -174,7 +174,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(this.IsDefinitionOrDistinct());
 
             PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
-            if (this.IsDefinition && this.ContainingModule == moduleBeingBuilt.SourceModule)
+            if (this.IsDefinition && object.ReferenceEquals(this.ContainingModule, moduleBeingBuilt.SourceModule))
             {
                 return StaticCast<Cci.IParameterTypeInformation>.From(this.EnumerateDefinitionParameters());
             }

@@ -766,7 +766,82 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal override Cci.ITypeReference Translate(ITypeSymbol symbol, SyntaxNode syntaxOpt, DiagnosticBag diagnostics)
         {
-            throw new NotImplementedException();
+            Debug.Assert(diagnostics != null);
+
+            //if (!namedTypeSymbol.IsDefinition)
+            //{
+            //    // generic instantiation for sure
+            //    Debug.Assert(!needDeclaration);
+
+            //    if (namedTypeSymbol.IsUnboundGenericType)
+            //    {
+            //        namedTypeSymbol = namedTypeSymbol.OriginalDefinition;
+            //    }
+            //    else
+            //    {
+            //        return namedTypeSymbol;
+            //    }
+            //}
+            //else if (!needDeclaration)
+            //{
+            //    object reference;
+            //    Cci.INamedTypeReference typeRef;
+
+            //    NamedTypeSymbol container = namedTypeSymbol.ContainingType;
+
+            //    if (namedTypeSymbol.Arity > 0)
+            //    {
+            //        if (_genericInstanceMap.TryGetValue(namedTypeSymbol, out reference))
+            //        {
+            //            return (Cci.INamedTypeReference)reference;
+            //        }
+
+            //        if ((object)container != null)
+            //        {
+            //            if (IsGenericType(container))
+            //            {
+            //                // Container is a generic instance too.
+            //                typeRef = new SpecializedGenericNestedTypeInstanceReference(namedTypeSymbol);
+            //            }
+            //            else
+            //            {
+            //                typeRef = new GenericNestedTypeInstanceReference(namedTypeSymbol);
+            //            }
+            //        }
+            //        else
+            //        {
+            //            typeRef = new GenericNamespaceTypeInstanceReference(namedTypeSymbol);
+            //        }
+
+            //        typeRef = (Cci.INamedTypeReference)_genericInstanceMap.GetOrAdd(namedTypeSymbol, typeRef);
+
+            //        return typeRef;
+            //    }
+            //    else if (IsGenericType(container))
+            //    {
+            //        Debug.Assert((object)container != null);
+
+            //        if (_genericInstanceMap.TryGetValue(namedTypeSymbol, out reference))
+            //        {
+            //            return (Cci.INamedTypeReference)reference;
+            //        }
+
+            //        typeRef = new SpecializedNestedTypeReference(namedTypeSymbol);
+            //        typeRef = (Cci.INamedTypeReference)_genericInstanceMap.GetOrAdd(namedTypeSymbol, typeRef);
+
+            //        return typeRef;
+            //    }
+            //}
+
+            //// NoPia: See if this is a type, which definition we should copy into our assembly.
+            //Debug.Assert(namedTypeSymbol.IsDefinition);
+
+            //if (_embeddedTypesManagerOpt != null)
+            //{
+            //    return _embeddedTypesManagerOpt.EmbedTypeIfNeedTo(namedTypeSymbol, fromImplements, syntaxNodeOpt, diagnostics);
+            //}
+
+            return (Cci.ITypeReference)symbol;
         }
 
         internal ImmutableArray<Cci.IParameterTypeInformation> Translate(ImmutableArray<IParameterSymbol> @params)

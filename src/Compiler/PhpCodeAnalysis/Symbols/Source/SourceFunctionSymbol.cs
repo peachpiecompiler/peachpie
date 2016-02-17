@@ -12,12 +12,13 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents a global PHP function.
     /// </summary>
-    internal sealed class SourceFunctionSymbol : MethodSymbol
+    internal sealed class SourceFunctionSymbol : SourceBaseMethodSymbol
     {
         readonly PhpCompilation/*!*/_compilation;
         readonly FunctionDecl/*!*/_syntax;
 
         public SourceFunctionSymbol(PhpCompilation/*!*/compilation, FunctionDecl/*!*/syntax)
+            :base(syntax.Signature)
         {
             Contract.ThrowIfNull(compilation);
             Contract.ThrowIfNull(syntax);
@@ -56,8 +57,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsVirtual => false;
 
-        public override SymbolKind Kind => SymbolKind.Method;
-
         public override ImmutableArray<Location> Locations
         {
             get
@@ -65,37 +64,5 @@ namespace Pchp.CodeAnalysis.Symbols
                 throw new NotImplementedException();
             }
         }
-
-        public override MethodKind MethodKind => MethodKind.Ordinary;
-
-        public override ImmutableArray<IParameterSymbol> Parameters
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override bool ReturnsVoid
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override ITypeSymbol ReturnType
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
-
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
-
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => false;
     }
 }

@@ -105,7 +105,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                return this.RefKind == Microsoft.CodeAnalysis.RefKind.None || this.RefKind == Microsoft.CodeAnalysis.RefKind.Ref;
+                return false; // this.IsMetadataIn;
             }
         }
 

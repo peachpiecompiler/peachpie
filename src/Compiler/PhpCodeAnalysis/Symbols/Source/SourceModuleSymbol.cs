@@ -34,22 +34,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override IAssemblySymbol ContainingAssembly => _sourceAssembly;
 
-        public override ImmutableArray<AssemblyIdentity> ReferencedAssemblies
-        {
-            get
-            {
-                return base.ReferencedAssemblies;
-            }
-        }
-
-        public override ImmutableArray<IAssemblySymbol> ReferencedAssemblySymbols
-        {
-            get
-            {
-                return base.ReferencedAssemblySymbols;
-            }
-        }
-
         public override ImmutableArray<Location> Locations
         {
             get
