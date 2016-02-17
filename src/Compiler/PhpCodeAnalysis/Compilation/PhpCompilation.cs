@@ -17,6 +17,8 @@ using Pchp.Syntax;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Symbols;
+using Microsoft.CodeAnalysis.Collections;
+using System.Collections.Concurrent;
 
 namespace Pchp.CodeAnalysis
 {
@@ -42,6 +44,16 @@ namespace Pchp.CodeAnalysis
         /// We do so by creating a new reference manager for such compilation. 
         /// </summary>
         private ReferenceManager _referenceManager;
+
+        /// <summary>
+        /// Cache of special types symbol.
+        /// </summary>
+        readonly ConcurrentDictionary<SpecialType, INamedTypeSymbol> _specialTypesCache = new ConcurrentDictionary<SpecialType, INamedTypeSymbol>();
+
+        /// <summary>
+        /// COR library containing base system types.
+        /// </summary>
+        public AssemblySymbol CorLibrary => ((ReferenceManager)GetBoundReferenceManager()).CorLibrary;
 
         /// <summary>
         /// Tables containing all source symbols to be compiled.
@@ -370,7 +382,16 @@ namespace Pchp.CodeAnalysis
 
         protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
         {
-            throw new NotImplementedException();
+            return _specialTypesCache.GetOrAdd(specialType, (type) =>
+            {
+                var name = SpecialTypes.GetMetadataName(type);
+                if (name != null && this.CorLibrary != null)
+                {
+                    return this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
+                }
+
+                return null;
+            });
         }
 
         protected override INamedTypeSymbol CommonGetTypeByMetadataName(string metadataName)
@@ -434,6 +455,17 @@ namespace Pchp.CodeAnalysis
         internal override ISymbol CommonGetWellKnownTypeMember(WellKnownMember member)
         {
             throw new NotImplementedException();
+        }
+
+        internal NamedTypeSymbol GetWellKnownType(WellKnownType id)
+        {
+            var name = id.GetMetadataName();
+            if (name != null && this.CorLibrary != null)
+            {
+                return (NamedTypeSymbol)this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
+            }
+
+            return null;
         }
 
         internal override int CompareSourceLocations(Location loc1, Location loc2)

@@ -47,7 +47,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<IModuleSymbol> Modules => _modules;
 
-        //internal PEModuleSymbol PrimaryModule => (PEModuleSymbol)_modules[0];
+        public override INamespaceSymbol GlobalNamespace => PrimaryModule.GlobalNamespace;
+
+        internal PEModuleSymbol PrimaryModule => (PEModuleSymbol)_modules[0];
 
         internal override PhpCompilation DeclaringCompilation => null;
 

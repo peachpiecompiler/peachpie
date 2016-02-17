@@ -104,10 +104,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var objtype = _type.DeclaringCompilation.SourceAssembly.CorLibrary.Modules[0].GlobalNamespace.GetTypeMembers("System.Object");
-
-                //throw new NotImplementedException();
-                return objtype[0];
+                return this.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
             }
         }
 
