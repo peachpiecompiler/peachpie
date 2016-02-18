@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Pchp.Syntax.AST;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -64,5 +65,30 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitBlockStatement(this, argument);
+    }
+
+    /// <summary>
+    /// Represents an expression statement.
+    /// </summary>
+    public sealed class BoundExpressionStatement : BoundStatement, IExpressionStatement
+    {
+        /// <summary>
+        /// Expression of the statement.
+        /// </summary>
+        public IExpression Expression { get; private set; }
+
+        public override OperationKind Kind => OperationKind.ExpressionStatement;
+
+        public BoundExpressionStatement(IExpression/*!*/expression)
+        {
+            Debug.Assert(expression != null);
+            this.Expression = expression;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitExpressionStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitExpressionStatement(this, argument);
     }
 }

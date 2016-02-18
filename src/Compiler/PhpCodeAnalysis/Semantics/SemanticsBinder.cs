@@ -26,6 +26,8 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(stmt != null);
 
+            if (stmt is EchoStmt) return new BoundExpressionStatement(new BoundEchoStatement(/*((EchoStmt)stmt).Parameters*/));
+
             return new BoundEmptyStatement();   // TODO
         }
     }

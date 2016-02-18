@@ -12,14 +12,14 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly SourceAssemblySymbol _sourceAssembly;
         readonly string _name;
-        readonly ISymbolTables _tables;
+        readonly SourceDeclarations _tables;
 
         /// <summary>
         /// Tables of all source symbols to be compiled within the source module.
         /// </summary>
-        public ISymbolTables SymbolTables => _tables;
+        public SourceDeclarations SymbolTables => _tables;
 
-        public SourceModuleSymbol(SourceAssemblySymbol sourceAssembly, ISymbolTables tables, string name)
+        public SourceModuleSymbol(SourceAssemblySymbol sourceAssembly, SourceDeclarations tables, string name)
         {
             _sourceAssembly = sourceAssembly;
             _name = name;

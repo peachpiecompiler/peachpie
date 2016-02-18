@@ -27,6 +27,7 @@ namespace Pchp.CodeAnalysis
             var sourcesymbols = compilation.SourceSymbolTables;
             // var callgraph = new ...
             // var worklist = new ... // parralel worklist algorithm
+            // semantic model
 
             // 1.Bind Syntax & Symbols to Operations (CFG)
             //   a.equivalent to building CFG
@@ -34,9 +35,9 @@ namespace Pchp.CodeAnalysis
             //   c.inline syntax like traits
 
             // 2.Analyze Operations + Synthetize(magic)
-            //   a.synthetize entry point, getters, setters, ctors, dispose, magic methods, …
-            //   b.type analysis(converge type - mask), resolve symbols
-            //   c.update types(from type-mask)
+            //   a.type analysis(converge type - mask), resolve symbols
+            //   b.synthetize entry point, getters, setters, ctors, dispose, magic methods, …
+            //   c.update clr types(from type-mask)
 
             // 3. Emit method bodies
 

@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis
 {
     internal sealed partial class PhpCompilation : Compilation
     {
-        readonly SourceSymbolTables _tables;
+        readonly SourceDeclarations _tables;
 
         readonly PhpCompilationOptions _options;
 
@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis
         /// Tables containing all source symbols to be compiled.
         /// Used for enumeration and lookup.
         /// </summary>
-        public ISymbolTables SourceSymbolTables => _tables;
+        public SourceDeclarations SourceSymbolTables => _tables;
 
         ///// <summary>
         ///// Contains the main method of this assembly, if there is one.
@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis
         {
             _options = options;
             _referenceManager = new ReferenceManager();
-            _tables = new SourceSymbolTables();
+            _tables = new SourceDeclarations();
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences

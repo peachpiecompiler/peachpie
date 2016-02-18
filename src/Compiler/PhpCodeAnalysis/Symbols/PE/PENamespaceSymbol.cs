@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// The base class to represent a namespace imported from a PE/module. Namespaces that differ
     /// only by casing in name are not merged.
     /// </summary>
-    internal abstract class PENamespaceSymbol : NamespaceSymbol, ISymbolTables
+    internal abstract class PENamespaceSymbol : NamespaceSymbol
     {
         /// <summary>
         /// A map of types immediately contained within this namespace 
@@ -127,22 +127,5 @@ namespace Pchp.CodeAnalysis.Symbols
                 Interlocked.CompareExchange(ref _types, typesDict, null);
             }
         }
-
-        INamedTypeSymbol ISymbolTables.GetType(QualifiedName name)
-        {
-            var types = this.GetTypeMembers(name.ClrName());
-            if (types.Length == 0)
-                return null;
-            if (types.Length == 1)
-                return types[0];
-
-            throw new NotImplementedException();    // merged type
-        }
-
-        IEnumerable<INamedTypeSymbol> ISymbolTables.GetTypes() => this.GetTypeMembers();
-
-        IMethodSymbol ISymbolTables.GetFunction(QualifiedName name) => null;
-
-        IEnumerable<IMethodSymbol> ISymbolTables.GetFunctions() => ImmutableArray<IMethodSymbol>.Empty;
     }
 }

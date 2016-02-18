@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Semantics\BoundMethodBody.cs" />
+    <Compile Include="Semantics\Expressions.cs" />
     <Compile Include="Semantics\SemanticsBinder.cs" />
     <Compile Include="Semantics\Statements.cs" />
     <Compile Include="CodeGen\MethodGenerator.cs" />
@@ -99,9 +100,9 @@
     <Compile Include="Symbols\Source\SourceNamedTypeSymbol.cs" />
     <Compile Include="Symbols\Source\SourceNamespaceSymbol.cs" />
     <Compile Include="Symbols\Source\SourceParameterSymbol.cs" />
-    <Compile Include="Symbols\Source\SourceSymbolTables.cs" />
+    <Compile Include="Symbols\Source\SourceDeclarations.cs" />
     <Compile Include="Symbols\Symbol.cs" />
-    <Compile Include="Symbols\ISymbolTables.cs" />
+    <Compile Include="FlowAnalysis\ISemanticModel.cs" />
     <Compile Include="Symbols\TypeSymbol.cs" />
     <Compile Include="Utilities\Contract.cs" />
     <Compile Include="Utilities\EnumeratorExtension.cs" />
@@ -110,7 +111,9 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Symbols\Tables\" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="PhpResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

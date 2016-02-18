@@ -15,16 +15,16 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents declarations within given source trees.
     /// </summary>
-    internal class SourceSymbolTables : ISymbolTables
+    internal class SourceDeclarations
     {
         #region PopulatorVisitor
 
         sealed class PopulatorVisitor : TreeVisitor
         {
-            readonly SourceSymbolTables _tables;
+            readonly SourceDeclarations _tables;
             readonly PhpCompilation _compilation;
             
-            public PopulatorVisitor(PhpCompilation compilation, SourceSymbolTables tables)
+            public PopulatorVisitor(PhpCompilation compilation, SourceDeclarations tables)
             {
                 _tables = tables;
                 _compilation = compilation;
@@ -57,7 +57,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Dictionary<QualifiedName, IMethodSymbol> _functions = new Dictionary<QualifiedName, IMethodSymbol>();
         readonly Dictionary<string, GlobalCode> _files = new Dictionary<string, GlobalCode>(StringComparer.OrdinalIgnoreCase);
         
-        public SourceSymbolTables()
+        public SourceDeclarations()
         {
             
         }
@@ -71,16 +71,12 @@ namespace Pchp.CodeAnalysis.Symbols
             trees.Foreach(visitor.VisitSourceUnit);
         }
 
-        #region ISymbolTables
+        public IMethodSymbol GetFunction(QualifiedName name) => _functions.TryGetOrDefault(name);
 
-        IMethodSymbol ISymbolTables.GetFunction(QualifiedName name) => _functions.TryGetOrDefault(name);
+        public IEnumerable<IMethodSymbol> GetFunctions() => _functions.Values;
 
-        IEnumerable<IMethodSymbol> ISymbolTables.GetFunctions() => _functions.Values;
+        public INamedTypeSymbol GetType(QualifiedName name) => _types.TryGetOrDefault(name);
 
-        INamedTypeSymbol ISymbolTables.GetType(QualifiedName name) => _types.TryGetOrDefault(name);
-
-        IEnumerable<INamedTypeSymbol> ISymbolTables.GetTypes() => _types.Values;
-
-        #endregion
+        public IEnumerable<INamedTypeSymbol> GetTypes() => _types.Values;
     }
 }
