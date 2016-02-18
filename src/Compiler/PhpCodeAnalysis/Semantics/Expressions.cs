@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public abstract OperationKind Kind { get; }
 
-        public virtual ITypeSymbol ResultType => null;
+        public virtual ITypeSymbol ResultType { get; set; }
 
         public SyntaxNode Syntax => null;
 
@@ -39,6 +39,8 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     public class BoundFunctionCall : BoundExpression, IInvocationExpression
     {
+        protected ImmutableArray<BoundExpression> _arguments;
+
         public ImmutableArray<IArgument> ArgumentsInParameterOrder => ArgumentsInSourceOrder;
 
         public ImmutableArray<IArgument> ArgumentsInSourceOrder
@@ -71,11 +73,40 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundEchoStatement
+    #region BoundEcho
 
-    public sealed class BoundEchoStatement : BoundFunctionCall
+    public sealed class BoundEcho : BoundFunctionCall
     {
+        public BoundEcho(ImmutableArray<BoundExpression> arguments)
+        {
+            _arguments = arguments;
+        }
+    }
 
+    #endregion
+
+    #region BoundLiteral
+
+    public class BoundLiteral : BoundExpression, ILiteralExpression
+    {
+        Optional<object> _value;
+
+        public string Spelling => this.ConstantValue.Value.ToString();
+
+        public override Optional<object> ConstantValue => _value;
+
+        public override OperationKind Kind => OperationKind.LiteralExpression;
+
+        public BoundLiteral(object value)
+        {
+            _value = new Optional<object>(value);
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitLiteralExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitLiteralExpression(this, argument);
     }
 
     #endregion

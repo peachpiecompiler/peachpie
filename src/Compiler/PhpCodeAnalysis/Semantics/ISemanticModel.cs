@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Pchp.CodeAnalysis
+namespace Pchp.CodeAnalysis.Semantics
 {
     /// <summary>
     /// Represents PHP semantics.
