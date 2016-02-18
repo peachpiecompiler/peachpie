@@ -49,6 +49,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Compilation\SourceCompiler.cs" />
+    <Compile Include="Semantics\BoundMethodBody.cs" />
+    <Compile Include="Semantics\SemanticsBinder.cs" />
+    <Compile Include="Semantics\Statements.cs" />
     <Compile Include="CodeGen\MethodGenerator.cs" />
     <Compile Include="CommandLine\PhpCommandLineArguments.cs" />
     <Compile Include="CommandLine\PhpCommandLineParser.cs" />
@@ -106,10 +110,7 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Binder\" />
-    <Folder Include="BoundTree\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <EmbeddedResource Include="PhpResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

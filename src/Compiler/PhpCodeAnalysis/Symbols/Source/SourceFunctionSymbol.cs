@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 using Pchp.Syntax.AST;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -26,6 +27,9 @@ namespace Pchp.CodeAnalysis.Symbols
             _compilation = compilation;
             _syntax = syntax;
         }
+
+        protected override BoundMethodBody CreateBoundBlock()
+            => new BoundMethodBody(SemanticsBinder.BindStatements(_syntax.Body).AsImmutable());
 
         public override string Name => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.Namespace).ClrName();
 

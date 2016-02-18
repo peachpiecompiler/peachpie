@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics;
 using Pchp.Syntax.AST;
 using System;
 using System.Collections.Generic;
@@ -12,25 +13,15 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal abstract class SourceBaseMethodSymbol : MethodSymbol
     {
-        IBlockStatement _block; // TODO: BoundMethodBody
+        BoundMethodBody _block;
 
         /// <summary>
-        /// Bound block containing method semantics.
+        /// Gets lazily bound block containing method semantics.
         /// Entry point of analysis and emitting.
         /// </summary>
-        public IBlockStatement GetOrBindBlock
-        {
-            get
-            {
-                var block = _block;
-                if (block == null)
-                {
-                    // TODO: bind block
-                }
+        public BoundMethodBody BoundBlock => _block ?? (_block = CreateBoundBlock());
 
-                return block;
-            }
-        }
+        protected abstract BoundMethodBody CreateBoundBlock();
 
         readonly protected ImmutableArray<ParameterSymbol> _params;
 

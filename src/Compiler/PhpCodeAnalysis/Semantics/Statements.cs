@@ -1,0 +1,68 @@
+﻿using Microsoft.CodeAnalysis.Semantics;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using System.Collections.Immutable;
+using Pchp.Syntax.AST;
+
+namespace Pchp.CodeAnalysis.Semantics
+{
+    /// <summary>
+    /// Base class representing a statement semantic.
+    /// </summary>
+    public abstract class BoundStatement : IStatement
+    {
+        public virtual bool IsInvalid => false;
+
+        public abstract OperationKind Kind { get; }
+
+        public SyntaxNode Syntax => null;
+
+        public abstract void Accept(OperationVisitor visitor);
+
+        public abstract TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument);
+    }
+
+    public sealed class BoundEmptyStatement : BoundStatement
+    {
+        public override OperationKind Kind => OperationKind.EmptyStatement;
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitEmptyStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitEmptyStatement(this, argument);
+    }
+
+    /// <summary>
+    /// Code block semantic.
+    /// </summary>
+    public class BoundBlock : BoundStatement, IBlockStatement
+    {
+        ImmutableArray<IStatement> _statements;
+
+        public BoundBlock(IEnumerable<IStatement> statements)
+        {
+            _statements = statements.AsImmutable();
+        }
+
+        public override OperationKind Kind => OperationKind.BlockStatement;
+
+        /// <summary>
+        /// Array of local variables within this code block.
+        /// All PHP local variables are declared within the method scope.
+        /// </summary>
+        public virtual ImmutableArray<ILocalSymbol> Locals => ImmutableArray<ILocalSymbol>.Empty;
+
+        public ImmutableArray<IStatement> Statements => _statements;
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitBlockStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitBlockStatement(this, argument);
+    }
+}

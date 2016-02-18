@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -23,9 +24,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal static MethodBody GenerateMethodBody(
             PEModuleBuilder moduleBuilder,
-            MethodSymbol method,
+            SourceBaseMethodSymbol method,
             int methodOrdinal,
-            //BoundStatement block,
             //ImmutableArray<LambdaDebugInfo> lambdaDebugInfo,
             //ImmutableArray<ClosureDebugInfo> closureDebugInfo,
             //StateMachineTypeSymbol stateMachineTypeOpt,
@@ -54,6 +54,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
 
+                var block = method.BoundBlock;
                 //var codeGen = new CodeGenerator(method, block, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
 
                 //if (diagnosticsForThisMethod.HasAnyErrors())

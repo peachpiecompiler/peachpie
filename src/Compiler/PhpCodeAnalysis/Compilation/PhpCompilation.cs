@@ -46,11 +46,6 @@ namespace Pchp.CodeAnalysis
         private ReferenceManager _referenceManager;
 
         /// <summary>
-        /// Cache of special types symbol.
-        /// </summary>
-        readonly ConcurrentDictionary<SpecialType, INamedTypeSymbol> _specialTypesCache = new ConcurrentDictionary<SpecialType, INamedTypeSymbol>();
-
-        /// <summary>
         /// COR library containing base system types.
         /// </summary>
         public AssemblySymbol CorLibrary => ((ReferenceManager)GetBoundReferenceManager()).CorLibrary;
@@ -317,8 +312,6 @@ namespace Pchp.CodeAnalysis
             string fileVersion = //sourceAssembly.FileVersion ?? 
                 sourceAssembly.Identity.Version.ToString();
 
-            // TODO: uncomment when SourceAssemblySymbol is implemented
-
             Win32ResourceConversions.AppendVersionToResourceStream(resourceStream,
                 !this.Options.OutputKind.IsApplication(),
                 fileVersion: fileVersion,
@@ -382,20 +375,23 @@ namespace Pchp.CodeAnalysis
 
         protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
         {
-            return _specialTypesCache.GetOrAdd(specialType, (type) =>
+            var name = SpecialTypes.GetMetadataName(specialType);
+            if (name != null && this.CorLibrary != null)
             {
-                var name = SpecialTypes.GetMetadataName(type);
-                if (name != null && this.CorLibrary != null)
-                {
-                    return this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
-                }
+                return this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
+            }
 
-                return null;
-            });
+            return null;
         }
 
         protected override INamedTypeSymbol CommonGetTypeByMetadataName(string metadataName)
         {
+            //return CommonGetBoundReferenceManager().GetReferencedAssemblies()
+            //    + this.SourceAssembly
+            //    .Select(pair => pair.Value)
+            //    .SelectMany(a => a.GlobalNamespace.GetTypeMembers(metadataName))
+            //    .FirstOrDefault(); 
+
             throw new NotImplementedException();
         }
 
@@ -492,22 +488,13 @@ namespace Pchp.CodeAnalysis
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
             DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
 
-            moduleBeingBuilt.SourceModule.SymbolTables.GetFunctions()
-                .Concat(moduleBeingBuilt.SourceModule.SymbolTables.GetTypes().SelectMany(t => t.GetMembers().OfType<MethodSymbol>()))
-                .Foreach((m) =>
-                {
-                    var body = CodeGen.MethodGenerator.GenerateMethodBody(moduleBeingBuilt, (MethodSymbol)m, 0, null, methodBodyDiagnosticBag, false);
-                    moduleBeingBuilt.SetMethodBody(m, body);
-                });
-
-            //MethodCompiler.CompileMethodBodies(
-            //    this,
-            //    moduleBeingBuilt,
-            //    emittingPdb,
-            //    hasDeclarationErrors,
-            //    diagnostics: methodBodyDiagnosticBag,
-            //    filterOpt: filterOpt,
-            //    cancellationToken: cancellationToken);
+            SourceCompiler.CompileMethodBodies(
+                this,
+                moduleBeingBuilt,
+                emittingPdb,
+                hasDeclarationErrors,
+                methodBodyDiagnosticBag,
+                cancellationToken);
 
             SetupWin32Resources(moduleBeingBuilt, win32Resources, methodBodyDiagnosticBag);
 
@@ -657,10 +644,45 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Filter out warnings based on the compiler options (/nowarn, /warn and /warnaserror) and the pragma warning directives.
+        /// 'incoming' is freed.
+        /// </summary>
+        /// <returns>True when there is no error or warning treated as an error.</returns>
         internal override bool FilterAndAppendAndFreeDiagnostics(DiagnosticBag accumulator, ref DiagnosticBag incoming)
         {
-            //throw new NotImplementedException();
-            return true;
+            bool result = FilterAndAppendDiagnostics(accumulator, incoming.AsEnumerableWithoutResolution());
+            incoming.Free();
+            incoming = null;
+            return result;
+        }
+
+        /// <summary>
+        /// Filter out warnings based on the compiler options (/nowarn, /warn and /warnaserror) and the pragma warning directives.
+        /// </summary>
+        /// <returns>True when there is no error.</returns>
+        private bool FilterAndAppendDiagnostics(DiagnosticBag accumulator, IEnumerable<Diagnostic> incoming)
+        {
+            bool hasError = false;
+            bool reportSuppressedDiagnostics = Options.ReportSuppressedDiagnostics;
+
+            foreach (Diagnostic d in incoming)
+            {
+                var filtered = _options.FilterDiagnostic(d);
+                if (filtered == null ||
+                    (!reportSuppressedDiagnostics && filtered.IsSuppressed))
+                {
+                    continue;
+                }
+                else if (filtered.Severity == DiagnosticSeverity.Error)
+                {
+                    hasError = true;
+                }
+
+                accumulator.Add(filtered);
+            }
+
+            return !hasError;
         }
 
         internal override int GetSyntaxTreeOrdinal(SyntaxTree tree)

@@ -680,13 +680,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override bool IsMetadataAbstract
-        {
-            get
-            {
-                return (_flags & TypeAttributes.Abstract) != 0;
-            }
-        }
+        internal override bool IsMetadataAbstract => (_flags & TypeAttributes.Abstract) != 0;
 
         public override bool IsSealed
         {
@@ -698,21 +692,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override bool IsMetadataSealed
-        {
-            get
-            {
-                return (_flags & TypeAttributes.Sealed) != 0;
-            }
-        }
+        internal override bool IsMetadataSealed => (_flags & TypeAttributes.Sealed) != 0;
 
-        internal TypeAttributes Flags
-        {
-            get
-            {
-                return _flags;
-            }
-        }
+        internal TypeAttributes Flags => _flags;
 
         internal NamedTypeSymbol GetDeclaredBaseType(ConsList<Symbol> basesBeingResolved)
         {
