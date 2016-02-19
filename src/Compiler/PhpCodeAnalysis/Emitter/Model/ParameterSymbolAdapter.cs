@@ -193,7 +193,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
 
             if (this.IsDefinition &&
-                this.ContainingModule == moduleBeingBuilt.SourceModule)
+                object.ReferenceEquals(this.ContainingModule, moduleBeingBuilt.SourceModule))
             {
                 return this;
             }

@@ -50,6 +50,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compilation\SourceCompiler.cs" />
+    <Compile Include="FlowAnalysis\TypeRef\CallInfo.cs" />
+    <Compile Include="FlowAnalysis\TypeRef\ITypeRef.cs" />
+    <Compile Include="FlowAnalysis\TypeRef\PhpDataType.cs" />
+    <Compile Include="FlowAnalysis\TypeRef\TypeRef.cs" />
+    <Compile Include="FlowAnalysis\TypeRef\TypeRefContext.cs" />
+    <Compile Include="FlowAnalysis\TypeRef\TypeRefMask.cs" />
+    <Compile Include="FlowAnalysis\Worklist.cs" />
     <Compile Include="Semantics\BoundMethodBody.cs" />
     <Compile Include="Semantics\Expressions.cs" />
     <Compile Include="Semantics\SemanticsBinder.cs" />
@@ -61,6 +68,7 @@
     <Compile Include="CommandLine\PhpParseOptions.cs" />
     <Compile Include="Compilation\PhpCompilation.cs" />
     <Compile Include="Compilation\PhpCompilationOptions.cs" />
+    <Compile Include="FlowAnalysis\TypeRef\TypeHelpers.cs" />
     <Compile Include="Symbols\ReferenceManager.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Emitter\Model\AssemblyReference.cs" />
@@ -105,14 +113,15 @@
     <Compile Include="Semantics\ISemanticModel.cs" />
     <Compile Include="Symbols\TypeSymbol.cs" />
     <Compile Include="Utilities\Contract.cs" />
+    <Compile Include="Utilities\DistinctQueue.cs" />
     <Compile Include="Utilities\EnumeratorExtension.cs" />
     <Compile Include="Utilities\NameUtils.cs" />
+    <Compile Include="Utilities\TypeHintValue.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="FlowAnalysis\" />
     <Folder Include="Symbols\Tables\" />
   </ItemGroup>
   <ItemGroup>

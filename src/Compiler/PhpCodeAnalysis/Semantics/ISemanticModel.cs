@@ -21,12 +21,18 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Gets type symbol by its name in current context.
         /// Can be <c>null</c> if type cannot be found.
         /// </summary>
-        INamedTypeSymbol GetType(QualifiedName name);
+        INamedTypeSymbol GetClass(QualifiedName name);
 
         /// <summary>
         /// Get global function symbol by its name in current context.
         /// Can be <c>null</c> if function cannot be found.
         /// </summary>
         IMethodSymbol GetFunction(QualifiedName name);
+
+        /// <summary>
+        /// Gets value determining whether <paramref name="qname"/> type can be assigned from <paramref name="from"/>.
+        /// </summary>
+        /// <remarks>Gets <c>true</c>, if <paramref name="qname"/> is equal to or is a base type of <paramref name="from"/>.</remarks>
+        bool IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from);
     }
 }

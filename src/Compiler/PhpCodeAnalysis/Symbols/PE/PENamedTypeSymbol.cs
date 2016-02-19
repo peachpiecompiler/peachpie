@@ -166,15 +166,16 @@ namespace Pchp.CodeAnalysis.Symbols
                     // If this is a nested type generic parameters in metadata include generic parameters of the outer types.
                     int firstIndex = _genericParameterHandles.Count - _arity;
 
-                    var ownedParams = new ITypeParameterSymbol[_arity];
-                    for (int i = 0; i < ownedParams.Length; i++)
-                    {
-                        throw new NotImplementedException();
-                        //ownedParams[i] = new PETypeParameterSymbol(moduleSymbol, this, (ushort)i, _genericParameterHandles[firstIndex + i]);
-                    }
+                    throw new NotImplementedException();
 
-                    ImmutableInterlocked.InterlockedInitialize(ref _lazyTypeParameters,
-                        ImmutableArray.Create<ITypeParameterSymbol>(ownedParams));
+                    //var ownedParams = new ITypeParameterSymbol[_arity];
+                    //for (int i = 0; i < ownedParams.Length; i++)
+                    //{    
+                    //    ownedParams[i] = new PETypeParameterSymbol(moduleSymbol, this, (ushort)i, _genericParameterHandles[firstIndex + i]);
+                    //}
+
+                    //ImmutableInterlocked.InterlockedInitialize(ref _lazyTypeParameters,
+                    //    ImmutableArray.Create<ITypeParameterSymbol>(ownedParams));
                 }
             }
 

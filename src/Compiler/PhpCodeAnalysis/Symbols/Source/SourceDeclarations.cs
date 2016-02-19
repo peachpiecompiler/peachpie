@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(trees);
 
             var visitor = new PopulatorVisitor(compilation, this);
-            trees.Foreach(visitor.VisitSourceUnit);
+            trees.ForEach(visitor.VisitSourceUnit);
         }
 
         public IMethodSymbol GetFunction(QualifiedName name) => _functions.TryGetOrDefault(name);

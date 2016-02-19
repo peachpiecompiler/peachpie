@@ -62,5 +62,31 @@ namespace Pchp.CodeAnalysis
 
             return true;
         }
+
+        /// <summary>
+        /// Gets value indicating whether given qualified name was not set.
+        /// </summary>
+        public static bool IsEmpty(this QualifiedName qname)
+        {
+            return qname.IsSimpleName && string.IsNullOrEmpty(qname.Name.Value);
+        }
+
+        /// <summary>
+        /// Special PHP type and function names.
+        /// </summary>
+        public struct SpecialNames
+        {
+            public static QualifiedName ArrayAccess { get { return new QualifiedName(new Name("ArrayAccess")); } }
+            public static QualifiedName Iterator { get { return new QualifiedName(new Name("Iterator")); } }
+            public static QualifiedName Traversable { get { return new QualifiedName(new Name("Traversable")); } }
+            public static QualifiedName Closure { get { return new QualifiedName(new Name("Closure")); } }
+            public static QualifiedName Exception { get { return new QualifiedName(new Name("Exception")); } }
+
+            public static Name offsetGet { get { return new Name("offsetGet"); } }
+            public static Name offsetSet { get { return new Name("offsetSet"); } }
+            public static Name current { get { return new Name("current"); } }
+            public static Name __invoke { get { return new Name("__invoke"); } }
+            public static Name __toString { get { return new Name("__toString"); } }
+        }
     }
 }

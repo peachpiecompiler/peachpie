@@ -119,7 +119,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if ((object)this.ContainingType == null &&
                 this.IsDefinition &&
-                this.ContainingModule == moduleBeingBuilt.SourceModule)
+                object.ReferenceEquals(this.ContainingModule, moduleBeingBuilt.SourceModule))
             {
                 return this;
             }
@@ -154,7 +154,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if ((object)this.ContainingType != null &&
                 this.IsDefinition &&
-                this.ContainingModule == moduleBeingBuilt.SourceModule)
+                object.ReferenceEquals(this.ContainingModule, moduleBeingBuilt.SourceModule))
             {
                 return this;
             }
@@ -194,7 +194,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(this.IsDefinitionOrDistinct());
 
             if (this.IsDefinition && // can't be generic instantiation
-                this.ContainingModule == moduleBeingBuilt.SourceModule) // must be declared in the module we are building
+                object.ReferenceEquals(this.ContainingModule, moduleBeingBuilt.SourceModule)) // must be declared in the module we are building
             {
                 return this;
             }

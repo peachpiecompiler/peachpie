@@ -1,0 +1,805 @@
+﻿using AST = Pchp.Syntax.AST;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using Pchp.Syntax;
+using Pchp.CodeAnalysis.Utilities;
+
+namespace Pchp.CodeAnalysis.FlowAnalysis
+{
+    /// <summary>
+    /// Context of <see cref="TypeRefMask"/> and <see cref="ITypeRef"/> instances.
+    /// Contains additional information for routine context like current namespace, current type context etc.
+    /// </summary>
+    public sealed class TypeRefContext
+    {
+        #region Fields & Properties
+
+        /// <summary>
+        /// Bit masks initialized when such type is added to the context.
+        /// Its bits corresponds to <see cref="_typeRefs"/> indices.
+        /// </summary>
+        private ulong _isObjectMask, _isArrayMask, _isIntMask, _isDoubleMask, _isBoolMask, _isStringMask, _isPrimitiveMask, _isLambdaMask, _isResourceMask, _nullTypeMask, _AnObjectMask;
+        private ulong IsNumberMask { get { return _isIntMask | _isDoubleMask; } }
+        private ulong IsNullableMask { get { return _isObjectMask | _isArrayMask | _isStringMask | _isLambdaMask | _nullTypeMask | _isResourceMask; } }
+
+        /// <summary>
+        /// Allowed types for array key.
+        /// </summary>
+        private ulong IsArrayKeyMask { get { return _isStringMask | _isBoolMask | _isIntMask | _isDoubleMask | _isResourceMask; } }
+
+        /// <summary>
+        /// List of types occuring in the context.
+        /// </summary>
+        private readonly List<ITypeRef>/*!*/_typeRefs;
+
+        /// <summary>
+        /// Name of <c>parent</c> class type if any.
+        /// </summary>
+        private readonly QualifiedName? _parentTypeCtx;
+
+        /// <summary>
+        /// contains type mask of <c>self</c> type with <c>includesSubclasses</c> flag set whether type is not final.
+        /// </summary>
+        private readonly TypeRefMask _typeCtxMask;
+
+        /// <summary>
+        /// When resolved, contains type mask of <c>parent</c> type.
+        /// </summary>
+        private TypeRefMask _parentTypeMask;
+
+        /// <summary>
+        /// When resolved, contains type mask of <c>static</c> type.
+        /// </summary>
+        private TypeRefMask _staticTypeMask;
+
+        /// <summary>
+        /// Current naming context. Used for resolving PHPDoc type names, current namespace name etc. Can be <c>null</c>.
+        /// </summary>
+        public NamingContext Naming { get { return _namingCtx; } }
+        private readonly NamingContext _namingCtx;
+
+        /// <summary>
+        /// Current source unit. Used for resolving current file name, elements position etc. Can be <c>null</c>.
+        /// </summary>
+        public SourceUnit SourceUnit { get { return _sourceUnit; } }
+        private readonly SourceUnit _sourceUnit;
+
+        #endregion
+
+        #region Primitive Types
+
+        internal static readonly PrimitiveTypeRef/*!*/NullTypeRef = new PrimitiveTypeRef(PhpDataType.Null);
+        internal static readonly PrimitiveTypeRef/*!*/BoolTypeRef = new PrimitiveTypeRef(PhpDataType.Boolean);
+        internal static readonly PrimitiveTypeRef/*!*/IntTypeRef = new PrimitiveTypeRef(PhpDataType.Long);
+        internal static readonly PrimitiveTypeRef/*!*/DoubleTypeRef = new PrimitiveTypeRef(PhpDataType.Double);
+        internal static readonly PrimitiveTypeRef/*!*/StringTypeRef = new PrimitiveTypeRef(PhpDataType.String);
+        internal static readonly PrimitiveTypeRef/*!*/ArrayTypeRef = new PrimitiveTypeRef(PhpDataType.Array);
+        internal static readonly PrimitiveTypeRef/*!*/ObjectTypeRef = new PrimitiveTypeRef(PhpDataType.Object);
+        internal static readonly PrimitiveTypeRef/*!*/ResourceTypeRef = new PrimitiveTypeRef(PhpDataType.Resource);
+        internal static readonly PrimitiveTypeRef/*!*/CallableTypeRef = new PrimitiveTypeRef(PhpDataType.Callable);
+        
+        #endregion
+
+        #region Initialization
+
+        public TypeRefContext(NamingContext naming, SourceUnit sourceUnit, AST.TypeDecl typeCtx, QualifiedName? parentTypeCtx)
+        {
+            Debug.Assert(!parentTypeCtx.HasValue || typeCtx != null);
+
+            _namingCtx = naming;
+            _sourceUnit = sourceUnit;
+            _parentTypeCtx = parentTypeCtx;
+            _typeRefs = new List<ITypeRef>();
+            _typeCtxMask = GetTypeCtxMask(typeCtx);
+        }
+
+        /// <summary>
+        /// Gets type mask corresponding to <c>self</c> with <c>includesSubclasses</c> flag set whether type is not final.
+        /// </summary>
+        private TypeRefMask GetTypeCtxMask(AST.TypeDecl typeCtx)
+        {
+            if (typeCtx != null)
+            {
+                var typeIsFinal = (typeCtx.MemberAttributes & PhpMemberAttributes.Final) != 0;
+                return GetTypeMask(new ClassTypeRef(NameUtils.MakeQualifiedName(typeCtx)), !typeIsFinal);
+            }
+
+            //
+            return 0;
+        }
+
+        /// <summary>
+        /// Explicitly defines late static bind type (type of <c>static</c>).
+        /// </summary>
+        /// <param name="staticTypeMask">Type mask of <c>static</c> or <c>void</c> if this information is unknown.</param>
+        internal void SetLateStaticBindType(TypeRefMask staticTypeMask)
+        {
+            _staticTypeMask = staticTypeMask;
+        }
+
+        #endregion
+
+        #region AddToContext
+
+        /// <summary>
+        /// Ensures given type is in the context.
+        /// </summary>
+        /// <param name="typeRef">Type reference to be in the context.</param>
+        /// <returns>Index of the type within the context. Can return <c>-1</c> if there is too many types in the context already.</returns>
+        public int AddToContext(ITypeRef/*!*/typeRef)
+        {
+            Contract.ThrowIfNull(typeRef);
+
+            var types = _typeRefs;
+            var index = this.GetTypeIndex(typeRef);
+            if (index < 0 && this.Types.Count < TypeRefMask.IndicesCount)
+                index = this.AddToContextNoCheck(typeRef);
+
+            //
+            return index;
+        }
+
+        private int AddToContextNoCheck(ITypeRef/*!*/typeRef)
+        {
+            Contract.ThrowIfNull(typeRef);
+            Debug.Assert(_typeRefs.IndexOf(typeRef) == -1);
+            
+            int index = _typeRefs.Count;
+            this.UpdateMasks(typeRef, index);
+            
+            _typeRefs.Add(typeRef);
+
+            //
+            return index;
+        }
+
+        /// <summary>
+        /// Updates internal masks for newly added type.
+        /// </summary>
+        /// <param name="typeRef">Type.</param>
+        /// <param name="index">Type index.</param>
+        private void UpdateMasks(ITypeRef/*!*/typeRef, int index)
+        {
+            Debug.Assert(index >= 0 && index < TypeRefMask.IndicesCount);
+
+            ulong mask = (ulong)1 << index;
+
+            if (typeRef.IsObject) _isObjectMask |= mask;
+            if (typeRef.IsArray) _isArrayMask |= mask;
+            if (typeRef.IsLambda) _isLambdaMask |= mask;
+
+            if (typeRef.IsPrimitiveType)
+            {
+                _isPrimitiveMask |= mask;
+                switch (typeRef.TypeCode)
+                {
+                    case PhpDataType.Boolean:
+                        _isBoolMask = mask;
+                        break;
+                    case PhpDataType.Long:
+                        _isIntMask = mask;
+                        break;
+                    case PhpDataType.Double:
+                        _isDoubleMask = mask;
+                        break;
+                    case PhpDataType.String:
+                        _isStringMask = mask;
+                        break;
+                    case PhpDataType.Null:
+                        _nullTypeMask = mask;
+                        break;
+                    case PhpDataType.Resource:
+                        _isResourceMask |= mask;
+                        break;
+                    case PhpDataType.Object:
+                        _AnObjectMask = mask;
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds properly types from another context.
+        /// </summary>
+        /// <param name="other">Another type context which types will be added to this one.</param>
+        internal void AddToContext(TypeRefContext/*!*/other)
+        {
+            Contract.ThrowIfNull(other);
+
+            foreach (var typeref in other.Types)
+            {
+                AddToContext(typeref.Transfer(other, this));
+            }
+        }
+
+        /// <summary>
+        /// Adds properly types from another context matching given mask.
+        /// </summary>
+        /// <param name="context">Context of <paramref name="mask"/>.</param>
+        /// <param name="mask">Type mask representing types in <paramref name="context"/>.</param>
+        /// <returns>Returns type mask in this context representing <paramref name="mask"/> as <paramref name="context"/>.</returns>
+        public TypeRefMask AddToContext(TypeRefContext/*!*/context, TypeRefMask mask)
+        {
+            Contract.ThrowIfNull(context);
+
+            if (mask.IsAnyType || mask.IsVoid || object.ReferenceEquals(this, context))
+                return mask;
+
+            var result = default(TypeRefMask);
+
+            var types = context.Types;
+            var count = Math.Min(types.Count, TypeRefMask.IndicesCount);
+            for (int i = 0; i < count; i++)
+            {
+                if (mask.HasType(i))
+                {
+                    var index = AddToContext(types[i].Transfer(context, this));
+                    result.AddType(index);
+                }
+            }
+
+            //
+            result.IsHint = mask.IsHint;
+            result.IncludesSubclasses = mask.IncludesSubclasses;
+
+            //
+            return result;
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Gets enumeration of types matching given masks.
+        /// </summary>
+        private IList<ITypeRef>/*!!*/GetTypes(TypeRefMask typemask, ulong bitmask)
+        {
+            var mask = typemask.Mask & bitmask & ~TypeRefMask.FlagsMask;
+            if (mask == (ulong)0 || typemask.IsAnyType)
+                return EmptyArray<ITypeRef>.Instance;
+            
+            var result = new List<ITypeRef>(1);
+            for (int i = 0; mask != 0; i++, mask = (mask & ~(ulong)1) >> 1)
+                if ((mask & 1) != 0)
+                {
+                    result.Add(_typeRefs[i]);
+                }
+
+            return result;
+        }
+
+        private TypeRefMask GetPrimitiveTypeRefMask(PrimitiveTypeRef/*!*/typeref)
+        {
+            // primitive type cannot include subclasses
+            var index = AddToContext(typeref);
+            return TypeRefMask.CreateFromTypeIndex(index);
+        }
+
+        /// <summary>
+        /// Does not lookup existing types whether there is typeref already.
+        /// </summary>
+        private TypeRefMask GetPrimitiveTypeRefMaskNoCheck(PrimitiveTypeRef/*!*/typeref)
+        {
+            if (this.Types.Count < TypeRefMask.IndicesCount)
+            {
+                var index = AddToContextNoCheck(typeref);
+                return TypeRefMask.CreateFromTypeIndex(index);
+            }
+            else
+            {
+                return TypeRefMask.AnyType;
+            }
+        }
+
+        /// <summary>
+        /// Gets type mask for reserved class name (self, parent, static).
+        /// </summary>
+        private TypeRefMask GetTypeMaskOfReservedClassName(Name name)
+        {
+            if (name == Name.SelfClassName) return GetSelfTypeMask();
+            if (name == Name.ParentClassName) return GetParentTypeMask();
+            if (name == Name.StaticClassName) return GetStaticTypeMask();
+
+            throw new ArgumentException();
+        }
+
+        #endregion
+
+        #region GetTypeMask
+
+        /// <summary>
+        /// Helper method that builds <see cref="TypeRefMask"/> for given type in this context.
+        /// </summary>
+        public TypeRefMask GetTypeMask(ITypeRef/*!*/typeref, bool includesSubclasses)
+        {
+            var index = AddToContext(typeref);
+            var mask = TypeRefMask.CreateFromTypeIndex(index);
+
+            if (includesSubclasses)
+                mask.SetIncludesSubclasses();
+
+            return mask;
+        }
+
+        /// <summary>
+        /// Gets type mask corresponding to given qualified name within this context.
+        /// </summary>
+        public TypeRefMask GetTypeMask(QualifiedName qname, bool includesSubclasses = true)
+        {
+            if (qname.IsReservedClassName)
+                return GetTypeMaskOfReservedClassName(qname.Name);
+            
+            return GetTypeMask(new ClassTypeRef(qname), includesSubclasses);
+        }
+
+        /// <summary>
+        /// Gets type mask corresponding to given TypeRef within this context.
+        /// </summary>
+        public TypeRefMask GetTypeMask(AST.TypeRef/*!*/tref, bool includesSubclasses = true)
+        {
+            Contract.ThrowIfNull(tref);
+
+            var dtype = tref as AST.DirectTypeRef;
+            if (dtype != null)
+            {
+                return GetTypeMask(dtype.ClassName, includesSubclasses);
+            }
+            else
+            {
+                var itype = tref as AST.IndirectTypeRef;
+                if (itype != null)
+                {
+                    return GetTypeMask(itype, includesSubclasses);
+                }
+            }
+
+            //
+            return TypeRefMask.AnyType;
+        }
+
+        /// <summary>
+        /// Gets type mask corresponding to given TypeRef within this context.
+        /// </summary>
+        private TypeRefMask GetTypeMask(AST.IndirectTypeRef/*!*/tref, bool includesSubclasses)
+        {
+            Contract.ThrowIfNull(tref);
+
+            var dvar = tref.ClassNameVar as AST.DirectVarUse;
+            if (dvar != null && dvar.IsMemberOf == null && dvar.VarName.IsThisVariableName)
+                return GetThisTypeMask();
+
+            //
+            return TypeRefMask.AnyType;
+        }
+
+        /// <summary>
+        /// Gets type mask corresponding to the parameter type hint.
+        /// </summary>
+        /// <param name="typeHint">Type hint. Can be <c>null</c>, <see cref="GenericQualifiedName"/> or <see cref="PrimitiveTypeName"/>.</param>
+        /// <returns>Type mask of type hint if it was provided, otherwise AnyType.</returns>
+        public TypeRefMask GetTypeMaskFromTypeHint(object typeHint)
+        {
+            if (typeHint != null)
+            {
+                var value = new TypeHintValue(typeHint);
+
+                if (value.IsGenericQualifiedName)
+                {
+                    return GetTypeMask(value.GenericQualifiedName.QualifiedName);
+                }
+                
+                if (value.IsPrimitiveType)
+                {
+                    var pname = value.PrimitiveTypeName.Name;
+                    if (pname == QualifiedName.Callable.Name) return GetPrimitiveTypeRefMask(CallableTypeRef);
+                    if (pname == QualifiedName.Array.Name) return GetArrayTypeMask();
+                    if (pname == QualifiedName.String.Name) return GetStringTypeMask();
+                    if (pname == QualifiedName.Boolean.Name) return GetBooleanTypeMask();
+                    if (pname == QualifiedName.Integer.Name) return GetIntTypeMask();
+                    if (pname == QualifiedName.LongInteger.Name) return GetIntTypeMask();
+                    if (pname == QualifiedName.Double.Name) return GetDoubleTypeMask();
+                }
+            }
+
+            return TypeRefMask.AnyType;
+        }
+
+        /// <summary>
+        /// Gets <c>string</c> type for this context.
+        /// </summary>
+        public TypeRefMask GetStringTypeMask()
+        {
+            if (_isStringMask != 0)
+            {
+                return new TypeRefMask(_isStringMask);
+            }
+            else
+            {
+                return GetPrimitiveTypeRefMaskNoCheck(StringTypeRef);
+            }
+        }
+
+        /// <summary>
+        /// Gets <c>int</c> type for this context.
+        /// </summary>
+        public TypeRefMask GetIntTypeMask()
+        {
+            if (_isIntMask != 0)
+            {
+                return new TypeRefMask(_isIntMask);
+            }
+            else
+            {
+                return GetPrimitiveTypeRefMaskNoCheck(IntTypeRef);
+            }
+        }
+
+        /// <summary>
+        /// Gets <c>bool</c> type for this context.
+        /// </summary>
+        public TypeRefMask GetBooleanTypeMask()
+        {
+            if (_isBoolMask != 0)
+            {
+                return new TypeRefMask(_isBoolMask);
+            }
+            else
+            {
+                return GetPrimitiveTypeRefMaskNoCheck(BoolTypeRef);
+            }
+        }
+
+        /// <summary>
+        /// Gets <c>double</c> type for this context.
+        /// </summary>
+        public TypeRefMask GetDoubleTypeMask()
+        {
+            if (_isDoubleMask != 0)
+            {
+                return new TypeRefMask(_isDoubleMask);
+            }
+            else
+            {
+                return GetPrimitiveTypeRefMaskNoCheck(DoubleTypeRef);
+            }
+        }
+
+        /// <summary>
+        /// Gets <c>number</c> (<c>int</c> and <c>double</c>) type for this context.
+        /// </summary>
+        public TypeRefMask GetNumberTypeMask()
+        {
+            return GetIntTypeMask() | GetDoubleTypeMask();
+        }
+
+        /// <summary>
+        /// Gets <c>null</c> type for this context.
+        /// </summary>
+        public TypeRefMask GetNullTypeMask()
+        {
+            if (_nullTypeMask != 0)
+            {
+                return new TypeRefMask(_nullTypeMask);
+            }
+            else
+            {
+                return GetPrimitiveTypeRefMaskNoCheck(NullTypeRef);
+            }
+        }
+
+        /// <summary>
+        /// Gets type mask of generic <c>array</c> with element of any type.
+        /// </summary>
+        public TypeRefMask GetArrayTypeMask()
+        {
+            return GetPrimitiveTypeRefMask(ArrayTypeRef);
+        }
+
+        /// <summary>
+        /// Gets type mask of <c>array</c> with elements of given type.
+        /// </summary>
+        public TypeRefMask GetArrayTypeMask(TypeRefMask elementType)
+        {
+            TypeRefMask result;
+
+            if (elementType.IsAnyType)
+            {
+                result = GetArrayTypeMask();  // generic array
+            }
+            else if (elementType.IsVoid)
+            {
+                result = GetTypeMask(new ArrayTypeRef(null, 0), false);   // empty array
+            }
+            else if (elementType.IsSingleType)
+            {
+                result = GetTypeMask(new ArrayTypeRef(null, elementType), false);
+            }
+            else
+            {
+                result = 0;
+
+                if ((elementType & _isArrayMask) != 0)  // array elements contain another arrays
+                {
+                    // simplify this to generic arrays
+                    elementType &= ~_isArrayMask;
+                    elementType |= GetArrayTypeMask();
+                }
+
+                // construct array type mask from array types with single element type
+
+                // go through all array types
+                var mask = elementType & ~(ulong)TypeRefMask.FlagsMask;
+                for (int i = 0; mask != 0; i++, mask = (mask & ~(ulong)1) >> 1)
+                    if ((mask & 1) != 0)    // _typeRefs[i].IsArray
+                    {
+                        result |= GetTypeMask(new ArrayTypeRef(null, (ulong)1 << i), false);
+                    }
+            }
+
+            //
+            result.IsHint = elementType.IsHint;
+            return result;
+        }
+
+        /// <summary>
+        /// Gets <c>self</c> type for this context.
+        /// </summary>
+        public TypeRefMask GetSelfTypeMask()
+        {
+            var result = _typeCtxMask;
+            result.IncludesSubclasses = false;
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets type of <c>$this</c> in current context.
+        /// </summary>
+        public TypeRefMask GetThisTypeMask()
+        {
+            return _typeCtxMask;    // the same as $this
+        }
+
+        /// <summary>
+        /// Gets <c>parent</c> type for this context.
+        /// </summary>
+        public TypeRefMask GetParentTypeMask()
+        {
+            if (_parentTypeMask == 0 && _parentTypeCtx.HasValue)
+                _parentTypeMask = GetTypeMask(new ClassTypeRef(_parentTypeCtx.Value), false);
+            
+            return _parentTypeMask;
+        }
+
+        /// <summary>
+        /// Gets <c>static</c> type for this context.
+        /// </summary>
+        public TypeRefMask GetStaticTypeMask()
+        {
+            if (_staticTypeMask == 0)
+            {
+                var mask = _typeCtxMask;
+                if (mask != 0)
+                    mask.IncludesSubclasses = true;
+
+                _staticTypeMask = mask;
+            }
+
+            return _staticTypeMask;
+        }
+
+        /// <summary>
+        /// Gets mask representing only array types in given mask.
+        /// (Only bits corresponding to an array type will be set).
+        /// </summary>
+        public TypeRefMask GetArraysFromMask(TypeRefMask mask)
+        {
+            if (mask.IsAnyType) return 0;
+            return mask & _isArrayMask;
+        }
+
+        /// <summary>
+        /// Gets mask representing only object types in given mask.
+        /// (Only bits corresponding to an object type will be set).
+        /// </summary>
+        public TypeRefMask GetObjectsFromMask(TypeRefMask mask)
+        {
+            if (mask.IsAnyType) return 0;
+            return mask & _isObjectMask;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Gets enumeration of all types in the context.
+        /// </summary>
+        public IList<ITypeRef>/*!*/Types { get { return _typeRefs; } }
+
+        /// <summary>
+        /// Gets types referenced by given type mask.
+        /// </summary>
+        public IList<ITypeRef>/*!*/GetTypes(TypeRefMask mask)
+        {
+            return GetTypes(mask, TypeRefMask.AnyTypeMask);
+        }
+
+        /// <summary>
+        /// Gets types of type <c>object</c> (classes, interfaces, traits) referenced by given type mask.
+        /// </summary>
+        public IList<ITypeRef>/*!*/GetObjectTypes(TypeRefMask mask)
+        {
+            if (mask.IsAnyType)
+                return EmptyArray<ITypeRef>.Instance;
+
+            return GetTypes(mask, _isObjectMask);
+        }
+
+        /// <summary>
+        /// Gets string representation of types contained in given type mask.
+        /// </summary>
+        public string ToString(TypeRefMask mask)
+        {
+            if (!mask.IsVoid)
+            {
+                if (mask.IsAnyType)
+                    return TypeRefMask.MixedTypeName;
+
+                //
+                var types = new List<string>(1);
+
+                // handle arrays separately
+                var arrmask = mask & _isArrayMask;
+                if (arrmask != 0)
+                {
+                    mask &= ~_isArrayMask;
+                    ITypeRef elementtype = null;
+                    var elementmask = GetElementType(arrmask);
+                    if (elementmask.IsSingleType)
+                        elementtype = GetTypes(elementmask).FirstOrDefault();
+
+                    if (elementtype != null)
+                        types.Add(elementtype.QualifiedName.ToString() + "[]");
+                    else
+                        types.Add(ArrayTypeRef.QualifiedName.ToString());
+                }
+
+                //// int|double => number
+                //var isNumber = (_isIntMask != 0 && _isDoubleMask != 0 && (mask & IsNumberMask) == IsNumberMask);
+                //if (isNumber)
+                //    mask &= ~IsNumberMask;
+                
+                //
+                types.AddRange(GetTypes(mask).Select(t => t.QualifiedName.ToString()));
+
+                //if (isNumber)
+                //    types.Add("number");
+                
+                //
+                if (types.Count != 0)
+                {
+                    types.Sort();
+                    return string.Join(PHPDocBlock.TypeVarDescTag.TypeNamesSeparator.ToString(), types.Distinct());
+                }
+            }
+
+            return TypeRefMask.VoidTypeName;
+        }
+
+        /// <summary>
+        /// Gets index of the given type within the context. Returns <c>-1</c> if such type is not present.
+        /// </summary>
+        public int GetTypeIndex(ITypeRef/*!*/typeref) { return _typeRefs.IndexOf(typeref); }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents a number.
+        /// </summary>
+        public bool IsNumber(TypeRefMask mask) { return (mask.Mask & IsNumberMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents a string type.
+        /// </summary>
+        public bool IsString(TypeRefMask mask) { return (mask.Mask & _isStringMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents a boolean.
+        /// </summary>
+        public bool IsBoolean(TypeRefMask mask) { return (mask.Mask & _isBoolMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents an integer type.
+        /// </summary>
+        public bool IsInteger(TypeRefMask mask) { return (mask.Mask & _isIntMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents a double type.
+        /// </summary>
+        public bool IsDouble(TypeRefMask mask) { return (mask.Mask & _isDoubleMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents an object.
+        /// </summary>
+        public bool IsObject(TypeRefMask mask) { return (mask.Mask & _isObjectMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents an array.
+        /// </summary>
+        public bool IsArray(TypeRefMask mask) { return (mask.Mask & _isArrayMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents a lambda function or <c>callable</c> primitive type.
+        /// </summary>
+        public bool IsLambda(TypeRefMask mask) { return (mask.Mask & _isLambdaMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents a resource.
+        /// </summary>
+        public bool IsResource(TypeRefMask mask) { return (mask.Mask & _isResourceMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents a primitive type.
+        /// </summary>
+        public bool IsPrimitiveType(TypeRefMask mask) { return (mask.Mask & _isPrimitiveMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether the type mask represents <c>null</c>.
+        /// </summary>
+        public bool IsNull(TypeRefMask mask)
+        {
+            return (mask.Mask & _nullTypeMask) != 0 && !mask.IsAnyType;
+        }
+
+        /// <summary>
+        /// Gets value indicating whether given type can be <c>null</c>.
+        /// </summary>
+        public bool IsNullable(TypeRefMask mask) { return (mask.Mask & IsNullableMask) != 0; }
+
+        public bool IsArrayKey(TypeRefMask mask) { return (mask.Mask & IsArrayKeyMask) != 0; }  // TODO: type can be of type object with method __toString() ?
+
+        /// <summary>
+        /// Gets value indicating whether given mask represents an unspecified <c>object</c> instance.
+        /// </summary>
+        public bool IsAnObject(TypeRefMask mask)
+        {
+            return (mask.Mask & _AnObjectMask) != 0;
+        }
+
+        /// <summary>
+        /// In case of array type, gets its possible element types.
+        /// </summary>
+        public TypeRefMask GetElementType(TypeRefMask mask)
+        {
+            TypeRefMask result;
+            if (IsArray(mask) && !mask.IsAnyType)
+            {
+                result = default(TypeRefMask);  // uninitalized
+
+                var arrtypes = GetTypes(mask, _isArrayMask);
+                foreach (var t in arrtypes)
+                {
+                    Debug.Assert(t.IsArray);
+                    result |= t.ElementType;
+                }
+
+                if (result.IsVoid)
+                {
+                    // empty array
+                    //result = TypeRefMask.AnyType;
+                }
+            }
+            else
+            {
+                result = TypeRefMask.AnyType;
+            }
+
+            return result;
+        }
+
+        #endregion
+    }
+}

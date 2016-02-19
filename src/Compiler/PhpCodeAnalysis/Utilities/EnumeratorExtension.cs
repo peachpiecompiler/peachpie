@@ -50,7 +50,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Calls given action for each element in given enumerable.
         /// </summary>
-        public static void Foreach<T>(this IEnumerable<T>/*!*/enumerable, Action<T>/*!*/func)
+        public static void ForEach<T>(this IEnumerable<T>/*!*/enumerable, Action<T>/*!*/func)
         {
             Contract.ThrowIfNull(enumerable);
             Contract.ThrowIfNull(func);

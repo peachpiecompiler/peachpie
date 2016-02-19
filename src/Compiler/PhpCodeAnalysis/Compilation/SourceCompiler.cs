@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
@@ -21,6 +22,8 @@ namespace Pchp.CodeAnalysis
         readonly PEModuleBuilder _moduleBuilder;
         readonly bool _emittingPdb;
         readonly DiagnosticBag _diagnostics;
+        readonly Worklist _worklist;
+        // readonly CallGraph _callgraph; //keeps graph of what methods call specific method // used to reanalyze caller methods when return type ot arg. type changes
 
         private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics)
         {
@@ -33,8 +36,8 @@ namespace Pchp.CodeAnalysis
             _emittingPdb = emittingPdb;
             _diagnostics = diagnostics;
 
-            // var callgraph = new ...
-            // var worklist = new ... // parallel worklist algorithm
+            _worklist = new Worklist(); // parallel worklist algorithm
+
             // semantic model
         }
 
@@ -45,7 +48,7 @@ namespace Pchp.CodeAnalysis
             var methods = sourcesymbols.GetFunctions()
                     .Concat(sourcesymbols.GetTypes().SelectMany(t => t.GetMembers()))
                     .OfType<SourceBaseMethodSymbol>();
-            methods.Foreach(action);
+            methods.ForEach(action);
 
             // TODO: methodsWalker.VisitNamespace(_compilation.SourceModule.GlobalNamespace)
         }
@@ -57,11 +60,24 @@ namespace Pchp.CodeAnalysis
             return method.BoundBlock;
         }
 
-        internal void AnalyzeMethod(SourceBaseMethodSymbol method)
+        internal void AnalyzeMethods()
+        {
+            //this.WalkMethods(m => worklist.Enlist(m, this.AnalyzeMethod))
+            //worklist.Do
+
+            // DEBUG
+            this.WalkMethods(this.AnalyzeMethod);
+        }
+
+        private void AnalyzeMethod(SourceBaseMethodSymbol method)
         {
             Contract.ThrowIfNull(method);
 
             var bound = method.BoundBlock;
+
+            // Initial State // declared locals, initial types
+            // TypeAnalysis + ResolveSymbols
+            // if (LowerBody(bound)) Enlist(method)
         }
 
         /// <summary>
@@ -84,7 +100,7 @@ namespace Pchp.CodeAnalysis
             CancellationToken cancellationToken)
         {
             var compiler = new SourceCompiler(compilation, moduleBuilder, emittingPdb, diagnostics);
-            
+
             // 1. Synthetize magic
             //   a.inline syntax like traits
             //   b.synthetize entry point, getters, setters, ctors, dispose, magic methods, …
@@ -100,7 +116,7 @@ namespace Pchp.CodeAnalysis
             //   b.build global variables/constants table
             //   c.type analysis(converge type - mask), resolve symbols
             //   d.lower semantics, update bound tree, repeat
-            compiler.WalkMethods(compiler.AnalyzeMethod);
+            compiler.AnalyzeMethods();
 
             // 4. Emit method bodies
             compiler.WalkMethods(compiler.EmitMethodBody);
