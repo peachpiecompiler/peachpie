@@ -488,7 +488,7 @@ namespace Pchp.CodeAnalysis
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
             DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
 
-            SourceCompiler.CompileMethodBodies(
+            SourceCompiler.CompileSources(
                 this,
                 moduleBeingBuilt,
                 emittingPdb,

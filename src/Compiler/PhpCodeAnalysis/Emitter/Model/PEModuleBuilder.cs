@@ -196,7 +196,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal Cci.IMethodBody GetMethodBody(IMethodSymbol methodSymbol)
         {
-            Debug.Assert(((IMethodSymbol)methodSymbol).ContainingModule == this.SourceModule);
+            Debug.Assert(object.ReferenceEquals(((IMethodSymbol)methodSymbol).ContainingModule, this.SourceModule));
             Debug.Assert(((IMethodSymbol)methodSymbol).IsDefinition);
             Debug.Assert(((IMethodSymbol)methodSymbol).PartialDefinitionPart == null); // Must be definition.
 
@@ -212,7 +212,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         public void SetMethodBody(IMethodSymbol methodSymbol, Cci.IMethodBody body)
         {
-            Debug.Assert(((IMethodSymbol)methodSymbol).ContainingModule == this.SourceModule);
+            Debug.Assert(object.ReferenceEquals(((IMethodSymbol)methodSymbol).ContainingModule, this.SourceModule));
             Debug.Assert(((IMethodSymbol)methodSymbol).IsDefinition);
             Debug.Assert(((IMethodSymbol)methodSymbol).PartialDefinitionPart == null); // Must be definition.
             Debug.Assert(body == null || (object)methodSymbol == body.MethodDefinition);
