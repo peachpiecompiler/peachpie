@@ -15,12 +15,9 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     internal static class SemanticsBinder
     {
-        public static IEnumerable<BoundStatement> BindStatements(IList<AST.Statement> statements)
+        public static IEnumerable<BoundStatement> BindStatements(IEnumerable<AST.Statement> statements)
         {
-            Debug.Assert(statements != null);
-
-            for (int i = 0; i < statements.Count; i++)
-                yield return BindStatement(statements[i]);
+            return statements.Select(BindStatement);
         }
 
         public static BoundStatement BindStatement(AST.Statement stmt)

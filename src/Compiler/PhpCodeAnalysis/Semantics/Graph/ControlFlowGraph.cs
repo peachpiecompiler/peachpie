@@ -1,0 +1,156 @@
+﻿using Pchp.Syntax.AST;
+using Pchp.Syntax.Text;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Pchp.CodeAnalysis.Semantics.Graph
+{
+    /// <summary>
+    /// Represents statements control flow graph.
+    /// </summary>
+    public sealed class ControlFlowGraph : AstNode
+    {
+        #region LabelBlockFlags, LabelBlockInfo
+
+        /// <summary>
+        /// Found label reference (definition or target) information.
+        /// </summary>
+        [Flags]
+        public enum LabelBlockFlags : byte
+        {
+            /// <summary>
+            /// Not used nor defined.
+            /// </summary>
+            None = 0,
+
+            /// <summary>
+            /// Label is defined.
+            /// </summary>
+            Defined = 1,
+
+            /// <summary>
+            /// Label is used as a target.
+            /// </summary>
+            Used = 2,
+
+            /// <summary>
+            /// Label was defined twice or more.
+            /// </summary>
+            Redefined = 4,
+        }
+
+        /// <summary>
+        /// Label state.
+        /// </summary>
+        public sealed class LabelBlockState
+        {
+            /// <summary>
+            /// Label identifier.
+            /// </summary>
+            public string Label;
+
+            /// <summary>
+            /// Positions of label definition and last label use.
+            /// </summary>
+            public Span GotoSpan, LabelSpan;
+
+            /// <summary>
+            /// Lable target block.
+            /// </summary>
+            public Block Block;
+
+            /// <summary>
+            /// Label information.
+            /// </summary>
+            public LabelBlockFlags Flags;
+        }
+
+        #endregion
+
+        #region Fields & Properties
+
+        /// <summary>
+        /// Gets the control flow start block. Cannot be <c>null</c>.
+        /// </summary>
+        public Block/*!*/Start { get { return _start; } }
+        readonly Block/*!*/_start;
+        
+        /// <summary>
+        /// Gets the control flow exit block. Cannot be <c>null</c>.
+        /// </summary>
+        public Block/*!*/Exit { get { return _exit; } }
+        readonly Block/*!*/_exit;
+
+        /// <summary>
+        /// Exception block. Can be <c>null</c>.
+        /// If set, code can throw an exception or be terminated by call to <c>exit</c>, before reaching exit block.
+        /// This block is connected with blocks ending with <c>throw</c> statement.
+        /// </summary>
+        public Block Throws { get { return _exception; } }
+        readonly Block _exception;
+
+        /// <summary>
+        /// Array of labels within routine. Can be <c>null</c>.
+        /// </summary>
+        public LabelBlockState[] Labels { get { return _labels; } }
+        readonly LabelBlockState[] _labels;
+
+        /// <summary>
+        /// List of blocks that are unreachable syntactically (statements after JumpStmt etc.).
+        /// </summary>
+        public List<Block>/*!*/UnreachableBlocks { get { return _unrecachable; } }
+        readonly List<Block>/*!*/_unrecachable;
+
+        /// <summary>
+        /// Last "tag" color used. Used internally for graph algorithms.
+        /// </summary>
+        int _lastcolor = 0;
+        
+        #endregion
+
+        #region Construction
+
+        public ControlFlowGraph(IList<Statement>/*!*/statements)
+            : this(BuilderVisitor.Build(statements))
+        {
+        }
+
+        private ControlFlowGraph(BuilderVisitor/*!*/builder)
+            : this(builder.Start, builder.Exit, builder.Exception, builder.Labels, builder.DeadBlocks)
+        {
+        }
+
+        private ControlFlowGraph(Block/*!*/start, Block/*!*/exit, Block exception, LabelBlockState[] labels, List<Block> unreachable)
+        {
+            Contract.ThrowIfNull(start);
+            Contract.ThrowIfNull(exit);
+
+            _start = start;
+            _exit = exit;
+            _exception = exception;
+            _labels = labels;
+            _unrecachable = unreachable ?? new List<Block>();
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Gets new (unique) color for use by graph algorithms.
+        /// </summary>
+        /// <returns>New color index.</returns>
+        public int NewColor()
+        {
+            return unchecked(++_lastcolor);
+        }
+
+        /// <summary>
+        /// Visits control flow blocks and contained statements, in deep.
+        /// Unreachable blocks are not visited.
+        /// </summary>
+        /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
+        public void Visit(GraphVisitor/*!*/visitor) => visitor.VisitCFG(this);
+    }
+}

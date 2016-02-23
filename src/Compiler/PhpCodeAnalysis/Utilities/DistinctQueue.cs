@@ -47,24 +47,22 @@ namespace Pchp.CodeAnalysis.Utilities
         /// <summary>
         /// Dequeues item from the queue.
         /// </summary>
-        public T TryDequeue()
+        public bool TryDequeue(out T value)
         {
-            T value;
-
             lock (_syncRoot)
             {
                 if (_queue.Count != 0)
                 {
                     value = _queue.Dequeue();
                     _set.Remove(value);
+                    return true;
                 }
                 else
                 {
                     value = default(T);
+                    return false;
                 }
             }
-
-            return value;
         }
     }
 }

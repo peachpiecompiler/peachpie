@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis
         readonly PEModuleBuilder _moduleBuilder;
         readonly bool _emittingPdb;
         readonly DiagnosticBag _diagnostics;
-        readonly Worklist _worklist;
+        readonly Worklist<BoundBlock> _worklist;
         // readonly CallGraph _callgraph; //keeps graph of what methods call specific method // used to reanalyze caller methods when return type ot arg. type changes
 
         private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics)
@@ -36,7 +36,7 @@ namespace Pchp.CodeAnalysis
             _emittingPdb = emittingPdb;
             _diagnostics = diagnostics;
 
-            _worklist = new Worklist(); // parallel worklist algorithm
+            _worklist = new Worklist<BoundBlock>(AnalyzeMethod); // parallel worklist algorithm
 
             // semantic model
         }
@@ -62,18 +62,13 @@ namespace Pchp.CodeAnalysis
 
         internal void AnalyzeMethods()
         {
-            //this.WalkMethods(m => worklist.Enlist(m, this.AnalyzeMethod))
-            //worklist.Do
-
-            // DEBUG
-            this.WalkMethods(this.AnalyzeMethod);
+            this.WalkMethods(m => _worklist.Enqueue(BindMethod(m)));
+            _worklist.DoAll();
         }
 
-        private void AnalyzeMethod(SourceBaseMethodSymbol method)
+        private void AnalyzeMethod(BoundBlock method)
         {
             Contract.ThrowIfNull(method);
-
-            var bound = method.BoundBlock;
 
             // Initial State // declared locals, initial types
             // TypeAnalysis + ResolveSymbols

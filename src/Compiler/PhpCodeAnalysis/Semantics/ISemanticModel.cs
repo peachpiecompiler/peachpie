@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// Represents PHP semantics.
     /// Used to query semantic questions about the compilation in specific context.
     /// </summary>
-    /// <remarks>Use <see cref="Microsoft.CodeAnalysis.SemanticModel"/> once we implement <see cref="SyntaxTree"/>.</remarks>
+    /// <remarks>Use <see cref="SemanticModel"/> once we implement <see cref="SyntaxTree"/>.</remarks>
     internal interface ISemanticModel
     {
         // TODO: source file, constant, local variable
