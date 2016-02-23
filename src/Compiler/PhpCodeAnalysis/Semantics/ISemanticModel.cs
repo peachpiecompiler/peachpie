@@ -25,9 +25,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         /// <summary>
         /// Get global function symbol by its name in current context.
-        /// Can be <c>null</c> if function cannot be found.
+        /// Can be <c>null</c> if function could not be found.
         /// </summary>
-        IMethodSymbol GetFunction(QualifiedName name);
+        ISemanticFunction GetFunction(QualifiedName name);
 
         /// <summary>
         /// Gets value determining whether <paramref name="qname"/> type can be assigned from <paramref name="from"/>.

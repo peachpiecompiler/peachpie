@@ -39,35 +39,6 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     /// <summary>
-    /// Code block semantic.
-    /// </summary>
-    public class BoundBlock : BoundStatement, IBlockStatement
-    {
-        ImmutableArray<IStatement> _statements;
-
-        public BoundBlock(IEnumerable<IStatement> statements)
-        {
-            _statements = statements.AsImmutable();
-        }
-
-        public override OperationKind Kind => OperationKind.BlockStatement;
-
-        /// <summary>
-        /// Array of local variables within this code block.
-        /// All PHP local variables are declared within the method scope.
-        /// </summary>
-        public virtual ImmutableArray<ILocalSymbol> Locals => ImmutableArray<ILocalSymbol>.Empty;
-
-        public ImmutableArray<IStatement> Statements => _statements;
-
-        public override void Accept(OperationVisitor visitor)
-            => visitor.VisitBlockStatement(this);
-
-        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitBlockStatement(this, argument);
-    }
-
-    /// <summary>
     /// Represents an expression statement.
     /// </summary>
     public sealed class BoundExpressionStatement : BoundStatement, IExpressionStatement

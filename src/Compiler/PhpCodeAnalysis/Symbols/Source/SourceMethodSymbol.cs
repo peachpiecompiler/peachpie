@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -28,8 +29,8 @@ namespace Pchp.CodeAnalysis.Symbols
             _syntax = syntax;
         }
 
-        protected override BoundMethodBody CreateBoundBlock()
-            => new BoundMethodBody(SemanticsBinder.BindStatements(_syntax.Body).AsImmutable());
+        protected override ControlFlowGraph CreateCFG()
+            => new ControlFlowGraph(_syntax.Body);
 
         public override string Name => _syntax.Name.Value;
 

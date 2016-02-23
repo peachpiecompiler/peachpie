@@ -55,12 +55,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             /// <summary>
             /// Positions of label definition and last label use.
             /// </summary>
-            public Span GotoSpan, LabelSpan;
+            public Span LabelSpan;
 
             /// <summary>
             /// Lable target block.
             /// </summary>
-            public Block Block;
+            public BoundBlock TargetBlock;
 
             /// <summary>
             /// Label information.
@@ -75,22 +75,22 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Gets the control flow start block. Cannot be <c>null</c>.
         /// </summary>
-        public Block/*!*/Start { get { return _start; } }
-        readonly Block/*!*/_start;
+        public BoundBlock/*!*/Start { get { return _start; } }
+        readonly BoundBlock/*!*/_start;
         
         /// <summary>
         /// Gets the control flow exit block. Cannot be <c>null</c>.
         /// </summary>
-        public Block/*!*/Exit { get { return _exit; } }
-        readonly Block/*!*/_exit;
+        public BoundBlock/*!*/Exit { get { return _exit; } }
+        readonly BoundBlock/*!*/_exit;
 
         /// <summary>
         /// Exception block. Can be <c>null</c>.
         /// If set, code can throw an exception or be terminated by call to <c>exit</c>, before reaching exit block.
         /// This block is connected with blocks ending with <c>throw</c> statement.
         /// </summary>
-        public Block Throws { get { return _exception; } }
-        readonly Block _exception;
+        public BoundBlock Throws { get { return _exception; } }
+        readonly BoundBlock _exception;
 
         /// <summary>
         /// Array of labels within routine. Can be <c>null</c>.
@@ -101,8 +101,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// List of blocks that are unreachable syntactically (statements after JumpStmt etc.).
         /// </summary>
-        public List<Block>/*!*/UnreachableBlocks { get { return _unrecachable; } }
-        readonly List<Block>/*!*/_unrecachable;
+        public List<BoundBlock>/*!*/UnreachableBlocks { get { return _unrecachable; } }
+        readonly List<BoundBlock>/*!*/_unrecachable;
 
         /// <summary>
         /// Last "tag" color used. Used internally for graph algorithms.
@@ -123,7 +123,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
         }
 
-        private ControlFlowGraph(Block/*!*/start, Block/*!*/exit, Block exception, LabelBlockState[] labels, List<Block> unreachable)
+        private ControlFlowGraph(BoundBlock/*!*/start, BoundBlock/*!*/exit, BoundBlock exception, LabelBlockState[] labels, List<BoundBlock> unreachable)
         {
             Contract.ThrowIfNull(start);
             Contract.ThrowIfNull(exit);
@@ -132,7 +132,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _exit = exit;
             _exception = exception;
             _labels = labels;
-            _unrecachable = unreachable ?? new List<Block>();
+            _unrecachable = unreachable ?? new List<BoundBlock>();
         }
 
         #endregion

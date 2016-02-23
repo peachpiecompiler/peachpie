@@ -15,14 +15,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// </summary>
     internal sealed class BuilderVisitor : TreeVisitor
     {
-        private Block/*!*/_current;
+        private BoundBlock/*!*/_current;
         private Dictionary<string, ControlFlowGraph.LabelBlockState> _labels;
         private List<BreakTargetScope> _breakTargets;
         private Stack<TryCatchEdge> _tryTargets;
 
-        public Block/*!*/Start { get; private set; }
-        public Block/*!*/Exit { get; private set; }
-        public Block Exception { get; private set; }
+        public BoundBlock/*!*/Start { get; private set; }
+        public BoundBlock/*!*/Exit { get; private set; }
+        public BoundBlock Exception { get; private set; }
 
         /// <summary>
         /// Gets labels defined within the routine.
@@ -35,8 +35,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Blocks we know nothing is pointing to (right after jump, throw, etc.).
         /// </summary>
-        public List<Block>/*!*/DeadBlocks { get { return _deadBlocks; } }
-        private readonly List<Block>/*!*/_deadBlocks = new List<Block>();
+        public List<BoundBlock>/*!*/DeadBlocks { get { return _deadBlocks; } }
+        private readonly List<BoundBlock>/*!*/_deadBlocks = new List<BoundBlock>();
 
         #region BreakTargetScope
 
@@ -45,10 +45,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         private struct BreakTargetScope
         {
-            public readonly Block/*!*/BreakTarget;
-            public readonly Block/*!*/ContinueTarget;
+            public readonly BoundBlock/*!*/BreakTarget;
+            public readonly BoundBlock/*!*/ContinueTarget;
 
-            public BreakTargetScope(Block breakBlock, Block continueBlock)
+            public BreakTargetScope(BoundBlock breakBlock, BoundBlock continueBlock)
             {
                 BreakTarget = breakBlock;
                 ContinueTarget = continueBlock;
@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return _breakTargets[_breakTargets.Count - level];
         }
 
-        private void EnterBreakTarget(Block breakBlock, Block continueBlock)
+        private void EnterBreakTarget(BoundBlock breakBlock, BoundBlock continueBlock)
         {
             if (_breakTargets == null) _breakTargets = new List<BreakTargetScope>(1);
             _breakTargets.Add(new BreakTargetScope(breakBlock, continueBlock));
@@ -126,7 +126,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Helper Methods
 
-        private Block/*!*/GetExceptionBlock()
+        private BoundBlock/*!*/GetExceptionBlock()
         {
             if (this.Exception == null)
                 this.Exception = new ExitBlock();
@@ -138,16 +138,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current.AddStatement(SemanticsBinder.BindStatement(stmt));
         }
 
-        private Block/*!*/NewBlock()
+        private BoundBlock/*!*/NewBlock()
         {
-            return new Block();
+            return new BoundBlock();
         }
 
         /// <summary>
         /// Creates block we know nothing is pointing to.
         /// Such block will be analysed later whether it is empty or whether it contains some statements (which will be reported as unreachable).
         /// </summary>
-        private Block/*!*/NewDeadBlock()
+        private BoundBlock/*!*/NewDeadBlock()
         {
             var block = NewBlock();
             _deadBlocks.Add(block);
@@ -164,13 +164,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return new CaseBlock(item);
         }
 
-        private Block/*!*/Connect(Block/*!*/source, Block/*!*/ifTarget, Block/*!*/elseTarget, Expression/*!*/condition)
+        private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression/*!*/condition)
         {
             new ConditionalEdge(source, ifTarget, elseTarget, SemanticsBinder.BindExpression(condition));
             return ifTarget;
         }
 
-        private Block/*!*/Connect(Block/*!*/source, Block/*!*/target)
+        private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/target)
         {
             new SimpleEdge(source, target);
             return target;
@@ -186,8 +186,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 _labels[label] = result = new ControlFlowGraph.LabelBlockState()
                 {
-                    Block = NewBlock(),
-                    GotoSpan = Span.Invalid,
+                    TargetBlock = NewBlock(),
                     LabelSpan = Span.Invalid,
                     Label = label,
                     Flags = ControlFlowGraph.LabelBlockFlags.None,
@@ -401,9 +400,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             var/*!*/label = GetLabelBlock(x.LabelName.Value);
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Used;   // label is used
-            label.GotoSpan = x.Span;
-
-            Connect(_current, label.Block);
+            
+            Connect(_current, label.TargetBlock);
 
             _current = NewDeadBlock();  // any statement inside this block would be unreachable unless it is LabelStmt
         }
@@ -447,7 +445,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             var conditions = x.Conditions;
             Debug.Assert(conditions.Count != 0);
-            Block elseBlock = null;
+            BoundBlock elseBlock = null;
             for (int i = 0; i < conditions.Count; i++)
             {
                 var cond = conditions[i];
@@ -480,7 +478,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Defined;        // label is defined
             label.LabelSpan = x.Span;
 
-            _current = Connect(_current, label.Block);
+            _current = Connect(_current, label.TargetBlock);
 
             Add(x);
         }
@@ -571,7 +569,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // init catch blocks and finally block
             var catchBlocks = new CatchBlock[(x.Catches == null) ? 0 : x.Catches.Length];
-            Block finallyBlock = null;
+            BoundBlock finallyBlock = null;
 
             for (int i = 0; i < catchBlocks.Length; i++)
                 catchBlocks[i] = NewBlock(x.Catches[i]);

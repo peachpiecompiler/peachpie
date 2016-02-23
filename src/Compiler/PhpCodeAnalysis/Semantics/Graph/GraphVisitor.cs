@@ -67,7 +67,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Graph.Block
 
-        void VisitCFGBlockStatements(Block x)
+        void VisitCFGBlockStatements(BoundBlock x)
         {
             for (int i = 0; i < x.Statements.Count; i++)
             {
@@ -78,7 +78,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits block statements and its edge to next block.
         /// </summary>
-        protected virtual void VisitCFGBlockInternal(Block x)
+        protected virtual void VisitCFGBlockInternal(BoundBlock x)
         {
             VisitCFGBlockStatements(x);
 
@@ -86,7 +86,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 x.NextEdge.Visit(this);
         }
 
-        public virtual void VisitCFGBlock(Block x)
+        public virtual void VisitCFGBlock(BoundBlock x)
         {
             VisitCFGBlockInternal(x);
         }

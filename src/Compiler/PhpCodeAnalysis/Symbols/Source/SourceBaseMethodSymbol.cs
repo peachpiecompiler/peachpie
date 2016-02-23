@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.Syntax.AST;
 using System;
 using System.Collections.Generic;
@@ -13,15 +14,24 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal abstract class SourceBaseMethodSymbol : MethodSymbol
     {
-        BoundMethodBody _block;
+        ImmutableArray<ControlFlowGraph> _cfg;
 
         /// <summary>
         /// Gets lazily bound block containing method semantics.
         /// Entry point of analysis and emitting.
         /// </summary>
-        public BoundMethodBody BoundBlock => _block ?? (_block = CreateBoundBlock());
+        public override ImmutableArray<ControlFlowGraph> CFG
+        {
+            get
+            {
+                if (_cfg.IsDefaultOrEmpty)
+                    _cfg = ImmutableArray.Create(CreateCFG());
 
-        protected abstract BoundMethodBody CreateBoundBlock();
+                return _cfg;
+            }
+        }
+
+        protected abstract ControlFlowGraph CreateCFG();
 
         readonly protected ImmutableArray<ParameterSymbol> _params;
 
@@ -30,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _params = BuildParameters(signature).ToImmutableArray();
         }
 
-        private IEnumerable<ParameterSymbol> BuildParameters(Signature signature)
+        IEnumerable<ParameterSymbol> BuildParameters(Signature signature)
         {
             int index = 0;
 

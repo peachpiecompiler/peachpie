@@ -16,8 +16,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents control flow block.
     /// </summary>
     [DebuggerDisplay("Block")]
-    public class Block : AstNode, IBlockStatement
+    public class BoundBlock : AstNode, IBlockStatement
     {
+        // TODO: initial local state
+        
         readonly List<BoundStatement>/*!*/_statements;
         Edge _next;
 
@@ -41,7 +43,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             internal set { _next = value; }
         }
 
-        internal Block()
+        internal BoundBlock()
         {
             _statements = new List<BoundStatement>();
         }
@@ -58,16 +60,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Traverses empty blocks to their non-empty successor. Skips duplicities.
         /// </summary>
-        internal static List<Block>/*!*/SkipEmpty(IEnumerable<Block>/*!*/blocks)
+        internal static List<BoundBlock>/*!*/SkipEmpty(IEnumerable<BoundBlock>/*!*/blocks)
         {
             Contract.ThrowIfNull(blocks);
             
-            var result = new HashSet<Block>();
+            var result = new HashSet<BoundBlock>();
 
             foreach (var x in blocks)
             {
                 var block = x;
-                while (block != null && block.GetType() == typeof(Block) && block.Statements.Count == 0)
+                while (block != null && block.GetType() == typeof(BoundBlock) && block.Statements.Count == 0)
                 {
                     var edge = block.NextEdge as SimpleEdge;
                     if (edge != null || block.NextEdge == null)
@@ -118,7 +120,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents a start block.
     /// </summary>
     [DebuggerDisplay("Start")]
-    public sealed class StartBlock : Block
+    public sealed class StartBlock : BoundBlock
     {
     }
 
@@ -126,15 +128,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents an exit block.
     /// </summary>
     [DebuggerDisplay("Exit")]
-    public sealed class ExitBlock : Block
+    public sealed class ExitBlock : BoundBlock
     {
+        // TODO: list of blocks (may be from another CFG!!!) waiting for return type of this function
     }
 
     /// <summary>
     /// Represents control flow block of catch item.
     /// </summary>
     [DebuggerDisplay("CatchBlock({ClassName.QualifiedName})")]
-    public class CatchBlock : Block
+    public class CatchBlock : BoundBlock
     {
         /// <summary>
         /// Catch variable type.
@@ -162,7 +165,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents control flow block of case item.
     /// </summary>
     [DebuggerDisplay("CaseBlock")]
-    public class CaseBlock : Block
+    public class CaseBlock : BoundBlock
     {
         /// <summary>
         /// Gets case value expression. In case of default item, returns <c>null</c>.

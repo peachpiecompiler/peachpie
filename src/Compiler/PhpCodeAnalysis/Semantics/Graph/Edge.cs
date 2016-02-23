@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Target blocks.
         /// </summary>
-        public abstract IEnumerable<Block>/*!!*/Targets { get; }
+        public abstract IEnumerable<BoundBlock>/*!!*/Targets { get; }
 
         /// <summary>
         /// Gets value indicating whether the edge represents a conditional edge.
@@ -52,19 +52,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Finally block of try/catch edge.
         /// </summary>
-        public virtual Block FinallyBlock => null;
+        public virtual BoundBlock FinallyBlock => null;
 
         /// <summary>
         /// Enumeration with single case blocks.
         /// </summary>
         public virtual CaseBlock[] CaseBlocks => EmptyArray<CaseBlock>.Instance;
 
-        internal Edge(Block/*!*/source)
+        internal Edge(BoundBlock/*!*/source)
         {
             Contract.ThrowIfNull(source);
         }
 
-        protected void Connect(Block/*!*/source)
+        protected void Connect(BoundBlock/*!*/source)
         {
             source.NextEdge = this;
         }
@@ -84,10 +84,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Gets the target block if the simple edge.
         /// </summary>
-        public Block Target { get { return _target; } }
-        private readonly Block _target;
+        public BoundBlock Target { get { return _target; } }
+        private readonly BoundBlock _target;
 
-        internal SimpleEdge(Block source, Block target)
+        internal SimpleEdge(BoundBlock source, BoundBlock target)
             : base(source)
         {
             _target = target;
@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Target blocks.
         /// </summary>
-        public override IEnumerable<Block> Targets => new Block[] { _target };
+        public override IEnumerable<BoundBlock> Targets => new BoundBlock[] { _target };
         
         /// <summary>
         /// Visits the object by given visitor.
@@ -111,20 +111,20 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("ConditionalEdge")]
     public sealed class ConditionalEdge : Edge
     {
-        private readonly Block _true, _false;
+        private readonly BoundBlock _true, _false;
         private readonly BoundExpression _condition;
 
         /// <summary>
         /// Target true block
         /// </summary>
-        public Block/*!*/TrueTarget => _true;
+        public BoundBlock/*!*/TrueTarget => _true;
 
         /// <summary>
         /// Target false block.
         /// </summary>
-        public Block/*!*/FalseTarget => _false;
+        public BoundBlock/*!*/FalseTarget => _false;
 
-        internal ConditionalEdge(Block source, Block @true, Block @false, BoundExpression cond)
+        internal ConditionalEdge(BoundBlock source, BoundBlock @true, BoundBlock @false, BoundExpression cond)
             : base(source)
         {
             Debug.Assert(@true != @false);
@@ -139,7 +139,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// All target blocks.
         /// </summary>
-        public override IEnumerable<Block> Targets => new Block[] { _true, _false };
+        public override IEnumerable<BoundBlock> Targets => new BoundBlock[] { _true, _false };
 
         public override bool IsConditional
         {
@@ -160,14 +160,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("TryCatchEdge")]
     public sealed class TryCatchEdge : Edge
     {
-        private readonly Block _body;
+        private readonly BoundBlock _body;
         private readonly CatchBlock[] _catchBlocks;
-        private readonly Block _finallyBlock;
+        private readonly BoundBlock _finallyBlock;
 
         /// <summary>
         /// Try block.
         /// </summary>
-        public Block BodyBlock => _body;
+        public BoundBlock BodyBlock => _body;
 
         /// <summary>
         /// Whether the given class name is equal to <c>Exception</c>.
@@ -188,7 +188,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return null;
         }
 
-        internal TryCatchEdge(Block source, Block body, CatchBlock[] catchBlocks, Block finallyBlock)
+        internal TryCatchEdge(BoundBlock source, BoundBlock body, CatchBlock[] catchBlocks, BoundBlock finallyBlock)
             : base(source)
         {
             _body = body;
@@ -200,11 +200,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// All target blocks.
         /// </summary>
-        public override IEnumerable<Block> Targets
+        public override IEnumerable<BoundBlock> Targets
         {
             get
             {
-                var list = new List<Block>(_catchBlocks.Length + 2);
+                var list = new List<BoundBlock>(_catchBlocks.Length + 2);
 
                 list.Add(_body);
                 list.AddRange(_catchBlocks);
@@ -219,15 +219,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override CatchBlock[] CatchBlocks => _catchBlocks;
 
-        public override Block FinallyBlock => _finallyBlock;
+        public override BoundBlock FinallyBlock => _finallyBlock;
 
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor)
-        {
-            visitor.VisitCFGTryCatchEdge(this);
-        }
+        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGTryCatchEdge(this);
     }
 
     /// <summary>
@@ -242,7 +239,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public BoundExpression Enumeree => _enumeree;
         private readonly BoundExpression _enumeree;
 
-        internal ForeachEnumereeEdge(Block/*!*/source, Block/*!*/target, BoundExpression/*!*/enumeree)
+        internal ForeachEnumereeEdge(BoundBlock/*!*/source, BoundBlock/*!*/target, BoundExpression/*!*/enumeree)
             : base(source, target)
         {
             Contract.ThrowIfNull(enumeree);
@@ -252,10 +249,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor)
-        {
-            visitor.VisitCFGForeachEnumereeEdge(this);
-        }
+        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGForeachEnumereeEdge(this);
     }
 
     /// <summary>
@@ -267,13 +261,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Content of the foreach.
         /// </summary>
-        public Block BodyBlock => _body;
+        public BoundBlock BodyBlock => _body;
 
         /// <summary>
         /// Block after the foreach.
         /// </summary>
-        public Block EndBlock => _end;
-        readonly Block _body, _end;
+        public BoundBlock EndBlock => _end;
+        readonly BoundBlock _body, _end;
 
         /// <summary>
         /// Reference to the edge defining the enumeree.
@@ -293,7 +287,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public ForeachVar ValueVariable { get { return _valueVariable; } }
         readonly ForeachVar _valueVariable;
 
-        internal ForeachMoveNextEdge(Block/*!*/source, Block/*!*/body, Block/*!*/end, ForeachEnumereeEdge/*!*/enumereeEdge, ForeachVar keyVar, ForeachVar/*!*/valueVar)
+        internal ForeachMoveNextEdge(BoundBlock/*!*/source, BoundBlock/*!*/body, BoundBlock/*!*/end, ForeachEnumereeEdge/*!*/enumereeEdge, ForeachVar keyVar, ForeachVar/*!*/valueVar)
             : base(source)
         {
             Contract.ThrowIfNull(body);
@@ -309,18 +303,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Connect(source);
         }
 
-        public override IEnumerable<Block> Targets
+        public override IEnumerable<BoundBlock> Targets
         {
-            get { return new Block[] { _body, _end }; }
+            get { return new BoundBlock[] { _body, _end }; }
         }
 
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor)
-        {
-            visitor.VisitCFGForeachMoveNextEdge(this);
-        }
+        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGForeachMoveNextEdge(this);
     }
 
     /// <summary>
@@ -337,13 +328,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         public BoundExpression SwitchValue => _switchValue;
 
-        public override IEnumerable<Block> Targets => _caseBlocks;
+        public override IEnumerable<BoundBlock> Targets => _caseBlocks;
 
         public override bool IsSwitch => true;
 
         public override CaseBlock[] CaseBlocks => _caseBlocks;
 
-        internal SwitchEdge(Block source, BoundExpression switchValue, CaseBlock[] caseBlocks)
+        internal SwitchEdge(BoundBlock source, BoundExpression switchValue, CaseBlock[] caseBlocks)
             : base(source)
         {
             Contract.ThrowIfNull(caseBlocks);
@@ -356,9 +347,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor)
-        {
-            visitor.VisitCFGSwitchEdge(this);
-        }
+        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGSwitchEdge(this);
     }
 }

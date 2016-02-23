@@ -57,9 +57,8 @@
     <Compile Include="FlowAnalysis\TypeRef\TypeRefContext.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefMask.cs" />
     <Compile Include="FlowAnalysis\Worklist.cs" />
-    <Compile Include="Semantics\BoundMethodBody.cs" />
     <Compile Include="Semantics\Expressions.cs" />
-    <Compile Include="Semantics\Graph\Block.cs" />
+    <Compile Include="Semantics\Graph\BoundBlock.cs" />
     <Compile Include="Semantics\Graph\BuilderVisitor.cs" />
     <Compile Include="Semantics\Graph\ControlFlowGraph.cs" />
     <Compile Include="Semantics\Graph\Edge.cs" />
@@ -74,6 +73,7 @@
     <Compile Include="Compilation\PhpCompilation.cs" />
     <Compile Include="Compilation\PhpCompilationOptions.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeHelpers.cs" />
+    <Compile Include="Semantics\ISemanticValue.cs" />
     <Compile Include="Symbols\ReferenceManager.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Emitter\Model\AssemblyReference.cs" />

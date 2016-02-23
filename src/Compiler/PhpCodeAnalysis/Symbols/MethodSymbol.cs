@@ -5,6 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
+using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -12,7 +15,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// Represents a method or method-like symbol (including constructor,
     /// destructor, operator, or property/event accessor).
     /// </summary>
-    internal abstract partial class MethodSymbol : Symbol, IMethodSymbol
+    internal abstract partial class MethodSymbol : Symbol, IMethodSymbol, ISemanticFunction
     {
         public virtual int Arity => 0;
 
@@ -141,5 +144,33 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             throw new NotImplementedException();
         }
+
+        #region ISemanticFunction
+
+        public virtual TypeRefMask GetExpectedParamType(TypeRefContext ctx, int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual TypeRefMask GetResultType(TypeRefContext ctx)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual ImmutableArray<ControlFlowGraph> CFG => ImmutableArray<ControlFlowGraph>.Empty;
+
+        public virtual int MandatoryParamsCount => Parameters.Length;    // TOOD: only mandatory
+
+        public virtual bool IsParamByRef(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool IsParamVariadic(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 }

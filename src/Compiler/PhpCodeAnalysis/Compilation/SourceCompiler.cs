@@ -3,6 +3,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -53,16 +54,10 @@ namespace Pchp.CodeAnalysis
             // TODO: methodsWalker.VisitNamespace(_compilation.SourceModule.GlobalNamespace)
         }
 
-        internal BoundMethodBody BindMethod(SourceBaseMethodSymbol method)
-        {
-            Contract.ThrowIfNull(method);
-
-            return method.BoundBlock;
-        }
 
         internal void AnalyzeMethods()
         {
-            this.WalkMethods(m => _worklist.Enqueue(BindMethod(m)));
+            this.WalkMethods(m => _worklist.Enqueue(m.CFG[0].Start));
             _worklist.DoAll();
         }
 

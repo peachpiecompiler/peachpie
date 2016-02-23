@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
 
-                var block = method.BoundBlock;
+                var block = method.CFG[0];
                 //var codeGen = new CodeGenerator(method, block, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
 
                 //if (diagnosticsForThisMethod.HasAnyErrors())
