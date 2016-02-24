@@ -24,8 +24,7 @@ namespace Pchp.CodeAnalysis
         readonly bool _emittingPdb;
         readonly DiagnosticBag _diagnostics;
         readonly Worklist<BoundBlock> _worklist;
-        // readonly CallGraph _callgraph; //keeps graph of what methods call specific method // used to reanalyze caller methods when return type ot arg. type changes
-
+        
         private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics)
         {
             Contract.ThrowIfNull(compilation);
@@ -42,18 +41,17 @@ namespace Pchp.CodeAnalysis
             // semantic model
         }
 
-        private void WalkMethods(Action<SourceBaseMethodSymbol> action)
+        private void WalkMethods(Action<SourceRoutineSymbol> action)
         {
             // DEBUG
             var sourcesymbols = _compilation.SourceSymbolTables;
             var methods = sourcesymbols.GetFunctions()
                     .Concat(sourcesymbols.GetTypes().SelectMany(t => t.GetMembers()))
-                    .OfType<SourceBaseMethodSymbol>();
+                    .OfType<SourceRoutineSymbol>();
             methods.ForEach(action);
 
             // TODO: methodsWalker.VisitNamespace(_compilation.SourceModule.GlobalNamespace)
         }
-
 
         internal void AnalyzeMethods()
         {
@@ -73,7 +71,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Emits analyzed method.
         /// </summary>
-        internal void EmitMethodBody(SourceBaseMethodSymbol method)
+        internal void EmitMethodBody(SourceRoutineSymbol method)
         {
             Contract.ThrowIfNull(method);
 

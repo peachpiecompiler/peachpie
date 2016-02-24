@@ -9,12 +9,19 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal abstract class SourceBaseMethodSymbol : MethodSymbol
+    /// <summary>
+    /// Base symbol representing a method or a function from source.
+    /// </summary>
+    internal abstract class SourceRoutineSymbol : MethodSymbol
     {
         ImmutableArray<ControlFlowGraph> _cfg;
+        TypeRefContext _typeCtx;
+
+        #region ISemanticFunction
 
         /// <summary>
         /// Gets lazily bound block containing method semantics.
@@ -24,18 +31,45 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_cfg.IsDefaultOrEmpty)
+                if (_cfg.IsDefault)
                     _cfg = ImmutableArray.Create(CreateCFG());
 
                 return _cfg;
             }
         }
 
-        protected abstract ControlFlowGraph CreateCFG();
+        #endregion
+
+        #region Helpers
+        
+        /// <summary>
+        /// Creates type context for a method within given type, determines naming, type context.
+        /// </summary>
+        protected static TypeRefContext/*!*/CreateTypeRefContext(TypeDecl/*!*/typeDecl)
+        {
+            Contract.ThrowIfNull(typeDecl);
+
+            return new TypeRefContext(NameUtils.GetNamingContext(typeDecl), typeDecl.SourceUnit, typeDecl);
+        }
+
+        #endregion
+
+        internal abstract IList<Statement> Statements { get; }
+
+        internal TypeRefContext TypeRefContext => _typeCtx ?? (_typeCtx = CreateTypeRefContext());
+
+        protected ControlFlowGraph CreateCFG() => new ControlFlowGraph(this.Statements);
+
+        protected abstract TypeRefContext CreateTypeRefContext();
+
+        /// <summary>
+        /// Gets routine declaration syntax.
+        /// </summary>
+        internal abstract LangElement Syntax { get; }
 
         readonly protected ImmutableArray<ParameterSymbol> _params;
 
-        public SourceBaseMethodSymbol(Signature signature)
+        public SourceRoutineSymbol(Signature signature)
         {
             _params = BuildParameters(signature).ToImmutableArray();
         }

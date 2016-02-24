@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal static MethodBody GenerateMethodBody(
             PEModuleBuilder moduleBuilder,
-            SourceBaseMethodSymbol method,
+            SourceRoutineSymbol method,
             int methodOrdinal,
             //ImmutableArray<LambdaDebugInfo> lambdaDebugInfo,
             //ImmutableArray<ClosureDebugInfo> closureDebugInfo,
@@ -54,9 +54,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
 
-                Debug.Assert(method.CFG.Length == 1, "Method is not a merged method or a sourceless method.");
+                var block = method.CFG.Single();
 
-                var block = method.CFG[0];
                 //var codeGen = new CodeGenerator(method, block, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
 
                 //if (diagnosticsForThisMethod.HasAnyErrors())

@@ -21,6 +21,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ExitBlock
     {
-        // TODO: list of blocks (may be from another CFG!!!) waiting for return type of this function
+        // TODO: list of blocks making call to this routine (callers) (may be from another CFG!!!) waiting for return type of this function
+        // These blocks has to be reanalysed when merged return type changes
     }
 }

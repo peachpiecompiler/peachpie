@@ -32,6 +32,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// Gets type declaration syntax node.
+        /// </summary>
+        internal TypeDecl Syntax => _syntax;
+
         internal override IModuleSymbol ContainingModule => _compilation.SourceModule;
 
         public override Symbol ContainingSymbol => _compilation.SourceModule;

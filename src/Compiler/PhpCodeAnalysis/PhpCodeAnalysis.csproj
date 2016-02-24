@@ -49,18 +49,21 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CodeGen\CodeGenerator.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="FlowAnalysis\FlowContext.cs" />
     <Compile Include="FlowAnalysis\FlowState.cs" />
     <Compile Include="FlowAnalysis\Graph\BoundBlock.cs" />
     <Compile Include="FlowAnalysis\Graph\ControlFlowGraph.cs" />
     <Compile Include="FlowAnalysis\IFlowState.cs" />
+    <Compile Include="FlowAnalysis\StateBinder.cs" />
     <Compile Include="FlowAnalysis\TypeRef\CallInfo.cs" />
     <Compile Include="FlowAnalysis\TypeRef\ITypeRef.cs" />
     <Compile Include="FlowAnalysis\TypeRef\PhpDataType.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRef.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefContext.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefMask.cs" />
+    <Compile Include="FlowAnalysis\Visitors\LocalsWalker.cs" />
     <Compile Include="FlowAnalysis\Worklist.cs" />
     <Compile Include="Semantics\Expressions.cs" />
     <Compile Include="Semantics\Graph\BoundBlock.cs" />
@@ -111,7 +114,8 @@
     <Compile Include="Symbols\PE\PENamespaceSymbol.cs" />
     <Compile Include="Symbols\Source\MemberAttributesAdapter.cs" />
     <Compile Include="Symbols\Source\SourceAssemblySymbol.cs" />
-    <Compile Include="Symbols\Source\SourceBaseMethodSymbol.cs" />
+    <Compile Include="Symbols\Source\SourceLocalSymbol.cs" />
+    <Compile Include="Symbols\Source\SourceRoutineSymbol.cs" />
     <Compile Include="Symbols\Source\SourceFunctionSymbol.cs" />
     <Compile Include="Symbols\Source\SourceMethodSymbol.cs" />
     <Compile Include="Symbols\Source\SourceModuleSymbol.cs" />
@@ -122,6 +126,7 @@
     <Compile Include="Symbols\Symbol.cs" />
     <Compile Include="Semantics\ISemanticModel.cs" />
     <Compile Include="Symbols\TypeSymbol.cs" />
+    <Compile Include="Utilities\AstUtils.cs" />
     <Compile Include="Utilities\Contract.cs" />
     <Compile Include="Utilities\DistinctQueue.cs" />
     <Compile Include="Utilities\EnumeratorExtension.cs" />
@@ -129,11 +134,10 @@
     <Compile Include="Utilities\TypeHintValue.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Compilation\PhpCompilation.Types.cs" />
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Symbols\Tables\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <EmbeddedResource Include="PhpResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

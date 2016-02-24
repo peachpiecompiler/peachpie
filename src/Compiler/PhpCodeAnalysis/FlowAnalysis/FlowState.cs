@@ -270,12 +270,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _initializedMask = ~(ulong)0;
         }
 
-        public void SetVarInitized(string name)
+        public void SetVarInitialized(string name)
         {
-            SetVarInitized(_common.GetVarIndex(name));
+            SetVarInitialized(_common.GetVarIndex(name));
         }
 
-        internal void SetVarInitized(int varindex)
+        internal void SetVarInitialized(int varindex)
         {
             if (varindex >= 0 && varindex < CommonState.BitsCount)
                 _initializedMask |= (ulong)1 << varindex;
@@ -292,16 +292,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (varindex >= 0 && varindex < types.Length)
             {
                 types[varindex] |= type;
+                this.SetVarInitialized(varindex);
                 this.FlowContext.AddVarType(varindex, type);
             }
         }
 
+        /// <summary>
+        /// Sets the variable is used by reference.
+        /// </summary>
         public void SetVarRef(string name)
         {
-            var index = _common.GetVarIndex(name);
-            this.FlowContext.SetReference(index);
-            this.SetVarInitized(index);
-            _common.SetUsed(index);
+            SetVarRef(_common.GetVarIndex(name));
+        }
+
+        /// <summary>
+        /// Sets the variable is used by reference.
+        /// </summary>
+        internal void SetVarRef(int varindex)
+        {
+            this.FlowContext.SetReference(varindex);
+            this.SetVarInitialized(varindex);
+            _common.SetUsed(varindex);
         }
 
         public void SetVarUsed(string name)

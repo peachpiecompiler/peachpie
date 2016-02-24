@@ -15,11 +15,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     public abstract class Edge : AstNode
     {
         /// <summary>
-        /// Properties key as a recursion prevention when visiting edges recursively.
-        /// </summary>
-        protected static readonly object/*!*/RecursionLockKey = new object();
-
-        /// <summary>
         /// Target blocks.
         /// </summary>
         public abstract IEnumerable<BoundBlock>/*!!*/Targets { get; }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -101,6 +103,23 @@ namespace Pchp.CodeAnalysis
                     return false;
 
             return true;
+        }
+
+        /// <summary>
+        /// Finds index of first element passing given predicate.
+        /// Returns <c>-1</c> if not found.
+        /// </summary>
+        public static int IndexOf<T>(this ImmutableArray<T> array, Predicate<T> predicate)
+        {
+            Contract.ThrowIfNull(predicate);
+            Debug.Assert(!array.IsDefault);
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (predicate(array[i])) return i;
+            }
+
+            return -1;
         }
     }
 }

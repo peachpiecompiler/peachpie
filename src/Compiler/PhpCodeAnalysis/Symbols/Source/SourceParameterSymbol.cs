@@ -14,11 +14,11 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed class SourceParameterSymbol : ParameterSymbol   
     {
-        readonly SourceBaseMethodSymbol _method;
+        readonly SourceRoutineSymbol _method;
         readonly FormalParam _syntax;
         readonly int _index;
 
-        public SourceParameterSymbol(SourceBaseMethodSymbol method, FormalParam syntax, int index)
+        public SourceParameterSymbol(SourceRoutineSymbol method, FormalParam syntax, int index)
         {
             _method = method;
             _syntax = syntax;
@@ -35,10 +35,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsThis => _syntax.Name.IsThisVariableName;
 
+        public FormalParam Syntax => _syntax;
+
         public override ITypeSymbol Type
         {
             get
             {
+                //var cfg = _method.CFG.Single();
+                //var tmask = cfg.GetLocalTypeMask(this);
                 return _method.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
             }
         }

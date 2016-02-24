@@ -34,6 +34,29 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Create naming context.
+        /// </summary>
+        /// <param name="ns">Current namespace declaration. In case it is <c>null</c>, context for global code is created.</param>
+        /// <param name="ast">Global code used when <paramref name="ns"/> is <c>null</c>.</param>
+        /// <returns>Naming context. Cannot be <c>null</c>.</returns>
+        public static NamingContext GetNamingContext(NamespaceDecl ns, GlobalCode ast)
+        {
+            return (ns != null)
+                ? ns.Naming
+                : ast.SourceUnit.Naming;
+        }
+
+        /// <summary>
+        /// Create naming context in context of given type declaration.
+        /// </summary>
+        public static NamingContext GetNamingContext(TypeDecl/*!*/type)
+        {
+            Contract.ThrowIfNull(type);
+
+            return GetNamingContext(type.Namespace, type.SourceUnit.Ast);
+        }
+
+        /// <summary>
         /// Gets CLR name using dot as a name separator.
         /// </summary>
         public static string ClrName(this QualifiedName qname)
@@ -69,6 +92,38 @@ namespace Pchp.CodeAnalysis
         public static bool IsEmpty(this QualifiedName qname)
         {
             return qname.IsSimpleName && string.IsNullOrEmpty(qname.Name.Value);
+        }
+
+        /// <summary>
+        /// Gets value indicating whether the expression is in form of <c>$GLOBALS[...]</c>.
+        /// </summary>
+        public static bool IsGlobalVar(ItemUse itemUse)
+        {
+            if (itemUse != null &&
+                itemUse.IsMemberOf == null && itemUse.Array.IsMemberOf == null &&
+                itemUse.Array is DirectVarUse)
+            {
+                // $GLOBALS[...]
+                var dvar = (DirectVarUse)itemUse.Array;
+                return (dvar.VarName.Value == VariableName.GlobalsName);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Tries to resolve global variable name from array item use. (eg. <c>$GLOBALS["varname"]</c>).
+        /// </summary>
+        public static bool TryGetGlobalVarName(ItemUse itemUse, out VariableName varname)
+        {
+            if (IsGlobalVar(itemUse) && itemUse.Index is StringLiteral)
+            {
+                varname = new VariableName(((StringLiteral)itemUse.Index).Value);
+                return true;
+            }
+
+            varname = default(VariableName);
+            return false;
         }
 
         /// <summary>

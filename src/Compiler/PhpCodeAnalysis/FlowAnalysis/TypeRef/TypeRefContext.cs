@@ -85,15 +85,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Initialization
 
-        public TypeRefContext(NamingContext naming, SourceUnit sourceUnit, AST.TypeDecl typeCtx, QualifiedName? parentTypeCtx)
+        public TypeRefContext(NamingContext naming, SourceUnit sourceUnit, AST.TypeDecl typeCtx)
         {
-            Debug.Assert(!parentTypeCtx.HasValue || typeCtx != null);
-
             _namingCtx = naming;
             _sourceUnit = sourceUnit;
-            _parentTypeCtx = parentTypeCtx;
             _typeRefs = new List<ITypeRef>();
             _typeCtxMask = GetTypeCtxMask(typeCtx);
+
+            if (typeCtx != null && typeCtx.BaseClassName.HasValue)
+                _parentTypeCtx = typeCtx.BaseClassName.Value.QualifiedName;
         }
 
         /// <summary>

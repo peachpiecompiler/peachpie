@@ -8,13 +8,14 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents a global PHP function.
     /// </summary>
-    internal sealed class SourceFunctionSymbol : SourceBaseMethodSymbol
+    internal sealed class SourceFunctionSymbol : SourceRoutineSymbol
     {
         readonly PhpCompilation/*!*/_compilation;
         readonly FunctionDecl/*!*/_syntax;
@@ -29,8 +30,12 @@ namespace Pchp.CodeAnalysis.Symbols
             _syntax = syntax;
         }
 
-        protected override ControlFlowGraph CreateCFG()
-            => new ControlFlowGraph(_syntax.Body);
+        internal override LangElement Syntax => _syntax;
+
+        internal override IList<Statement> Statements => _syntax.Body;
+
+        protected override TypeRefContext CreateTypeRefContext()
+            => new TypeRefContext(NameUtils.GetNamingContext(_syntax.Namespace, _syntax.SourceUnit.Ast), _syntax.SourceUnit, null);
 
         public override string Name => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.Namespace).ClrName();
 
