@@ -43,5 +43,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Sets all variables as initialized at this state.
         /// </summary>
         void SetAllInitialized();
+
+        /// <summary>
+        /// Records return value type.
+        /// </summary>
+        void FlowThroughReturn(TypeRefMask type);
     }
 }

@@ -54,6 +54,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
 
+                Debug.Assert(method.CFG.Length == 1, "Method is not a merged method or a sourceless method.");
+
                 var block = method.CFG[0];
                 //var codeGen = new CodeGenerator(method, block, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
 

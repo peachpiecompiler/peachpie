@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Size of ulong bit array (<c>64</c>).
         /// </summary>
-        const int BitsCount = sizeof(ulong) * 8;
+        int BitsCount => FlowState.CommonState.BitsCount;
 
         #endregion
 
@@ -34,14 +34,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         readonly TypeRefContext/*!*/_typeRefContext;
 
         /// <summary>
-        /// Merged type information of variables.
-        /// </summary>
-        readonly TypeRefMask[] _types;
-
-        /// <summary>
         /// Information variables within the routine.
         /// </summary>
-        readonly ImmutableArray<ILocalSymbol>/*!*/_vars;
+        readonly ImmutableArray<ILocalSymbol>/*!*/_locals;
+
+        /// <summary>
+        /// Merged local variables type.
+        /// </summary>
+        internal TypeRefMask[] LocalsType => _localsType;
+        readonly TypeRefMask[]/*!*/_localsType;
+
+        /// <summary>
+        /// Index of return variable. It is <c>-1</c> in case there are no return statements.
+        /// </summary>
+        public int ReturnVarIndex => _returnVarIndex;
+        readonly int _returnVarIndex;
 
         /// <summary>
         /// Bit array indicating what variables may be referenced.
@@ -49,27 +56,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         ulong _referencesMask = 0;
 
         /// <summary>
-        /// Gets or sets type of expressions in return statement.
-        /// </summary>
-        public TypeRefMask ReturnType => _returnType;
-        TypeRefMask _returnType = default(TypeRefMask);
-
-        /// <summary>
         /// Gets array of local variables. Names are indexed by their internal index.
         /// </summary>
-        public ImmutableArray<ILocalSymbol> LocalVariables => _vars;
+        public ImmutableArray<ILocalSymbol> Locals => _locals;
         
         #endregion
 
         #region Construction
 
-        private FlowContext(TypeRefContext typeCtx, ImmutableArray<ILocalSymbol> locals)
+        private FlowContext(TypeRefContext typeCtx, ImmutableArray<ILocalSymbol> locals, int returnIndex)
         {
             Contract.ThrowIfNull(typeCtx);
             Debug.Assert(!locals.IsDefaultOrEmpty);
+            Debug.Assert(returnIndex >= -1 && returnIndex < locals.Length);
 
-            _types = new TypeRefMask[locals.Length];
-            _vars = locals;
+            _locals = locals;
+            _localsType = new TypeRefMask[locals.Length];
+            _returnVarIndex = returnIndex;
             _typeRefContext = typeCtx;
         }
 
@@ -238,20 +241,34 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return varindex < 0 || varindex >= BitsCount || (_referencesMask & (ulong)1 << varindex) != 0;
         }
 
+        public ILocalSymbol GetVar(int index)
+        {
+            return (index >= 0 && index < _locals.Length)
+                ? _locals[index]
+                : null;
+        }
+
         public void AddVarType(int varindex, TypeRefMask type)
         {
-            if (varindex >= 0)
+            if (varindex >= 0 && varindex < _localsType.Length)
             {
-                _types[varindex] |= type;
+                _localsType[varindex] |= type;
             }
         }
 
-        /// <summary>
-        /// Gets merged type information for given variable by its index.
-        /// </summary>
-        internal TypeRefMask GetVarType(int varindex)
+        public TypeRefMask GetVarType(string name)
         {
-            return _types[varindex];
+            var vars = _locals;
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (StringComparer.OrdinalIgnoreCase.Equals(vars[i].Name, name))
+                {
+                    return _localsType[i];
+                }
+            }
+
+            //
+            return default(TypeRefMask);
         }
 
         #endregion

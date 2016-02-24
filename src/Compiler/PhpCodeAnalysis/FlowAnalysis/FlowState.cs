@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 _flowcontext = flowcontext;
 
-                var locals = flowcontext.LocalVariables;
+                var locals = flowcontext.Locals;
                 var dict = new Dictionary<string, int>(locals.Length, StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < locals.Length; i++)
                 {
@@ -100,7 +100,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             /// </summary>
             public IEnumerable<ILocalSymbol>/*!!*/GetUnusedVars()
             {
-                var locals = _flowcontext.LocalVariables;
+                var locals = _flowcontext.Locals;
 
                 if (_usedMask == ~((ulong)0) || _usedMask == ((ulong)1 << locals.Length) - 1)
                     yield break;
@@ -173,7 +173,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _common = common;
             _initializedMask = (ulong)0;
 
-            var count = flowcontext.LocalVariables.Length;
+            var count = flowcontext.Locals.Length;
             _varsType = new TypeRefMask[count];
         }
 
@@ -242,6 +242,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public FlowState Merge(FlowState other) => new FlowState(this, other);
 
+        /// <summary>
+        /// Get merged variable value type.
+        /// </summary>
         public TypeRefMask GetVarType(string name)
         {
             var index = _common.GetVarIndex(name);
@@ -249,6 +252,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return (index >= 0 && index < types.Length)
                 ? types[index]
                 : TypeRefMask.AnyType;
+        }
+
+        /// <summary>
+        /// Gets merged return value type.
+        /// </summary>
+        public TypeRefMask GetReturnType()
+        {
+            var index = _common.FlowContext.ReturnVarIndex;
+            return (index >= 0)
+                ? _varsType[index]      // merged return type
+                : default(TypeRefMask); // void
         }
         
         public void SetAllInitialized()
@@ -276,7 +290,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             var types = _varsType;
             if (varindex >= 0 && varindex < types.Length)
+            {
                 types[varindex] |= type;
+                this.FlowContext.AddVarType(varindex, type);
+            }
         }
 
         public void SetVarRef(string name)
@@ -295,6 +312,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         internal void SetVarUsed(int varindex)
         {
             _common.SetUsed(varindex);
+        }
+
+        public void FlowThroughReturn(TypeRefMask type)
+        {
+            var index = _common.FlowContext.ReturnVarIndex;
+            if (index < 0)
+                throw new InvalidOperationException();
+
+            SetVar(index, type);
         }
 
         #endregion

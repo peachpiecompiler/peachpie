@@ -11,7 +11,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <summary>
     /// Represents statements control flow graph.
     /// </summary>
-    public sealed class ControlFlowGraph : AstNode
+    public sealed partial class ControlFlowGraph : AstNode
     {
         #region LabelBlockFlags, LabelBlockInfo
 

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Immutable;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -16,10 +17,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents control flow block.
     /// </summary>
     [DebuggerDisplay("Block")]
-    public class BoundBlock : AstNode, IBlockStatement
+    public partial class BoundBlock : AstNode, IBlockStatement
     {
-        // TODO: initial local state
-        
         readonly List<BoundStatement>/*!*/_statements;
         Edge _next;
 
@@ -128,9 +127,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents an exit block.
     /// </summary>
     [DebuggerDisplay("Exit")]
-    public sealed class ExitBlock : BoundBlock
+    public sealed partial class ExitBlock : BoundBlock
     {
-        // TODO: list of blocks (may be from another CFG!!!) waiting for return type of this function
     }
 
     /// <summary>
