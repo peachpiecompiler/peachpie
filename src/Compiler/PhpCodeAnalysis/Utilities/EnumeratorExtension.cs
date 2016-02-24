@@ -60,5 +60,47 @@ namespace Pchp.CodeAnalysis
                 func(x);
             }
         }
+
+        /// <summary>
+        /// Mixes two array of the same length into new one, using <paramref name="mixer"/> function applied on each pair of elements from first and second arrays.
+        /// </summary>
+        /// <typeparam name="T">Elements type.</typeparam>
+        /// <param name="arr1">First array.</param>
+        /// <param name="arr2">Second array.</param>
+        /// <param name="mixer">Mixing function.</param>
+        /// <returns>Mixed array.</returns>
+        public static T[]/*!*/MixArrays<T>(T[]/*!*/arr1, T[]/*!*/arr2, Func<T, T, T>/*!*/mixer)
+        {
+            Contract.ThrowIfNull(arr1);
+            Contract.ThrowIfNull(arr2);
+            Contract.ThrowIfNull(mixer);
+            if (arr1.Length != arr2.Length)
+                throw new ArgumentException();
+
+            var tmp = new T[arr1.Length];
+            for (int i = 0; i < tmp.Length; i++)
+            {
+                tmp[i] = mixer(arr1[i], arr2[i]);
+            }
+            return tmp;
+        }
+
+        /// <summary>
+        /// Checks two arrays for equality.
+        /// </summary>
+        public static bool Equals<T>(T[]/*!*/arr1, T[]/*!*/arr2) where T : IEquatable<T>
+        {
+            Contract.ThrowIfNull(arr1);
+            Contract.ThrowIfNull(arr2);
+
+            if (arr1.Length != arr2.Length)
+                return false;
+
+            for (int i = 0; i < arr1.Length; i++)
+                if (!arr1[i].Equals(arr2[i]))
+                    return false;
+
+            return true;
+        }
     }
 }

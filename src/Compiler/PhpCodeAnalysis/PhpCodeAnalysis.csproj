@@ -50,6 +50,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compilation\SourceCompiler.cs" />
+    <Compile Include="FlowAnalysis\FlowContext.cs" />
+    <Compile Include="FlowAnalysis\FlowState.cs" />
+    <Compile Include="FlowAnalysis\IFlowState.cs" />
     <Compile Include="FlowAnalysis\TypeRef\CallInfo.cs" />
     <Compile Include="FlowAnalysis\TypeRef\ITypeRef.cs" />
     <Compile Include="FlowAnalysis\TypeRef\PhpDataType.cs" />
