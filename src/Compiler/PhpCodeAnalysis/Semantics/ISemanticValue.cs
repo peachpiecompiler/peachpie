@@ -31,6 +31,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Optional. Gets control flow graph(s) of the function.
         /// Used for interprocedural analysis.
         /// </summary>
+        /// <remarks>Wrapping routine symbols have more than one CFG.</remarks>
         ImmutableArray<ControlFlowGraph> CFG { get; }
 
         /// <summary>

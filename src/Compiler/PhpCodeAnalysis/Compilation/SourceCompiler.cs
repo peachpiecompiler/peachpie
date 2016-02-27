@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis
             // semantic model
         }
 
-        private void WalkMethods(Action<SourceRoutineSymbol> action)
+        void WalkMethods(Action<SourceRoutineSymbol> action)
         {
             // DEBUG
             var sourcesymbols = _compilation.SourceSymbolTables;
@@ -53,30 +53,51 @@ namespace Pchp.CodeAnalysis
             // TODO: methodsWalker.VisitNamespace(_compilation.SourceModule.GlobalNamespace)
         }
 
+        /// <summary>
+        /// Ensures the routine has flow context.
+        /// Otherwise it is created and routine is enqueued for analysis.
+        /// </summary>
+        void EnsureRoutine(SourceRoutineSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+
+            var start = routine.ControlFlowGraph.Start;
+
+            if (start.FlowState == null)
+            {
+                // create initial flow state
+                start.FlowState = StateBinder.CreateInitialState(routine);
+
+                // enqueue the method for the analysis
+                _worklist.Enqueue(start);
+            }
+        }
+
         internal void AnalyzeMethods()
         {
-            this.WalkMethods(m => _worklist.Enqueue(m.CFG[0].Start));
+            this.WalkMethods(EnsureRoutine);
+
+            // analyze methods
             _worklist.DoAll();
         }
 
-        private void AnalyzeMethod(BoundBlock method)
+        private void AnalyzeMethod(BoundBlock block)
         {
-            Contract.ThrowIfNull(method);
+            Contract.ThrowIfNull(block);
 
-            // Initial State // declared locals, initial types
             // TypeAnalysis + ResolveSymbols
-            // if (LowerBody(bound)) Enlist(method)
+            // if (LowerBody(block)) Enqueue(block)
         }
 
         /// <summary>
         /// Emits analyzed method.
         /// </summary>
-        internal void EmitMethodBody(SourceRoutineSymbol method)
+        internal void EmitMethodBody(SourceRoutineSymbol routine)
         {
-            Contract.ThrowIfNull(method);
+            Contract.ThrowIfNull(routine);
 
-            var body = MethodGenerator.GenerateMethodBody(_moduleBuilder, method, 0, null, _diagnostics, _emittingPdb);
-            _moduleBuilder.SetMethodBody(method, body);
+            var body = MethodGenerator.GenerateMethodBody(_moduleBuilder, routine, 0, null, _diagnostics, _emittingPdb);
+            _moduleBuilder.SetMethodBody(routine, body);
         }
 
         public static void CompileSources(

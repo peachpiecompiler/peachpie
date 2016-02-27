@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindExpressions(((AST.EchoStmt)stmt).Parameters)));
 
-            return new BoundEmptyStatement();   // TODO
+            throw new NotImplementedException();
         }
 
         public static ImmutableArray<BoundExpression> BindExpressions(IEnumerable<Syntax.AST.Expression> expressions)

@@ -159,7 +159,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual ImmutableArray<ControlFlowGraph> CFG => ImmutableArray<ControlFlowGraph>.Empty;
 
-        public virtual int MandatoryParamsCount => Parameters.Length;    // TOOD: only mandatory
+        public virtual int MandatoryParamsCount => Parameters.Length;    // TODO: only mandatory
 
         public virtual bool IsParamByRef(int index)
         {

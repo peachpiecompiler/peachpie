@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal static MethodBody GenerateMethodBody(
             PEModuleBuilder moduleBuilder,
-            SourceRoutineSymbol method,
+            SourceRoutineSymbol routine,
             int methodOrdinal,
             //ImmutableArray<LambdaDebugInfo> lambdaDebugInfo,
             //ImmutableArray<ClosureDebugInfo> closureDebugInfo,
@@ -49,14 +49,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             ILBuilder builder = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
-            //DiagnosticBag diagnosticsForThisMethod = DiagnosticBag.GetInstance();
+            DiagnosticBag diagnosticsForThisMethod = DiagnosticBag.GetInstance();
             try
             {
                 Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
 
-                var block = method.CFG.Single();
+                var cfg = routine.ControlFlowGraph;
 
-                //var codeGen = new CodeGenerator(method, block, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
+                var codeGen = new CodeGenerator(routine, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
 
                 //if (diagnosticsForThisMethod.HasAnyErrors())
                 //{
@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return new MethodBody(
                     builder.RealizedIL,
                     builder.MaxStack,
-                    (Cci.IMethodDefinition)method.PartialDefinitionPart ?? method,
+                    (Cci.IMethodDefinition)routine.PartialDefinitionPart ?? routine,
                     variableSlotAllocatorOpt?.MethodId ?? new DebugId(methodOrdinal, moduleBuilder.CurrentGenerationOrdinal),
                     localVariables,
                     builder.RealizedSequencePoints,

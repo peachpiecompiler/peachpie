@@ -134,8 +134,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         readonly TypeRefMask[]/*!*/_varsType;
         ulong _initializedMask;
 
-        // TODO: remember other constraints (range, etc), combine them on merge
-
         #endregion
 
         #region Construction & Copying

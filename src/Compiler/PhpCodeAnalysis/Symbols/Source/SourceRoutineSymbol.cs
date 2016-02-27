@@ -25,7 +25,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Gets lazily bound block containing method semantics.
-        /// Entry point of analysis and emitting.
         /// </summary>
         public override ImmutableArray<ControlFlowGraph> CFG
         {
@@ -37,6 +36,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 return _cfg;
             }
         }
+
+        /// <summary>
+        /// Lazily bound semantic block, equivalent for CFG[0].
+        /// Entry point of analysis and emitting.
+        /// </summary>
+        internal ControlFlowGraph ControlFlowGraph => CFG[0];
 
         #endregion
 

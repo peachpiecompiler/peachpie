@@ -13,8 +13,9 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Gets <see cref="INamedTypeSymbol"/> best fitting given type mask.
         /// </summary>
-        internal INamedTypeSymbol GetTypeByTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask)
+        internal INamedTypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask, bool isRef)
         {
+            // TODO: return { namedtype, includes subclasses (for vcall) }
             throw new NotImplementedException();
         }
     }
