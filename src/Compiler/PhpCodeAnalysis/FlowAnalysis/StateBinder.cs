@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // collect locals
             var locals = LocalsCollector.GetLocals(routine);
-            var returnIdx = locals.IndexOf(x => x.LocalKind == LocalKind.ReturnVariable);
+            var returnIdx = locals.IndexOf(x => x.VariableKind == VariableKind.ReturnVariable);
 
             // create typeCtx
             var typeCtx = routine.TypeRefContext;
@@ -57,25 +57,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             int paramIdx = 0;
             for (int i = 0; i < locals.Length; i++)
             {
-                switch (locals[i].LocalKind)
+                switch (locals[i].VariableKind)
                 {
-                    case LocalKind.GlobalVariable:
+                    case VariableKind.GlobalVariable:
                         state.SetVarRef(i); // => used, byref, initialized
                         break;
-                    case LocalKind.Parameter:
-                        state.SetVarUsed(i);
+                    case VariableKind.Parameter:
+                        //state.SetVarUsed(i);
                         //var paramtag = TypeRef.Helpers.PHPDoc.GetParamTag(phpdoc, paramIdx, locals[i].Name);
                         state.SetVar(i, GetParamType(typeCtx, null, ((SourceParameterSymbol)parameters[paramIdx]).Syntax, default(CallInfo), paramIdx));
                         paramIdx++;
                         break;
-                    case LocalKind.UseParameter:
-                        state.SetVar(i, TypeRefMask.AnyType);
-                        state.SetVarInitialized(i);
-                        break;
-                    case LocalKind.ThisVariable:
+                    //case VariableKind.UseParameter:
+                    //    state.SetVar(i, TypeRefMask.AnyType);
+                    //    break;
+                    case VariableKind.ThisParameter:
                         InitThisVar(flowCtx, state, i);
                         break;
-                    case LocalKind.StaticVariable:
+                    case VariableKind.StaticVariable:
                         state.SetVarInitialized(i);
                         break;
                 }

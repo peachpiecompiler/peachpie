@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -109,21 +110,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<IParameterSymbol> Parameters => StaticCast<IParameterSymbol>.From(_params);
 
-        public override bool ReturnsVoid
-        {
-            get
-            {
-                return ReturnType.SpecialType == SpecialType.System_Void;
-            }
-        }
+        public override bool ReturnsVoid => this.ControlFlowGraph.GetReturnTypeMask.IsVoid;
 
-        public override ITypeSymbol ReturnType
-        {
-            get
-            {
-                return this.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
-            }
-        }
+        public override ITypeSymbol ReturnType => DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.GetReturnTypeMask, false);
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 

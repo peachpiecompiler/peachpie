@@ -11,6 +11,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 {
     partial class ControlFlowGraph
     {
+        public bool HasFlowState => this.Start.FlowState != null;
+
         /// <summary>
         /// Gets flow analysis context for this CFG.
         /// </summary>
@@ -24,9 +26,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public TypeRefMask GetLocalTypeMask(ILocalSymbol local) => this.FlowContext.GetVarType(local.Name);
 
         /// <summary>
+        /// Gets type of a parameter.
+        /// </summary>
+        /// <remarks>CFG has to be analysed prior to getting this property.</remarks>
+        public TypeRefMask GetParamTypeMask(IParameterSymbol parameter) => this.FlowContext.GetVarType(parameter.Name); // TODO: type of parameter in Start state, uninitialized -> AnyType, handle param type is smaller than its local symbol
+
+        /// <summary>
         /// Gets type of return value within this CFG.
         /// </summary>
         /// <remarks>CFG has to be analysed prior to getting this property.</remarks>
-        public TypeRefMask GetReturnTypeMask => this.Exit.FlowState.GetReturnType();
+        public TypeRefMask GetReturnTypeMask => (this.Exit.FlowState != null) ? this.Exit.FlowState.GetReturnType() : default(TypeRefMask);
     }
 }

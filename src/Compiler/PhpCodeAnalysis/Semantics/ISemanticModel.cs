@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <remarks>Use <see cref="SemanticModel"/> once we implement <see cref="SyntaxTree"/>.</remarks>
     internal interface ISemanticModel
     {
-        // TODO: source file, constant, local variable
+        // TODO: source file, constant, variable
 
         /// <summary>
         /// Gets type symbol by its name in current context.

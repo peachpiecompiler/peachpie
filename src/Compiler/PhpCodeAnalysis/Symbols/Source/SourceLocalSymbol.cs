@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Variable kind.
     /// </summary>
-    public enum LocalKind
+    public enum VariableKind
     {
         /// <summary>
         /// Variable is local in the routine.
@@ -30,14 +30,9 @@ namespace Pchp.CodeAnalysis.Symbols
         Parameter,
 
         /// <summary>
-        /// Variable is passed from caller routine.
-        /// </summary>
-        UseParameter,
-
-        /// <summary>
         /// Variable is <c>$this</c> variable.
         /// </summary>
-        ThisVariable,
+        ThisParameter,
 
         /// <summary>
         /// Variable was introduced with <c>static</c> declaration.
@@ -50,13 +45,13 @@ namespace Pchp.CodeAnalysis.Symbols
         ReturnVariable,
     }
 
-    internal class SourceLocalSymbol : Symbol, ILocalSymbol
+    internal class SourceLocalSymbol : Symbol, ILocalSymbol //, ILocalSymbolInternal
     {
-        readonly SourceRoutineSymbol _routine;
+        readonly protected SourceRoutineSymbol _routine;
         readonly string _name;
-        readonly LocalKind _kind;
+        readonly VariableKind _kind;
 
-        public SourceLocalSymbol(SourceRoutineSymbol routine, string name, LocalKind kind)
+        public SourceLocalSymbol(SourceRoutineSymbol routine, string name, VariableKind kind)
         {
             Debug.Assert(routine != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(name));
@@ -73,13 +68,15 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets local kind.
         /// </summary>
-        public LocalKind LocalKind => _kind;
+        public VariableKind LocalKind => _kind;
 
         public override void Accept(SymbolVisitor visitor)
             => visitor.VisitLocal(this);
 
         public override TResult Accept<TResult>(SymbolVisitor<TResult> visitor)
             => visitor.VisitLocal(this);
+
+        public SyntaxNode GetDeclaratorSyntax() => null;
 
         public override Symbol ContainingSymbol => _routine;
 
@@ -101,7 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSealed => true;
 
-        public override bool IsStatic => _kind == LocalKind.StaticVariable;
+        public override bool IsStatic => _kind == VariableKind.StaticVariable;
 
         public override bool IsVirtual => false;
 
@@ -129,7 +126,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public bool IsFunctionValue => false;
 
-        public virtual ITypeSymbol Type => null;
+        public virtual ITypeSymbol Type => DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetLocalTypeMask(this), false);
+
+        public bool IsImportedFromMetadata => false;
+
+        public SynthesizedLocalKind SynthesizedKind => SynthesizedLocalKind.UserDefined;
 
         #endregion
     }
@@ -139,9 +140,11 @@ namespace Pchp.CodeAnalysis.Symbols
         internal const string SpecialName = "<return>";
 
         public SourceReturnSymbol(SourceRoutineSymbol routine)
-            :base(routine, SpecialName, LocalKind.ReturnVariable)
+            :base(routine, SpecialName, VariableKind.ReturnVariable)
         {
 
         }
+
+        public override ITypeSymbol Type => _routine.ReturnType;
     }
 }

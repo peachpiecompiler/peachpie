@@ -49,6 +49,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CodeGen\BoundVariable.cs" />
     <Compile Include="CodeGen\CodeGenerator.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="FlowAnalysis\FlowContext.cs" />
@@ -65,6 +66,7 @@
     <Compile Include="FlowAnalysis\TypeRef\TypeRefMask.cs" />
     <Compile Include="FlowAnalysis\Visitors\LocalsWalker.cs" />
     <Compile Include="FlowAnalysis\Worklist.cs" />
+    <Compile Include="Semantics\BoundVariable.cs" />
     <Compile Include="Semantics\Expressions.cs" />
     <Compile Include="Semantics\Graph\BoundBlock.cs" />
     <Compile Include="Semantics\Graph\BuilderVisitor.cs" />

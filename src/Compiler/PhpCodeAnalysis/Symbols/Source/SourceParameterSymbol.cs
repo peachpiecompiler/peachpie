@@ -6,34 +6,35 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
+using Pchp.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents a PHP function parameter.
     /// </summary>
-    internal sealed class SourceParameterSymbol : ParameterSymbol   
+    internal sealed class SourceParameterSymbol : ParameterSymbol
     {
-        readonly SourceRoutineSymbol _method;
+        readonly SourceRoutineSymbol _routine;
         readonly FormalParam _syntax;
         readonly int _index;
 
-        public SourceParameterSymbol(SourceRoutineSymbol method, FormalParam syntax, int index)
+        public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int index)
         {
-            _method = method;
+            _routine = routine;
             _syntax = syntax;
             _index = index;
         }
 
-        public override Symbol ContainingSymbol => _method;
+        public override Symbol ContainingSymbol => _routine;
 
-        internal override IModuleSymbol ContainingModule => _method.ContainingModule;
+        internal override IModuleSymbol ContainingModule => _routine.ContainingModule;
 
-        public override INamedTypeSymbol ContainingType => _method.ContainingType;
+        public override INamedTypeSymbol ContainingType => _routine.ContainingType;
 
         public override string Name => _syntax.Name.Value;
 
-        public override bool IsThis => _syntax.Name.IsThisVariableName;
+        public override bool IsThis => _index == -1;
 
         public FormalParam Syntax => _syntax;
 
@@ -41,9 +42,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                //var cfg = _method.CFG.Single();
-                //var tmask = cfg.GetLocalTypeMask(this);
-                return _method.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
+                return (IsThis)
+                    ? ContainingType // TODO: "?? AnyType" in case of $this in global scope
+                    : DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetParamTypeMask(this), false);
             }
         }
 
@@ -80,7 +81,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override Accessibility DeclaredAccessibility => Accessibility.Public;
+        public override Accessibility DeclaredAccessibility => Accessibility.Private;
 
         internal override ObsoleteAttributeData ObsoleteAttributeData
         {
@@ -90,4 +91,67 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
     }
+
+    internal sealed class ThisParameterSymbol : ParameterSymbol
+    {
+        readonly SourceRoutineSymbol _routine;
+
+        public ThisParameterSymbol(SourceRoutineSymbol routine)
+        {
+            _routine = routine;
+        }
+
+        public override Symbol ContainingSymbol => _routine;
+
+        internal override IModuleSymbol ContainingModule => _routine.ContainingModule;
+
+        public override INamedTypeSymbol ContainingType => _routine.ContainingType;
+
+        public override string Name => VariableName.ThisVariableName.Value;
+
+        public override bool IsThis => true;
+
+        public override ITypeSymbol Type
+        {
+            get
+            {
+                return ContainingType; // TODO: "?? AnyType" in case of $this in global scope
+            }
+        }
+
+        public override RefKind RefKind => RefKind.None;
+
+        public override bool IsParams => false;
+
+        public override int Ordinal => -1;
+
+        public override SymbolKind Kind => SymbolKind.Parameter;
+
+        public override ImmutableArray<Location> Locations
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override Accessibility DeclaredAccessibility => Accessibility.Private;
+
+        internal override ObsoleteAttributeData ObsoleteAttributeData
+        {
+            get
+            {
+                return null;
+            }
+        }
+    }
+
 }

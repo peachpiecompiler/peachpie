@@ -7,6 +7,7 @@ using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -73,11 +74,13 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        internal void AnalyzeMethods()
+        internal void BindMethods()
         {
             this.WalkMethods(EnsureRoutine);
+        }
 
-            // analyze methods
+        internal void AnalyzeMethods()
+        {
             _worklist.DoAll();
         }
 
@@ -90,11 +93,12 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
-        /// Emits analyzed method.
+        /// Generates analyzed method.
         /// </summary>
         internal void EmitMethodBody(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
+            Debug.Assert(routine.ControlFlowGraph.Start.FlowState != null);
 
             var body = MethodGenerator.GenerateMethodBody(_moduleBuilder, routine, 0, null, _diagnostics, _emittingPdb);
             _moduleBuilder.SetMethodBody(routine, body);
@@ -118,7 +122,7 @@ namespace Pchp.CodeAnalysis
             // 2.Bind Syntax & Symbols to Operations (CFG)
             //   a.equivalent to building CFG
             //   b.most generic types(and empty type - mask)
-            // Done lazily.
+            compiler.BindMethods();
 
             // 3.Analyze Operations
             //   a.declared variables

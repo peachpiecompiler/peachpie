@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Symbols;
 using System.Diagnostics;
 using System.Collections.Immutable;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 {
@@ -19,12 +20,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         protected class VisitLocalArgs : EventArgs
         {
             public VariableName Name;
-            public LocalKind Kind;
+            public VariableKind Kind;
+            public Expression Initializer;
 
-            public VisitLocalArgs(VariableName name, LocalKind kind)
+            public VisitLocalArgs(VariableName name, VariableKind kind, Expression initializer)
             {
                 this.Name = name;
                 this.Kind = kind;
+                this.Initializer = initializer;
             }
         }
 
@@ -39,12 +42,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                 e(this, args);
         }
 
-        LocalKind _statementContext;
+        VariableKind _statementContext;
         LangElement _routine;
 
         public LocalsWalker(LangElement routine)
         {
-            _statementContext = LocalKind.LocalVariable;
+            _statementContext = VariableKind.LocalVariable;
             _routine = routine;
         }
 
@@ -57,19 +60,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 
         private void AddVar(VariableName name, Syntax.Text.Span span)
         {
-            AddVar(name, span, _statementContext);
+            AddVar(name, span, _statementContext, null);
         }
 
-        private void AddVar(VariableName name, Syntax.Text.Span span, LocalKind kind)
+        private void AddVar(VariableName name, Syntax.Text.Span span, VariableKind kind, Expression initializer = null)
         {
             if (name.IsThisVariableName)
-                kind = LocalKind.ThisVariable;
+                kind = VariableKind.ThisParameter;
 
-            if (kind != LocalKind.GlobalVariable && kind != LocalKind.ThisVariable && kind != LocalKind.Parameter && kind != LocalKind.ReturnVariable    // just avoid checking IsAutoGlobal if not necessary
+            if (kind != VariableKind.GlobalVariable && kind != VariableKind.ThisParameter && kind != VariableKind.Parameter && kind != VariableKind.ReturnVariable    // just avoid checking IsAutoGlobal if not necessary
                 && name.IsAutoGlobal)
-                kind = LocalKind.GlobalVariable;
+                kind = VariableKind.GlobalVariable;
 
-            OnLocal(new VisitLocalArgs(name, kind));
+            OnLocal(new VisitLocalArgs(name, kind, initializer));
         }
 
         #endregion
@@ -80,7 +83,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         {
             if (x == _routine)
             {
-                _statementContext = LocalKind.LocalVariable;
+                _statementContext = VariableKind.LocalVariable;
                 base.VisitFunctionDecl(x);
             }
         }
@@ -89,7 +92,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         {
             if (x == _routine)
             {
-                _statementContext = LocalKind.LocalVariable;
+                _statementContext = VariableKind.LocalVariable;
                 base.VisitMethodDecl(x);
             }
         }
@@ -103,12 +106,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         {
             if (x == _routine)
             {
-                _statementContext = LocalKind.LocalVariable;
+                _statementContext = VariableKind.LocalVariable;
 
                 // use params
                 if (x.UseParams != null)
                     foreach (var u in x.UseParams)
-                        AddVar(u.Name, u.Span, LocalKind.UseParameter);
+                        AddVar(u.Name, u.Span, VariableKind.Parameter);
 
                 // params
                 x.Signature.FormalParams.ForEach(VisitFormalParam);
@@ -120,13 +123,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 
         public override void VisitNamespaceDecl(NamespaceDecl x)
         {
-            _statementContext = LocalKind.GlobalVariable;
+            _statementContext = VariableKind.GlobalVariable;
             base.VisitNamespaceDecl(x);
         }
 
         public override void VisitGlobalCode(GlobalCode x)
         {
-            _statementContext = LocalKind.GlobalVariable;
+            _statementContext = VariableKind.GlobalVariable;
             base.VisitGlobalCode(x);
         }
 
@@ -162,7 +165,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         public override void VisitGlobalStmt(GlobalStmt x)
         {
             var prevCtx = _statementContext;
-            _statementContext = LocalKind.GlobalVariable;
+            _statementContext = VariableKind.GlobalVariable;
             base.VisitGlobalStmt(x);
             _statementContext = prevCtx;
         }
@@ -173,20 +176,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             {
                 VisitElement(st.Initializer);
                 Debug.Assert(st.Variable.IsMemberOf == null);
-                AddVar(st.Variable.VarName, st.Span, LocalKind.StaticVariable);
+                AddVar(st.Variable.VarName, st.Span, VariableKind.StaticVariable, st.Initializer);
             }
         }
 
         public override void VisitFormalParam(FormalParam x)
         {
-            AddVar(x.Name, x.Span, LocalKind.Parameter);
+            AddVar(x.Name, x.Span, VariableKind.Parameter);
         }
 
         public override void VisitJumpStmt(JumpStmt x)
         {
             if (x.Type == JumpStmt.Types.Return && x.Expression != null)
             {
-                AddVar(new VariableName(SourceReturnSymbol.SpecialName), x.Span, LocalKind.ReturnVariable);
+                AddVar(new VariableName(SourceReturnSymbol.SpecialName), x.Span, VariableKind.ReturnVariable);
             }
 
             base.VisitJumpStmt(x);
@@ -196,7 +199,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
     internal class LocalsCollector : LocalsWalker
     {
         readonly SourceRoutineSymbol _routine;
-        readonly List<SourceLocalSymbol> _locals = new List<SourceLocalSymbol>();
+        readonly List<BoundVariable> _locals = new List<BoundVariable>();
         readonly HashSet<VariableName>/*!*/_visited = new HashSet<VariableName>();
         
         private LocalsCollector(SourceRoutineSymbol routine)
@@ -207,7 +210,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             this.VisitLocal += this.HandleLocal;
         }
 
-        public static ImmutableArray<SourceLocalSymbol> GetLocals(SourceRoutineSymbol routine)
+        public static ImmutableArray<BoundVariable> GetLocals(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
 
@@ -222,7 +225,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 
             if (_visited.Add(e.Name))
             {
-                _locals.Add(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind));
+                switch (e.Kind)
+                {
+                    case VariableKind.ThisParameter:
+                        _locals.Add(new BoundParameter(new ThisParameterSymbol(_routine)));
+                        break;
+                    case VariableKind.Parameter:
+                        _locals.Add(new BoundParameter((SourceParameterSymbol)_routine.Parameters.First(p => p.Name == e.Name.Value)));
+                        break;
+                    case VariableKind.LocalVariable:
+                    case VariableKind.StaticVariable:
+                        _locals.Add(new BoundLocal(
+                            new SourceLocalSymbol(_routine, e.Name.Value, e.Kind),
+                            (e.Initializer != null) ? SemanticsBinder.BindExpression(e.Initializer) : null));
+                        break;
+                    case VariableKind.GlobalVariable:
+                        // BoundGlobal
+                    case VariableKind.ReturnVariable:
+                        // BoundReturnvariable
+                    default:
+                        throw new NotImplementedException();
+                }
+                
             }
             else
             {

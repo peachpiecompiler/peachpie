@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -98,7 +99,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             /// <summary>
             /// Enumerates unused variables.
             /// </summary>
-            public IEnumerable<ILocalSymbol>/*!!*/GetUnusedVars()
+            public IEnumerable<BoundVariable>/*!!*/GetUnusedVars()
             {
                 var locals = _flowcontext.Locals;
 

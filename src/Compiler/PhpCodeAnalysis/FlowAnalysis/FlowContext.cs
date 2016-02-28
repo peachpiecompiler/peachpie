@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax;
 using Pchp.Syntax.AST;
@@ -37,7 +38,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Information variables within the routine.
         /// </summary>
-        readonly ImmutableArray<SourceLocalSymbol>/*!*/_locals;
+        readonly ImmutableArray<BoundVariable>/*!*/_locals;
 
         /// <summary>
         /// Merged local variables type.
@@ -59,16 +60,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets array of local variables. Names are indexed by their internal index.
         /// </summary>
-        internal ImmutableArray<SourceLocalSymbol> Locals => _locals;
+        internal ImmutableArray<BoundVariable> Locals => _locals;
         
         #endregion
 
         #region Construction
 
-        internal FlowContext(TypeRefContext typeCtx, ImmutableArray<SourceLocalSymbol> locals, int returnIndex)
+        internal FlowContext(TypeRefContext typeCtx, ImmutableArray<BoundVariable> locals, int returnIndex)
         {
             Contract.ThrowIfNull(typeCtx);
-            Debug.Assert(!locals.IsDefaultOrEmpty);
+            Debug.Assert(!locals.IsDefault);
             Debug.Assert(returnIndex >= -1 && returnIndex < locals.Length);
 
             _locals = locals;
@@ -101,7 +102,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return varindex < 0 || varindex >= BitsCount || (_referencesMask & (ulong)1 << varindex) != 0;
         }
 
-        public ILocalSymbol GetVar(int index)
+        public BoundVariable GetVar(int index)
         {
             return (index >= 0 && index < _locals.Length)
                 ? _locals[index]
