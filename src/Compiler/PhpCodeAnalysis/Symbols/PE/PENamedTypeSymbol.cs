@@ -559,32 +559,31 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
-        private PooledDictionary<MethodDefinitionHandle, IMethodSymbol> CreateMethods(ArrayBuilder<Symbol> members)
+        private PooledDictionary<MethodDefinitionHandle, PEMethodSymbol> CreateMethods(ArrayBuilder<Symbol> members)
         {
-            //var moduleSymbol = this.ContainingPEModule;
-            //var module = moduleSymbol.Module;
-            //var map = PooledDictionary<MethodDefinitionHandle, PEMethodSymbol>.GetInstance();
+            var moduleSymbol = this.ContainingPEModule;
+            var module = moduleSymbol.Module;
+            var map = PooledDictionary<MethodDefinitionHandle, PEMethodSymbol>.GetInstance();
 
-            //// for ordinary embeddable struct types we import private members so that we can report appropriate errors if the structure is used 
-            //var isOrdinaryEmbeddableStruct = (this.TypeKind == TypeKind.Struct) && (this.SpecialType == Microsoft.CodeAnalysis.SpecialType.None) && this.ContainingAssembly.IsLinked;
+            // for ordinary embeddable struct types we import private members so that we can report appropriate errors if the structure is used 
+            var isOrdinaryEmbeddableStruct = false;  //(this.TypeKind == TypeKind.Struct) && (this.SpecialType == SpecialType.None) && ((AssemblySymbol)this.ContainingAssembly).IsLinked;
 
-            //try
-            //{
-            //    foreach (var methodHandle in module.GetMethodsOfTypeOrThrow(_handle))
-            //    {
-            //        if (isOrdinaryEmbeddableStruct || module.ShouldImportMethod(methodHandle, moduleSymbol.ImportOptions))
-            //        {
-            //            var method = new PEMethodSymbol(moduleSymbol, this, methodHandle);
-            //            members.Add(method);
-            //            map.Add(methodHandle, method);
-            //        }
-            //    }
-            //}
-            //catch (BadImageFormatException)
-            //{ }
+            try
+            {
+                foreach (var methodHandle in module.GetMethodsOfTypeOrThrow(_handle))
+                {
+                    if (isOrdinaryEmbeddableStruct || module.ShouldImportMethod(methodHandle, moduleSymbol.ImportOptions))
+                    {
+                        var method = new PEMethodSymbol(moduleSymbol, this, methodHandle);
+                        members.Add(method);
+                        map.Add(methodHandle, method);
+                    }
+                }
+            }
+            catch (BadImageFormatException)
+            { }
 
-            //return map;
-            throw new NotImplementedException();
+            return map;
         }
 
         private void CreateProperties(Dictionary<MethodDefinitionHandle, IMethodSymbol> methodHandleToSymbol, ArrayBuilder<Symbol> members)

@@ -32,8 +32,11 @@ namespace Pchp.CodeAnalysis.Symbols
             _assembly = assembly;
             _module = module;
             _ordinal = ordinal;
+            this.ImportOptions = importOptions;
             _namespace = new PEGlobalNamespaceSymbol(this);
         }
+
+        internal readonly MetadataImportOptions ImportOptions;
 
         public PEModule Module => _module;
 
