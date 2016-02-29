@@ -51,6 +51,11 @@ namespace Pchp.CodeAnalysis
         public AssemblySymbol CorLibrary => ((ReferenceManager)GetBoundReferenceManager()).CorLibrary;
 
         /// <summary>
+        /// PHP COR library containing PHP runtime.
+        /// </summary>
+        public AssemblySymbol PhpCorLibrary => ((ReferenceManager)GetBoundReferenceManager()).PhpCorLibrary;
+
+        /// <summary>
         /// Tables containing all source symbols to be compiled.
         /// Used for enumeration and lookup.
         /// </summary>

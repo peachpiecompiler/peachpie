@@ -287,14 +287,12 @@ namespace Pchp.CodeAnalysis.Emit
 
         public IEnumerable<Cci.IAssemblyReference> GetAssemblyReferences(EmitContext context)
         {
-            //Cci.IAssemblyReference corLibrary = GetCorLibraryReferenceToEmit(context);
-
-            //// Only add Cor Library reference explicitly, PeWriter will add
-            //// other references implicitly on as needed basis.
-            //if (corLibrary != null)
-            //{
-            //    yield return corLibrary;
-            //}
+            // Only add Cor Library reference explicitly, PeWriter will add
+            // other references implicitly on as needed basis.
+            foreach (var aRef in GetCorLibraryReferencesToEmit(context))
+            {
+                yield return aRef;
+            }
 
             if (_outputKind != OutputKind.NetModule)
             {
@@ -306,6 +304,12 @@ namespace Pchp.CodeAnalysis.Emit
             }
 
             yield break;
+        }
+
+        private IEnumerable<Cci.IAssemblyReference> GetCorLibraryReferencesToEmit(EmitContext context)
+        {
+            yield return Translate(_compilation.CorLibrary, context.Diagnostics);
+            yield return Translate(_compilation.PhpCorLibrary, context.Diagnostics);
         }
 
         protected IEnumerable<Cci.IAssemblyReference> GetAssemblyReferencesFromAddedModules(DiagnosticBag diagnostics)
@@ -455,6 +459,8 @@ namespace Pchp.CodeAnalysis.Emit
                 VisitTopLevelType(noPiaIndexer, type);
                 yield return type;
             }
+
+            // TODO: <global> type containing global functions, constants, variables
 
             var privateImpl = this.PrivateImplClass;
             if (privateImpl != null)

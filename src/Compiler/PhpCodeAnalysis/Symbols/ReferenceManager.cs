@@ -19,12 +19,17 @@ namespace Pchp.CodeAnalysis
             ImmutableArray<MetadataReference> _lazyImplicitReferences = ImmutableArray<MetadataReference>.Empty;
             ImmutableDictionary<MetadataReference, IAssemblySymbol> _referencesMap;
             ImmutableDictionary<IAssemblySymbol, MetadataReference> _metadataMap;
-            AssemblySymbol _lazyCorLibrary;
+            AssemblySymbol _lazyCorLibrary, _lazyPhpCorLibrary;
 
             /// <summary>
             /// COR library containing base system types.
             /// </summary>
             internal AssemblySymbol CorLibrary => _lazyCorLibrary;
+
+            /// <summary>
+            /// PHP COR library containing PHP runtime.
+            /// </summary>
+            internal AssemblySymbol PhpCorLibrary => _lazyPhpCorLibrary;
 
             internal override ImmutableArray<MetadataReference> ExplicitReferences => _lazyExplicitReferences;
 
@@ -51,6 +56,22 @@ namespace Pchp.CodeAnalysis
                 yield break;
             }
 
+            IEnumerable<MetadataReference> CorLibReferences
+            {
+                get
+                {
+                    // mscorlib
+                    yield return MetadataReference.CreateFromFile(
+                        @"C:\Windows\Microsoft.NET\assembly\GAC_64\mscorlib\v4.0_4.0.0.0__b77a5c561934e089\mscorlib.dll",
+                        new MetadataReferenceProperties(MetadataImageKind.Assembly));
+
+                    // pchpcor
+                    yield return MetadataReference.CreateFromFile(
+                        @"pchpcor.dll",
+                        new MetadataReferenceProperties(MetadataImageKind.Assembly));
+                }
+            }
+
             internal void CreateSourceAssemblyForCompilation(PhpCompilation compilation)
             {
                 if (compilation._lazyAssemblySymbol != null)
@@ -60,14 +81,15 @@ namespace Pchp.CodeAnalysis
 
                 Debug.Assert(_lazyExplicitReferences.IsDefault);
                 Debug.Assert(_lazyCorLibrary == null);
+                Debug.Assert(_lazyPhpCorLibrary == null);
 
                 //
-                var externalRefs = compilation.ExternalReferences;
+                var externalRefs = CorLibReferences.Concat(compilation.ExternalReferences).AsImmutable();
                 var assemblies = new List<AssemblySymbol>(externalRefs.Length);
 
                 var referencesMap = new Dictionary<MetadataReference, IAssemblySymbol>();
                 var metadataMap = new Dictionary<IAssemblySymbol, MetadataReference>();
-
+                //MetadataReference.CreateFromFile()
                 foreach (PortableExecutableReference pe in externalRefs)
                 {
                     var symbol = PEAssemblySymbol.Create(pe);
@@ -79,6 +101,9 @@ namespace Pchp.CodeAnalysis
 
                         if (_lazyCorLibrary == null && symbol.IsCorLibrary)
                             _lazyCorLibrary = symbol;
+
+                        if (_lazyPhpCorLibrary == null && symbol.Identity.Name == "pchpcor")
+                            _lazyPhpCorLibrary = symbol;
                     }
                 }
 
