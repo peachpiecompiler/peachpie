@@ -10,11 +10,9 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal abstract partial class ParameterSymbol : Symbol, IParameterSymbol
     {
-        public ImmutableArray<CustomModifier> CustomModifiers => ImmutableArray<CustomModifier>.Empty;
+        public virtual ImmutableArray<CustomModifier> CustomModifiers => ImmutableArray<CustomModifier>.Empty;
 
-        public virtual object ExplicitDefaultValue => null;
-
-        public virtual bool HasExplicitDefaultValue => false;
+        public override SymbolKind Kind => SymbolKind.Parameter;
 
         public virtual bool IsOptional => false;
 
@@ -58,5 +56,33 @@ namespace Pchp.CodeAnalysis.Symbols
         protected override Symbol OriginalSymbolDefinition => this;
 
         IParameterSymbol IParameterSymbol.OriginalDefinition => (IParameterSymbol)OriginalSymbolDefinition;
+
+        /// <summary>
+        /// Get this accessibility that was declared on this symbol. For symbols that do not have
+        /// accessibility declared on them, returns NotApplicable.
+        /// </summary>
+        public override Accessibility DeclaredAccessibility => Accessibility.NotApplicable;
+
+        /// <summary>
+        /// Returns the default value constant of the parameter, 
+        /// or null if the parameter doesn't have a default value or 
+        /// the parameter type is a struct and the default value of the parameter
+        /// is the default value of the struct type or of type parameter type which is 
+        /// not known to be a referenced type.
+        /// </summary>
+        /// <remarks>
+        /// This is used for emitting.  It does not reflect the language semantics
+        /// (i.e. even non-optional parameters can have default values).
+        /// </remarks>
+        internal abstract ConstantValue ExplicitDefaultConstantValue { get; }
+
+        /// <summary>
+        /// Returns data decoded from Obsolete attribute or null if there is no Obsolete attribute.
+        /// This property returns ObsoleteAttributeData.Uninitialized if attribute arguments haven't been decoded yet.
+        /// </summary>
+        internal sealed override ObsoleteAttributeData ObsoleteAttributeData
+        {
+            get { return null; }
+        }
     }
 }

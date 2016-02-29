@@ -308,6 +308,9 @@ namespace Pchp.CodeAnalysis.Emit
 
         private IEnumerable<Cci.IAssemblyReference> GetCorLibraryReferencesToEmit(EmitContext context)
         {
+            Debug.Assert(_compilation.CorLibrary != null);
+            Debug.Assert(_compilation.PhpCorLibrary != null);
+
             yield return Translate(_compilation.CorLibrary, context.Diagnostics);
             yield return Translate(_compilation.PhpCorLibrary, context.Diagnostics);
         }

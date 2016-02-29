@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using System.Reflection;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -52,10 +53,15 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Returns value 'Method' of the <see cref="SymbolKind"/>
+        /// </summary>
+        public sealed override SymbolKind Kind => SymbolKind.Method;
+
+        /// <summary>
         /// True if this method is hidden if a derived type declares a method with the same name and signature. 
         /// If false, any method with the same name hides this method. This flag is ignored by the runtime and is only used by compilers.
         /// </summary>
-        public bool HidesBaseMethodsByName
+        public virtual bool HidesBaseMethodsByName
         {
             get
             {
@@ -79,16 +85,24 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual bool IsVararg => false;
 
+        internal virtual bool HasSpecialName => false;
+
+        internal virtual MethodImplAttributes ImplementationAttributes => MethodImplAttributes.IL;
+
+        internal virtual bool RequiresSecurityObject => false;
+
         public abstract MethodKind MethodKind { get; }
 
         public virtual IMethodSymbol OverriddenMethod => null;
 
         public abstract ImmutableArray<IParameterSymbol> Parameters { get; }
 
+        public virtual int ParameterCount => this.Parameters.Length;
+
         public IMethodSymbol PartialDefinitionPart => null;
 
         public IMethodSymbol PartialImplementationPart => null;
-
+        
         public ITypeSymbol ReceiverType
         {
             get

@@ -91,6 +91,32 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public bool HasExplicitDefaultValue => this.ExplicitDefaultConstantValue != null;
+
+        /// <summary>
+        /// Returns the default value of the parameter. If <see cref="HasExplicitDefaultValue"/>
+        /// returns false then DefaultValue throws an InvalidOperationException.
+        /// </summary>
+        /// <remarks>
+        /// If the parameter type is a struct and the default value of the parameter
+        /// is the default value of the struct type or of type parameter type which is 
+        /// not known to be a referenced type, then this property will return null.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The parameter has no default value.</exception>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        public object ExplicitDefaultValue
+        {
+            get
+            {
+                if (HasExplicitDefaultValue)
+                {
+                    return ExplicitDefaultConstantValue.Value;
+                }
+
+                throw new InvalidOperationException();
+            }
+        }
+
         bool Cci.IParameterDefinition.IsOptional
         {
             get

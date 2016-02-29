@@ -435,7 +435,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual System.Reflection.MethodImplAttributes GetImplementationAttributes(EmitContext context)
         {
             CheckDefinitionInvariant();
-            return System.Reflection.MethodImplAttributes.IL;
+            return this.ImplementationAttributes;
         }
 
         bool Cci.IMethodDefinition.IsRuntimeSpecial
@@ -484,7 +484,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                return false;
+                return this.HasSpecialName;
             }
         }
 
@@ -528,13 +528,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public bool RequiresSecurityObject
+        bool Cci.IMethodDefinition.RequiresSecurityObject
         {
             get
             {
                 CheckDefinitionInvariant();
 
-                return false;
+                return this.RequiresSecurityObject;
             }
         }
 

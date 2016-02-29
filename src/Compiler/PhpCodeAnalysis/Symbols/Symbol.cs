@@ -1157,7 +1157,7 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        ImmutableArray<AttributeData> ISymbol.GetAttributes()
+        public virtual ImmutableArray<AttributeData> GetAttributes()
         {
             return ImmutableArray<AttributeData>.Empty; // StaticCast<AttributeData>.From(this.GetAttributes());
         }

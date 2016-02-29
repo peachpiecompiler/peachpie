@@ -96,8 +96,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsVirtual => !IsSealed && !IsStatic;
 
-        public override SymbolKind Kind => SymbolKind.Method;
-
         public override MethodKind MethodKind
         {
             get
@@ -109,6 +107,8 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override ImmutableArray<IParameterSymbol> Parameters => StaticCast<IParameterSymbol>.From(_params);
+
+        public override int ParameterCount => _params.Length;
 
         public override bool ReturnsVoid => this.ControlFlowGraph.GetReturnTypeMask.IsVoid;
 

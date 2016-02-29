@@ -89,6 +89,10 @@
     <Compile Include="Compilation\PhpCompilationOptions.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeHelpers.cs" />
     <Compile Include="Semantics\ISemanticValue.cs" />
+    <Compile Include="Symbols\MethodSymbolExtensions.cs" />
+    <Compile Include="Symbols\PE\MetadataDecoder.cs" />
+    <Compile Include="Symbols\PE\PEMethodSymbol.cs" />
+    <Compile Include="Symbols\PE\PEParameterSymbol.cs" />
     <Compile Include="Symbols\ReferenceManager.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Emitter\Model\AssemblyReference.cs" />

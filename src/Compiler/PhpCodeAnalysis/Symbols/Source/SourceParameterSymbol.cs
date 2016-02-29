@@ -63,8 +63,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int Ordinal => _index;
 
-        public override SymbolKind Kind => SymbolKind.Parameter;
-
         public override ImmutableArray<Location> Locations
         {
             get
@@ -81,15 +79,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override Accessibility DeclaredAccessibility => Accessibility.Private;
-
-        internal override ObsoleteAttributeData ObsoleteAttributeData
-        {
-            get
-            {
-                return null;
-            }
-        }
+        internal override ConstantValue ExplicitDefaultConstantValue => null;   // TODO
     }
 
     internal sealed class ThisParameterSymbol : ParameterSymbol
@@ -125,8 +115,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int Ordinal => -1;
 
-        public override SymbolKind Kind => SymbolKind.Parameter;
-
         public override ImmutableArray<Location> Locations
         {
             get
@@ -143,15 +131,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override Accessibility DeclaredAccessibility => Accessibility.Private;
-
-        internal override ObsoleteAttributeData ObsoleteAttributeData
-        {
-            get
-            {
-                return null;
-            }
-        }
+        internal override ConstantValue ExplicitDefaultConstantValue => null;
     }
 
 }

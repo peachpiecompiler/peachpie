@@ -8,7 +8,7 @@
     <ProjectGuid>{9C5F04EF-13BE-47C0-B416-45FAD5722EEF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>pchpcor</RootNamespace>
+    <RootNamespace>Pchp.Core</RootNamespace>
     <AssemblyName>pchpcor</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
@@ -33,7 +33,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-    <PropertyGroup>
+  <PropertyGroup>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)build\StrongKeys\core.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>

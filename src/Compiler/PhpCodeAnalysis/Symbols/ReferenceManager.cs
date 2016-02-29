@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis
 
                 var referencesMap = new Dictionary<MetadataReference, IAssemblySymbol>();
                 var metadataMap = new Dictionary<IAssemblySymbol, MetadataReference>();
-                //MetadataReference.CreateFromFile()
+                
                 foreach (PortableExecutableReference pe in externalRefs)
                 {
                     var symbol = PEAssemblySymbol.Create(pe);
