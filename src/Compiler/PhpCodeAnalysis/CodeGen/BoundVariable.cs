@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -12,40 +13,42 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     partial class BoundVariable
     {
-        // TODO: wrap to IPlace
+        // TODO: initialization at routine begin
 
-        internal void Load(ILBuilder il) => il.EmitLoad(this.LocalOrParameter(il));
-
-        internal void Store(ILBuilder il)
-        {
-            var lp = this.LocalOrParameter(il);
-            if (lp.Local != null)
-                il.EmitLocalStore(lp.Local);
-            else
-                il.EmitStoreArgumentOpcode(lp.ParameterIndex);
-        }
-
-        internal abstract LocalOrParameter LocalOrParameter(ILBuilder il);
+        /// <summary>
+        /// Gets <see cref="IPlace"/> providing load and store operations.
+        /// </summary>
+        internal abstract IPlace GetPlace(ILBuilder il);
     }
 
     partial class BoundLocal
     {
-        LocalDefinition _def;
+        LocalPlace _place;
 
-        internal override LocalOrParameter LocalOrParameter(ILBuilder il)
+        internal override IPlace GetPlace(ILBuilder il)
         {
-            var def = _def;
-            if (def == null)
+            if (_place == null)
             {
-                _def = def = il.LocalSlotManager.DeclareLocal((Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal, this.Name, SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false);
+                _place = new LocalPlace(il.LocalSlotManager.DeclareLocal((Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal, this.Name, SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false));
             }
 
-            return def;
+            return _place;
         }
     }
 
     partial class BoundParameter
     {
-        internal override LocalOrParameter LocalOrParameter(ILBuilder il) => this.Parameter.Ordinal;
+        internal override IPlace GetPlace(ILBuilder il)
+        {
+            return new ParamPlace(this.Parameter.Ordinal);
+        }
+    }
+
+    partial class BoundGlobalVariable
+    {
+        internal override IPlace GetPlace(ILBuilder il)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

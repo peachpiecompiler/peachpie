@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="CodeGen\BoundVariable.cs" />
     <Compile Include="CodeGen\CodeGenerator.cs" />
+    <Compile Include="CodeGen\Places.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="FlowAnalysis\FlowContext.cs" />
     <Compile Include="FlowAnalysis\FlowState.cs" />

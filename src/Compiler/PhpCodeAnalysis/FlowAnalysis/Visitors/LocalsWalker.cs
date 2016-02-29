@@ -234,19 +234,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                         _locals.Add(new BoundParameter((SourceParameterSymbol)_routine.Parameters.First(p => p.Name == e.Name.Value)));
                         break;
                     case VariableKind.LocalVariable:
+                        _locals.Add(new BoundLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind)));
+                        break;
                     case VariableKind.StaticVariable:
-                        _locals.Add(new BoundLocal(
+                        _locals.Add(new BoundStaticLocal(
                             new SourceLocalSymbol(_routine, e.Name.Value, e.Kind),
                             (e.Initializer != null) ? SemanticsBinder.BindExpression(e.Initializer) : null));
                         break;
+                    case VariableKind.ReturnVariable:   // for analysis purposes
+                        _locals.Add(new BoundLocal(new SourceReturnSymbol(_routine)));
+                        break;
                     case VariableKind.GlobalVariable:
-                        // BoundGlobal
-                    case VariableKind.ReturnVariable:
-                        // BoundReturnvariable
+                        _locals.Add(new BoundGlobalVariable(e.Name.Value));
+                        break;
                     default:
                         throw new NotImplementedException();
                 }
-                
             }
             else
             {

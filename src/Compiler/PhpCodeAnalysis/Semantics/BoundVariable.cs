@@ -10,6 +10,8 @@ using Microsoft.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
+    #region BoundVariable
+
     /// <summary>
     /// Represents a variable within routine.
     /// </summary>
@@ -28,7 +30,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Name of the variable.
         /// </summary>
-        public string Name => this.Symbol.Name;
+        public virtual string Name => this.Symbol.Name;
 
         public abstract OperationKind Kind { get; }
 
@@ -46,19 +48,21 @@ namespace Pchp.CodeAnalysis.Semantics
         public abstract TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument);
     }
 
+    #endregion
+
+    #region BoundLocal
+
     public partial class BoundLocal : BoundVariable, IVariable
     {
         private SourceLocalSymbol _symbol;
-        private BoundExpression _initializer;
-
-        internal BoundLocal(SourceLocalSymbol symbol, BoundExpression initializer)
+        
+        internal BoundLocal(SourceLocalSymbol symbol)
             :base(symbol.LocalKind)
         {
             _symbol = symbol;
-            _initializer = initializer;
         }
 
-        public IExpression InitialValue => _initializer;
+        public virtual IExpression InitialValue => null;
 
         public ILocalSymbol Variable => _symbol;
 
@@ -72,6 +76,27 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitVariable(this, argument);
     }
+
+    #endregion
+
+    #region BoundStaticLocal
+
+    public partial class BoundStaticLocal : BoundLocal
+    {
+        protected BoundExpression _initialier;
+
+        internal BoundStaticLocal(SourceLocalSymbol symbol, BoundExpression initializer)
+            :base(symbol)
+        {
+            _initialier = initializer;
+        }
+
+        public override IExpression InitialValue => _initialier;
+    }
+
+    #endregion
+
+    #region BoundParameter
 
     public partial class BoundParameter : BoundVariable, IParameterInitializer
     {
@@ -98,4 +123,43 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitParameterInitializer(this, argument);
     }
+
+    #endregion
+
+    #region BoundGlobalVariable
+
+    public partial class BoundGlobalVariable : BoundVariable
+    {
+        private string _name;
+
+        public BoundGlobalVariable(string name)
+            :base(VariableKind.GlobalVariable)
+        {
+            _name = name;
+        }
+
+        public override string Name => _name;
+
+        public override OperationKind Kind => OperationKind.None;
+
+        internal override Symbol Symbol
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override void Accept(OperationVisitor visitor)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    #endregion
 }
