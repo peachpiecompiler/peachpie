@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Collections;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -249,7 +250,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ushort arity = (ushort)genericParameterHandles.Count;
 
             bool mangleName;
-            
+
             if (arity == 0)
             {
                 return new PENamedTypeSymbolNonGeneric(moduleSymbol, containingNamespace, handle, emittedNamespaceName, out mangleName);
@@ -267,6 +268,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        private static readonly Dictionary<string, ImmutableArray<PENamedTypeSymbol>> s_emptyNestedTypes = new Dictionary<string, ImmutableArray<PENamedTypeSymbol>>();
+
         readonly TypeDefinitionHandle _handle;
         readonly NamespaceOrTypeSymbol _container;
         readonly TypeAttributes _flags;
@@ -274,7 +277,37 @@ namespace Pchp.CodeAnalysis.Symbols
         string _ns;
         readonly SpecialType _corTypeId;
 
+        /// <summary>
+        /// A set of all the names of the members in this type.
+        /// We can get names without getting members (which is a more expensive operation)
+        /// </summary>
+        private ICollection<string> _lazyMemberNames;
+
+        /// <summary>
+        /// We used to sort symbols on demand and relied on row ids to figure out the order between symbols of the same kind.
+        /// However, that was fragile because, when map tables are used in metadata, row ids in the map table define the order
+        /// and we don't have them.
+        /// Members are grouped by kind. First we store fields, then methods, then properties, then events and finally nested types.
+        /// Within groups, members are sorted based on declaration order.
+        /// </summary>
+        private ImmutableArray<Symbol> _lazyMembersInDeclarationOrder;
+        
+        /// <summary>
+                                                                      /// A map of members immediately contained within this type 
+                                                                      /// grouped by their name (case-sensitively).
+                                                                      /// </summary>
+        Dictionary<string, ImmutableArray<Symbol>> _lazyMembersByName;
+
+        /// <summary>
+        /// A map of types immediately contained within this type 
+        /// grouped by their name (case-sensitively).
+        /// </summary>
+        private Dictionary<string, ImmutableArray<PENamedTypeSymbol>> _lazyNestedTypes;
+
         TypeKind _lazyKind;
+
+        private NamedTypeSymbol _lazyDeclaredBaseType = null; // ErrorTypeSymbol.UnknownResultType;
+        //private ImmutableArray<NamedTypeSymbol> _lazyDeclaredInterfaces = default(ImmutableArray<NamedTypeSymbol>);
 
         private PENamedTypeSymbol(
             PEModuleSymbol moduleSymbol,
@@ -292,7 +325,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //bool makeBad = false;
 
             metadataName = moduleSymbol.Module.GetTypeDefNameOrThrow(handle);
-            
+
             _handle = handle;
             _container = container;
             _ns = emittedNamespaceName;
@@ -402,7 +435,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return ((PENamespaceSymbol)s).ContainingPEModule;
             }
         }
-        
+
         internal override IModuleSymbol ContainingModule
         {
             get
@@ -489,12 +522,278 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers()
         {
-            throw new NotImplementedException();
+            EnsureAllMembersAreLoaded();
+            return _lazyMembersInDeclarationOrder;
         }
 
         public override ImmutableArray<Symbol> GetMembers(string name)
         {
-            throw new NotImplementedException();
+            EnsureAllMembersAreLoaded();
+
+            ImmutableArray<Symbol> m;
+            if (!_lazyMembersByName.TryGetValue(name, out m))
+            {
+                m = ImmutableArray<Symbol>.Empty;
+            }
+
+            // nested types are not common, but we need to check just in case
+            ImmutableArray<PENamedTypeSymbol> t;
+            if (_lazyNestedTypes.TryGetValue(name, out t))
+            {
+                m = m.Concat(StaticCast<Symbol>.From(t));
+            }
+
+            return m;
+        }
+
+        private void EnsureAllMembersAreLoaded()
+        {
+            if (_lazyMembersByName == null)
+            {
+                LoadMembers();
+            }
+        }
+
+        private void EnsureNestedTypesAreLoaded()
+        {
+            if (_lazyNestedTypes == null)
+            {
+                var types = ArrayBuilder<PENamedTypeSymbol>.GetInstance();
+                //types.AddRange(this.CreateNestedTypes());
+                var typesDict = GroupByName(types);
+
+                var exchangeResult = Interlocked.CompareExchange(ref _lazyNestedTypes, typesDict, null);
+                if (exchangeResult == null)
+                {
+                    //// Build cache of TypeDef Tokens
+                    //// Potentially this can be done in the background.
+                    //var moduleSymbol = this.ContainingPEModule;
+                    //moduleSymbol.OnNewTypeDeclarationsLoaded(typesDict);
+                }
+                types.Free();
+            }
+        }
+
+        private static Dictionary<string, ImmutableArray<Symbol>> GroupByName(ArrayBuilder<Symbol> symbols)
+        {
+            return symbols.ToDictionary(s => s.Name);
+        }
+
+        private static Dictionary<string, ImmutableArray<PENamedTypeSymbol>> GroupByName(ArrayBuilder<PENamedTypeSymbol> symbols)
+        {
+            if (symbols.Count == 0)
+            {
+                return s_emptyNestedTypes;
+            }
+
+            return symbols.ToDictionary(s => s.Name);
+        }
+
+        private class DeclarationOrderTypeSymbolComparer : IComparer<Symbol>
+        {
+            public static readonly DeclarationOrderTypeSymbolComparer Instance = new DeclarationOrderTypeSymbolComparer();
+
+            private DeclarationOrderTypeSymbolComparer() { }
+
+            public int Compare(Symbol x, Symbol y)
+            {
+                return HandleComparer.Default.Compare(((PENamedTypeSymbol)x).Handle, ((PENamedTypeSymbol)y).Handle);
+            }
+        }
+
+        private void LoadMembers()
+        {
+            ArrayBuilder<Symbol> members = null;
+
+            if (_lazyMembersInDeclarationOrder.IsDefault)
+            {
+                EnsureNestedTypesAreLoaded();
+
+                members = ArrayBuilder<Symbol>.GetInstance();
+
+                Debug.Assert(SymbolKind.Field.ToSortOrder() < SymbolKind.Method.ToSortOrder());
+                Debug.Assert(SymbolKind.Method.ToSortOrder() < SymbolKind.Property.ToSortOrder());
+                Debug.Assert(SymbolKind.Property.ToSortOrder() < SymbolKind.Event.ToSortOrder());
+                Debug.Assert(SymbolKind.Event.ToSortOrder() < SymbolKind.NamedType.ToSortOrder());
+
+                if (this.TypeKind == TypeKind.Enum)
+                {
+                    //EnsureEnumUnderlyingTypeIsLoaded(this.GetUncommonProperties());
+
+                    //var moduleSymbol = this.ContainingPEModule;
+                    //var module = moduleSymbol.Module;
+
+                    //try
+                    //{
+                    //    foreach (var fieldDef in module.GetFieldsOfTypeOrThrow(_handle))
+                    //    {
+                    //        FieldAttributes fieldFlags;
+
+                    //        try
+                    //        {
+                    //            fieldFlags = module.GetFieldDefFlagsOrThrow(fieldDef);
+                    //            if ((fieldFlags & FieldAttributes.Static) == 0)
+                    //            {
+                    //                continue;
+                    //            }
+                    //        }
+                    //        catch (BadImageFormatException)
+                    //        {
+                    //            fieldFlags = 0;
+                    //        }
+
+                    //        if (ModuleExtensions.ShouldImportField(fieldFlags, moduleSymbol.ImportOptions))
+                    //        {
+                    //            var field = new PEFieldSymbol(moduleSymbol, this, fieldDef);
+                    //            members.Add(field);
+                    //        }
+                    //    }
+                    //}
+                    //catch (BadImageFormatException)
+                    //{ }
+
+                    //var syntheticCtor = new SynthesizedInstanceConstructor(this);
+                    //members.Add(syntheticCtor);
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    //ArrayBuilder<PEFieldSymbol> fieldMembers = ArrayBuilder<PEFieldSymbol>.GetInstance();
+                    ArrayBuilder<Symbol> nonFieldMembers = ArrayBuilder<Symbol>.GetInstance();
+
+                    //MultiDictionary<string, PEFieldSymbol> privateFieldNameToSymbols = this.CreateFields(fieldMembers);
+
+                    // A method may be referenced as an accessor by one or more properties. And,
+                    // any of those properties may be "bogus" if one of the property accessors
+                    // does not match the property signature. If the method is referenced by at
+                    // least one non-bogus property, then the method is created as an accessor,
+                    // and (for purposes of error reporting if the method is referenced directly) the
+                    // associated property is set (arbitrarily) to the first non-bogus property found
+                    // in metadata. If the method is not referenced by any non-bogus properties,
+                    // then the method is created as a normal method rather than an accessor.
+
+                    // Create a dictionary of method symbols indexed by metadata handle
+                    // (to allow efficient lookup when matching property accessors).
+                    var methodHandleToSymbol = this.CreateMethods(nonFieldMembers);
+
+                    //if (this.TypeKind == TypeKind.Struct)
+                    //{
+                    //    bool haveParameterlessConstructor = false;
+                    //    foreach (MethodSymbol method in nonFieldMembers)
+                    //    {
+                    //        if (method.IsParameterlessConstructor())
+                    //        {
+                    //            haveParameterlessConstructor = true;
+                    //            break;
+                    //        }
+                    //    }
+
+                    //    // Structs have an implicit parameterless constructor, even if it
+                    //    // does not appear in metadata (11.3.8)
+                    //    if (!haveParameterlessConstructor)
+                    //    {
+                    //        nonFieldMembers.Insert(0, new SynthesizedInstanceConstructor(this));
+                    //    }
+                    //}
+
+                    //this.CreateProperties(methodHandleToSymbol, nonFieldMembers);
+                    //this.CreateEvents(privateFieldNameToSymbols, methodHandleToSymbol, nonFieldMembers);
+
+                    //foreach (PEFieldSymbol field in fieldMembers)
+                    //{
+                    //    if ((object)field.AssociatedSymbol == null)
+                    //    {
+                    //        members.Add(field);
+                    //    }
+                    //    else
+                    //    {
+                    //        // As for source symbols, our public API presents the fiction that all
+                    //        // operations are performed on the event, rather than on the backing field.  
+                    //        // The backing field is not accessible through the API.  As an additional 
+                    //        // bonus, lookup is easier when the names don't collide.
+                    //        Debug.Assert(field.AssociatedSymbol.Kind == SymbolKind.Event);
+                    //    }
+                    //}
+
+                    members.AddRange(nonFieldMembers);
+
+                    nonFieldMembers.Free();
+                    //fieldMembers.Free();
+
+                    methodHandleToSymbol.Free();
+                }
+
+                // Now add types to the end.
+                int membersCount = members.Count;
+
+                foreach (var typeArray in _lazyNestedTypes.Values)
+                {
+                    members.AddRange(typeArray);
+                }
+
+                // Sort the types based on row id.
+                members.Sort(membersCount, DeclarationOrderTypeSymbolComparer.Instance);
+
+                var membersInDeclarationOrder = members.ToImmutable();
+
+                if (!ImmutableInterlocked.InterlockedInitialize(ref _lazyMembersInDeclarationOrder, membersInDeclarationOrder))
+                {
+                    members.Free();
+                    members = null;
+                }
+                else
+                {
+                    // remove the types
+                    members.Clip(membersCount);
+                }
+            }
+
+            if (_lazyMembersByName == null)
+            {
+                if (members == null)
+                {
+                    members = ArrayBuilder<Symbol>.GetInstance();
+                    foreach (var member in _lazyMembersInDeclarationOrder)
+                    {
+                        if (member.Kind == SymbolKind.NamedType)
+                        {
+                            break;
+                        }
+                        members.Add(member);
+                    }
+                }
+
+                Dictionary<string, ImmutableArray<Symbol>> membersDict = GroupByName(members);
+
+                var exchangeResult = Interlocked.CompareExchange(ref _lazyMembersByName, membersDict, null);
+                if (exchangeResult == null)
+                {
+                    // we successfully swapped in the members dictionary.
+
+                    // Now, use these as the canonical member names.  This saves us memory by not having
+                    // two collections around at the same time with redundant data in them.
+                    //
+                    // NOTE(cyrusn): We must use an interlocked exchange here so that the full
+                    // construction of this object will be seen from 'MemberNames'.  Also, doing a
+                    // straight InterlockedExchange here is the right thing to do.  Consider the case
+                    // where one thread is calling in through "MemberNames" while we are in the middle
+                    // of this method.  Either that thread will compute the member names and store it
+                    // first (in which case we overwrite it), or we will store first (in which case
+                    // their CompareExchange(..., ..., null) will fail.  Either way, this will be certain
+                    // to become the canonical set of member names.
+                    //
+                    // NOTE(cyrusn): This means that it is possible (and by design) for people to get a
+                    // different object back when they call MemberNames multiple times.  However, outside
+                    // of object identity, both collections should appear identical to the user.
+                    var memberNames = SpecializedCollections.ReadOnlyCollection(membersDict.Keys);
+                    Interlocked.Exchange(ref _lazyMemberNames, memberNames);
+                }
+            }
+
+            if (members != null)
+            {
+                members.Free();
+            }
         }
 
         private MultiDictionary<string, IFieldSymbol> CreateFields(ArrayBuilder<IFieldSymbol> fieldMembers)
@@ -698,13 +997,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal NamedTypeSymbol GetDeclaredBaseType(ConsList<Symbol> basesBeingResolved)
         {
-            //if (ReferenceEquals(_lazyDeclaredBaseType, ErrorTypeSymbol.UnknownResultType))
-            //{
-            //    Interlocked.CompareExchange(ref _lazyDeclaredBaseType, MakeDeclaredBaseType(), ErrorTypeSymbol.UnknownResultType);
-            //}
+            if (_lazyDeclaredBaseType == null) // TODO: if (ReferenceEquals(_lazyDeclaredBaseType, ErrorTypeSymbol.UnknownResultType))
+            {
+                _lazyDeclaredBaseType = MakeDeclaredBaseType();
+            }
 
-            //return _lazyDeclaredBaseType;
-            throw new NotImplementedException();
+            return _lazyDeclaredBaseType;
         }
 
         private NamedTypeSymbol MakeDeclaredBaseType()
