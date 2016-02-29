@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override TResult Accept<TResult>(SymbolVisitor<TResult> visitor) => visitor.VisitNamespace(this);
 
-        public override IAssemblySymbol ContainingAssembly => _sourceModule.ContainingAssembly;
+        public override AssemblySymbol ContainingAssembly => _sourceModule.ContainingAssembly;
 
         internal override IModuleSymbol ContainingModule => _sourceModule;
 

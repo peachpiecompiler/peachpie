@@ -68,6 +68,19 @@ namespace Pchp.CodeAnalysis.Emit
             AssemblyOrModuleSymbolToModuleRefMap.Add(sourceModule, this);
         }
 
+        #region PEModuleBuilder
+
+        internal MetadataConstant CreateConstant(
+            ITypeSymbol type,
+            object value,
+            SyntaxNode syntaxNodeOpt,
+            DiagnosticBag diagnostics)
+        {
+            return new MetadataConstant(Translate(type, syntaxNodeOpt, diagnostics), value);
+        }
+
+        #endregion
+
         internal SourceModuleSymbol SourceModule => _sourceModule;
 
         public ArrayMethods ArrayMethods

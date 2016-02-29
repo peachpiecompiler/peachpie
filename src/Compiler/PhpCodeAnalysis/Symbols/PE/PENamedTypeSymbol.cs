@@ -1016,7 +1016,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     if (!token.IsNil)
                     {
-                        //TypeSymbol decodedType = new MetadataDecoder(moduleSymbol, this).GetTypeOfToken(token);
+                        TypeSymbol decodedType = new MetadataDecoder(moduleSymbol, this).GetTypeOfToken(token);
                         //return (NamedTypeSymbol)DynamicTypeDecoder.TransformType(decodedType, 0, _handle, moduleSymbol);
                         throw new NotImplementedException();
                     }

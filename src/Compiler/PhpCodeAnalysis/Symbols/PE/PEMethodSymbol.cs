@@ -575,59 +575,57 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var moduleSymbol = _containingType.ContainingPEModule;
 
-            throw new NotImplementedException();
+            SignatureHeader signatureHeader;
+            BadImageFormatException mrEx;
+            ParamInfo<TypeSymbol>[] paramInfo = new MetadataDecoder(moduleSymbol, this).GetSignatureForMethod(_handle, out signatureHeader, out mrEx);
+            bool makeBad = (mrEx != null);
 
-            //SignatureHeader signatureHeader;
-            //BadImageFormatException mrEx;
-            //ParamInfo<TypeSymbol>[] paramInfo = new MetadataDecoder(moduleSymbol, this).GetSignatureForMethod(_handle, out signatureHeader, out mrEx);
-            //bool makeBad = (mrEx != null);
-
-            ////// If method is not generic, let's assign empty list for type parameters
-            ////if (!signatureHeader.IsGeneric &&
-            ////    _lazyTypeParameters.IsDefault)
-            ////{
-            ////    ImmutableInterlocked.InterlockedInitialize(ref _lazyTypeParameters, ImmutableArray<TypeParameterSymbol>.Empty);
-            ////}
-
-            //int count = paramInfo.Length - 1;
-            //ImmutableArray<ParameterSymbol> @params;
-            //bool isBadParameter;
-
-            //if (count > 0)
+            //// If method is not generic, let's assign empty list for type parameters
+            //if (!signatureHeader.IsGeneric &&
+            //    _lazyTypeParameters.IsDefault)
             //{
-            //    var builder = ImmutableArray.CreateBuilder<ParameterSymbol>(count);
-            //    for (int i = 0; i < count; i++)
-            //    {
-            //        builder.Add(PEParameterSymbol.Create(moduleSymbol, this, i, paramInfo[i + 1], out isBadParameter));
-            //        if (isBadParameter)
-            //        {
-            //            makeBad = true;
-            //        }
-            //    }
-
-            //    @params = builder.ToImmutable();
-            //}
-            //else
-            //{
-            //    @params = ImmutableArray<ParameterSymbol>.Empty;
+            //    ImmutableInterlocked.InterlockedInitialize(ref _lazyTypeParameters, ImmutableArray<TypeParameterSymbol>.Empty);
             //}
 
-            //// paramInfo[0] contains information about return "parameter"
-            //Debug.Assert(!paramInfo[0].IsByRef);
+            int count = paramInfo.Length - 1;
+            ImmutableArray<ParameterSymbol> @params;
+            bool isBadParameter;
+
+            if (count > 0)
+            {
+                var builder = ImmutableArray.CreateBuilder<ParameterSymbol>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    builder.Add(PEParameterSymbol.Create(moduleSymbol, this, i, paramInfo[i + 1], out isBadParameter));
+                    if (isBadParameter)
+                    {
+                        makeBad = true;
+                    }
+                }
+
+                @params = builder.ToImmutable();
+            }
+            else
+            {
+                @params = ImmutableArray<ParameterSymbol>.Empty;
+            }
+
+            // paramInfo[0] contains information about return "parameter"
+            Debug.Assert(!paramInfo[0].IsByRef);
 
             //// Dynamify object type if necessary
             //paramInfo[0].Type = paramInfo[0].Type.AsDynamicIfNoPia(_containingType);
 
-            //var returnParam = PEParameterSymbol.Create(moduleSymbol, this, 0, paramInfo[0], out isBadParameter);
+            var returnParam = PEParameterSymbol.Create(moduleSymbol, this, 0, paramInfo[0], out isBadParameter);
 
-            //if (makeBad || isBadParameter)
-            //{
-            //    //InitializeUseSiteDiagnostic(new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, this));
-            //}
+            if (makeBad || isBadParameter)
+            {
+                //InitializeUseSiteDiagnostic(new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, this));
+            }
 
-            //var signature = new SignatureData(signatureHeader, @params, returnParam);
+            var signature = new SignatureData(signatureHeader, @params, returnParam);
 
-            //return InterlockedOperations.Initialize(ref _lazySignature, signature);
+            return InterlockedOperations.Initialize(ref _lazySignature, signature);
         }
 
         //public override ImmutableArray<TypeParameterSymbol> TypeParameters

@@ -116,7 +116,7 @@ namespace Pchp.CodeAnalysis
         /// Returns the assembly containing this symbol. If this symbol is shared across multiple
         /// assemblies, or doesn't belong to an assembly, returns null.
         /// </summary>
-        public virtual IAssemblySymbol ContainingAssembly
+        public virtual AssemblySymbol ContainingAssembly
         {
             get
             {

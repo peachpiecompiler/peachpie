@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsGlobalNamespace => true;
 
-        public override IAssemblySymbol ContainingAssembly => _moduleSymbol.ContainingAssembly;
+        public override AssemblySymbol ContainingAssembly => _moduleSymbol.ContainingAssembly;
 
         internal override IModuleSymbol ContainingModule => _moduleSymbol;
 

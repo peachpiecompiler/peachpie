@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal class AssemblySymbol : Symbol, IAssemblySymbol
+    internal abstract class AssemblySymbol : Symbol, IAssemblySymbol
     {
         public override Symbol ContainingSymbol => null;
 
@@ -32,12 +32,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual AssemblyIdentity Identity { get { throw new NotImplementedException(); } }
+        public abstract AssemblyIdentity Identity { get; }
 
         /// <summary>
-        /// Gets COR library assembly symbol. Valid for source assembly.
+        /// Gets COR library assembly symbol.
         /// </summary>
-        public virtual AssemblySymbol CorLibrary { get { throw new InvalidOperationException(); } }
+        public abstract AssemblySymbol CorLibrary { get; }
 
         public virtual bool IsCorLibrary => false;
 
@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual INamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
         {
-            throw new NotImplementedException();
+            return this.GlobalNamespace.GetTypeMembers(fullyQualifiedMetadataName).FirstOrDefault();
         }
 
         public virtual bool GivesAccessTo(IAssemblySymbol toAssembly)

@@ -41,6 +41,18 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         readonly DocumentationProvider _documentationProvider;
 
+        public override AssemblySymbol CorLibrary
+        {
+            get
+            {
+                if (_isCorLibrary)
+                    return this;
+
+                // assembly.AssemblyReferences
+                throw new NotImplementedException();
+            }
+        }
+
         internal PEAssembly PEAssembly => _assembly;
 
         public override AssemblyIdentity Identity => _assembly.Identity;

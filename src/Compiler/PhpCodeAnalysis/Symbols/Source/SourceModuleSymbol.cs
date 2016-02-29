@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal SourceAssemblySymbol SourceAssemblySymbol => _sourceAssembly;
 
-        public override IAssemblySymbol ContainingAssembly => _sourceAssembly;
+        public override AssemblySymbol ContainingAssembly => _sourceAssembly;
 
         public override ImmutableArray<Location> Locations
         {

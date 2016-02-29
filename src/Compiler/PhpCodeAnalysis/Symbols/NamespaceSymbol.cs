@@ -83,7 +83,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Containing assembly.
         /// </summary>
-        public abstract override IAssemblySymbol ContainingAssembly { get; }
+        public abstract override AssemblySymbol ContainingAssembly { get; }
 
         internal override IModuleSymbol ContainingModule
         {

@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    }
         //}
 
-        public override IAssemblySymbol ContainingAssembly => _assembly;
+        public override AssemblySymbol ContainingAssembly => _assembly;
 
         public override Symbol ContainingSymbol => _assembly;
 
