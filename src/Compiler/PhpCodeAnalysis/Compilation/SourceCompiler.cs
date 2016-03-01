@@ -62,15 +62,19 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(routine);
 
-            var start = routine.ControlFlowGraph.Start;
-
-            if (start.FlowState == null)
+            var cfg = routine.ControlFlowGraph;
+            if (cfg == null)
             {
                 // create initial flow state
-                start.FlowState = StateBinder.CreateInitialState(routine);
+                var state = StateBinder.CreateInitialState(routine);
+                var binder = new SemanticsBinder();
+
+                // create control flow
+                routine.ControlFlowGraph = cfg = new ControlFlowGraph(routine.Statements, binder);
 
                 // enqueue the method for the analysis
-                _worklist.Enqueue(start);
+                cfg.Start.FlowState = state;
+                _worklist.Enqueue(cfg.Start);
             }
         }
 

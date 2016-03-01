@@ -17,15 +17,14 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed class SourceFunctionSymbol : SourceRoutineSymbol
     {
-        readonly PhpCompilation/*!*/_compilation;
-        readonly FunctionDecl/*!*/_syntax;
+        readonly PhpCompilation _compilation;
+        readonly FunctionDecl _syntax;
 
-        public SourceFunctionSymbol(PhpCompilation/*!*/compilation, FunctionDecl/*!*/syntax)
+        public SourceFunctionSymbol(PhpCompilation compilation, FunctionDecl syntax)
             :base(syntax.Signature)
         {
             Contract.ThrowIfNull(compilation);
-            Contract.ThrowIfNull(syntax);
-
+            
             _compilation = compilation;
             _syntax = syntax;
         }

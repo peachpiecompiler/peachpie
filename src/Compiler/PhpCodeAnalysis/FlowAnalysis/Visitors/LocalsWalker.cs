@@ -196,25 +196,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         }
     }
 
-    internal class LocalsCollector : LocalsWalker
+    internal class LocalsBinder : LocalsWalker
     {
         readonly SourceRoutineSymbol _routine;
         readonly List<BoundVariable> _locals = new List<BoundVariable>();
         readonly HashSet<VariableName>/*!*/_visited = new HashSet<VariableName>();
-        
-        private LocalsCollector(SourceRoutineSymbol routine)
+        SemanticsBinder _lazyBinder;
+
+        SemanticsBinder SemanticBinder { get { return _lazyBinder ?? (_lazyBinder = new SemanticsBinder()); } }
+
+        private LocalsBinder(SourceRoutineSymbol routine)
             :base(routine.Syntax)
         {
             _routine = routine;
-
+            
             this.VisitLocal += this.HandleLocal;
         }
 
-        public static ImmutableArray<BoundVariable> GetLocals(SourceRoutineSymbol routine)
+        public static ImmutableArray<BoundVariable> BindLocals(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
 
-            var visitor = new LocalsCollector(routine);
+            var visitor = new LocalsBinder(routine);
             visitor.VisitRoutine();
             return visitor._locals.ToImmutableArray();
         }
@@ -237,9 +240,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                         _locals.Add(new BoundLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind)));
                         break;
                     case VariableKind.StaticVariable:
-                        _locals.Add(new BoundStaticLocal(
-                            new SourceLocalSymbol(_routine, e.Name.Value, e.Kind),
-                            (e.Initializer != null) ? SemanticsBinder.BindExpression(e.Initializer) : null));
+                        var boundstatic = new BoundStaticLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind), null);
+                        if (e.Initializer != null)
+                            boundstatic.Update(this.SemanticBinder.BindExpression(e.Initializer));
+                        
+                        _locals.Add(boundstatic);
                         break;
                     case VariableKind.ReturnVariable:   // for analysis purposes
                         _locals.Add(new BoundLocal(new SourceReturnSymbol(_routine)));

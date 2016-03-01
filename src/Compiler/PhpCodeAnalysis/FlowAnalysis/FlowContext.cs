@@ -61,6 +61,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Gets array of local variables. Names are indexed by their internal index.
         /// </summary>
         internal ImmutableArray<BoundVariable> Locals => _locals;
+
+        /// <summary>
+        /// Finds index of variable with given name.
+        /// </summary>
+        int FindVar(string name)
+        {
+            var vars = _locals;
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (StringComparer.OrdinalIgnoreCase.Equals(vars[i].Name, name))
+                {
+                    return i;
+                }
+            }
+
+            //
+            return -1;
+        }
         
         #endregion
 
@@ -109,6 +127,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 : null;
         }
 
+        /// <summary>
+        /// Gets bound variable with given name.
+        /// </summary>
+        public BoundVariable GetVar(string name)
+        {
+            return GetVar(FindVar(name));
+        }
+
         public void AddVarType(int varindex, TypeRefMask type)
         {
             if (varindex >= 0 && varindex < _localsType.Length)
@@ -119,17 +145,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public TypeRefMask GetVarType(string name)
         {
-            var vars = _locals;
-            for (int i = 0; i < vars.Length; i++)
-            {
-                if (StringComparer.OrdinalIgnoreCase.Equals(vars[i].Name, name))
-                {
-                    return _localsType[i];
-                }
-            }
-
-            //
-            return default(TypeRefMask);
+            var index = FindVar(name);
+            return (index >= 0)
+                ? _localsType[index]
+                : default(TypeRefMask);
         }
 
         #endregion

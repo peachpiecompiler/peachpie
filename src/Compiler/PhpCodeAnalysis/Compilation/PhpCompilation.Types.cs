@@ -11,6 +11,39 @@ namespace Pchp.CodeAnalysis
 {
     partial class PhpCompilation
     {
+        internal NamedTypeSymbol GetWellKnownType(WellKnownType id)
+        {
+            var name = id.GetMetadataName();
+            if (name != null && this.CorLibrary != null)
+            {
+                return (NamedTypeSymbol)this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
+            }
+
+            return null;
+        }
+
+        protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
+        {
+            var name = SpecialTypes.GetMetadataName(specialType);
+            if (name != null && this.CorLibrary != null)
+            {
+                return this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
+            }
+
+            return null;
+        }
+
+        protected override INamedTypeSymbol CommonGetTypeByMetadataName(string metadataName)
+        {
+            //return CommonGetBoundReferenceManager().GetReferencedAssemblies()
+            //    + this.SourceAssembly
+            //    .Select(pair => pair.Value)
+            //    .SelectMany(a => a.GlobalNamespace.GetTypeMembers(metadataName))
+            //    .FirstOrDefault(); 
+
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Resolves <see cref="INamedTypeSymbol"/> best fitting given type mask.
         /// </summary>

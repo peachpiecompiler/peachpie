@@ -176,13 +176,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         public bool IsDefault => _caseValue == null;
 
-        public CaseBlock(SwitchItem item)
+        public CaseBlock(BoundExpression caseValue)
             : base()
         {
-            var caseItem = item as CaseItem;
-            _caseValue = (caseItem != null)
-                ? SemanticsBinder.BindExpression(caseItem.CaseVal)
-                : null;  // DefaultItem has no value.
+            _caseValue = caseValue;
         }
 
         public override void Accept(GraphVisitor visitor) => visitor.VisitCFGCaseBlock(this);

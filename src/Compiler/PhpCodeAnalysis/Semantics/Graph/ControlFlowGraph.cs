@@ -113,8 +113,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Construction
 
-        public ControlFlowGraph(IList<Statement>/*!*/statements)
-            : this(BuilderVisitor.Build(statements))
+        internal ControlFlowGraph(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder)
+            : this(BuilderVisitor.Build(statements, binder))
         {
         }
 

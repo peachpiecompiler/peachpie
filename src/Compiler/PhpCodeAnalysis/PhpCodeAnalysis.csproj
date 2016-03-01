@@ -74,6 +74,7 @@
     <Compile Include="FlowAnalysis\Worklist.cs" />
     <Compile Include="Semantics\BoundVariable.cs" />
     <Compile Include="Semantics\Expressions.cs" />
+    <Compile Include="Semantics\ExpressionsExtension.cs" />
     <Compile Include="Semantics\Graph\BoundBlock.cs" />
     <Compile Include="Semantics\Graph\BuilderVisitor.cs" />
     <Compile Include="Semantics\Graph\ControlFlowGraph.cs" />

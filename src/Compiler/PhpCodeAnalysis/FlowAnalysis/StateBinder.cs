@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var containingType = routine.ContainingType as SourceNamedTypeSymbol;
 
             // collect locals
-            var locals = LocalsCollector.GetLocals(routine);
+            var locals = LocalsBinder.BindLocals(routine);
             var returnIdx = locals.IndexOf(x => x.VariableKind == VariableKind.ReturnVariable);
 
             // create typeCtx

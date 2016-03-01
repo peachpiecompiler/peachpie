@@ -21,10 +21,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             _syntax = syntax;
             _compilation = compilation;
-            _methods = GenerateMethods().ToImmutableArray();
+            _methods = LoadMethods().ToImmutableArray();
         }
 
-        IEnumerable<SourceMethodSymbol> GenerateMethods()
+        IEnumerable<SourceMethodSymbol> LoadMethods()
         {
             foreach (var m in _syntax.Members.OfType<MethodDecl>())
             {
@@ -97,6 +97,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers(string name)
         {
+            // TODO: + props, constants
+            var method = _methods.First(m => string.Equals(m.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (method != null)
+                return ImmutableArray.Create<Symbol>(method);
+
+            //
             return ImmutableArray<Symbol>.Empty;
         }
 

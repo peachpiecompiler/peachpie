@@ -378,28 +378,6 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
-        {
-            var name = SpecialTypes.GetMetadataName(specialType);
-            if (name != null && this.CorLibrary != null)
-            {
-                return this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
-            }
-
-            return null;
-        }
-
-        protected override INamedTypeSymbol CommonGetTypeByMetadataName(string metadataName)
-        {
-            //return CommonGetBoundReferenceManager().GetReferencedAssemblies()
-            //    + this.SourceAssembly
-            //    .Select(pair => pair.Value)
-            //    .SelectMany(a => a.GlobalNamespace.GetTypeMembers(metadataName))
-            //    .FirstOrDefault(); 
-
-            throw new NotImplementedException();
-        }
-
         protected override Compilation CommonRemoveAllSyntaxTrees()
         {
             throw new NotImplementedException();
@@ -456,17 +434,6 @@ namespace Pchp.CodeAnalysis
         internal override ISymbol CommonGetWellKnownTypeMember(WellKnownMember member)
         {
             throw new NotImplementedException();
-        }
-
-        internal NamedTypeSymbol GetWellKnownType(WellKnownType id)
-        {
-            var name = id.GetMetadataName();
-            if (name != null && this.CorLibrary != null)
-            {
-                return (NamedTypeSymbol)this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
-            }
-
-            return null;
         }
 
         internal override int CompareSourceLocations(Location loc1, Location loc2)

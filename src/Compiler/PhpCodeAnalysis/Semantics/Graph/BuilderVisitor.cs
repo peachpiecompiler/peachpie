@@ -15,6 +15,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// </summary>
     internal sealed class BuilderVisitor : TreeVisitor
     {
+        readonly SemanticsBinder/*!*/_binder;
         private BoundBlock/*!*/_current;
         private Dictionary<string, ControlFlowGraph.LabelBlockState> _labels;
         private List<BreakTargetScope> _breakTargets;
@@ -104,9 +105,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Construction
 
-        private BuilderVisitor(IList<Statement>/*!*/statements)
+        private BuilderVisitor(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder)
         {
             Contract.ThrowIfNull(statements);
+            Contract.ThrowIfNull(binder);
+
+            _binder = binder;
 
             this.Start = new StartBlock();
             this.Exit = new ExitBlock();
@@ -117,9 +121,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current = Connect(_current, this.Exit);
         }
 
-        public static BuilderVisitor/*!*/Build(IList<Statement>/*!*/statements)
+        public static BuilderVisitor/*!*/Build(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder)
         {
-            return new BuilderVisitor(statements);
+            return new BuilderVisitor(statements, binder);
         }
 
         #endregion
@@ -135,7 +139,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void Add(Statement stmt)
         {
-            _current.AddStatement(SemanticsBinder.BindStatement(stmt));
+            _current.AddStatement(_binder.BindStatement(stmt));
         }
 
         private BoundBlock/*!*/NewBlock()
@@ -161,12 +165,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private CaseBlock/*!*/NewBlock(SwitchItem item)
         {
-            return new CaseBlock(item);
+            var caseitem = item as CaseItem;
+            BoundExpression caseValue =  // null => DefaultItem
+                (caseitem != null) ? _binder.BindExpression(caseitem.CaseVal) : null;
+            return new CaseBlock(caseValue);
         }
 
         private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression/*!*/condition)
         {
-            new ConditionalEdge(source, ifTarget, elseTarget, SemanticsBinder.BindExpression(condition));
+            new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition));
             return ifTarget;
         }
 
@@ -317,7 +324,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // ForeachEnumereeEdge : SimpleEdge
             // x.Enumeree.GetEnumerator();
-            var enumereeEdge = new ForeachEnumereeEdge(_current, move, SemanticsBinder.BindExpression(x.Enumeree));
+            var enumereeEdge = new ForeachEnumereeEdge(_current, move, _binder.BindExpression(x.Enumeree));
 
             // ContinueTarget:
             EnterBreakTarget(end, move);
@@ -505,7 +512,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // SwitchEdge // Connects _current to cases
-            var edge = new SwitchEdge(_current, SemanticsBinder.BindExpression(x.SwitchValue), cases.ToArray());
+            var edge = new SwitchEdge(_current, _binder.BindExpression(x.SwitchValue), cases.ToArray());
             _current = cases[0];
 
             EnterBreakTarget(end, end); // NOTE: inside switch, Continue ~ Break

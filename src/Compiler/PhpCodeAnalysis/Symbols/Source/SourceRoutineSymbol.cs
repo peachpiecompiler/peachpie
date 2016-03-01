@@ -19,7 +19,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal abstract class SourceRoutineSymbol : MethodSymbol
     {
-        ImmutableArray<ControlFlowGraph> _cfg;
+        ControlFlowGraph _cfg;
         TypeRefContext _typeCtx;
 
         #region ISemanticFunction
@@ -31,10 +31,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_cfg.IsDefault)
-                    _cfg = ImmutableArray.Create(CreateCFG());
+                if (_cfg != null)
+                    return ImmutableArray.Create(_cfg);
 
-                return _cfg;
+                return default(ImmutableArray<ControlFlowGraph>);
             }
         }
 
@@ -42,7 +42,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Lazily bound semantic block, equivalent for CFG[0].
         /// Entry point of analysis and emitting.
         /// </summary>
-        internal ControlFlowGraph ControlFlowGraph => CFG[0];
+        internal ControlFlowGraph ControlFlowGraph
+        {
+            get { return _cfg; }
+            set { _cfg = value; }
+        }
 
         #endregion
 
@@ -63,8 +67,6 @@ namespace Pchp.CodeAnalysis.Symbols
         internal abstract IList<Statement> Statements { get; }
 
         internal TypeRefContext TypeRefContext => _typeCtx ?? (_typeCtx = CreateTypeRefContext());
-
-        protected ControlFlowGraph CreateCFG() => new ControlFlowGraph(this.Statements);
 
         protected abstract TypeRefContext CreateTypeRefContext();
 

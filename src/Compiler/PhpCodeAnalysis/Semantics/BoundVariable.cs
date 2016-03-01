@@ -92,6 +92,11 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override IExpression InitialValue => _initialier;
+
+        public void Update(BoundExpression initializer)
+        {
+            _initialier = initializer;
+        }
     }
 
     #endregion

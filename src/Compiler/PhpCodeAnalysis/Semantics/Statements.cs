@@ -50,7 +50,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.ExpressionStatement;
 
-        public BoundExpressionStatement(IExpression/*!*/expression)
+        public BoundExpressionStatement(BoundExpression/*!*/expression)
         {
             Debug.Assert(expression != null);
             this.Expression = expression;
