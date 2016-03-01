@@ -17,12 +17,12 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override TypeSymbol GetMDArrayTypeSymbol(PEModuleSymbol moduleSymbol, int rank, TypeSymbol elementType, ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers,
                                                           ImmutableArray<int> sizes, ImmutableArray<int> lowerBounds)
         {
-            throw new NotImplementedException();
-            //if (elementType is UnsupportedMetadataTypeSymbol)
-            //{
-            //    return elementType;
-            //}
+            if (elementType is UnsupportedMetadataTypeSymbol)
+            {
+                return elementType;
+            }
 
+            throw new NotImplementedException();
             //return ArrayTypeSymbol.CreateMDArray(moduleSymbol.ContainingAssembly, elementType, rank, sizes, lowerBounds, CSharpCustomModifier.Convert(customModifiers));
         }
 
@@ -45,12 +45,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol MakePointerTypeSymbol(PEModuleSymbol moduleSymbol, TypeSymbol type, ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers)
         {
-            throw new NotImplementedException();
-            //if (type is UnsupportedMetadataTypeSymbol)
-            //{
-            //    return type;
-            //}
+            if (type is UnsupportedMetadataTypeSymbol)
+            {
+                return type;
+            }
 
+            throw new NotImplementedException();
             //return new PointerTypeSymbol(type, CSharpCustomModifier.Convert(customModifiers));
         }
 
@@ -73,19 +73,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetSZArrayTypeSymbol(PEModuleSymbol moduleSymbol, TypeSymbol elementType, ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers)
         {
-            throw new NotImplementedException();
-            //if (elementType is UnsupportedMetadataTypeSymbol)
-            //{
-            //    return elementType;
-            //}
+            if (elementType is UnsupportedMetadataTypeSymbol)
+            {
+                return elementType;
+            }
 
+            throw new NotImplementedException();
             //return ArrayTypeSymbol.CreateSZArray(moduleSymbol.ContainingAssembly, elementType, CSharpCustomModifier.Convert(customModifiers));
         }
 
         internal override TypeSymbol GetUnsupportedMetadataTypeSymbol(PEModuleSymbol moduleSymbol, BadImageFormatException exception)
         {
-            throw new NotImplementedException();
-            //return new UnsupportedMetadataTypeSymbol(exception);
+            return new UnsupportedMetadataTypeSymbol(exception);
         }
 
         internal override TypeSymbol SubstituteTypeParameters(
@@ -94,24 +93,24 @@ namespace Pchp.CodeAnalysis.Symbols
             ImmutableArray<KeyValuePair<TypeSymbol, ImmutableArray<ModifierInfo<TypeSymbol>>>> arguments,
             ImmutableArray<bool> refersToNoPiaLocalType)
         {
+            if (genericTypeDef is UnsupportedMetadataTypeSymbol)
+            {
+                return genericTypeDef;
+            }
+
+            // Let's return unsupported metadata type if any argument is unsupported metadata type 
+            foreach (var arg in arguments)
+            {
+                if (arg.Key.Kind == SymbolKind.ErrorType &&
+                    arg.Key is UnsupportedMetadataTypeSymbol)
+                {
+                    return new UnsupportedMetadataTypeSymbol();
+                }
+            }
+
+            NamedTypeSymbol genericType = (NamedTypeSymbol)genericTypeDef;
+
             throw new NotImplementedException();
-            //if (genericTypeDef is UnsupportedMetadataTypeSymbol)
-            //{
-            //    return genericTypeDef;
-            //}
-
-            //// Let's return unsupported metadata type if any argument is unsupported metadata type 
-            //foreach (var arg in arguments)
-            //{
-            //    if (arg.Key.Kind == SymbolKind.ErrorType &&
-            //        arg.Key is UnsupportedMetadataTypeSymbol)
-            //    {
-            //        return new UnsupportedMetadataTypeSymbol();
-            //    }
-            //}
-
-            //NamedTypeSymbol genericType = (NamedTypeSymbol)genericTypeDef;
-
             //// See if it is or its enclosing type is a non-interface closed over NoPia local types. 
             //ImmutableArray<AssemblySymbol> linkedAssemblies = moduleSymbol.ContainingAssembly.GetLinkedReferencedAssemblies();
 

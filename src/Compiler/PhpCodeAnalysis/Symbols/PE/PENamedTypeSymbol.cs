@@ -306,7 +306,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         TypeKind _lazyKind;
 
-        private NamedTypeSymbol _lazyDeclaredBaseType = null; // ErrorTypeSymbol.UnknownResultType;
+        private NamedTypeSymbol _lazyDeclaredBaseType = ErrorTypeSymbol.UnknownResultType;
         //private ImmutableArray<NamedTypeSymbol> _lazyDeclaredInterfaces = default(ImmutableArray<NamedTypeSymbol>);
 
         private PENamedTypeSymbol(
@@ -997,9 +997,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal NamedTypeSymbol GetDeclaredBaseType(ConsList<Symbol> basesBeingResolved)
         {
-            if (_lazyDeclaredBaseType == null) // TODO: if (ReferenceEquals(_lazyDeclaredBaseType, ErrorTypeSymbol.UnknownResultType))
+            if (ReferenceEquals(_lazyDeclaredBaseType, ErrorTypeSymbol.UnknownResultType))
             {
-                _lazyDeclaredBaseType = MakeDeclaredBaseType();
+                Interlocked.CompareExchange(ref _lazyDeclaredBaseType, MakeDeclaredBaseType(), ErrorTypeSymbol.UnknownResultType);
             }
 
             return _lazyDeclaredBaseType;
@@ -1018,13 +1018,12 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         TypeSymbol decodedType = new MetadataDecoder(moduleSymbol, this).GetTypeOfToken(token);
                         //return (NamedTypeSymbol)DynamicTypeDecoder.TransformType(decodedType, 0, _handle, moduleSymbol);
-                        throw new NotImplementedException();
+                        return (NamedTypeSymbol)decodedType;
                     }
                 }
-                catch (BadImageFormatException)
+                catch (BadImageFormatException mrEx)
                 {
-                    throw;
-                    //return new UnsupportedMetadataTypeSymbol(mrEx);
+                    return new UnsupportedMetadataTypeSymbol(mrEx);
                 }
             }
 

@@ -37,6 +37,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal TypeDecl Syntax => _syntax;
 
+        public override int Arity => 0;
+
         internal override IModuleSymbol ContainingModule => _compilation.SourceModule;
 
         public override Symbol ContainingSymbol => _compilation.SourceModule;

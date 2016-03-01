@@ -67,16 +67,14 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if ((object)_methodContextOpt == null)
             {
-                throw new ArgumentException();
-                //return new UnsupportedMetadataTypeSymbol(); // type parameter not associated with a method
+                return new UnsupportedMetadataTypeSymbol(); // type parameter not associated with a method
             }
 
             var typeParameters = _methodContextOpt.TypeParameters;
 
             if (typeParameters.Length <= position)
             {
-                throw new ArgumentException();
-                //return new UnsupportedMetadataTypeSymbol(); // type parameter position too large
+                return new UnsupportedMetadataTypeSymbol(); // type parameter position too large
             }
 
             return (TypeSymbol)typeParameters[position];
@@ -93,8 +91,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if ((object)type == null || type.MetadataArity <= position)
             {
-                throw new ArgumentException();
-                //return new UnsupportedMetadataTypeSymbol(); // position of type parameter too large
+                return new UnsupportedMetadataTypeSymbol(); // position of type parameter too large
             }
 
             position -= type.MetadataArity - type.Arity;

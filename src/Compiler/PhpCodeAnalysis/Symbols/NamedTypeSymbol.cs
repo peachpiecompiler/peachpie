@@ -16,13 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal abstract partial class NamedTypeSymbol : TypeSymbol, INamedTypeSymbol
     {
-        public virtual int Arity
-        {
-            get
-            {
-                return 0; //throw new NotImplementedException();
-            }
-        }
+        public abstract int Arity { get; }
 
         /// <summary>
         /// Should the name returned by Name property be mangled with [`arity] suffix in order to get metadata name.
