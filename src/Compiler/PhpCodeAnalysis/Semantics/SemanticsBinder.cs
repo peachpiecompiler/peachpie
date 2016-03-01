@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundExpression BindBinaryEx(AST.BinaryEx expr)
         {
             return new BoundBinaryEx(
-                BindExpression(expr.LeftExpr, AccessType.Write),
+                BindExpression(expr.LeftExpr, AccessType.Read),
                 BindExpression(expr.RightExpr, AccessType.Read),
                 BindBinaryOperationKind(expr.Operation));
         }
