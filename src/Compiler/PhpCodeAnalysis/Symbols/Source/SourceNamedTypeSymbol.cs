@@ -98,7 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<Symbol> GetMembers(string name)
         {
             // TODO: + props, constants
-            var method = _methods.First(m => string.Equals(m.Name, name, StringComparison.OrdinalIgnoreCase));
+            var method = _methods.FirstOrDefault(m => string.Equals(m.Name, name, StringComparison.OrdinalIgnoreCase));
             if (method != null)
                 return ImmutableArray.Create<Symbol>(method);
 

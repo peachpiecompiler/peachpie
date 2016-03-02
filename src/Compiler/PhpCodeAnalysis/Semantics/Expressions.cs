@@ -177,4 +177,33 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     #endregion
+
+    #region BoundVariableRead
+
+    public class BoundLocalRef : BoundExpression, ILocalReferenceExpression
+    {
+        public string Name => _name;
+        readonly string _name;
+
+        BoundVariable _variable;
+
+        public BoundVariable Variable { get; set; }
+
+        public override OperationKind Kind => OperationKind.LocalReferenceExpression;
+
+        public ILocalSymbol Local => _variable?.Symbol as ILocalSymbol;
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitLocalReferenceExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitLocalReferenceExpression(this, argument);
+
+        public BoundLocalRef(string name)
+        {
+            _name = name;
+        }
+    }
+
+    #endregion
 }

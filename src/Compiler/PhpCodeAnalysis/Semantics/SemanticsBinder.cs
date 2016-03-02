@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (expr.IsMemberOf == null)
             {
-                
+                return new BoundLocalRef(expr.VarName.Value).WithAccess(access);
             }
 
             throw new NotImplementedException();
