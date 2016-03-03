@@ -32,6 +32,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
 
+            if (routine.ControlFlowGraph == null)
+                throw new ArgumentException();
+
             _routine = routine;
             _il = il;
             _moduleBuilder = moduleBuilder;

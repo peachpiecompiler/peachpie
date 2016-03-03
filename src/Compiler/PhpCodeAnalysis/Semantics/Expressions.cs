@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -178,20 +179,32 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundVariableRead
+    #region BoundVariableRef
 
-    public class BoundLocalRef : BoundExpression, ILocalReferenceExpression
+    /// <summary>
+    /// A variable reference that can be read or written to.
+    /// </summary>
+    public class BoundVariableRef : BoundExpression, ILocalReferenceExpression
     {
-        public string Name => _name;
         readonly string _name;
-
         BoundVariable _variable;
-
-        public BoundVariable Variable { get; set; }
+        
+        /// <summary>
+        /// Name of the variable.
+        /// </summary>
+        public string Name => _name;
+        
+        /// <summary>
+        /// Resolved variable source.
+        /// </summary>
+        public BoundVariable Variable => _variable;
 
         public override OperationKind Kind => OperationKind.LocalReferenceExpression;
 
-        public ILocalSymbol Local => _variable?.Symbol as ILocalSymbol;
+        /// <summary>
+        /// Local in case of the variable is resolved local variable.
+        /// </summary>
+        ILocalSymbol ILocalReferenceExpression.Local => _variable?.Symbol as ILocalSymbol;
 
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitLocalReferenceExpression(this);
@@ -199,9 +212,15 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitLocalReferenceExpression(this, argument);
 
-        public BoundLocalRef(string name)
+        public BoundVariableRef(string name)
         {
             _name = name;
+        }
+        
+        public void Update(BoundVariable variable)
+        {
+            Debug.Assert(variable != null);
+            _variable = variable;
         }
     }
 

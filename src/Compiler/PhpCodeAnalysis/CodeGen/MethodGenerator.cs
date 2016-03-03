@@ -54,8 +54,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
 
-                var cfg = routine.ControlFlowGraph;
-
                 var codeGen = new CodeGenerator(routine, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
 
                 //if (diagnosticsForThisMethod.HasAnyErrors())
