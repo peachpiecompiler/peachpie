@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         #region Construction
 
-	    public SemanticsBinder(/*PhpCompilation compilation, AST.GlobalCode ast, bool ignoreAccessibility*/)
+        public SemanticsBinder(/*PhpCompilation compilation, AST.GlobalCode ast, bool ignoreAccessibility*/)
         {
         }
 
@@ -46,7 +46,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindExpressions(((AST.EchoStmt)stmt).Parameters)));
             if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, AccessType.None));
 
-              throw new NotImplementedException(stmt.GetType().FullName);
+            throw new NotImplementedException(stmt.GetType().FullName);
         }
 
         public BoundExpression BindExpression(AST.Expression expr, AccessType access = AccessType.Read)
@@ -56,6 +56,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.Literal) return BindLiteral((AST.Literal)expr).WithAccess(access);
             if (expr is AST.VarLikeConstructUse) return BindVarLikeConstructUse((AST.VarLikeConstructUse)expr, access);
             if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
+            if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -121,6 +122,61 @@ namespace Pchp.CodeAnalysis.Semantics
                 //
                 default:
                     throw new NotImplementedException(op.ToString());
+            }
+        }
+
+        BoundExpression BindAssignEx(AST.AssignEx expr, AccessType access)
+        {
+            var kind = BindAssignOperationKind(expr);
+            var target = (BoundReferenceExpression)BindExpression(expr.LValue,
+                (kind == BinaryOperationKind.None) ? AccessType.Write : AccessType.ReadAndWrite);
+            BoundExpression value;
+
+            if (expr is AST.ValueAssignEx)
+            {
+                value = BindExpression(((AST.ValueAssignEx)expr).RValue, AccessType.Read);
+            }
+            else
+            {
+                Debug.Assert(expr is AST.RefAssignEx);
+                Debug.Assert(kind == BinaryOperationKind.None);
+                target.Access = AccessType.WriteRef;
+                value = BindExpression(((AST.RefAssignEx)expr).RValue, AccessType.ReadRef);
+            }
+
+            //
+            if (kind == BinaryOperationKind.None)
+                return new BoundAssignEx(target, value).WithAccess(access);
+            else
+                return new BoundCompoundAssignEx(target, value, kind).WithAccess(access);
+        }
+
+        static BinaryOperationKind BindAssignOperationKind(AST.AssignEx expr)
+        {
+            switch (expr.Operation)
+            {
+                // =
+                case AST.Operations.AssignValue:
+                case AST.Operations.AssignRef:
+                    return BinaryOperationKind.None;
+
+                // 
+                case AST.Operations.AssignAdd: return BinaryOperationKind.OperatorAdd;
+                case AST.Operations.AssignSub: return BinaryOperationKind.OperatorSubtract;
+                case AST.Operations.AssignMul:
+                case AST.Operations.AssignDiv:
+                case AST.Operations.AssignAnd:
+                case AST.Operations.AssignOr:
+                case AST.Operations.AssignXor:
+                case AST.Operations.AssignAppend:
+                case AST.Operations.AssignPrepend:
+                case AST.Operations.AssignMod:
+                case AST.Operations.AssignPow:
+                case AST.Operations.AssignShiftLeft:
+                case AST.Operations.AssignShiftRight:
+
+                default:
+                    throw new NotImplementedException();
             }
         }
 

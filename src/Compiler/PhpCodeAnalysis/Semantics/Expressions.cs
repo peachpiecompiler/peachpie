@@ -179,12 +179,69 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
+    #region BoundAssignEx, BoundCompoundAssignEx
+
+    public class BoundAssignEx : BoundExpression, IAssignmentExpression
+    {
+        public override OperationKind Kind => OperationKind.AssignmentExpression;
+
+        public IReferenceExpression Target { get; set; }
+
+        public IExpression Value { get; set; }
+
+        public BoundAssignEx(BoundReferenceExpression target, BoundExpression value)
+        {
+            this.Target = target;
+            this.Value = value;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitAssignmentExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitAssignmentExpression(this, argument);
+    }
+
+    public class BoundCompoundAssignEx : BoundAssignEx, ICompoundAssignmentExpression
+    {
+        public BinaryOperationKind BinaryKind { get; private set; }
+
+        public override OperationKind Kind => OperationKind.CompoundAssignmentExpression;
+
+        public IMethodSymbol Operator { get; set; }
+
+        public bool UsesOperatorMethod => this.Operator != null;
+
+        public BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, BinaryOperationKind kind)
+            :base(target, value)
+        {
+            this.BinaryKind = kind;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitCompoundAssignmentExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitCompoundAssignmentExpression(this, argument);
+    }
+
+    #endregion
+
+    #region BoundReferenceExpression
+
+    public abstract class BoundReferenceExpression : BoundExpression, IReferenceExpression
+    {
+
+    }
+
+    #endregion
+
     #region BoundVariableRef
 
     /// <summary>
     /// A variable reference that can be read or written to.
     /// </summary>
-    public class BoundVariableRef : BoundExpression, ILocalReferenceExpression
+    public class BoundVariableRef : BoundReferenceExpression, ILocalReferenceExpression
     {
         readonly string _name;
         BoundVariable _variable;
