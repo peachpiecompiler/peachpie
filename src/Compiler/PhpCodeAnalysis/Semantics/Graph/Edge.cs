@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <summary>
     /// Represents edge between to graph blocks.
     /// </summary>
-    public abstract class Edge : AstNode
+    public abstract partial class Edge : AstNode
     {
         /// <summary>
         /// Target blocks.

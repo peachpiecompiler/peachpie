@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Base class representing a statement semantic.
     /// </summary>
-    public abstract class BoundStatement : IStatement
+    public abstract partial class BoundStatement : IStatement
     {
         public virtual bool IsInvalid => false;
 
@@ -27,7 +27,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public abstract TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument);
     }
 
-    public sealed class BoundEmptyStatement : BoundStatement
+    public sealed partial class BoundEmptyStatement : BoundStatement
     {
         public override OperationKind Kind => OperationKind.EmptyStatement;
 
@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Represents an expression statement.
     /// </summary>
-    public sealed class BoundExpressionStatement : BoundStatement, IExpressionStatement
+    public sealed partial class BoundExpressionStatement : BoundStatement, IExpressionStatement
     {
         /// <summary>
         /// Expression of the statement.

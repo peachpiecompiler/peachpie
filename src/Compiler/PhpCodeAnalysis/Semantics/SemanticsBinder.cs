@@ -37,13 +37,20 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindExpression(AST.Expression expr) => BindExpression(expr, AccessType.Read);
 
+        ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.Expression> expressions)
+        {
+            return BindExpressions(expressions)
+                .Select(x => new BoundArgument(x))
+                .ToImmutableArray();
+        }
+
         #endregion
 
         public BoundStatement BindStatement(AST.Statement stmt)
         {
             Debug.Assert(stmt != null);
 
-            if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindExpressions(((AST.EchoStmt)stmt).Parameters)));
+            if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters)));
             if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, AccessType.None));
 
             throw new NotImplementedException(stmt.GetType().FullName);
@@ -114,6 +121,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case AST.Operations.Mul: return BinaryOperationKind.OperatorMultiply;
                 case AST.Operations.Div: return BinaryOperationKind.OperatorDivide;
                 case AST.Operations.Mod: return BinaryOperationKind.OperatorRemainder;  // %
+                case AST.Operations.Pow: return BinaryOperationKind.ObjectPower; // **
 
                 // shift
                 case AST.Operations.ShiftLeft: return BinaryOperationKind.OperatorLeftShift;    // <<
@@ -163,17 +171,17 @@ namespace Pchp.CodeAnalysis.Semantics
                 // 
                 case AST.Operations.AssignAdd: return BinaryOperationKind.OperatorAdd;
                 case AST.Operations.AssignSub: return BinaryOperationKind.OperatorSubtract;
-                case AST.Operations.AssignMul:
-                case AST.Operations.AssignDiv:
-                case AST.Operations.AssignAnd:
-                case AST.Operations.AssignOr:
-                case AST.Operations.AssignXor:
-                case AST.Operations.AssignAppend:
-                case AST.Operations.AssignPrepend:
-                case AST.Operations.AssignMod:
-                case AST.Operations.AssignPow:
-                case AST.Operations.AssignShiftLeft:
-                case AST.Operations.AssignShiftRight:
+                case AST.Operations.AssignMul: return BinaryOperationKind.OperatorMultiply;
+                case AST.Operations.AssignDiv: return BinaryOperationKind.OperatorDivide;
+                case AST.Operations.AssignAnd: return BinaryOperationKind.OperatorAnd;
+                case AST.Operations.AssignOr: return BinaryOperationKind.OperatorOr;
+                case AST.Operations.AssignXor: return BinaryOperationKind.OperatorExclusiveOr;
+                case AST.Operations.AssignAppend: return BinaryOperationKind.StringConcatenation;
+                //case AST.Operations.AssignPrepend:
+                case AST.Operations.AssignMod: return BinaryOperationKind.OperatorRemainder;    // %
+                case AST.Operations.AssignPow: return BinaryOperationKind.ObjectPower;  // **
+                case AST.Operations.AssignShiftLeft: return BinaryOperationKind.OperatorLeftShift;
+                case AST.Operations.AssignShiftRight: return BinaryOperationKind.OperatorRightShift;
 
                 default:
                     throw new NotImplementedException();

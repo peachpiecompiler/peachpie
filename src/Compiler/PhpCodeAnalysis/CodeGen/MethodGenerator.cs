@@ -83,19 +83,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //    asyncDebugInfo = new Cci.AsyncMethodBodyDebugInfo(kickoffMethod, kickoffMethod.ReturnsVoid ? asyncCatchHandlerOffset : -1, asyncYieldPoints, asyncResumePoints);
                 //}
                 //else
-                //{
-                //    codeGen.Generate();
-                //}
+                {
+                    codeGen.Generate();
+                }
 
-                // DEBUG
-
-                builder.EmitNullConstant();
-                builder.EmitRet(false);
-
+                //
                 builder.Realize();
 
-                // DEBUG
-
+                //
                 var localVariables = builder.LocalSlotManager.LocalsInOrder();
 
                 if (localVariables.Length > 0xFFFE)

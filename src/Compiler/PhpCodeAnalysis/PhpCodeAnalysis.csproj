@@ -55,7 +55,9 @@
   <ItemGroup>
     <Compile Include="CodeGen\BoundVariable.cs" />
     <Compile Include="CodeGen\CodeGenerator.cs" />
+    <Compile Include="CodeGen\BoundExpression.cs" />
     <Compile Include="CodeGen\Places.cs" />
+    <Compile Include="CodeGen\BoundStatement.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
     <Compile Include="FlowAnalysis\FlowContext.cs" />
@@ -73,7 +75,7 @@
     <Compile Include="FlowAnalysis\Visitors\LocalsWalker.cs" />
     <Compile Include="FlowAnalysis\Worklist.cs" />
     <Compile Include="Semantics\BoundVariable.cs" />
-    <Compile Include="Semantics\Expressions.cs" />
+    <Compile Include="Semantics\BoundExpression.cs" />
     <Compile Include="Semantics\ExpressionsExtension.cs" />
     <Compile Include="Semantics\Graph\BoundBlock.cs" />
     <Compile Include="Semantics\Graph\BuilderVisitor.cs" />
@@ -81,7 +83,7 @@
     <Compile Include="Semantics\Graph\Edge.cs" />
     <Compile Include="Semantics\Graph\GraphVisitor.cs" />
     <Compile Include="Semantics\SemanticsBinder.cs" />
-    <Compile Include="Semantics\Statements.cs" />
+    <Compile Include="Semantics\BoundStatement.cs" />
     <Compile Include="CodeGen\MethodGenerator.cs" />
     <Compile Include="CommandLine\PhpCommandLineArguments.cs" />
     <Compile Include="CommandLine\PhpCommandLineParser.cs" />

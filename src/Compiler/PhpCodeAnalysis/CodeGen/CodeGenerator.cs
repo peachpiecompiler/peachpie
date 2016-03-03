@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -45,9 +46,36 @@ namespace Pchp.CodeAnalysis.CodeGen
         #endregion
 
         /// <summary>
+        /// Emits routines body.
+        /// </summary>
+        public void Generate()
+        {
+            Generate(_routine.ControlFlowGraph.Start);
+
+            // DEBUG
+
+            _il.EmitNullConstant();
+            _il.EmitRet(false);
+
+            // DEBUG
+
+            _il.AssertStackEmpty();
+        }
+
+        /// <summary>
+        /// Emits given block and recursively its edge if it was not emitted already.
+        /// </summary>
+        void Generate(BoundBlock block)
+        {
+            Contract.ThrowIfNull(block);
+
+            // TODO
+        }
+
+        /// <summary>
         /// Emit cast from one type to another.
         /// </summary>
-        internal void EmitCast(INamedTypeSymbol from, INamedTypeSymbol to)
+        public void EmitCast(INamedTypeSymbol from, INamedTypeSymbol to)
         {
             throw new NotImplementedException();
         }

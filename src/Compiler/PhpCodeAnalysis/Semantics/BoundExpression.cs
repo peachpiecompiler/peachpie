@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundExpression
 
-    public abstract class BoundExpression : IExpression
+    public abstract partial class BoundExpression : IExpression
     {
         public TypeRefMask TypeRefMask { get; set; } = default(TypeRefMask);
 
@@ -70,26 +70,55 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundFunctionCall
 
+    public partial class BoundArgument : IArgument
+    {
+        public ArgumentKind ArgumentKind => ArgumentKind.Positional;    // TODO: DefaultValue, ParamArray
+
+        public IExpression InConversion => null;
+
+        public bool IsInvalid => false;
+
+        public OperationKind Kind => OperationKind.Argument;
+
+        public IExpression OutConversion => null;
+
+        public IParameterSymbol Parameter { get; set; }
+
+        public SyntaxNode Syntax => null;
+
+        public IExpression Value { get; set; }
+
+        public BoundArgument(BoundExpression value)
+        {
+            this.Value = value;
+        }
+
+        public void Accept(OperationVisitor visitor)
+            => visitor.VisitArgument(this);
+
+        public TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitArgument(this, argument);
+
+    }
+
     /// <summary>
     /// Represents a function call.
     /// </summary>
-    public class BoundFunctionCall : BoundExpression, IInvocationExpression
+    public partial class BoundFunctionCall : BoundExpression, IInvocationExpression
     {
-        protected ImmutableArray<BoundExpression> _arguments;
+        protected ImmutableArray<BoundArgument> _arguments;
 
         public ImmutableArray<IArgument> ArgumentsInParameterOrder => ArgumentsInSourceOrder;
 
-        public ImmutableArray<IArgument> ArgumentsInSourceOrder
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public ImmutableArray<IArgument> ArgumentsInSourceOrder => StaticCast<IArgument>.From(_arguments);
 
         public IArgument ArgumentMatchingParameter(IParameterSymbol parameter)
         {
-            throw new NotImplementedException();
+            foreach (var arg in _arguments)
+                if (arg.Parameter == parameter)
+                    return arg;
+
+            return null;
         }
 
         public virtual IExpression Instance => null;
@@ -99,6 +128,12 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.InvocationExpression;
         
         public IMethodSymbol TargetMethod { get; set; }
+
+        public BoundFunctionCall(ImmutableArray<BoundArgument> arguments)
+        {
+            Debug.Assert(!arguments.IsDefault);
+            _arguments = arguments;
+        }
 
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitInvocationExpression(this);
@@ -111,11 +146,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundEcho
 
-    public sealed class BoundEcho : BoundFunctionCall
+    public sealed partial class BoundEcho : BoundFunctionCall
     {
-        public BoundEcho(ImmutableArray<BoundExpression> arguments)
+        public BoundEcho(ImmutableArray<BoundArgument> arguments)
+            :base(arguments)
         {
-            _arguments = arguments;
         }
     }
 
@@ -123,7 +158,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundLiteral
 
-    public class BoundLiteral : BoundExpression, ILiteralExpression
+    public partial class BoundLiteral : BoundExpression, ILiteralExpression
     {
         Optional<object> _value;
 
@@ -149,7 +184,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundBinaryEx
 
-    public sealed class BoundBinaryEx : BoundExpression, IBinaryOperatorExpression
+    public sealed partial class BoundBinaryEx : BoundExpression, IBinaryOperatorExpression
     {
         public BinaryOperationKind BinaryOperationKind { get; private set; }
 
@@ -181,7 +216,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundAssignEx, BoundCompoundAssignEx
 
-    public class BoundAssignEx : BoundExpression, IAssignmentExpression
+    public partial class BoundAssignEx : BoundExpression, IAssignmentExpression
     {
         public override OperationKind Kind => OperationKind.AssignmentExpression;
 
@@ -202,7 +237,7 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.VisitAssignmentExpression(this, argument);
     }
 
-    public class BoundCompoundAssignEx : BoundAssignEx, ICompoundAssignmentExpression
+    public partial class BoundCompoundAssignEx : BoundAssignEx, ICompoundAssignmentExpression
     {
         public BinaryOperationKind BinaryKind { get; private set; }
 
@@ -229,7 +264,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundReferenceExpression
 
-    public abstract class BoundReferenceExpression : BoundExpression, IReferenceExpression
+    public abstract partial class BoundReferenceExpression : BoundExpression, IReferenceExpression
     {
 
     }
@@ -241,7 +276,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// A variable reference that can be read or written to.
     /// </summary>
-    public class BoundVariableRef : BoundReferenceExpression, ILocalReferenceExpression
+    public partial class BoundVariableRef : BoundReferenceExpression, ILocalReferenceExpression
     {
         readonly string _name;
         BoundVariable _variable;
