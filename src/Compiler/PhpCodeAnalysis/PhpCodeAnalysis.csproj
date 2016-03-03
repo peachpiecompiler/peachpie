@@ -53,6 +53,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CodeGen\BoundBlock.cs" />
+    <Compile Include="CodeGen\BoundEdge.cs" />
     <Compile Include="CodeGen\BoundVariable.cs" />
     <Compile Include="CodeGen\CodeGenerator.cs" />
     <Compile Include="CodeGen\BoundExpression.cs" />

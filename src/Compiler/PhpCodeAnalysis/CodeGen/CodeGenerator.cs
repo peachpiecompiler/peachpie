@@ -10,6 +10,7 @@ using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using System.Reflection.Metadata;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -22,6 +23,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly PEModuleBuilder _moduleBuilder;
         readonly OptimizationLevel _optimizations;
         readonly bool _emittingPdb;
+        readonly HashSet<BoundBlock> _emitted = new HashSet<BoundBlock>();
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets underlaying <see cref="ILBuilder"/>.
+        /// </summary>
+        public ILBuilder IL => _il;
 
         #endregion
 
@@ -48,7 +59,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits routines body.
         /// </summary>
-        public void Generate()
+        internal void Generate()
         {
             Generate(_routine.ControlFlowGraph.Start);
 
@@ -65,11 +76,31 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits given block and recursively its edge if it was not emitted already.
         /// </summary>
-        void Generate(BoundBlock block)
+        internal void Generate(BoundBlock block)
         {
             Contract.ThrowIfNull(block);
 
-            // TODO
+            if (_emitted.Add(block))
+            {
+                // mark location as a label
+                // to allow branching to the block
+                _il.MarkLabel(block);
+
+                //
+                Emit(block);
+                Emit(block.NextEdge);
+            }
+        }
+
+        /// <summary>
+        /// Gets value indicating whether the given block was already emitted.
+        /// </summary>
+        internal bool IsGenerated(BoundBlock block) => _emitted.Contains(block);
+
+        internal void Emit(IEmittable element)
+        {
+            if (element != null)
+                element.Emit(this);
         }
 
         /// <summary>
@@ -79,5 +110,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             throw new NotImplementedException();
         }
+
+        public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
+    }
+
+    /// <summary>
+    /// Represents an semantic element that can be emitted.
+    /// </summary>
+    internal interface IEmittable
+    {
+        /// <summary>
+        /// Emits IL into the underlaying <see cref="ILBuilder"/>.
+        /// </summary>
+        void Emit(CodeGenerator il);
     }
 }

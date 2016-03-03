@@ -74,7 +74,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents simple unconditional jump.
     /// </summary>
     [DebuggerDisplay("SimpleEdge")]
-    public class SimpleEdge : Edge
+    public partial class SimpleEdge : Edge
     {
         /// <summary>
         /// Gets the target block if the simple edge.
@@ -104,7 +104,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Conditional edge.
     /// </summary>
     [DebuggerDisplay("ConditionalEdge")]
-    public sealed class ConditionalEdge : Edge
+    public sealed partial class ConditionalEdge : Edge
     {
         private readonly BoundBlock _true, _false;
         private readonly BoundExpression _condition;
@@ -153,7 +153,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents try/catch edge.
     /// </summary>
     [DebuggerDisplay("TryCatchEdge")]
-    public sealed class TryCatchEdge : Edge
+    public sealed partial class TryCatchEdge : Edge
     {
         private readonly BoundBlock _body;
         private readonly CatchBlock[] _catchBlocks;
@@ -226,7 +226,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents foreach edge through the enumeree invocation.
     /// </summary>
     [DebuggerDisplay("ForeachEnumeree")]
-    public sealed class ForeachEnumereeEdge : SimpleEdge
+    public sealed partial class ForeachEnumereeEdge : SimpleEdge
     {
         /// <summary>
         /// Array to enumerate through.
@@ -251,7 +251,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents foreach edge from enumeree invocation through <c>MoveNext</c> to body block or end.
     /// </summary>
     [DebuggerDisplay("ForeachMoveNextEdge")]
-    public sealed class ForeachMoveNextEdge : Edge
+    public sealed partial class ForeachMoveNextEdge : Edge
     {
         /// <summary>
         /// Content of the foreach.
@@ -313,7 +313,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents switch edge.
     /// </summary>
     [DebuggerDisplay("SwitchEdge")]
-    public sealed class SwitchEdge : Edge
+    public sealed partial class SwitchEdge : Edge
     {
         readonly BoundExpression _switchValue;
         readonly CaseBlock[] _caseBlocks;

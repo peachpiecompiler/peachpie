@@ -46,7 +46,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Expression of the statement.
         /// </summary>
-        public IExpression Expression { get; private set; }
+        IExpression IExpressionStatement.Expression => Expression;
+
+        /// <summary>
+        /// Expression of the statement.
+        /// </summary>
+        public BoundExpression Expression { get; private set; }
 
         public override OperationKind Kind => OperationKind.ExpressionStatement;
 
