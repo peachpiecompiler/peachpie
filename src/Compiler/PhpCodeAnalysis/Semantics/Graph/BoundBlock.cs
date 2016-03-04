@@ -41,6 +41,28 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             get { return _next; }
             internal set { _next = value; }
         }
+        
+        #region Topological order & scoping
+
+        /// <summary>
+        /// Gets block topological index.
+        /// Index is unique within the graph.
+        /// </summary>
+        public int Ordinal { get { return _ordinal; } internal set { _ordinal = value; } }
+        private int _ordinal;
+
+        /// <summary>
+        /// Index of nearest block after the scope.
+        /// </summary>
+        public int ScopeTo { get { return _scopeTo; } internal set { _scopeTo = value; } }
+        private int _scopeTo;
+
+        /// <summary>
+        /// Gets value indicating <see cref="ScopeTo"/> is valid.
+        /// </summary>
+        public bool ScopeToValid => _scopeTo >= _ordinal;
+
+        #endregion
 
         internal BoundBlock()
         {
@@ -150,7 +172,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private readonly VariableName _variableName;
 
         public CatchBlock(CatchItem item)
-            : base()
         {
             _typeRef = item.TypeRef;
             _variableName = item.Variable.VarName;
@@ -177,7 +198,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public bool IsDefault => _caseValue == null;
 
         public CaseBlock(BoundExpression caseValue)
-            : base()
         {
             _caseValue = caseValue;
         }

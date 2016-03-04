@@ -85,6 +85,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal SimpleEdge(BoundBlock source, BoundBlock target)
             : base(source)
         {
+            Debug.Assert(source != target);
             _target = target;
             Connect(source);
         }
