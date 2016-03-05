@@ -190,11 +190,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.BinaryOperatorExpression;
 
-        public IExpression Left { get; private set; }
+        public BoundExpression Left { get; private set; }
+        public BoundExpression Right { get; private set; }
+
+        IExpression IBinaryOperatorExpression.Left => Left;
 
         public IMethodSymbol Operator { get; set; }
 
-        public IExpression Right { get; private set; }
+        IExpression IBinaryOperatorExpression.Right => Right;
 
         public bool UsesOperatorMethod => this.Operator != null;
 
@@ -204,7 +207,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitBinaryOperatorExpression(this, argument);
 
-        internal BoundBinaryEx(IExpression left, IExpression right, BinaryOperationKind kind)
+        internal BoundBinaryEx(BoundExpression left, BoundExpression right, BinaryOperationKind kind)
         {
             this.Left = left;
             this.Right = right;

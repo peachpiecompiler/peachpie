@@ -11,7 +11,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     partial class Edge : IGenerator
     {
         /// <summary>
-        /// Enqueues next blocks to the worklist.
+        /// Generates or enqueues next blocks to the worklist.
         /// </summary>
         internal abstract void Generate(CodeGenerator il);
 
