@@ -197,10 +197,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal void Generate()
         {
-            GenerateScope(_routine.ControlFlowGraph.Start, ScopeType.Variable, int.MaxValue);
+            GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
         }
 
         #region CFG Emitting
+
+        internal void GenerateScope(BoundBlock block, int to)
+        {
+            GenerateScope(block, ScopeType.Variable, to);
+        }
 
         internal void GenerateScope(BoundBlock block, ScopeType type, int to)
         {
@@ -267,6 +272,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitCast(INamedTypeSymbol from, INamedTypeSymbol to)
         {
             throw new NotImplementedException();
+        }
+
+        public void EmitCastToBool(TypeSymbol from)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void EmitBranch(ILOpCode code, BoundBlock label)
+        {
+            IL.EmitBranch(code, label);
         }
 
         public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);

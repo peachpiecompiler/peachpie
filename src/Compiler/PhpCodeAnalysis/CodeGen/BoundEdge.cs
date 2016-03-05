@@ -30,11 +30,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         internal override void Generate(CodeGenerator il)
         {
-            // emit condition
-            // .brfalse FalseBranch
-            // GenerateScope(TrueBranch)
+            Contract.ThrowIfNull(Condition);
 
-            throw new NotImplementedException();
+            // if (Condition)
+            il.EmitCastToBool(this.Condition.Emit(il));
+            il.EmitBranch(ILOpCode.Brfalse, FalseTarget);
+            
+            // {
+            il.GenerateScope(TrueTarget, NextBlock.Ordinal);
+            // }
+
+            il.Scope.ContinueWith(FalseTarget);
         }
     }
 
