@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (_scopes.Count == 0)
                 throw new InvalidOperationException();
 
-            _scopes.Pop().FirstBlock.ScopeTo = _index;
+            _scopes.Pop(); // .FirstBlock.ScopeTo = _index;
         }
 
         #endregion
@@ -155,6 +155,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             //
             WithNewOrdinal(this.Exit);
             CloseScope();
+
+            //
+            Debug.Assert(_scopes.Count == 0);
+            Debug.Assert(_tryTargets == null || _tryTargets.Count == 0);
+            Debug.Assert(_breakTargets == null || _breakTargets.Count == 0);
         }
 
         public static BuilderVisitor/*!*/Build(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder)
@@ -207,10 +212,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return WithNewOrdinal(new CaseBlock(caseValue));
         }
 
-        private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression/*!*/condition)
+        private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition)
         {
-            new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition));
-            return ifTarget;
+            if (condition != null)
+            {
+                new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition));
+                return ifTarget;
+            }
+            else
+            {
+                // jump to ifTarget if there is no condition (always true) // e.g. for (;;) { [ifTarget] }
+                return Connect(source, ifTarget);
+            }
         }
 
         private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/target)
@@ -432,9 +445,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _deadBlocks.Add(end);
             }
 
-            OpenScope(_current);
-
             //   { x.Body }
+            OpenScope(_current);
             VisitElement(bodyStmt);
             //   { x.Action }
             if (hasActions)
@@ -462,8 +474,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitGotoStmt(GotoStmt x)
         {
-            Add(x);
-
             var/*!*/label = GetLabelBlock(x.LabelName.Value);
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Used;   // label is used
             
@@ -553,8 +563,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             label.LabelSpan = x.Span;
 
             _current = WithNewOrdinal(Connect(_current, label.TargetBlock));
-
-            Add(x);
         }
 
         public override void VisitSwitchStmt(SwitchStmt x)
@@ -579,7 +587,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // SwitchEdge // Connects _current to cases
-            var edge = new SwitchEdge(_current, _binder.BindExpression(x.SwitchValue), cases.ToArray());
+            var edge = new SwitchEdge(_current, _binder.BindExpression(x.SwitchValue), cases.ToArray(), end);
             _current = WithNewOrdinal(cases[0]);
 
             OpenBreakScope(end, end); // NOTE: inside switch, Continue ~ Break
@@ -656,7 +664,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 finallyBlock = NewBlock();
 
             // TryCatchEdge // Connects _current to body, catch blocks and finally
-            var edge = new TryCatchEdge(_current, body, catchBlocks, finallyBlock);
+            var edge = new TryCatchEdge(_current, body, catchBlocks, finallyBlock, end);
 
             // build try body
             OpenTryScope(edge);

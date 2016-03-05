@@ -7,14 +7,44 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
-    partial class BoundBlock : IEmittable
+    partial class BoundBlock : IGenerator
     {
         internal virtual void Emit(CodeGenerator il)
         {
             // emit contained statements
-            _statements.ForEach(il.Emit);
+            _statements.ForEach(il.Generate);
+
+            //
+            il.Generate(this.NextEdge);
         }
 
-        void IEmittable.Emit(CodeGenerator il) => Emit(il);
+        void IGenerator.Generate(CodeGenerator il) => Emit(il);
+    }
+
+    partial class StartBlock
+    {
+        internal override void Emit(CodeGenerator il)
+        {
+            // parameters initialization
+            // ...
+
+            //
+            base.Emit(il);
+        }
+    }
+
+    partial class ExitBlock
+    {
+        internal override void Emit(CodeGenerator il)
+        {
+            // return default(RETURN_TYPE);
+
+            // <DEBUG>
+            
+            il.IL.EmitNullConstant();
+            il.IL.EmitRet(false);
+            
+            // </DEBUG>
+        }
     }
 }

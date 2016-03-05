@@ -108,8 +108,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public virtual void VisitCFGSimpleEdge(SimpleEdge x)
         {
-            Debug.Assert(x.Target != null);
-            x.Target.Accept(this);
+            Debug.Assert(x.NextBlock != null);
+            x.NextBlock.Accept(this);
         }
 
         public virtual void VisitCFGConditionalEdge(ConditionalEdge x)
@@ -134,13 +134,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public virtual void VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
         {
             Accept(x.Enumeree);
-            x.Target.Accept(this);
+            x.NextBlock.Accept(this);
         }
 
         public virtual void VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
         {
             x.BodyBlock.Accept(this);
-            x.EndBlock.Accept(this);
+            x.NextBlock.Accept(this);
         }
 
         public virtual void VisitCFGSwitchEdge(SwitchEdge x)

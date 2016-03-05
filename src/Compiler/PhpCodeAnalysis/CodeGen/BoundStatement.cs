@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
-    partial class BoundStatement : IEmittable
+    partial class BoundStatement : IGenerator
     {
         internal virtual void Emit(CodeGenerator il)
         {
             throw new NotImplementedException();
         }
 
-        void IEmittable.Emit(CodeGenerator il) => Emit(il);
+        void IGenerator.Generate(CodeGenerator il) => Emit(il);
     }
 
     partial class BoundExpressionStatement

@@ -8,42 +8,39 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
-    partial class Edge : IEmittable
+    partial class Edge : IGenerator
     {
-        internal abstract void Emit(CodeGenerator il);
+        /// <summary>
+        /// Enqueues next blocks to the worklist.
+        /// </summary>
+        internal abstract void Generate(CodeGenerator il);
 
-        void IEmittable.Emit(CodeGenerator il) => this.Emit(il);
+        void IGenerator.Generate(CodeGenerator il) => this.Generate(il);
     }
 
     partial class SimpleEdge
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Generate(CodeGenerator il)
         {
-            if (il.IsGenerated(this.Target))
-            {
-                // target was already emitte,
-                // simply branch there
-                il.IL.EmitBranch(ILOpCode.Br, this.Target);
-            }
-            else
-            {
-                // continue generating the next block
-                il.Generate(this.Target);
-            }
+            il.Scope.ContinueWith(NextBlock);
         }
     }
 
     partial class ConditionalEdge
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Generate(CodeGenerator il)
         {
+            // emit condition
+            // .brfalse FalseBranch
+            // GenerateScope(TrueBranch)
+
             throw new NotImplementedException();
         }
     }
 
     partial class TryCatchEdge
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Generate(CodeGenerator il)
         {
             throw new NotImplementedException();
         }
@@ -51,7 +48,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ForeachEnumereeEdge
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Generate(CodeGenerator il)
         {
             throw new NotImplementedException();
         }
@@ -59,7 +56,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ForeachMoveNextEdge
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Generate(CodeGenerator il)
         {
             throw new NotImplementedException();
         }
@@ -67,7 +64,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class SwitchEdge
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Generate(CodeGenerator il)
         {
             throw new NotImplementedException();
         }

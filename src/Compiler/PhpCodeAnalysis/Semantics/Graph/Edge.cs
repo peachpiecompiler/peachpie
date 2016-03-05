@@ -6,11 +6,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
     /// <summary>
-    /// Represents edge between to graph blocks.
+    /// Represents an edge to other blocks.
     /// </summary>
     public abstract partial class Edge : AstNode
     {
@@ -18,6 +19,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Target blocks.
         /// </summary>
         public abstract IEnumerable<BoundBlock>/*!!*/Targets { get; }
+
+        /// <summary>
+        /// The block after the edge. Can be a <c>null</c> reference.
+        /// </summary>
+        public abstract BoundBlock NextBlock { get; }
 
         /// <summary>
         /// Gets value indicating whether the edge represents a conditional edge.
@@ -76,11 +82,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("SimpleEdge")]
     public partial class SimpleEdge : Edge
     {
+        private readonly BoundBlock _target;
+
         /// <summary>
         /// Gets the target block if the simple edge.
         /// </summary>
-        public BoundBlock Target { get { return _target; } }
-        private readonly BoundBlock _target;
+        public override BoundBlock NextBlock => _target;
 
         internal SimpleEdge(BoundBlock source, BoundBlock target)
             : base(source)
@@ -109,6 +116,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         private readonly BoundBlock _true, _false;
         private readonly BoundExpression _condition;
+
+        public override BoundBlock NextBlock => _false;
 
         /// <summary>
         /// Target true block
@@ -156,9 +165,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("TryCatchEdge")]
     public sealed partial class TryCatchEdge : Edge
     {
-        private readonly BoundBlock _body;
+        private readonly BoundBlock _body, _end;
         private readonly CatchBlock[] _catchBlocks;
         private readonly BoundBlock _finallyBlock;
+
+        /// <summary>
+        /// Where <see cref="BodyBlock"/>, catch blocks and <see cref="FinallyBlock"/> go to.
+        /// </summary>
+        public override BoundBlock NextBlock => _end;
 
         /// <summary>
         /// Try block.
@@ -184,12 +198,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return null;
         }
 
-        internal TryCatchEdge(BoundBlock source, BoundBlock body, CatchBlock[] catchBlocks, BoundBlock finallyBlock)
+        internal TryCatchEdge(BoundBlock source, BoundBlock body, CatchBlock[] catchBlocks, BoundBlock finallyBlock, BoundBlock endBlock)
             : base(source)
         {
             _body = body;
             _catchBlocks = catchBlocks;
             _finallyBlock = finallyBlock;
+            _end = endBlock;
             Connect(source);
         }
 
@@ -254,16 +269,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("ForeachMoveNextEdge")]
     public sealed partial class ForeachMoveNextEdge : Edge
     {
+        readonly BoundBlock _body, _end;
+        
         /// <summary>
         /// Content of the foreach.
         /// </summary>
         public BoundBlock BodyBlock => _body;
-
+        
         /// <summary>
         /// Block after the foreach.
         /// </summary>
-        public BoundBlock EndBlock => _end;
-        readonly BoundBlock _body, _end;
+        public override BoundBlock NextBlock => _end;
 
         /// <summary>
         /// Reference to the edge defining the enumeree.
@@ -319,6 +335,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         readonly BoundExpression _switchValue;
         readonly CaseBlock[] _caseBlocks;
 
+        readonly BoundBlock _end;
+
+        public override BoundBlock NextBlock => _end;
+
         /// <summary>
         /// The expression representing the switch value.
         /// </summary>
@@ -330,12 +350,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override CaseBlock[] CaseBlocks => _caseBlocks;
 
-        internal SwitchEdge(BoundBlock source, BoundExpression switchValue, CaseBlock[] caseBlocks)
+        internal SwitchEdge(BoundBlock source, BoundExpression switchValue, CaseBlock[] caseBlocks, BoundBlock endBlock)
             : base(source)
         {
             Contract.ThrowIfNull(caseBlocks);
             _switchValue = switchValue;
             _caseBlocks = caseBlocks;
+            _end = endBlock;
 
             Connect(source);
         }

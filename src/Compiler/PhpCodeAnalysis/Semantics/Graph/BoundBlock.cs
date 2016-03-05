@@ -42,28 +42,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             internal set { _next = value; }
         }
         
-        #region Topological order & scoping
-
         /// <summary>
         /// Gets block topological index.
         /// Index is unique within the graph.
         /// </summary>
         public int Ordinal { get { return _ordinal; } internal set { _ordinal = value; } }
         private int _ordinal;
-
-        /// <summary>
-        /// Index of nearest block after the scope.
-        /// </summary>
-        public int ScopeTo { get { return _scopeTo; } internal set { _scopeTo = value; } }
-        private int _scopeTo;
-
-        /// <summary>
-        /// Gets value indicating <see cref="ScopeTo"/> is valid.
-        /// </summary>
-        public bool ScopeToValid => _scopeTo >= _ordinal;
-
-        #endregion
-
+        
         internal BoundBlock()
         {
             _statements = new List<BoundStatement>();
@@ -95,7 +80,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     var edge = block.NextEdge as SimpleEdge;
                     if (edge != null || block.NextEdge == null)
                     {
-                        block = (edge != null && edge.Target != block) ? edge.Target : null;
+                        block = (edge != null && edge.NextBlock != block) ? edge.NextBlock : null;
                     }
                     else
                     {
@@ -141,7 +126,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents a start block.
     /// </summary>
     [DebuggerDisplay("Start")]
-    public sealed class StartBlock : BoundBlock
+    public sealed partial class StartBlock : BoundBlock
     {
     }
 
@@ -157,7 +142,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents control flow block of catch item.
     /// </summary>
     [DebuggerDisplay("CatchBlock({ClassName.QualifiedName})")]
-    public class CatchBlock : BoundBlock
+    public partial class CatchBlock : BoundBlock
     {
         /// <summary>
         /// Catch variable type.
@@ -184,7 +169,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents control flow block of case item.
     /// </summary>
     [DebuggerDisplay("CaseBlock")]
-    public class CaseBlock : BoundBlock
+    public partial class CaseBlock : BoundBlock
     {
         /// <summary>
         /// Gets case value expression. In case of default item, returns <c>null</c>.
