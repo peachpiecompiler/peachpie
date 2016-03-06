@@ -102,14 +102,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override ConcurrentDictionary<TypeDefinitionHandle, TypeSymbol> GetTypeHandleToTypeMap()
         {
-            throw new NotImplementedException();
-            //return moduleSymbol.TypeHandleToTypeMap;
+            return moduleSymbol.TypeHandleToTypeMap;
         }
 
         protected override ConcurrentDictionary<TypeReferenceHandle, TypeSymbol> GetTypeRefHandleToTypeMap()
         {
-            throw new NotImplementedException();
-            //return moduleSymbol.TypeRefHandleToTypeMap;
+            return moduleSymbol.TypeRefHandleToTypeMap;
         }
 
         protected override TypeSymbol LookupNestedTypeDefSymbol(TypeSymbol container, ref MetadataTypeName emittedName)
@@ -130,16 +128,16 @@ namespace Pchp.CodeAnalysis.Symbols
             int referencedAssemblyIndex,
             ref MetadataTypeName emittedName)
         {
-            throw new NotImplementedException();
-            //try
-            //{
-            //    AssemblySymbol assembly = moduleSymbol.GetReferencedAssemblySymbols()[referencedAssemblyIndex];
-            //    return assembly.LookupTopLevelMetadataType(ref emittedName, digThroughForwardedTypes: true);
-            //}
-            //catch (Exception e) when (FatalError.Report(e)) // Trying to get more useful Watson dumps.
-            //{
-            //    throw ExceptionUtilities.Unreachable;
-            //}
+            try
+            {
+                AssemblySymbol assembly = (AssemblySymbol)moduleSymbol.ReferencedAssemblySymbols[referencedAssemblyIndex];
+                //return assembly.LookupTopLevelMetadataType(ref emittedName, digThroughForwardedTypes: true);
+                throw new NotImplementedException();
+            }
+            catch (Exception e) when (FatalError.Report(e)) // Trying to get more useful Watson dumps.
+            {
+                throw ExceptionUtilities.Unreachable;
+            }
         }
 
         /// <summary>

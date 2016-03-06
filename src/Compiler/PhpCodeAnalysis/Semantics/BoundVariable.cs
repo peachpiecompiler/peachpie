@@ -114,7 +114,9 @@ namespace Pchp.CodeAnalysis.Semantics
             _symbol = symbol;
         }
 
-        public IParameterSymbol Parameter => _symbol;
+        internal ParameterSymbol Parameter => _symbol;
+
+        IParameterSymbol IParameterInitializer.Parameter => _symbol;
 
         public IExpression Value => null;
 

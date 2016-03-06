@@ -36,7 +36,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             // DEBUG
             sourceFiles.Add(new CommandLineSourceFile("test.php", false));
-            metadataReferences.Add(new CommandLineReference(@"C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Collections\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Collections.dll", new MetadataReferenceProperties(MetadataImageKind.Assembly)));
+            //metadataReferences.Add(new CommandLineReference(@"System.Collections, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", new MetadataReferenceProperties(MetadataImageKind.Assembly)));
             compilationName = "test";
             outputFileName = moduleName = "test" + outputKind.GetDefaultExtension();
             // 

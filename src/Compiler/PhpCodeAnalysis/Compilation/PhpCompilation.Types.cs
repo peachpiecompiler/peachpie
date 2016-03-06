@@ -33,15 +33,22 @@ namespace Pchp.CodeAnalysis
             return null;
         }
 
+        IEnumerable<IAssemblySymbol> ProbingAssemblies
+        {
+            get
+            {
+                foreach (var pair in CommonGetBoundReferenceManager().GetReferencedAssemblies())
+                    yield return pair.Value;
+
+                yield return this.SourceAssembly;
+            }
+        }
+
         protected override INamedTypeSymbol CommonGetTypeByMetadataName(string metadataName)
         {
-            //return CommonGetBoundReferenceManager().GetReferencedAssemblies()
-            //    + this.SourceAssembly
-            //    .Select(pair => pair.Value)
-            //    .SelectMany(a => a.GlobalNamespace.GetTypeMembers(metadataName))
-            //    .FirstOrDefault(); 
-
-            throw new NotImplementedException();
+            return ProbingAssemblies
+                    .SelectMany(a => a.GlobalNamespace.GetTypeMembers(metadataName))
+                    .FirstOrDefault();
         }
 
         /// <summary>

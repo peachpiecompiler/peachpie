@@ -38,13 +38,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public FormalParam Syntax => _syntax;
 
-        public override ITypeSymbol Type
+        internal override TypeSymbol Type
         {
             get
             {
-                return (IsThis)
+                return (TypeSymbol)((IsThis)
                     ? ContainingType // TODO: "?? AnyType" in case of $this in global scope
-                    : DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetParamTypeMask(this), false);
+                    : DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetParamTypeMask(this), false));
             }
         }
 
@@ -101,11 +101,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsThis => true;
 
-        public override ITypeSymbol Type
+        internal override TypeSymbol Type
         {
             get
             {
-                return ContainingType; // TODO: "?? AnyType" in case of $this in global scope
+                return (TypeSymbol)ContainingType; // TODO: "?? AnyType" in case of $this in global scope
             }
         }
 

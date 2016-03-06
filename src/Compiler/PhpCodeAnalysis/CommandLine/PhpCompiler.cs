@@ -87,6 +87,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 return null;
             }
 
+            var referenceResolver = new AssemblyIdentityReferenceResolver(GetCommandLineMetadataReferenceResolver(touchedFilesLogger));
             var strongNameProvider = new LoggingStrongNameProvider(Arguments.KeyFileSearchPaths, touchedFilesLogger);
 
             var compilation = PhpCompilation.Create(
@@ -94,7 +95,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 trees.WhereNotNull(),
                 resolvedReferences,
                 Arguments.CompilationOptions.
-                    WithMetadataReferenceResolver(referenceDirectiveResolver).
+                    WithMetadataReferenceResolver(referenceResolver).
                     WithAssemblyIdentityComparer(assemblyIdentityComparer).
                     WithStrongNameProvider(strongNameProvider).
                     WithXmlReferenceResolver(xmlFileResolver).

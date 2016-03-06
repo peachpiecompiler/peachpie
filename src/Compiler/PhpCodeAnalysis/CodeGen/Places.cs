@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,7 +23,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits code that loads the value from this storage place.
         /// </summary>
         /// <param name="il">The <see cref="ILBuilder"/> to emit the code to.</param>
-        void EmitLoad(ILBuilder il);
+        TypeSymbol EmitLoad(ILBuilder il);
 
         /// <summary>
         /// Emits code that stores a value to this storage place.
@@ -56,7 +57,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => true;
 
-        public void EmitLoad(ILBuilder il) => il.EmitLocalLoad(_def);
+        public TypeSymbol EmitLoad(ILBuilder il)
+        {
+            il.EmitLocalLoad(_def);
+            return (TypeSymbol)_def.Type;
+        }
 
         public void EmitLoadAddress(ILBuilder il) => il.EmitLocalAddress(_def);
 
@@ -65,22 +70,26 @@ namespace Pchp.CodeAnalysis.CodeGen
 
     internal class ParamPlace : IPlace
     {
-        public static readonly ParamPlace/*!*/ThisPlace = new ParamPlace(-1);
+        readonly ParameterSymbol _p;
 
-        readonly int _index;
+        public int Index => _p.Ordinal;
 
-        public ParamPlace(int index)
+        public ParamPlace(ParameterSymbol p)
         {
-            _index = index;
+            _p = p;
         }
 
         public bool HasAddress => true;
 
-        public void EmitLoad(ILBuilder il) => il.EmitLoadArgumentOpcode(_index);
+        public TypeSymbol EmitLoad(ILBuilder il)
+        {
+            il.EmitLoadArgumentOpcode(Index);
+            return _p.Type;
+        }
 
-        public void EmitLoadAddress(ILBuilder il) => il.EmitLoadArgumentAddrOpcode(_index);
+        public void EmitLoadAddress(ILBuilder il) => il.EmitLoadArgumentAddrOpcode(Index);
 
-        public void EmitStore(ILBuilder il) => il.EmitStoreArgumentOpcode(_index);
+        public void EmitStore(ILBuilder il) => il.EmitStoreArgumentOpcode(Index);
     }
 
     internal class FieldPlace : IPlace
@@ -110,7 +119,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => _holder.HasAddress;
 
-        public void EmitLoad(ILBuilder il) => EmitOpCode(il, ILOpCode.Ldfld);
+        public TypeSymbol EmitLoad(ILBuilder il)
+        {
+            EmitOpCode(il, ILOpCode.Ldfld);
+            return ((FieldSymbol)_field).Type;
+        }
 
         public void EmitStore(ILBuilder il) => EmitOpCode(il, ILOpCode.Stfld);
 

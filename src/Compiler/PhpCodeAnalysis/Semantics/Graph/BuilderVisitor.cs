@@ -195,6 +195,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private BoundBlock/*!*/NewDeadBlock()
         {
             var block = new BoundBlock();
+            block.Ordinal = -1; // unreachable
             _deadBlocks.Add(block);
             return block;
         }

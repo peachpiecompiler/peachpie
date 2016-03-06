@@ -565,7 +565,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    }
         //}
 
-        public override ITypeSymbol Type => _type;
+        internal override TypeSymbol Type => _type;
         
         //public override ImmutableArray<CustomModifier> CustomModifiers
         //{

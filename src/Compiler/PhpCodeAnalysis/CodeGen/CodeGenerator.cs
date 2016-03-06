@@ -15,7 +15,7 @@ using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
-    internal class CodeGenerator
+    internal partial class CodeGenerator
     {
         #region BoundBlockOrdinalComparer
 
@@ -103,6 +103,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 }
 
+                if (block.IsDead)
+                {
+                    return;
+                }
+
                 if (block.Ordinal < _from)
                 {
                     throw new InvalidOperationException("block miss");
@@ -152,6 +157,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly PEModuleBuilder _moduleBuilder;
         readonly OptimizationLevel _optimizations;
         readonly bool _emittingPdb;
+        readonly DiagnosticBag _diagnostics;
 
         /// <summary>
         /// BoundBlock.Tag value indicating the block was emitted.
@@ -168,6 +174,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Gets underlaying <see cref="ILBuilder"/>.
         /// </summary>
         public ILBuilder IL => _il;
+
+        /// <summary>
+        /// Gets the routine we are emitting.
+        /// </summary>
+        public SourceRoutineSymbol Routine => _routine;
 
         #endregion
 
@@ -186,6 +197,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il = il;
             _moduleBuilder = moduleBuilder;
             _optimizations = optimizations;
+            _diagnostics = diagnostics;
             _emittingPdb = emittingPdb;
             _emmittedTag = routine.ControlFlowGraph.NewColor();
         }
@@ -265,26 +277,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         #endregion
-
-        /// <summary>
-        /// Emit cast from one type to another.
-        /// </summary>
-        public void EmitCast(INamedTypeSymbol from, INamedTypeSymbol to)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void EmitCastToBool(TypeSymbol from)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void EmitBranch(ILOpCode code, BoundBlock label)
-        {
-            IL.EmitBranch(code, label);
-        }
-
-        public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
     }
 
     /// <summary>

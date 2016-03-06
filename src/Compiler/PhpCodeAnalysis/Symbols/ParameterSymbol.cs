@@ -40,7 +40,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual RefKind RefKind => RefKind.None;
 
-        public virtual ITypeSymbol Type
+        ITypeSymbol IParameterSymbol.Type => Type;
+
+        internal virtual TypeSymbol Type
         {
             get
             {

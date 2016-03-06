@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override IPlace GetPlace(ILBuilder il)
         {
-            return new ParamPlace(this.Parameter.Ordinal);
+            return new ParamPlace(this.Parameter);
         }
     }
 

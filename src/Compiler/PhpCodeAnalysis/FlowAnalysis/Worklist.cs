@@ -1,4 +1,6 @@
-﻿using Pchp.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -12,14 +14,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Queue of work items to do.
     /// </summary>
-    internal class Worklist<T>
+    internal class Worklist<T> where T : BoundBlock
     {
         readonly object _syncRoot = new object();
 
         /// <summary>
-        /// Action performed on blocks.
+        /// Action performed on bound operations.
         /// </summary>
-        readonly Action<T> _analyzer;
+        readonly List<GraphVisitor> _analyzers = new List<GraphVisitor>();  // TODO: Analysis instead of GraphVisitor
 
         //public event EventHandler MethodDone;
         
@@ -34,11 +36,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         readonly DistinctQueue<T> _queue = new DistinctQueue<T>();
 
-        public Worklist(Action<T> analyzer)
+        /// <summary>
+        /// Adds an analysis driver into the list of analyzers to be performed on bound operations.
+        /// </summary>
+        internal void AddAnalysis(GraphVisitor analyzer)
         {
-            Contract.ThrowIfNull(analyzer);
+            _analyzers.Add(analyzer);
+        }
 
-            _analyzer = analyzer;
+        public Worklist()
+        {
+            
         }
 
         /// <summary>
@@ -68,7 +76,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 return false;
 
             //
-            _analyzer(block);
+            _analyzers.ForEach(visitor => visitor.VisitCFGBlock(block));
 
             //
             return true;

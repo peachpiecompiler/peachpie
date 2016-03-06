@@ -48,6 +48,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         public int Ordinal { get { return _ordinal; } internal set { _ordinal = value; } }
         private int _ordinal;
+
+        /// <summary>
+        /// Gets value indicating the block is unreachable.
+        /// </summary>
+        public bool IsDead => _ordinal < 0;
         
         internal BoundBlock()
         {

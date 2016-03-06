@@ -58,8 +58,10 @@
     <Compile Include="CodeGen\BoundVariable.cs" />
     <Compile Include="CodeGen\CodeGenerator.cs" />
     <Compile Include="CodeGen\BoundExpression.cs" />
+    <Compile Include="CodeGen\CodeGenerator.Emit.cs" />
     <Compile Include="CodeGen\Places.cs" />
     <Compile Include="CodeGen\BoundStatement.cs" />
+    <Compile Include="Compilation\AssemblyIdentityReferenceResolver.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
     <Compile Include="FlowAnalysis\FlowContext.cs" />
@@ -74,7 +76,9 @@
     <Compile Include="FlowAnalysis\TypeRef\TypeRef.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefContext.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefMask.cs" />
+    <Compile Include="FlowAnalysis\Visitors\GraphWalker.cs" />
     <Compile Include="FlowAnalysis\Visitors\LocalsWalker.cs" />
+    <Compile Include="FlowAnalysis\Visitors\VariableResolver.cs" />
     <Compile Include="FlowAnalysis\Worklist.cs" />
     <Compile Include="Semantics\BoundVariable.cs" />
     <Compile Include="Semantics\BoundExpression.cs" />

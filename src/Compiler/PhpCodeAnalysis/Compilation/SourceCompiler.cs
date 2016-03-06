@@ -1,7 +1,9 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.FlowAnalysis.Visitors;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
@@ -24,7 +26,7 @@ namespace Pchp.CodeAnalysis
         readonly PEModuleBuilder _moduleBuilder;
         readonly bool _emittingPdb;
         readonly DiagnosticBag _diagnostics;
-        readonly Worklist<BoundBlock> _worklist;
+        readonly Worklist<BoundBlock> _worklist;    // TODO: analysis driver
         
         private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics)
         {
@@ -37,7 +39,7 @@ namespace Pchp.CodeAnalysis
             _emittingPdb = emittingPdb;
             _diagnostics = diagnostics;
 
-            _worklist = new Worklist<BoundBlock>(AnalyzeMethod); // parallel worklist algorithm
+            _worklist = new Worklist<BoundBlock>(); // parallel worklist algorithm
 
             // semantic model
         }
@@ -83,17 +85,25 @@ namespace Pchp.CodeAnalysis
             this.WalkMethods(EnsureRoutine);
         }
 
-        internal void AnalyzeMethods()
+        internal void ReanalyzeMethods()
         {
-            _worklist.DoAll();
+            this.WalkMethods(routine => _worklist.Enqueue(routine.ControlFlowGraph.Start));
         }
 
-        private void AnalyzeMethod(BoundBlock block)
+        internal void AnalyzeMethods()
         {
-            Contract.ThrowIfNull(block);
+            // _worklist.AddAnalysis:
 
+            // Resolve variable references
             // TypeAnalysis + ResolveSymbols
-            // if (LowerBody(block)) Enqueue(block)
+            // LowerBody(block)
+
+            // Resolve variable references
+            this.WalkMethods(routine
+                => GraphWalker.Walk(routine.ControlFlowGraph, new VariableResolver(routine.ControlFlowGraph.FlowContext)));
+
+            // analyse blocks
+            _worklist.DoAll();
         }
 
         /// <summary>
