@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -30,6 +31,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _sourceAssembly;
 
+        public override NamespaceSymbol GlobalNamespace
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         internal SourceAssemblySymbol SourceAssemblySymbol => _sourceAssembly;
 
         public override AssemblySymbol ContainingAssembly => _sourceAssembly;
@@ -50,6 +59,37 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 throw new NotImplementedException();
             }
+        }
+
+        /// <summary>
+        /// Lookup a top level type referenced from metadata, names should be
+        /// compared case-sensitively.
+        /// </summary>
+        /// <param name="emittedName">
+        /// Full type name, possibly with generic name mangling.
+        /// </param>
+        /// <returns>
+        /// Symbol for the type, or MissingMetadataSymbol if the type isn't found.
+        /// </returns>
+        /// <remarks></remarks>
+        internal sealed override NamedTypeSymbol LookupTopLevelMetadataType(ref MetadataTypeName emittedName)
+        {
+            NamedTypeSymbol result;
+            NamespaceSymbol scope = this.GlobalNamespace; //.LookupNestedNamespace(emittedName.NamespaceSegments);
+
+            if ((object)scope == null)
+            {
+                // We failed to locate the namespace
+                throw new NotImplementedException();
+                //result = new MissingMetadataTypeSymbol.TopLevel(this, ref emittedName);
+            }
+            else
+            {
+                result = scope.LookupMetadataType(ref emittedName);
+            }
+
+            Debug.Assert((object)result != null);
+            return result;
         }
     }
 }

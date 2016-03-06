@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -12,7 +13,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents an assembly imported from a PE.
     /// </summary>
-    internal sealed class PEAssemblySymbol : AssemblySymbol
+    internal sealed class PEAssemblySymbol : NonMissingAssemblySymbol
     {
         /// <summary>
         /// An Assembly object providing metadata for the assembly.
@@ -24,7 +25,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// The list doesn't use type ReadOnlyCollection(Of PEModuleSymbol) so that we
         /// can return it from Modules property as is.
         /// </summary>
-        readonly ImmutableArray<IModuleSymbol> _modules;
+        readonly ImmutableArray<ModuleSymbol> _modules;
 
         /// <summary>
         /// Assembly is /l-ed by compilation that is using it as a reference.
@@ -40,24 +41,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// A DocumentationProvider that provides XML documentation comments for this assembly.
         /// </summary>
         readonly DocumentationProvider _documentationProvider;
-
-        public override AssemblySymbol CorLibrary
-        {
-            get
-            {
-                if (_isCorLibrary)
-                    return this;
-
-                // assembly.AssemblyReferences
-                throw new NotImplementedException();
-            }
-        }
-
+        
         internal PEAssembly PEAssembly => _assembly;
 
         public override AssemblyIdentity Identity => _assembly.Identity;
 
-        public override ImmutableArray<IModuleSymbol> Modules => _modules;
+        public override ImmutableArray<ModuleSymbol> Modules => _modules;
 
         public override INamespaceSymbol GlobalNamespace => PrimaryModule.GlobalNamespace;
 
@@ -79,7 +68,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _assembly = assembly;
             _documentationProvider = documentationProvider;
 
-            var modules = new IModuleSymbol[assembly.Modules.Length];
+            var modules = new ModuleSymbol[assembly.Modules.Length];
 
             for (int i = 0; i < assembly.Modules.Length; i++)
             {
@@ -98,6 +87,46 @@ namespace Pchp.CodeAnalysis.Symbols
             var ass = data.GetAssembly();
 
             return new PEAssemblySymbol(ass, DocumentationProvider.Default, true, MetadataImportOptions.Public);
+        }
+
+        /// <summary>
+        /// Look up the assembly to which the given metadata type is forwarded.
+        /// </summary>
+        /// <param name="emittedName"></param>
+        /// <returns>
+        /// The assembly to which the given type is forwarded or null, if there isn't one.
+        /// </returns>
+        /// <remarks>
+        /// The returned assembly may also forward the type.
+        /// </remarks>
+        internal AssemblySymbol LookupAssemblyForForwardedMetadataType(ref MetadataTypeName emittedName)
+        {
+            // Look in the type forwarders of the primary module of this assembly, clr does not honor type forwarder
+            // in non-primary modules.
+
+            // Examine the type forwarders, but only from the primary module.
+            return this.PrimaryModule.GetAssemblyForForwardedType(ref emittedName);
+        }
+
+        internal override NamedTypeSymbol TryLookupForwardedMetadataTypeWithCycleDetection(ref MetadataTypeName emittedName, ConsList<AssemblySymbol> visitedAssemblies)
+        {
+            // Check if it is a forwarded type.
+            var forwardedToAssembly = LookupAssemblyForForwardedMetadataType(ref emittedName);
+            if ((object)forwardedToAssembly != null)
+            {
+                // Don't bother to check the forwarded-to assembly if we've already seen it.
+                if (visitedAssemblies != null && visitedAssemblies.Contains(forwardedToAssembly))
+                {
+                    return CreateCycleInTypeForwarderErrorTypeSymbol(ref emittedName);
+                }
+                else
+                {
+                    visitedAssemblies = new ConsList<AssemblySymbol>(this, visitedAssemblies ?? ConsList<AssemblySymbol>.Empty);
+                    return forwardedToAssembly.LookupTopLevelMetadataTypeWithCycleDetection(ref emittedName, visitedAssemblies, digThroughForwardedTypes: true);
+                }
+            }
+
+            return null;
         }
     }
 }

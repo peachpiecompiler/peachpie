@@ -180,6 +180,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public SourceRoutineSymbol Routine => _routine;
 
+        public DiagnosticBag Diagnostics => _diagnostics;
+
         #endregion
 
         #region Construction

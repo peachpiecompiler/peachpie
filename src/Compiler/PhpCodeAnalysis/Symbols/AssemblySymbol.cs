@@ -7,11 +7,15 @@ using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Threading;
+using Roslyn.Utilities;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     internal abstract class AssemblySymbol : Symbol, IAssemblySymbol
     {
+        AssemblySymbol _corLibrary;
+
         public override Symbol ContainingSymbol => null;
 
         public override Accessibility DeclaredAccessibility => Accessibility.NotApplicable;
@@ -35,9 +39,28 @@ namespace Pchp.CodeAnalysis.Symbols
         public abstract AssemblyIdentity Identity { get; }
 
         /// <summary>
-        /// Gets COR library assembly symbol.
+        /// The system assembly, which provides primitive types like Object, String, etc., e.g. mscorlib.dll. 
+        /// The value is MissingAssemblySymbol if none of the referenced assemblies can be used as a source for the 
+        /// primitive types and the owning assembly cannot be used as the source too. Otherwise, it is one of 
+        /// the referenced assemblies returned by GetReferencedAssemblySymbols() method or the owning assembly.
         /// </summary>
-        public abstract AssemblySymbol CorLibrary { get; }
+        internal AssemblySymbol CorLibrary
+        {
+            get
+            {
+                return _corLibrary;
+            }
+        }
+
+        /// <summary>
+        /// A helper method for ReferenceManager to set the system assembly, which provides primitive 
+        /// types like Object, String, etc., e.g. mscorlib.dll. 
+        /// </summary>
+        internal void SetCorLibrary(AssemblySymbol corLibrary)
+        {
+            Debug.Assert((object)_corLibrary == null);
+            _corLibrary = corLibrary;
+        }
 
         public virtual bool IsCorLibrary => false;
 
@@ -65,6 +88,24 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// Lookup declaration for predefined CorLib type in this Assembly.
+        /// </summary>
+        /// <returns>The symbol for the pre-defined type or an error type if the type is not defined in the core library.</returns>
+        internal virtual NamedTypeSymbol GetDeclaredSpecialType(SpecialType type)
+        {
+            return (NamedTypeSymbol)CorLibrary.GetTypeByMetadataName(type.GetMetadataName());
+        }
+
+        /// <summary>
+        /// Gets the symbol for the pre-defined type from core library associated with this assembly.
+        /// </summary>
+        /// <returns>The symbol for the pre-defined type or an error type if the type is not defined in the core library.</returns>
+        internal NamedTypeSymbol GetSpecialType(SpecialType type)
+        {
+            return CorLibrary.GetDeclaredSpecialType(type);
+        }
+
         public virtual bool MightContainExtensionMethods
         {
             get
@@ -73,21 +114,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual ImmutableArray<IModuleSymbol> Modules
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        IEnumerable<IModuleSymbol> IAssemblySymbol.Modules => Modules;
 
-        IEnumerable<IModuleSymbol> IAssemblySymbol.Modules
-        {
-            get
-            {
-                return this.Modules;
-            }
-        }
+        public abstract ImmutableArray<ModuleSymbol> Modules { get; }
 
         public virtual ICollection<string> NamespaceNames
         {
@@ -133,6 +162,52 @@ namespace Pchp.CodeAnalysis.Symbols
         public INamedTypeSymbol ResolveForwardedType(string fullyQualifiedMetadataName)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Lookup a top level type referenced from metadata, names should be
+        /// compared case-sensitively.
+        /// </summary>
+        /// <param name="emittedName">
+        /// Full type name with generic name mangling.
+        /// </param>
+        /// <param name="digThroughForwardedTypes">
+        /// Take forwarded types into account.
+        /// </param>
+        /// <remarks></remarks>
+        internal NamedTypeSymbol LookupTopLevelMetadataType(ref MetadataTypeName emittedName, bool digThroughForwardedTypes)
+        {
+            return LookupTopLevelMetadataTypeWithCycleDetection(ref emittedName, visitedAssemblies: null, digThroughForwardedTypes: digThroughForwardedTypes);
+        }
+
+        /// <summary>
+        /// Lookup a top level type referenced from metadata, names should be
+        /// compared case-sensitively.  Detect cycles during lookup.
+        /// </summary>
+        /// <param name="emittedName">
+        /// Full type name, possibly with generic name mangling.
+        /// </param>
+        /// <param name="visitedAssemblies">
+        /// List of assemblies lookup has already visited (since type forwarding can introduce cycles).
+        /// </param>
+        /// <param name="digThroughForwardedTypes">
+        /// Take forwarded types into account.
+        /// </param>
+        internal abstract NamedTypeSymbol LookupTopLevelMetadataTypeWithCycleDetection(ref MetadataTypeName emittedName, ConsList<AssemblySymbol> visitedAssemblies, bool digThroughForwardedTypes);
+
+        internal ErrorTypeSymbol CreateCycleInTypeForwarderErrorTypeSymbol(ref MetadataTypeName emittedName)
+        {
+            //DiagnosticInfo diagnosticInfo = new CSDiagnosticInfo(ErrorCode.ERR_CycleInTypeForwarder, emittedName.FullName, this.Name);
+            //return new MissingMetadataTypeSymbol.TopLevelWithCustomErrorInfo(this.Modules[0], ref emittedName, diagnosticInfo);
+            return new MissingMetadataTypeSymbol(emittedName.FullName, emittedName.ForcedArity, emittedName.IsMangled);
+        }
+
+        /// <summary>
+        /// Look up the given metadata type, if it is forwarded.
+        /// </summary>
+        internal virtual NamedTypeSymbol TryLookupForwardedMetadataTypeWithCycleDetection(ref MetadataTypeName emittedName, ConsList<AssemblySymbol> visitedAssemblies)
+        {
+            return null;
         }
     }
 }

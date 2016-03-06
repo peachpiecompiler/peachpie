@@ -131,8 +131,7 @@ namespace Pchp.CodeAnalysis.Symbols
             try
             {
                 AssemblySymbol assembly = (AssemblySymbol)moduleSymbol.ReferencedAssemblySymbols[referencedAssemblyIndex];
-                //return assembly.LookupTopLevelMetadataType(ref emittedName, digThroughForwardedTypes: true);
-                throw new NotImplementedException();
+                return assembly.LookupTopLevelMetadataType(ref emittedName, digThroughForwardedTypes: true);
             }
             catch (Exception e) when (FatalError.Report(e)) // Trying to get more useful Watson dumps.
             {
@@ -175,8 +174,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         protected override TypeSymbol LookupTopLevelTypeDefSymbol(ref MetadataTypeName emittedName, out bool isNoPiaLocalType)
         {
-            throw new NotImplementedException();
-            //return moduleSymbol.LookupTopLevelMetadataType(ref emittedName, out isNoPiaLocalType);
+            isNoPiaLocalType = false;
+            return moduleSymbol.LookupTopLevelMetadataType(ref emittedName); //, out isNoPiaLocalType);
         }
 
         protected override int GetIndexOfReferencedAssembly(AssemblyIdentity identity)

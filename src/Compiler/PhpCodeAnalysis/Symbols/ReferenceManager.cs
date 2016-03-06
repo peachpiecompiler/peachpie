@@ -78,6 +78,7 @@ namespace Pchp.CodeAnalysis
                     var pe = resolver.ResolveReference(identity.GetDisplayName(), basepath, new MetadataReferenceProperties())[0];
                     
                     _assembliesMap[identity] = ass = PEAssemblySymbol.Create(pe);
+                    ass.SetCorLibrary(_lazyCorLibrary);
                     modules.AddRange(ass.Modules.Cast<PEModuleSymbol>());
                 }
 
@@ -154,13 +155,16 @@ namespace Pchp.CodeAnalysis
                 _referencesMap = referencesMap.ToImmutableDictionary();
 
                 //
-                var assembly = new SourceAssemblySymbol(compilation, _lazyCorLibrary, compilation.Options.ModuleName, compilation.Options.ModuleName);
+                var assembly = new SourceAssemblySymbol(compilation, compilation.Options.ModuleName, compilation.Options.ModuleName);
+                assembly.SetCorLibrary(_lazyCorLibrary);
                 compilation._lazyAssemblySymbol = assembly;
 
                 assembly.SourceModule.SetReferences(new ModuleReferences<AssemblySymbol>(
                     assemblies.Select(x => x.Identity).AsImmutable(),
                     assemblies.AsImmutable(),
                     ImmutableArray<UnifiedAssembly<AssemblySymbol>>.Empty), assembly);
+
+                assemblies.ForEach(ass => ass.SetCorLibrary(_lazyCorLibrary));
 
                 // recursively initialize references of referenced modules
                 SetReferencesOfReferencedModules(compilation.Options.MetadataReferenceResolver, refmodules);

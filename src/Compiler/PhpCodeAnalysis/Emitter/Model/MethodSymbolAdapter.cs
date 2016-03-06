@@ -180,8 +180,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             else
             {
-                throw new NotImplementedException();
-                //return moduleBeingBuilt.Translate(this.Parameters);
+                return moduleBeingBuilt.Translate(this.Parameters);
             }
         }
 

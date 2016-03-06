@@ -37,7 +37,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         var ops = il.Routine.DeclaringCompilation.GetTypeByMetadataName("Pchp.Core.Operators");
                         var eqsymbol = ops.GetMembers("Equal").OfType<MethodSymbol>().FirstOrDefault();
-                        il.EmitCall(ILOpCode.Call, eqsymbol);
+                        il.IL.EmitOpCode(ILOpCode.Call, stackAdjustment: -1);    // 2 out, 1 return value on
+                        il.IL.EmitToken(eqsymbol, null, il.Diagnostics);
                     }
                     else
                     {
@@ -70,7 +71,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (value is int)
                 {
                     il.IL.EmitIntConstant((int)value);
-                    il.IL.EmitOpCode(System.Reflection.Metadata.ILOpCode.Box);
+                    il.IL.EmitOpCode(ILOpCode.Box);
+                    il.IL.EmitToken((TypeSymbol)il.Routine.DeclaringCompilation.GetSpecialType(SpecialType.System_Int32), null, il.Diagnostics);
                 }
                 else
                 {

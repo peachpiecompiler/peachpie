@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -81,5 +82,28 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
             }
         }
+    }
+
+    internal class MissingMetadataTypeSymbol : ErrorTypeSymbol
+    {
+        protected readonly string _name;
+        protected readonly int _arity;
+        protected readonly bool _mangleName;
+
+        public MissingMetadataTypeSymbol(string name, int arity, bool mangleName)
+        {
+            Debug.Assert(name != null);
+
+            this._name = name;
+            this._arity = arity;
+            this._mangleName = (mangleName && arity > 0);
+
+        }
+        public override CandidateReason CandidateReason => CandidateReason.None;
+
+        public override string Name => _name;
+        internal override bool MangleName => _mangleName;
+        public override int Arity => _arity;
+
     }
 }

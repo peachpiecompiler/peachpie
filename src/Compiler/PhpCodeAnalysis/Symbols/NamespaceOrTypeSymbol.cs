@@ -132,6 +132,121 @@ namespace Pchp.CodeAnalysis.Symbols
             return symbols;
         }
 
+        /// <summary>
+        /// Lookup an immediately nested type referenced from metadata, names should be
+        /// compared case-sensitively.
+        /// </summary>
+        /// <param name="emittedTypeName">
+        /// Simple type name, possibly with generic name mangling.
+        /// </param>
+        /// <returns>
+        /// Symbol for the type, or MissingMetadataSymbol if the type isn't found.
+        /// </returns>
+        internal virtual NamedTypeSymbol LookupMetadataType(ref MetadataTypeName emittedTypeName)
+        {
+            Debug.Assert(!emittedTypeName.IsNull);
+
+            NamespaceOrTypeSymbol scope = this;
+
+            if (scope.Kind == SymbolKind.ErrorType)
+            {
+                throw new NotImplementedException();
+                //return new MissingMetadataTypeSymbol.Nested((NamedTypeSymbol)scope, ref emittedTypeName);
+            }
+
+            NamedTypeSymbol namedType = null;
+
+            ImmutableArray<NamedTypeSymbol> namespaceOrTypeMembers;
+            bool isTopLevel = scope.IsNamespace;
+
+            //Debug.Assert(!isTopLevel || scope.ToDisplayString(SymbolDisplayFormat.QualifiedNameOnlyFormat) == emittedTypeName.NamespaceName);
+
+            if (emittedTypeName.IsMangled)
+            {
+                Debug.Assert(!emittedTypeName.UnmangledTypeName.Equals(emittedTypeName.TypeName) && emittedTypeName.InferredArity > 0);
+
+                if (emittedTypeName.ForcedArity == -1 || emittedTypeName.ForcedArity == emittedTypeName.InferredArity)
+                {
+                    // Let's handle mangling case first.
+                    namespaceOrTypeMembers = scope.GetTypeMembers(emittedTypeName.UnmangledTypeName);
+
+                    foreach (var named in namespaceOrTypeMembers)
+                    {
+                        if (emittedTypeName.InferredArity == named.Arity && named.MangleName)
+                        {
+                            if ((object)namedType != null)
+                            {
+                                namedType = null;
+                                break;
+                            }
+
+                            namedType = named;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Debug.Assert(ReferenceEquals(emittedTypeName.UnmangledTypeName, emittedTypeName.TypeName) && emittedTypeName.InferredArity == 0);
+            }
+
+            // Now try lookup without removing generic arity mangling.
+            int forcedArity = emittedTypeName.ForcedArity;
+
+            if (emittedTypeName.UseCLSCompliantNameArityEncoding)
+            {
+                // Only types with arity 0 are acceptable, we already examined types with mangled names.
+                if (emittedTypeName.InferredArity > 0)
+                {
+                    goto Done;
+                }
+                else if (forcedArity == -1)
+                {
+                    forcedArity = 0;
+                }
+                else if (forcedArity != 0)
+                {
+                    goto Done;
+                }
+                else
+                {
+                    Debug.Assert(forcedArity == emittedTypeName.InferredArity);
+                }
+            }
+
+            namespaceOrTypeMembers = scope.GetTypeMembers(emittedTypeName.FullName);
+
+            foreach (var named in namespaceOrTypeMembers)
+            {
+                if (!named.MangleName && (forcedArity == -1 || forcedArity == named.Arity))
+                {
+                    if ((object)namedType != null)
+                    {
+                        namedType = null;
+                        break;
+                    }
+
+                    namedType = named;
+                }
+            }
+
+            Done:
+            if ((object)namedType == null)
+            {
+                return new MissingMetadataTypeSymbol(emittedTypeName.FullName, emittedTypeName.ForcedArity, emittedTypeName.IsMangled);
+                //if (isTopLevel)
+                //{
+                //    return new MissingMetadataTypeSymbol.TopLevel(scope.ContainingModule, ref emittedTypeName);
+                //}
+                //else
+                //{
+                //    return new MissingMetadataTypeSymbol.Nested((NamedTypeSymbol)scope, ref emittedTypeName);
+                //}
+            }
+
+            return namedType;
+        }
+
         #region INamespaceOrTypeSymbol Members
 
         ImmutableArray<ISymbol> INamespaceOrTypeSymbol.GetMembers()

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Reflection.Metadata;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -66,7 +67,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public PEModule Module => _module;
 
-        public override INamespaceSymbol GlobalNamespace => _namespace;
+        public override NamespaceSymbol GlobalNamespace => _namespace;
 
         public override string Name => _module.Name;
 
@@ -95,6 +96,60 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 return ObsoleteAttributeData.Uninitialized; // throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Lookup a top level type referenced from metadata, names should be
+        /// compared case-sensitively.
+        /// </summary>
+        /// <param name="emittedName">
+        /// Full type name, possibly with generic name mangling.
+        /// </param>
+        /// <returns>
+        /// Symbol for the type, or MissingMetadataSymbol if the type isn't found.
+        /// </returns>
+        /// <remarks></remarks>
+        internal sealed override NamedTypeSymbol LookupTopLevelMetadataType(ref MetadataTypeName emittedName)
+        {
+            NamedTypeSymbol result;
+            NamespaceSymbol scope = this.GlobalNamespace;//.LookupNestedNamespace(emittedName.NamespaceSegments);
+
+            if ((object)scope == null)
+            {
+                // We failed to locate the namespace
+                //result = new MissingMetadataTypeSymbol.TopLevel(this, ref emittedName);
+                throw new NotImplementedException();
+            }
+            else
+            {
+                result = scope.LookupMetadataType(ref emittedName);
+            }
+
+            Debug.Assert((object)result != null);
+            return result;
+        }
+
+        /// <summary>
+        /// If this module forwards the given type to another assembly, return that assembly;
+        /// otherwise, return null.
+        /// </summary>
+        /// <param name="fullName">Type to look up.</param>
+        /// <returns>Assembly symbol or null.</returns>
+        /// <remarks>
+        /// The returned assembly may also forward the type.
+        /// </remarks>
+        internal AssemblySymbol GetAssemblyForForwardedType(ref MetadataTypeName fullName)
+        {
+            try
+            {
+                string matchedName;
+                AssemblyReferenceHandle assemblyRef = Module.GetAssemblyForForwardedType(fullName.FullName, ignoreCase: false, matchedName: out matchedName);
+                return assemblyRef.IsNil ? null : this.ReferencedAssemblySymbols[Module.GetAssemblyReferenceIndexOrThrow(assemblyRef)];
+            }
+            catch (BadImageFormatException)
+            {
+                return null;
             }
         }
     }

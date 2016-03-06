@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -45,13 +46,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override SymbolKind Kind => SymbolKind.NetModule;
 
-        public virtual INamespaceSymbol GlobalNamespace
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        INamespaceSymbol IModuleSymbol.GlobalNamespace => GlobalNamespace;
+
+        public abstract NamespaceSymbol GlobalNamespace { get; }
 
         public virtual ImmutableArray<AssemblyIdentity> ReferencedAssemblies => _moduleReferences.Identities;
 
@@ -64,7 +61,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// 
         /// The array and its content is provided by ReferenceManager and must not be modified.
         /// </summary>
-        public virtual ImmutableArray<IAssemblySymbol> ReferencedAssemblySymbols => StaticCast<IAssemblySymbol>.From(_moduleReferences.Symbols);
+        public virtual ImmutableArray<AssemblySymbol> ReferencedAssemblySymbols => _moduleReferences.Symbols;
+
+        ImmutableArray<IAssemblySymbol> IModuleSymbol.ReferencedAssemblySymbols => StaticCast<IAssemblySymbol>.From(ReferencedAssemblySymbols);
 
         /// <summary>
         /// A helper method for ReferenceManager to set assembly identities for assemblies 
@@ -86,6 +85,52 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual INamespaceSymbol GetModuleNamespace(INamespaceSymbol namespaceSymbol)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Lookup a top level type referenced from metadata, names should be
+        /// compared case-sensitively.
+        /// </summary>
+        /// <param name="emittedName">
+        /// Full type name, possibly with generic name mangling.
+        /// </param>
+        /// <returns>
+        /// Symbol for the type, or MissingMetadataSymbol if the type isn't found.
+        /// </returns>
+        /// <remarks></remarks>
+        internal abstract NamedTypeSymbol LookupTopLevelMetadataType(ref MetadataTypeName emittedName);
+
+        internal AssemblyReferenceHandle GetAssemblyForForwardedType(string fullName, bool ignoreCase, out string matchedName)
+        {
+            //EnsureForwardTypeToAssemblyMap();
+
+            //if (ignoreCase)
+            //{
+            //    // This linear search is not the optimal way to use a hashmap, but we should only use
+            //    // this functionality when computing diagnostics.  Note
+            //    // that we can't store the map case-insensitively, since real metadata name
+            //    // lookup has to remain case sensitive.
+            //    foreach (var pair in _lazyForwardedTypesToAssemblyMap)
+            //    {
+            //        if (string.Equals(pair.Key, fullName, StringComparison.OrdinalIgnoreCase))
+            //        {
+            //            matchedName = pair.Key;
+            //            return pair.Value;
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    AssemblyReferenceHandle assemblyRef;
+            //    if (_lazyForwardedTypesToAssemblyMap.TryGetValue(fullName, out assemblyRef))
+            //    {
+            //        matchedName = fullName;
+            //        return assemblyRef;
+            //    }
+            //}
+
+            matchedName = null;
+            return default(AssemblyReferenceHandle);
         }
     }
 }

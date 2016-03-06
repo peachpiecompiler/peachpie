@@ -34,7 +34,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetSpecialType(PEModuleSymbol moduleSymbol, SpecialType specialType)
         {
-            return (TypeSymbol)moduleSymbol.ContainingAssembly.CorLibrary.GetTypeByMetadataName(SpecialTypes.GetMetadataName(specialType));
+            return moduleSymbol.ContainingAssembly.GetSpecialType(specialType);
         }
 
         internal override TypeSymbol GetSystemTypeSymbol(PEModuleSymbol moduleSymbol)

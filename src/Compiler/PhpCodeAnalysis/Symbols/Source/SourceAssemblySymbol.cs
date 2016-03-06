@@ -9,26 +9,25 @@ using System.Globalization;
 using System.Threading;
 using System.Diagnostics;
 using System.Reflection;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed class SourceAssemblySymbol : AssemblySymbol
+    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol
     {
         readonly string _simpleName;
         readonly PhpCompilation _compilation;
-        readonly AssemblySymbol _corLibraryOpt;
-
+        
         /// <summary>
         /// A list of modules the assembly consists of. 
         /// The first (index=0) module is a SourceModuleSymbol, which is a primary module, the rest are net-modules.
         /// </summary>
-        readonly ImmutableArray<IModuleSymbol> _modules;
+        readonly ImmutableArray<ModuleSymbol> _modules;
 
         AssemblyIdentity _lazyIdentity;
 
         public SourceAssemblySymbol(
             PhpCompilation compilation,
-            AssemblySymbol corLibraryOpt,
             string assemblySimpleName,
             string moduleName)
         {
@@ -38,9 +37,8 @@ namespace Pchp.CodeAnalysis.Symbols
             
             _compilation = compilation;
             _simpleName = assemblySimpleName;
-            _corLibraryOpt = corLibraryOpt;
-
-            var moduleBuilder = new ArrayBuilder<IModuleSymbol>(1);
+            
+            var moduleBuilder = new ArrayBuilder<ModuleSymbol>(1);
 
             moduleBuilder.Add(new SourceModuleSymbol(this, compilation.SourceSymbolTables, moduleName));
 
@@ -57,11 +55,9 @@ namespace Pchp.CodeAnalysis.Symbols
             _modules = moduleBuilder.ToImmutableAndFree();
         }
 
-        public override AssemblySymbol CorLibrary => _corLibraryOpt;
-
         internal SourceModuleSymbol SourceModule => (SourceModuleSymbol)_modules[0];
 
-        public override ImmutableArray<IModuleSymbol> Modules => _modules;
+        public override ImmutableArray<ModuleSymbol> Modules => _modules;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
@@ -145,6 +141,92 @@ namespace Pchp.CodeAnalysis.Symbols
                 this.AssemblyCultureAttributeSetting,
                 _compilation.StrongNameKeys.PublicKey,
                 hasPublicKey: !_compilation.StrongNameKeys.PublicKey.IsDefault);
+        }
+
+        internal override NamedTypeSymbol TryLookupForwardedMetadataTypeWithCycleDetection(ref MetadataTypeName emittedName, ConsList<AssemblySymbol> visitedAssemblies)
+        {
+            int forcedArity = emittedName.ForcedArity;
+
+            if (emittedName.UseCLSCompliantNameArityEncoding)
+            {
+                if (forcedArity == -1)
+                {
+                    forcedArity = emittedName.InferredArity;
+                }
+                else if (forcedArity != emittedName.InferredArity)
+                {
+                    return null;
+                }
+
+                Debug.Assert(forcedArity == emittedName.InferredArity);
+            }
+
+            //if (_lazyForwardedTypesFromSource == null)
+            //{
+            //    IDictionary<string, NamedTypeSymbol> forwardedTypesFromSource;
+            //    CommonAssemblyWellKnownAttributeData<NamedTypeSymbol> wellKnownAttributeData = GetSourceDecodedWellKnownAttributeData();
+
+            //    if (wellKnownAttributeData != null && wellKnownAttributeData.ForwardedTypes != null)
+            //    {
+            //        forwardedTypesFromSource = new Dictionary<string, NamedTypeSymbol>();
+
+            //        foreach (NamedTypeSymbol forwardedType in wellKnownAttributeData.ForwardedTypes)
+            //        {
+            //            NamedTypeSymbol originalDefinition = forwardedType.OriginalDefinition;
+            //            Debug.Assert((object)originalDefinition.ContainingType == null, "How did a nested type get forwarded?");
+
+            //            string fullEmittedName = MetadataHelpers.BuildQualifiedName(originalDefinition.ContainingSymbol.ToDisplayString(SymbolDisplayFormat.QualifiedNameOnlyFormat),
+            //                                                                        originalDefinition.MetadataName);
+            //            // Since we need to allow multiple constructions of the same generic type at the source
+            //            // level, we need to de-dup the original definitions.
+            //            forwardedTypesFromSource[fullEmittedName] = originalDefinition;
+            //        }
+            //    }
+            //    else
+            //    {
+            //        forwardedTypesFromSource = SpecializedCollections.EmptyDictionary<string, NamedTypeSymbol>();
+            //    }
+
+            //    _lazyForwardedTypesFromSource = forwardedTypesFromSource;
+            //}
+
+            //NamedTypeSymbol result;
+
+            //if (_lazyForwardedTypesFromSource.TryGetValue(emittedName.FullName, out result))
+            //{
+            //    if ((forcedArity == -1 || result.Arity == forcedArity) &&
+            //        (!emittedName.UseCLSCompliantNameArityEncoding || result.Arity == 0 || result.MangleName))
+            //    {
+            //        return result;
+            //    }
+            //}
+            //else if (!_compilation.Options.OutputKind.IsNetModule())
+            //{
+            //    // See if any of added modules forward the type.
+
+            //    // Similar to attributes, type forwarders from the second added module should override type forwarders from the first added module, etc. 
+            //    for (int i = _modules.Length - 1; i > 0; i--)
+            //    {
+            //        var peModuleSymbol = (Metadata.PE.PEModuleSymbol)_modules[i];
+
+            //        var forwardedToAssembly = peModuleSymbol.GetAssemblyForForwardedType(ref emittedName);
+            //        if ((object)forwardedToAssembly != null)
+            //        {
+            //            // Don't bother to check the forwarded-to assembly if we've already seen it.
+            //            if (visitedAssemblies != null && visitedAssemblies.Contains(forwardedToAssembly))
+            //            {
+            //                return CreateCycleInTypeForwarderErrorTypeSymbol(ref emittedName);
+            //            }
+            //            else
+            //            {
+            //                visitedAssemblies = new ConsList<AssemblySymbol>(this, visitedAssemblies ?? ConsList<AssemblySymbol>.Empty);
+            //                return forwardedToAssembly.LookupTopLevelMetadataTypeWithCycleDetection(ref emittedName, visitedAssemblies, digThroughForwardedTypes: true);
+            //            }
+            //        }
+            //    }
+            //}
+
+            return null;
         }
     }
 }

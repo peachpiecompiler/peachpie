@@ -102,6 +102,7 @@
     <Compile Include="Symbols\ErrorTypeSymbol.cs" />
     <Compile Include="Symbols\FieldSymbol.cs" />
     <Compile Include="Symbols\MethodSymbolExtensions.cs" />
+    <Compile Include="Symbols\NonMissingAssemblySymbol.cs" />
     <Compile Include="Symbols\PE\MetadataDecoder.cs" />
     <Compile Include="Symbols\PE\PEMethodSymbol.cs" />
     <Compile Include="Symbols\PE\PEParameterSymbol.cs" />
@@ -147,9 +148,11 @@
     <Compile Include="Symbols\Source\SourceNamespaceSymbol.cs" />
     <Compile Include="Symbols\Source\SourceParameterSymbol.cs" />
     <Compile Include="Symbols\Source\SourceDeclarations.cs" />
+    <Compile Include="Symbols\SpecialTypeExtensions.cs" />
     <Compile Include="Symbols\Symbol.cs" />
     <Compile Include="Semantics\ISemanticModel.cs" />
     <Compile Include="Symbols\TypeSymbol.cs" />
+    <Compile Include="Symbols\TypeSymbolExtensions.cs" />
     <Compile Include="Utilities\AstUtils.cs" />
     <Compile Include="Utilities\Contract.cs" />
     <Compile Include="Utilities\DistinctQueue.cs" />
