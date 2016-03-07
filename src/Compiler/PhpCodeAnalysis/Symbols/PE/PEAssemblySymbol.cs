@@ -35,7 +35,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Whether this assembly is the COR library.
         /// </summary>
-        readonly bool _isCorLibrary;
+        readonly SpecialAssembly _specialAssembly;
 
         /// <summary>
         /// A DocumentationProvider that provides XML documentation comments for this assembly.
@@ -58,7 +58,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<byte> PublicKey => this.Identity.PublicKey;
 
-        public override bool IsCorLibrary => _isCorLibrary;
+        public override bool IsCorLibrary => _specialAssembly == SpecialAssembly.CorLibrary;
+
+        public override bool IsPchpCorLibrary => _specialAssembly == SpecialAssembly.PchpCorLibrary;
 
         internal PEAssemblySymbol(PEAssembly assembly, DocumentationProvider documentationProvider, bool isLinked, MetadataImportOptions importOptions)
         {
@@ -77,7 +79,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _modules = modules.AsImmutableOrNull();
             _isLinked = isLinked;
-            _isCorLibrary = assembly.AssemblyReferences.Length == 0 && assembly.DeclaresTheObjectClass;
+
+            if (assembly.AssemblyReferences.Length == 0 && assembly.DeclaresTheObjectClass)
+                _specialAssembly = SpecialAssembly.CorLibrary;
+            else if (assembly.Identity.Name == "pchpcor")
+                _specialAssembly = SpecialAssembly.PchpCorLibrary;
         }
 
         internal static PEAssemblySymbol Create(PortableExecutableReference reference)
