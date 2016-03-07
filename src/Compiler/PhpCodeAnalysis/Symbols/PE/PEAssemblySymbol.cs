@@ -83,7 +83,12 @@ namespace Pchp.CodeAnalysis.Symbols
             if (assembly.AssemblyReferences.Length == 0 && assembly.DeclaresTheObjectClass)
                 _specialAssembly = SpecialAssembly.CorLibrary;
             else if (assembly.Identity.Name == "pchpcor")
+            {
                 _specialAssembly = SpecialAssembly.PchpCorLibrary;
+                
+                // initialize CoreTypes
+                this.PrimaryModule.GlobalNamespace.GetTypeMembers();
+            }
         }
 
         internal static PEAssemblySymbol Create(PortableExecutableReference reference)

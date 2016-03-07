@@ -35,10 +35,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Microsoft.CodeAnalysis.Semantics.BinaryOperationKind.OperatorEquals:
                     if (ltype.SpecialType == SpecialType.System_Object && rtype.SpecialType == SpecialType.System_Object)
                     {
-                        var ops = il.Routine.DeclaringCompilation.GetTypeByMetadataName("Pchp.Core.Operators");
-                        var eqsymbol = ops.GetMembers("Equal").OfType<MethodSymbol>().FirstOrDefault();
                         il.IL.EmitOpCode(ILOpCode.Call, stackAdjustment: -1);    // 2 out, 1 return value on
-                        il.IL.EmitToken(eqsymbol, null, il.Diagnostics);
+                        il.IL.EmitToken(CoreMethods.Operators.Equal_Object_Object.Symbol, null, il.Diagnostics);
                     }
                     else
                     {

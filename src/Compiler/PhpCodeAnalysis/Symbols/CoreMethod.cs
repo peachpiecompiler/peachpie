@@ -77,6 +77,9 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     static class CoreMethods
     {
-        
+        public struct Operators
+        {
+            public static readonly CoreMethod Equal_Object_Object = CoreTypes.Operators.Method("Equal"/*TODO: Object, Object*/);
+        }
     }
 }

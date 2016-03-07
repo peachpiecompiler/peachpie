@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets well-known core type by its full CLR name.
         /// </summary>
-        internal static CoreType GetTypeFromSymbol(PENamedTypeSymbol symbol)
+        internal static CoreType Update(PENamedTypeSymbol symbol)
         {
             CoreType t = null;
 

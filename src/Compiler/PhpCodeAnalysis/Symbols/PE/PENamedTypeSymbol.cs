@@ -371,7 +371,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // check Php COR library type
-            _pchpCorType = CoreTypes.GetTypeFromSymbol(this);
+            _pchpCorType = CoreTypes.Update(this);
             
             //if (makeBad)
             //{

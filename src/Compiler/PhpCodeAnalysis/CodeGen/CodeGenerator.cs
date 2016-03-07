@@ -160,6 +160,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly DiagnosticBag _diagnostics;
 
         /// <summary>
+        /// Place for loading a reference to <c>Pchp.Core.Context</c> in runtime.
+        /// </summary>
+        readonly IPlace _contextPlace;
+
+        /// <summary>
         /// BoundBlock.Tag value indicating the block was emitted.
         /// </summary>
         readonly int _emmittedTag;
@@ -202,6 +207,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             _diagnostics = diagnostics;
             _emittingPdb = emittingPdb;
             _emmittedTag = routine.ControlFlowGraph.NewColor();
+
+            // TODO: _contextPlace = new ParamPlace(routine.ContextParameter);
         }
 
         #endregion
