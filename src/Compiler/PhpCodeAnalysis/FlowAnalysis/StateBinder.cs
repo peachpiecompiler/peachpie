@@ -41,8 +41,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var state = new FlowState(flowCtx);
 
             // handle parameters passed by reference
-            var parameters = routine.Parameters;
-            foreach (SourceParameterSymbol p in parameters)
+            var parameters = routine.Parameters.OfType<SourceParameterSymbol>().ToImmutableArray();
+            foreach (var p in parameters)
                 if (p.Syntax.PassedByRef)
                     state.SetVarRef(p.Name);
 

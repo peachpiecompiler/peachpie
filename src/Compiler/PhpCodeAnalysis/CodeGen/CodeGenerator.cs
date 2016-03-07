@@ -208,7 +208,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _emittingPdb = emittingPdb;
             _emmittedTag = routine.ControlFlowGraph.NewColor();
 
-            // TODO: _contextPlace = new ParamPlace(routine.ContextParameter);
+            _contextPlace = new ParamPlace(routine.ContextParameter);
         }
 
         #endregion

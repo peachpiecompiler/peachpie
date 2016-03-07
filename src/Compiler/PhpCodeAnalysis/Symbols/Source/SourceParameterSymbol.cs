@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Pchp.Syntax;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -21,6 +22,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int index)
         {
+            Contract.ThrowIfNull(routine);
+            Contract.ThrowIfNull(syntax);
+            Debug.Assert(index >= 0);
+
             _routine = routine;
             _syntax = syntax;
             _index = index;
@@ -34,7 +39,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string Name => _syntax.Name.Value;
 
-        public override bool IsThis => _index == -1;
+        public override bool IsThis => false;
 
         public FormalParam Syntax => _syntax;
 
@@ -81,57 +86,4 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ConstantValue ExplicitDefaultConstantValue => null;   // TODO
     }
-
-    internal sealed class ThisParameterSymbol : ParameterSymbol
-    {
-        readonly SourceRoutineSymbol _routine;
-
-        public ThisParameterSymbol(SourceRoutineSymbol routine)
-        {
-            _routine = routine;
-        }
-
-        public override Symbol ContainingSymbol => _routine;
-
-        internal override IModuleSymbol ContainingModule => _routine.ContainingModule;
-
-        public override INamedTypeSymbol ContainingType => _routine.ContainingType;
-
-        public override string Name => VariableName.ThisVariableName.Value;
-
-        public override bool IsThis => true;
-
-        internal override TypeSymbol Type
-        {
-            get
-            {
-                return (TypeSymbol)ContainingType; // TODO: "?? AnyType" in case of $this in global scope
-            }
-        }
-
-        public override RefKind RefKind => RefKind.None;
-
-        public override bool IsParams => false;
-
-        public override int Ordinal => -1;
-
-        public override ImmutableArray<Location> Locations
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        internal override ConstantValue ExplicitDefaultConstantValue => null;
-    }
-
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
-    /// A well-known method declared in PchpCor library.
+    /// Descriptor of a well-known method declared in PchpCor library.
     /// </summary>
     [DebuggerDisplay("CoreMethod {DebuggerDisplay,nq}")]
     class CoreMethod
@@ -17,6 +18,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Lazily associated symbol.
         /// </summary>
         private MethodSymbol _symbol;
+
+        /// <summary>
+        /// Parametyer types.
+        /// </summary>
+        readonly SpecialType[] _ptypes;
 
         /// <summary>
         /// Declaring class. Cannot be <c>null</c>.
@@ -47,11 +53,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
         string DebuggerDisplay => DeclaringClass.FullName + "." + MethodName;
 
-        public CoreMethod(CoreType declaringClass, string methodName, params object[] ptypes)
+        public CoreMethod(CoreType declaringClass, string methodName, params SpecialType[] ptypes)
         {
+            Contract.ThrowIfNull(declaringClass);
+            Contract.ThrowIfNull(methodName);
+
             this.DeclaringClass = declaringClass;
             this.MethodName = methodName;
-            // TODO: ptypes
+
+            _ptypes = ptypes;
         }
 
         private void Update(MethodSymbol symbol)
@@ -60,6 +70,9 @@ namespace Pchp.CodeAnalysis.Symbols
             _symbol = symbol;
         }
 
+        /// <summary>
+        /// Resolves <see cref="MethodSymbol"/> of this descriptor.
+        /// </summary>
         private void ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
@@ -67,8 +80,20 @@ namespace Pchp.CodeAnalysis.Symbols
                 throw new InvalidOperationException();
 
             var methods = type.GetMembers(MethodName);
-            // TODO: overload resolution
-            Update(methods.OfType<MethodSymbol>().FirstOrDefault());
+            Update(methods.OfType<MethodSymbol>().First(MatchesSignature));
+        }
+
+        private bool MatchesSignature(MethodSymbol m)
+        {
+            var ps = m.Parameters;
+            if (ps.Length != _ptypes.Length)
+                return false;
+
+            for (int i = 0; i < ps.Length; i++)
+                if (ps[i].Type.SpecialType != _ptypes[i])
+                    return false;
+
+            return true;
         }
     }
 
@@ -79,7 +104,8 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         public struct Operators
         {
-            public static readonly CoreMethod Equal_Object_Object = CoreTypes.Operators.Method("Equal"/*TODO: Object, Object*/);
+            public static readonly CoreMethod Equal_Object_Object = CoreTypes.Operators.Method(
+                "Equal", SpecialType.System_Object, SpecialType.System_Object);
         }
     }
 }

@@ -82,13 +82,28 @@ namespace Pchp.CodeAnalysis.Symbols
             _params = BuildParameters(signature).ToImmutableArray();
         }
 
+        /// <summary>
+        /// Builds CLR method parameters.
+        /// </summary>
+        /// <remarks>(Context, arg1, arg2, ...)</remarks>
         IEnumerable<ParameterSymbol> BuildParameters(Signature signature)
         {
             int index = 0;
 
+            yield return new SpecialParameterSymbol(this, CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+
             foreach (var p in signature.FormalParams)
             {
                 yield return new SourceParameterSymbol(this, p, index++);
+            }
+        }
+
+        public ParameterSymbol ContextParameter
+        {
+            get
+            {
+                Debug.Assert(_params[0] is SpecialParameterSymbol && _params[0].Name == SpecialParameterSymbol.ContextName);
+                return _params[0];
             }
         }
 

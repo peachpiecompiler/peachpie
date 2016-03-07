@@ -151,6 +151,7 @@
     <Compile Include="Symbols\Source\SourceParameterSymbol.cs" />
     <Compile Include="Symbols\Source\SourceDeclarations.cs" />
     <Compile Include="Symbols\SpecialAssembly.cs" />
+    <Compile Include="Symbols\SpecialParameterSymbol.cs" />
     <Compile Include="Symbols\SpecialTypeExtensions.cs" />
     <Compile Include="Symbols\Symbol.cs" />
     <Compile Include="Semantics\ISemanticModel.cs" />

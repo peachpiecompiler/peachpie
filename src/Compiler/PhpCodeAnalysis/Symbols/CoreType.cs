@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
-    /// A well-known type declared in PchpCor library.
+    /// Descriptor of a well-known type declared in PchpCor library.
     /// </summary>
     [DebuggerDisplay("CoreType {FullName,nq}")]
     class CoreType
     {
         internal static CoreType FromString(string fullName) => new CoreType(fullName);
 
-        public CoreMethod Method(string name, params object[] ptypes) => new CoreMethod(this, name, ptypes);
+        public CoreMethod Method(string name, params SpecialType[] ptypes) => new CoreMethod(this, name, ptypes);
 
         /// <summary>
         /// Gets full type name.
@@ -26,6 +26,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets associated symbol.
         /// </summary>
+        /// <remarks>Assuming single singleton instance of pchpcor library.</remarks>
         public NamedTypeSymbol Symbol { get; private set; }
 
         public CoreType(string fullName)
