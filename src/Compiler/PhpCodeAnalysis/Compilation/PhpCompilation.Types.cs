@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis
             var name = id.GetMetadataName();
             if (name != null && this.CorLibrary != null)
             {
-                return (NamedTypeSymbol)this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
+                return (NamedTypeSymbol)this.CorLibrary.GetTypeByMetadataName(name);
             }
 
             return null;
@@ -24,13 +24,7 @@ namespace Pchp.CodeAnalysis
 
         protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
         {
-            var name = SpecialTypes.GetMetadataName(specialType);
-            if (name != null && this.CorLibrary != null)
-            {
-                return this.CorLibrary.GlobalNamespace.GetTypeMembers(name).FirstOrDefault();
-            }
-
-            return null;
+            return this.CorLibrary.GetSpecialType(specialType);
         }
 
         IEnumerable<IAssemblySymbol> ProbingAssemblies
@@ -56,8 +50,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal INamedTypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask, bool isRef)
         {
-            // TODO: return { namedtype, includes subclasses (for vcall) }
-            // TODO: determine best fitting CLR type
+            // TODO: magic - determine best fitting CLR type
             return this.GetSpecialType(SpecialType.System_Object);
         }
 

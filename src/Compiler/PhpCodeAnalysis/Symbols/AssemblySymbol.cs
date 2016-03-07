@@ -94,6 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <returns>The symbol for the pre-defined type or an error type if the type is not defined in the core library.</returns>
         internal virtual NamedTypeSymbol GetDeclaredSpecialType(SpecialType type)
         {
+            // TODO: cache SpecialType
             return (NamedTypeSymbol)CorLibrary.GetTypeByMetadataName(type.GetMetadataName());
         }
 
@@ -103,7 +104,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <returns>The symbol for the pre-defined type or an error type if the type is not defined in the core library.</returns>
         internal NamedTypeSymbol GetSpecialType(SpecialType type)
         {
-            return CorLibrary.GetDeclaredSpecialType(type);
+            return GetDeclaredSpecialType(type);
         }
 
         public virtual bool MightContainExtensionMethods

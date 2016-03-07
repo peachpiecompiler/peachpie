@@ -70,6 +70,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             return stack;
         }
 
+        public void EmitBox(ITypeSymbol valuetype)
+        {
+            _il.EmitOpCode(ILOpCode.Box);
+            EmitSymbolToken((TypeSymbol)valuetype, null);
+        }
+
         //public void EmitCall(ILOpCode code, MethodSymbol method)
         //{
         //    Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt);

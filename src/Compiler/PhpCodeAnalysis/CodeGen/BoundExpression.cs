@@ -71,8 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (value is int)
                 {
                     il.IL.EmitIntConstant((int)value);
-                    il.IL.EmitOpCode(ILOpCode.Box);
-                    il.IL.EmitToken((TypeSymbol)il.Routine.DeclaringCompilation.GetSpecialType(SpecialType.System_Int32), null, il.Diagnostics);
+                    il.EmitBox(il.Routine.DeclaringCompilation.GetSpecialType(SpecialType.System_Int32));
                 }
                 else
                 {
