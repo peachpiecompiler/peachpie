@@ -25,6 +25,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         internal override void Emit(CodeGenerator il)
         {
+            if (il.IsDebug)
+            {
+                // emit Debug.Assert(<context> != null);
+                // emit parameters checks
+            }
+
             // parameters initialization
             // ...
 

@@ -15,6 +15,14 @@ namespace Pchp.CodeAnalysis.CodeGen
     partial class CodeGenerator
     {
         /// <summary>
+        /// Emits <c>context</c> onto the evaluation stack.
+        /// </summary>
+        public void EmitLoadContext()
+        {
+            _contextPlace.EmitLoad(_il);
+        }
+
+        /// <summary>
         /// Emit cast from one type to another.
         /// </summary>
         public void EmitCast(INamedTypeSymbol from, INamedTypeSymbol to)

@@ -187,6 +187,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public DiagnosticBag Diagnostics => _diagnostics;
 
+        /// <summary>
+        /// Whether to emit debug assertions.
+        /// </summary>
+        public bool IsDebug => _optimizations == OptimizationLevel.Debug;
+
         #endregion
 
         #region Construction
