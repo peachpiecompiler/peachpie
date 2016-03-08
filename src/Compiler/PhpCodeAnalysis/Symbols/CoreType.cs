@@ -14,7 +14,8 @@ namespace Pchp.CodeAnalysis.Symbols
     [DebuggerDisplay("CoreType {FullName,nq}")]
     class CoreType : IEquatable<CoreType>
     {
-        internal static CoreType FromString(string fullName) => new CoreType(fullName);
+        internal static CoreType FromFullName(string fullName) => new CoreType(fullName);
+        internal static CoreType FromName(string name) => FromFullName("Pchp.Core." + name);
 
         public CoreMethod Method(string name, params SpecialType[] ptypes) => new CoreMethod(this, name, ptypes);
 
@@ -61,8 +62,8 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     static class CoreTypes
     {
-        public static readonly CoreType Context = CoreType.FromString("Pchp.Core.Context");
-        public static readonly CoreType Operators = CoreType.FromString("Pchp.Core.Operators");
+        public static readonly CoreType Context = CoreType.FromName("Context");
+        public static readonly CoreType Operators = CoreType.FromName("Operators");
 
         #region Table of types
 
