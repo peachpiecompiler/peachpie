@@ -10,6 +10,9 @@ using Pchp.Syntax.AST;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
+    /// <summary>
+    /// Global code as a static [Main] method.
+    /// </summary>
     sealed class SourceGlobalMethodSymbol : SourceRoutineSymbol
     {
         public const string GlobalRoutineName = "<Main>";

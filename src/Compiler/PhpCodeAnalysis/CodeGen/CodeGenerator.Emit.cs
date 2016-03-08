@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
@@ -30,12 +31,38 @@ namespace Pchp.CodeAnalysis.CodeGen
             throw new NotImplementedException();
         }
 
-        public void EmitCastToBool(TypeSymbol from)
+        public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint)
         {
             if (from.SpecialType != SpecialType.System_Boolean)
             {
                 throw new NotImplementedException();
             }
+        }
+
+        public void EmitConvert(BoundExpression expr, TypeSymbol to)
+        {
+            EmitConvert(expr.Emit(this), expr.TypeRefMask, to);
+        }
+
+        public void EmitConvert(TypeSymbol from, TypeRefMask fromHint, TypeSymbol to)
+        {
+            Contract.ThrowIfNull(from);
+            Contract.ThrowIfNull(to);
+
+            // conversion is not needed:
+            if (from.SpecialType == to.SpecialType && from.SpecialType != SpecialType.None)
+                return;
+
+            // specialized conversions:
+            switch (to.SpecialType)
+            {
+                case SpecialType.System_Boolean:
+                    EmitConvertToBool(from, fromHint);
+                    return;
+            }
+
+            // not supported conversions:
+            throw new NotSupportedException();
         }
 
         public void EmitBranch(ILOpCode code, BoundBlock label)

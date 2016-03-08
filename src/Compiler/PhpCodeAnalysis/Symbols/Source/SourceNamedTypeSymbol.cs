@@ -10,6 +10,9 @@ using Pchp.Syntax.AST;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
+    /// <summary>
+    /// PHP class as a CLR type.
+    /// </summary>
     internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol
     {
         readonly TypeDecl _syntax;

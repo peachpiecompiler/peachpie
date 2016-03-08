@@ -309,7 +309,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override MethodSymbol FindMethodSymbolInType(TypeSymbol typeSymbol, MethodDefinitionHandle targetMethodDef)
         {
-            Debug.Assert(typeSymbol is PENamedTypeSymbol);// || typeSymbol is ErrorTypeSymbol);
+            Debug.Assert(typeSymbol is PENamedTypeSymbol || typeSymbol is ErrorTypeSymbol);
 
             foreach (Symbol member in typeSymbol.GetMembers())//.GetMembersUnordered())
             {
@@ -325,15 +325,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override FieldSymbol FindFieldSymbolInType(TypeSymbol typeSymbol, FieldDefinitionHandle fieldDef)
         {
-            Debug.Assert(typeSymbol is PENamedTypeSymbol); // || typeSymbol is ErrorTypeSymbol);
+            Debug.Assert(typeSymbol is PENamedTypeSymbol || typeSymbol is ErrorTypeSymbol);
 
             foreach (Symbol member in typeSymbol.GetMembers())//.GetMembersUnordered())
             {
-                //PEFieldSymbol field = member as PEFieldSymbol;
-                //if ((object)field != null && field.Handle == fieldDef)
-                //{
-                //    return field;
-                //}
+                PEFieldSymbol field = member as PEFieldSymbol;
+                if ((object)field != null && field.Handle == fieldDef)
+                {
+                    return field;
+                }
             }
 
             return null;

@@ -106,6 +106,7 @@
     <Compile Include="Symbols\MethodSymbolExtensions.cs" />
     <Compile Include="Symbols\NonMissingAssemblySymbol.cs" />
     <Compile Include="Symbols\PE\MetadataDecoder.cs" />
+    <Compile Include="Symbols\PE\PEFieldSymbol.cs" />
     <Compile Include="Symbols\PE\PEMethodSymbol.cs" />
     <Compile Include="Symbols\PE\PEParameterSymbol.cs" />
     <Compile Include="Symbols\PE\SymbolFactory.cs" />

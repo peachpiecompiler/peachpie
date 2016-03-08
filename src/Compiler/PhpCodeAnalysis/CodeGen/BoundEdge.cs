@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Contract.ThrowIfNull(Condition);
 
             // if (Condition)
-            il.EmitCastToBool(this.Condition.Emit(il));
+            il.EmitConvertToBool(this.Condition.Emit(il), this.Condition.TypeRefMask);
             il.EmitBranch(ILOpCode.Brfalse, FalseTarget);
             
             // {

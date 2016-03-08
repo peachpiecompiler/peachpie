@@ -630,37 +630,37 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     //EnsureEnumUnderlyingTypeIsLoaded(this.GetUncommonProperties());
 
-                    //var moduleSymbol = this.ContainingPEModule;
-                    //var module = moduleSymbol.Module;
+                    var moduleSymbol = this.ContainingPEModule;
+                    var module = moduleSymbol.Module;
 
-                    //try
-                    //{
-                    //    foreach (var fieldDef in module.GetFieldsOfTypeOrThrow(_handle))
-                    //    {
-                    //        FieldAttributes fieldFlags;
+                    try
+                    {
+                        foreach (var fieldDef in module.GetFieldsOfTypeOrThrow(_handle))
+                        {
+                            FieldAttributes fieldFlags;
 
-                    //        try
-                    //        {
-                    //            fieldFlags = module.GetFieldDefFlagsOrThrow(fieldDef);
-                    //            if ((fieldFlags & FieldAttributes.Static) == 0)
-                    //            {
-                    //                continue;
-                    //            }
-                    //        }
-                    //        catch (BadImageFormatException)
-                    //        {
-                    //            fieldFlags = 0;
-                    //        }
+                            try
+                            {
+                                fieldFlags = module.GetFieldDefFlagsOrThrow(fieldDef);
+                                if ((fieldFlags & FieldAttributes.Static) == 0)
+                                {
+                                    continue;
+                                }
+                            }
+                            catch (BadImageFormatException)
+                            {
+                                fieldFlags = 0;
+                            }
 
-                    //        if (ModuleExtensions.ShouldImportField(fieldFlags, moduleSymbol.ImportOptions))
-                    //        {
-                    //            var field = new PEFieldSymbol(moduleSymbol, this, fieldDef);
-                    //            members.Add(field);
-                    //        }
-                    //    }
-                    //}
-                    //catch (BadImageFormatException)
-                    //{ }
+                            if (ModuleExtensions.ShouldImportField(fieldFlags, moduleSymbol.ImportOptions))
+                            {
+                                var field = new PEFieldSymbol(moduleSymbol, this, fieldDef);
+                                members.Add(field);
+                            }
+                        }
+                    }
+                    catch (BadImageFormatException)
+                    { }
 
                     //var syntheticCtor = new SynthesizedInstanceConstructor(this);
                     //members.Add(syntheticCtor);
@@ -668,10 +668,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 else
                 {
-                    //ArrayBuilder<PEFieldSymbol> fieldMembers = ArrayBuilder<PEFieldSymbol>.GetInstance();
+                    ArrayBuilder<PEFieldSymbol> fieldMembers = ArrayBuilder<PEFieldSymbol>.GetInstance();
                     ArrayBuilder<Symbol> nonFieldMembers = ArrayBuilder<Symbol>.GetInstance();
 
-                    //MultiDictionary<string, PEFieldSymbol> privateFieldNameToSymbols = this.CreateFields(fieldMembers);
+                    MultiDictionary<string, PEFieldSymbol> privateFieldNameToSymbols = this.CreateFields(fieldMembers);
 
                     // A method may be referenced as an accessor by one or more properties. And,
                     // any of those properties may be "bogus" if one of the property accessors
@@ -709,26 +709,26 @@ namespace Pchp.CodeAnalysis.Symbols
                     //this.CreateProperties(methodHandleToSymbol, nonFieldMembers);
                     //this.CreateEvents(privateFieldNameToSymbols, methodHandleToSymbol, nonFieldMembers);
 
-                    //foreach (PEFieldSymbol field in fieldMembers)
-                    //{
-                    //    if ((object)field.AssociatedSymbol == null)
-                    //    {
-                    //        members.Add(field);
-                    //    }
-                    //    else
-                    //    {
-                    //        // As for source symbols, our public API presents the fiction that all
-                    //        // operations are performed on the event, rather than on the backing field.  
-                    //        // The backing field is not accessible through the API.  As an additional 
-                    //        // bonus, lookup is easier when the names don't collide.
-                    //        Debug.Assert(field.AssociatedSymbol.Kind == SymbolKind.Event);
-                    //    }
-                    //}
+                    foreach (PEFieldSymbol field in fieldMembers)
+                    {
+                        if ((object)field.AssociatedSymbol == null)
+                        {
+                            members.Add(field);
+                        }
+                        else
+                        {
+                            // As for source symbols, our public API presents the fiction that all
+                            // operations are performed on the event, rather than on the backing field.  
+                            // The backing field is not accessible through the API.  As an additional 
+                            // bonus, lookup is easier when the names don't collide.
+                            Debug.Assert(field.AssociatedSymbol.Kind == SymbolKind.Event);
+                        }
+                    }
 
                     members.AddRange(nonFieldMembers);
 
                     nonFieldMembers.Free();
-                    //fieldMembers.Free();
+                    fieldMembers.Free();
 
                     methodHandleToSymbol.Free();
                 }
@@ -806,66 +806,65 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        private MultiDictionary<string, IFieldSymbol> CreateFields(ArrayBuilder<IFieldSymbol> fieldMembers)
+        private MultiDictionary<string, PEFieldSymbol> CreateFields(ArrayBuilder<PEFieldSymbol> fieldMembers)
         {
-            //var privateFieldNameToSymbols = new MultiDictionary<string, PEFieldSymbol>();
+            var privateFieldNameToSymbols = new MultiDictionary<string, PEFieldSymbol>();
 
-            //var moduleSymbol = this.ContainingPEModule;
-            //var module = moduleSymbol.Module;
+            var moduleSymbol = this.ContainingPEModule;
+            var module = moduleSymbol.Module;
 
-            //// for ordinary struct types we import private fields so that we can distinguish empty structs from non-empty structs
-            //var isOrdinaryStruct = false;
-            //// for ordinary embeddable struct types we import private members so that we can report appropriate errors if the structure is used 
-            //var isOrdinaryEmbeddableStruct = false;
+            // for ordinary struct types we import private fields so that we can distinguish empty structs from non-empty structs
+            var isOrdinaryStruct = false;
+            // for ordinary embeddable struct types we import private members so that we can report appropriate errors if the structure is used 
+            var isOrdinaryEmbeddableStruct = false;
 
-            //if (this.TypeKind == TypeKind.Struct)
-            //{
-            //    if (this.SpecialType == Microsoft.CodeAnalysis.SpecialType.None)
-            //    {
-            //        isOrdinaryStruct = true;
-            //        isOrdinaryEmbeddableStruct = this.ContainingAssembly.IsLinked;
-            //    }
-            //    else
-            //    {
-            //        isOrdinaryStruct = (this.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Nullable_T);
-            //    }
-            //}
+            if (this.TypeKind == TypeKind.Struct)
+            {
+                if (this.SpecialType == SpecialType.None)
+                {
+                    isOrdinaryStruct = true;
+                    isOrdinaryEmbeddableStruct = false; // this.ContainingAssembly.IsLinked;
+                }
+                else
+                {
+                    isOrdinaryStruct = (this.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Nullable_T);
+                }
+            }
 
-            //try
-            //{
-            //    foreach (var fieldRid in module.GetFieldsOfTypeOrThrow(_handle))
-            //    {
-            //        try
-            //        {
-            //            if (!(isOrdinaryEmbeddableStruct ||
-            //                (isOrdinaryStruct && (module.GetFieldDefFlagsOrThrow(fieldRid) & FieldAttributes.Static) == 0) ||
-            //                module.ShouldImportField(fieldRid, moduleSymbol.ImportOptions)))
-            //            {
-            //                continue;
-            //            }
-            //        }
-            //        catch (BadImageFormatException)
-            //        { }
+            try
+            {
+                foreach (var fieldRid in module.GetFieldsOfTypeOrThrow(_handle))
+                {
+                    try
+                    {
+                        if (!(isOrdinaryEmbeddableStruct ||
+                            (isOrdinaryStruct && (module.GetFieldDefFlagsOrThrow(fieldRid) & FieldAttributes.Static) == 0) ||
+                            module.ShouldImportField(fieldRid, moduleSymbol.ImportOptions)))
+                        {
+                            continue;
+                        }
+                    }
+                    catch (BadImageFormatException)
+                    { }
 
-            //        var symbol = new PEFieldSymbol(moduleSymbol, this, fieldRid);
-            //        fieldMembers.Add(symbol);
+                    var symbol = new PEFieldSymbol(moduleSymbol, this, fieldRid);
+                    fieldMembers.Add(symbol);
 
-            //        // Only private fields are potentially backing fields for field-like events.
-            //        if (symbol.DeclaredAccessibility == Accessibility.Private)
-            //        {
-            //            var name = symbol.Name;
-            //            if (name.Length > 0)
-            //            {
-            //                privateFieldNameToSymbols.Add(name, symbol);
-            //            }
-            //        }
-            //    }
-            //}
-            //catch (BadImageFormatException)
-            //{ }
+                    // Only private fields are potentially backing fields for field-like events.
+                    if (symbol.DeclaredAccessibility == Accessibility.Private)
+                    {
+                        var name = symbol.Name;
+                        if (name.Length > 0)
+                        {
+                            privateFieldNameToSymbols.Add(name, symbol);
+                        }
+                    }
+                }
+            }
+            catch (BadImageFormatException)
+            { }
 
-            //return privateFieldNameToSymbols;
-            throw new NotImplementedException();
+            return privateFieldNameToSymbols;
         }
 
         private PooledDictionary<MethodDefinitionHandle, PEMethodSymbol> CreateMethods(ArrayBuilder<Symbol> members)
