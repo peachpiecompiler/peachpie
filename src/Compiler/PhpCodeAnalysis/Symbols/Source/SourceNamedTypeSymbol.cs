@@ -13,14 +13,18 @@ namespace Pchp.CodeAnalysis.Symbols
     internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol
     {
         readonly TypeDecl _syntax;
-        readonly PhpCompilation _compilation;
+        readonly SourceFileSymbol _file;
 
         readonly ImmutableArray<SourceMethodSymbol> _methods;
 
-        public SourceNamedTypeSymbol(PhpCompilation compilation, TypeDecl syntax)
+        public SourceFileSymbol ContainingFile => _file;
+
+        public SourceNamedTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
+            Contract.ThrowIfNull(file);
+
             _syntax = syntax;
-            _compilation = compilation;
+            _file = file;
             _methods = LoadMethods().ToImmutableArray();
         }
 
@@ -39,11 +43,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int Arity => 0;
 
-        internal override IModuleSymbol ContainingModule => _compilation.SourceModule;
+        internal override IModuleSymbol ContainingModule => _file.SourceModule;
 
-        public override Symbol ContainingSymbol => _compilation.SourceModule;
+        public override Symbol ContainingSymbol => _file.SourceModule;
 
-        internal override PhpCompilation DeclaringCompilation => _compilation;
+        internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
         public override string Name => _syntax.Name.Value;
 

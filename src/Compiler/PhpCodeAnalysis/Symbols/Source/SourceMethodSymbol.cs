@@ -36,6 +36,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override TypeRefContext CreateTypeRefContext() => CreateTypeRefContext(_type.Syntax);
 
+        internal override SourceFileSymbol ContainingFile => _type.ContainingFile;
+
         public override string Name => _syntax.Name.Value;
 
         public override Symbol ContainingSymbol => _type;
