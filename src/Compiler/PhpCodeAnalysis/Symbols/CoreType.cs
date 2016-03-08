@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// Descriptor of a well-known type declared in PchpCor library.
     /// </summary>
     [DebuggerDisplay("CoreType {FullName,nq}")]
-    class CoreType
+    class CoreType : IEquatable<CoreType>
     {
         internal static CoreType FromString(string fullName) => new CoreType(fullName);
 
@@ -45,6 +45,15 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(this.Symbol == null);
             this.Symbol = symbol;
         }
+
+        #region IEquatable<CoreType>
+
+        bool IEquatable<CoreType>.Equals(CoreType other)
+        {
+            return object.ReferenceEquals(this, other);
+        }
+
+        #endregion
     }
 
     /// <summary>
@@ -65,7 +74,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_table == null)
                 _table = new Dictionary<string, CoreType>();
 
-            _table[t.FullName] = t;
+            _table.Add(t.FullName, t);
         }
 
         /// <summary>

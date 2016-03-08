@@ -72,13 +72,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual SpecialType SpecialType => SpecialType.None;
 
-        public virtual TypeKind TypeKind
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        /// <summary>
+        /// In case of PHP corlibrary type, gets reference to the descriptor <see cref="CoreType"/>.
+        /// </summary>
+        public virtual CoreType PhpCoreType => null;
+
+        public abstract TypeKind TypeKind { get; }
 
         ITypeSymbol ITypeSymbol.OriginalDefinition
         {

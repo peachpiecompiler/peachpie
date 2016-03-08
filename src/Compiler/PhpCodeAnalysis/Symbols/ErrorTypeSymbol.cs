@@ -24,6 +24,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int Arity => 0;
 
+        public override TypeKind TypeKind => TypeKind.Error;
+
         public override SymbolKind Kind => SymbolKind.ErrorType;
 
         public override Accessibility DeclaredAccessibility => Accessibility.NotApplicable;
@@ -104,6 +106,5 @@ namespace Pchp.CodeAnalysis.Symbols
         public override string Name => _name;
         internal override bool MangleName => _mangleName;
         public override int Arity => _arity;
-
     }
 }
