@@ -9,7 +9,6 @@ using System.Collections.Immutable;
 using Pchp.Syntax;
 using System.Diagnostics;
 using Pchp.Syntax.AST;
-using Pchp.CodeAnalysis.Symbols.Source;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -24,6 +23,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             readonly SourceDeclarations _tables;
             readonly PhpCompilation _compilation;
+
+            SourceFileSymbol _currentFile;
             
             public PopulatorVisitor(PhpCompilation compilation, SourceDeclarations tables)
             {
@@ -35,20 +36,23 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (unit != null && unit.Ast != null)
                 {
-                    _tables._files.Add(unit.FilePath, new SourceFileSymbol(_compilation, unit.Ast));
+                    _currentFile = new SourceFileSymbol(_compilation, unit.Ast, _tables._files.Count);
+                    _tables._files.Add(unit.FilePath, _currentFile);
 
                     VisitGlobalCode(unit.Ast);
+
+                    _currentFile = null;
                 }
             }
 
             public override void VisitFunctionDecl(FunctionDecl x)
             {
-                _tables._functions.Add(NameUtils.MakeQualifiedName(x.Name, x.Namespace), new SourceFunctionSymbol(_compilation, x));
+                _tables._functions.Add(NameUtils.MakeQualifiedName(x.Name, x.Namespace), new SourceFunctionSymbol(_currentFile, x));
             }
 
             public override void VisitTypeDecl(TypeDecl x)
             {
-                _tables._types.Add(x.MakeQualifiedName(), new SourceNamedTypeSymbol(_compilation, x));
+                _tables._types.Add(x.MakeQualifiedName(), new SourceNamedTypeSymbol(_currentFile, x));
             }
         }
 

@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Name of special context parameter.
         /// </summary>
-        public const string ContextName = "<context>";
+        public const string ContextName = "<ctx>";
 
         readonly MethodSymbol _symbol;
         readonly int _index;

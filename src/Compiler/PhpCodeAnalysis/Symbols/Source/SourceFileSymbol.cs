@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.Syntax.AST;
 using Roslyn.Utilities;
+using System.Diagnostics;
 
-namespace Pchp.CodeAnalysis.Symbols.Source
+namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents a file within the mudule as a CLR type.
@@ -17,6 +18,7 @@ namespace Pchp.CodeAnalysis.Symbols.Source
     /// namespace [DIR]{
     ///     class [FNAME] {
     ///         object [Main](){ ... }
+    ///         int Index{get;};
     ///     }
     /// }</remarks>
     sealed class SourceFileSymbol : NamedTypeSymbol
@@ -25,15 +27,26 @@ namespace Pchp.CodeAnalysis.Symbols.Source
         readonly GlobalCode _syntax;
         readonly SourceGlobalMethodSymbol _mainMethod;
 
+        /// <summary>
+        /// Unique ordinal of the source file.
+        /// Used in runtime in bit arrays to check whether the file was included.
+        /// </summary>
+        public int Ordinal => _index;
+        readonly int _index;
+
         public GlobalCode Syntax => _syntax;
 
-        public SourceFileSymbol(PhpCompilation compilation, GlobalCode syntax)
+        public SourceModuleSymbol SourceModule => _compilation.SourceModule;
+
+        public SourceFileSymbol(PhpCompilation compilation, GlobalCode syntax, int index)
         {
             Contract.ThrowIfNull(compilation);
             Contract.ThrowIfNull(syntax);
+            Debug.Assert(index >= 0);
 
             _compilation = compilation;
             _syntax = syntax;
+            _index = index;
             _mainMethod = new SourceGlobalMethodSymbol(this);
         }
 

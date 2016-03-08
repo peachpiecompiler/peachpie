@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.Syntax.AST;
 
-namespace Pchp.CodeAnalysis.Symbols.Source
+namespace Pchp.CodeAnalysis.Symbols
 {
     sealed class SourceGlobalMethodSymbol : SourceRoutineSymbol
     {
@@ -27,6 +27,8 @@ namespace Pchp.CodeAnalysis.Symbols.Source
         public override string Name => GlobalRoutineName;
 
         public override Symbol ContainingSymbol => _file;
+
+        internal override SourceFileSymbol ContainingFile => _file;
 
         public override Accessibility DeclaredAccessibility => Accessibility.Public;
 

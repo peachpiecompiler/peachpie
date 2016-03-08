@@ -75,6 +75,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract AstNode Syntax { get; }
 
+        /// <summary>
+        /// Reference to a containing file symbol.
+        /// </summary>
+        internal abstract SourceFileSymbol ContainingFile { get; }
+
         readonly protected ImmutableArray<ParameterSymbol> _params;
 
         public SourceRoutineSymbol(Signature signature)

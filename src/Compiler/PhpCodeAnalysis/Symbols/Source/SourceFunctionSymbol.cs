@@ -17,15 +17,15 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed class SourceFunctionSymbol : SourceRoutineSymbol
     {
-        readonly PhpCompilation _compilation;
+        readonly SourceFileSymbol _file;
         readonly FunctionDecl _syntax;
 
-        public SourceFunctionSymbol(PhpCompilation compilation, FunctionDecl syntax)
+        public SourceFunctionSymbol(SourceFileSymbol file, FunctionDecl syntax)
             :base(syntax.Signature)
         {
-            Contract.ThrowIfNull(compilation);
-            
-            _compilation = compilation;
+            Contract.ThrowIfNull(file);
+
+            _file = file;
             _syntax = syntax;
         }
 
@@ -33,16 +33,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IList<Statement> Statements => _syntax.Body;
 
+        internal override SourceFileSymbol ContainingFile => _file;
+
         protected override TypeRefContext CreateTypeRefContext()
             => new TypeRefContext(NameUtils.GetNamingContext(_syntax.Namespace, _syntax.SourceUnit.Ast), _syntax.SourceUnit, null);
 
         public override string Name => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.Namespace).ClrName();
 
-        public override Symbol ContainingSymbol => _compilation.SourceModule;
+        public override Symbol ContainingSymbol => _file.SourceModule;
 
-        internal override IModuleSymbol ContainingModule => _compilation.SourceModule;
+        internal override IModuleSymbol ContainingModule => _file.SourceModule;
 
-        public override AssemblySymbol ContainingAssembly => _compilation.SourceAssembly;
+        public override AssemblySymbol ContainingAssembly => _file.DeclaringCompilation.SourceAssembly;
 
         public override Accessibility DeclaredAccessibility => Accessibility.Public;
 
