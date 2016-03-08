@@ -43,9 +43,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         }
 
         VariableKind _statementContext;
-        LangElement _routine;
+        AstNode _routine;
 
-        public LocalsWalker(LangElement routine)
+        public LocalsWalker(AstNode routine)
         {
             _statementContext = VariableKind.LocalVariable;
             _routine = routine;
@@ -53,7 +53,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 
         public void VisitRoutine()
         {
-            VisitElement(_routine);
+            if (_routine is LangElement)
+                VisitElement((LangElement)_routine);
+            else
+                VisitGlobalCode((GlobalCode)_routine);
         }
 
         #region AddVar

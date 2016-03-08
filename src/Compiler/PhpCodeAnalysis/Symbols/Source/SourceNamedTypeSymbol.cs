@@ -68,8 +68,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.MemberAttributes.IsStatic();
 
-        public override SymbolKind Kind => SymbolKind.NamedType;
-
         public override ImmutableArray<Location> Locations
         {
             get

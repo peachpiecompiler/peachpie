@@ -141,6 +141,8 @@
     <Compile Include="Symbols\PE\PENamespaceSymbol.cs" />
     <Compile Include="Symbols\Source\MemberAttributesAdapter.cs" />
     <Compile Include="Symbols\Source\SourceAssemblySymbol.cs" />
+    <Compile Include="Symbols\Source\SourceFileSymbol.cs" />
+    <Compile Include="Symbols\Source\SourceGlobalMethodSymbol.cs" />
     <Compile Include="Symbols\Source\SourceLocalSymbol.cs" />
     <Compile Include="Symbols\Source\SourceRoutineSymbol.cs" />
     <Compile Include="Symbols\Source\SourceFunctionSymbol.cs" />

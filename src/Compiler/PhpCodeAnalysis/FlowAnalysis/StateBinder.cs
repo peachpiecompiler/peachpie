@@ -23,7 +23,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public static FlowState CreateInitialState(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
-            Debug.Assert(routine.ContainingType == null || routine.ContainingType is SourceNamedTypeSymbol);
 
             var containingType = routine.ContainingType as SourceNamedTypeSymbol;
 
@@ -65,7 +64,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     case VariableKind.Parameter:
                         //state.SetVarUsed(i);
                         //var paramtag = TypeRef.Helpers.PHPDoc.GetParamTag(phpdoc, paramIdx, locals[i].Name);
-                        state.SetVar(i, GetParamType(typeCtx, null, ((SourceParameterSymbol)parameters[paramIdx]).Syntax, default(CallInfo), paramIdx));
+                        state.SetVar(i, GetParamType(typeCtx, null, parameters[paramIdx].Syntax, default(CallInfo), paramIdx));
                         paramIdx++;
                         break;
                     //case VariableKind.UseParameter:

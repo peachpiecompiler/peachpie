@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _syntax = syntax;
         }
 
-        internal override LangElement Syntax => _syntax;
+        internal override AstNode Syntax => _syntax;
 
         internal override IList<Statement> Statements => _syntax.Body;
 

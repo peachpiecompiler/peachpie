@@ -73,7 +73,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets routine declaration syntax.
         /// </summary>
-        internal abstract LangElement Syntax { get; }
+        internal abstract AstNode Syntax { get; }
 
         readonly protected ImmutableArray<ParameterSymbol> _params;
 

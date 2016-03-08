@@ -9,6 +9,7 @@ using System.Collections.Immutable;
 using Pchp.Syntax;
 using System.Diagnostics;
 using Pchp.Syntax.AST;
+using Pchp.CodeAnalysis.Symbols.Source;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -34,7 +35,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (unit != null && unit.Ast != null)
                 {
-                    _tables._files.Add(unit.FilePath, unit.Ast);
+                    _tables._files.Add(unit.FilePath, new SourceFileSymbol(_compilation, unit.Ast));
 
                     VisitGlobalCode(unit.Ast);
                 }
@@ -53,9 +54,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
-        readonly Dictionary<QualifiedName, INamedTypeSymbol> _types = new Dictionary<QualifiedName, INamedTypeSymbol>();
-        readonly Dictionary<QualifiedName, IMethodSymbol> _functions = new Dictionary<QualifiedName, IMethodSymbol>();
-        readonly Dictionary<string, GlobalCode> _files = new Dictionary<string, GlobalCode>(StringComparer.OrdinalIgnoreCase);
+        readonly Dictionary<QualifiedName, SourceNamedTypeSymbol> _types = new Dictionary<QualifiedName, SourceNamedTypeSymbol>();
+        readonly Dictionary<QualifiedName, SourceRoutineSymbol> _functions = new Dictionary<QualifiedName, SourceRoutineSymbol>();
+        readonly Dictionary<string, SourceFileSymbol> _files = new Dictionary<string, SourceFileSymbol>(StringComparer.OrdinalIgnoreCase);
         
         public SourceDeclarations()
         {
@@ -71,12 +72,16 @@ namespace Pchp.CodeAnalysis.Symbols
             trees.ForEach(visitor.VisitSourceUnit);
         }
 
-        public IMethodSymbol GetFunction(QualifiedName name) => _functions.TryGetOrDefault(name);
+        public SourceFileSymbol GetFile(string fname) => _files.TryGetOrDefault(fname);
 
-        public IEnumerable<IMethodSymbol> GetFunctions() => _functions.Values;
+        public IEnumerable<SourceFileSymbol> GetFiles() => _files.Values;
 
-        public INamedTypeSymbol GetType(QualifiedName name) => _types.TryGetOrDefault(name);
+        public MethodSymbol GetFunction(QualifiedName name) => _functions.TryGetOrDefault(name);
 
-        public IEnumerable<INamedTypeSymbol> GetTypes() => _types.Values;
+        public IEnumerable<MethodSymbol> GetFunctions() => _functions.Values;
+
+        public NamedTypeSymbol GetType(QualifiedName name) => _types.TryGetOrDefault(name);
+
+        public IEnumerable<NamedTypeSymbol> GetTypes() => _types.Values;
     }
 }

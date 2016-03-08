@@ -509,9 +509,11 @@ namespace Pchp.CodeAnalysis.Emit
             //    yield return type;
             //}
 
-            return _sourceModule.SymbolTables
-                .GetTypes()
-                .Cast<Cci.INamespaceTypeDefinition>();
+            foreach (var f in _sourceModule.SymbolTables.GetFiles())
+                yield return f;
+
+            foreach (var t in _sourceModule.SymbolTables.GetTypes())
+                yield return t;
 
             //var namespacesToProcess = new Stack<INamespaceSymbol>();
             //namespacesToProcess.Push(this.SourceModule.GlobalNamespace);
