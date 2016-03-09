@@ -62,6 +62,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsPchpCorLibrary => _specialAssembly == SpecialAssembly.PchpCorLibrary;
 
+        public override string Name => _assembly.ManifestModule.Name;
+
         internal PEAssemblySymbol(PEAssembly assembly, DocumentationProvider documentationProvider, bool isLinked, MetadataImportOptions importOptions)
         {
             Debug.Assert(assembly != null);

@@ -18,7 +18,9 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
-        readonly ImmutableArray<SourceMethodSymbol> _methods;
+        readonly ImmutableArray<Symbol> _members;
+        
+        NamedTypeSymbol _lazyBaseType;
 
         public SourceFileSymbol ContainingFile => _file;
 
@@ -28,7 +30,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _syntax = syntax;
             _file = file;
-            _methods = LoadMethods().ToImmutableArray();
+
+            _members = LoadMethods()
+                .Concat<Symbol>(LoadFields())
+                .ToImmutableArray();
         }
 
         IEnumerable<SourceMethodSymbol> LoadMethods()
@@ -36,6 +41,34 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var m in _syntax.Members.OfType<MethodDecl>())
             {
                 yield return new SourceMethodSymbol(this, m);
+            }
+        }
+
+        IEnumerable<SourceFieldSymbol> LoadFields()
+        {
+            foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
+            {
+                foreach (var f in flist.Fields)
+                {
+                    yield return new SourceFieldSymbol(this, f, flist.Modifiers);
+                }
+            }
+        }
+
+        public override INamedTypeSymbol BaseType
+        {
+            get
+            {
+                if (_lazyBaseType == null && _syntax.BaseClassName.HasValue)
+                {
+                    if (_syntax.BaseClassName.Value.IsGeneric)
+                        throw new NotImplementedException();
+
+                    _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(_syntax.BaseClassName.Value.QualifiedName.ClrName())
+                        ?? new MissingMetadataTypeSymbol(_syntax.BaseClassName.Value.QualifiedName.ClrName(), 0, false);
+                }
+
+                return _lazyBaseType;
             }
         }
 
@@ -95,21 +128,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool MangleName => false;
 
-        public override ImmutableArray<Symbol> GetMembers()
-        {
-            return StaticCast<Symbol>.From(_methods);   // TODO: + props, constants
-        }
+        public override ImmutableArray<Symbol> GetMembers() => _members;
 
         public override ImmutableArray<Symbol> GetMembers(string name)
-        {
-            // TODO: + props, constants
-            var method = _methods.FirstOrDefault(m => string.Equals(m.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (method != null)
-                return ImmutableArray.Create<Symbol>(method);
-
-            //
-            return ImmutableArray<Symbol>.Empty;
-        }
+            => _members.Where(s => s.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable();
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
@@ -123,7 +145,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
-            yield break;
+            return _members.OfType<IFieldSymbol>();
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
