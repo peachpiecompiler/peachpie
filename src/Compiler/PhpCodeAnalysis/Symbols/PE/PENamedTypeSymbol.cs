@@ -706,7 +706,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     //    }
                     //}
 
-                    //this.CreateProperties(methodHandleToSymbol, nonFieldMembers);
+                    this.CreateProperties(methodHandleToSymbol, nonFieldMembers);
                     //this.CreateEvents(privateFieldNameToSymbols, methodHandleToSymbol, nonFieldMembers);
 
                     foreach (PEFieldSymbol field in fieldMembers)
@@ -894,34 +894,33 @@ namespace Pchp.CodeAnalysis.Symbols
             return map;
         }
 
-        private void CreateProperties(Dictionary<MethodDefinitionHandle, IMethodSymbol> methodHandleToSymbol, ArrayBuilder<Symbol> members)
+        private void CreateProperties(Dictionary<MethodDefinitionHandle, PEMethodSymbol> methodHandleToSymbol, ArrayBuilder<Symbol> members)
         {
-            //var moduleSymbol = this.ContainingPEModule;
-            //var module = moduleSymbol.Module;
+            var moduleSymbol = this.ContainingPEModule;
+            var module = moduleSymbol.Module;
 
-            //try
-            //{
-            //    foreach (var propertyDef in module.GetPropertiesOfTypeOrThrow(_handle))
-            //    {
-            //        try
-            //        {
-            //            var methods = module.GetPropertyMethodsOrThrow(propertyDef);
+            try
+            {
+                foreach (var propertyDef in module.GetPropertiesOfTypeOrThrow(_handle))
+                {
+                    try
+                    {
+                        var methods = module.GetPropertyMethodsOrThrow(propertyDef);
 
-            //            PEMethodSymbol getMethod = GetAccessorMethod(module, methodHandleToSymbol, methods.Getter);
-            //            PEMethodSymbol setMethod = GetAccessorMethod(module, methodHandleToSymbol, methods.Setter);
+                        PEMethodSymbol getMethod = GetAccessorMethod(module, methodHandleToSymbol, methods.Getter);
+                        PEMethodSymbol setMethod = GetAccessorMethod(module, methodHandleToSymbol, methods.Setter);
 
-            //            if (((object)getMethod != null) || ((object)setMethod != null))
-            //            {
-            //                members.Add(new PEPropertySymbol(moduleSymbol, this, propertyDef, getMethod, setMethod));
-            //            }
-            //        }
-            //        catch (BadImageFormatException)
-            //        { }
-            //    }
-            //}
-            //catch (BadImageFormatException)
-            //{ }
-            throw new NotImplementedException();
+                        if (((object)getMethod != null) || ((object)setMethod != null))
+                        {
+                            members.Add(new PEPropertySymbol(moduleSymbol, this, propertyDef, getMethod, setMethod));
+                        }
+                    }
+                    catch (BadImageFormatException)
+                    { }
+                }
+            }
+            catch (BadImageFormatException)
+            { }
         }
 
         private void CreateEvents(
@@ -958,6 +957,45 @@ namespace Pchp.CodeAnalysis.Symbols
             //catch (BadImageFormatException)
             //{ }
             throw new NotImplementedException();
+        }
+
+        private PEMethodSymbol GetAccessorMethod(PEModule module, Dictionary<MethodDefinitionHandle, PEMethodSymbol> methodHandleToSymbol, MethodDefinitionHandle methodDef)
+        {
+            if (methodDef.IsNil)
+            {
+                return null;
+            }
+
+            PEMethodSymbol method;
+            bool found = methodHandleToSymbol.TryGetValue(methodDef, out method);
+            Debug.Assert(found || !module.ShouldImportMethod(methodDef, this.ContainingPEModule.ImportOptions));
+            return method;
+        }
+
+        internal string DefaultMemberName
+        {
+            get
+            {
+                //var uncommon = GetUncommonProperties();
+                //if (uncommon == s_noUncommonProperties)
+                //{
+                //    return string.Empty;
+                //}
+
+                //if (uncommon.lazyDefaultMemberName == null)
+                //{
+                //    string defaultMemberName;
+                //    this.ContainingPEModule.Module.HasDefaultMemberAttribute(_handle, out defaultMemberName);
+
+                //    // NOTE: the default member name is frequently null (e.g. if there is not indexer in the type).
+                //    // Make sure we set a non-null value so that we don't recompute it repeatedly.
+                //    // CONSIDER: this makes it impossible to distinguish between not having the attribute and
+                //    // having the attribute with a value of "".
+                //    Interlocked.CompareExchange(ref uncommon.lazyDefaultMemberName, defaultMemberName ?? "", null);
+                //}
+                //return uncommon.lazyDefaultMemberName;
+                throw new NotImplementedException();
+            }
         }
 
         internal override Microsoft.CodeAnalysis.TypeLayout Layout

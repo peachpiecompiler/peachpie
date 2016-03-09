@@ -48,16 +48,16 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Resolves <see cref="INamedTypeSymbol"/> best fitting given type mask.
         /// </summary>
-        internal INamedTypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask, bool isRef)
+        internal NamedTypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask, bool isRef)
         {
             // TODO: magic - determine best fitting CLR type
-            return this.GetSpecialType(SpecialType.System_Object);
+            return (NamedTypeSymbol)this.GetSpecialType(SpecialType.System_Object);
         }
 
         /// <summary>
         /// Resolves <see cref="INamedTypeSymbol"/> best fitting given type mask.
         /// </summary>
-        internal INamedTypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol routine, TypeRefMask typeMask, bool isRef)
+        internal NamedTypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol routine, TypeRefMask typeMask, bool isRef)
         {
             if (routine.ControlFlowGraph.HasFlowState)
             {

@@ -95,7 +95,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual IMethodSymbol OverriddenMethod => null;
 
-        public abstract ImmutableArray<IParameterSymbol> Parameters { get; }
+        ImmutableArray<IParameterSymbol> IMethodSymbol.Parameters => StaticCast<IParameterSymbol>.From(Parameters);
+
+        public abstract ImmutableArray<ParameterSymbol> Parameters { get; }
 
         public virtual int ParameterCount => this.Parameters.Length;
 
@@ -121,7 +123,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public abstract bool ReturnsVoid { get; }
 
-        public abstract ITypeSymbol ReturnType { get; }
+        ITypeSymbol IMethodSymbol.ReturnType => ReturnType;
+
+        public abstract TypeSymbol ReturnType { get; }
 
         public virtual ImmutableArray<CustomModifier> ReturnTypeCustomModifiers => ImmutableArray<CustomModifier>.Empty;
 

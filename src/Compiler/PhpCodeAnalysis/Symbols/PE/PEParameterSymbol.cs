@@ -135,27 +135,27 @@ namespace Pchp.CodeAnalysis.Symbols
             return Create(moduleSymbol, containingSymbol, ordinal, parameter.IsByRef, parameter.CountOfCustomModifiersPrecedingByRef, parameter.Type, parameter.Handle, parameter.CustomModifiers, out isBad);
         }
 
-        ///// <summary>
-        ///// Construct a parameter symbol for a property loaded from metadata.
-        ///// </summary>
-        ///// <param name="moduleSymbol"></param>
-        ///// <param name="containingSymbol"></param>
-        ///// <param name="ordinal"></param>
-        ///// <param name="handle">The property parameter doesn't have a name in metadata,
-        ///// so this is the handle of a corresponding accessor parameter, if there is one,
-        ///// or of the ParamInfo passed in, otherwise).</param>
-        ///// <param name="isBad" />
-        ///// <param name="parameter"></param>
-        //internal static PEParameterSymbol Create(
-        //    PEModuleSymbol moduleSymbol,
-        //    PEPropertySymbol containingSymbol,
-        //    int ordinal,
-        //    ParameterHandle handle,
-        //    ParamInfo<TypeSymbol> parameter,
-        //    out bool isBad)
-        //{
-        //    return Create(moduleSymbol, containingSymbol, ordinal, parameter.IsByRef, parameter.CountOfCustomModifiersPrecedingByRef, parameter.Type, handle, parameter.CustomModifiers, out isBad);
-        //}
+        /// <summary>
+        /// Construct a parameter symbol for a property loaded from metadata.
+        /// </summary>
+        /// <param name="moduleSymbol"></param>
+        /// <param name="containingSymbol"></param>
+        /// <param name="ordinal"></param>
+        /// <param name="handle">The property parameter doesn't have a name in metadata,
+        /// so this is the handle of a corresponding accessor parameter, if there is one,
+        /// or of the ParamInfo passed in, otherwise).</param>
+        /// <param name="isBad" />
+        /// <param name="parameter"></param>
+        internal static PEParameterSymbol Create(
+            PEModuleSymbol moduleSymbol,
+            PEPropertySymbol containingSymbol,
+            int ordinal,
+            ParameterHandle handle,
+            ParamInfo<TypeSymbol> parameter,
+            out bool isBad)
+        {
+            return Create(moduleSymbol, containingSymbol, ordinal, parameter.IsByRef, parameter.CountOfCustomModifiersPrecedingByRef, parameter.Type, handle, parameter.CustomModifiers, out isBad);
+        }
 
         private PEParameterSymbol(
             PEModuleSymbol moduleSymbol,

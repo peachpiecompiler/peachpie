@@ -868,7 +868,7 @@ namespace Pchp.CodeAnalysis.Emit
             return (Cci.ITypeReference)symbol;
         }
 
-        internal ImmutableArray<Cci.IParameterTypeInformation> Translate(ImmutableArray<IParameterSymbol> @params)
+        internal ImmutableArray<Cci.IParameterTypeInformation> Translate(ImmutableArray<ParameterSymbol> @params)
         {
             return @params.Cast<Cci.IParameterTypeInformation>().ToImmutableArray();
         }

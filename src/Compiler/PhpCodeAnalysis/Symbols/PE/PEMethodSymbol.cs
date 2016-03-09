@@ -645,11 +645,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool ReturnsVoid => this.ReturnType.SpecialType == SpecialType.System_Void;
 
-        public override ImmutableArray<IParameterSymbol> Parameters => StaticCast<IParameterSymbol>.From(Signature.Parameters);
+        public override ImmutableArray<ParameterSymbol> Parameters => Signature.Parameters;
 
         public override int ParameterCount => Signature.Parameters.Length;
 
-        public override ITypeSymbol ReturnType => Signature.ReturnParam.Type;
+        public override TypeSymbol ReturnType => Signature.ReturnParam.Type;
         internal ParameterSymbol ReturnTypeParameter => Signature.ReturnParam;
 
         internal override bool ReturnValueIsMarshalledExplicitly => ReturnTypeParameter.IsMarshalledExplicitly;
