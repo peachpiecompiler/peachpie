@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Cci;
 using Microsoft.CodeAnalysis;
 
-namespace Pchp.CodeAnalysis.Symbols.Synthesized
+namespace Pchp.CodeAnalysis.Symbols
 {
     internal class SynthesizedPropertySymbol : PropertySymbol
     {
