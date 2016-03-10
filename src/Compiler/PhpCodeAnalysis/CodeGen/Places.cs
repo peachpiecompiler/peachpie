@@ -26,6 +26,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         TypeSymbol EmitLoad(ILBuilder il);
 
         /// <summary>
+        /// Emits preparation code for storing a value into the place.
+        /// Must be call before loading a value and calling <see cref="EmitStore(ILBuilder)"/>.
+        /// </summary>
+        /// <param name="il">The <see cref="ILBuilder"/> to emit the code to.</param>
+        void EmitStorePrepare(ILBuilder il);
+
+        /// <summary>
         /// Emits code that stores a value to this storage place.
         /// </summary>
         /// <param name="il">The <see cref="ILBuilder"/> to emit the code to.</param>
@@ -65,6 +72,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitLoadAddress(ILBuilder il) => il.EmitLocalAddress(_def);
 
+        public void EmitStorePrepare(ILBuilder il) { }
+
         public void EmitStore(ILBuilder il) => il.EmitLocalStore(_def);
     }
 
@@ -89,44 +98,133 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitLoadAddress(ILBuilder il) => il.EmitLoadArgumentAddrOpcode(Index);
 
+        public void EmitStorePrepare(ILBuilder il) { }
+
         public void EmitStore(ILBuilder il) => il.EmitStoreArgumentOpcode(Index);
     }
 
     internal class FieldPlace : IPlace
     {
         readonly IPlace _holder;
-        readonly Cci.IFieldReference _field;
+        readonly FieldSymbol _field;
 
-        public FieldPlace(IPlace holder, Cci.IFieldDefinition field)
+        public FieldPlace(IPlace holder, IFieldSymbol field)
         {
             Contract.ThrowIfNull(field);
             Debug.Assert(holder != null || field.IsStatic);
 
             _holder = holder;
-            _field = field;
+            _field = (FieldSymbol)field;
+        }
+
+        void EmitHolder(ILBuilder il)
+        {
+            if (_holder != null)
+            {
+                Debug.Assert(!_field.IsStatic);
+                _holder.EmitLoad(il);
+            }
         }
 
         void EmitOpCode(ILBuilder il, ILOpCode code)
         {
-            if (_holder != null)
-            {
-                _holder.EmitLoad(il);   // {holder}
-            }
-
             il.EmitOpCode(code);
             il.EmitToken(_field, null, null /*DiagnosticBag.GetInstance()*/);    // .{field}
         }
 
-        public bool HasAddress => _holder.HasAddress;
+        public bool HasAddress => true;
 
         public TypeSymbol EmitLoad(ILBuilder il)
         {
-            EmitOpCode(il, ILOpCode.Ldfld);
-            return ((FieldSymbol)_field).Type;
+            EmitHolder(il);
+            EmitOpCode(il, _field.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
+            return _field.Type;
         }
 
-        public void EmitStore(ILBuilder il) => EmitOpCode(il, ILOpCode.Stfld);
+        public void EmitStorePrepare(ILBuilder il)
+        {
+            EmitHolder(il);
+        }
 
-        public void EmitLoadAddress(ILBuilder il) => EmitOpCode(il, ILOpCode.Ldflda);
+        public void EmitStore(ILBuilder il)
+        {
+            EmitOpCode(il, _field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
+        }
+
+        public void EmitLoadAddress(ILBuilder il) => EmitOpCode(il, _field.IsStatic ? ILOpCode.Ldsflda : ILOpCode.Ldflda);
+    }
+
+    internal class PropertyPlace : IPlace
+    {
+        readonly IPlace _holder;
+        readonly PropertySymbol _property;
+
+        public PropertyPlace(IPlace holder, Cci.IPropertyDefinition property)
+        {
+            Contract.ThrowIfNull(property);
+
+            _holder = holder;
+            _property = (PropertySymbol)property;
+        }
+
+        public bool HasAddress => false;
+
+        public TypeSymbol EmitLoad(ILBuilder il)
+        {
+            //if (_property.Getter == null)
+            //    throw new InvalidOperationException();
+
+            var stack = +1;
+            var getter = _property.GetMethod;
+
+            if (_holder != null)
+            {
+                Debug.Assert(!getter.IsStatic);
+                _holder.EmitLoad(il);   // {holder}
+                stack -= 1;
+            }
+
+            il.EmitOpCode(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, stack);
+            il.EmitToken(getter, null, null);
+
+            //
+            return getter.ReturnType;
+        }
+
+        public void EmitLoadAddress(ILBuilder il)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void EmitStorePrepare(ILBuilder il)
+        {
+            if (_holder != null)
+            {
+                Debug.Assert(_property.SetMethod != null);
+                Debug.Assert(!_property.SetMethod.IsStatic);
+                _holder.EmitLoad(il);   // {holder}
+            }
+        }
+
+        public void EmitStore(ILBuilder il)
+        {
+            //if (_property.Setter == null)
+            //    throw new InvalidOperationException();
+
+            var stack = 0;
+            var setter = _property.SetMethod;
+
+            if (_holder != null)
+            {
+                stack -= 1;
+            }
+            
+            //
+            il.EmitOpCode(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, stack);
+            il.EmitToken(setter, null, null);
+
+            //
+            Debug.Assert(setter.ReturnType.SpecialType == SpecialType.System_Void);
+        }
     }
 }
