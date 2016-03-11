@@ -27,6 +27,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly GlobalCode _syntax;
         readonly SourceGlobalMethodSymbol _mainMethod;
 
+        SynthesizedFieldSymbol _lazyIndexField;
+
         /// <summary>
         /// Unique ordinal of the source file.
         /// Used in runtime in bit arrays to check whether the file was included.
@@ -48,6 +50,16 @@ namespace Pchp.CodeAnalysis.Symbols
             _syntax = syntax;
             _index = index;
             _mainMethod = new SourceGlobalMethodSymbol(this);
+        }
+
+        private FieldSymbol GetIndexField()
+        {
+            if (_lazyIndexField == null)
+            {
+                _lazyIndexField = new SynthesizedFieldSymbol(this, (NamedTypeSymbol)_compilation.GetSpecialType(SpecialType.System_Int32), "<Ordinal>", Accessibility.Internal, ConstantValue.Create(_index));
+            }
+
+            return _lazyIndexField;
         }
 
         public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath).Replace('.', '_');
@@ -101,7 +113,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;
 
-        public override ImmutableArray<Symbol> GetMembers() => ImmutableArray.Create((Symbol)_mainMethod);
+        public override ImmutableArray<Symbol> GetMembers() => ImmutableArray.Create((Symbol)_mainMethod, GetIndexField());
 
         public override ImmutableArray<Symbol> GetMembers(string name) => ImmutableArray<Symbol>.Empty;
 
@@ -109,7 +121,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name) => ImmutableArray<NamedTypeSymbol>.Empty;
 
-        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => ImmutableArray<IFieldSymbol>.Empty;
+        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
+        {
+            yield return GetIndexField();
+        }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
     }

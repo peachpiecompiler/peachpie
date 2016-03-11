@@ -11,13 +11,14 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using System.Diagnostics;
+using Pchp.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Base symbol representing a method or a function from source.
     /// </summary>
-    internal abstract class SourceRoutineSymbol : MethodSymbol
+    internal abstract partial class SourceRoutineSymbol : MethodSymbol
     {
         ControlFlowGraph _cfg;
         TypeRefContext _typeCtx;
@@ -48,10 +49,16 @@ namespace Pchp.CodeAnalysis.Symbols
             set { _cfg = value; }
         }
 
+        public override TypeRefMask GetResultType(TypeRefContext ctx)
+        {
+            var cfg = this.ControlFlowGraph;
+            return ctx.AddToContext(cfg.FlowContext.TypeRefContext, cfg.ReturnTypeMask);
+        }
+
         #endregion
 
         #region Helpers
-        
+
         /// <summary>
         /// Creates type context for a method within given type, determines naming, type context.
         /// </summary>
@@ -103,15 +110,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public ParameterSymbol ContextParameter
-        {
-            get
-            {
-                Debug.Assert(_params[0] is SpecialParameterSymbol && _params[0].Name == SpecialParameterSymbol.ContextName);
-                return _params[0];
-            }
-        }
-
         public override bool IsExtern => false;
 
         public override bool IsOverride => false;
@@ -132,9 +130,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int ParameterCount => _params.Length;
 
-        public override bool ReturnsVoid => this.ControlFlowGraph.GetReturnTypeMask.IsVoid;
+        public override bool ReturnsVoid => this.ControlFlowGraph.ReturnTypeMask.IsVoid;
 
-        public override TypeSymbol ReturnType => DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.GetReturnTypeMask, false);
+        public override TypeSymbol ReturnType => DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.ReturnTypeMask, false);
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 

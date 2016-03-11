@@ -75,7 +75,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                throw new NotImplementedException();
+                return SourceModule.GlobalNamespace;
             }
         }
 
@@ -229,6 +229,11 @@ namespace Pchp.CodeAnalysis.Symbols
             //}
 
             return null;
+        }
+
+        public override INamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
+        {
+            return SourceModule.SymbolTables.GetType(NameUtils.CreateQualifiedName(fullyQualifiedMetadataName));
         }
     }
 }

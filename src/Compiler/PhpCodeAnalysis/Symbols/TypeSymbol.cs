@@ -24,7 +24,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual INamedTypeSymbol BaseType
+        INamedTypeSymbol ITypeSymbol.BaseType => BaseType;
+
+        public virtual NamedTypeSymbol BaseType
         {
             get
             {

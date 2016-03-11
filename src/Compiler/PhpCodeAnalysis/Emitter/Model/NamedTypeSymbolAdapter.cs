@@ -221,21 +221,19 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
 
-            //Debug.Assert(((Cci.ITypeReference)this).AsTypeDefinition(context) != null);
-            //NamedTypeSymbol baseType = this.BaseTypeNoUseSiteDiagnostics;
+            Debug.Assert(((Cci.ITypeReference)this).AsTypeDefinition(context) != null);
+            NamedTypeSymbol baseType = this.BaseType; // .BaseTypeNoUseSiteDiagnostics;
 
-            //if (this.TypeKind == TypeKind.Submission)
-            //{
-            //    // although submission semantically doesn't have a base we need to emit one into metadata:
-            //    Debug.Assert((object)baseType == null);
-            //    baseType = this.ContainingAssembly.GetSpecialType(Microsoft.CodeAnalysis.SpecialType.System_Object);
-            //}
+            if (this.TypeKind == TypeKind.Submission)
+            {
+                // although submission semantically doesn't have a base we need to emit one into metadata:
+                Debug.Assert((object)baseType == null);
+                baseType = this.ContainingAssembly.GetSpecialType(SpecialType.System_Object);
+            }
 
-            //return ((object)baseType != null) ? moduleBeingBuilt.Translate(baseType,
-            //                                                       syntaxNodeOpt: (CSharpSyntaxNode)context.SyntaxNodeOpt,
-            //                                                       diagnostics: context.Diagnostics) : null;
-
-            return null;
+            return ((object)baseType != null)
+                ? moduleBeingBuilt.Translate(baseType, null /* (SyntaxNode)context.SyntaxNodeOpt */,  context.Diagnostics)
+                : null;
         }
 
         IEnumerable<Cci.IEventDefinition> Cci.ITypeDefinition.Events

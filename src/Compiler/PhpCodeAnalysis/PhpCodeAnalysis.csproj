@@ -53,14 +53,15 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CodeGen\BoundBlock.cs" />
-    <Compile Include="CodeGen\BoundEdge.cs" />
-    <Compile Include="CodeGen\BoundVariable.cs" />
+    <Compile Include="CodeGen\Graph\BoundBlock.cs" />
+    <Compile Include="CodeGen\Graph\BoundEdge.cs" />
+    <Compile Include="CodeGen\Graph\BoundVariable.cs" />
     <Compile Include="CodeGen\CodeGenerator.cs" />
-    <Compile Include="CodeGen\BoundExpression.cs" />
+    <Compile Include="CodeGen\Graph\BoundExpression.cs" />
     <Compile Include="CodeGen\CodeGenerator.Emit.cs" />
     <Compile Include="CodeGen\Places.cs" />
-    <Compile Include="CodeGen\BoundStatement.cs" />
+    <Compile Include="CodeGen\Graph\BoundStatement.cs" />
+    <Compile Include="CodeGen\Symbols\SourceRoutineSymbol.cs" />
     <Compile Include="Compilation\AssemblyIdentityReferenceResolver.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />

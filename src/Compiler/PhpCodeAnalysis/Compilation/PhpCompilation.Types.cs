@@ -41,7 +41,8 @@ namespace Pchp.CodeAnalysis
         protected override INamedTypeSymbol CommonGetTypeByMetadataName(string metadataName)
         {
             return ProbingAssemblies
-                    .SelectMany(a => a.GlobalNamespace.GetTypeMembers(metadataName))
+                    .Select(a => a.GetTypeByMetadataName(metadataName))
+                    .Where(a => a != null)
                     .FirstOrDefault();
         }
 

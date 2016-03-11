@@ -1042,6 +1042,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal TypeAttributes Flags => _flags;
 
+        public override NamedTypeSymbol BaseType => GetDeclaredBaseType(null);
+
         internal NamedTypeSymbol GetDeclaredBaseType(ConsList<Symbol> basesBeingResolved)
         {
             if (ReferenceEquals(_lazyDeclaredBaseType, ErrorTypeSymbol.UnknownResultType))

@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override INamedTypeSymbol BaseType
+        public override NamedTypeSymbol BaseType
         {
             get
             {

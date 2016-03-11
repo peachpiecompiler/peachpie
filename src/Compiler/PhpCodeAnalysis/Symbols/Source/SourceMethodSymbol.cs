@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents a PHP class method.
     /// </summary>
-    internal sealed class SourceMethodSymbol : SourceRoutineSymbol
+    internal sealed partial class SourceMethodSymbol : SourceRoutineSymbol
     {
         readonly SourceNamedTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;

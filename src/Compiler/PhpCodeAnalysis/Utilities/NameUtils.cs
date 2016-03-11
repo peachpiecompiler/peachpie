@@ -34,6 +34,25 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Creates PHP qualified name from CLR type name.
+        /// </summary>
+        /// <param name="clrname">Dot separated CLR name.</param>
+        /// <returns>Qualified name representing a type name.</returns>
+        public static QualifiedName CreateQualifiedName(string clrname)
+        {
+            Name[] ns = Name.EmptyNames;
+            var parts = clrname.Split(new char[] { '.' });
+            if (parts.Length > 1)
+            {
+                ns = new Name[parts.Length - 1];
+                for (int i = 0; i < ns.Length; i++)
+                    ns[i] = new Name(parts[i]);
+            }
+
+            return new QualifiedName(new Name(parts.Last()), ns, true);
+        }
+
+        /// <summary>
         /// Create naming context.
         /// </summary>
         /// <param name="ns">Current namespace declaration. In case it is <c>null</c>, context for global code is created.</param>

@@ -62,6 +62,8 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     static class CoreTypes
     {
+        // TODO: bind to core library instead of static
+
         public static readonly CoreType Context = CoreType.FromName("Context");
         public static readonly CoreType Operators = CoreType.FromName("Operators");
 

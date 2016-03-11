@@ -35,6 +35,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Gets type of return value within this CFG.
         /// </summary>
         /// <remarks>CFG has to be analysed prior to getting this property.</remarks>
-        public TypeRefMask GetReturnTypeMask => (this.Exit.FlowState != null) ? this.Exit.FlowState.GetReturnType() : default(TypeRefMask);
+        public TypeRefMask ReturnTypeMask => (this.Exit.FlowState != null) ? this.Exit.FlowState.GetReturnType() : default(TypeRefMask);
     }
 }

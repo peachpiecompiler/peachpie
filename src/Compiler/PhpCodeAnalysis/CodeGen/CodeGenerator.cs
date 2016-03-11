@@ -213,10 +213,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             _emittingPdb = emittingPdb;
             _emmittedTag = routine.ControlFlowGraph.NewColor();
 
-            _contextPlace = new ParamPlace(routine.ContextParameter);
+            _contextPlace = routine.GetContextPlace();
         }
 
         #endregion
+
+        #region CFG Emitting
 
         /// <summary>
         /// Emits routines body.
@@ -225,8 +227,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
         }
-
-        #region CFG Emitting
 
         internal void GenerateScope(BoundBlock block, int to)
         {
@@ -294,7 +294,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     }
 
     /// <summary>
-    /// Represents an semantic element that can be emitted.
+    /// Represents a semantic element that can be emitted.
     /// </summary>
     internal interface IGenerator
     {
