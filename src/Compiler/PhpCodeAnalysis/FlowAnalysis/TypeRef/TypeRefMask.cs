@@ -43,13 +43,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         [Flags]
         private enum MaskFlags : ulong
         {
-            IsHint = (ulong)1 << (BitsCount - 1),
+            IsRef = (ulong)1 << (BitsCount - 1),
             IncludesSubclasses = (ulong)1 << (BitsCount - 2),
 
             /// <summary>
             /// Mask of all flags.
             /// </summary>
-            Mask = IsHint | IncludesSubclasses
+            Mask = IsRef | IncludesSubclasses
         }
 
         #endregion
@@ -79,15 +79,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsVoid { get { return (_mask & ~(ulong)(MaskFlags.Mask)) == 0; } }
 
         /// <summary>
-        /// Gets or sets value indicating whether the type represents a hint.
+        /// Gets or sets value indicating whether the type represents an alias.
         /// </summary>
-        public bool IsHint
+        public bool IsRef
         {
-            get { return (_mask & (ulong)MaskFlags.IsHint) != 0; }
+            get { return (_mask & (ulong)MaskFlags.IsRef) != 0; }
             set
             {
-                if (value) SetIsHint();
-                else RemoveIsHint();
+                if (value) SetIsRef();
+                else RemoveIsRef();
             }
         }
 
@@ -168,26 +168,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
-        /// Marks this type as a hint.
+        /// Marks this as an aliased value.
         /// </summary>
-        public void SetIsHint()
+        public void SetIsRef()
         {
-            _mask |= (ulong)MaskFlags.IsHint;
+            _mask |= (ulong)MaskFlags.IsRef;
         }
 
         /// <summary>
-        /// Marks this type as not a hint.
+        /// Marks this as not an aliased value.
         /// </summary>
-        public void RemoveIsHint()
+        public void RemoveIsRef()
         {
             if (!this.IsAnyType)
             {
-                _mask &= ~(ulong)MaskFlags.IsHint;
+                _mask &= ~(ulong)MaskFlags.IsRef;
             }
         }
 
         /// <summary>
-        /// Marks this type as a hint.
+        /// Marks this type as it may include subclasses.
         /// </summary>
         public void SetIncludesSubclasses()
         {
@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
-        /// Marks this type as not a hint.
+        /// Marks this type as is does not include subclasses.
         /// </summary>
         internal void RemoveIncludesSubclasses()
         {
@@ -258,9 +258,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             //
-            if (IsHint)
+            if (IsRef)
             {
-                value += " (hint)";
+                value += " (byref)";
             }
 
             //

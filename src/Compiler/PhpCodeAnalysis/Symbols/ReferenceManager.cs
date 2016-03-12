@@ -171,6 +171,7 @@ namespace Pchp.CodeAnalysis
 
                 // set cor types for this compilation
                 compilation.CoreTypes.Update(_lazyPhpCorLibrary);
+                compilation.CoreTypes.Update(_lazyCorLibrary);
             }
         }
     }

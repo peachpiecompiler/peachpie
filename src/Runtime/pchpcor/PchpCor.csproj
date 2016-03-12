@@ -40,6 +40,10 @@
   <ItemGroup>
     <Compile Include="Context.cs" />
     <Compile Include="Operators.cs" />
+    <Compile Include="PhpAlias.cs" />
+    <Compile Include="PhpNumber.cs" />
+    <Compile Include="PhpTypeCode.cs" />
+    <Compile Include="PhpValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />

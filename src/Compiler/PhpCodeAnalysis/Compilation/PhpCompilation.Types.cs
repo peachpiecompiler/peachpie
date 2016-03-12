@@ -11,7 +11,7 @@ namespace Pchp.CodeAnalysis
 {
     partial class PhpCompilation
     {
-        #region CoreTypes
+        #region CoreTypes, CoreMethods, Merging
 
         /// <summary>
         /// Well known types associated with this compilation.
@@ -24,6 +24,18 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public CoreMethods CoreMethods => _coreMethods;
         readonly CoreMethods _coreMethods;
+
+        public CoreType Merge(CoreType first, CoreType second)
+        {
+            Contract.ThrowIfNull(first);
+            Contract.ThrowIfNull(second);
+
+            if (first == second)
+                return first;
+
+            //return CoreTypes.obj
+            throw new NotImplementedException();
+        }
 
         #endregion
 
@@ -63,23 +75,36 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
-        /// Resolves <see cref="INamedTypeSymbol"/> best fitting given type mask.
+        /// Resolves <see cref="TypeSymbol"/> best fitting given type mask.
         /// </summary>
-        internal NamedTypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask, bool isRef)
+        internal NamedTypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask)
         {
-            // TODO: magic - determine best fitting CLR type
-            return (NamedTypeSymbol)this.GetSpecialType(SpecialType.System_Object);
+            if (!typeMask.IsAnyType)
+            {
+                if (typeMask.IsRef)
+                {
+                    // return CoreTypes.PhpAlias;
+                    throw new NotImplementedException();
+                }
+
+                var types = typeCtx.GetTypes(typeMask);
+
+                // TODO: determine best fitting CLR type based on defined PHP types hierarchy
+            }
+
+            //
+            return CoreTypes.Object;
         }
 
         /// <summary>
         /// Resolves <see cref="INamedTypeSymbol"/> best fitting given type mask.
         /// </summary>
-        internal NamedTypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol routine, TypeRefMask typeMask, bool isRef)
+        internal NamedTypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol routine, TypeRefMask typeMask)
         {
             if (routine.ControlFlowGraph.HasFlowState)
             {
                 var ctx = routine.ControlFlowGraph.FlowContext;
-                return this.GetTypeFromTypeRef(ctx.TypeRefContext, typeMask, false);
+                return this.GetTypeFromTypeRef(ctx.TypeRefContext, typeMask);
             }
 
             throw new InvalidOperationException();

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
-    /// Descriptor of a well-known type declared in PchpCor library.
+    /// Descriptor of a well-known type.
     /// </summary>
     [DebuggerDisplay("CoreType {FullName,nq}")]
     sealed class CoreType : IEquatable<CoreType>, IEquatable<TypeSymbol>
@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public CoreType(string fullName)
         {
             Debug.Assert(fullName != null);
-            Debug.Assert(fullName.StartsWith("Pchp.Core."));
+            Debug.Assert(fullName.StartsWith("Pchp.Core.") || fullName.StartsWith("System."));
             this.FullName = fullName;
         }
 
@@ -40,6 +40,11 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(this.Symbol == null);
             this.Symbol = symbol;
         }
+
+        /// <summary>
+        /// Implicit cast to type symbol.
+        /// </summary>
+        public static implicit operator NamedTypeSymbol (CoreType t) => t.Symbol;
 
         #region IEquatable
 
@@ -72,11 +77,16 @@ namespace Pchp.CodeAnalysis.Symbols
     }
 
     /// <summary>
-    /// Set of well-known types declared in PchpCor library.
+    /// Set of well-known types declared in core libraries.
     /// </summary>
     class CoreTypes
     {
         readonly PhpCompilation _compilation;
+
+        public readonly CoreType
+            Context, Operators,
+            PhpNumber, PhpValue, PhpAlias,
+            Object, Long, Double, Boolean;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -84,15 +94,23 @@ namespace Pchp.CodeAnalysis.Symbols
             _compilation = compilation;
             _table = new Dictionary<string, CoreType>();
 
+            this.Object = CreateFromFullName(SpecialTypes.GetMetadataName(SpecialType.System_Object));
+            this.Long = CreateFromFullName(SpecialTypes.GetMetadataName(SpecialType.System_Int64));
+            this.Double = CreateFromFullName(SpecialTypes.GetMetadataName(SpecialType.System_Double));
+            this.Boolean = CreateFromFullName(SpecialTypes.GetMetadataName(SpecialType.System_Boolean));
+            this.PhpNumber = Create("PhpNumber");
+            this.PhpAlias = Create("PhpAlias");
+            this.PhpValue = Create("PhpValue");
             this.Context = Create("Context");
             this.Operators = Create("Operators");
         }
 
-        public readonly CoreType Context;
-        public readonly CoreType Operators;
-
         #region Table of types
 
+        readonly Dictionary<string, CoreType> _table;
+        readonly Dictionary<TypeSymbol, CoreType> _typetable = new Dictionary<TypeSymbol, CoreType>();
+        readonly Dictionary<SpecialType, CoreType> _specialTypes = new Dictionary<SpecialType, CoreType>();
+        
         CoreType Create(string name) => CreateFromFullName("Pchp.Core." + name);
 
         CoreType CreateFromFullName(string fullName)
@@ -104,8 +122,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return type;
         }
 
-        readonly Dictionary<string, CoreType> _table;
-
         /// <summary>
         /// Gets well-known core type by its full CLR name.
         /// </summary>
@@ -113,6 +129,26 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             CoreType t;
             _table.TryGetValue(fullName, out t);
+            return t;
+        }
+
+        /// <summary>
+        /// Gets well-known core type by associated symbol.
+        /// </summary>
+        public CoreType GetTypeFromSymbol(TypeSymbol symbol)
+        {
+            CoreType t;
+            _typetable.TryGetValue(symbol, out t);
+            return t;
+        }
+
+        /// <summary>
+        /// Gets special core type.
+        /// </summary>
+        public CoreType GetSpecialType(SpecialType type)
+        {
+            CoreType t;
+            _specialTypes.TryGetValue(type, out t);
             return t;
         }
 
@@ -131,6 +167,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 t = GetTypeFromMetadataName(MetadataHelpers.BuildQualifiedName(symbol.NamespaceName, symbol.Name));
                 if (t != null)
                 {
+                    _typetable[symbol] = t;
                     t.Update(symbol);
                 }
             }
@@ -145,9 +182,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var t in _table.Values)
             {
-                var symbol = coreass.GetTypeByMetadataName(t.FullName);
-                if (symbol != null)
-                    t.Update(symbol);
+                if (t.Symbol == null)
+                {
+                    var symbol = coreass.GetTypeByMetadataName(t.FullName);
+                    if (symbol != null)
+                    {
+                        _typetable[symbol] = t;
+                        t.Update(symbol);
+
+                        if (symbol.SpecialType != SpecialType.None)
+                            _specialTypes[symbol.SpecialType] = t;
+                    }
+                }
             }
         }
 

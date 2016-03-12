@@ -126,7 +126,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public bool IsFunctionValue => false;
 
-        public virtual ITypeSymbol Type => DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetLocalTypeMask(this), false);
+        public virtual ITypeSymbol Type => DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetLocalTypeMask(this));
 
         public bool IsImportedFromMetadata => false;
 

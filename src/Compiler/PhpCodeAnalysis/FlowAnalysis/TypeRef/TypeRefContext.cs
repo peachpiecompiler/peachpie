@@ -242,7 +242,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             //
-            result.IsHint = mask.IsHint;
+            result.IsRef = mask.IsRef;
             result.IncludesSubclasses = mask.IncludesSubclasses;
 
             //
@@ -541,7 +541,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             //
-            result.IsHint = elementType.IsHint;
+            result.IsRef = elementType.IsRef;
             return result;
         }
 

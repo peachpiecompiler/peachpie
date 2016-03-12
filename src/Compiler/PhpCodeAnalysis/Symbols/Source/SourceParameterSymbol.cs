@@ -49,7 +49,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 return (TypeSymbol)((IsThis)
                     ? ContainingType // TODO: "?? AnyType" in case of $this in global scope
-                    : DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetParamTypeMask(this), false));
+                    : DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetParamTypeMask(this)));
             }
         }
 

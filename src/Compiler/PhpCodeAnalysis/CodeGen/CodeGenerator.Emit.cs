@@ -23,14 +23,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             _contextPlace.EmitLoad(_il);
         }
 
-        /// <summary>
-        /// Emit cast from one type to another.
-        /// </summary>
-        public void EmitCast(INamedTypeSymbol from, INamedTypeSymbol to)
-        {
-            throw new NotImplementedException();
-        }
-
         public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint)
         {
             if (from.SpecialType != SpecialType.System_Boolean)
@@ -56,6 +48,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             // specialized conversions:
             switch (to.SpecialType)
             {
+                case SpecialType.System_Void:
+                    if (from.SpecialType != SpecialType.System_Void)
+                        _il.EmitOpCode(ILOpCode.Pop, -1);
+                    return;
                 case SpecialType.System_Boolean:
                     EmitConvertToBool(from, fromHint);
                     return;
@@ -65,10 +61,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             throw new NotSupportedException();
         }
 
-        public void EmitBranch(ILOpCode code, BoundBlock label)
-        {
-            IL.EmitBranch(code, label);
-        }
+        public void EmitBranch(ILOpCode code, BoundBlock label) => _il.EmitBranch(code, label);
 
         public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
 

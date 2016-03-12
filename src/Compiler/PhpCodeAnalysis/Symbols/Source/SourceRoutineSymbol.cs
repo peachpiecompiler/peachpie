@@ -127,7 +127,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool ReturnsVoid => this.ControlFlowGraph.ReturnTypeMask.IsVoid;
 
-        public override TypeSymbol ReturnType => DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.ReturnTypeMask, false);
+        public override TypeSymbol ReturnType => DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.ReturnTypeMask);
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 
