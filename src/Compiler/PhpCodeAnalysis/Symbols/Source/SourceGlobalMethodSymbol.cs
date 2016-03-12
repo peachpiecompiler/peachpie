@@ -20,11 +20,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SourceFileSymbol _file;
 
         public SourceGlobalMethodSymbol(SourceFileSymbol file)
-            :base(new Signature(false, new FormalParam[0]))
         {
             Contract.ThrowIfNull(file);
 
             _file = file;
+            _params = BuildParameters(new Signature(false, new FormalParam[0])).ToImmutableArray();
         }
 
         public override string Name => GlobalRoutineName;

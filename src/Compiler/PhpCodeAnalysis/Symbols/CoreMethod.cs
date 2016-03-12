@@ -100,12 +100,25 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Set of well-known methods declared in PchpCor library.
     /// </summary>
-    static class CoreMethods
+    class CoreMethods
     {
-        public struct Operators
+        public readonly OperatorsHolder Operators;
+
+        public CoreMethods(CoreTypes types)
         {
-            public static readonly CoreMethod Equal_Object_Object = CoreTypes.Operators.Method(
-                "Equal", SpecialType.System_Object, SpecialType.System_Object);
+            Contract.ThrowIfNull(types);
+
+            Operators = new OperatorsHolder(types);
+        }
+
+        public struct OperatorsHolder
+        {
+            public OperatorsHolder(CoreTypes coretypes)
+            {
+                Equal_Object_Object = coretypes.Operators.Method("Equal", SpecialType.System_Object, SpecialType.System_Object);
+            }
+
+            public readonly CoreMethod Equal_Object_Object;
         }
     }
 }

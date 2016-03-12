@@ -12,11 +12,8 @@ namespace Pchp.CodeAnalysis.Symbols
     /// Descriptor of a well-known type declared in PchpCor library.
     /// </summary>
     [DebuggerDisplay("CoreType {FullName,nq}")]
-    class CoreType : IEquatable<CoreType>
+    sealed class CoreType : IEquatable<CoreType>, IEquatable<TypeSymbol>
     {
-        internal static CoreType FromFullName(string fullName) => new CoreType(fullName);
-        internal static CoreType FromName(string name) => FromFullName("Pchp.Core." + name);
-
         public CoreMethod Method(string name, params SpecialType[] ptypes) => new CoreMethod(this, name, ptypes);
 
         /// <summary>
@@ -35,9 +32,6 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(fullName != null);
             Debug.Assert(fullName.StartsWith("Pchp.Core."));
             this.FullName = fullName;
-
-            //
-            CoreTypes.RegisterCoreType(this);
         }
 
         internal void Update(NamedTypeSymbol symbol)
@@ -47,12 +41,32 @@ namespace Pchp.CodeAnalysis.Symbols
             this.Symbol = symbol;
         }
 
-        #region IEquatable<CoreType>
+        #region IEquatable
+
+        //public override bool Equals(object obj)
+        //{
+        //    return base.Equals(obj);
+        //}
 
         bool IEquatable<CoreType>.Equals(CoreType other)
         {
             return object.ReferenceEquals(this, other);
         }
+
+        bool IEquatable<TypeSymbol>.Equals(TypeSymbol other)
+        {
+            return this.Symbol == other;
+        }
+
+        //public static bool operator ==(TypeSymbol s, CoreType t)
+        //{
+        //    return ((IEquatable<TypeSymbol>)t).Equals(s);
+        //}
+
+        //public static bool operator !=(TypeSymbol s, CoreType t)
+        //{
+        //    return !((IEquatable<TypeSymbol>)t).Equals(s);
+        //}
 
         #endregion
     }
@@ -60,30 +74,42 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Set of well-known types declared in PchpCor library.
     /// </summary>
-    static class CoreTypes
+    class CoreTypes
     {
-        // TODO: bind to core library instead of static
+        readonly PhpCompilation _compilation;
 
-        public static readonly CoreType Context = CoreType.FromName("Context");
-        public static readonly CoreType Operators = CoreType.FromName("Operators");
+        public CoreTypes(PhpCompilation compilation)
+        {
+            Contract.ThrowIfNull(compilation);
+            _compilation = compilation;
+            _table = new Dictionary<string, CoreType>();
+
+            this.Context = Create("Context");
+            this.Operators = Create("Operators");
+        }
+
+        public readonly CoreType Context;
+        public readonly CoreType Operators;
 
         #region Table of types
 
-        static Dictionary<string, CoreType> _table;
-        internal static void RegisterCoreType(CoreType t)
+        CoreType Create(string name) => CreateFromFullName("Pchp.Core." + name);
+
+        CoreType CreateFromFullName(string fullName)
         {
-            Contract.ThrowIfNull(t);
+            var type = new CoreType(fullName);
 
-            if (_table == null)
-                _table = new Dictionary<string, CoreType>();
+            _table.Add(fullName, type);
 
-            _table.Add(t.FullName, t);
+            return type;
         }
+
+        readonly Dictionary<string, CoreType> _table;
 
         /// <summary>
         /// Gets well-known core type by its full CLR name.
         /// </summary>
-        public static CoreType GetTypeFromMetadataName(string fullName)
+        public CoreType GetTypeFromMetadataName(string fullName)
         {
             CoreType t;
             _table.TryGetValue(fullName, out t);
@@ -93,7 +119,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets well-known core type by its full CLR name.
         /// </summary>
-        internal static CoreType Update(PENamedTypeSymbol symbol)
+        internal CoreType Update(PENamedTypeSymbol symbol)
         {
             CoreType t = null;
 
@@ -111,6 +137,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             return t;
+        }
+
+        internal void Update(AssemblySymbol coreass)
+        {
+            Contract.ThrowIfNull(coreass);
+
+            foreach (var t in _table.Values)
+            {
+                var symbol = coreass.GetTypeByMetadataName(t.FullName);
+                if (symbol != null)
+                    t.Update(symbol);
+            }
         }
 
         #endregion

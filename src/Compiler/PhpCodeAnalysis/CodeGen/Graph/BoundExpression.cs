@@ -36,7 +36,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (ltype.SpecialType == SpecialType.System_Object && rtype.SpecialType == SpecialType.System_Object)
                     {
                         il.IL.EmitOpCode(ILOpCode.Call, stackAdjustment: -1);    // 2 out, 1 return value on
-                        il.IL.EmitToken(CoreMethods.Operators.Equal_Object_Object.Symbol, null, il.Diagnostics);
+                        il.IL.EmitToken(il.CoreMethods.Operators.Equal_Object_Object.Symbol, null, il.Diagnostics);
                     }
                     else
                     {

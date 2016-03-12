@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal virtual NamedTypeSymbol GetDeclaredSpecialType(SpecialType type)
         {
             // TODO: cache SpecialType
-            return (NamedTypeSymbol)CorLibrary.GetTypeByMetadataName(type.GetMetadataName());
+            return CorLibrary.GetTypeByMetadataName(type.GetMetadataName());
         }
 
         /// <summary>
@@ -152,9 +152,12 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
-        public virtual INamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
+        INamedTypeSymbol IAssemblySymbol.GetTypeByMetadataName(string fullyQualifiedMetadataName)
+            => (NamedTypeSymbol)GetTypeByMetadataName(fullyQualifiedMetadataName);
+
+        public virtual NamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
         {
-            return this.GlobalNamespace.GetTypeMembers(fullyQualifiedMetadataName).FirstOrDefault();
+            return (NamedTypeSymbol)this.GlobalNamespace.GetTypeMembers(fullyQualifiedMetadataName).FirstOrDefault();
         }
 
         public virtual bool GivesAccessTo(IAssemblySymbol toAssembly)

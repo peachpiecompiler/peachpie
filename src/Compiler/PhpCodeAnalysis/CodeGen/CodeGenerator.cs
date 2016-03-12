@@ -192,6 +192,21 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public bool IsDebug => _optimizations == OptimizationLevel.Debug;
 
+        /// <summary>
+        /// Gets a reference to compilation object.
+        /// </summary>
+        public PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
+
+        /// <summary>
+        /// Well known types.
+        /// </summary>
+        public CoreTypes CoreTypes => DeclaringCompilation.CoreTypes;
+
+        /// <summary>
+        /// Well known methods.
+        /// </summary>
+        public CoreMethods CoreMethods => DeclaringCompilation.CoreMethods;
+
         #endregion
 
         #region Construction

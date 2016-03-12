@@ -231,7 +231,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
-        public override INamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
+        public override NamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
         {
             return SourceModule.SymbolTables.GetType(NameUtils.CreateQualifiedName(fullyQualifiedMetadataName));
         }

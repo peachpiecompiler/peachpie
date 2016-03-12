@@ -168,6 +168,9 @@ namespace Pchp.CodeAnalysis
 
                 // recursively initialize references of referenced modules
                 SetReferencesOfReferencedModules(compilation.Options.MetadataReferenceResolver, refmodules);
+
+                // set cor types for this compilation
+                compilation.CoreTypes.Update(_lazyPhpCorLibrary);
             }
         }
     }

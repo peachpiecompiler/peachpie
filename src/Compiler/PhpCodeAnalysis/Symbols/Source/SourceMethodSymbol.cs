@@ -21,13 +21,13 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly MethodDecl/*!*/_syntax;
         
         public SourceMethodSymbol(SourceNamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
-            :base(syntax.Signature)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(syntax);
 
             _type = type;
             _syntax = syntax;
+            _params = BuildParameters(syntax.Signature).AsImmutable();
         }
 
         internal override AstNode Syntax => _syntax;

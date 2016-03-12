@@ -87,22 +87,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
 
-        readonly protected ImmutableArray<ParameterSymbol> _params;
-
-        public SourceRoutineSymbol(Signature signature)
-        {
-            _params = BuildParameters(signature).ToImmutableArray();
-        }
+        protected ImmutableArray<ParameterSymbol> _params;
 
         /// <summary>
         /// Builds CLR method parameters.
         /// </summary>
         /// <remarks>(Context, arg1, arg2, ...)</remarks>
-        IEnumerable<ParameterSymbol> BuildParameters(Signature signature)
+        protected virtual IEnumerable<ParameterSymbol> BuildParameters(Signature signature)
         {
             int index = 0;
 
-            yield return new SpecialParameterSymbol(this, CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
 
             foreach (var p in signature.FormalParams)
             {

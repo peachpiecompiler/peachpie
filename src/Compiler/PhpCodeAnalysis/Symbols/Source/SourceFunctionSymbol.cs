@@ -21,12 +21,12 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly FunctionDecl _syntax;
 
         public SourceFunctionSymbol(SourceFileSymbol file, FunctionDecl syntax)
-            :base(syntax.Signature)
         {
             Contract.ThrowIfNull(file);
 
             _file = file;
             _syntax = syntax;
+            _params = BuildParameters(syntax.Signature).AsImmutable();
         }
 
         internal override AstNode Syntax => _syntax;

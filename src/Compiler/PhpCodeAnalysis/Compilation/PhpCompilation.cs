@@ -100,6 +100,8 @@ namespace Pchp.CodeAnalysis
             _options = options;
             _referenceManager = new ReferenceManager();
             _tables = new SourceDeclarations();
+            _coreTypes = new CoreTypes(this);
+            _coreMethods = new CoreMethods(_coreTypes);
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences

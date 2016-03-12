@@ -11,12 +11,28 @@ namespace Pchp.CodeAnalysis
 {
     partial class PhpCompilation
     {
+        #region CoreTypes
+
+        /// <summary>
+        /// Well known types associated with this compilation.
+        /// </summary>
+        public CoreTypes CoreTypes => _coreTypes;
+        readonly CoreTypes _coreTypes;
+
+        /// <summary>
+        /// Well known methods associated with this compilation.
+        /// </summary>
+        public CoreMethods CoreMethods => _coreMethods;
+        readonly CoreMethods _coreMethods;
+
+        #endregion
+
         internal NamedTypeSymbol GetWellKnownType(WellKnownType id)
         {
             var name = id.GetMetadataName();
             if (name != null && this.CorLibrary != null)
             {
-                return (NamedTypeSymbol)this.CorLibrary.GetTypeByMetadataName(name);
+                return this.CorLibrary.GetTypeByMetadataName(name);
             }
 
             return null;

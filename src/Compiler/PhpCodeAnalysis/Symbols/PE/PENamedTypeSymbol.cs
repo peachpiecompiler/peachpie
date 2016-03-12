@@ -278,11 +278,6 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SpecialType _corTypeId;
 
         /// <summary>
-        /// In case of a PchpCor library type, gets associated cor type ID.
-        /// </summary>
-        readonly CoreType _phpCorType;
-
-        /// <summary>
         /// A set of all the names of the members in this type.
         /// We can get names without getting members (which is a more expensive operation)
         /// </summary>
@@ -370,9 +365,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 _corTypeId = SpecialType.None;
             }
 
-            // check Php COR library type
-            _phpCorType = CoreTypes.Update(this);
-            
             //if (makeBad)
             //{
             //    _lazyUseSiteDiagnostic = new CSDiagnosticInfo(ErrorCode.ERR_BogusType, this);
@@ -424,8 +416,6 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override SpecialType SpecialType => _corTypeId;
-
-        public override CoreType PhpCoreType => _phpCorType;
 
         public override string Name => _name;
 
