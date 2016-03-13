@@ -45,9 +45,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (p.Syntax.PassedByRef)
                     state.SetVarRef(p.Name);
 
-            //// get PHPDoc block for routine
-            //var phpdoc = routine.Element.GetProperty<PHPDocBlock>();
-
             // mark $this as initialized
             // mark global variables as ByRef, used
             // mark function parameters as used, initialized, typed
@@ -63,8 +60,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
                     case VariableKind.Parameter:
                         //state.SetVarUsed(i);
-                        //var paramtag = TypeRef.Helpers.PHPDoc.GetParamTag(phpdoc, paramIdx, locals[i].Name);
-                        state.SetVar(i, GetParamType(typeCtx, null, parameters[paramIdx].Syntax, default(CallInfo), paramIdx));
+                        var paramtag = PHPDoc.GetParamTag(routine.PHPDocBlock, paramIdx, locals[i].Name);
+                        state.SetVar(i, GetParamType(typeCtx, paramtag, parameters[paramIdx].Syntax, default(CallInfo), paramIdx));
                         paramIdx++;
                         break;
                     //case VariableKind.UseParameter:
@@ -75,6 +72,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
                     case VariableKind.StaticVariable:
                         state.SetVarInitialized(i);
+                        break;
+                    case VariableKind.ReturnVariable:
+                        InitReturn(flowCtx, state, routine.PHPDocBlock);
                         break;
                 }
             }
@@ -94,6 +94,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             initialState.SetVarUsed(varIndex);
             initialState.SetVar(varIndex, thisVarType);
+        }
+
+        /// <summary>
+        /// Sets the initial routine return type.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="initialState"></param>
+        /// <param name="phpdoc"></param>
+        static void InitReturn(FlowContext/*!*/ctx, FlowState/*!*/initialState, PHPDocBlock phpdoc)
+        {
+            Debug.Assert(ctx.ReturnVarIndex >= 0);
+            if (phpdoc != null)
+            {
+                var returnTag = phpdoc.Returns;
+                if (returnTag != null && returnTag.TypeNamesArray.Length != 0)
+                {
+                    initialState.SetVar(ctx.ReturnVarIndex, PHPDoc.GetTypeMask(ctx.TypeRefContext, returnTag.TypeNamesArray));
+                }
+            }
         }
 
         /// <summary>
@@ -134,9 +153,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 result = call.GetParamType(typeCtx, paramIndex);
                 if (result.IsUninitialized)
                 {
-                    //// lookup PHPDoc
-                    //if (paramTag != null && paramTag.TypeNamesArray.Length != 0)
-                    //    result = TypeRef.Helpers.PHPDoc.GetTypeMask(typeCtx, paramTag.TypeNamesArray);
+                    // lookup PHPDoc
+                    if (paramTag != null && paramTag.TypeNamesArray.Length != 0)
+                        result = PHPDoc.GetTypeMask(typeCtx, paramTag.TypeNamesArray);
 
                     if (result.IsUninitialized)
                     {

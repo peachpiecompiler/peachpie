@@ -27,7 +27,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (from.SpecialType != SpecialType.System_Boolean)
             {
-                throw new NotImplementedException();
+                switch (from.SpecialType)
+                {
+                    case SpecialType.System_Int32: break; // nop
+                    case SpecialType.System_Int64:
+                        _il.EmitNumericConversion(Microsoft.Cci.PrimitiveTypeCode.Int64, Microsoft.Cci.PrimitiveTypeCode.Int32, false);
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
             }
         }
 
@@ -172,6 +180,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Double:
                     method = CoreMethods.Operators.Echo_Double.Symbol;
                     break;
+                case SpecialType.System_Int64:
+                    method = CoreMethods.Operators.Echo_Long.Symbol;
+                    break;
                 default:
                     if (type == CoreTypes.PhpNumber)
                     {
@@ -198,6 +209,43 @@ namespace Pchp.CodeAnalysis.CodeGen
             //
             _il.EmitOpCode(ILOpCode.Call, stackAdjustment: -2); // - <ctx> - <expr>
             _il.EmitToken(method, null, this.Diagnostics);
+        }
+
+        public void EmitReturnDefault()
+        {
+            // return default(RETURN_TYPE);
+
+            var return_type = this.Routine.ReturnType;
+            switch (return_type.SpecialType)
+            {
+                case SpecialType.System_Void:
+                    break;
+                case SpecialType.System_Double:
+                    _il.EmitDoubleConstant(0.0);
+                    break;
+                case SpecialType.System_Int64:
+                    _il.EmitLongConstant(0);
+                    break;
+                case SpecialType.System_Boolean:
+                    _il.EmitBoolConstant(false);
+                    break;
+                case SpecialType.System_String:
+                    _il.EmitStringConstant(string.Empty);
+                    break;
+                default:
+                    if (return_type.IsReferenceType)
+                    {
+                        _il.EmitNullConstant();
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();    // default(T)
+                    }
+                    break;
+            }
+
+            //
+            _il.EmitRet(return_type.SpecialType == SpecialType.System_Void);
         }
     }
 }

@@ -117,6 +117,9 @@ namespace Pchp.CodeAnalysis
                     var tdesc = GetTypeFromTypeRef(types[i]);
                     result = Merge(result, GetTypeFromTypeRef(types[i]));
                 }
+
+                //
+                return result;
             }
 
             // most common type

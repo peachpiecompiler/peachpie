@@ -71,6 +71,7 @@
     <Compile Include="FlowAnalysis\Graph\BoundBlock.cs" />
     <Compile Include="FlowAnalysis\Graph\ControlFlowGraph.cs" />
     <Compile Include="FlowAnalysis\IFlowState.cs" />
+    <Compile Include="FlowAnalysis\PHPDoc.cs" />
     <Compile Include="FlowAnalysis\StateBinder.cs" />
     <Compile Include="FlowAnalysis\TypeRef\CallInfo.cs" />
     <Compile Include="FlowAnalysis\TypeRef\ITypeRef.cs" />

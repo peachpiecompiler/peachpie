@@ -67,4 +67,27 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitExpressionStatement(this, argument);
     }
+
+    /// <summary>
+    /// return <c>optional</c>;
+    /// </summary>
+    public sealed partial class BoundReturnStatement : BoundStatement, IReturnStatement
+    {
+        public override OperationKind Kind => OperationKind.ReturnStatement;
+
+        IExpression IReturnStatement.Returned => Returned;
+
+        BoundExpression Returned { get; set; }
+
+        public BoundReturnStatement(BoundExpression returned)
+        {
+            this.Returned = returned;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitReturnStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitReturnStatement(this, argument);
+    }
 }

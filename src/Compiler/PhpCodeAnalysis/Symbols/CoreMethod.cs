@@ -122,12 +122,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_PhpValue = ct.Context.Method("Echo", ct.PhpValue);
                 Echo_Object = ct.Context.Method("Echo", ct.Object);
                 Echo_Double = ct.Context.Method("Echo", ct.Double);
+                Echo_Long = ct.Context.Method("Echo", ct.Long);
             }
 
             public readonly CoreMethod
                 Equal_Object_Object,
                 PhpAlias_GetValue,
-                Echo_Object, Echo_String, Echo_PhpNumber, Echo_PhpValue, Echo_Double;
+                Echo_Object, Echo_String, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long;
         }
     }
 }

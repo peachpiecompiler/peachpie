@@ -233,7 +233,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override NamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
         {
-            return SourceModule.SymbolTables.GetType(NameUtils.CreateQualifiedName(fullyQualifiedMetadataName));
+            return SourceModule.SymbolTables.GetType(NameUtils.MakeQualifiedName(fullyQualifiedMetadataName, true));
         }
     }
 }

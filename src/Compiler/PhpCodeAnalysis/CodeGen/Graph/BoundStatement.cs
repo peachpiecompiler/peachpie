@@ -26,4 +26,39 @@ namespace Pchp.CodeAnalysis.Semantics
             il.EmitPop(this.Expression.Emit(il));
         }
     }
+
+    partial class BoundReturnStatement
+    {
+        internal override void Emit(CodeGenerator il)
+        {
+            if (this.Returned == null)
+            {
+                if (il.Routine.ReturnsVoid)
+                {
+                    // return;
+                    il.Builder.EmitRet(true);
+                }
+                else
+                {
+                    // return <default>;
+                    il.EmitReturnDefault();
+                }
+            }
+            else
+            {
+                if (il.Routine.ReturnsVoid)
+                {
+                    // <expr>;
+                    // return;
+                    il.EmitPop(this.Returned.Emit(il));
+                }
+                else
+                {
+                    // return (T)<expr>;
+                    il.EmitConvert(this.Returned, il.Routine.ReturnType);
+                    il.Builder.EmitRet(false);
+                }
+            }
+        }
+    }
 }

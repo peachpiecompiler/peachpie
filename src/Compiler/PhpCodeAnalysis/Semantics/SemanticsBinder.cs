@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -52,8 +53,22 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters)));
             if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, AccessType.None));
+            if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
 
             throw new NotImplementedException(stmt.GetType().FullName);
+        }
+
+        BoundStatement BindJumpStmt(AST.JumpStmt stmt)
+        {
+            if (stmt.Type == AST.JumpStmt.Types.Return)
+            {
+                return new BoundReturnStatement(
+                    (stmt.Expression != null)
+                        ? BindExpression(stmt.Expression, AccessType.Read)   // ReadRef in case routine returns an aliased value
+                        : null);
+            }
+
+            throw ExceptionUtilities.Unreachable;
         }
 
         public BoundExpression BindExpression(AST.Expression expr, AccessType access = AccessType.Read)

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.Syntax.AST;
+using Pchp.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -72,6 +73,8 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IList<Statement> Statements => _file.Syntax.Statements;
 
         internal override AstNode Syntax => _file.Syntax;
+
+        internal override PHPDocBlock PHPDocBlock => null;
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 

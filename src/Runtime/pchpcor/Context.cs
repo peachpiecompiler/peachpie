@@ -43,6 +43,11 @@ namespace Pchp.Core
 
         }
 
+        public void Echo(long value)
+        {
+
+        }
+
         #endregion
     }
 }

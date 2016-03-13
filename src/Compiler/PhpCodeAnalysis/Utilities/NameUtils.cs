@@ -34,22 +34,46 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
-        /// Creates PHP qualified name from CLR type name.
+        /// Make QualifiedName from the string like AAA\BBB\XXX
         /// </summary>
-        /// <param name="clrname">Dot separated CLR name.</param>
-        /// <returns>Qualified name representing a type name.</returns>
-        public static QualifiedName CreateQualifiedName(string clrname)
+        /// <returns>Qualified name.</returns>
+        public static QualifiedName MakeQualifiedName(string name, bool fullyQualified)
         {
-            Name[] ns = Name.EmptyNames;
-            var parts = clrname.Split(new char[] { '.' });
-            if (parts.Length > 1)
+            if (string.IsNullOrEmpty(name))
+                return new QualifiedName(Name.EmptyBaseName);
+
+            // fully qualified
+            if (name[0] == QualifiedName.Separator)
             {
-                ns = new Name[parts.Length - 1];
-                for (int i = 0; i < ns.Length; i++)
-                    ns[i] = new Name(parts[i]);
+                name = name.Substring(1);
+                fullyQualified = true;
             }
 
-            return new QualifiedName(new Name(parts.Last()), ns, true);
+            // parse name
+            Name[] namespaces;
+
+            int to = name.IndexOf(QualifiedName.Separator);
+            if (to < 0)
+            {
+                namespaces = Name.EmptyNames;
+            }
+            else
+            {
+                int from = 0;
+                List<Name> namespacesList = new List<Name>(4);
+                do
+                {
+                    string part = name.Substring(from, to - from);
+                    namespacesList.Add(new Name(part));
+                    from = to + 1;
+                } while ((to = name.IndexOf(QualifiedName.Separator, from)) > 0);
+
+                name = name.Substring(from);
+                namespaces = namespacesList.ToArray();
+            }
+
+            // create QualifiedName
+            return new QualifiedName(new Name(name), namespaces, fullyQualified);
         }
 
         /// <summary>
@@ -111,6 +135,54 @@ namespace Pchp.CodeAnalysis
         public static bool IsEmpty(this QualifiedName qname)
         {
             return qname.IsSimpleName && string.IsNullOrEmpty(qname.Name.Value);
+        }
+
+        /// <summary>
+        /// Gets variable name without leading <c>$</c>.
+        /// </summary>
+        /// <param name="varname">String in form of <c>$varname</c> or <c>$GLOBALS['varname']</c> or <c>'varname'</c></param>
+        /// <returns>Variable name without leading <c>$</c> or <c>null</c>.</returns>
+        public static string AsVarName(string varname)
+        {
+            if (varname != null && varname.Length != 0)
+            {
+                if (varname[0] == '$')
+                {
+                    // $varname
+                    varname = varname.Substring(1);
+                }
+
+                if (varname.Length != 0)
+                {
+                    var lbrace = varname.IndexOf('[');
+                    if (lbrace >= 0)
+                    {
+                        if (varname.StartsWith("GLOBALS", StringComparison.OrdinalIgnoreCase) || varname.StartsWith("_GLOBALS", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // GLOBALS['varname']
+                            // _GLOBALS['varname']
+                            var rbrace = varname.IndexOf(']', lbrace + 1);
+                            if (rbrace >= 0)
+                            {
+                                varname = varname.Substring(lbrace + 1, rbrace - lbrace - 2).Trim();
+                                if (varname.Length > 2 &&
+                                    varname[0] == varname[varname.Length - 1] &&
+                                    (varname[0] == '\'' || varname[0] == '"'))
+                                {
+                                    return varname.Substring(1, varname.Length - 2);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return varname;
+                    }
+                }
+            }
+
+            //
+            return null;
         }
 
         /// <summary>

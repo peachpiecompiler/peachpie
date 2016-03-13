@@ -65,11 +65,11 @@ namespace Pchp.Syntax
             {
                 // initilize dictionary of known tags and their factories:
                 elementFactories = new Dictionary<string, Func<string, string, Element>>(20, StringComparer.OrdinalIgnoreCase);
-                var types = typeof(PHPDocBlock).GetTypeInfo().DeclaredNestedTypes.Where(t => t.IsPublic);
+                var types = typeof(PHPDocBlock).GetTypeInfo().DeclaredNestedTypes.Where(t => t.IsNestedPublic && !t.IsAbstract);
                 var eltype = typeof(Element).GetTypeInfo();
                 foreach (var t in types)
                 {
-                    if (t.IsSealed && !t.IsAbstract && eltype.IsAssignableFrom(t))
+                    if (t.IsSealed && eltype.IsAssignableFrom(t))
                     {
                         // add to the dictionary according to its Name:
                         var fld = t.GetDeclaredField("Name");

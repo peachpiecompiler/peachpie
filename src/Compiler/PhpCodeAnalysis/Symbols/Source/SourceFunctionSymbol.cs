@@ -9,6 +9,7 @@ using Pchp.CodeAnalysis.Semantics;
 using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -32,6 +33,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ParameterSymbol ThisParameter => null;
 
         internal override AstNode Syntax => _syntax;
+
+        internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
 
         internal override IList<Statement> Statements => _syntax.Body;
 

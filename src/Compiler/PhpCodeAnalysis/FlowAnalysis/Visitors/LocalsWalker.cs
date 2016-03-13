@@ -21,13 +21,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         {
             public VariableName Name;
             public VariableKind Kind;
-            public Expression Initializer;
+            public Expression Expression;
 
-            public VisitLocalArgs(VariableName name, VariableKind kind, Expression initializer)
+            public VisitLocalArgs(VariableName name, VariableKind kind, Expression expression)
             {
                 this.Name = name;
                 this.Kind = kind;
-                this.Initializer = initializer;
+                this.Expression = expression;
             }
         }
 
@@ -192,7 +192,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         {
             if (x.Type == JumpStmt.Types.Return && x.Expression != null)
             {
-                AddVar(new VariableName(SourceReturnSymbol.SpecialName), x.Span, VariableKind.ReturnVariable);
+                AddVar(new VariableName(SourceReturnSymbol.SpecialName), x.Span, VariableKind.ReturnVariable, x.Expression);
             }
 
             base.VisitJumpStmt(x);
@@ -244,8 +244,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                         break;
                     case VariableKind.StaticVariable:
                         var boundstatic = new BoundStaticLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind), null);
-                        if (e.Initializer != null)
-                            boundstatic.Update(this.SemanticBinder.BindExpression(e.Initializer));
+                        if (e.Expression != null)
+                            boundstatic.Update(this.SemanticBinder.BindExpression(e.Expression));
                         
                         _locals.Add(boundstatic);
                         break;

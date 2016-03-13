@@ -83,6 +83,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Gets routine declaration syntax.
         /// </summary>
         internal abstract AstNode Syntax { get; }
+        
+        /// <summary>
+        /// Optionaly gets routines PHP doc block.
+        /// </summary>
+        internal abstract Syntax.PHPDocBlock PHPDocBlock { get; }
 
         /// <summary>
         /// Reference to a containing file symbol.

@@ -33,6 +33,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _routine;
 
+        internal override PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
+
         internal override IModuleSymbol ContainingModule => _routine.ContainingModule;
 
         public override INamedTypeSymbol ContainingType => _routine.ContainingType;
