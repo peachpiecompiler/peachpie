@@ -46,17 +46,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case (BinaryKind)BinaryPhpOperationKind.OperatorConditionalXor:
-
-                    //// LOAD <(bool) leftSon> == <(bool) rightSon>;
-                    //codeGenerator.EmitConversion(node.LeftExpr, PhpTypeCode.Boolean);
-                    //codeGenerator.EmitConversion(node.RightExpr, PhpTypeCode.Boolean);
-                    //codeGenerator.IL.Emit(OpCodes.Ceq);
-
-                    //codeGenerator.IL.Emit(OpCodes.Ldc_I4_0);
-                    //codeGenerator.IL.Emit(OpCodes.Ceq);
-
-                    //returned_typecode = PhpTypeCode.Boolean;
-                    //break;
+                    returned_type = EmitBinaryXor(il);
+                    break;
 
                 case BinaryKind.OperatorAnd:
                     //returned_typecode = EmitBitOperation(node, codeGenerator, Operators.BitOp.And);
@@ -98,9 +89,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits binary boolean operation (AND or OR).
         /// </summary>
-        /// <param name="node">Instance.</param>
         /// <param name="codeGenerator">A code generator.</param>
-        /// <param name="isAnd">Whether to emit AND.</param>
+        /// <param name="isAnd">Whether to emit AND, otherwise OR.</param>
         /// <returns>A type code of the result.</returns>
         private TypeSymbol EmitBinaryBooleanOperation(CodeGenerator codeGenerator, bool isAnd)
         {
@@ -136,6 +126,22 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return boolean;
+        }
+
+        /// <summary>
+        /// Emits binary operation XOR.
+        /// </summary>
+        private TypeSymbol EmitBinaryXor(CodeGenerator codeGenerator)
+        {
+            // LOAD <(bool) leftSon> == <(bool) rightSon>;
+            codeGenerator.EmitConvertToBool(Left);
+            codeGenerator.EmitConvertToBool(Right);
+            codeGenerator.EmitOpCode(ILOpCode.Ceq);
+
+            codeGenerator.EmitOpCode(ILOpCode.Ldc_i4_0);
+            codeGenerator.EmitOpCode(ILOpCode.Ceq);
+
+            return codeGenerator.CoreTypes.Boolean;
         }
     }
 
