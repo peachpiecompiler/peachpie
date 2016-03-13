@@ -27,6 +27,14 @@ namespace Pchp.CodeAnalysis.Symbols
             _params = BuildParameters(new Signature(false, new FormalParam[0])).ToImmutableArray();
         }
 
+        public override ParameterSymbol ThisParameter
+        {
+            get
+            {
+                return null;    // TODO: _params[0] ?
+            }
+        }
+
         public override string Name => GlobalRoutineName;
 
         public override Symbol ContainingSymbol => _file;

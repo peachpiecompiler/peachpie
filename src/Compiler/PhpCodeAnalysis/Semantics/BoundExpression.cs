@@ -86,7 +86,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public SyntaxNode Syntax => null;
 
-        public IExpression Value { get; set; }
+        IExpression IArgument.Value => Value;
+
+        public BoundExpression Value { get; set; }
 
         public BoundArgument(BoundExpression value)
         {

@@ -87,6 +87,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal virtual bool HasSpecialName => false;
 
+        /// <summary>
+        /// Gets value determining the method has special <c>this</c> hidden parameter at index <c>0</c>.
+        /// </summary>
+        internal bool HasThis => (this.CallingConvention & Microsoft.Cci.CallingConvention.HasThis) != 0;
+
         internal virtual MethodImplAttributes ImplementationAttributes => MethodImplAttributes.IL;
 
         internal virtual bool RequiresSecurityObject => false;

@@ -23,11 +23,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator il)
         {
-            if (this.Expression.Emit(il)
-                .SpecialType != SpecialType.System_Void)
-            {
-                il.EmitOpCode(ILOpCode.Pop);
-            }
+            il.EmitPop(this.Expression.Emit(il));
         }
     }
 }

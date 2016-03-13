@@ -29,6 +29,8 @@ namespace Pchp.CodeAnalysis.Symbols
             _params = BuildParameters(syntax.Signature).AsImmutable();
         }
 
+        public override ParameterSymbol ThisParameter => null;
+
         internal override AstNode Syntax => _syntax;
 
         internal override IList<Statement> Statements => _syntax.Body;

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis
 {
@@ -30,11 +31,25 @@ namespace Pchp.CodeAnalysis
             Contract.ThrowIfNull(first);
             Contract.ThrowIfNull(second);
 
-            if (first == second)
+            // merge is not needed,
+            if (first == second || first.TypeCode == Core.PhpTypeCode.PhpValue)
                 return first;
 
-            //return CoreTypes.obj
-            throw new NotImplementedException();
+            if (second.TypeCode == Core.PhpTypeCode.PhpValue)
+                return second;
+
+            // a number
+            if (first.IsNumber && second.IsNumber)
+                return CoreTypes.PhpNumber;
+
+            //// a string builder
+            //if (first.IsString && second.IsString)
+            //    return CoreTypes.PhpStringBuilder;
+
+            //
+
+            // most common PHP value type
+            return CoreTypes.PhpValue;
         }
 
         #endregion
@@ -83,17 +98,62 @@ namespace Pchp.CodeAnalysis
             {
                 if (typeMask.IsRef)
                 {
-                    // return CoreTypes.PhpAlias;
-                    throw new NotImplementedException();
+                    return CoreTypes.PhpAlias;
+                }
+
+                if (typeMask.IsVoid)
+                {
+                    return CoreTypes.Void;
                 }
 
                 var types = typeCtx.GetTypes(typeMask);
+                Debug.Assert(types.Count != 0);
 
-                // TODO: determine best fitting CLR type based on defined PHP types hierarchy
+                // determine best fitting CLR type based on defined PHP types hierarchy
+                CoreType result = GetTypeFromTypeRef(types[0]);
+
+                for (int i = 1; i < types.Count; i++)
+                {
+                    var tdesc = GetTypeFromTypeRef(types[i]);
+                    result = Merge(result, GetTypeFromTypeRef(types[i]));
+                }
             }
 
-            //
-            return CoreTypes.Object;
+            // most common type
+            return CoreTypes.PhpValue;
+        }
+
+        internal CoreType GetTypeFromTypeRef(ITypeRef t)
+        {
+            if (t is PrimitiveTypeRef)
+            {
+                return GetTypeFromTypeRef((PrimitiveTypeRef)t);
+            }
+            else if (t is ClassTypeRef)
+            {
+
+            }
+            else if (t is ArrayTypeRef)
+            {
+
+            }
+            else if (t is LambdaTypeRef)
+            {
+
+            }
+
+            throw new ArgumentException();
+        }
+
+        CoreType GetTypeFromTypeRef(PrimitiveTypeRef t)
+        {
+            switch (t.TypeCode)
+            {
+                case PhpDataType.Double: return CoreTypes.Double;
+                case PhpDataType.Long: return CoreTypes.Long;
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         /// <summary>

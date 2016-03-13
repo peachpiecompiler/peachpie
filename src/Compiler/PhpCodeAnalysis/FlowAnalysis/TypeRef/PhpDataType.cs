@@ -6,7 +6,7 @@ using System.Text;
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     /// <summary>
-    /// PHP value type codes.
+    /// A value type code.
     /// </summary>
     public enum PhpDataType : int
     {
@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Helper methods for <see cref="PhpDataType"/>.
     /// </summary>
-    public static class PhpDataTypeEnum
+    public static class PhpDataTypes
     {
         /// <summary>
         /// Mask which bits corresponds to <see cref="PhpDataType"/> values. Determines which type can be a <c>null</c> value.

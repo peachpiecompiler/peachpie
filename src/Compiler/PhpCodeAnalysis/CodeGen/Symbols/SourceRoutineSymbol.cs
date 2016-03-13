@@ -16,7 +16,15 @@ namespace Pchp.CodeAnalysis.Symbols
         internal virtual IPlace GetContextPlace()
         {
             Debug.Assert(_params[0] is SpecialParameterSymbol && _params[0].Name == SpecialParameterSymbol.ContextName);
-            return new ParamPlace(_params[0]);  // <ctx> 
+            return new ParamPlace(_params[0]);  // <ctx>
+        }
+
+        internal virtual IPlace GetThisPlace()
+        {
+            var thisParameter = this.ThisParameter;
+            return (thisParameter != null)
+                ? new ParamPlace(thisParameter)
+                : null;
         }
     }
 

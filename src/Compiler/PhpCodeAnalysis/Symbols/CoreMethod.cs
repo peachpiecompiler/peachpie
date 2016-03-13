@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Parametyer types.
         /// </summary>
-        readonly SpecialType[] _ptypes;
+        readonly CoreType[] _ptypes;
 
         /// <summary>
         /// Declaring class. Cannot be <c>null</c>.
@@ -53,7 +53,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         string DebuggerDisplay => DeclaringClass.FullName + "." + MethodName;
 
-        public CoreMethod(CoreType declaringClass, string methodName, params SpecialType[] ptypes)
+        public CoreMethod(CoreType declaringClass, string methodName, params CoreType[] ptypes)
         {
             Contract.ThrowIfNull(declaringClass);
             Contract.ThrowIfNull(methodName);
@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
 
             for (int i = 0; i < ps.Length; i++)
-                if (ps[i].Type.SpecialType != _ptypes[i])
+                if (_ptypes[i] != ps[i].Type)
                     return false;
 
             return true;
@@ -113,12 +113,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public struct OperatorsHolder
         {
-            public OperatorsHolder(CoreTypes coretypes)
+            public OperatorsHolder(CoreTypes ct)
             {
-                Equal_Object_Object = coretypes.Operators.Method("Equal", SpecialType.System_Object, SpecialType.System_Object);
+                Equal_Object_Object = ct.Operators.Method("Equal", ct.Object, ct.Object);
+                Echo_String = ct.Context.Method("Echo", ct.String);
+                Echo_PhpNumber = ct.Context.Method("Echo", ct.PhpNumber);
+                Echo_PhpValue = ct.Context.Method("Echo", ct.PhpValue);
+                Echo_Object = ct.Context.Method("Echo", ct.Object);
             }
 
-            public readonly CoreMethod Equal_Object_Object;
+            public readonly CoreMethod
+                Equal_Object_Object,
+                Echo_Object, Echo_String, Echo_PhpNumber, Echo_PhpValue;
         }
     }
 }

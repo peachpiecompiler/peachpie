@@ -49,8 +49,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             switch (to.SpecialType)
             {
                 case SpecialType.System_Void:
-                    if (from.SpecialType != SpecialType.System_Void)
-                        _il.EmitOpCode(ILOpCode.Pop, -1);
+                    EmitPop(from);
                     return;
                 case SpecialType.System_Boolean:
                     EmitConvertToBool(from, fromHint);
@@ -64,6 +63,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitBranch(ILOpCode code, BoundBlock label) => _il.EmitBranch(code, label);
 
         public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
+
+        public void EmitPop(TypeSymbol type)
+        {
+            if (type.SpecialType != SpecialType.System_Void)
+            {
+                _il.EmitOpCode(ILOpCode.Pop, -1);
+            }
+        }
 
         public static int GetCallStackBehavior(BoundFunctionCall call)
         {
@@ -125,5 +132,51 @@ namespace Pchp.CodeAnalysis.CodeGen
         //{
         //    _il.EmitToken(_moduleBuilder.Translate(symbol, syntaxNode, _diagnostics), syntaxNode, _diagnostics);
         //}
+
+        public void EmitEcho(BoundExpression expr)
+        {
+            Contract.ThrowIfNull(expr);
+
+            // <ctx>.Echo(expr);
+            this.EmitLoadContext();
+            var type = expr.Emit(this);
+
+            MethodSymbol method = null;
+
+            switch (type.SpecialType)
+            {
+                case SpecialType.System_Void:
+                    Debug.Assert(false);
+                    EmitPop(type);
+                    return;
+                case SpecialType.System_String:
+                    method = CoreMethods.Operators.Echo_String.Symbol;
+                    break;
+                //case SpecialType.System_Double:
+                    
+                //    method = CoreMethods.Operators.Echo_String.Symbol;
+                //    break;
+                default:
+                    if (type == CoreTypes.PhpNumber)
+                    {
+                        method = CoreMethods.Operators.Echo_PhpNumber.Symbol;
+                    }
+                    else if (type == CoreTypes.PhpValue)
+                    {
+                        method = CoreMethods.Operators.Echo_PhpValue.Symbol;
+                    }
+                    else
+                    {
+                        // TODO: check expr.TypeRefMask if it is only NULL
+                        EmitBox(type);
+                        method = CoreMethods.Operators.Echo_Object.Symbol;
+                    }
+                    break;
+            }
+
+            //
+            _il.EmitOpCode(ILOpCode.Call, stackAdjustment: -2); // - <ctx> - <expr>
+            _il.EmitToken(method, null, this.Diagnostics);
+        }
     }
 }

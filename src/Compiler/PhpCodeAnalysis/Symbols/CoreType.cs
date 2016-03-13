@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +15,7 @@ namespace Pchp.CodeAnalysis.Symbols
     [DebuggerDisplay("CoreType {FullName,nq}")]
     sealed class CoreType : IEquatable<CoreType>, IEquatable<TypeSymbol>
     {
-        public CoreMethod Method(string name, params SpecialType[] ptypes) => new CoreMethod(this, name, ptypes);
+        public CoreMethod Method(string name, params CoreType[] ptypes) => new CoreMethod(this, name, ptypes);
 
         /// <summary>
         /// Gets full type name.
@@ -22,16 +23,26 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly string FullName;
 
         /// <summary>
+        /// Represented well known type code.
+        /// </summary>
+        public readonly PhpTypeCode TypeCode;
+
+        /// <summary>
         /// Gets associated symbol.
         /// </summary>
         /// <remarks>Assuming single singleton instance of pchpcor library.</remarks>
         public NamedTypeSymbol Symbol { get; private set; }
 
-        public CoreType(string fullName)
+        public bool IsNumber => TypeCode == PhpTypeCode.Double || TypeCode == PhpTypeCode.Long || TypeCode == PhpTypeCode.PhpNumber;
+
+        public bool IsString => TypeCode == PhpTypeCode.String || TypeCode == PhpTypeCode.PhpStringBuilder || TypeCode == PhpTypeCode.ByteString;
+
+        public CoreType(string fullName, PhpTypeCode typecode)
         {
             Debug.Assert(fullName != null);
             Debug.Assert(fullName.StartsWith("Pchp.Core.") || fullName.StartsWith("System."));
             this.FullName = fullName;
+            this.TypeCode = typecode;
         }
 
         internal void Update(NamedTypeSymbol symbol)
@@ -86,7 +97,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly CoreType
             Context, Operators,
             PhpNumber, PhpValue, PhpAlias,
-            Object, Long, Double, Boolean;
+            Void, Object, Int32, Long, Double, Boolean, String;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -94,15 +105,18 @@ namespace Pchp.CodeAnalysis.Symbols
             _compilation = compilation;
             _table = new Dictionary<string, CoreType>();
 
-            this.Object = CreateFromFullName(SpecialTypes.GetMetadataName(SpecialType.System_Object));
-            this.Long = CreateFromFullName(SpecialTypes.GetMetadataName(SpecialType.System_Int64));
-            this.Double = CreateFromFullName(SpecialTypes.GetMetadataName(SpecialType.System_Double));
-            this.Boolean = CreateFromFullName(SpecialTypes.GetMetadataName(SpecialType.System_Boolean));
-            this.PhpNumber = Create("PhpNumber");
-            this.PhpAlias = Create("PhpAlias");
-            this.PhpValue = Create("PhpValue");
-            this.Context = Create("Context");
-            this.Operators = Create("Operators");
+            this.Void = Create(SpecialType.System_Void, PhpTypeCode.Void);
+            this.Object = Create(SpecialType.System_Object, PhpTypeCode.Object);
+            this.Int32 = Create(SpecialType.System_Int32, PhpTypeCode.Long);
+            this.Long = Create(SpecialType.System_Int64, PhpTypeCode.Long);
+            this.Double = Create(SpecialType.System_Double, PhpTypeCode.Double);
+            this.Boolean = Create(SpecialType.System_Boolean, PhpTypeCode.Boolean);
+            this.String = Create(SpecialType.System_String, PhpTypeCode.String);
+            this.PhpNumber = Create("PhpNumber", PhpTypeCode.PhpNumber);
+            this.PhpAlias = Create("PhpAlias", PhpTypeCode.PhpAlias);
+            this.PhpValue = Create("PhpValue", PhpTypeCode.PhpValue);
+            this.Context = Create("Context", PhpTypeCode.Object);
+            this.Operators = Create("Operators", PhpTypeCode.Object);
         }
 
         #region Table of types
@@ -111,11 +125,13 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Dictionary<TypeSymbol, CoreType> _typetable = new Dictionary<TypeSymbol, CoreType>();
         readonly Dictionary<SpecialType, CoreType> _specialTypes = new Dictionary<SpecialType, CoreType>();
         
-        CoreType Create(string name) => CreateFromFullName("Pchp.Core." + name);
+        CoreType Create(string name, PhpTypeCode typecode) => CreateFromFullName("Pchp.Core." + name, typecode);
 
-        CoreType CreateFromFullName(string fullName)
+        CoreType Create(SpecialType type, PhpTypeCode typecode) => CreateFromFullName(SpecialTypes.GetMetadataName(type), typecode);
+        
+        CoreType CreateFromFullName(string fullName, PhpTypeCode typecode)
         {
-            var type = new CoreType(fullName);
+            var type = new CoreType(fullName, typecode);
 
             _table.Add(fullName, type);
 

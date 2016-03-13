@@ -16,6 +16,28 @@ namespace Pchp.Core
     /// </remarks>
     public class Context
     {
+        #region Echo
 
+        public void Echo(object value)
+        {
+
+        }
+
+        public void Echo(string value)
+        {
+
+        }
+
+        public void Echo(PhpValue value)
+        {
+
+        }
+
+        public void Echo(PhpNumber value)
+        {
+
+        }
+
+        #endregion
     }
 }

@@ -167,7 +167,25 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual Cci.CallingConvention CallingConvention => Cci.CallingConvention.Default;
+        public virtual Cci.CallingConvention CallingConvention
+        {
+            get
+            {
+                var cc = IsVararg ? Cci.CallingConvention.ExtraArguments : Cci.CallingConvention.Default;
+
+                if (IsGenericMethod)
+                {
+                    cc |= Cci.CallingConvention.Generic;
+                }
+
+                if (!IsStatic)
+                {
+                    cc |= Cci.CallingConvention.HasThis;
+                }
+
+                return cc;
+            }
+        }
 
         ImmutableArray<Cci.IParameterTypeInformation> Cci.ISignature.GetParameters(EmitContext context)
         {

@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -271,6 +272,8 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override bool RequiresSecurityObject => HasFlag(MethodAttributes.RequireSecObject);
 
         public override bool IsExtern => HasFlag(MethodAttributes.PinvokeImpl);
+
+        internal override bool IsExternal => IsExtern || (ImplementationAttributes & MethodImplAttributes.Runtime) != 0;
 
         // do not cache the result, the compiler doesn't use this (it's only exposed through public API):
         public override DllImportData GetDllImportData() => HasFlag(MethodAttributes.PinvokeImpl)
@@ -570,6 +573,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 !this.IsParams();
 
         private SignatureData Signature => _lazySignature ?? LoadSignature();
+
+        public override CallingConvention CallingConvention => (CallingConvention)Signature.Header.RawValue;
+
+        public override bool IsVararg => Signature.Header.CallingConvention == SignatureCallingConvention.VarArgs;
+
+        public override bool IsAsync => false;
 
         private SignatureData LoadSignature()
         {

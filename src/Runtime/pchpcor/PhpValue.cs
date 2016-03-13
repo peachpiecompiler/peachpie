@@ -11,9 +11,27 @@ namespace Pchp.Core
     /// <summary>
     /// Represents a non-aliased PHP value.
     /// </summary>
+    [DebuggerDisplay("{_type} ({GetDebuggerValue})")]
     [StructLayout(LayoutKind.Explicit)]
     public struct PhpValue // <T>
     {
+        #region GetDebuggerValue
+
+        internal string GetDebuggerValue
+        {
+            get
+            {
+                var str = ToString();
+
+                if (_type == PhpTypeCode.String || _type == PhpTypeCode.ByteString || _type == PhpTypeCode.PhpStringBuilder)
+                    str = $"'{str}'";
+
+                return str;
+            }
+        }
+
+        #endregion
+
         #region Fields
 
         /// <summary>
@@ -65,6 +83,35 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Operators
+
+        public object ToObject()
+        {
+            throw new NotImplementedException();
+        }
+
+        public PhpNumber ToPhpNumber()
+        {
+            throw new NotImplementedException();
+        }
+
+        public PhpAlias ToAlias()
+        {
+            return new PhpAlias(this, 1);
+        }
+
+        public bool ToBoolean()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string ToString()
+        {
+            return base.ToString();
+        }
+
+        #endregion
+
         #region Construction
 
         public static PhpValue Create(PhpNumber number)
@@ -82,6 +129,18 @@ namespace Pchp.Core
         public static PhpValue Create(double value)
         {
             return new PhpValue() { _type = PhpTypeCode.Double, _double = value };
+        }
+
+        public static PhpValue Create(int value) => Create((long)value);
+
+        public static PhpValue Create()
+        {
+            return new PhpValue() { _type = PhpTypeCode.Void };
+        }
+
+        public static PhpValue CreateNull()
+        {
+            return new PhpValue() { _type = PhpTypeCode.Object };
         }
 
         #endregion

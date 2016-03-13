@@ -19,13 +19,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public const string ContextName = "<ctx>";
 
+        public static string ThisName => Syntax.VariableName.ThisVariableName.Value;
+
         readonly MethodSymbol _symbol;
         readonly int _index;
         readonly string _name;
         readonly object _type;
-
-        internal static SpecialParameterSymbol CreateThis(MethodSymbol symbol)
-            => new SpecialParameterSymbol(symbol, (TypeSymbol)symbol.ContainingType, Syntax.VariableName.ThisVariableName.Value, -1);
 
         public SpecialParameterSymbol(MethodSymbol symbol, object type, string name, int index)
         {

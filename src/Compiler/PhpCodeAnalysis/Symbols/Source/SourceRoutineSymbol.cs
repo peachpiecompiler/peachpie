@@ -77,6 +77,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected abstract TypeRefContext CreateTypeRefContext();
 
+        public abstract ParameterSymbol ThisParameter { get;}
+
         /// <summary>
         /// Gets routine declaration syntax.
         /// </summary>
@@ -97,7 +99,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             int index = 0;
 
-            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+            //if (this.IsStatic)
+            {
+                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+            }
 
             foreach (var p in signature.FormalParams)
             {

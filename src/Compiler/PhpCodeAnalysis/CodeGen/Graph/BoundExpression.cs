@@ -3,6 +3,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -22,13 +23,15 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            var ltype = Left.Emit(il);
-            var rtype = Right.Emit(il);
+            Debug.Assert(this.Access == AccessType.Read || this.Access == AccessType.None);
 
             if (UsesOperatorMethod)
             {
-                throw new NotImplementedException();    // call this.Operator(ltype, rtype)
+                throw new NotImplementedException();    // call this.Operator(Left, Right)
             }
+
+            var ltype = Left.Emit(il);
+            var rtype = Right.Emit(il);
 
             switch (this.BinaryOperationKind)
             {
@@ -54,6 +57,15 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
+            Debug.Assert(this.Access == AccessType.Read || this.Access == AccessType.None);
+
+            // do nothing
+            if (this.Access == AccessType.None)
+            {
+                return il.CoreTypes.Void;
+            }
+
+            // push value onto the evaluation stack
             if (!ConstantValue.HasValue)
                 throw new InvalidOperationException();
 
@@ -63,21 +75,30 @@ namespace Pchp.CodeAnalysis.Semantics
             if (value == null)
             {
                 il.IL.EmitNullConstant();
+                return il.CoreTypes.Object;
             }
             else
             {
                 if (value is int)
                 {
-                    il.IL.EmitIntConstant((int)value);
-                    il.EmitBox(il.Routine.DeclaringCompilation.GetSpecialType(SpecialType.System_Int32));
+                    il.IL.EmitLongConstant((int)value);
+                    return il.CoreTypes.Long;
+                }
+                else if (value is long)
+                {
+                    il.IL.EmitLongConstant((long)value);
+                    return il.CoreTypes.Long;
+                }
+                else if (value is string)
+                {
+                    il.IL.EmitStringConstant((string)value);
+                    return il.CoreTypes.String;
                 }
                 else
                 {
                     throw new NotImplementedException();
                 }
             }
-
-            return (TypeSymbol)il.Routine.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
         }
     }
 
@@ -92,8 +113,28 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 return this.Variable.GetPlace(il.IL).EmitLoad(il.IL);
             }
+            else if (Access == AccessType.None)
+            {
+                // do nothing
+                return il.CoreTypes.Void;
+            }
 
             throw new NotImplementedException();
+        }
+    }
+
+    partial class BoundEcho
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            Debug.Assert(Access == AccessType.None);
+
+            foreach (var arg in _arguments)
+            {
+                il.EmitEcho(arg.Value);
+            }
+
+            return il.CoreTypes.Void;
         }
     }
 }

@@ -234,7 +234,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                 switch (e.Kind)
                 {
                     case VariableKind.ThisParameter:
-                        _locals.Add(new BoundParameter(SpecialParameterSymbol.CreateThis(_routine)));
+                        _locals.Add(new BoundParameter(_routine.ThisParameter));
                         break;
                     case VariableKind.Parameter:
                         _locals.Add(new BoundParameter((SourceParameterSymbol)_routine.Parameters.First(p => p.Name == e.Name.Value)));

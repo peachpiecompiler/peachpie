@@ -1,4 +1,5 @@
-﻿using Pchp.CodeAnalysis.CodeGen;
+﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,12 +46,40 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             // return default(RETURN_TYPE);
 
-            // <DEBUG>
-            
-            il.IL.EmitNullConstant();
-            il.IL.EmitRet(false);
-            
-            // </DEBUG>
+            var return_type = il.Routine.ReturnType;
+            switch (return_type.SpecialType)
+            {
+                case SpecialType.System_Void:
+                    break;
+                case SpecialType.System_Double:
+                    il.IL.EmitDoubleConstant(0.0);
+                    break;
+                case SpecialType.System_Int64:
+                    il.IL.EmitLongConstant(0);
+                    break;
+                case SpecialType.System_Boolean:
+                    il.IL.EmitBoolConstant(false);
+                    break;
+                case SpecialType.System_String:
+                    il.IL.EmitStringConstant(string.Empty);
+                    break;
+                default:
+                    if (return_type.IsReferenceType)
+                    {
+                        il.IL.EmitNullConstant();
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();    // default(T)
+                    }
+                    break;
+            }
+
+            //
+            il.IL.EmitRet(return_type.SpecialType == SpecialType.System_Void);
+
+            //
+            il.IL.AssertStackEmpty();
         }
     }
 }

@@ -81,10 +81,11 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         readonly ParameterSymbol _p;
 
-        public int Index => _p.Ordinal;
+        public int Index => ((MethodSymbol)_p.ContainingSymbol).HasThis ? _p.Ordinal + 1 : _p.Ordinal;
 
         public ParamPlace(ParameterSymbol p)
         {
+            Contract.ThrowIfNull(p);
             _p = p;
         }
 

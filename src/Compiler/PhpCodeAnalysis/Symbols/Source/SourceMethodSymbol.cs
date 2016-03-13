@@ -19,6 +19,8 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly SourceNamedTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;
+
+        ParameterSymbol _lazyThisSymbol;
         
         public SourceMethodSymbol(SourceNamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
         {
@@ -28,6 +30,17 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = type;
             _syntax = syntax;
             _params = BuildParameters(syntax.Signature).AsImmutable();
+        }
+
+        public override ParameterSymbol ThisParameter
+        {
+            get
+            {
+                if (_lazyThisSymbol == null)
+                    _lazyThisSymbol = new SpecialParameterSymbol(this, _type, SpecialParameterSymbol.ThisName, -1);
+
+                return _lazyThisSymbol;
+            }
         }
 
         internal override AstNode Syntax => _syntax;
