@@ -91,6 +91,7 @@
     <Compile Include="Semantics\Graph\ControlFlowGraph.cs" />
     <Compile Include="Semantics\Graph\Edge.cs" />
     <Compile Include="Semantics\Graph\GraphVisitor.cs" />
+    <Compile Include="Semantics\PhpOperationKind.cs" />
     <Compile Include="Semantics\SemanticsBinder.cs" />
     <Compile Include="Semantics\BoundStatement.cs" />
     <Compile Include="CodeGen\MethodGenerator.cs" />
@@ -179,6 +180,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compilation\PhpCompilation.Types.cs" />
+    <Compile Include="CodeGen\CodeGenerator.Locals.cs" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup />

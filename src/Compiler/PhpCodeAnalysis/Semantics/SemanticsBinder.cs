@@ -115,8 +115,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 // logical op
                 case AST.Operations.NotEqual: return BinaryOperationKind.OperatorNotEquals;
                 case AST.Operations.Equal: return BinaryOperationKind.OperatorEquals;
-                //case AST.Operations.NotIdentical: 
-                //case AST.Operations.Identical:
+                case AST.Operations.NotIdentical: return (BinaryOperationKind)BinaryPhpOperationKind.NotIdentical;
+                case AST.Operations.Identical: return (BinaryOperationKind)BinaryPhpOperationKind.Identical;
                 case AST.Operations.LessThan: return BinaryOperationKind.OperatorLessThan;
                 case AST.Operations.LessThanOrEqual: return BinaryOperationKind.OperatorLessThanOrEqual;
                 case AST.Operations.GreaterThan: return BinaryOperationKind.OperatorGreaterThan;
@@ -125,10 +125,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case AST.Operations.Or: return BinaryOperationKind.OperatorConditionalOr;
                 case AST.Operations.And: return BinaryOperationKind.OperatorConditionalAnd;
-                //case AST.Operations.Xor: return BinaryOperationKind.OperatorConditionalExclusiveOr;
+                case AST.Operations.Xor: return (BinaryOperationKind)BinaryPhpOperationKind.OperatorConditionalXor;
                 case AST.Operations.BitOr: return BinaryOperationKind.OperatorOr;
-                case AST.Operations.BitAnd: return BinaryOperationKind.OperatorAnd;
                 case AST.Operations.BitXor: return BinaryOperationKind.OperatorExclusiveOr;
+                case AST.Operations.BitAnd: return BinaryOperationKind.OperatorAnd;
 
                 // arithmetic
                 case AST.Operations.Add: return BinaryOperationKind.OperatorAdd;

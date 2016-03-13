@@ -31,12 +31,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     case SpecialType.System_Int32: break; // nop
                     case SpecialType.System_Int64:
-                        _il.EmitNumericConversion(Microsoft.Cci.PrimitiveTypeCode.Int64, Microsoft.Cci.PrimitiveTypeCode.Int32, false);
+                        _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                        _il.EmitOpCode(ILOpCode.Conv_i8, 0);
+                        _il.EmitOpCode(ILOpCode.Cgt_un);
                         break;
                     default:
                         throw new NotImplementedException();
                 }
             }
+        }
+
+        public void EmitConvertToBool(BoundExpression expr)
+        {
+            Contract.ThrowIfNull(expr);
+            EmitConvertToBool(expr.Emit(this), expr.TypeRefMask);
         }
 
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
