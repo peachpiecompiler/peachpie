@@ -38,8 +38,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Microsoft.CodeAnalysis.Semantics.BinaryOperationKind.OperatorEquals:
                     if (ltype.SpecialType == SpecialType.System_Object && rtype.SpecialType == SpecialType.System_Object)
                     {
-                        il.IL.EmitOpCode(ILOpCode.Call, stackAdjustment: -1);    // 2 out, 1 return value on
-                        il.IL.EmitToken(il.CoreMethods.Operators.Equal_Object_Object.Symbol, null, il.Diagnostics);
+                        il.Builder.EmitOpCode(ILOpCode.Call, stackAdjustment: -1);    // 2 out, 1 return value on
+                        il.Builder.EmitToken(il.CoreMethods.Operators.Equal_Object_Object.Symbol, null, il.Diagnostics);
                     }
                     else
                     {
@@ -74,25 +74,30 @@ namespace Pchp.CodeAnalysis.Semantics
             var value = ConstantValue.Value;
             if (value == null)
             {
-                il.IL.EmitNullConstant();
+                il.Builder.EmitNullConstant();
                 return il.CoreTypes.Object;
             }
             else
             {
                 if (value is int)
                 {
-                    il.IL.EmitLongConstant((int)value);
+                    il.Builder.EmitLongConstant((int)value);
                     return il.CoreTypes.Long;
                 }
                 else if (value is long)
                 {
-                    il.IL.EmitLongConstant((long)value);
+                    il.Builder.EmitLongConstant((long)value);
                     return il.CoreTypes.Long;
                 }
                 else if (value is string)
                 {
-                    il.IL.EmitStringConstant((string)value);
+                    il.Builder.EmitStringConstant((string)value);
                     return il.CoreTypes.String;
+                }
+                else if (value is bool)
+                {
+                    il.Builder.EmitBoolConstant((bool)value);
+                    return il.CoreTypes.Boolean;
                 }
                 else
                 {
@@ -111,7 +116,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (Access == AccessType.Read)
             {
-                return this.Variable.GetPlace(il.IL).EmitLoad(il.IL);
+                return il.EmitLoad(this.Variable);
             }
             else if (Access == AccessType.None)
             {

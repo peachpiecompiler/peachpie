@@ -131,7 +131,7 @@ namespace Pchp.CodeAnalysis
             }
             else if (t is ClassTypeRef)
             {
-
+                return CoreTypes.Object;
             }
             else if (t is ArrayTypeRef)
             {
@@ -151,6 +151,8 @@ namespace Pchp.CodeAnalysis
             {
                 case PhpDataType.Double: return CoreTypes.Double;
                 case PhpDataType.Long: return CoreTypes.Long;
+                case PhpDataType.Boolean: return CoreTypes.Boolean;
+                case PhpDataType.String: return CoreTypes.String;
                 default:
                     throw new NotImplementedException();
             }

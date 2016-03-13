@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <summary>
             /// Gets underlaying <see cref="ILBuilder"/>.
             /// </summary>
-            public ILBuilder IL => _codegen.IL;
+            public ILBuilder IL => _codegen.Builder;
 
             /// <summary>
             /// Gets parent scope. Can be <c>null</c> in case of a root scope.
@@ -183,7 +183,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Gets underlaying <see cref="ILBuilder"/>.
         /// </summary>
-        public ILBuilder IL => _il;
+        public ILBuilder Builder => _il;
 
         /// <summary>
         /// Gets the routine we are emitting.

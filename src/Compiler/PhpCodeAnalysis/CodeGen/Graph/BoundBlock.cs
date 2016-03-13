@@ -52,21 +52,21 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 case SpecialType.System_Void:
                     break;
                 case SpecialType.System_Double:
-                    il.IL.EmitDoubleConstant(0.0);
+                    il.Builder.EmitDoubleConstant(0.0);
                     break;
                 case SpecialType.System_Int64:
-                    il.IL.EmitLongConstant(0);
+                    il.Builder.EmitLongConstant(0);
                     break;
                 case SpecialType.System_Boolean:
-                    il.IL.EmitBoolConstant(false);
+                    il.Builder.EmitBoolConstant(false);
                     break;
                 case SpecialType.System_String:
-                    il.IL.EmitStringConstant(string.Empty);
+                    il.Builder.EmitStringConstant(string.Empty);
                     break;
                 default:
                     if (return_type.IsReferenceType)
                     {
-                        il.IL.EmitNullConstant();
+                        il.Builder.EmitNullConstant();
                     }
                     else
                     {
@@ -76,10 +76,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             //
-            il.IL.EmitRet(return_type.SpecialType == SpecialType.System_Void);
+            il.Builder.EmitRet(return_type.SpecialType == SpecialType.System_Void);
 
             //
-            il.IL.AssertStackEmpty();
+            il.Builder.AssertStackEmpty();
         }
     }
 }

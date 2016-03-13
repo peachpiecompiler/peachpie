@@ -20,7 +20,7 @@ namespace Pchp.Core
 
         public void Echo(object value)
         {
-
+            
         }
 
         public void Echo(string value)

@@ -56,8 +56,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
             }
 
-            // not supported conversions:
-            throw new NotSupportedException();
+            //
+            throw new NotImplementedException();
         }
 
         public void EmitBranch(ILOpCode code, BoundBlock label) => _il.EmitBranch(code, label);
@@ -70,6 +70,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 _il.EmitOpCode(ILOpCode.Pop, -1);
             }
+        }
+
+        /// <summary>
+        /// Emits load of a variable.
+        /// </summary>
+        public TypeSymbol EmitLoad(BoundVariable variable)
+        {
+            Contract.ThrowIfNull(variable);
+            return variable.GetPlace(_il).EmitLoad(_il);
         }
 
         public static int GetCallStackBehavior(BoundFunctionCall call)
