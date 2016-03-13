@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using System.Diagnostics;
+using Pchp.Syntax.AST;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -188,9 +189,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public sealed partial class BoundBinaryEx : BoundExpression, IBinaryOperatorExpression
     {
-        public BinaryOperationKind BinaryOperationKind { get; private set; }
+        public BinaryOperationKind BinaryOperationKind { get { throw new NotSupportedException(); } }
 
         public override OperationKind Kind => OperationKind.BinaryOperatorExpression;
+
+        public Operations Operation { get; private set; }
 
         public BoundExpression Left { get; private set; }
         public BoundExpression Right { get; private set; }
@@ -209,12 +212,46 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitBinaryOperatorExpression(this, argument);
 
-        internal BoundBinaryEx(BoundExpression left, BoundExpression right, BinaryOperationKind kind)
+        internal BoundBinaryEx(BoundExpression left, BoundExpression right, Syntax.AST.Operations op)
         {
             this.Left = left;
             this.Right = right;
-            this.BinaryOperationKind = kind;
+            this.Operation = op;
         }
+    }
+
+    #endregion
+
+    #region BoundUnaryEx
+
+    public partial class BoundUnaryEx : BoundExpression, IUnaryOperatorExpression
+    {
+        public Operations Operation { get; private set; }
+
+        public BoundExpression Operand { get; set; }
+
+        public override OperationKind Kind => OperationKind.UnaryOperatorExpression;
+
+        IExpression IUnaryOperatorExpression.Operand => Operand;
+
+        public IMethodSymbol Operator => null;
+
+        public bool UsesOperatorMethod => Operator != null;
+
+        public UnaryOperationKind UnaryOperationKind { get { throw new NotSupportedException(); } }
+
+        public BoundUnaryEx(BoundExpression operand, Operations op)
+        {
+            Contract.ThrowIfNull(operand);
+            this.Operand = operand;
+            this.Operation = op;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitUnaryOperatorExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitUnaryOperatorExpression(this, argument);
     }
 
     #endregion

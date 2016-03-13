@@ -79,6 +79,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.VarLikeConstructUse) return BindVarLikeConstructUse((AST.VarLikeConstructUse)expr, access);
             if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
+            if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -105,47 +106,12 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundBinaryEx(
                 BindExpression(expr.LeftExpr, AccessType.Read),
                 BindExpression(expr.RightExpr, AccessType.Read),
-                BindBinaryOperationKind(expr.Operation));
+                expr.Operation);
         }
 
-        static BinaryOperationKind BindBinaryOperationKind(AST.Operations op)
+        BoundExpression BindUnaryEx(AST.UnaryEx expr)
         {
-            switch (op)
-            {
-                // logical op
-                case AST.Operations.NotEqual: return BinaryOperationKind.OperatorNotEquals;
-                case AST.Operations.Equal: return BinaryOperationKind.OperatorEquals;
-                case AST.Operations.NotIdentical: return (BinaryOperationKind)BinaryPhpOperationKind.NotIdentical;
-                case AST.Operations.Identical: return (BinaryOperationKind)BinaryPhpOperationKind.Identical;
-                case AST.Operations.LessThan: return BinaryOperationKind.OperatorLessThan;
-                case AST.Operations.LessThanOrEqual: return BinaryOperationKind.OperatorLessThanOrEqual;
-                case AST.Operations.GreaterThan: return BinaryOperationKind.OperatorGreaterThan;
-                case AST.Operations.GreaterThanOrEqual: return BinaryOperationKind.OperatorGreaterThanOrEqual;
-                case AST.Operations.Concat: return BinaryOperationKind.StringConcatenation; // .
-
-                case AST.Operations.Or: return BinaryOperationKind.OperatorConditionalOr;
-                case AST.Operations.And: return BinaryOperationKind.OperatorConditionalAnd;
-                case AST.Operations.Xor: return (BinaryOperationKind)BinaryPhpOperationKind.OperatorConditionalXor;
-                case AST.Operations.BitOr: return BinaryOperationKind.OperatorOr;
-                case AST.Operations.BitXor: return BinaryOperationKind.OperatorExclusiveOr;
-                case AST.Operations.BitAnd: return BinaryOperationKind.OperatorAnd;
-
-                // arithmetic
-                case AST.Operations.Add: return BinaryOperationKind.OperatorAdd;
-                case AST.Operations.Sub: return BinaryOperationKind.OperatorSubtract;
-                case AST.Operations.Mul: return BinaryOperationKind.OperatorMultiply;
-                case AST.Operations.Div: return BinaryOperationKind.OperatorDivide;
-                case AST.Operations.Mod: return BinaryOperationKind.OperatorRemainder;  // %
-                case AST.Operations.Pow: return BinaryOperationKind.ObjectPower; // **
-
-                // shift
-                case AST.Operations.ShiftLeft: return BinaryOperationKind.OperatorLeftShift;    // <<
-                case AST.Operations.ShiftRight: return BinaryOperationKind.OperatorRightShift;  // >>
-
-                //
-                default:
-                    throw new NotImplementedException(op.ToString());
-            }
+            return new BoundUnaryEx(BindExpression(expr.Expr, AccessType.Read), expr.Operation);
         }
 
         BoundExpression BindAssignEx(AST.AssignEx expr, AccessType access)

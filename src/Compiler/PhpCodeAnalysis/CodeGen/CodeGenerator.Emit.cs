@@ -23,8 +23,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             _contextPlace.EmitLoad(_il);
         }
 
-        public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint)
+        public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint, bool negation = false)
         {
+            // TODO: handle {negation} within the switch to avoid unnecessary conversions
+
             if (from.SpecialType != SpecialType.System_Boolean)
             {
                 switch (from.SpecialType)
@@ -39,12 +41,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                         throw new NotImplementedException();
                 }
             }
+
+            //
+            if (negation)
+            {
+                EmitLogicNegation();
+            }
         }
 
-        public void EmitConvertToBool(BoundExpression expr)
+        public void EmitConvertToBool(BoundExpression expr, bool negation = false)
         {
             Contract.ThrowIfNull(expr);
-            EmitConvertToBool(expr.Emit(this), expr.TypeRefMask);
+            EmitConvertToBool(expr.Emit(this), expr.TypeRefMask, negation);
         }
 
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
@@ -134,6 +142,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             _il.EmitOpCode(ILOpCode.Box);
             EmitSymbolToken((TypeSymbol)valuetype, null);
+        }
+
+        /// <summary>
+        /// Emits "!= 0" operation. This method expects I4 value on top of evaluation stack.
+        /// </summary>
+        public void EmitLogicNegation()
+        {
+            _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+            _il.EmitOpCode(ILOpCode.Ceq);
         }
 
         //public void EmitCall(ILOpCode code, MethodSymbol method)

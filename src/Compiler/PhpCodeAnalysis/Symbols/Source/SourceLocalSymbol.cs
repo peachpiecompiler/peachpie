@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.Symbols
         ReturnVariable,
     }
 
-    internal class SourceLocalSymbol : Symbol, ILocalSymbol //, ILocalSymbolInternal
+    internal class SourceLocalSymbol : Symbol, ILocalSymbol, ILocalSymbolInternal
     {
         readonly protected SourceRoutineSymbol _routine;
         readonly string _name;
