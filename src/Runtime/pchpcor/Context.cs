@@ -38,6 +38,11 @@ namespace Pchp.Core
 
         }
 
+        public void Echo(double value)
+        {
+
+        }
+
         #endregion
     }
 }

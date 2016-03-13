@@ -72,7 +72,22 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public virtual bool IsPointerType => false;
+
         public virtual SpecialType SpecialType => SpecialType.None;
+
+        /// <summary>
+        /// Gets corresponding primitive type code for this type declaration.
+        /// </summary>
+        internal Microsoft.Cci.PrimitiveTypeCode PrimitiveTypeCode
+        {
+            get
+            {
+                return this.IsPointerType
+                    ? Microsoft.Cci.PrimitiveTypeCode.Pointer
+                    : SpecialTypes.GetTypeCode(SpecialType);
+            }
+        }
 
         /// <summary>
         /// In case of PHP corlibrary type, gets reference to the descriptor <see cref="CoreType"/>.

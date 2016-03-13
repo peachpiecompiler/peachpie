@@ -35,7 +35,7 @@ namespace Pchp.Core
         public int ReferenceCount => _refcount;
 
         /// <summary>
-        /// Gets or sets underlaying value.
+        /// Gets or sets the underlaying value.
         /// </summary>
         public PhpValue Value
         {

@@ -116,15 +116,18 @@ namespace Pchp.CodeAnalysis.Symbols
             public OperatorsHolder(CoreTypes ct)
             {
                 Equal_Object_Object = ct.Operators.Method("Equal", ct.Object, ct.Object);
+                PhpAlias_GetValue = ct.PhpAlias.Method("get_Value");
                 Echo_String = ct.Context.Method("Echo", ct.String);
                 Echo_PhpNumber = ct.Context.Method("Echo", ct.PhpNumber);
                 Echo_PhpValue = ct.Context.Method("Echo", ct.PhpValue);
                 Echo_Object = ct.Context.Method("Echo", ct.Object);
+                Echo_Double = ct.Context.Method("Echo", ct.Double);
             }
 
             public readonly CoreMethod
                 Equal_Object_Object,
-                Echo_Object, Echo_String, Echo_PhpNumber, Echo_PhpValue;
+                PhpAlias_GetValue,
+                Echo_Object, Echo_String, Echo_PhpNumber, Echo_PhpValue, Echo_Double;
         }
     }
 }

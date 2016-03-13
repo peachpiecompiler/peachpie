@@ -62,8 +62,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override Cci.PrimitiveTypeCode GetPrimitiveTypeCode(PEModuleSymbol moduleSymbol, TypeSymbol type)
         {
-            throw new NotImplementedException();
-            //return type.PrimitiveTypeCode;
+            return type.PrimitiveTypeCode;            
         }
 
         internal override bool IsVolatileModifierType(PEModuleSymbol moduleSymbol, TypeSymbol type)

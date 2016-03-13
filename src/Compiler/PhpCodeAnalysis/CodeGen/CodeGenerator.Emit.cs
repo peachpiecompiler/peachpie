@@ -133,11 +133,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         //    _il.EmitToken(_moduleBuilder.Translate(symbol, syntaxNode, _diagnostics), syntaxNode, _diagnostics);
         //}
 
+        public void Emit_PhpAlias_GetValue()
+        {
+            // <stack>.get_Value
+            _il.EmitOpCode(ILOpCode.Call, stackAdjustment: 0);
+            _il.EmitToken(CoreMethods.Operators.PhpAlias_GetValue.Symbol, null, this.Diagnostics);
+        }
+
         public void EmitEcho(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
 
             // <ctx>.Echo(expr);
+
             this.EmitLoadContext();
             var type = expr.Emit(this);
 
@@ -152,10 +160,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_String:
                     method = CoreMethods.Operators.Echo_String.Symbol;
                     break;
-                //case SpecialType.System_Double:
-                    
-                //    method = CoreMethods.Operators.Echo_String.Symbol;
-                //    break;
+                case SpecialType.System_Double:
+                    method = CoreMethods.Operators.Echo_Double.Symbol;
+                    break;
                 default:
                     if (type == CoreTypes.PhpNumber)
                     {
@@ -163,6 +170,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (type == CoreTypes.PhpValue)
                     {
+                        method = CoreMethods.Operators.Echo_PhpValue.Symbol;
+                    }
+                    else if (type == CoreTypes.PhpAlias)
+                    {
+                        Emit_PhpAlias_GetValue();
                         method = CoreMethods.Operators.Echo_PhpValue.Symbol;
                     }
                     else
