@@ -15,7 +15,8 @@ namespace Pchp.CodeAnalysis.Symbols
     [DebuggerDisplay("CoreType {FullName,nq}")]
     sealed class CoreType : IEquatable<CoreType>, IEquatable<TypeSymbol>
     {
-        public CoreMethod Method(string name, params CoreType[] ptypes) => new CoreMethod(this, name, ptypes);
+        internal CoreMethod Method(string name, params CoreType[] ptypes) => new CoreMethod(this, name, ptypes);
+        internal CoreConstructor Ctor(params CoreType[] ptypes) => new CoreConstructor(this, ptypes);
 
         /// <summary>
         /// Gets full type name.

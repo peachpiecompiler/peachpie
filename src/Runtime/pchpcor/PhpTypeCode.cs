@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     /// <summary>
-    /// Well known types used by rutnime.
+    /// Well known types used by runtime.
     /// </summary>
     public enum PhpTypeCode : int
     {

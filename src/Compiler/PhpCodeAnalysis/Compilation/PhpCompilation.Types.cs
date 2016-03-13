@@ -31,11 +31,13 @@ namespace Pchp.CodeAnalysis
             Contract.ThrowIfNull(first);
             Contract.ThrowIfNull(second);
 
+            Debug.Assert(first != CoreTypes.PhpAlias && second != CoreTypes.PhpAlias);
+
             // merge is not needed,
-            if (first == second || first.TypeCode == Core.PhpTypeCode.PhpValue)
+            if (first == second || first == CoreTypes.PhpValue)
                 return first;
 
-            if (second.TypeCode == Core.PhpTypeCode.PhpValue)
+            if (second == CoreTypes.PhpValue)
                 return second;
 
             // a number

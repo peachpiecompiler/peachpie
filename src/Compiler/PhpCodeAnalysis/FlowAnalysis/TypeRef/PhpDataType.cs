@@ -34,7 +34,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     public static class PhpDataTypes
     {
         /// <summary>
-        /// Mask which bits corresponds to <see cref="PhpDataType"/> values. Determines which type can be a <c>null</c> value.
+        /// Mask where bits correspond to <see cref="PhpDataType"/> values.
+        /// Determines reference type.
         /// </summary>
         private const int NullableTypesMask =
             (1 << (int)PhpDataType.Object) |

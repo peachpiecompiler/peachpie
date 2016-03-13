@@ -95,19 +95,14 @@ namespace Pchp.Core
             throw new NotImplementedException();
         }
 
-        public PhpAlias ToAlias()
-        {
-            return new PhpAlias(this, 1);
-        }
-
         public bool ToBoolean()
         {
             throw new NotImplementedException();
         }
 
-        public override string ToString()
+        public string ToString(Context ctx)
         {
-            return base.ToString();
+            throw new NotImplementedException();
         }
 
         #endregion

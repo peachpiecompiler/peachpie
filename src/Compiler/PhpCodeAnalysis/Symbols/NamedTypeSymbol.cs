@@ -40,13 +40,24 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual ImmutableArray<IMethodSymbol> Constructors
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        /// <summary>
+        /// Get the both instance and static constructors for this type.
+        /// </summary>
+        public virtual ImmutableArray<MethodSymbol> Constructors => GetMembers()
+            .OfType<MethodSymbol>()
+            .Where(m => m.MethodKind == MethodKind.Constructor || m.MethodKind == MethodKind.StaticConstructor)
+            .ToImmutableArray();
+
+        public virtual ImmutableArray<MethodSymbol> InstanceConstructors => GetMembers()
+            .OfType<MethodSymbol>()
+            .Where(m => m.MethodKind == MethodKind.Constructor)
+            .ToImmutableArray();
+
+        public virtual ImmutableArray<MethodSymbol> StaticConstructors => /*GetMembers()
+            .OfType<MethodSymbol>()
+            .Where(m => m.MethodKind == MethodKind.StaticConstructor)
+            .ToImmutableArray();*/
+            ImmutableArray<MethodSymbol>.Empty;
 
         /// <summary>
         /// For delegate types, gets the delegate's invoke method.  Returns null on
@@ -62,15 +73,6 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public virtual INamedTypeSymbol EnumUnderlyingType => null;
-
-        public virtual ImmutableArray<IMethodSymbol> InstanceConstructors
-        {
-            get
-            {
-                // TODO: get constructors
-                return ImmutableArray<IMethodSymbol>.Empty;
-            }
-        }
 
         public virtual bool IsGenericType => false;
 
@@ -101,14 +103,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual ImmutableArray<IMethodSymbol> StaticConstructors
-        {
-            get
-            {
-                return ImmutableArray<IMethodSymbol>.Empty;
-            }
-        }
-
         public virtual ImmutableArray<ITypeSymbol> TypeArguments
         {
             get
@@ -132,6 +126,21 @@ namespace Pchp.CodeAnalysis.Symbols
                 return (INamedTypeSymbol)this.OriginalDefinition;
             }
         }
+
+        #region INamedTypeSymbol
+
+        /// <summary>
+        /// Get the both instance and static constructors for this type.
+        /// </summary>
+        ImmutableArray<IMethodSymbol> INamedTypeSymbol.Constructors => StaticCast<IMethodSymbol>.From(Constructors);
+
+        ImmutableArray<IMethodSymbol> INamedTypeSymbol.InstanceConstructors
+            => StaticCast<IMethodSymbol>.From(InstanceConstructors);
+
+        ImmutableArray<IMethodSymbol> INamedTypeSymbol.StaticConstructors
+            => StaticCast<IMethodSymbol>.From(StaticConstructors);
+
+        #endregion
 
         #region ISymbol Members
 

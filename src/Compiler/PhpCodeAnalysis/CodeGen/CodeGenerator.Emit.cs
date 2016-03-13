@@ -23,26 +23,64 @@ namespace Pchp.CodeAnalysis.CodeGen
             _contextPlace.EmitLoad(_il);
         }
 
+        /// <summary>
+        /// Emits reference to <c>this</c>.
+        /// </summary>
+        /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
+        public TypeSymbol EmitThis()
+        {
+            if (_thisPlace == null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            return _thisPlace.EmitLoad(_il);
+        }
+
         public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint, bool negation = false)
         {
             // TODO: handle {negation} within the switch to avoid unnecessary conversions
+            // TODO: use {fromHint} to emit casting in compile time
 
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            //
             if (from.SpecialType != SpecialType.System_Boolean)
             {
                 switch (from.SpecialType)
                 {
-                    case SpecialType.System_Int32: break; // nop
+                    case SpecialType.System_Int32:
+                        break; // nop
+
                     case SpecialType.System_Int64:
                         _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
                         _il.EmitOpCode(ILOpCode.Conv_i8, 0);
                         _il.EmitOpCode(ILOpCode.Cgt_un);
                         break;
+
+                    case SpecialType.None:
+                        if (from == CoreTypes.PhpValue)
+                        {
+                            _il.EmitOpCode(ILOpCode.Call, 0);
+                            _il.EmitToken(CoreMethods.Operators.PhpValue_ToBoolean.Symbol, null, _diagnostics);
+                            break;
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();
+                        }
+
                     default:
                         throw new NotImplementedException();
                 }
             }
 
-            //
+            // !<I4>
             if (negation)
             {
                 EmitLogicNegation();
@@ -175,11 +213,27 @@ namespace Pchp.CodeAnalysis.CodeGen
         //    _il.EmitToken(_moduleBuilder.Translate(symbol, syntaxNode, _diagnostics), syntaxNode, _diagnostics);
         //}
 
+        /// <summary>
+        /// Emits call to <c>PhpAlias.Value</c>,
+        /// expecting <c>PhpAlias</c> on top of evaluation stack,
+        /// pushing <c>PhpValue</c> on top of the stack.
+        /// </summary>
         public void Emit_PhpAlias_GetValue()
         {
             // <stack>.get_Value
             _il.EmitOpCode(ILOpCode.Call, stackAdjustment: 0);
             _il.EmitToken(CoreMethods.Operators.PhpAlias_GetValue.Symbol, null, this.Diagnostics);
+        }
+
+        /// <summary>
+        /// Emits <c>new PhpAlias</c>, expecting <c>PhpValue</c> on top of the evaluation stack.
+        /// </summary>
+        public void Emit_PhpValue_MakeAlias()
+        {
+            // new PhpAlias(<STACK>, 1)
+            _il.EmitIntConstant(1);
+            _il.EmitOpCode(ILOpCode.Newobj, -1);    // - 2 out, + 1 in
+            _il.EmitToken(CoreMethods.Ctors.PhpAlias_PhpValue_int.Symbol, null, _diagnostics);
         }
 
         public void EmitEcho(BoundExpression expr)

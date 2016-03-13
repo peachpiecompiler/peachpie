@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
-    /// Descriptor of a well-known method declared in PchpCor library.
+    /// Descriptor of a well-known method.
     /// </summary>
     [DebuggerDisplay("CoreMethod {DebuggerDisplay,nq}")]
     class CoreMethod
@@ -64,16 +64,21 @@ namespace Pchp.CodeAnalysis.Symbols
             _ptypes = ptypes;
         }
 
-        private void Update(MethodSymbol symbol)
+        protected void Update(MethodSymbol symbol)
         {
             Contract.ThrowIfNull(symbol);
             _symbol = symbol;
         }
 
         /// <summary>
+        /// Implicit cast to method symbol.
+        /// </summary>
+        public static implicit operator MethodSymbol(CoreMethod m) => m.Symbol;
+
+        /// <summary>
         /// Resolves <see cref="MethodSymbol"/> of this descriptor.
         /// </summary>
-        private void ResolveSymbol()
+        protected virtual void ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
             if (type == null)
@@ -83,7 +88,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Update(methods.OfType<MethodSymbol>().First(MatchesSignature));
         }
 
-        private bool MatchesSignature(MethodSymbol m)
+        protected bool MatchesSignature(MethodSymbol m)
         {
             var ps = m.Parameters;
             if (ps.Length != _ptypes.Length)
@@ -98,17 +103,41 @@ namespace Pchp.CodeAnalysis.Symbols
     }
 
     /// <summary>
-    /// Set of well-known methods declared in PchpCor library.
+    /// Descriptor of a well-known constructor.
+    /// </summary>
+    class CoreConstructor : CoreMethod
+    {
+        public CoreConstructor(CoreType declaringClass, params CoreType[] ptypes)
+            :base(declaringClass, ".ctor", ptypes)
+        {
+
+        }
+
+        protected override void ResolveSymbol()
+        {
+            var type = this.DeclaringClass.Symbol;
+            if (type == null)
+                throw new InvalidOperationException();
+
+            var methods = type.InstanceConstructors;
+            Update(methods.OfType<MethodSymbol>().First(MatchesSignature));
+        }
+    }
+
+    /// <summary>
+    /// Set of well-known methods declared in a core library.
     /// </summary>
     class CoreMethods
     {
         public readonly OperatorsHolder Operators;
+        public readonly ConstructorsHolder Ctors;
 
         public CoreMethods(CoreTypes types)
         {
             Contract.ThrowIfNull(types);
 
             Operators = new OperatorsHolder(types);
+            Ctors = new ConstructorsHolder(types);
         }
 
         public struct OperatorsHolder
@@ -116,7 +145,12 @@ namespace Pchp.CodeAnalysis.Symbols
             public OperatorsHolder(CoreTypes ct)
             {
                 Equal_Object_Object = ct.Operators.Method("Equal", ct.Object, ct.Object);
+
                 PhpAlias_GetValue = ct.PhpAlias.Method("get_Value");
+
+                PhpValue_ToBoolean = ct.PhpValue.Method("ToBoolean");
+                PhpValue_ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
+
                 Echo_String = ct.Context.Method("Echo", ct.String);
                 Echo_PhpNumber = ct.Context.Method("Echo", ct.PhpNumber);
                 Echo_PhpValue = ct.Context.Method("Echo", ct.PhpValue);
@@ -128,7 +162,19 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 Equal_Object_Object,
                 PhpAlias_GetValue,
+                PhpValue_ToBoolean, PhpValue_ToString_Context,
                 Echo_Object, Echo_String, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long;
+        }
+
+        public struct ConstructorsHolder
+        {
+            public ConstructorsHolder(CoreTypes ct)
+            {
+                PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
+            }
+
+            public readonly CoreConstructor
+                PhpAlias_PhpValue_int;
         }
     }
 }
