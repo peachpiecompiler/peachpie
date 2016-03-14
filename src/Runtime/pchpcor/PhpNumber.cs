@@ -129,7 +129,7 @@ namespace Pchp.Core
 
         public override int GetHashCode()
         {
-            return (int)Long;
+            return unchecked((int)Long);
         }
 
         public override bool Equals(object obj)
@@ -181,16 +181,11 @@ namespace Pchp.Core
         {
             AssertTypeCode();
 
-            if (_typeCode == PhpTypeCode.Long)
-            {
-                number = Create(Long);
-                return Convert.NumberInfo.LongInteger | Convert.NumberInfo.IsNumber;
-            }
-            else
-            {
-                number = Create(Double);
-                return Convert.NumberInfo.Double | Convert.NumberInfo.IsNumber;
-            }
+            number = this;
+
+            return (_typeCode == PhpTypeCode.Long)
+                ? Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger
+                : Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
         }
 
         /// <summary>
@@ -198,6 +193,8 @@ namespace Pchp.Core
         /// </summary>
         public string ToString(Context ctx)
         {
+            AssertTypeCode();
+
             return IsLong ? Long.ToString() : Double.ToString();    // TODO: Double conversion must respect ctx culture
         }
 
