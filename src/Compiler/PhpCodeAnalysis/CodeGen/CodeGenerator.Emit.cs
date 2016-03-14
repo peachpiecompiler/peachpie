@@ -102,6 +102,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Boolean:
                     EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
                     break;
+                case SpecialType.System_Int32:
+                    _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
+                    break;
                 case SpecialType.System_Int64:
                     EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
                     break;
@@ -158,7 +162,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         throw new NotImplementedException();
                     }
-                    break;
+                    return;
             }
 
             //

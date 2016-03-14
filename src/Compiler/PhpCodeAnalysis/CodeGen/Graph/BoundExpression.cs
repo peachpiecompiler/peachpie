@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax.AST;
@@ -720,8 +721,8 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (value is int)
                 {
-                    il.Builder.EmitLongConstant((int)value);
-                    return il.CoreTypes.Long;
+                    il.Builder.EmitIntConstant((int)value);
+                    return il.CoreTypes.Int32;
                 }
                 else if (value is long)
                 {
@@ -751,8 +752,18 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundReferenceExpression
+    {
+        /// <summary>
+        /// Gets <see cref="IPlace"/> providing load and store operations.
+        /// </summary>
+        internal abstract IPlace GetPlace(CodeGenerator il);
+    }
+
     partial class BoundVariableRef
     {
+        internal override IPlace GetPlace(CodeGenerator il) => this.Variable.GetPlace(il.Builder);
+
         internal override TypeSymbol Emit(CodeGenerator il)
         {
             if (this.Variable == null)
@@ -784,6 +795,69 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             return il.CoreTypes.Void;
+        }
+    }
+
+    partial class BoundAssignEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            var target_place = this.Target.GetPlace(il);
+            Debug.Assert(target_place != null);
+            Debug.Assert(target_place.Type != null && target_place.Type.SpecialType != SpecialType.System_Void);
+
+            // T tmp; // in case access is Read
+            var t = target_place.Type;
+            LocalDefinition tmp = null;
+
+            // <target> = <value>
+            target_place.EmitStorePrepare(il.Builder);
+            il.EmitConvert(this.Value, t);
+
+            if (this.Access != AccessType.None)
+            {
+                switch (this.Access)
+                {
+                    case AccessType.Read:
+                        tmp = il.GetTemporaryLocal(t, false);
+                        il.EmitOpCode(ILOpCode.Dup);
+                        il.Builder.EmitLocalStore(tmp);
+                        break;
+                    default:
+                        throw ExceptionUtilities.UnexpectedValue(this.Access);
+                }
+            }
+
+            target_place.EmitStore(il.Builder);
+
+            //
+            switch (this.Access)
+            {
+                case AccessType.None:
+                    t = il.CoreTypes.Void;
+                    break;
+                case AccessType.Read:
+                    il.Builder.EmitLocalLoad(tmp);
+                    break;
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(this.Access);
+            }
+
+            if (tmp != null)
+            {
+                il.ReturnTemporaryLocal(tmp);
+            }
+
+            //
+            return t;
+        }
+    }
+
+    partial class BoundCompoundAssignEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            throw new NotImplementedException();
         }
     }
 }

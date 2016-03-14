@@ -20,6 +20,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 	internal interface IPlace
     {
         /// <summary>
+        /// Gets the type of place.
+        /// </summary>
+        TypeSymbol Type { get; }
+
+        /// <summary>
         /// Emits code that loads the value from this storage place.
         /// </summary>
         /// <param name="il">The <see cref="ILBuilder"/> to emit the code to.</param>
@@ -62,6 +67,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             _def = def;
         }
 
+        public TypeSymbol Type => (TypeSymbol)_def.Type;
+
         public bool HasAddress => true;
 
         public TypeSymbol EmitLoad(ILBuilder il)
@@ -88,6 +95,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(p);
             _p = p;
         }
+
+        public TypeSymbol Type => _p.Type;
 
         public bool HasAddress => true;
 
@@ -133,6 +142,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             il.EmitToken(_field, null, null /*DiagnosticBag.GetInstance()*/);    // .{field}
         }
 
+        public TypeSymbol Type => _field.Type;
+
         public bool HasAddress => true;
 
         public TypeSymbol EmitLoad(ILBuilder il)
@@ -167,6 +178,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             _holder = holder;
             _property = (PropertySymbol)property;
         }
+
+        public TypeSymbol Type => _property.Type;
 
         public bool HasAddress => false;
 

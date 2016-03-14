@@ -260,11 +260,19 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundAssignEx : BoundExpression, IAssignmentExpression
     {
+        #region IAssignmentExpression
+
+        IReferenceExpression IAssignmentExpression.Target => Target;
+
+        IExpression IAssignmentExpression.Value => Value;
+
+        #endregion
+
         public override OperationKind Kind => OperationKind.AssignmentExpression;
 
-        public IReferenceExpression Target { get; set; }
+        public BoundReferenceExpression Target { get; set; }
 
-        public IExpression Value { get; set; }
+        public BoundExpression Value { get; set; }        
 
         public BoundAssignEx(BoundReferenceExpression target, BoundExpression value)
         {
@@ -308,7 +316,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public abstract partial class BoundReferenceExpression : BoundExpression, IReferenceExpression
     {
-
+        
     }
 
     #endregion
