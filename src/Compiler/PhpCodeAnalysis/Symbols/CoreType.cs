@@ -24,22 +24,16 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly string FullName;
 
         /// <summary>
-        /// Represented well known type code.
-        /// </summary>
-        public readonly PhpTypeCode TypeCode;
-
-        /// <summary>
         /// Gets associated symbol.
         /// </summary>
         /// <remarks>Assuming single singleton instance of pchpcor library.</remarks>
         public NamedTypeSymbol Symbol { get; private set; }
 
-        public CoreType(string fullName, PhpTypeCode typecode)
+        public CoreType(string fullName)
         {
             Debug.Assert(fullName != null);
             Debug.Assert(fullName.StartsWith("Pchp.Core.") || fullName.StartsWith("System."));
             this.FullName = fullName;
-            this.TypeCode = typecode;
         }
 
         internal void Update(NamedTypeSymbol symbol)
@@ -102,18 +96,18 @@ namespace Pchp.CodeAnalysis.Symbols
             _compilation = compilation;
             _table = new Dictionary<string, CoreType>();
 
-            this.Void = Create(SpecialType.System_Void, PhpTypeCode.Void);
-            this.Object = Create(SpecialType.System_Object, PhpTypeCode.Object);
-            this.Int32 = Create(SpecialType.System_Int32, PhpTypeCode.Long);
-            this.Long = Create(SpecialType.System_Int64, PhpTypeCode.Long);
-            this.Double = Create(SpecialType.System_Double, PhpTypeCode.Double);
-            this.Boolean = Create(SpecialType.System_Boolean, PhpTypeCode.Boolean);
-            this.String = Create(SpecialType.System_String, PhpTypeCode.String);
-            this.PhpNumber = Create("PhpNumber", PhpTypeCode.PhpNumber);
-            this.PhpAlias = Create("PhpAlias", PhpTypeCode.PhpAlias);
-            this.PhpValue = Create("PhpValue", PhpTypeCode.PhpValue);
-            this.Context = Create("Context", PhpTypeCode.Object);
-            this.Operators = Create("Operators", PhpTypeCode.Object);
+            this.Void = Create(SpecialType.System_Void);
+            this.Object = Create(SpecialType.System_Object);
+            this.Int32 = Create(SpecialType.System_Int32);
+            this.Long = Create(SpecialType.System_Int64);
+            this.Double = Create(SpecialType.System_Double);
+            this.Boolean = Create(SpecialType.System_Boolean);
+            this.String = Create(SpecialType.System_String);
+            this.PhpNumber = Create("PhpNumber");
+            this.PhpAlias = Create("PhpAlias");
+            this.PhpValue = Create("PhpValue");
+            this.Context = Create("Context");
+            this.Operators = Create("Operators");
         }
 
         #region Table of types
@@ -122,13 +116,13 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Dictionary<TypeSymbol, CoreType> _typetable = new Dictionary<TypeSymbol, CoreType>();
         readonly Dictionary<SpecialType, CoreType> _specialTypes = new Dictionary<SpecialType, CoreType>();
         
-        CoreType Create(string name, PhpTypeCode typecode) => CreateFromFullName("Pchp.Core." + name, typecode);
+        CoreType Create(string name) => CreateFromFullName("Pchp.Core." + name);
 
-        CoreType Create(SpecialType type, PhpTypeCode typecode) => CreateFromFullName(SpecialTypes.GetMetadataName(type), typecode);
+        CoreType Create(SpecialType type) => CreateFromFullName(SpecialTypes.GetMetadataName(type));
         
-        CoreType CreateFromFullName(string fullName, PhpTypeCode typecode)
+        CoreType CreateFromFullName(string fullName)
         {
-            var type = new CoreType(fullName, typecode);
+            var type = new CoreType(fullName);
 
             _table.Add(fullName, type);
 

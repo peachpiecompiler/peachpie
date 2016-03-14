@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using Pchp.Syntax;
 using Pchp.CodeAnalysis.Utilities;
+using Pchp.Core;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -21,14 +22,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Bit masks initialized when such type is added to the context.
         /// Its bits corresponds to <see cref="_typeRefs"/> indices.
         /// </summary>
-        private ulong _isObjectMask, _isArrayMask, _isIntMask, _isDoubleMask, _isBoolMask, _isStringMask, _isPrimitiveMask, _isLambdaMask, _isResourceMask, _nullTypeMask, _AnObjectMask;
-        private ulong IsNumberMask { get { return _isIntMask | _isDoubleMask; } }
-        private ulong IsNullableMask { get { return _isObjectMask | _isArrayMask | _isStringMask | _isLambdaMask | _nullTypeMask | _isResourceMask; } }
+        private ulong _isObjectMask, _isArrayMask, _isLongMask, _isDoubleMask, _isBoolMask, _isStringMask, _isPrimitiveMask, _isLambdaMask;
+        private ulong IsNumberMask { get { return _isLongMask | _isDoubleMask; } }
+        private ulong IsNullableMask { get { return _isObjectMask | _isArrayMask | _isStringMask | _isLambdaMask; } }
 
-        /// <summary>
-        /// Allowed types for array key.
-        /// </summary>
-        private ulong IsArrayKeyMask { get { return _isStringMask | _isBoolMask | _isIntMask | _isDoubleMask | _isResourceMask; } }
+        ///// <summary>
+        ///// Allowed types for array key.
+        ///// </summary>
+        //private ulong IsArrayKeyMask { get { return _isStringMask | _isBoolMask | _isIntMask | _isDoubleMask | _isResourceMask; } }
 
         /// <summary>
         /// List of types occuring in the context.
@@ -71,15 +72,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Primitive Types
 
-        internal static readonly PrimitiveTypeRef/*!*/NullTypeRef = new PrimitiveTypeRef(PhpDataType.Null);
-        internal static readonly PrimitiveTypeRef/*!*/BoolTypeRef = new PrimitiveTypeRef(PhpDataType.Boolean);
-        internal static readonly PrimitiveTypeRef/*!*/IntTypeRef = new PrimitiveTypeRef(PhpDataType.Long);
-        internal static readonly PrimitiveTypeRef/*!*/DoubleTypeRef = new PrimitiveTypeRef(PhpDataType.Double);
-        internal static readonly PrimitiveTypeRef/*!*/StringTypeRef = new PrimitiveTypeRef(PhpDataType.String);
-        internal static readonly PrimitiveTypeRef/*!*/ArrayTypeRef = new PrimitiveTypeRef(PhpDataType.Array);
-        internal static readonly PrimitiveTypeRef/*!*/ObjectTypeRef = new PrimitiveTypeRef(PhpDataType.Object);
-        internal static readonly PrimitiveTypeRef/*!*/ResourceTypeRef = new PrimitiveTypeRef(PhpDataType.Resource);
-        internal static readonly PrimitiveTypeRef/*!*/CallableTypeRef = new PrimitiveTypeRef(PhpDataType.Callable);
+        internal static readonly PrimitiveTypeRef/*!*/BoolTypeRef = new PrimitiveTypeRef(PhpTypeCode.Boolean);
+        internal static readonly PrimitiveTypeRef/*!*/LongTypeRef = new PrimitiveTypeRef(PhpTypeCode.Long);
+        internal static readonly PrimitiveTypeRef/*!*/DoubleTypeRef = new PrimitiveTypeRef(PhpTypeCode.Double);
+        internal static readonly PrimitiveTypeRef/*!*/StringTypeRef = new PrimitiveTypeRef(PhpTypeCode.String);
+        internal static readonly PrimitiveTypeRef/*!*/ArrayTypeRef = new PrimitiveTypeRef(PhpTypeCode.PhpArray);
         
         #endregion
 
@@ -176,26 +173,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 _isPrimitiveMask |= mask;
                 switch (typeRef.TypeCode)
                 {
-                    case PhpDataType.Boolean:
+                    case PhpTypeCode.Boolean:
                         _isBoolMask = mask;
                         break;
-                    case PhpDataType.Long:
-                        _isIntMask = mask;
+                    case PhpTypeCode.Long:
+                        _isLongMask |= mask;
                         break;
-                    case PhpDataType.Double:
+                    case PhpTypeCode.Double:
                         _isDoubleMask = mask;
                         break;
-                    case PhpDataType.String:
+                    case PhpTypeCode.String:
                         _isStringMask = mask;
-                        break;
-                    case PhpDataType.Null:
-                        _nullTypeMask = mask;
-                        break;
-                    case PhpDataType.Resource:
-                        _isResourceMask |= mask;
-                        break;
-                    case PhpDataType.Object:
-                        _AnObjectMask = mask;
                         break;
                 }
             }
@@ -395,12 +383,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (value.IsPrimitiveType)
                 {
                     var pname = value.PrimitiveTypeName.Name;
-                    if (pname == QualifiedName.Callable.Name) return GetPrimitiveTypeRefMask(CallableTypeRef);
+                    if (pname == QualifiedName.Callable.Name) return GetCallableTypeMask(); // array | object | string
                     if (pname == QualifiedName.Array.Name) return GetArrayTypeMask();
                     if (pname == QualifiedName.String.Name) return GetStringTypeMask();
                     if (pname == QualifiedName.Boolean.Name) return GetBooleanTypeMask();
-                    if (pname == QualifiedName.Integer.Name) return GetIntTypeMask();
-                    if (pname == QualifiedName.LongInteger.Name) return GetIntTypeMask();
+                    if (pname == QualifiedName.Integer.Name) return GetLongTypeMask();
+                    if (pname == QualifiedName.LongInteger.Name) return GetLongTypeMask();
                     if (pname == QualifiedName.Double.Name) return GetDoubleTypeMask();
                 }
             }
@@ -426,15 +414,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets <c>int</c> type for this context.
         /// </summary>
-        public TypeRefMask GetIntTypeMask()
+        public TypeRefMask GetLongTypeMask()
         {
-            if (_isIntMask != 0)
+            if (_isLongMask != 0)
             {
-                return new TypeRefMask(_isIntMask);
+                return new TypeRefMask(_isLongMask);
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(IntTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(LongTypeRef);
             }
         }
 
@@ -473,22 +461,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetNumberTypeMask()
         {
-            return GetIntTypeMask() | GetDoubleTypeMask();
+            return GetLongTypeMask() | GetDoubleTypeMask();
         }
 
         /// <summary>
-        /// Gets <c>null</c> type for this context.
+        /// Gets type mask of all callable types.
         /// </summary>
-        public TypeRefMask GetNullTypeMask()
+        public TypeRefMask GetCallableTypeMask()
         {
-            if (_nullTypeMask != 0)
-            {
-                return new TypeRefMask(_nullTypeMask);
-            }
-            else
-            {
-                return GetPrimitiveTypeRefMaskNoCheck(NullTypeRef);
-            }
+            return GetArrayTypeMask() | GetStringTypeMask() | GetTypeMask(QualifiedName.SystemObject, true);
         }
 
         /// <summary>
@@ -714,7 +695,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets value indicating whether given type mask represents an integer type.
         /// </summary>
-        public bool IsInteger(TypeRefMask mask) { return (mask.Mask & _isIntMask) != 0; }
+        public bool IsInteger(TypeRefMask mask) { return (mask.Mask & _isLongMask) != 0; }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a double type.
@@ -736,10 +717,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public bool IsLambda(TypeRefMask mask) { return (mask.Mask & _isLambdaMask) != 0; }
 
-        /// <summary>
-        /// Gets value indicating whether given type mask represents a resource.
-        /// </summary>
-        public bool IsResource(TypeRefMask mask) { return (mask.Mask & _isResourceMask) != 0; }
+        ///// <summary>
+        ///// Gets value indicating whether given type mask represents a resource.
+        ///// </summary>
+        //public bool IsResource(TypeRefMask mask) { return GetObjectTypes(mask).Any(InheritesFromPhpResource); }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a primitive type.
@@ -747,27 +728,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsPrimitiveType(TypeRefMask mask) { return (mask.Mask & _isPrimitiveMask) != 0; }
 
         /// <summary>
-        /// Gets value indicating whether the type mask represents <c>null</c>.
-        /// </summary>
-        public bool IsNull(TypeRefMask mask)
-        {
-            return (mask.Mask & _nullTypeMask) != 0 && !mask.IsAnyType;
-        }
-
-        /// <summary>
         /// Gets value indicating whether given type can be <c>null</c>.
         /// </summary>
         public bool IsNullable(TypeRefMask mask) { return (mask.Mask & IsNullableMask) != 0; }
 
-        public bool IsArrayKey(TypeRefMask mask) { return (mask.Mask & IsArrayKeyMask) != 0; }  // TODO: type can be of type object with method __toString() ?
-
-        /// <summary>
-        /// Gets value indicating whether given mask represents an unspecified <c>object</c> instance.
-        /// </summary>
-        public bool IsAnObject(TypeRefMask mask)
-        {
-            return (mask.Mask & _AnObjectMask) != 0;
-        }
+        //public bool IsArrayKey(TypeRefMask mask) { return (mask.Mask & IsArrayKeyMask) != 0; }  // TODO: type can be of type object with method __toString() ?
 
         /// <summary>
         /// In case of array type, gets its possible element types.

@@ -23,7 +23,7 @@ namespace Pchp.Core
             {
                 var str = ToString();
 
-                if (_type == PhpTypeCode.String || _type == PhpTypeCode.ByteString || _type == PhpTypeCode.PhpStringBuilder)
+                if (_type == PhpTypeCode.String || _type == PhpTypeCode.BinaryString || _type == PhpTypeCode.PhpStringBuilder)
                     str = $"'{str}'";
 
                 return str;
@@ -131,11 +131,6 @@ namespace Pchp.Core
         public static PhpValue Create(bool value)
         {
             return new PhpValue() { _type = PhpTypeCode.Boolean, _bool = value };
-        }
-
-        public static PhpValue Create()
-        {
-            return new PhpValue() { _type = PhpTypeCode.Void };
         }
 
         public static PhpValue CreateNull()

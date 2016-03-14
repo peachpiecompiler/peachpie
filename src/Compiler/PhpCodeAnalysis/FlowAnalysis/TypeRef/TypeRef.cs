@@ -1,4 +1,5 @@
-﻿using Pchp.Syntax;
+﻿using Pchp.Core;
+using Pchp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -45,7 +46,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public AST.Signature LambdaSignature { get { throw new InvalidOperationException(); } }
 
-        public PhpDataType TypeCode { get { return PhpDataType.Object; } }
+        public PhpTypeCode TypeCode { get { return PhpTypeCode.Object; } }
 
         public ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target) { return this; }   // there is nothing depending on the context
         
@@ -121,7 +122,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public AST.Signature LambdaSignature { get { throw new InvalidOperationException(); } }
 
-        public PhpDataType TypeCode { get { return PhpDataType.Array; } }
+        public PhpTypeCode TypeCode { get { return PhpTypeCode.PhpArray; } }
 
         public ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target)
         {
@@ -173,9 +174,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// </summary>
     internal sealed class PrimitiveTypeRef : ITypeRef, IEquatable<PrimitiveTypeRef>
     {
-        private readonly PhpDataType _code;
+        private readonly PhpTypeCode _code;
 
-        public PrimitiveTypeRef(PhpDataType code)
+        public PrimitiveTypeRef(PhpTypeCode code)
         {
             _code = code;
         }
@@ -188,28 +189,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 switch (_code)
                 {
-                    case PhpDataType.Null: return QualifiedName.Null;
-                    case PhpDataType.Boolean: return QualifiedName.Boolean;
-                    case PhpDataType.Long: return QualifiedName.Integer;
-                    case PhpDataType.Double: return QualifiedName.Double;
-                    case PhpDataType.String: return QualifiedName.String;
-                    case PhpDataType.Array: return QualifiedName.Array;
-                    case PhpDataType.Object: return QualifiedName.Object;
-                    case PhpDataType.Resource: return QualifiedName.Resource;
-                    case PhpDataType.Callable: return QualifiedName.Callable;
+                    case PhpTypeCode.Boolean: return QualifiedName.Boolean;
+                    case PhpTypeCode.Int32:
+                    case PhpTypeCode.Long: return QualifiedName.Integer;
+                    case PhpTypeCode.Double: return QualifiedName.Double;
+                    case PhpTypeCode.BinaryString:
+                    case PhpTypeCode.PhpStringBuilder:
+                    case PhpTypeCode.String: return QualifiedName.String;
+                    case PhpTypeCode.PhpArray: return QualifiedName.Array;
                     default:
                         throw new ArgumentException();
                 }
             }
         }
 
-        public bool IsObject { get { return _code == PhpDataType.Object; } }
+        public bool IsObject { get { return _code == PhpTypeCode.Object; } }
 
-        public bool IsArray { get { return _code == PhpDataType.Array; } }
+        public bool IsArray { get { return _code == PhpTypeCode.PhpArray; } }
 
         public bool IsPrimitiveType { get { return true; } }
 
-        public bool IsLambda { get { return _code == PhpDataType.Callable; } }
+        public bool IsLambda { get { return false; } }
 
         public IEnumerable<object> Keys { get { return null; } }
 
@@ -222,7 +222,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets underlaying type code of the primitive type.
         /// </summary>
-        public PhpDataType TypeCode { get { return _code; } }
+        public PhpTypeCode TypeCode { get { return _code; } }
 
         public ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target) { return this; }
 
@@ -319,7 +319,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public AST.Signature LambdaSignature { get { return _signature; } }
 
-        public PhpDataType TypeCode { get { return PhpDataType.Callable; } }
+        public PhpTypeCode TypeCode { get { return PhpTypeCode.Object; } }
 
         public ITypeRef Transfer(TypeRefContext source, TypeRefContext target)
         {

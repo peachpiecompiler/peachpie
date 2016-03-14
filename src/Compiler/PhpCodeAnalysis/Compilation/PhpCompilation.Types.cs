@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System.Diagnostics;
+using Pchp.Core;
 
 namespace Pchp.CodeAnalysis
 {
@@ -178,10 +179,11 @@ namespace Pchp.CodeAnalysis
         {
             switch (t.TypeCode)
             {
-                case PhpDataType.Double: return CoreTypes.Double;
-                case PhpDataType.Long: return CoreTypes.Long;
-                case PhpDataType.Boolean: return CoreTypes.Boolean;
-                case PhpDataType.String: return CoreTypes.String;
+                case PhpTypeCode.Double: return CoreTypes.Double;
+                case PhpTypeCode.Long: return CoreTypes.Long;
+                case PhpTypeCode.Int32: return CoreTypes.Int32;
+                case PhpTypeCode.Boolean: return CoreTypes.Boolean;
+                case PhpTypeCode.String: return CoreTypes.String;
                 default:
                     throw new NotImplementedException();
             }

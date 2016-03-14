@@ -19,9 +19,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         private static readonly Dictionary<string, TypeMaskGetter>/*!*/_knownTypes = new Dictionary<string, TypeMaskGetter>(StringComparer.OrdinalIgnoreCase)
         {
-                { "int", ctx => ctx.GetIntTypeMask()},
-                { "integer", ctx => ctx.GetIntTypeMask()},
-                { "long", ctx => ctx.GetIntTypeMask()},
+                { "int", ctx => ctx.GetLongTypeMask()},
+                { "integer", ctx => ctx.GetLongTypeMask()},
+                { "long", ctx => ctx.GetLongTypeMask()},
                 { "number", ctx => ctx.GetNumberTypeMask()},
                 { "numeric", ctx => ctx.GetNumberTypeMask()},
                 { "string", ctx => ctx.GetStringTypeMask()},
@@ -32,11 +32,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 { "float", ctx => ctx.GetDoubleTypeMask()},
                 { "double", ctx => ctx.GetDoubleTypeMask()},
                 { "array", ctx => ctx.GetArrayTypeMask()},
-                { "resource", ctx => ctx.GetTypeMask(TypeRefContext.ResourceTypeRef, false)},
-                { "null", ctx => ctx.GetNullTypeMask()},
+                //{ "resource", ctx => ctx.GetTypeMask(Pchp.Core.PhpResource, true)},
+                { "null", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, false)},
+                { "object", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, true)},
                 { "void", ctx => 0},
-                { "callable", ctx => ctx.GetTypeMask(TypeRefContext.CallableTypeRef, false)},
-                { "object", ctx => ctx.GetTypeMask(TypeRefContext.ObjectTypeRef, false)},
+                //{ "nothing", ctx => 0},
+                { "callable", ctx => ctx.GetCallableTypeMask()},
                 { "mixed", ctx => TypeRefMask.AnyType},
             };
 

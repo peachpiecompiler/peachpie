@@ -75,7 +75,6 @@
     <Compile Include="FlowAnalysis\StateBinder.cs" />
     <Compile Include="FlowAnalysis\TypeRef\CallInfo.cs" />
     <Compile Include="FlowAnalysis\TypeRef\ITypeRef.cs" />
-    <Compile Include="FlowAnalysis\TypeRef\PhpDataType.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRef.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefContext.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefMask.cs" />

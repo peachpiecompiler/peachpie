@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Pchp.Syntax;
 using Pchp.Syntax.AST;
+using Pchp.Core;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -63,7 +64,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets the type code.
         /// </summary>
-        PhpDataType TypeCode { get; }
+        PhpTypeCode TypeCode { get; }
 
         /// <summary>
         /// Transfers this type reference to the target type context.
