@@ -34,10 +34,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <remarks>Assuming single singleton instance of pchpcor library.</remarks>
         public NamedTypeSymbol Symbol { get; private set; }
 
-        public bool IsNumber => TypeCode == PhpTypeCode.Double || TypeCode == PhpTypeCode.Long || TypeCode == PhpTypeCode.PhpNumber;
-
-        public bool IsString => TypeCode == PhpTypeCode.String || TypeCode == PhpTypeCode.PhpStringBuilder || TypeCode == PhpTypeCode.ByteString;
-
         public CoreType(string fullName, PhpTypeCode typecode)
         {
             Debug.Assert(fullName != null);

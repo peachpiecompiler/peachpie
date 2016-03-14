@@ -66,8 +66,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     case SpecialType.None:
                         if (from == CoreTypes.PhpValue)
                         {
-                            _il.EmitOpCode(ILOpCode.Call, 0);
-                            _il.EmitToken(CoreMethods.Operators.PhpValue_ToBoolean.Symbol, null, _diagnostics);
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
                             break;
                         }
                         else
@@ -93,6 +92,34 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitConvertToBool(expr.Emit(this), expr.TypeRefMask, negation);
         }
 
+        public void EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
+        {
+            Contract.ThrowIfNull(from);
+
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_Boolean:
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+                    break;
+                case SpecialType.System_Int64:
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
+                    break;
+                case SpecialType.System_Double:
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Double);
+                    break;
+                default:
+                    if (from == CoreTypes.PhpNumber)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpNumber);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                    break;
+            }
+        }
+
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
         {
             EmitConvert(expr.Emit(this), expr.TypeRefMask, to);
@@ -116,6 +143,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Boolean:
                     EmitConvertToBool(from, fromHint);
                     return;
+                default:
+                    if (to == CoreTypes.PhpValue)
+                    {
+                        EmitConvertToPhpValue(from, fromHint);
+                    }
+                    else if (to == CoreTypes.PhpAlias)
+                    {
+                        EmitConvertToPhpValue(from, fromHint);
+                        Emit_PhpValue_MakeAlias();
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                    break;
             }
 
             //
@@ -143,36 +185,26 @@ namespace Pchp.CodeAnalysis.CodeGen
             return variable.GetPlace(_il).EmitLoad(_il);
         }
 
-        public static int GetCallStackBehavior(BoundFunctionCall call)
+        private static int GetCallStackBehavior(MethodSymbol method)
         {
             int stack = 0;
 
-            if (!call.TargetMethod.ReturnsVoid)
+            if (!method.ReturnsVoid)
             {
                 // The call puts the return value on the stack.
                 stack += 1;
             }
 
-            if (!call.TargetMethod.IsStatic)
+            if (!method.IsStatic)
             {
                 // The call pops the receiver off the stack.
                 stack -= 1;
             }
 
-            if (call.TargetMethod.IsVararg)
-            {
-                // The call pops all the arguments, fixed and variadic.
-                int fixedArgCount = call.ArgumentsInParameterOrder.Length - 1;
-                int varArgCount = 0; //  ((BoundArgListOperator)call.Arguments[fixedArgCount]).Arguments.Length;
-                stack -= fixedArgCount;
-                stack -= varArgCount;
-            }
-            else
-            {
-                // The call pops all the arguments.
-                stack -= call.ArgumentsInParameterOrder.Length;
-            }
+            // The call pops all the arguments.
+            stack -= method.ParameterCount;
 
+            //
             return stack;
         }
 
@@ -190,13 +222,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
             _il.EmitOpCode(ILOpCode.Ceq);
         }
-
-        //public void EmitCall(ILOpCode code, MethodSymbol method)
-        //{
-        //    Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt);
-        //    EmitOpCode(code);
-        //    IL.EmitToken(method, /*method.Syntax*/ null, _diagnostics);
-        //}
 
         internal void EmitSymbolToken(TypeSymbol symbol, SyntaxNode syntaxNode)
         {
@@ -221,8 +246,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void Emit_PhpAlias_GetValue()
         {
             // <stack>.get_Value
-            _il.EmitOpCode(ILOpCode.Call, stackAdjustment: 0);
-            _il.EmitToken(CoreMethods.Operators.PhpAlias_GetValue.Symbol, null, this.Diagnostics);
+            EmitCall(ILOpCode.Call, CoreMethods.Operators.PhpAlias_GetValue);
         }
 
         /// <summary>
@@ -234,6 +258,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitIntConstant(1);
             _il.EmitOpCode(ILOpCode.Newobj, -1);    // - 2 out, + 1 in
             _il.EmitToken(CoreMethods.Ctors.PhpAlias_PhpValue_int.Symbol, null, _diagnostics);
+        }
+
+        /// <summary>
+        /// Emits call to given method.
+        /// </summary>
+        /// <param name="code">Call op code, Call, Callvirt, Calli.</param>
+        /// <param name="method">Method reference.</param>
+        /// <returns>Method return type.</returns>
+        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method)
+        {
+            Contract.ThrowIfNull(method);
+            Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt);
+
+            var stack = GetCallStackBehavior(method);
+            _il.EmitOpCode(code, stack);
+            _il.EmitToken(_moduleBuilder.Translate(method, _diagnostics, false), null, _diagnostics);
+            return method.ReturnType;
         }
 
         public void EmitEcho(BoundExpression expr)
@@ -286,8 +327,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            _il.EmitOpCode(ILOpCode.Call, stackAdjustment: -2); // - <ctx> - <expr>
-            _il.EmitToken(method, null, this.Diagnostics);
+            EmitCall(ILOpCode.Call, method);
         }
 
         public void EmitReturnDefault()

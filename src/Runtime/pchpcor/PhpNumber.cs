@@ -43,8 +43,6 @@ namespace Pchp.Core
 
         #region Construction
 
-        public static PhpNumber Create(int value) => Create((long)value);
-
         public static PhpNumber Create(long value)
         {
             return new PhpNumber() { TypeCode = PhpTypeCode.Long, Long = value };

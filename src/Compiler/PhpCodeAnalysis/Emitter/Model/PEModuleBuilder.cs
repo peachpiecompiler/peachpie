@@ -785,7 +785,8 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal override Cci.IMethodReference Translate(IMethodSymbol symbol, DiagnosticBag diagnostics, bool needDeclaration)
         {
-            throw new NotImplementedException();
+            // TODO
+            return (Cci.IMethodReference)symbol;
         }
 
         internal override Cci.ITypeReference Translate(ITypeSymbol symbol, SyntaxNode syntaxOpt, DiagnosticBag diagnostics)

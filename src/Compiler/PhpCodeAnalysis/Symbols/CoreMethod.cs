@@ -4,20 +4,25 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
+    #region CoreMethod, CoreConstructor
+
     /// <summary>
     /// Descriptor of a well-known method.
     /// </summary>
     [DebuggerDisplay("CoreMethod {DebuggerDisplay,nq}")]
     class CoreMethod
     {
+        #region Fields
+
         /// <summary>
         /// Lazily associated symbol.
         /// </summary>
-        private MethodSymbol _symbol;
+        MethodSymbol _lazySymbol;
 
         /// <summary>
         /// Parametyer types.
@@ -34,24 +39,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public readonly string MethodName;
 
-        /// <summary>
-        /// Gets associated symbol.
-        /// </summary>
-        public MethodSymbol Symbol
-        {
-            get
-            {
-                var symbol = _symbol;
-                if (symbol == null)
-                {
-                    ResolveSymbol();
-                    symbol = _symbol;
-                }
-                return symbol;
-            }
-        }
-
-        string DebuggerDisplay => DeclaringClass.FullName + "." + MethodName;
+        #endregion
 
         public CoreMethod(CoreType declaringClass, string methodName, params CoreType[] ptypes)
         {
@@ -64,28 +52,45 @@ namespace Pchp.CodeAnalysis.Symbols
             _ptypes = ptypes;
         }
 
-        protected void Update(MethodSymbol symbol)
+        /// <summary>
+        /// Gets associated symbol.
+        /// </summary>
+        public MethodSymbol Symbol
         {
-            Contract.ThrowIfNull(symbol);
-            _symbol = symbol;
+            get
+            {
+                var symbol = _lazySymbol;
+                if (symbol == null)
+                {
+                    symbol = ResolveSymbol();
+                    Contract.ThrowIfNull(symbol);
+
+                    Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
+                }
+                return symbol;
+            }
         }
+
+        string DebuggerDisplay => DeclaringClass.FullName + "." + MethodName;
 
         /// <summary>
         /// Implicit cast to method symbol.
         /// </summary>
         public static implicit operator MethodSymbol(CoreMethod m) => m.Symbol;
 
+        #region ResolveSymbol
+
         /// <summary>
         /// Resolves <see cref="MethodSymbol"/> of this descriptor.
         /// </summary>
-        protected virtual void ResolveSymbol()
+        protected virtual MethodSymbol ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
             if (type == null)
                 throw new InvalidOperationException();
 
             var methods = type.GetMembers(MethodName);
-            Update(methods.OfType<MethodSymbol>().First(MatchesSignature));
+            return methods.OfType<MethodSymbol>().First(MatchesSignature);
         }
 
         protected bool MatchesSignature(MethodSymbol m)
@@ -100,6 +105,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return true;
         }
+
+        #endregion
     }
 
     /// <summary>
@@ -113,22 +120,25 @@ namespace Pchp.CodeAnalysis.Symbols
 
         }
 
-        protected override void ResolveSymbol()
+        protected override MethodSymbol ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
             if (type == null)
                 throw new InvalidOperationException();
 
             var methods = type.InstanceConstructors;
-            Update(methods.OfType<MethodSymbol>().First(MatchesSignature));
+            return methods.First(MatchesSignature);
         }
     }
+
+    #endregion
 
     /// <summary>
     /// Set of well-known methods declared in a core library.
     /// </summary>
     class CoreMethods
     {
+        public readonly PhpValueHolder PhpValue;
         public readonly OperatorsHolder Operators;
         public readonly ConstructorsHolder Ctors;
 
@@ -136,6 +146,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Contract.ThrowIfNull(types);
 
+            PhpValue = new PhpValueHolder(types);
             Operators = new OperatorsHolder(types);
             Ctors = new ConstructorsHolder(types);
         }
@@ -148,9 +159,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 PhpAlias_GetValue = ct.PhpAlias.Method("get_Value");
 
-                PhpValue_ToBoolean = ct.PhpValue.Method("ToBoolean");
-                PhpValue_ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
-
                 Echo_String = ct.Context.Method("Echo", ct.String);
                 Echo_PhpNumber = ct.Context.Method("Echo", ct.PhpNumber);
                 Echo_PhpValue = ct.Context.Method("Echo", ct.PhpValue);
@@ -162,8 +170,25 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 Equal_Object_Object,
                 PhpAlias_GetValue,
-                PhpValue_ToBoolean, PhpValue_ToString_Context,
                 Echo_Object, Echo_String, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long;
+        }
+
+        public struct PhpValueHolder
+        {
+            public PhpValueHolder(CoreTypes ct)
+            {
+                ToBoolean = ct.PhpValue.Method("ToBoolean");
+                ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
+
+                Create_Boolean = ct.PhpValue.Method("Create", ct.Boolean);
+                Create_Long = ct.PhpValue.Method("Create", ct.Long);
+                Create_Double = ct.PhpValue.Method("Create", ct.Double);
+                Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
+            }
+
+            public readonly CoreMethod
+                ToBoolean, ToString_Context,
+                Create_Boolean, Create_Long, Create_Double, Create_PhpNumber;
         }
 
         public struct ConstructorsHolder

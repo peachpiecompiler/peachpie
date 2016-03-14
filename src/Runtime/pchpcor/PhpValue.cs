@@ -128,6 +128,11 @@ namespace Pchp.Core
 
         public static PhpValue Create(int value) => Create((long)value);
 
+        public static PhpValue Create(bool value)
+        {
+            return new PhpValue() { _type = PhpTypeCode.Boolean, _bool = value };
+        }
+
         public static PhpValue Create()
         {
             return new PhpValue() { _type = PhpTypeCode.Void };

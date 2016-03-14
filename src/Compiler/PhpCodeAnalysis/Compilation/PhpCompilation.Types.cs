@@ -26,7 +26,17 @@ namespace Pchp.CodeAnalysis
         public CoreMethods CoreMethods => _coreMethods;
         readonly CoreMethods _coreMethods;
 
-        public CoreType Merge(CoreType first, CoreType second)
+        #endregion
+
+        #region PHP Type Hierarchy
+
+        /// <summary>
+        /// Merges two CLR types into one, according to PCHP type hierarchy.
+        /// </summary>
+        /// <param name="first">First type.</param>
+        /// <param name="second">Second type.</param>
+        /// <returns>One type convering both <paramref name="first"/> and <paramref name="second"/> types.</returns>
+        public NamedTypeSymbol Merge(NamedTypeSymbol first, NamedTypeSymbol second)
         {
             Contract.ThrowIfNull(first);
             Contract.ThrowIfNull(second);
@@ -40,8 +50,8 @@ namespace Pchp.CodeAnalysis
             if (second == CoreTypes.PhpValue)
                 return second;
 
-            // a number
-            if (first.IsNumber && second.IsNumber)
+            // a number (int | double)
+            if (IsNumber(first) && IsNumber(second))
                 return CoreTypes.PhpNumber;
 
             //// a string builder
@@ -54,8 +64,22 @@ namespace Pchp.CodeAnalysis
             return CoreTypes.PhpValue;
         }
 
-        #endregion
+        /// <summary>
+        /// Determines whether given type is treated as a PHP number (<c>int</c> or <c>double</c>).
+        /// </summary>
+        public bool IsNumber(TypeSymbol type)
+        {
+            Contract.ThrowIfNull(type);
 
+            return
+                type.SpecialType == SpecialType.System_Double ||
+                type.SpecialType == SpecialType.System_Int32 ||
+                type.SpecialType == SpecialType.System_Int64 ||
+                type == CoreTypes.PhpNumber;
+        }
+
+        #endregion
+        
         internal NamedTypeSymbol GetWellKnownType(WellKnownType id)
         {
             var name = id.GetMetadataName();
@@ -112,7 +136,7 @@ namespace Pchp.CodeAnalysis
                 Debug.Assert(types.Count != 0);
 
                 // determine best fitting CLR type based on defined PHP types hierarchy
-                CoreType result = GetTypeFromTypeRef(types[0]);
+                var result = GetTypeFromTypeRef(types[0]);
 
                 for (int i = 1; i < types.Count; i++)
                 {
@@ -128,7 +152,7 @@ namespace Pchp.CodeAnalysis
             return CoreTypes.PhpValue;
         }
 
-        internal CoreType GetTypeFromTypeRef(ITypeRef t)
+        internal NamedTypeSymbol GetTypeFromTypeRef(ITypeRef t)
         {
             if (t is PrimitiveTypeRef)
             {
@@ -150,7 +174,7 @@ namespace Pchp.CodeAnalysis
             throw new ArgumentException();
         }
 
-        CoreType GetTypeFromTypeRef(PrimitiveTypeRef t)
+        NamedTypeSymbol GetTypeFromTypeRef(PrimitiveTypeRef t)
         {
             switch (t.TypeCode)
             {
