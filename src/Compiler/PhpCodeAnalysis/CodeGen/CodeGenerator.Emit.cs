@@ -3,6 +3,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -335,6 +336,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // return default(RETURN_TYPE);
 
             var return_type = this.Routine.ReturnType;
+
             switch (return_type.SpecialType)
             {
                 case SpecialType.System_Void:
@@ -358,7 +360,46 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        throw new NotImplementedException();    // default(T)
+                        if (return_type == CoreTypes.PhpValue)
+                        {
+                            var return_mask = this.Routine.ControlFlowGraph.ReturnTypeMask;
+                            var typectx = this.Routine.ControlFlowGraph.FlowContext.TypeRefContext;
+
+                            if (typectx.IsBoolean(return_mask))
+                            {
+                                _il.EmitBoolConstant(false);
+                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+                            }
+                            else if (typectx.IsInteger(return_mask))
+                            {
+                                _il.EmitLongConstant(0);
+                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
+                            }
+                            else if (typectx.IsDouble(return_mask))
+                            {
+                                _il.EmitDoubleConstant(0.0);
+                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Double);
+                            }
+                            //else if (typectx.IsString(return_mask))
+                            //{
+                            //}
+                            //else if (typectx.IsArray(return_mask))
+                            //{
+                            //}
+                            //else if (typectx.IsNullable(return_mask))
+                            //{
+                            //    _il.EmitNullConstant();
+                            //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Object);
+                            //}
+                            else
+                            {
+                                throw ExceptionUtilities.UnexpectedValue(return_type);
+                            }
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();    // default(T)
+                        }
                     }
                     break;
             }

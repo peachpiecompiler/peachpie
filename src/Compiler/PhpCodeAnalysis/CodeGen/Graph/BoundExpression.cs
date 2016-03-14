@@ -738,6 +738,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     il.Builder.EmitBoolConstant((bool)value);
                     return il.CoreTypes.Boolean;
                 }
+                else if (value is double)
+                {
+                    il.Builder.EmitDoubleConstant((double)value);
+                    return il.CoreTypes.Double;
+                }
                 else
                 {
                     throw new NotImplementedException();
