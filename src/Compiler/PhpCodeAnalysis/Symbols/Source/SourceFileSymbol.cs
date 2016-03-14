@@ -91,6 +91,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal override bool IsInterface => false;
+
         public override bool IsAbstract => false;
 
         public override bool IsSealed => true;
@@ -112,6 +114,11 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override bool MangleName => false;
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;
+
+        internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
+        {
+            return ImmutableArray<NamedTypeSymbol>.Empty;
+        }
 
         public override ImmutableArray<Symbol> GetMembers() => ImmutableArray.Create((Symbol)_mainMethod, GetIndexField());
 

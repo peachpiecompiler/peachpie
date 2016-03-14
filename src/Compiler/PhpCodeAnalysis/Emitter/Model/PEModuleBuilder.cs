@@ -789,9 +789,69 @@ namespace Pchp.CodeAnalysis.Emit
             return (Cci.IMethodReference)symbol;
         }
 
-        internal override Cci.ITypeReference Translate(ITypeSymbol symbol, SyntaxNode syntaxOpt, DiagnosticBag diagnostics)
+        internal sealed override Cci.ITypeReference Translate(ITypeSymbol typeSymbol, SyntaxNode syntaxNodeOpt, DiagnosticBag diagnostics)
         {
             Debug.Assert(diagnostics != null);
+
+            switch (typeSymbol.Kind)
+            {
+                //case SymbolKind.DynamicType:
+                //    return Translate((DynamicTypeSymbol)typeSymbol, syntaxNodeOpt, diagnostics);
+
+                //case SymbolKind.ArrayType:
+                //    return Translate((ArrayTypeSymbol)typeSymbol);
+
+                case SymbolKind.ErrorType:
+                case SymbolKind.NamedType:
+                    return Translate((NamedTypeSymbol)typeSymbol, syntaxNodeOpt, diagnostics);
+
+                //case SymbolKind.PointerType:
+                //    return Translate((PointerTypeSymbol)typeSymbol);
+
+                //case SymbolKind.TypeParameter:
+                //    return Translate((TypeParameterSymbol)typeSymbol);
+            }
+
+            throw ExceptionUtilities.UnexpectedValue(typeSymbol.Kind);
+        }
+
+        internal Cci.ITypeReference Translate(
+            TypeSymbol namedTypeSymbol, SyntaxNode syntaxOpt, DiagnosticBag diagnostics,
+            bool fromImplements = false,
+            bool needDeclaration = false)
+        {
+            Debug.Assert(namedTypeSymbol.IsDefinitionOrDistinct());
+            Debug.Assert(diagnostics != null);
+
+            //// Anonymous type being translated
+            //if (namedTypeSymbol.IsAnonymousType)
+            //{
+            //    namedTypeSymbol = AnonymousTypeManager.TranslateAnonymousTypeSymbol(namedTypeSymbol);
+            //}
+
+            // Substitute error types with a special singleton object.
+            // Unreported bad types can come through NoPia embedding, for example.
+            if (namedTypeSymbol.OriginalDefinition.Kind == SymbolKind.ErrorType)
+            {
+                //ErrorTypeSymbol errorType = (ErrorTypeSymbol)namedTypeSymbol.OriginalDefinition;
+                //DiagnosticInfo diagInfo = errorType.GetUseSiteDiagnostic() ?? errorType.ErrorInfo;
+
+                //if (diagInfo == null && namedTypeSymbol.Kind == SymbolKind.ErrorType)
+                //{
+                //    errorType = (ErrorTypeSymbol)namedTypeSymbol;
+                //    diagInfo = errorType.GetUseSiteDiagnostic() ?? errorType.ErrorInfo;
+                //}
+
+                //// Try to decrease noise by not complaining about the same type over and over again.
+                //if (_reportedErrorTypesMap.Add(errorType))
+                //{
+                //    diagnostics.Add(new CSDiagnostic(diagInfo ?? new CSDiagnosticInfo(ErrorCode.ERR_BogusType, string.Empty), syntaxNodeOpt == null ? NoLocation.Singleton : syntaxNodeOpt.Location));
+                //}
+
+                //return CodeAnalysis.Emit.ErrorType.Singleton;
+
+                throw new NotImplementedException();
+            }
 
             //if (!namedTypeSymbol.IsDefinition)
             //{
@@ -866,7 +926,7 @@ namespace Pchp.CodeAnalysis.Emit
             //    return _embeddedTypesManagerOpt.EmbedTypeIfNeedTo(namedTypeSymbol, fromImplements, syntaxNodeOpt, diagnostics);
             //}
 
-            return (Cci.ITypeReference)symbol;
+            return (Cci.ITypeReference)namedTypeSymbol;
         }
 
         internal ImmutableArray<Cci.IParameterTypeInformation> Translate(ImmutableArray<ParameterSymbol> @params)

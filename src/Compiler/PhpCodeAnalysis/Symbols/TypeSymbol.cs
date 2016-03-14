@@ -16,15 +16,19 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal abstract partial class TypeSymbol : NamespaceOrTypeSymbol, ITypeSymbol
     {
-        public virtual ImmutableArray<INamedTypeSymbol> AllInterfaces
-        {
-            get
-            {
-                return ImmutableArray<INamedTypeSymbol>.Empty;
-            }
-        }
+        #region ITypeSymbol
+
+        public abstract TypeKind TypeKind { get; }
 
         INamedTypeSymbol ITypeSymbol.BaseType => BaseType;
+
+        ImmutableArray<INamedTypeSymbol> ITypeSymbol.AllInterfaces => StaticCast<INamedTypeSymbol>.From(AllInterfaces);
+
+        ImmutableArray<INamedTypeSymbol> ITypeSymbol.Interfaces => StaticCast<INamedTypeSymbol>.From(Interfaces);
+
+        ITypeSymbol ITypeSymbol.OriginalDefinition => (ITypeSymbol)this.OriginalDefinition;
+
+        #endregion
 
         public virtual NamedTypeSymbol BaseType
         {
@@ -34,11 +38,19 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual ImmutableArray<INamedTypeSymbol> Interfaces
+        public virtual ImmutableArray<NamedTypeSymbol> AllInterfaces
         {
             get
             {
-                return ImmutableArray<INamedTypeSymbol>.Empty;
+                return ImmutableArray<NamedTypeSymbol>.Empty;
+            }
+        }
+
+        public virtual ImmutableArray<NamedTypeSymbol> Interfaces
+        {
+            get
+            {
+                return ImmutableArray<NamedTypeSymbol>.Empty;
             }
         }
 
@@ -93,16 +105,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// In case of PHP corlibrary type, gets reference to the descriptor <see cref="CoreType"/>.
         /// </summary>
         public virtual CoreType PhpCoreType => null;
-
-        public abstract TypeKind TypeKind { get; }
-
-        ITypeSymbol ITypeSymbol.OriginalDefinition
-        {
-            get
-            {
-                return (ITypeSymbol)this.OriginalDefinition;
-            }
-        }
 
         public ISymbol FindImplementationForInterfaceMember(ISymbol interfaceMember)
         {

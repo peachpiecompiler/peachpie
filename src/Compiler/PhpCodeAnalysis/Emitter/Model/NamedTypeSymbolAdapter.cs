@@ -127,7 +127,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
-
         Cci.INestedTypeReference Cci.ITypeReference.AsNestedTypeReference
         {
             get
@@ -392,12 +391,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
             PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
 
-            foreach (NamedTypeSymbol @interface in this.GetInterfacesToEmit())
+            foreach (NamedTypeSymbol iiface in this.GetInterfacesToEmit())
             {
-                //yield return moduleBeingBuilt.Translate(@interface,
-                //                                        syntaxNodeOpt: (CSharpSyntaxNode)context.SyntaxNodeOpt,
-                //                                        diagnostics: context.Diagnostics,
-                //                                        fromImplements: true);
+                yield return moduleBeingBuilt.Translate(iiface, null, context.Diagnostics,
+                    fromImplements: true);
             }
 
             yield break;

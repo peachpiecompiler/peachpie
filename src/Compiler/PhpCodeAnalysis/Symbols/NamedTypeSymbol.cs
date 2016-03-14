@@ -59,6 +59,18 @@ namespace Pchp.CodeAnalysis.Symbols
             .ToImmutableArray();*/
             ImmutableArray<MethodSymbol>.Empty;
 
+        internal abstract ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved);
+
+        /// <summary>
+        /// Requires less computation than <see cref="TypeSymbol.TypeKind"/> == <see cref="TypeKind.Interface"/>.
+        /// </summary>
+        /// <remarks>
+        /// Metadata types need to compute their base types in order to know their TypeKinds, and that can lead
+        /// to cycles if base types are already being computed.
+        /// </remarks>
+        /// <returns>True if this is an interface type.</returns>
+        internal abstract bool IsInterface { get; }
+
         /// <summary>
         /// For delegate types, gets the delegate's invoke method.  Returns null on
         /// all other kinds of types.

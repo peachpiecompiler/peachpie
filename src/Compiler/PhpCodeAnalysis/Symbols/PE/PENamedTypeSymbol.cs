@@ -307,7 +307,7 @@ namespace Pchp.CodeAnalysis.Symbols
         TypeKind _lazyKind;
 
         private NamedTypeSymbol _lazyDeclaredBaseType = ErrorTypeSymbol.UnknownResultType;
-        //private ImmutableArray<NamedTypeSymbol> _lazyDeclaredInterfaces = default(ImmutableArray<NamedTypeSymbol>);
+        private ImmutableArray<NamedTypeSymbol> _lazyDeclaredInterfaces = default(ImmutableArray<NamedTypeSymbol>);
 
         private PENamedTypeSymbol(
             PEModuleSymbol moduleSymbol,
@@ -510,6 +510,66 @@ namespace Pchp.CodeAnalysis.Symbols
         //        return (_flags & TypeAttributes.SpecialName) != 0;
         //    }
         //}
+
+        internal sealed override bool IsInterface => _flags.IsInterface();
+
+        ImmutableArray<NamedTypeSymbol> MakeAcyclicInterfaces()
+        {
+            var declaredInterfaces = GetDeclaredInterfaces(null);
+            if (!IsInterface)
+            {
+                // only interfaces needs to check for inheritance cycles via interfaces.
+                return declaredInterfaces;
+            }
+
+            return declaredInterfaces
+                ;//.SelectAsArray(t => BaseTypeAnalysis.InterfaceDependsOn(t, this) ? CyclicInheritanceError(this, t) : t);
+        }
+
+        internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
+        {
+            if (_lazyDeclaredInterfaces.IsDefault)
+            {
+                ImmutableInterlocked.InterlockedCompareExchange(ref _lazyDeclaredInterfaces, MakeDeclaredInterfaces(), default(ImmutableArray<NamedTypeSymbol>));
+            }
+
+            return _lazyDeclaredInterfaces;
+        }
+
+        ImmutableArray<NamedTypeSymbol> MakeDeclaredInterfaces()
+        {
+            try
+            {
+                var moduleSymbol = ContainingPEModule;
+                var interfaceImpls = moduleSymbol.Module.GetInterfaceImplementationsOrThrow(_handle);
+
+                if (interfaceImpls.Count > 0)
+                {
+                    NamedTypeSymbol[] symbols = new NamedTypeSymbol[interfaceImpls.Count];
+                    var tokenDecoder = new MetadataDecoder(moduleSymbol, this);
+
+                    int i = 0;
+                    foreach (var interfaceImpl in interfaceImpls)
+                    {
+                        EntityHandle interfaceHandle = moduleSymbol.Module.MetadataReader.GetInterfaceImplementation(interfaceImpl).Interface;
+                        TypeSymbol typeSymbol = tokenDecoder.GetTypeOfToken(interfaceHandle);
+
+                        var namedTypeSymbol = typeSymbol as NamedTypeSymbol;
+                        symbols[i++] = (object)namedTypeSymbol != null ? namedTypeSymbol : new UnsupportedMetadataTypeSymbol(); // interface tmpList contains a bad type
+                    }
+
+                    return symbols.AsImmutableOrNull();
+                }
+
+                return ImmutableArray<NamedTypeSymbol>.Empty;
+            }
+            catch (BadImageFormatException mrEx)
+            {
+                return ImmutableArray.Create<NamedTypeSymbol>(new UnsupportedMetadataTypeSymbol(mrEx));
+            }
+        }
+
+        public override ImmutableArray<NamedTypeSymbol> Interfaces => MakeAcyclicInterfaces();
 
         internal TypeDefinitionHandle Handle => _handle;
         public override IEnumerable<string> MemberNames

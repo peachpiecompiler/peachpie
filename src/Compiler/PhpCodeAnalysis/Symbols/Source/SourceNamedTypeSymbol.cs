@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.Syntax;
 using Pchp.Syntax.AST;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -90,7 +91,13 @@ namespace Pchp.CodeAnalysis.Symbols
         public override string NamespaceName
             => (_syntax.Namespace != null) ? _syntax.Namespace.QualifiedName.ClrName() : string.Empty;
 
-        public override TypeKind TypeKind => TypeKind.Class;
+        public override TypeKind TypeKind
+        {
+            get
+            {
+                return IsInterface ? TypeKind.Interface : TypeKind.Class;
+            }
+        }
 
         public override Accessibility DeclaredAccessibility => _syntax.MemberAttributes.GetAccessibility();
 
@@ -101,6 +108,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 return ImmutableArray<SyntaxReference>.Empty;
             }
         }
+
+        internal override bool IsInterface => (_syntax.MemberAttributes & PhpMemberAttributes.Interface) != 0;
 
         public override bool IsAbstract => _syntax.MemberAttributes.IsAbstract();
 
@@ -128,6 +137,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool MangleName => false;
 
+        public override ImmutableArray<NamedTypeSymbol> Interfaces => GetDeclaredInterfaces(null);
+
         public override ImmutableArray<Symbol> GetMembers() => _members;
 
         public override ImmutableArray<Symbol> GetMembers(string name)
@@ -150,7 +161,25 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            return ImmutableArray<NamedTypeSymbol>.Empty;
+            return this.Interfaces;
+        }
+
+        internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
+        {
+            var ifaces = new HashSet<NamedTypeSymbol>();
+            foreach (var i in _syntax.ImplementsList)
+            {
+                if (i.IsGeneric)
+                    throw new NotImplementedException();
+
+                var t = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(i.QualifiedName.ClrName())
+                        ?? new MissingMetadataTypeSymbol(i.QualifiedName.ClrName(), 0, false);
+
+                ifaces.Add(t);
+            }
+
+            //
+            return ifaces.AsImmutable();
         }
     }
 }

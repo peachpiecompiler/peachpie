@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -48,12 +49,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSealed => false;
 
+        internal override bool IsInterface => false;
+
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
             yield break;
         }
+
+        internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved) => ImmutableArray<NamedTypeSymbol>.Empty;
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
 
