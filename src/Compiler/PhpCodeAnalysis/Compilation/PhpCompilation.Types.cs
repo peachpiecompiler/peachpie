@@ -121,13 +121,13 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal NamedTypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask)
         {
+            if (typeMask.IsRef)
+            {
+                return CoreTypes.PhpAlias;
+            }
+
             if (!typeMask.IsAnyType)
             {
-                if (typeMask.IsRef)
-                {
-                    return CoreTypes.PhpAlias;
-                }
-
                 if (typeMask.IsVoid)
                 {
                     return CoreTypes.Void;

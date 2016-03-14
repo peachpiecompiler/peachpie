@@ -53,11 +53,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         readonly int _returnVarIndex;
 
         /// <summary>
-        /// Bit array indicating what variables may be referenced.
-        /// </summary>
-        ulong _referencesMask = 0;
-
-        /// <summary>
         /// Gets array of local variables. Names are indexed by their internal index.
         /// </summary>
         internal ImmutableArray<BoundVariable> Locals => _locals;
@@ -103,12 +98,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public void SetReference(int varindex)
         {
             if (varindex >= 0 && varindex < BitsCount)
-                _referencesMask |= (ulong)1 << varindex;
-        }
-
-        public void SetAllReferences()
-        {
-            _referencesMask = ~(ulong)0;
+                _localsType[varindex] |= TypeRefMask.IsRefMask;
         }
 
         /// <summary>
@@ -117,7 +107,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsReference(int varindex)
         {
             // anything >= 64 is reported as a possible reference
-            return varindex < 0 || varindex >= BitsCount || (_referencesMask & (ulong)1 << varindex) != 0;
+            return varindex < 0 || varindex >= _localsType.Length || _localsType[varindex].IsRef;
         }
 
         public BoundVariable GetVar(int index)

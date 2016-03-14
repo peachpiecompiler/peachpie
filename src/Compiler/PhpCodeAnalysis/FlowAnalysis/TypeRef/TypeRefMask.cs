@@ -31,7 +31,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Mask of any type.
         /// </summary>
-        public const ulong AnyTypeMask = ~(ulong)0;
+        public const ulong AnyTypeMask = ~(ulong)0 & ~(ulong)IsRefMask;
+
+        /// <summary>
+        /// Mask of an aliased value.
+        /// </summary>
+        public const ulong IsRefMask = (ulong)MaskFlags.IsRef;
 
         #endregion
 
@@ -65,7 +70,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets value indicating whether the type represents an any type.
         /// </summary>
-        public bool IsAnyType { get { return _mask == AnyTypeMask; } }
+        public bool IsAnyType { get { return (_mask & AnyTypeMask) == AnyTypeMask; } }
 
         /// <summary>
         /// Gets value indicating whether the type information is not initialized.
@@ -163,7 +168,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                _mask = AnyTypeMask;  // AnyType
+                _mask |= AnyTypeMask;  // AnyType
             }
         }
 
