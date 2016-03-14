@@ -136,7 +136,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(to);
 
             // conversion is not needed:
-            if (from.SpecialType == to.SpecialType && from.SpecialType != SpecialType.None)
+            if (to == from ||
+               (from.SpecialType == to.SpecialType && from.SpecialType != SpecialType.None))
                 return;
 
             // specialized conversions:

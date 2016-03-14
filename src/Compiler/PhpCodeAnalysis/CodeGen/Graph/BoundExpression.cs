@@ -820,7 +820,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     case AccessType.Read:
                         tmp = il.GetTemporaryLocal(t, false);
-                        il.EmitOpCode(ILOpCode.Dup);
+                        il.Builder.EmitOpCode(ILOpCode.Dup);
                         il.Builder.EmitLocalStore(tmp);
                         break;
                     default:
