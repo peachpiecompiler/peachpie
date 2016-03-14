@@ -39,9 +39,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Context.cs" />
+    <Compile Include="Conversions.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="PhpAlias.cs" />
+    <Compile Include="BinaryString.cs" />
     <Compile Include="PhpNumber.cs" />
+    <Compile Include="PhpStringBuilder.cs" />
     <Compile Include="PhpTypeCode.cs" />
     <Compile Include="PhpValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -11,13 +11,13 @@ namespace Pchp.Core
     /// <summary>
     /// Represents a non-aliased PHP value.
     /// </summary>
-    [DebuggerDisplay("{_type} ({GetDebuggerValue})")]
+    [DebuggerDisplay("{_type} ({GetDebuggerValue,nq})")]
     [StructLayout(LayoutKind.Explicit)]
     public struct PhpValue // <T>
     {
         #region GetDebuggerValue
 
-        internal string GetDebuggerValue
+        string GetDebuggerValue
         {
             get
             {
@@ -58,24 +58,6 @@ namespace Pchp.Core
 
         public PhpTypeCode TypeCode => _type;
 
-        public long Long
-        {
-            get
-            {
-                Debug.Assert(TypeCode == PhpTypeCode.Long);
-                return _long;
-            }
-        }
-
-        public double Double
-        {
-            get
-            {
-                Debug.Assert(TypeCode == PhpTypeCode.Double);
-                return _double;
-            }
-        }
-
         /// <summary>
         /// Gets value indicating whether the value is a <c>NULL</c>.
         /// </summary>
@@ -96,6 +78,11 @@ namespace Pchp.Core
         }
 
         public bool ToBoolean()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string ToString()
         {
             throw new NotImplementedException();
         }

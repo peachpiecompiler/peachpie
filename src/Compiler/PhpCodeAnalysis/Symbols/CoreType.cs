@@ -87,7 +87,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators,
-            PhpNumber, PhpValue, PhpAlias,
+            PhpNumber, PhpValue, PhpAlias, BinaryString, PhpStringBuilder,
             Void, Object, Int32, Long, Double, Boolean, String;
 
         public CoreTypes(PhpCompilation compilation)
@@ -106,6 +106,8 @@ namespace Pchp.CodeAnalysis.Symbols
             this.PhpNumber = Create("PhpNumber");
             this.PhpAlias = Create("PhpAlias");
             this.PhpValue = Create("PhpValue");
+            this.BinaryString = Create("BinaryString");
+            this.PhpStringBuilder = Create("PhpStringBuilder");
             this.Context = Create("Context");
             this.Operators = Create("Operators");
         }
@@ -156,30 +158,6 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             CoreType t;
             _specialTypes.TryGetValue(type, out t);
-            return t;
-        }
-
-        /// <summary>
-        /// Gets well-known core type by its full CLR name.
-        /// </summary>
-        internal CoreType Update(PENamedTypeSymbol symbol)
-        {
-            CoreType t = null;
-
-            //
-            if (symbol.NamespaceName != null &&
-                symbol.ContainingAssembly.IsPchpCorLibrary &&
-                symbol.DeclaredAccessibility == Accessibility.Public)
-            {
-                t = GetTypeFromMetadataName(MetadataHelpers.BuildQualifiedName(symbol.NamespaceName, symbol.Name));
-                if (t != null)
-                {
-                    _typetable[symbol] = t;
-                    t.Update(symbol);
-                }
-            }
-
-            //
             return t;
         }
 

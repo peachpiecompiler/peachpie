@@ -37,11 +37,6 @@ namespace Pchp.Core
         Double,
 
         /// <summary>
-        /// A number, encapsulating <see cref="Long"/> and <see cref="Double"/>.
-        /// </summary>
-        PhpNumber,
-
-        /// <summary>
         /// A PHP array.
         /// </summary>
         PhpArray,

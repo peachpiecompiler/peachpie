@@ -19,27 +19,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         private static readonly Dictionary<string, TypeMaskGetter>/*!*/_knownTypes = new Dictionary<string, TypeMaskGetter>(StringComparer.OrdinalIgnoreCase)
         {
-                { "int", ctx => ctx.GetLongTypeMask()},
-                { "integer", ctx => ctx.GetLongTypeMask()},
-                { "long", ctx => ctx.GetLongTypeMask()},
-                { "number", ctx => ctx.GetNumberTypeMask()},
-                { "numeric", ctx => ctx.GetNumberTypeMask()},
-                { "string", ctx => ctx.GetStringTypeMask()},
-                { "bool", ctx => ctx.GetBooleanTypeMask()},
-                { "boolean", ctx => ctx.GetBooleanTypeMask()},
-                { "false", ctx => ctx.GetBooleanTypeMask()},
-                { "true", ctx => ctx.GetBooleanTypeMask()},
-                { "float", ctx => ctx.GetDoubleTypeMask()},
-                { "double", ctx => ctx.GetDoubleTypeMask()},
-                { "array", ctx => ctx.GetArrayTypeMask()},
-                //{ "resource", ctx => ctx.GetTypeMask(Pchp.Core.PhpResource, true)},
-                { "null", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, false)},
-                { "object", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, true)},
-                { "void", ctx => 0},
-                //{ "nothing", ctx => 0},
-                { "callable", ctx => ctx.GetCallableTypeMask()},
-                { "mixed", ctx => TypeRefMask.AnyType},
-            };
+            { "int", ctx => ctx.GetLongTypeMask()},
+            { "integer", ctx => ctx.GetLongTypeMask()},
+            { "long", ctx => ctx.GetLongTypeMask()},
+            { "number", ctx => ctx.GetNumberTypeMask()},
+            { "numeric", ctx => ctx.GetNumberTypeMask()},
+            { "string", ctx => ctx.GetStringTypeMask()},
+            { "bool", ctx => ctx.GetBooleanTypeMask()},
+            { "boolean", ctx => ctx.GetBooleanTypeMask()},
+            { "false", ctx => ctx.GetBooleanTypeMask()},
+            { "true", ctx => ctx.GetBooleanTypeMask()},
+            { "float", ctx => ctx.GetDoubleTypeMask()},
+            { "double", ctx => ctx.GetDoubleTypeMask()},
+            { "array", ctx => ctx.GetArrayTypeMask()},
+            //{ "resource", ctx => ctx.GetTypeMask(Pchp.Core.PhpResource, true)},
+            { "null", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, false)},
+            { "object", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, true)},
+            { "void", ctx => 0},
+            //{ "nothing", ctx => 0},
+            { "callable", ctx => ctx.GetCallableTypeMask()},
+            { "mixed", ctx => TypeRefMask.AnyType},
+        };
 
         /// <summary>
         /// Gets value indicating whether given parameter represents known PHPDoc type name.

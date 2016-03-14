@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
+    [DebuggerDisplay("{TypeCode} ({GetDebuggerValue,nq})")]
     [StructLayout(LayoutKind.Explicit)]
     public struct PhpNumber
     {
@@ -39,6 +41,20 @@ namespace Pchp.Core
         /// </summary>
         public bool IsLong => TypeCode == PhpTypeCode.Long;
 
+        #endregion
+
+        string GetDebuggerValue => IsLong ? Long.ToString() : Double.ToString();
+
+        #region Operators
+
+        /// <summary>
+        /// Gets string representation of the number.
+        /// </summary>
+        public string ToString(Context ctx)
+        {
+            return IsLong ? Long.ToString() : Double.ToString();    // TODO: Double conversion must respect ctx culture
+        }
+        
         #endregion
 
         #region Construction
