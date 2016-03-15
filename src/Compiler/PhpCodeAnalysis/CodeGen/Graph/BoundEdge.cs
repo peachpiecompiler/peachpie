@@ -34,7 +34,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // if (Condition)
             il.EmitConvertToBool(this.Condition.Emit(il), this.Condition.TypeRefMask);
-            il.EmitBranch(ILOpCode.Brfalse, FalseTarget);
+            il.Builder.EmitBranch(ILOpCode.Brfalse, FalseTarget);
             
             // {
             il.GenerateScope(TrueTarget, NextBlock.Ordinal);

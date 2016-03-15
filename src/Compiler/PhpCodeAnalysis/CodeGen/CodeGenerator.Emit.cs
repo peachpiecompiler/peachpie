@@ -38,6 +38,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             return _thisPlace.EmitLoad(_il);
         }
 
+        #region EmitConvert
+
         public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint, bool negation = false)
         {
             // TODO: handle {negation} within the switch to avoid unnecessary conversions
@@ -264,12 +266,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             throw new NotImplementedException();
         }
 
-        public void EmitBranch(ILOpCode code, BoundBlock label) => _il.EmitBranch(code, label);
+        #endregion
 
         public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
 
         public void EmitPop(TypeSymbol type)
         {
+            Contract.ThrowIfNull(type);
+
             if (type.SpecialType != SpecialType.System_Void)
             {
                 _il.EmitOpCode(ILOpCode.Pop, -1);
@@ -308,10 +312,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             return stack;
         }
 
-        public void EmitBox(ITypeSymbol valuetype)
+        public void EmitBox(TypeSymbol valuetype)
         {
-            _il.EmitOpCode(ILOpCode.Box);
-            EmitSymbolToken((TypeSymbol)valuetype, null);
+            Contract.ThrowIfNull(valuetype);
+
+            if (valuetype.IsValueType)
+            {
+                _il.EmitOpCode(ILOpCode.Box);
+                EmitSymbolToken(valuetype, null);
+            }
         }
 
         /// <summary>
