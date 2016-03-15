@@ -13,7 +13,7 @@ namespace Pchp.Core
     /// </summary>
     [DebuggerDisplay("{_type} ({GetDebuggerValue,nq})")]
     [StructLayout(LayoutKind.Explicit)]
-    public struct PhpValue // <T>
+    public struct PhpValue : IPhpConvertible // <T>
     {
         #region GetDebuggerValue
 
@@ -72,7 +72,12 @@ namespace Pchp.Core
             throw new NotImplementedException();
         }
 
-        public PhpNumber ToPhpNumber()
+        public long ToLong()
+        {
+            throw new NotImplementedException();
+        }
+
+        public double ToDouble()
         {
             throw new NotImplementedException();
         }
@@ -82,7 +87,7 @@ namespace Pchp.Core
             throw new NotImplementedException();
         }
 
-        public override string ToString()
+        public Convert.NumberInfo ToNumber(out PhpNumber number)
         {
             throw new NotImplementedException();
         }
@@ -92,15 +97,26 @@ namespace Pchp.Core
             throw new NotImplementedException();
         }
 
+        public string ToStringOrThrow(Context ctx)
+        {
+            throw new NotImplementedException();
+        }
+        
         #endregion
 
         #region Construction
 
         public static PhpValue Create(PhpNumber number)
         {
-            return (number.IsLong)
-                 ? Create(number.Long)
-                 : Create(number.Double);
+            //return (number.IsLong)
+            //     ? Create(number.Long)
+            //     : Create(number.Double);
+
+            return new PhpValue()
+            {
+                _type = number.TypeCode,    // Long || Double
+                _long = number.Long // _long = Long <=> _double = Double
+            };
         }
 
         public static PhpValue Create(long value)

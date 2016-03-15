@@ -62,12 +62,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                         _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
                         _il.EmitOpCode(ILOpCode.Conv_i8, 0);
                         _il.EmitOpCode(ILOpCode.Cgt_un);
+                        // or ?
+                        // _il.EmitOpCode(ILOpCode.Conv_i4);
                         break;
 
                     case SpecialType.None:
                         if (from == CoreTypes.PhpValue)
                         {
                             EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
+                            break;
+                        }
+                        else if (from == CoreTypes.PhpNumber)
+                        {
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
                             break;
                         }
                         else
@@ -104,8 +111,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     break;
                 case SpecialType.System_Int32:
                     _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
-                    break;
+                    goto case SpecialType.System_Int64; // PhpValue.Create((long)<stack>)
                 case SpecialType.System_Int64:
                     EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
                     break;
@@ -113,15 +119,95 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Double);
                     break;
                 default:
-                    if (from == CoreTypes.PhpNumber)
+                    if (from == CoreTypes.PhpAlias)
+                    {
+                        Emit_PhpAlias_GetValue();
+                        return;
+                    }
+                    else if (from == CoreTypes.PhpValue)
+                    {
+                        // nop
+                        break;
+                    }
+                    else if (from == CoreTypes.PhpNumber)
                     {
                         EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpNumber);
+                        break;
                     }
                     else
                     {
                         throw new NotImplementedException();
                     }
+            }
+        }
+
+        public void EmitConvertToPhpNumber(TypeSymbol from, TypeRefMask fromHint)
+        {
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_Int32:
+                    _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
+                    goto case SpecialType.System_Int64; // PhpValue.Create((long)<stack>)
+                case SpecialType.System_Int64:
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Long);
                     break;
+                case SpecialType.System_Double:
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Double);
+                    break;
+                default:
+                    if (from == CoreTypes.PhpNumber)
+                    {
+                        // nop
+                        return;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+            }
+        }
+
+        public void EmitConvertToLong(TypeSymbol from, TypeRefMask fromHint)
+        {
+            Contract.ThrowIfNull(from);
+
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_Int32:
+                    _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
+                    return;
+                case SpecialType.System_Int64:
+                    // nop
+                    return;
+                default:
+                    if (from == CoreTypes.PhpNumber)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToLong);
+                        return;
+                    }
+                    else if (from == CoreTypes.PhpValue)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToLong);
+                        return;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
             }
         }
 
@@ -149,6 +235,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Boolean:
                     EmitConvertToBool(from, fromHint);
                     return;
+                case SpecialType.System_Int64:
+                    EmitConvertToLong(from, fromHint);
+                    return;
                 default:
                     if (to == CoreTypes.PhpValue)
                     {
@@ -158,6 +247,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         EmitConvertToPhpValue(from, fromHint);
                         Emit_PhpValue_MakeAlias();
+                    }
+                    else if (to == CoreTypes.PhpNumber)
+                    {
+                        EmitConvertToPhpNumber(from, fromHint);
+                        return;
                     }
                     else
                     {

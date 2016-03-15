@@ -139,6 +139,7 @@ namespace Pchp.CodeAnalysis.Symbols
     class CoreMethods
     {
         public readonly PhpValueHolder PhpValue;
+        public readonly PhpNumberHolder PhpNumber;
         public readonly OperatorsHolder Operators;
         public readonly ConstructorsHolder Ctors;
 
@@ -147,6 +148,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(types);
 
             PhpValue = new PhpValueHolder(types);
+            PhpNumber = new PhpNumberHolder(types);
             Operators = new OperatorsHolder(types);
             Ctors = new ConstructorsHolder(types);
         }
@@ -178,6 +180,8 @@ namespace Pchp.CodeAnalysis.Symbols
             public PhpValueHolder(CoreTypes ct)
             {
                 ToBoolean = ct.PhpValue.Method("ToBoolean");
+                ToLong = ct.PhpValue.Method("ToLong");
+                ToDouble = ct.PhpValue.Method("ToDouble");
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
 
                 Create_Boolean = ct.PhpValue.Method("Create", ct.Boolean);
@@ -187,8 +191,29 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToBoolean, ToString_Context,
+                ToLong, ToDouble, ToBoolean, ToString_Context,
                 Create_Boolean, Create_Long, Create_Double, Create_PhpNumber;
+        }
+
+        public struct PhpNumberHolder
+        {
+            public PhpNumberHolder(CoreTypes ct)
+            {
+                ToBoolean = ct.PhpNumber.Method("ToBoolean");
+                ToLong = ct.PhpNumber.Method("ToLong");
+                ToDouble = ct.PhpNumber.Method("ToDouble");
+                ToString_Context = ct.PhpNumber.Method("ToString", ct.Context);
+
+                CompareTo = ct.PhpNumber.Method("CompareTo", ct.PhpNumber);
+
+                Create_Long = ct.PhpNumber.Method("Create", ct.Long);
+                Create_Double = ct.PhpNumber.Method("Create", ct.Double);
+            }
+
+            public readonly CoreMethod
+                ToLong, ToDouble, ToBoolean, ToString_Context,
+                CompareTo,
+                Create_Long, Create_Double;
         }
 
         public struct ConstructorsHolder
