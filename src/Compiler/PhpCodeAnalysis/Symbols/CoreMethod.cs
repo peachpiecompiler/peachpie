@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    #region CoreMethod, CoreConstructor
+    #region CoreMethod, CoreConstructor, CoreOperator
 
     /// <summary>
     /// Descriptor of a well-known method.
@@ -128,6 +128,36 @@ namespace Pchp.CodeAnalysis.Symbols
 
             var methods = type.InstanceConstructors;
             return methods.First(MatchesSignature);
+        }
+    }
+
+    /// <summary>
+    /// Descriptor of a well-known operator method.
+    /// </summary>
+    class CoreOperator : CoreMethod
+    {
+        /// <summary>
+        /// Creates the descriptor.
+        /// </summary>
+        /// <param name="declaringClass">Containing class.</param>
+        /// <param name="name">Operator name, without <c>op_</c> prefix.</param>
+        /// <param name="ptypes">CLR parameters.</param>
+        public CoreOperator(CoreType declaringClass, string name, params CoreType[] ptypes)
+            :base(declaringClass, "op_" + name, ptypes)
+        {
+
+        }
+
+        protected override MethodSymbol ResolveSymbol()
+        {
+            var type = this.DeclaringClass.Symbol;
+            if (type == null)
+                throw new InvalidOperationException();
+
+            var methods = type.GetMembers(this.MethodName);
+            return methods.OfType<MethodSymbol>()
+                .Where(m => m.IsSpecialName)
+                .First(MatchesSignature);
         }
     }
 
