@@ -134,11 +134,6 @@ namespace Pchp.Syntax.AST
         protected Expression(Text.Span span) : base(span) { }
 
         /// <summary>
-        /// Internal type information determined during type analysis.
-        /// </summary>
-        public ulong/*A*/TypeInfoValue { get; set; }
-
-		/// <summary>
         /// Whether the expression is allowed to be passed by reference to a routine.
         /// </summary>
         internal virtual bool AllowsPassByReference { get { return false; } }

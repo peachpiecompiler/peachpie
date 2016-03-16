@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
+using Pchp.Syntax;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -80,6 +81,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
             if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr).WithAccess(access);
+            if (expr is AST.GlobalConstUse) return BindGlobalConstUse((AST.GlobalConstUse)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -98,6 +100,17 @@ namespace Pchp.CodeAnalysis.Semantics
                 return new BoundVariableRef(expr.VarName.Value).WithAccess(access);
             }
 
+            throw new NotImplementedException();
+        }
+
+        BoundExpression BindGlobalConstUse(AST.GlobalConstUse expr)
+        {
+            // translate built-in constants directly
+            if (expr.Name == QualifiedName.True) return new BoundLiteral(true);
+            if (expr.Name == QualifiedName.False) return new BoundLiteral(false);
+            if (expr.Name == QualifiedName.Null) return new BoundLiteral(null);
+
+            // bind constant
             throw new NotImplementedException();
         }
 
