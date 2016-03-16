@@ -213,6 +213,46 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        public void EmitConvertToDouble(TypeSymbol from, TypeRefMask fromHint)
+        {
+            Contract.ThrowIfNull(from);
+
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_Int32:
+                    _il.EmitOpCode(ILOpCode.Conv_r8);   // Int32 -> Double
+                    return;
+                case SpecialType.System_Int64:
+                    _il.EmitOpCode(ILOpCode.Conv_r8);   // Int64 -> Double
+                    return;
+                case SpecialType.System_Double:
+                    // nop
+                    return;
+                default:
+                    if (from == CoreTypes.PhpNumber)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
+                        return;
+                    }
+                    else if (from == CoreTypes.PhpValue)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToDouble);
+                        return;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+            }
+        }
+
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
         {
             EmitConvert(expr.Emit(this), expr.TypeRefMask, to);
@@ -239,6 +279,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 case SpecialType.System_Int64:
                     EmitConvertToLong(from, fromHint);
+                    return;
+                case SpecialType.System_Double:
+                    EmitConvertToDouble(from, fromHint);
                     return;
                 default:
                     if (to == CoreTypes.PhpValue)
