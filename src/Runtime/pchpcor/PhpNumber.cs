@@ -163,7 +163,7 @@ namespace Pchp.Core
         public static PhpNumber operator +(PhpNumber x, double y)
         {
             // at least one operand is a double:
-            return Create(x.ToDouble() + y);
+            return Create(Add(x, y));
         }
 
         /// <summary>
@@ -214,7 +214,7 @@ namespace Pchp.Core
         {
             // at least one operand is a double:
             // DOUBLE + DOUBLE|LONG
-            return Create(x + y.ToDouble());
+            return Create(Add(x, y));
         }
 
         /// <summary>
@@ -288,12 +288,25 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>+</c> operator on numbers.
         /// </summary>
-        /// <param name="x">First operand.</param>
-        /// <param name="y">Second operand.</param>
-        /// <returns></returns>
         public static double Add(long x, double y)
         {
             return (double)x + y;
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        public static double Add(PhpNumber x, double y)
+        {
+            return x.ToDouble() + y;
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        public static double Add(double x, PhpNumber y)
+        {
+            return x + y.ToDouble();
         }
 
         /// <summary>

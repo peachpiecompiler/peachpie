@@ -389,13 +389,15 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (ytype == codeGenerator.CoreTypes.PhpNumber)
                 {
+                    // number + number : number
                     codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_number);
                     return codeGenerator.CoreTypes.PhpNumber;
                 }
                 else if (ytype.SpecialType == SpecialType.System_Double)
                 {
+                    // number + r8 : r8
                     codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_double);
-                    return codeGenerator.CoreTypes.PhpNumber;
+                    return codeGenerator.CoreTypes.Double;
                 }
                 else if (
                     ytype.SpecialType == SpecialType.System_Int64 ||
@@ -407,6 +409,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         il.EmitOpCode(ILOpCode.Conv_i8);    // bool|int -> long
                     }
 
+                    // number + long : number
                     codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_long);
                     return codeGenerator.CoreTypes.PhpNumber;
                 }
@@ -432,9 +435,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (ytype == codeGenerator.CoreTypes.PhpNumber)
                 {
-                    // r8 + number : number
+                    // r8 + number : r8
                     codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_double_number);
-                    return codeGenerator.CoreTypes.PhpNumber;
+                    return codeGenerator.CoreTypes.Double;
                 }
 
                 //
