@@ -41,50 +41,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Arithmetic Operations
 
                 case Operations.Add:
-                    // Template: x + y : Operators.Add(x,y) [overloads]
-
-                    //switch (lo_typecode = node.LeftExpr.Emit(codeGenerator))
-                    //{
-                    //    case PhpTypeCode.Double:
-                    //        switch (ro_typecode = node.RightExpr.Emit(codeGenerator))
-                    //        {
-                    //            case PhpTypeCode.Integer:
-                    //                codeGenerator.IL.Emit(OpCodes.Conv_R8);
-                    //                goto case PhpTypeCode.Double;   // fallback:
-                    //            case PhpTypeCode.Double:
-                    //                codeGenerator.IL.Emit(OpCodes.Add);
-                    //                returned_typecode = PhpTypeCode.Double;
-                    //                break;
-                    //            default:
-                    //                codeGenerator.EmitBoxing(ro_typecode);
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Add.Double_Object);
-                    //                break;
-                    //        }
-
-                    //        break;
-                    //    default:
-                    //        codeGenerator.EmitBoxing(lo_typecode);
-                    //        ro_typecode = node.RightExpr.Emit(codeGenerator);
-
-                    //        switch (ro_typecode)
-                    //        {
-                    //            case PhpTypeCode.Integer:
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Add.Object_Int32);
-                    //                break;
-
-                    //            case PhpTypeCode.Double:
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Add.Object_Double);
-                    //                break;
-
-                    //            default:
-                    //                codeGenerator.EmitBoxing(ro_typecode);
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Add.Object_Object);
-                    //                break;
-                    //        }
-                    //        break;
-                    //}
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = EmitAdd(il);
+                    break;
 
                 case Operations.Sub:
                     //Template: "x - y"        Operators.Subtract(x,y) [overloads]
@@ -417,6 +375,103 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>
+        /// Emits <c>+</c> operator suitable for actual operands.
+        /// </summary>
+        private TypeSymbol EmitAdd(CodeGenerator codeGenerator)
+        {
+            // Template: x + y : Operators.Add(x,y) [overloads]
+
+            var il = codeGenerator.Builder;
+            var xtype = Left.Emit(codeGenerator);
+            var ytype = Right.Emit(codeGenerator);
+
+            if (xtype == codeGenerator.CoreTypes.PhpNumber)
+            {
+                if (ytype == codeGenerator.CoreTypes.PhpNumber)
+                {
+                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_number);
+                    return codeGenerator.CoreTypes.PhpNumber;
+                }
+                else if (ytype.SpecialType == SpecialType.System_Double)
+                {
+                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_double);
+                    return codeGenerator.CoreTypes.PhpNumber;
+                }
+                else if (
+                    ytype.SpecialType == SpecialType.System_Int64 ||
+                    ytype.SpecialType == SpecialType.System_Int32 ||
+                    ytype.SpecialType == SpecialType.System_Boolean)
+                {
+                    if (ytype.SpecialType != SpecialType.System_Int64)
+                    {
+                        il.EmitOpCode(ILOpCode.Conv_i8);    // bool|int -> long
+                    }
+
+                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_long);
+                    return codeGenerator.CoreTypes.PhpNumber;
+                }
+
+                //
+                throw new NotImplementedException();
+            }
+            else if (xtype.SpecialType == SpecialType.System_Double)
+            {
+                if (ytype.SpecialType == SpecialType.System_Boolean ||
+                    ytype.SpecialType == SpecialType.System_Int32 ||
+                    ytype.SpecialType == SpecialType.System_Int64 ||
+                    ytype.SpecialType == SpecialType.System_Double)
+                {
+                    if (ytype.SpecialType != SpecialType.System_Double)
+                    {
+                        il.EmitOpCode(ILOpCode.Conv_r8);    // bool|int|long -> double
+                    }
+
+                    // r8 + r8 : r8
+                    il.EmitOpCode(ILOpCode.Add);
+                    return codeGenerator.CoreTypes.Double;
+                }
+                else if (ytype == codeGenerator.CoreTypes.PhpNumber)
+                {
+                    // r8 + number : number
+                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_double_number);
+                    return codeGenerator.CoreTypes.PhpNumber;
+                }
+
+                //
+                throw new NotImplementedException();
+            }
+            else if (xtype.SpecialType == SpecialType.System_Int64)
+            {
+                if (ytype == codeGenerator.CoreTypes.PhpNumber)
+                {
+                    // i8 + number : number
+                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_number);
+                    return codeGenerator.CoreTypes.PhpNumber;
+                }
+                else if (
+                    ytype.SpecialType == SpecialType.System_Int64 ||
+                    ytype.SpecialType == SpecialType.System_Int32 ||
+                    ytype.SpecialType == SpecialType.System_Boolean)
+                {
+                    if (ytype.SpecialType != SpecialType.System_Int64)
+                    {
+                        il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
+                    }
+                    
+                    // i8 + i8 : number
+                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_long);
+                    return codeGenerator.CoreTypes.PhpNumber;
+                }
+
+                //
+                throw new NotImplementedException();
+            }
+
+            //
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Emits binary boolean operation (AND or OR).
         /// </summary>
         /// <param name="codeGenerator">A code generator.</param>
@@ -558,7 +613,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.Print:
                     il.EmitEcho(this.Operand);
-                    
+
                     // Always returns 1
                     il.Builder.EmitLongConstant(1);
                     returned_type = il.CoreTypes.Long;

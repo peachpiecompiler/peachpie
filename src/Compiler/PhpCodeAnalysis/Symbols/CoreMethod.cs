@@ -238,12 +238,25 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Create_Long = ct.PhpNumber.Method("Create", ct.Long);
                 Create_Double = ct.PhpNumber.Method("Create", ct.Double);
+
+                Add_number_number = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.PhpNumber);
+                Add_number_double = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.Double);
+                Add_number_long = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.Long);
+                Add_double_number = ct.PhpNumber.Operator("Addition", ct.Double, ct.PhpNumber);
+                Add_long_number = ct.PhpNumber.Operator("Addition", ct.Long, ct.PhpNumber);
+                Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
+                Subtract_number_number = ct.PhpNumber.Operator("Subtraction", ct.PhpNumber, ct.PhpNumber);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
                 CompareTo,
+                Add_long_long,
                 Create_Long, Create_Double;
+
+            public readonly CoreOperator
+                Add_number_number, Add_number_double, Add_number_long, Add_double_number, Add_long_number,
+                Subtract_number_number;
         }
 
         public struct ConstructorsHolder
