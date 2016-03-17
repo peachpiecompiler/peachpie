@@ -22,10 +22,10 @@ namespace Pchp.Core
         PhpTypeCode _typeCode;
 
         [FieldOffset(4)]
-        public long Long;
+        internal long _long;
 
         [FieldOffset(4)]
-        public double Double;
+        double _double;
 
         #endregion
 
@@ -41,11 +41,37 @@ namespace Pchp.Core
         /// </summary>
         public bool IsLong => _typeCode == PhpTypeCode.Long;
 
+        /// <summary>
+        /// Gets the long field of the number.
+        /// Does not perform a conversion, expects the number is of type long.
+        /// </summary>
+        public long Long
+        {
+            get
+            {
+                Debug.Assert(IsLong);
+                return _long;
+            }
+        }
+
+        /// <summary>
+        /// Gets the double field of the number.
+        /// Does not perform a conversion, expects the number is of type double.
+        /// </summary>
+        public double Double
+        {
+            get
+            {
+                Debug.Assert(IsDouble);
+                return _double;
+            }
+        }
+
         #endregion
 
         string GetDebuggerValue
         {
-            get { return IsLong ? Long.ToString() : Double.ToString(); }
+            get { return IsLong ? _long.ToString() : _double.ToString(); }
         }
 
         void AssertTypeCode()
@@ -67,14 +93,14 @@ namespace Pchp.Core
             if (_typeCode == other._typeCode)
             {
                 return (_typeCode == PhpTypeCode.Long)
-                    ? Long.CompareTo(other.Long)
-                    : Double.CompareTo(other.Double);
+                    ? _long.CompareTo(other._long)
+                    : _double.CompareTo(other._double);
             }
             else
             {
                 return (_typeCode == PhpTypeCode.Long)
-                    ? ((double)Long).CompareTo(other.Double)
-                    : Double.CompareTo((double)other.Long);
+                    ? ((double)_long).CompareTo(other._double)
+                    : _double.CompareTo((double)other._long);
             }
         }
 
@@ -90,14 +116,14 @@ namespace Pchp.Core
             if (a._typeCode == b._typeCode)
             {
                 return (a._typeCode == PhpTypeCode.Long)
-                    ? a.Long == b.Long
-                    : a.Double == b.Double;
+                    ? a._long == b._long
+                    : a._double == b._double;
             }
             else
             {
                 return (a._typeCode == PhpTypeCode.Long)
-                    ? (double)a.Long == b.Double
-                    : a.Double == (double)b.Long;
+                    ? (double)a._long == b._double
+                    : a._double == (double)b._long;
             }
         }
 
@@ -121,26 +147,26 @@ namespace Pchp.Core
             if (x.IsDouble)
             {
                 // DOUBLE + DOUBLE|LONG
-                return Create(x.Double + y.ToDouble());
+                return Create(x._double + y.ToDouble());
             }
 
             if (y.IsDouble)
             {
                 // LONG + DOUBLE
                 Debug.Assert(x.IsLong);
-                return Create((double)x.Long + y.Double);
+                return Create((double)x._long + y._double);
             }
 
             // LONG + LONG
             Debug.Assert(x.IsLong && y.IsLong);
-            long rl = unchecked(x.Long + y.Long);
+            long rl = unchecked(x._long + y._long);
 
-            if ((x.Long & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&       // result has different sign than x
-                (x.Long & Operators.LONG_SIGN_MASK) == (y.Long & Operators.LONG_SIGN_MASK)      // x and y have the same sign                
+            if ((x._long & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&       // result has different sign than x
+                (x._long & Operators.LONG_SIGN_MASK) == (y._long & Operators.LONG_SIGN_MASK)      // x and y have the same sign                
                 )
             {
                 // overflow to double:
-                return Create((double)x.Long + (double)y.Long);
+                return Create((double)x._long + (double)y._long);
             }
             else
             {
@@ -178,19 +204,19 @@ namespace Pchp.Core
             if (x.IsDouble)
             {
                 // DOUBLE + LONG
-                return Create(x.Double + (double)y);
+                return Create(x._double + (double)y);
             }
 
             // LONG + LONG
             Debug.Assert(x.IsLong);
-            long rl = unchecked(x.Long + y);
+            long rl = unchecked(x._long + y);
 
-            if ((x.Long & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&       // result has different sign than x
-                (x.Long & Operators.LONG_SIGN_MASK) == (y & Operators.LONG_SIGN_MASK)      // x and y have the same sign                
+            if ((x._long & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&       // result has different sign than x
+                (x._long & Operators.LONG_SIGN_MASK) == (y & Operators.LONG_SIGN_MASK)      // x and y have the same sign                
                 )
             {
                 // overflow to double:
-                return Create((double)x.Long + (double)y);
+                return Create((double)x._long + (double)y);
             }
             else
             {
@@ -229,19 +255,19 @@ namespace Pchp.Core
             if (y.IsDouble)
             {
                 // LONG + DOUBLE
-                return Create((double)x + y.Double);
+                return Create((double)x + y._double);
             }
 
             // LONG + LONG
             Debug.Assert(y.IsLong);
-            long rl = unchecked(x + y.Long);
+            long rl = unchecked(x + y._long);
 
             if ((x & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&       // result has different sign than x
-                (x & Operators.LONG_SIGN_MASK) == (y.Long & Operators.LONG_SIGN_MASK)      // x and y have the same sign                
+                (x & Operators.LONG_SIGN_MASK) == (y._long & Operators.LONG_SIGN_MASK)      // x and y have the same sign                
                 )
             {
                 // overflow to double:
-                return Create((double)x + (double)y.Long);
+                return Create((double)x + (double)y._long);
             }
             else
             {
@@ -321,26 +347,26 @@ namespace Pchp.Core
             if (x.IsDouble)
             {
                 // DOUBLE - DOUBLE
-                return Create(x.Double - y.ToDouble());
+                return Create(x._double - y.ToDouble());
             }
 
             if (y.IsDouble)
             {
                 // LONG - DOUBLE
                 Debug.Assert(x.IsLong);
-                return Create((double)x.Long - y.Double);
+                return Create((double)x._long - y._double);
             }
 
             // LONG - LONG
             Debug.Assert(x.IsLong && y.IsLong);
-            long rl = unchecked(x.Long - y.Long);
+            long rl = unchecked(x._long - y._long);
 
-            if ((x.Long & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&   // result has different sign than x
-                (x.Long & Operators.LONG_SIGN_MASK) != (y.Long & Operators.LONG_SIGN_MASK)  // x and y have the same sign                
+            if ((x._long & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&   // result has different sign than x
+                (x._long & Operators.LONG_SIGN_MASK) != (y._long & Operators.LONG_SIGN_MASK)  // x and y have the same sign                
                 )
             {
                 // overflow:
-                return Create((double)x.Long - (double)y.Long);
+                return Create((double)x._long - (double)y._long);
             }
             else
             {
@@ -360,12 +386,12 @@ namespace Pchp.Core
 
         public static PhpNumber Create(long value)
         {
-            return new PhpNumber() { _typeCode = PhpTypeCode.Long, Long = value };
+            return new PhpNumber() { _typeCode = PhpTypeCode.Long, _long = value };
         }
 
         public static PhpNumber Create(double value)
         {
-            return new PhpNumber() { _typeCode = PhpTypeCode.Double, Double = value };
+            return new PhpNumber() { _typeCode = PhpTypeCode.Double, _double = value };
         }
 
         #endregion
@@ -374,7 +400,7 @@ namespace Pchp.Core
 
         public override int GetHashCode()
         {
-            return unchecked((int)Long);
+            return unchecked((int)_long);
         }
 
         public override bool Equals(object obj)
@@ -382,7 +408,7 @@ namespace Pchp.Core
             PhpNumber tmp;
             return obj is PhpNumber
                 && (tmp = (PhpNumber)obj).TypeCode == TypeCode
-                && tmp.Long == Long;    // <=> tmp.Double == Double
+                && tmp._long == _long;    // <=> tmp.Double == Double
         }
 
         #endregion
@@ -405,21 +431,21 @@ namespace Pchp.Core
         {
             AssertTypeCode();
 
-            return (_typeCode == PhpTypeCode.Long) ? (double)Long : Double;
+            return (_typeCode == PhpTypeCode.Long) ? (double)_long : _double;
         }
 
         public long ToLong()
         {
             AssertTypeCode();
 
-            return (_typeCode == PhpTypeCode.Long) ? Long : (long)Double;
+            return (_typeCode == PhpTypeCode.Long) ? _long : (long)_double;
         }
 
         public bool ToBoolean()
         {
             AssertTypeCode();
 
-            return Long != 0L;  // (Double == 0.0 <=> Long == 0L)
+            return _long != 0L;  // (Double == 0.0 <=> Long == 0L)
         }
 
         public Convert.NumberInfo ToNumber(out PhpNumber number)
@@ -440,7 +466,7 @@ namespace Pchp.Core
         {
             AssertTypeCode();
 
-            return IsLong ? Long.ToString() : Double.ToString();    // TODO: Double conversion must respect ctx culture
+            return IsLong ? _long.ToString() : _double.ToString();    // TODO: Double conversion must respect ctx culture
         }
 
         public string ToStringOrThrow(Context ctx)

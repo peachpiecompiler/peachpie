@@ -389,9 +389,19 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (ytype == codeGenerator.CoreTypes.PhpNumber)
                 {
-                    // number + number : number
-                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_number);
-                    return codeGenerator.CoreTypes.PhpNumber;
+                    if (codeGenerator.IsDoubleOnly(Right.TypeRefMask))
+                    {
+                        // number + number.double : double
+                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.get_Double);
+                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_double);
+                        return codeGenerator.CoreTypes.Double;
+                    }
+                    else
+                    {
+                        // number + number : number
+                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_number);
+                        return codeGenerator.CoreTypes.PhpNumber;
+                    }
                 }
                 else if (ytype.SpecialType == SpecialType.System_Double)
                 {

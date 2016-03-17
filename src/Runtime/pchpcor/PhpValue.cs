@@ -115,7 +115,7 @@ namespace Pchp.Core
             return new PhpValue()
             {
                 _type = number.TypeCode,    // Long || Double
-                _long = number.Long // _long = Long <=> _double = Double
+                _long = number._long // _long = Long <=> _double = Double
             };
         }
 
