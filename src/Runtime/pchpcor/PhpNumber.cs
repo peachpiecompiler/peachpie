@@ -286,6 +286,17 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        /// <param name="x">First operand.</param>
+        /// <param name="y">Second operand.</param>
+        /// <returns></returns>
+        public static double Add(long x, double y)
+        {
+            return (double)x + y;
+        }
+
+        /// <summary>
         /// Implements <c>-</c> operator on numbers.
         /// </summary>
         /// <param name="x">First operand.</param>

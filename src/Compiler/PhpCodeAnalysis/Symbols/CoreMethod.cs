@@ -245,13 +245,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_double_number = ct.PhpNumber.Operator("Addition", ct.Double, ct.PhpNumber);
                 Add_long_number = ct.PhpNumber.Operator("Addition", ct.Long, ct.PhpNumber);
                 Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
+                Add_long_double = ct.PhpNumber.Method("Add", ct.Long, ct.Double);
                 Subtract_number_number = ct.PhpNumber.Operator("Subtraction", ct.PhpNumber, ct.PhpNumber);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
                 CompareTo,
-                Add_long_long,
+                Add_long_long, Add_long_double,
                 Create_Long, Create_Double;
 
             public readonly CoreOperator

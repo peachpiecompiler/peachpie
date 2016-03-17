@@ -448,6 +448,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_number);
                     return codeGenerator.CoreTypes.PhpNumber;
                 }
+                else if (ytype.SpecialType == SpecialType.System_Double)
+                {
+                    // i8 + r8 : r8
+                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_double);
+                    return codeGenerator.CoreTypes.Double;
+                }
                 else if (
                     ytype.SpecialType == SpecialType.System_Int64 ||
                     ytype.SpecialType == SpecialType.System_Int32 ||
