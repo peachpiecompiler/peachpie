@@ -521,7 +521,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 _il.EmitBoolConstant(false);
                                 EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
                             }
-                            else if (typectx.IsInteger(return_mask))
+                            else if (typectx.IsLong(return_mask))
                             {
                                 _il.EmitLongConstant(0);
                                 EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);

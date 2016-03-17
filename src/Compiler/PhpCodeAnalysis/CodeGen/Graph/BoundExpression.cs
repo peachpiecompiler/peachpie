@@ -445,9 +445,27 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (ytype == codeGenerator.CoreTypes.PhpNumber)
                 {
-                    // r8 + number : r8
-                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_double_number);
-                    return codeGenerator.CoreTypes.Double;
+                    if (codeGenerator.IsDoubleOnly(Right.TypeRefMask))
+                    {
+                        // r8 + number.Double : r8
+                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.get_Double);
+                        il.EmitOpCode(ILOpCode.Add);
+                        return codeGenerator.CoreTypes.Double;
+                    }
+                    else if (codeGenerator.IsLongOnly(Right.TypeRefMask))
+                    {
+                        // r8 + (double)number.Long : r8
+                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.get_Long);    // .Long
+                        il.EmitOpCode(ILOpCode.Conv_r8);    // long -> double
+                        il.EmitOpCode(ILOpCode.Add);
+                        return codeGenerator.CoreTypes.Double;
+                    }
+                    else
+                    {
+                        // r8 + number : r8
+                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_double_number);
+                        return codeGenerator.CoreTypes.Double;
+                    }
                 }
 
                 //

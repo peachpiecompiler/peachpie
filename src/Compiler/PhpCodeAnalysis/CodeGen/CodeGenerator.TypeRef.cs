@@ -18,11 +18,19 @@ namespace Pchp.CodeAnalysis.CodeGen
     partial class CodeGenerator
     {
         /// <summary>
-        /// Gets value indicating whether given type represents a double ant nothing else.
+        /// Gets value indicating the given type represents a double and nothing else.
         /// </summary>
         internal bool IsDoubleOnly(TypeRefMask tmask)
         {
             return tmask.IsSingleType && _routine.TypeRefContext.IsDouble(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        internal bool IsLongOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && _routine.TypeRefContext.IsLong(tmask);
         }
     }
 }

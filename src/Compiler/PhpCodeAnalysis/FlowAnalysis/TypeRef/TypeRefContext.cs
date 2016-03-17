@@ -695,7 +695,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets value indicating whether given type mask represents an integer type.
         /// </summary>
-        public bool IsInteger(TypeRefMask mask) { return (mask.Mask & _isLongMask) != 0; }
+        public bool IsLong(TypeRefMask mask) { return (mask.Mask & _isLongMask) != 0; }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a double type.
