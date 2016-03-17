@@ -81,7 +81,7 @@ namespace Pchp.Core
         /// <summary>
         /// Non strict equality operator.
         /// </summary>
-        public static bool operator == (PhpNumber a, PhpNumber b)
+        public static bool operator ==(PhpNumber a, PhpNumber b)
         {
             a.AssertTypeCode();
             b.AssertTypeCode();
@@ -107,6 +107,96 @@ namespace Pchp.Core
         public static bool operator !=(PhpNumber a, PhpNumber b)
         {
             return !(a == b);
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        /// <param name="x">First operand.</param>
+        /// <param name="y">Second operand.</param>
+        /// <returns></returns>
+        public static PhpNumber operator +(PhpNumber x, PhpNumber y)
+        {
+            // at least one operand is a double:
+            if (x.IsDouble)
+            {
+                // DOUBLE + DOUBLE|LONG
+                return Create(x.Double + y.ToDouble());
+            }
+
+            if (y.IsDouble)
+            {
+                // LONG + DOUBLE
+                Debug.Assert(x.IsLong);
+                return Create((double)x.Long + y.Double);
+            }
+
+            // LONG + LONG
+            Debug.Assert(x.IsLong && y.IsLong);
+            long rl = unchecked(x.Long + y.Long);
+
+            if ((x.Long & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&       // result has different sign than x
+                (x.Long & Operators.LONG_SIGN_MASK) == (y.Long & Operators.LONG_SIGN_MASK)      // x and y have the same sign                
+                )
+            {
+                // overflow to double:
+                return Create((double)x.Long + (double)y.Long);
+            }
+            else
+            {
+                //// int to long overflow check
+                //int il = unchecked((int)rl);
+                //if (il == rl)
+                //    return il;
+
+                // long:
+                return Create(rl);  // note: most common case
+            }
+        }
+
+        /// <summary>
+        /// Implements <c>-</c> operator on numbers.
+        /// </summary>
+        /// <param name="x">First operand.</param>
+        /// <param name="y">Second operand.</param>
+        /// <returns></returns>
+        public static PhpNumber operator -(PhpNumber x, PhpNumber y)
+        {
+            // at least one operand is a double:
+            if (x.IsDouble)
+            {
+                // DOUBLE - DOUBLE
+                return Create(x.Double - y.ToDouble());
+            }
+
+            if (y.IsDouble)
+            {
+                // LONG - DOUBLE
+                Debug.Assert(x.IsLong);
+                return Create((double)x.Long - y.Double);
+            }
+
+            // LONG - LONG
+            Debug.Assert(x.IsLong && y.IsLong);
+            long rl = unchecked(x.Long - y.Long);
+
+            if ((x.Long & Operators.LONG_SIGN_MASK) != (rl & Operators.LONG_SIGN_MASK) &&   // result has different sign than x
+                (x.Long & Operators.LONG_SIGN_MASK) != (y.Long & Operators.LONG_SIGN_MASK)      // x and y have the same sign                
+                )
+            {
+                // overflow:
+                return Create((double)x.Long - (double)y.Long);
+            }
+            else
+            {
+                //// int to long overflow check
+                //int il = unchecked((int)rl);
+                //if (il == rl)
+                //    return il;
+
+                // long:
+                return Create(rl);
+            }
         }
 
         #endregion
