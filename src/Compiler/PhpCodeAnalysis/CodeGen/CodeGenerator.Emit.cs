@@ -311,6 +311,36 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         #endregion
 
+        /// <summary>
+        /// If possible, based on type analysis, unwraps more specific type from a value currently on stack.
+        /// </summary>
+        /// <param name="stack">Type of value currently on top of evaluationb stack.</param>
+        /// <param name="tmask">Result of analysis what type will be there in runtime.</param>
+        /// <returns>New type on top of evaluation stack.</returns>
+        internal TypeSymbol EmitSpecialize(TypeSymbol stack, TypeRefMask tmask)
+        {
+            // specialize type if possible
+            if (tmask.IsSingleType)
+            {
+                if (stack == this.CoreTypes.PhpNumber)
+                {
+                    if (IsDoubleOnly(tmask))
+                    {
+                        return EmitCall(ILOpCode.Call, this.CoreMethods.PhpNumber.get_Double)
+                            .Expect(SpecialType.System_Double);
+                    }
+                    else if (IsLongOnly(tmask))
+                    {
+                        return EmitCall(ILOpCode.Call, this.CoreMethods.PhpNumber.get_Long)
+                            .Expect(SpecialType.System_Int64);
+                    }
+                }
+            }
+
+            //
+            return stack;
+        }
+
         public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
 
         public void EmitPop(TypeSymbol type)

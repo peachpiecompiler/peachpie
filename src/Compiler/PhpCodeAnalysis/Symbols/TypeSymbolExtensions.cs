@@ -12,6 +12,27 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal static partial class TypeSymbolExtensions
     {
+        /// <summary>
+        /// Throws exception in type is not as expected.
+        /// </summary>
+        public static TypeSymbol Expect(this TypeSymbol actual, TypeSymbol expecting)
+        {
+            Debug.Assert(actual == expecting);
+
+            return actual;
+        }
+
+        /// <summary>
+        /// Throws exception in type is not as expected.
+        /// </summary>
+        public static TypeSymbol Expect(this TypeSymbol actual, SpecialType expecting)
+        {
+            Debug.Assert(actual != null);
+            Debug.Assert(actual.SpecialType == expecting && expecting != SpecialType.None);
+
+            return actual;
+        }
+
         //public static bool ImplementsInterface(this TypeSymbol subType, TypeSymbol superInterface, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
         //{
         //    foreach (NamedTypeSymbol @interface in subType.AllInterfacesWithDefinitionUseSiteDiagnostics(ref useSiteDiagnostics))

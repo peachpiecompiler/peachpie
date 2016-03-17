@@ -382,32 +382,24 @@ namespace Pchp.CodeAnalysis.Semantics
             // Template: x + y : Operators.Add(x,y) [overloads]
 
             var il = codeGenerator.Builder;
-            var xtype = Left.Emit(codeGenerator);
-            var ytype = Right.Emit(codeGenerator);
 
+            var xtype = codeGenerator.EmitSpecialize(Left.Emit(codeGenerator), Left.TypeRefMask);
+            var ytype = codeGenerator.EmitSpecialize(Right.Emit(codeGenerator), Right.TypeRefMask);
+
+            //
             if (xtype == codeGenerator.CoreTypes.PhpNumber)
             {
                 if (ytype == codeGenerator.CoreTypes.PhpNumber)
                 {
-                    if (codeGenerator.IsDoubleOnly(Right.TypeRefMask))
-                    {
-                        // number + number.double : double
-                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.get_Double);
-                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_double);
-                        return codeGenerator.CoreTypes.Double;
-                    }
-                    else
-                    {
-                        // number + number : number
-                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_number);
-                        return codeGenerator.CoreTypes.PhpNumber;
-                    }
+                    // number + number : number
+                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_number)
+                        .Expect(codeGenerator.CoreTypes.PhpNumber);
                 }
                 else if (ytype.SpecialType == SpecialType.System_Double)
                 {
                     // number + r8 : r8
-                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_double);
-                    return codeGenerator.CoreTypes.Double;
+                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_double)
+                        .Expect(SpecialType.System_Double);
                 }
                 else if (
                     ytype.SpecialType == SpecialType.System_Int64 ||
@@ -420,8 +412,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
 
                     // number + long : number
-                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_long);
-                    return codeGenerator.CoreTypes.PhpNumber;
+                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_long)
+                        .Expect(codeGenerator.CoreTypes.PhpNumber);
                 }
 
                 //
@@ -445,27 +437,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (ytype == codeGenerator.CoreTypes.PhpNumber)
                 {
-                    if (codeGenerator.IsDoubleOnly(Right.TypeRefMask))
-                    {
-                        // r8 + number.Double : r8
-                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.get_Double);
-                        il.EmitOpCode(ILOpCode.Add);
-                        return codeGenerator.CoreTypes.Double;
-                    }
-                    else if (codeGenerator.IsLongOnly(Right.TypeRefMask))
-                    {
-                        // r8 + (double)number.Long : r8
-                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.get_Long);    // .Long
-                        il.EmitOpCode(ILOpCode.Conv_r8);    // long -> double
-                        il.EmitOpCode(ILOpCode.Add);
-                        return codeGenerator.CoreTypes.Double;
-                    }
-                    else
-                    {
-                        // r8 + number : r8
-                        codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_double_number);
-                        return codeGenerator.CoreTypes.Double;
-                    }
+                    // r8 + number : r8
+                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_double_number)
+                        .Expect(SpecialType.System_Double);
                 }
 
                 //
@@ -476,14 +450,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (ytype == codeGenerator.CoreTypes.PhpNumber)
                 {
                     // i8 + number : number
-                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_number);
-                    return codeGenerator.CoreTypes.PhpNumber;
+                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_number)
+                        .Expect(codeGenerator.CoreTypes.PhpNumber);
                 }
                 else if (ytype.SpecialType == SpecialType.System_Double)
                 {
                     // i8 + r8 : r8
-                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_double);
-                    return codeGenerator.CoreTypes.Double;
+                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_double)
+                        .Expect(SpecialType.System_Double);
                 }
                 else if (
                     ytype.SpecialType == SpecialType.System_Int64 ||
@@ -494,10 +468,10 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
                     }
-                    
+
                     // i8 + i8 : number
-                    codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_long);
-                    return codeGenerator.CoreTypes.PhpNumber;
+                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_long)
+                        .Expect(codeGenerator.CoreTypes.PhpNumber);
                 }
 
                 //
