@@ -926,4 +926,12 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException();
         }
     }
+
+    partial class BoundIncDecEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

@@ -99,7 +99,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitConvertToBool(BoundExpression expr, bool negation = false)
         {
             Contract.ThrowIfNull(expr);
-            EmitConvertToBool(expr.Emit(this), expr.TypeRefMask, negation);
+            EmitConvertToBool(EmitSpecialize(expr.Emit(this), expr.TypeRefMask), expr.TypeRefMask, negation);
         }
 
         public void EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
@@ -187,6 +187,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 from = CoreTypes.PhpValue;
             }
 
+            from = EmitSpecialize(from, fromHint);
+
             switch (from.SpecialType)
             {
                 case SpecialType.System_Int32:
@@ -223,6 +225,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 Emit_PhpAlias_GetValue();
                 from = CoreTypes.PhpValue;
             }
+
+            from = EmitSpecialize(from, fromHint);
 
             switch (from.SpecialType)
             {
@@ -267,6 +271,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (to == from ||
                (from.SpecialType == to.SpecialType && from.SpecialType != SpecialType.None))
                 return;
+
+            //
+            from = EmitSpecialize(from, fromHint);
 
             // specialized conversions:
             switch (to.SpecialType)
