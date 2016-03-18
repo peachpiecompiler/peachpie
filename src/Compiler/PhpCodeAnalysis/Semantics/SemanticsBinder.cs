@@ -129,9 +129,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindAssignEx(AST.AssignEx expr, AccessType access)
         {
-            var kind = BindAssignOperationKind(expr);
+            var op = expr.Operation;
             var target = (BoundReferenceExpression)BindExpression(expr.LValue,
-                (kind == BinaryOperationKind.None) ? AccessType.Write : AccessType.ReadAndWrite);
+                (op == AST.Operations.AssignValue || op == AST.Operations.AssignRef) ? AccessType.Write : AccessType.ReadAndWrite);
             BoundExpression value;
 
             if (expr is AST.ValueAssignEx)
@@ -141,45 +141,16 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 Debug.Assert(expr is AST.RefAssignEx);
-                Debug.Assert(kind == BinaryOperationKind.None);
+                Debug.Assert(op == AST.Operations.AssignRef);
                 target.Access = AccessType.WriteRef;
                 value = BindExpression(((AST.RefAssignEx)expr).RValue, AccessType.ReadRef);
             }
 
             //
-            if (kind == BinaryOperationKind.None)
+            if (op == AST.Operations.AssignValue || op == AST.Operations.AssignRef)
                 return new BoundAssignEx(target, value).WithAccess(access);
             else
-                return new BoundCompoundAssignEx(target, value, kind).WithAccess(access);
-        }
-
-        static BinaryOperationKind BindAssignOperationKind(AST.AssignEx expr)
-        {
-            switch (expr.Operation)
-            {
-                // =
-                case AST.Operations.AssignValue:
-                case AST.Operations.AssignRef:
-                    return BinaryOperationKind.None;
-
-                // 
-                case AST.Operations.AssignAdd: return BinaryOperationKind.OperatorAdd;
-                case AST.Operations.AssignSub: return BinaryOperationKind.OperatorSubtract;
-                case AST.Operations.AssignMul: return BinaryOperationKind.OperatorMultiply;
-                case AST.Operations.AssignDiv: return BinaryOperationKind.OperatorDivide;
-                case AST.Operations.AssignAnd: return BinaryOperationKind.OperatorAnd;
-                case AST.Operations.AssignOr: return BinaryOperationKind.OperatorOr;
-                case AST.Operations.AssignXor: return BinaryOperationKind.OperatorExclusiveOr;
-                case AST.Operations.AssignAppend: return BinaryOperationKind.StringConcatenation;
-                //case AST.Operations.AssignPrepend:
-                case AST.Operations.AssignMod: return BinaryOperationKind.OperatorRemainder;    // %
-                case AST.Operations.AssignPow: return BinaryOperationKind.ObjectPower;  // **
-                case AST.Operations.AssignShiftLeft: return BinaryOperationKind.OperatorLeftShift;
-                case AST.Operations.AssignShiftRight: return BinaryOperationKind.OperatorRightShift;
-
-                default:
-                    throw new NotImplementedException();
-            }
+                return new BoundCompoundAssignEx(target, value, op).WithAccess(access);
         }
 
         static BoundExpression BindLiteral(AST.Literal expr)

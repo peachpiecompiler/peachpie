@@ -151,6 +151,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Unreachable blocks are not visited.
         /// </summary>
         /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
-        public void Visit(CFGWalker/*!*/visitor) => visitor.VisitCFG(this);
+        public void Visit(GraphVisitor/*!*/visitor) => visitor.VisitCFG(this);
     }
 }

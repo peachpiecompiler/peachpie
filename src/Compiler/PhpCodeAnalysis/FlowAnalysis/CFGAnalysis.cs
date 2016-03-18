@@ -11,7 +11,7 @@ using Pchp.Syntax.Text;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    public partial class EdgesAnalysis : CFGWalker
+    public partial class CFGAnalysis : GraphVisitor
     {
         #region Fields
 
@@ -28,7 +28,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Current flow state.
         /// </summary>
-        internal FlowState State => _state;
+        internal FlowState State
+        {
+            get { return _state; }
+            set { _state = value; }
+        }
         FlowState _state;
 
         /// <summary>
@@ -41,23 +45,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region Construction
 
         /// <summary>
-        /// Creates an instance of <see cref="EdgesAnalysis"/> that can analyse a block.
+        /// Creates an instance of <see cref="CFGAnalysis"/> that can analyse a block.
         /// </summary>
         /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
         /// <returns>New instance of the flow analyzer.</returns>
-        internal static EdgesAnalysis Create(Worklist<BoundBlock> worklist)
+        internal static CFGAnalysis Create(Worklist<BoundBlock> worklist, ExpressionAnalysis opvisitor)
         {
             Contract.ThrowIfNull(worklist);
 
-            var opvisitor = new ExpressionAnalysis();   // TODO: MEF Import?
-            var analysis = new EdgesAnalysis(worklist, opvisitor);
+            var analysis = new CFGAnalysis(worklist, opvisitor);
             opvisitor.SetAnalysis(analysis);
 
             //
             return analysis;
         }
 
-        private EdgesAnalysis(Worklist<BoundBlock> worklist, OperationVisitor opvisitor)
+        private CFGAnalysis(Worklist<BoundBlock> worklist, OperationVisitor opvisitor)
             : base(opvisitor)
         {
             _worklist = worklist;
@@ -177,12 +180,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // true branch
             _state = state.Clone();
-            OpAnalysis.AcceptCondition(x.Condition, ConditionBranch.ToTrue);
+            OpAnalysis.VisitCondition(x.Condition, ConditionBranch.ToTrue);
             TraverseToBlock(_state, x.TrueTarget);
 
             // false branch
             _state = state.Clone();
-            OpAnalysis.AcceptCondition(x.Condition, ConditionBranch.ToFalse);
+            OpAnalysis.VisitCondition(x.Condition, ConditionBranch.ToFalse);
             TraverseToBlock(_state, x.FalseTarget);
         }
 

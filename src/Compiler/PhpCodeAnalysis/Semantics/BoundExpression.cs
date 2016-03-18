@@ -111,9 +111,11 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         protected ImmutableArray<BoundArgument> _arguments;
 
-        public ImmutableArray<IArgument> ArgumentsInParameterOrder => ArgumentsInSourceOrder;
+        ImmutableArray<IArgument> IInvocationExpression.ArgumentsInParameterOrder => StaticCast<IArgument>.From(_arguments);
 
-        public ImmutableArray<IArgument> ArgumentsInSourceOrder => StaticCast<IArgument>.From(_arguments);
+        ImmutableArray<IArgument> IInvocationExpression.ArgumentsInSourceOrder => StaticCast<IArgument>.From(_arguments);
+
+        public ImmutableArray<BoundArgument> ArgumentsInSourceOrder => _arguments;
 
         public IArgument ArgumentMatchingParameter(IParameterSymbol parameter)
         {
@@ -212,7 +214,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitBinaryOperatorExpression(this, argument);
 
-        internal BoundBinaryEx(BoundExpression left, BoundExpression right, Syntax.AST.Operations op)
+        internal BoundBinaryEx(BoundExpression left, BoundExpression right, Operations op)
         {
             this.Left = left;
             this.Right = right;
@@ -289,7 +291,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundCompoundAssignEx : BoundAssignEx, ICompoundAssignmentExpression
     {
-        public BinaryOperationKind BinaryKind { get; private set; }
+        public BinaryOperationKind BinaryKind { get { throw new NotSupportedException(); } }
 
         public override OperationKind Kind => OperationKind.CompoundAssignmentExpression;
 
@@ -297,10 +299,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public bool UsesOperatorMethod => this.Operator != null;
 
-        public BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, BinaryOperationKind kind)
+        public Operations Operation { get; private set; }
+
+        public BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Operations op)
             :base(target, value)
         {
-            this.BinaryKind = kind;
+            this.Operation = op;
         }
 
         public override void Accept(OperationVisitor visitor)

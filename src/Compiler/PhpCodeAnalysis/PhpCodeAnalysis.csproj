@@ -67,12 +67,13 @@
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\PropertySymbolAdapter.cs" />
-    <Compile Include="FlowAnalysis\EdgesAnalysis.cs" />
+    <Compile Include="FlowAnalysis\CFGAnalysis.cs" />
     <Compile Include="FlowAnalysis\ConditionBranch.cs" />
     <Compile Include="FlowAnalysis\ExpressionAnalysis.cs" />
     <Compile Include="FlowAnalysis\FlowContext.cs" />
     <Compile Include="FlowAnalysis\FlowState.cs" />
     <Compile Include="FlowAnalysis\Graph\BoundBlock.cs" />
+    <Compile Include="FlowAnalysis\Graph\BoundExpression.cs" />
     <Compile Include="FlowAnalysis\Graph\ControlFlowGraph.cs" />
     <Compile Include="FlowAnalysis\IFlowState.cs" />
     <Compile Include="FlowAnalysis\PHPDoc.cs" />
@@ -93,7 +94,7 @@
     <Compile Include="Semantics\Graph\BuilderVisitor.cs" />
     <Compile Include="Semantics\Graph\ControlFlowGraph.cs" />
     <Compile Include="Semantics\Graph\Edge.cs" />
-    <Compile Include="Semantics\Graph\CFGWalker.cs" />
+    <Compile Include="Semantics\Graph\GraphVisitor.cs" />
     <Compile Include="Semantics\SemanticsBinder.cs" />
     <Compile Include="Semantics\BoundStatement.cs" />
     <Compile Include="CodeGen\MethodGenerator.cs" />

@@ -77,7 +77,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IExpression IReturnStatement.Returned => Returned;
 
-        BoundExpression Returned { get; set; }
+        public BoundExpression Returned { get; private set; }
 
         public BoundReturnStatement(BoundExpression returned)
         {

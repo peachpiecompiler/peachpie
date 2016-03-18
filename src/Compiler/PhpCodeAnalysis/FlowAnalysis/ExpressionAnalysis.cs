@@ -1,8 +1,11 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.Syntax.AST;
 using Pchp.Syntax.Text;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -17,17 +20,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     {
         #region Fields
 
-        EdgesAnalysis _analysis;
+        CFGAnalysis _analysis;
 
         /// <summary>
         /// Gets current type context for type masks resolving.
         /// </summary>
-        protected TypeRefContext TypeRefContext => _analysis.TypeRefContext;
+        protected TypeRefContext TypeCtx => _analysis.TypeRefContext;
 
         /// <summary>
         /// Current flow state.
         /// </summary>
-        protected FlowState State => _analysis.State;
+        protected FlowState State
+        {
+            get { return _analysis.State; }
+            set { _analysis.State = value; }
+        }
 
         #endregion
 
@@ -43,17 +50,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Also some other constructs may have side-effect for known branch,
         /// eg. <c>($x instanceof X)</c> implies ($x is X) in True branch.
         /// </remarks>
-        internal void AcceptCondition(BoundExpression condition, ConditionBranch branch)
+        internal void VisitCondition(BoundExpression condition, ConditionBranch branch)
         {
             Contract.ThrowIfNull(condition);
 
             if (branch != ConditionBranch.AnyResult)
             {
-                //if (condition is BoundBinaryEx)
-                //{
-                //    VisitBinaryEx((BinaryEx)condition, branch);
-                //    return;
-                //}
+                if (condition is BoundBinaryEx)
+                {
+                    VisitBinaryOperatorExpression((BoundBinaryEx)condition, branch);
+                    return;
+                }
                 //if (condition is BoundUnaryEx)
                 //{
                 //    VisitUnaryEx((UnaryEx)condition, branch);
@@ -170,7 +177,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Visit overrides
+        #region Visit specialized
 
         //protected virtual void VisitBinaryEx(BinaryEx x, ConditionBranch branch)
         //{
@@ -270,9 +277,363 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
         }
 
-        internal void SetAnalysis(EdgesAnalysis analysis)
+        internal void SetAnalysis(CFGAnalysis analysis)
         {
             _analysis = analysis;
+        }
+
+        #endregion
+
+        #region Visit Literals
+
+        public sealed override void VisitLiteralExpression(ILiteralExpression operation)
+            => ((BoundExpression)operation).TypeRefMask = ((BoundLiteral)operation).ResolveTypeMask(TypeCtx);
+
+        #endregion
+
+        #region Visit Assignments
+
+        public sealed override void VisitAssignmentExpression(IAssignmentExpression operation)
+        => ((BoundExpression)operation).TypeRefMask = VisitAssignmentExpression((BoundAssignEx)operation);
+
+        protected virtual TypeRefMask VisitAssignmentExpression(BoundAssignEx op)
+        {
+            Debug.Assert(op.Target.Access == AccessType.Write || op.Target.Access == AccessType.WriteRef);
+            Debug.Assert(op.Value.Access == AccessType.Read || op.Value.Access == AccessType.ReadRef);
+
+            Visit(op.Value);
+            op.Target.TypeRefMask = op.Value.TypeRefMask;
+
+            //
+            Visit(op.Target);
+
+            //
+            return op.Value.TypeRefMask;
+        }
+
+        public override void VisitCompoundAssignmentExpression(ICompoundAssignmentExpression operation)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void VisitLocalReferenceExpression(ILocalReferenceExpression operation)
+        {
+            var expr = (BoundExpression)operation;
+
+            if (expr is BoundVariableRef)
+            {
+                VisitBoundVariableRef((BoundVariableRef)expr);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        protected virtual void VisitBoundVariableRef(BoundVariableRef v)
+        {
+            switch (v.Access)
+            {
+                case AccessType.None:
+                    break;
+
+                case AccessType.Read:
+                case AccessType.ReadRef:
+                    State.SetVarUsed(v.Name);
+                    v.TypeRefMask = State.GetVarType(v.Name);
+                    break;
+
+                case AccessType.Write:
+                case AccessType.WriteRef:
+                    Debug.Assert(!v.TypeRefMask.IsUninitialized);   // not set or right operand of assignment is void
+                    State.SetVarInitialized(v.Name);
+                    State.SetVar(v.Name, v.TypeRefMask);
+
+                    if (v.Access == AccessType.WriteRef)
+                        State.SetVarRef(v.Name);
+                                        
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        #endregion
+
+        #region Visit BinaryEx
+
+        private void VisitShortCircuitOp(BoundExpression lExpr, BoundExpression rExpr, bool isAndOp, ConditionBranch branch)
+        {
+            // Each operand has to be evaluated in various states and then the state merged.
+            // Simulates short-circuit evaluation in runtime:
+
+            var state = this.State; // original state
+
+            if (branch == ConditionBranch.AnyResult)
+            {
+                if (isAndOp)
+                {
+                    // A == True && B == Any
+                    // A == False
+
+                    State = state.Clone();
+                    VisitCondition(lExpr, ConditionBranch.ToTrue);
+                    VisitCondition(rExpr, ConditionBranch.AnyResult);
+                    var tmp = State;
+                    State = state.Clone();
+                    VisitCondition(lExpr, ConditionBranch.ToFalse);
+                    State = State.Merge(tmp);
+                }
+                else
+                {
+                    // A == False && B == Any
+                    // A == True
+
+                    State = state.Clone();
+                    VisitCondition(lExpr, ConditionBranch.ToFalse);
+                    VisitCondition(rExpr, ConditionBranch.AnyResult);
+                    var tmp = State;
+                    State = state.Clone();
+                    VisitCondition(lExpr, ConditionBranch.ToTrue);
+                    State = State.Merge(tmp);
+                }
+            }
+            else if (branch == ConditionBranch.ToTrue)
+            {
+                if (isAndOp)
+                {
+                    // A == True && B == True
+
+                    VisitCondition(lExpr, ConditionBranch.ToTrue);
+                    VisitCondition(rExpr, ConditionBranch.ToTrue);
+                }
+                else
+                {
+                    // A == False && B == True
+                    // A == True
+
+                    State = state.Clone();
+                    VisitCondition(lExpr, ConditionBranch.ToFalse);
+                    VisitCondition(rExpr, ConditionBranch.ToTrue);
+                    var tmp = State;
+                    State = state.Clone();
+                    VisitCondition(lExpr, ConditionBranch.ToTrue);
+                    State = State.Merge(tmp);
+                }
+            }
+            else if (branch == ConditionBranch.ToFalse)
+            {
+                if (isAndOp)
+                {
+                    // A == True && B == False
+                    // A == False
+
+                    State = state.Clone();
+                    VisitCondition(lExpr, ConditionBranch.ToTrue);
+                    VisitCondition(rExpr, ConditionBranch.ToFalse);
+                    var tmp = State;
+                    State = state.Clone();
+                    VisitCondition(lExpr, ConditionBranch.ToFalse);
+                    State = State.Merge(tmp);
+                }
+                else
+                {
+                    // A == False && B == False
+
+                    VisitCondition(lExpr, ConditionBranch.ToFalse);
+                    VisitCondition(rExpr, ConditionBranch.ToFalse);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets resulting type of bit operation (bit or, and, xor).
+        /// </summary>
+        TypeRefMask GetBitOperationType(TypeRefMask lValType, TypeRefMask rValType)
+        {
+            TypeRefMask type;
+
+            // type is string if both operands are string
+            if ((lValType.IsAnyType && rValType.IsAnyType) ||
+                (TypeCtx.IsString(lValType) && TypeCtx.IsString(rValType)))
+            {
+                type = TypeCtx.GetStringTypeMask();
+            }
+            else
+            {
+                type = default(TypeRefMask);
+            }
+
+            // type can be always long
+            type |= TypeCtx.GetLongTypeMask();
+
+            //
+            return type;
+        }
+
+        /// <summary>
+        /// Gets resulting type of <c>+</c> operation.
+        /// </summary>
+        TypeRefMask GetPlusOperationType(TypeRefMask lValType, TypeRefMask rValType)
+        {
+            // array + array => array
+            // array + number => 0 (ERROR)
+            // number + number => number
+            // anytype + array => array
+            // anytype + number => number
+
+            var or = lValType | rValType;
+            var type = TypeCtx.GetArraysFromMask(or);
+
+            //
+            if (or.IsAnyType || TypeCtx.IsNumber(or) || type == 0) // !this.TypeRefContext.IsArray(lValType & rValType))
+                type |= TypeCtx.GetNumberTypeMask();    // anytype or an operand is number or operands are not a number nor both are not array
+
+            if (or.IsAnyType)
+                type |= TypeCtx.GetArrayTypeMask();
+
+            //
+            return type;
+        }
+
+        public sealed override void VisitBinaryOperatorExpression(IBinaryOperatorExpression operation)
+            => ((BoundExpression)operation).TypeRefMask = VisitBinaryOperatorExpression((BoundBinaryEx)operation, ConditionBranch.AnyResult);
+
+        protected virtual TypeRefMask VisitBinaryOperatorExpression(BoundBinaryEx x, ConditionBranch branch)
+        {
+            if (x.Operation == Operations.And || x.Operation == Operations.Or)
+            {
+                this.VisitShortCircuitOp(x.Left, x.Right, x.Operation == Operations.And, branch);
+            }
+            else
+            {
+                Visit(x.Left);
+                Visit(x.Right);
+            }
+
+            switch (x.Operation)
+            {
+                #region Arithmetic Operations
+
+                case Operations.Add:
+                    return GetPlusOperationType(x.Left.TypeRefMask, x.Right.TypeRefMask);
+
+                case Operations.Sub:
+                case Operations.Div:
+                case Operations.Mul:
+                case Operations.Pow:
+                    return TypeCtx.GetNumberTypeMask(); // or double if we are sure about operands
+
+                case Operations.Mod:
+                    return TypeCtx.GetLongTypeMask();
+
+                case Operations.ShiftLeft:
+                case Operations.ShiftRight:
+                    return TypeCtx.GetLongTypeMask();
+
+                #endregion
+
+                #region Boolean and Bitwise Operations
+
+                case Operations.And:
+                case Operations.Or:
+                case Operations.Xor:
+                    return TypeCtx.GetBooleanTypeMask();
+
+                case Operations.BitAnd:
+                case Operations.BitOr:
+                case Operations.BitXor:
+                    return GetBitOperationType(x.Left.TypeRefMask, x.Right.TypeRefMask);    // int or string
+
+                #endregion
+
+                #region Comparing Operations
+
+                case Operations.Equal:
+                case Operations.NotEqual:
+                case Operations.GreaterThan:
+                case Operations.LessThan:
+                case Operations.GreaterThanOrEqual:
+                case Operations.LessThanOrEqual:
+                case Operations.Identical:
+                case Operations.NotIdentical:
+                    return TypeCtx.GetBooleanTypeMask();
+
+                #endregion
+
+                case Operations.Concat:
+                    return TypeCtx.GetStringTypeMask(); // TODO: or binary string, see operands
+
+                default:
+                    throw ExceptionUtilities.Unreachable;
+            }
+        }
+
+        #endregion
+
+        #region Visit Function Call
+
+        public override void VisitInvocationExpression(IInvocationExpression operation)
+        {
+            // TODO: write arguments Access
+            // TODO: visit invocation member of
+            // TODO: 2 pass, analyze arguments -> resolve method -> assign argument to parameter -> write arguments access -> analyze arguments again
+
+            // analyze arguments
+            operation.ArgumentsInSourceOrder.ForEach(VisitArgument);
+
+            // resolve invocation
+            if (operation is BoundEcho)
+            {
+                VisitEcho((BoundEcho)operation);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        protected virtual void VisitEcho(BoundEcho x)
+        {
+            x.TypeRefMask = 0;
+        }
+
+        public override void VisitArgument(IArgument operation)
+        {
+            if (operation.Parameter != null)
+            {
+                // TODO: write arguments access
+                // TODO: conversion by simplifier visitor
+            }
+
+            VisitArgument((BoundArgument)operation);
+        }
+
+        protected virtual void VisitArgument(BoundArgument x)
+        {
+            Visit(x.Value);
+        }
+
+        #endregion
+
+        #region Visit
+
+        public override void DefaultVisit(IOperation operation)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void VisitExpressionStatement(IExpressionStatement operation)
+            => Visit(operation.Expression);
+
+        public sealed override void VisitReturnStatement(IReturnStatement operation)
+            => VisitReturnStatement((BoundReturnStatement)operation);
+
+        protected virtual void VisitReturnStatement(BoundReturnStatement x)
+        {
+            Visit(x.Returned);
+            State.FlowThroughReturn(x.Returned.TypeRefMask);
         }
 
         #endregion

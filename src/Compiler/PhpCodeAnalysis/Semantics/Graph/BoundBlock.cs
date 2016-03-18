@@ -103,7 +103,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return result.ToList();
         }
 
-        public virtual void Accept(CFGWalker visitor) => visitor.VisitCFGBlock(this);
+        public virtual void Accept(GraphVisitor visitor) => visitor.VisitCFGBlock(this);
 
         #region IBlockStatement
 
@@ -167,7 +167,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _variableName = item.Variable.VarName;
         }
 
-        public override void Accept(CFGWalker visitor) => visitor.VisitCFGCatchBlock(this);
+        public override void Accept(GraphVisitor visitor) => visitor.VisitCFGCatchBlock(this);
     }
 
     /// <summary>
@@ -192,6 +192,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _caseValue = caseValue;
         }
 
-        public override void Accept(CFGWalker visitor) => visitor.VisitCFGCaseBlock(this);
+        public override void Accept(GraphVisitor visitor) => visitor.VisitCFGCaseBlock(this);
     }
 }

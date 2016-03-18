@@ -26,7 +26,8 @@ namespace Pchp.CodeAnalysis
         readonly PEModuleBuilder _moduleBuilder;
         readonly bool _emittingPdb;
         readonly DiagnosticBag _diagnostics;
-        readonly Worklist<BoundBlock> _worklist;    // TODO: analysis driver
+
+        readonly Worklist<BoundBlock> _worklist;
         
         private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics)
         {
@@ -39,7 +40,8 @@ namespace Pchp.CodeAnalysis
             _emittingPdb = emittingPdb;
             _diagnostics = diagnostics;
 
-            _worklist = new Worklist<BoundBlock>(); // parallel worklist algorithm
+            // parallel worklist algorithm
+            _worklist = new Worklist<BoundBlock>(AnalyzeBlock);
 
             // semantic model
         }
@@ -105,6 +107,15 @@ namespace Pchp.CodeAnalysis
 
             // analyse blocks
             _worklist.DoAll();
+        }
+
+        void AnalyzeBlock(BoundBlock block) // TODO: driver
+        {
+            // TODO: pool of CFGAnalysis
+            // TODO: async
+            // TODO: in parallel
+            var analysis = CFGAnalysis.Create(_worklist, new ExpressionAnalysis());
+            analysis.VisitCFGBlock(block);
         }
 
         /// <summary>

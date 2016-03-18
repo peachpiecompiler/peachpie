@@ -577,6 +577,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 throw ExceptionUtilities.UnexpectedValue(return_type);
                             }
                         }
+                        else if (return_type == CoreTypes.PhpNumber)
+                        {
+                            // PhpNumber.Create(0L)
+                            _il.EmitLongConstant(0L);
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Long);
+                        }
                         else
                         {
                             throw new NotImplementedException();    // default(T)

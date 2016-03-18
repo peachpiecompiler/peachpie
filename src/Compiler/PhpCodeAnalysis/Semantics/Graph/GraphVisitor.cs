@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Control flow graph visitor.
     /// </summary>
     /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
-    public class CFGWalker
+    public class GraphVisitor
     {
         #region Bound
 
@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region ControlFlowGraph
 
-        public CFGWalker(OperationVisitor opvisitor)
+        public GraphVisitor(OperationVisitor opvisitor)
         {
             Contract.ThrowIfNull(opvisitor);
             _opvisitor = opvisitor;

@@ -397,6 +397,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Gets type mask corresponding to <see cref="System.Object"/>.
+        /// </summary>
+        public TypeRefMask GetSystemObjectTypeMask()
+        {
+            return GetTypeMask(QualifiedName.SystemObject, true);
+        }
+
+        /// <summary>
+        /// Gets type mask corresponding to <see cref="System.Object"/> and not including any subclasses.
+        /// </summary>
+        public TypeRefMask GetNullTypeMask()
+        {
+            return GetTypeMask(QualifiedName.SystemObject, includesSubclasses: false);
+        }
+
+        /// <summary>
         /// Gets <c>string</c> type for this context.
         /// </summary>
         public TypeRefMask GetStringTypeMask()

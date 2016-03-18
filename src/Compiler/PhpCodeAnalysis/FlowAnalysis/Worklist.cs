@@ -5,6 +5,7 @@ using Pchp.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,14 +15,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Queue of work items to do.
     /// </summary>
+    [DebuggerDisplay("WorkList<{T}>, Size={_queue.Count}")]
     internal class Worklist<T> where T : BoundBlock
     {
         readonly object _syncRoot = new object();
 
         /// <summary>
+        /// Delegate used to process <typeparamref name="T"/>.
+        /// </summary>
+        public delegate void AnalyzeBlockDelegate(T block);
+
+        /// <summary>
         /// Action performed on bound operations.
         /// </summary>
-        readonly List<CFGWalker> _analyzers = new List<CFGWalker>();  // TODO: Analysis instead of GraphVisitor
+        readonly List<AnalyzeBlockDelegate> _analyzers = new List<AnalyzeBlockDelegate>();
 
         //public event EventHandler MethodDone;
         
@@ -39,14 +46,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Adds an analysis driver into the list of analyzers to be performed on bound operations.
         /// </summary>
-        internal void AddAnalysis(CFGWalker analyzer)
+        internal void AddAnalysis(AnalyzeBlockDelegate analyzer)
         {
             _analyzers.Add(analyzer);
         }
 
-        public Worklist()
+        public Worklist(params AnalyzeBlockDelegate[] analyzers)
         {
-            
+            _analyzers.AddRange(analyzers);
         }
 
         /// <summary>
@@ -76,7 +83,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 return false;
 
             //
-            _analyzers.ForEach(visitor => visitor.VisitCFGBlock(block));
+            _analyzers.ForEach(a => a(block));
 
             //
             return true;
