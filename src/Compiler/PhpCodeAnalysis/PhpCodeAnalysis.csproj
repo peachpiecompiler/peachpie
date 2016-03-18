@@ -67,8 +67,9 @@
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\PropertySymbolAdapter.cs" />
-    <Compile Include="FlowAnalysis\AnalysisWalker.cs" />
+    <Compile Include="FlowAnalysis\EdgesAnalysis.cs" />
     <Compile Include="FlowAnalysis\ConditionBranch.cs" />
+    <Compile Include="FlowAnalysis\ExpressionAnalysis.cs" />
     <Compile Include="FlowAnalysis\FlowContext.cs" />
     <Compile Include="FlowAnalysis\FlowState.cs" />
     <Compile Include="FlowAnalysis\Graph\BoundBlock.cs" />
