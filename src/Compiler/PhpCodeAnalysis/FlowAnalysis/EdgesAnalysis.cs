@@ -11,7 +11,7 @@ using Pchp.Syntax.Text;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    public class EdgesAnalysis : GraphVisitor
+    public partial class EdgesAnalysis : GraphVisitor
     {
         #region Short-Circuit Evaluation
 
@@ -267,10 +267,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Construction
 
-        internal EdgesAnalysis(Worklist<BoundBlock> worklist, OperationVisitor opvisitor)
+        /// <summary>
+        /// Creates an instance of <see cref="EdgesAnalysis"/> that can analyse a block.
+        /// </summary>
+        /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
+        /// <returns>New instance of the flow analyzer.</returns>
+        internal static EdgesAnalysis Create(Worklist<BoundBlock> worklist)
+        {
+            Contract.ThrowIfNull(worklist);
+
+            var opvisitor = new ExpressionAnalysis();   // TODO: MEF Import?
+            var analysis = new EdgesAnalysis(worklist, opvisitor);
+            opvisitor.SetAnalysis(analysis);
+
+            //
+            return analysis;
+        }
+
+        private EdgesAnalysis(Worklist<BoundBlock> worklist, OperationVisitor opvisitor)
             : base(opvisitor)
         {
-            Contract.ThrowIfNull(worklist);            
             _worklist = worklist;
         }
 
