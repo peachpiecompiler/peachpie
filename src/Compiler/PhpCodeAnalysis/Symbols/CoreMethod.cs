@@ -156,7 +156,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             var methods = type.GetMembers(this.MethodName);
             return methods.OfType<MethodSymbol>()
-                .Where(m => m.IsSpecialName)
+                .Where(m => m.HasSpecialName)
                 .First(MatchesSignature);
         }
     }

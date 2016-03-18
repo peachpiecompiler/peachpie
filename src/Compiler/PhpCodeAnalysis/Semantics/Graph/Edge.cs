@@ -73,7 +73,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public abstract void Visit(GraphVisitor visitor);
+        public abstract void Visit(CFGWalker visitor);
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGSimpleEdge(this);
+        public override void Visit(CFGWalker visitor) => visitor.VisitCFGSimpleEdge(this);
     }
 
     /// <summary>
@@ -156,7 +156,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGConditionalEdge(this);
+        public override void Visit(CFGWalker visitor) => visitor.VisitCFGConditionalEdge(this);
     }
 
     /// <summary>
@@ -235,7 +235,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGTryCatchEdge(this);
+        public override void Visit(CFGWalker visitor) => visitor.VisitCFGTryCatchEdge(this);
     }
 
     /// <summary>
@@ -260,7 +260,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGForeachEnumereeEdge(this);
+        public override void Visit(CFGWalker visitor) => visitor.VisitCFGForeachEnumereeEdge(this);
     }
 
     /// <summary>
@@ -323,7 +323,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGForeachMoveNextEdge(this);
+        public override void Visit(CFGWalker visitor) => visitor.VisitCFGForeachMoveNextEdge(this);
     }
 
     /// <summary>
@@ -364,6 +364,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGSwitchEdge(this);
+        public override void Visit(CFGWalker visitor) => visitor.VisitCFGSwitchEdge(this);
     }
 }

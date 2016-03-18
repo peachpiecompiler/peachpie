@@ -13,38 +13,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Control flow graph visitor.
     /// </summary>
     /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
-    public class GraphVisitor : TreeVisitor
+    public class CFGWalker
     {
-        #region Declarations (ignored)
-
-        public override void VisitTypeDecl(TypeDecl x)
-        {
-        }
-
-        public override void VisitMethodDecl(MethodDecl x)
-        {
-        }
-
-        public override void VisitConstDeclList(ConstDeclList x)
-        {
-        }
-
-        public override void VisitFunctionDecl(FunctionDecl x)
-        {
-        }
-
-        public override void VisitLambdaFunctionExpr(LambdaFunctionExpr x)
-        {   
-        }
-
-        #endregion
-
         #region Bound
 
         /// <summary>
         /// Visitor for bound operations.
         /// </summary>
-        readonly OperationVisitor _opvisitor;
+        readonly protected OperationVisitor _opvisitor;
 
         /// <summary>
         /// Forwards the operation to the <see cref="OperationVisitor"/>.
@@ -55,7 +31,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region ControlFlowGraph
 
-        public GraphVisitor(OperationVisitor opvisitor)
+        public CFGWalker(OperationVisitor opvisitor)
         {
             Contract.ThrowIfNull(opvisitor);
             _opvisitor = opvisitor;

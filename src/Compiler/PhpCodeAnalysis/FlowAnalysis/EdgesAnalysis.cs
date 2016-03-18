@@ -11,241 +11,8 @@ using Pchp.Syntax.Text;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    public partial class EdgesAnalysis : GraphVisitor
+    public partial class EdgesAnalysis : CFGWalker
     {
-        #region Short-Circuit Evaluation
-
-        /// <summary>
-        /// Visits condition used to branch execution to true or false branch.
-        /// </summary>
-        /// <remarks>
-        /// Because of minimal evaluation there is different TFlowState for true and false branches,
-        /// AND and OR operators have to take this into account.
-        /// 
-        /// Also some other constructs may have side-effect for known branch,
-        /// eg. <c>($x instanceof X)</c> implies ($x is X) in True branch.
-        /// </remarks>
-        protected void VisitCondition(BoundExpression condition, ConditionBranch branch)
-        {
-            Contract.ThrowIfNull(condition);
-
-            if (branch != ConditionBranch.AnyResult)
-            {
-                //if (condition is BoundBinaryEx)
-                //{
-                //    VisitBinaryEx((BinaryEx)condition, branch);
-                //    return;
-                //}
-                //if (condition is BoundUnaryEx)
-                //{
-                //    VisitUnaryEx((UnaryEx)condition, branch);
-                //    return;
-                //}
-                //if (condition is DirectFcnCall)
-                //{
-                //    VisitDirectFcnCall((DirectFcnCall)condition, branch);
-                //    return;
-                //}
-                //if (condition is InstanceOfEx)
-                //{
-                //    VisitInstanceOfEx((InstanceOfEx)condition, branch);
-                //    return;
-                //}
-                //if (condition is IssetEx)
-                //{
-                //    VisitIssetEx((IssetEx)condition, branch);
-                //    return;
-                //}
-                //if (condition is EmptyEx)
-                //{
-                //    VisitEmptyEx((EmptyEx)condition, branch);
-                //    return;
-                //}
-            }
-
-            // no effect
-            Accept(condition);
-        }
-
-        #endregion
-
-        #region AccessType
-
-        /// <summary>
-        /// Access type - describes context within which an expression is used.
-        /// </summary>
-        [Flags]
-        protected enum AccessFlags : byte
-        {
-            /// <summary>
-            /// Expression is being read from.
-            /// </summary>
-            Read = 0,
-
-            /// <summary>
-            /// Expression is LValue of an assignment. Do not report uninitialized var use.
-            /// </summary>
-            Write = 1,
-
-            /// <summary>
-            /// Expression is LValue accessed with array item operator.
-            /// </summary>
-            EnsureArray = 2,
-
-            /// <summary>
-            /// Expression is LValue accessed by object operator (<c>-></c>).
-            /// </summary>
-            EnsureProperty = 4,
-
-            /// <summary>
-            /// Expression is being checked within <c>isset</c> function call. Do not report uninitialized var use.
-            /// </summary>
-            IsCheck = 8,
-
-            /// <summary>
-            /// Expression is used as a statement, return value is not used.
-            /// </summary>
-            None = Read,
-        }
-
-        #endregion
-
-        #region Access
-
-        protected struct Access
-        {
-            public bool IsRead { get { return !IsWrite; } }
-            public bool IsWrite { get { return (flags & AccessFlags.Write) != 0; } }
-            public bool IsCheck { get { return (flags & AccessFlags.IsCheck) != 0; } }
-            public bool IsEnsureArray { get { return (flags & AccessFlags.EnsureArray) != 0; } }
-            public bool IsEnsureHasProperty { get { return (flags & AccessFlags.EnsureProperty) != 0; } }
-
-            /// <summary>
-            /// Type of expression access.
-            /// </summary>
-            private AccessFlags flags;
-
-            /// <summary>
-            /// In case of Write* access, specifies the type being written.
-            /// </summary>
-            public TypeRefMask RValueType;
-
-            /// <summary>
-            /// Span of right value for error reporting.
-            /// </summary>
-            public Span RValueSpan;
-
-            public static Access Read { get { return new Access() { flags = AccessFlags.Read }; } }
-            public static Access Check { get { return new Access() { flags = AccessFlags.IsCheck | AccessFlags.Read }; } }
-            public static Access Write(TypeRefMask rValueType, Span rValueSpan) { return new Access() { flags = AccessFlags.Write, RValueType = rValueType, RValueSpan = rValueSpan }; }
-            public static Access EnsureArray(TypeRefMask elementType) { return new Access() { flags = AccessFlags.EnsureArray | AccessFlags.Read, RValueType = elementType }; }
-
-            /// <summary>
-            /// Creates new <see cref="Access"/> with given check state.
-            /// </summary>
-            public static Access operator &(Access a, Access check)
-            {
-                a.flags |= (check.flags & AccessFlags.IsCheck);
-                return a;
-            }
-        }
-
-        #endregion
-
-        //#region Visit overrides
-
-        //protected virtual void VisitBinaryEx(BinaryEx x, ConditionBranch branch)
-        //{
-        //    // to be overriden in derived class
-        //    base.VisitBinaryEx(x);
-        //}
-
-        //protected virtual void VisitUnaryEx(UnaryEx x, ConditionBranch branch)
-        //{
-        //    // to be overriden in derived class
-        //    base.VisitUnaryEx(x);
-        //}
-
-        //protected virtual void VisitInstanceOfEx(InstanceOfEx x, ConditionBranch branch)
-        //{
-        //    // to be overriden in derived class
-        //    base.VisitInstanceOfEx(x);
-        //}
-
-        //protected virtual void VisitDirectFcnCall(DirectFcnCall x, ConditionBranch branch)
-        //{
-        //    // to be overriden in derived class
-        //    base.VisitDirectFcnCall(x);
-        //}
-        //public virtual void VisitIssetEx(IssetEx x, ConditionBranch branch)
-        //{
-        //    base.VisitIssetEx(x);
-        //}
-
-        //public virtual void VisitEmptyEx(EmptyEx x, ConditionBranch branch)
-        //{
-        //    base.VisitEmptyEx(x);
-        //}
-
-        ///// <summary>
-        ///// Explicitly given R-Value for the list. Used when traversing <c>foreach</c> and nested <c>list</c>.
-        ///// Standard <c>list() = expr;</c> fallbacks to this one as well.
-        ///// </summary>
-        //protected virtual void VisitListEx(ListEx list, TypeRefMask rValueType)
-        //{
-        //    // to be overriden in derived class            
-        //}
-
-        //public sealed override void VisitListEx(ListEx x)
-        //{
-        //    // standard list expression, not foreach or nested one
-        //    Contract.ThrowIfNull(x.RValue);
-        //    VisitElement(x.RValue);
-        //    VisitListEx(x, (x.RValue != null) ? (TypeRefMask)x.RValue.TypeInfoValue : TypeRefMask.AnyType);
-        //}
-
-        //public sealed override void VisitUnaryEx(UnaryEx x)
-        //{
-        //    VisitUnaryEx(x, ConditionBranch.Default);
-        //}
-
-        //public sealed override void VisitBinaryEx(BinaryEx x)
-        //{
-        //    VisitBinaryEx(x, ConditionBranch.Default);
-        //}
-
-        //public sealed override void VisitInstanceOfEx(InstanceOfEx x)
-        //{
-        //    VisitInstanceOfEx(x, ConditionBranch.AnyResult);
-        //}
-
-        //public sealed override void VisitDirectFcnCall(DirectFcnCall x)
-        //{
-        //    VisitDirectFcnCall(x, ConditionBranch.AnyResult);
-        //}
-
-        //public sealed override void VisitIssetEx(IssetEx x)
-        //{
-        //    VisitIssetEx(x, ConditionBranch.AnyResult);
-        //}
-
-        //public sealed override void VisitEmptyEx(EmptyEx x)
-        //{
-        //    VisitEmptyEx(x, ConditionBranch.AnyResult);
-        //}
-
-        /// <summary>
-        /// Handles use of variable as foreach iterator value.
-        /// </summary>
-        /// <param name="varuse"></param>
-        /// <returns>Derivate type of iterated values.</returns>
-        protected virtual TypeRefMask HandleTraversableUse(BoundExpression/*!*/varuse)
-        {
-            return TypeRefMask.AnyType;
-        }
-
-        //#endregion
-
         #region Fields
 
         /// <summary>
@@ -256,12 +23,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets current type context for type masks resolving.
         /// </summary>
-        protected TypeRefContext TypeRefContext => _state.TypeRefContext;
+        internal TypeRefContext TypeRefContext => _state.TypeRefContext;
 
         /// <summary>
         /// Current flow state.
         /// </summary>
+        internal FlowState State => _state;
         FlowState _state;
+
+        /// <summary>
+        /// Gets underlaying <see cref="ExpressionAnalysis"/>.
+        /// </summary>
+        internal ExpressionAnalysis OpAnalysis => (ExpressionAnalysis)_opvisitor;
 
         #endregion
 
@@ -404,12 +177,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // true branch
             _state = state.Clone();
-            VisitCondition(x.Condition, ConditionBranch.ToTrue);
+            OpAnalysis.AcceptCondition(x.Condition, ConditionBranch.ToTrue);
             TraverseToBlock(_state, x.TrueTarget);
 
             // false branch
             _state = state.Clone();
-            VisitCondition(x.Condition, ConditionBranch.ToFalse);
+            OpAnalysis.AcceptCondition(x.Condition, ConditionBranch.ToFalse);
             TraverseToBlock(_state, x.FalseTarget);
         }
 
@@ -423,7 +196,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             var state = _state;
             // get type information from Enumeree to determine types value variable
-            var elementType = HandleTraversableUse(x.EnumereeEdge.Enumeree);
+            var elementType = OpAnalysis.HandleTraversableUse(x.EnumereeEdge.Enumeree);
             if (elementType.IsVoid) elementType = TypeRefMask.AnyType;
 
             // Body branch

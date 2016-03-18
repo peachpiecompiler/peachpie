@@ -9,7 +9,7 @@ using Pchp.Syntax.AST;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 {
-    class GraphWalker : GraphVisitor
+    class GraphWalker : CFGWalker
     {
         readonly int _color;
 

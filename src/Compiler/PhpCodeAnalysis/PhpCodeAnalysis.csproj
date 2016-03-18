@@ -93,7 +93,7 @@
     <Compile Include="Semantics\Graph\BuilderVisitor.cs" />
     <Compile Include="Semantics\Graph\ControlFlowGraph.cs" />
     <Compile Include="Semantics\Graph\Edge.cs" />
-    <Compile Include="Semantics\Graph\GraphVisitor.cs" />
+    <Compile Include="Semantics\Graph\CFGWalker.cs" />
     <Compile Include="Semantics\SemanticsBinder.cs" />
     <Compile Include="Semantics\BoundStatement.cs" />
     <Compile Include="CodeGen\MethodGenerator.cs" />

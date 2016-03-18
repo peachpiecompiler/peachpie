@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Action performed on bound operations.
         /// </summary>
-        readonly List<GraphVisitor> _analyzers = new List<GraphVisitor>();  // TODO: Analysis instead of GraphVisitor
+        readonly List<CFGWalker> _analyzers = new List<CFGWalker>();  // TODO: Analysis instead of GraphVisitor
 
         //public event EventHandler MethodDone;
         
@@ -39,7 +39,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Adds an analysis driver into the list of analyzers to be performed on bound operations.
         /// </summary>
-        internal void AddAnalysis(GraphVisitor analyzer)
+        internal void AddAnalysis(CFGWalker analyzer)
         {
             _analyzers.Add(analyzer);
         }
