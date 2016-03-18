@@ -258,6 +258,35 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
+    #region BoundIncDecEx
+
+    public partial class BoundIncDecEx : BoundCompoundAssignEx, IIncrementExpression
+    {
+        public UnaryOperationKind IncrementKind { get; private set; }
+
+        public override OperationKind Kind => OperationKind.IncrementExpression;
+
+        public BoundIncDecEx(BoundReferenceExpression target, UnaryOperationKind kind)
+            :base(target, new BoundLiteral(1L), Operations.IncDec)
+        {
+            Debug.Assert(
+                kind == UnaryOperationKind.OperatorPostfixDecrement ||
+                kind == UnaryOperationKind.OperatorPostfixIncrement ||
+                kind == UnaryOperationKind.OperatorPrefixDecrement||
+                kind == UnaryOperationKind.OperatorPrefixIncrement);
+
+            this.IncrementKind = kind;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitIncrementExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitIncrementExpression(this, argument);
+    }
+
+    #endregion
+
     #region BoundAssignEx, BoundCompoundAssignEx
 
     public partial class BoundAssignEx : BoundExpression, IAssignmentExpression

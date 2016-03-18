@@ -339,6 +339,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case AccessType.Read:
                 case AccessType.ReadRef:
+                case AccessType.ReadAndWrite:   // Write handled by caller
                     State.SetVarUsed(v.Name);
                     v.TypeRefMask = State.GetVarType(v.Name);
                     break;
@@ -351,12 +352,36 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     if (v.Access == AccessType.WriteRef)
                         State.SetVarRef(v.Name);
-                                        
+
                     break;
 
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        public sealed override void VisitIncrementExpression(IIncrementExpression operation)
+            => VisitIncrementExpression((BoundIncDecEx)operation);
+
+        protected virtual void VisitIncrementExpression(BoundIncDecEx x)
+        {
+            // <target> = <target> +/- 1L
+
+            Debug.Assert(x.Access == AccessType.Read || x.Access == AccessType.None);
+            Debug.Assert(x.Target.Access == AccessType.ReadAndWrite);
+
+            Visit(x.Target);
+            Visit(x.Value);
+
+            Debug.Assert(TypeCtx.IsNumber(x.Value.TypeRefMask));    // 1L
+
+            // TODO: double++ [always] => double
+            // TODO: long++ [where long < long.MaxValue] => long
+
+            // long|double|anything++ => number
+
+            x.Target.TypeRefMask |= TypeCtx.GetNumberTypeMask();    // assign to target
+            x.TypeRefMask = TypeCtx.GetNumberTypeMask();
         }
 
         #endregion

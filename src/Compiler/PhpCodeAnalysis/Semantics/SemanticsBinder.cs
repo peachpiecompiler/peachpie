@@ -82,8 +82,25 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
             if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr).WithAccess(access);
             if (expr is AST.GlobalConstUse) return BindGlobalConstUse((AST.GlobalConstUse)expr).WithAccess(access);
-
+            if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
+            
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundExpression BindIncDec(AST.IncDecEx expr)
+        {
+            // bind variable reference
+            var varref = (BoundReferenceExpression)BindExpression(expr.Variable, AccessType.ReadAndWrite);
+
+            // resolve kind
+            UnaryOperationKind kind;
+            if (expr.Inc)
+                kind = (expr.Post) ? UnaryOperationKind.OperatorPostfixIncrement : UnaryOperationKind.OperatorPrefixIncrement;
+            else
+                kind = (expr.Post) ? UnaryOperationKind.OperatorPostfixDecrement : UnaryOperationKind.OperatorPrefixDecrement;
+            
+            //
+            return new BoundIncDecEx(varref, kind);
         }
 
         BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, AccessType access)
