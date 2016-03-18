@@ -266,21 +266,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.Equal:
 
-                    //// LOAD PhpComparer.Default.CompareEq
-                    //returned_typecode = EmitComparison(node, codeGenerator, true);
-                    //break;
-                    throw new NotImplementedException();
+                    EmitEquality(il);
+                    returned_type = il.CoreTypes.Boolean;
+                    break;
 
                 case Operations.NotEqual:
 
-                    //// LOAD PhpComparer.Default.CompareEq == false
-                    //EmitComparison(node, codeGenerator, true);
-                    //codeGenerator.IL.Emit(OpCodes.Ldc_I4_0);
-                    //codeGenerator.IL.Emit(OpCodes.Ceq);
-
-                    //returned_typecode = PhpTypeCode.Boolean;
-                    //break;
-                    throw new NotImplementedException();
+                    EmitEquality(il);
+                    il.EmitLogicNegation();
+                    returned_type = il.CoreTypes.Boolean;
+                    break;
 
                 case Operations.GreaterThan:
 
@@ -377,28 +372,28 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>+</c> operator suitable for actual operands.
         /// </summary>
-        private TypeSymbol EmitAdd(CodeGenerator codeGenerator)
+        TypeSymbol EmitAdd(CodeGenerator gen)
         {
             // Template: x + y : Operators.Add(x,y) [overloads]
 
-            var il = codeGenerator.Builder;
+            var il = gen.Builder;
 
-            var xtype = codeGenerator.EmitSpecialize(Left.Emit(codeGenerator), Left.TypeRefMask);
-            var ytype = codeGenerator.EmitSpecialize(Right.Emit(codeGenerator), Right.TypeRefMask);
+            var xtype = gen.Emit(Left);
+            var ytype = gen.Emit(Right);
 
             //
-            if (xtype == codeGenerator.CoreTypes.PhpNumber)
+            if (xtype == gen.CoreTypes.PhpNumber)
             {
-                if (ytype == codeGenerator.CoreTypes.PhpNumber)
+                if (ytype == gen.CoreTypes.PhpNumber)
                 {
                     // number + number : number
-                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_number)
-                        .Expect(codeGenerator.CoreTypes.PhpNumber);
+                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_number_number)
+                        .Expect(gen.CoreTypes.PhpNumber);
                 }
                 else if (ytype.SpecialType == SpecialType.System_Double)
                 {
                     // number + r8 : r8
-                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_double)
+                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_number_double)
                         .Expect(SpecialType.System_Double);
                 }
                 else if (
@@ -412,8 +407,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
 
                     // number + long : number
-                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_number_long)
-                        .Expect(codeGenerator.CoreTypes.PhpNumber);
+                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_number_long)
+                        .Expect(gen.CoreTypes.PhpNumber);
                 }
 
                 //
@@ -433,12 +428,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // r8 + r8 : r8
                     il.EmitOpCode(ILOpCode.Add);
-                    return codeGenerator.CoreTypes.Double;
+                    return gen.CoreTypes.Double;
                 }
-                else if (ytype == codeGenerator.CoreTypes.PhpNumber)
+                else if (ytype == gen.CoreTypes.PhpNumber)
                 {
                     // r8 + number : r8
-                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_double_number)
+                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_double_number)
                         .Expect(SpecialType.System_Double);
                 }
 
@@ -447,16 +442,16 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (xtype.SpecialType == SpecialType.System_Int64)
             {
-                if (ytype == codeGenerator.CoreTypes.PhpNumber)
+                if (ytype == gen.CoreTypes.PhpNumber)
                 {
                     // i8 + number : number
-                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_number)
-                        .Expect(codeGenerator.CoreTypes.PhpNumber);
+                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_long_number)
+                        .Expect(gen.CoreTypes.PhpNumber);
                 }
                 else if (ytype.SpecialType == SpecialType.System_Double)
                 {
                     // i8 + r8 : r8
-                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_double)
+                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_long_double)
                         .Expect(SpecialType.System_Double);
                 }
                 else if (
@@ -470,8 +465,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
 
                     // i8 + i8 : number
-                    return codeGenerator.EmitCall(ILOpCode.Call, codeGenerator.CoreMethods.PhpNumber.Add_long_long)
-                        .Expect(codeGenerator.CoreTypes.PhpNumber);
+                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_long_long)
+                        .Expect(gen.CoreTypes.PhpNumber);
                 }
 
                 //
@@ -485,24 +480,24 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits binary boolean operation (AND or OR).
         /// </summary>
-        /// <param name="codeGenerator">A code generator.</param>
+        /// <param name="gen">A code generator.</param>
         /// <param name="isAnd">Whether to emit AND, otherwise OR.</param>
         /// <returns>A type code of the result.</returns>
-        private TypeSymbol EmitBinaryBooleanOperation(CodeGenerator codeGenerator, bool isAnd)
+        TypeSymbol EmitBinaryBooleanOperation(CodeGenerator gen, bool isAnd)
         {
-            var boolean = codeGenerator.CoreTypes.Boolean;  // typeof(bool)
+            var boolean = gen.CoreTypes.Boolean;  // typeof(bool)
 
-            var il = codeGenerator.Builder;
+            var il = gen.Builder;
             var partial_eval_label = new object();
             var end_label = new object();
 
             // IF [!]<(bool) Left> THEN GOTO partial_eval;
-            codeGenerator.EmitConvertToBool(Left);
+            gen.EmitConvertToBool(Left);
             il.EmitBranch(isAnd ? ILOpCode.Brfalse : ILOpCode.Brtrue, partial_eval_label);
 
             // <RESULT> = <(bool) Right>;
-            codeGenerator.EmitConvertToBool(Right);
-            var resultvar = codeGenerator.GetTemporaryLocal(boolean);   // block the tempoarary variable as little as possible
+            gen.EmitConvertToBool(Right);
+            var resultvar = gen.GetTemporaryLocal(boolean);   // block the tempoarary variable as little as possible
             il.EmitLocalStore(resultvar);
 
             // GOTO end;
@@ -518,7 +513,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // LOAD <RESULT>
             il.EmitLocalLoad(resultvar);
-            codeGenerator.ReturnTemporaryLocal(resultvar);
+            gen.ReturnTemporaryLocal(resultvar);
 
             //
             return boolean;
@@ -527,17 +522,45 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits binary operation XOR.
         /// </summary>
-        private TypeSymbol EmitBinaryXor(CodeGenerator codeGenerator)
+        TypeSymbol EmitBinaryXor(CodeGenerator gen)
         {
             // LOAD <(bool) leftSon> == <(bool) rightSon>;
-            codeGenerator.EmitConvertToBool(Left);
-            codeGenerator.EmitConvertToBool(Right);
-            codeGenerator.EmitOpCode(ILOpCode.Ceq);
+            gen.EmitConvertToBool(Left);
+            gen.EmitConvertToBool(Right);
+            gen.EmitOpCode(ILOpCode.Ceq);
 
-            codeGenerator.EmitOpCode(ILOpCode.Ldc_i4_0);
-            codeGenerator.EmitOpCode(ILOpCode.Ceq);
+            gen.EmitOpCode(ILOpCode.Ldc_i4_0);
+            gen.EmitOpCode(ILOpCode.Ceq);
 
-            return codeGenerator.CoreTypes.Boolean;
+            return gen.CoreTypes.Boolean;
+        }
+
+        /// <summary>
+        /// Emits check for values equality.
+        /// </summary>
+        TypeSymbol EmitEquality(CodeGenerator gen)
+        {
+            // x == y
+
+            var xtype = gen.Emit(Left);
+            if (xtype.SpecialType == SpecialType.System_Double)
+            {
+                gen.EmitConvertToDouble(gen.Emit(Right), Right.TypeRefMask);    // TODO: only value types, otherwise fallback to generic CompareOp(double, object)
+                gen.Builder.EmitOpCode(ILOpCode.Ceq);
+            }
+            else if (xtype == gen.CoreTypes.PhpNumber)
+            {
+                gen.EmitConvertToPhpNumber(gen.Emit(Right), Right.TypeRefMask); // TODO: only value types, otherwise fallback to generic CompareOp(double, object)
+                gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Eq_number_number)
+                    .Expect(SpecialType.System_Boolean);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            //
+            return gen.CoreTypes.Boolean;
         }
     }
 

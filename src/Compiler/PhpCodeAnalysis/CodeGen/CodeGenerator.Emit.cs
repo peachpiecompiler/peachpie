@@ -360,6 +360,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        public TypeSymbol Emit(BoundExpression expr)
+        {
+            Contract.ThrowIfNull(expr);
+            return EmitSpecialize(expr.Emit(this), expr.TypeRefMask);
+        }
+
         /// <summary>
         /// Emits load of a variable.
         /// </summary>

@@ -234,7 +234,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble = ct.PhpNumber.Method("ToDouble");
                 ToString_Context = ct.PhpNumber.Method("ToString", ct.Context);
 
-                CompareTo = ct.PhpNumber.Method("CompareTo", ct.PhpNumber);
+                CompareTo_number = ct.PhpNumber.Method("CompareTo", ct.PhpNumber);
 
                 Create_Long = ct.PhpNumber.Method("Create", ct.Long);
                 Create_Double = ct.PhpNumber.Method("Create", ct.Double);
@@ -242,6 +242,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 get_Long = ct.PhpNumber.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpNumber.Method("get_Double");   // TODO: special name, property
 
+                Eq_number_number = ct.PhpNumber.Operator("Equality", ct.PhpNumber, ct.PhpNumber);
+                Ineq_number_number = ct.PhpNumber.Operator("Inequality", ct.PhpNumber, ct.PhpNumber);
                 Add_number_number = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.PhpNumber);
                 Add_number_long = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.Long);
                 Add_long_number = ct.PhpNumber.Operator("Addition", ct.Long, ct.PhpNumber);
@@ -254,12 +256,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
-                CompareTo,
+                CompareTo_number,
                 Add_long_long, Add_long_double, Add_number_double, Add_double_number,
                 get_Long, get_Double,
                 Create_Long, Create_Double;
 
             public readonly CoreOperator
+                Eq_number_number, Ineq_number_number, 
                 Add_number_number, Add_number_long, Add_long_number,
                 Subtract_number_number;
         }
