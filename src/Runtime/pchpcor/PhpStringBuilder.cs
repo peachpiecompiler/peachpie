@@ -14,10 +14,10 @@ namespace Pchp.Core
     {
         #region Fields & Properties
 
-        /// <summary>
-        /// Bit mask of chunks containing <see cref="BinaryString"/> or <see cref="StringBuilder"/>, otherwise it is <see cref="string"/>.
-        /// </summary>
-        ulong _writable = 0;
+        ///// <summary>
+        ///// Bit mask of chunks containing <see cref="BinaryString"/> or <see cref="StringBuilder"/>, otherwise it is <see cref="string"/>.
+        ///// </summary>
+        //ulong _writable = 0;
 
         /// <summary>
         /// Max count of chunks.
