@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
+using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax.AST;
@@ -41,7 +42,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Arithmetic Operations
 
                 case Operations.Add:
-                    returned_type = EmitAdd(il);
+                    returned_type = EmitAdd(il, Left, Right);
                     break;
 
                 case Operations.Sub:
@@ -265,13 +266,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Comparing Operations
 
                 case Operations.Equal:
-
                     EmitEquality(il);
                     returned_type = il.CoreTypes.Boolean;
                     break;
 
                 case Operations.NotEqual:
-
                     EmitEquality(il);
                     il.EmitLogicNegation();
                     returned_type = il.CoreTypes.Boolean;
@@ -372,7 +371,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>+</c> operator suitable for actual operands.
         /// </summary>
-        TypeSymbol EmitAdd(CodeGenerator gen)
+        internal static TypeSymbol EmitAdd(CodeGenerator gen, BoundExpression Left, BoundExpression Right)
         {
             // Template: x + y : Operators.Add(x,y) [overloads]
 
@@ -858,17 +857,14 @@ namespace Pchp.CodeAnalysis.Semantics
             if (this.Variable == null)
                 throw new InvalidOperationException(); // variable was not resolved
 
-            if (Access == AccessType.Read)
-            {
-                return il.EmitLoad(this.Variable);
-            }
-            else if (Access == AccessType.None)
+            if (Access == AccessType.None)
             {
                 // do nothing
                 return il.CoreTypes.Void;
             }
 
-            throw new NotImplementedException();
+            //
+            return il.EmitLoad(this.Variable);
         }
     }
 
@@ -946,7 +942,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();  // transform to BoundAssignEx with BoundBinaryEx as its Value
         }
     }
 
@@ -954,7 +950,63 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            throw new NotImplementedException();
+            Debug.Assert(this.Access == AccessType.None || this.Access == AccessType.Read);
+
+            if (this.UsesOperatorMethod)
+            {
+                throw new NotImplementedException();
+            }
+
+            var targetPlace = this.Target.GetPlace(il);
+            var read = this.Access == AccessType.Read;
+
+            // Postfix (i++, i--)
+            if (this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement)
+            {
+                if (read)
+                    throw new NotImplementedException();
+
+                targetPlace.EmitStorePrepare(il.Builder);
+                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value);
+                il.EmitConvert(result, this.TypeRefMask, targetPlace.Type);
+                targetPlace.EmitStore(il.Builder);
+
+                //
+                return il.CoreTypes.Void;
+            }
+            else if (this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement)
+            {
+                if (read)
+                    throw new NotImplementedException();
+
+                throw new NotImplementedException();
+            }
+            // Prefix (++i, --i)
+            if (this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement)
+            {
+                targetPlace.EmitStorePrepare(il.Builder);
+                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value);
+                il.EmitConvert(result, this.TypeRefMask, targetPlace.Type);
+
+                if (read)
+                    il.Builder.EmitOpCode(ILOpCode.Dup);
+
+                targetPlace.EmitStore(il.Builder);
+
+                //
+                if (read)
+                    return targetPlace.Type;
+                else
+                    return il.CoreTypes.Void;
+            }
+            else if (this.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(this.IncrementKind);
+            }
         }
     }
 }

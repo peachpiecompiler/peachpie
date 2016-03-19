@@ -267,7 +267,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.IncrementExpression;
 
         public BoundIncDecEx(BoundReferenceExpression target, UnaryOperationKind kind)
-            :base(target, new BoundLiteral(1L), Operations.IncDec)
+            :base(target, new BoundLiteral(1L).WithAccess(AccessType.Read), Operations.IncDec)
         {
             Debug.Assert(
                 kind == UnaryOperationKind.OperatorPostfixDecrement ||
