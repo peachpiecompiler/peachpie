@@ -250,7 +250,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_number_number = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.PhpNumber);
                 Add_number_long = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.Long);
                 Add_long_number = ct.PhpNumber.Operator("Addition", ct.Long, ct.PhpNumber);
-                Add_double_number = ct.PhpNumber.Operator("Add", ct.Double, ct.PhpNumber);
+                Add_double_number = ct.PhpNumber.Method("Add", ct.Double, ct.PhpNumber);
                 Add_number_double = ct.PhpNumber.Method("Add", ct.PhpNumber, ct.Double);
                 Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
                 Add_long_double = ct.PhpNumber.Method("Add", ct.Long, ct.Double);

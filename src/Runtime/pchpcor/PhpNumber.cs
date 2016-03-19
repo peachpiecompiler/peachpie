@@ -118,17 +118,7 @@ namespace Pchp.Core
         /// </summary>
         public int CompareTo(double dx)
         {
-            this.AssertTypeCode();
-
-            //
-            if (IsDouble)
-            {
-                return _double.CompareTo(dx);
-            }
-            else
-            {
-                return ((double)_long).CompareTo(dx);
-            }
+            return ToDouble().CompareTo(dx);
         }
 
         /// <summary>
@@ -161,12 +151,12 @@ namespace Pchp.Core
 
         public static bool operator <(PhpNumber x, double dy)
         {
-            return x.CompareTo(dy) < 0;
+            return x.ToDouble() < dy;
         }
 
         public static bool operator >(PhpNumber x, double dy)
         {
-            return x.CompareTo(dy) > 0;
+            return x.ToDouble() > dy;
         }
 
         public static bool operator <(PhpNumber x, long ly)
@@ -498,6 +488,8 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Div
+
         /// <summary>
         /// Divide operator.
         /// </summary>
@@ -537,6 +529,8 @@ namespace Pchp.Core
                 ? Create(lx / y._long)
                 : Create((double)lx / (double)y._long);
         }
+
+        #endregion
 
         #region Mul
 

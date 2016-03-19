@@ -630,9 +630,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             var or = lValType | rValType;
 
-            // double + double => double
-            if (IsDoubleOnly(or))
-                return or;
+            // double + number => double
+            if (IsNumberOnly(or))
+            {
+                if (IsDoubleOnly(lValType) || IsDoubleOnly(rValType))
+                    return TypeCtx.GetDoubleTypeMask();
+
+                return TypeCtx.GetNumberTypeMask();
+            }
 
             //
             var type = TypeCtx.GetArraysFromMask(or);
@@ -674,7 +679,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Div:
                 case Operations.Mul:
                 case Operations.Pow:
-                    if (IsDoubleOnly(x.Left.TypeRefMask | x.Right.TypeRefMask)) // both operands are double and nothing else
+                    if (IsDoubleOnly(x.Left.TypeRefMask) || IsDoubleOnly(x.Right.TypeRefMask)) // some operand is double and nothing else
                         return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
                     return TypeCtx.GetNumberTypeMask();
 

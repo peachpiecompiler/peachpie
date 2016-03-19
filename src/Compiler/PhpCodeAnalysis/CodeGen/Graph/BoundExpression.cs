@@ -279,8 +279,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 else if (ytype == gen.CoreTypes.PhpNumber)
                 {
                     // r8 + number : r8
-                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_double_number)
-                        .Expect(SpecialType.System_Double);
+
+                    gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.ToDouble);
+                    il.EmitOpCode(ILOpCode.Add);
+                    return gen.CoreTypes.Double;
                 }
 
                 //
@@ -288,6 +290,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (xtype.SpecialType == SpecialType.System_Int64)
             {
+                ytype = gen.EmitOptIntToLong(ytype);    // int|bool -> long
+
                 if (ytype == gen.CoreTypes.PhpNumber)
                 {
                     // i8 + number : number
@@ -300,16 +304,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_long_double)
                         .Expect(SpecialType.System_Double);
                 }
-                else if (
-                    ytype.SpecialType == SpecialType.System_Int64 ||
-                    ytype.SpecialType == SpecialType.System_Int32 ||
-                    ytype.SpecialType == SpecialType.System_Boolean)
+                else if (ytype.SpecialType == SpecialType.System_Int64)
                 {
-                    if (ytype.SpecialType != SpecialType.System_Int64)
-                    {
-                        il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
-                    }
-
                     // i8 + i8 : number
                     return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_long_long)
                         .Expect(gen.CoreTypes.PhpNumber);
@@ -651,11 +647,20 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 case SpecialType.System_Double:
                     if (ytype.SpecialType == SpecialType.System_Double ||
+                        ytype.SpecialType == SpecialType.System_Boolean ||
                         ytype.SpecialType == SpecialType.System_Int32 ||
                         ytype.SpecialType == SpecialType.System_Int64)
                     {
                         if (ytype.SpecialType != SpecialType.System_Double)
                             il.EmitOpCode(ILOpCode.Conv_r8);    // i4|i8 -> r8
+                        il.EmitOpCode(ILOpCode.Div);
+                        return xtype;   // r8
+                    }
+                    else if (ytype == gen.CoreTypes.PhpNumber)
+                    {
+                        // r8 / number : r8
+                        gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.ToDouble)
+                            .Expect(SpecialType.System_Double);
                         il.EmitOpCode(ILOpCode.Div);
                         return xtype;   // r8
                     }
