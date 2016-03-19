@@ -244,6 +244,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Eq_number_number = ct.PhpNumber.Operator("Equality", ct.PhpNumber, ct.PhpNumber);
                 Ineq_number_number = ct.PhpNumber.Operator("Inequality", ct.PhpNumber, ct.PhpNumber);
+
                 Add_number_number = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.PhpNumber);
                 Add_number_long = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.Long);
                 Add_long_number = ct.PhpNumber.Operator("Addition", ct.Long, ct.PhpNumber);
@@ -251,21 +252,30 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_number_double = ct.PhpNumber.Method("Add", ct.PhpNumber, ct.Double);
                 Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
                 Add_long_double = ct.PhpNumber.Method("Add", ct.Long, ct.Double);
+
+                Subtract_long_long = ct.PhpNumber.Method("Sub", ct.Long, ct.Long);
+                Subtract_number_double = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.Double);
+                Subtract_long_double = ct.PhpNumber.Method("Sub", ct.Long, ct.Double);
                 Subtract_number_number = ct.PhpNumber.Operator("Subtraction", ct.PhpNumber, ct.PhpNumber);
+                Subtract_long_number = ct.PhpNumber.Operator("Subtraction", ct.Long, ct.PhpNumber);
+                Subtract_number_long = ct.PhpNumber.Operator("Subtraction", ct.PhpNumber, ct.Long);
+                Negation = ct.PhpNumber.Operator("UnaryNegation", ct.PhpNumber);
+                Negation_long = ct.PhpNumber.Method("Minus", ct.Long);
+
                 Division_number_number = ct.PhpNumber.Operator("Division", ct.PhpNumber, ct.PhpNumber);
                 Division_long_number = ct.PhpNumber.Operator("Division", ct.Long, ct.PhpNumber);
+
                 Mul_number_number = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.PhpNumber);
                 Mul_number_double = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.Double);
                 Mul_number_long = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.Long);
                 Mul_long_long = ct.PhpNumber.Method("Multiply", ct.Long, ct.Long);
-                Negation = ct.PhpNumber.Operator("UnaryNegation", ct.PhpNumber);
-                Negation_long = ct.PhpNumber.Method("Minus", ct.Long);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
                 CompareTo_number,
                 Add_long_long, Add_long_double, Add_number_double, Add_double_number,
+                Subtract_long_long, Subtract_number_double, Subtract_long_double,
                 Negation_long,
                 get_Long, get_Double,
                 Mul_long_long,
@@ -274,7 +284,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreOperator
                 Eq_number_number, Ineq_number_number,
                 Add_number_number, Add_number_long, Add_long_number,
-                Subtract_number_number,
+                Subtract_number_number, Subtract_long_number, Subtract_number_long,
                 Division_number_number, Division_long_number,
                 Mul_number_number, Mul_number_double, Mul_number_long,
                 Negation;

@@ -47,47 +47,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.Sub:
                     //Template: "x - y"        Operators.Subtract(x,y) [overloads]
-
-                    //lo_typecode = node.LeftExpr.Emit(codeGenerator);
-                    //switch (lo_typecode)
-                    //{
-                    //    case PhpTypeCode.Integer:
-                    //        codeGenerator.EmitBoxing(node.RightExpr.Emit(codeGenerator));
-                    //        returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Subtract.Int32_Object);
-                    //        break;
-                    //    case PhpTypeCode.Double:
-                    //        switch (ro_typecode = node.RightExpr.Emit(codeGenerator))
-                    //        {
-                    //            case PhpTypeCode.Integer:
-                    //                codeGenerator.IL.Emit(OpCodes.Conv_R8);
-                    //                goto case PhpTypeCode.Double;   // fallback:
-                    //            case PhpTypeCode.Double:
-                    //                codeGenerator.IL.Emit(OpCodes.Sub);
-                    //                returned_typecode = PhpTypeCode.Double;
-                    //                break;
-                    //            default:
-                    //                codeGenerator.EmitBoxing(ro_typecode);
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Subtract.Double_Object);
-                    //                break;
-                    //        }
-
-                    //        break;
-                    //    default:
-                    //        codeGenerator.EmitBoxing(lo_typecode);
-                    //        ro_typecode = node.RightExpr.Emit(codeGenerator);
-                    //        if (ro_typecode == PhpTypeCode.Integer)
-                    //        {
-                    //            returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Subtract.Object_Int);
-                    //        }
-                    //        else
-                    //        {
-                    //            codeGenerator.EmitBoxing(ro_typecode);
-                    //            returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Subtract.Object_Object);
-                    //        }
-                    //        break;
-                    //}
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = EmitSub(il, Left, Right);
+                    break;
 
                 case Operations.Div:
                     //Template: "x / y"
@@ -96,7 +57,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.Mul:
                     //Template: "x * y"
-                    returned_type = EmitMul(il);
+                    returned_type = EmitMultiply(il);
                     break;
 
                 case Operations.Pow:
@@ -362,6 +323,102 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>
+        /// Emits subtraction operator.
+        /// </summary>
+        internal static TypeSymbol EmitSub(CodeGenerator gen, BoundExpression Left, BoundExpression Right)
+        {
+            var il = gen.Builder;
+
+            var xtype = gen.Emit(Left);
+
+            if (xtype.SpecialType == SpecialType.System_Int32 ||
+                xtype.SpecialType == SpecialType.System_Boolean)
+            {
+                il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
+                xtype = gen.CoreTypes.Long;
+            }
+
+            var ytype = gen.Emit(Right);
+
+            switch (xtype.SpecialType)
+            {
+                case SpecialType.System_Int64:
+                    if (ytype.SpecialType == SpecialType.System_Int64 ||
+                        ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.SpecialType == SpecialType.System_Boolean)
+                     {
+                        if (ytype.SpecialType != SpecialType.System_Int64)
+                            il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
+                        // i8 - i8 : number
+                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Subtract_long_long)
+                            .Expect(gen.CoreTypes.PhpNumber);
+                    }
+                    else if (ytype.SpecialType == SpecialType.System_Double)
+                    {
+                        // i8 - r8 : r8
+                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Subtract_long_double)
+                            .Expect(gen.CoreTypes.Double);
+                    }
+                    else if (ytype == gen.CoreTypes.PhpNumber)
+                    {
+                        // i8 - number : number
+                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Subtract_long_number)
+                            .Expect(gen.CoreTypes.PhpNumber);
+                    }
+                    throw new NotImplementedException();
+                case SpecialType.System_Double:
+                    if (ytype.SpecialType == SpecialType.System_Boolean ||
+                        ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.SpecialType == SpecialType.System_Int64 ||
+                        ytype.SpecialType == SpecialType.System_Double)
+                    {
+                        if (ytype.SpecialType != SpecialType.System_Double)
+                            il.EmitOpCode(ILOpCode.Conv_r8);    // int|bool|long -> double
+
+                        // r8 - r8 : r8
+                        il.EmitOpCode(ILOpCode.Sub);
+                        return gen.CoreTypes.Double;
+                    }
+                    else if (ytype == gen.CoreTypes.PhpNumber)
+                    {
+                        // r8 - number : r8
+                        gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.ToDouble);    // number -> double
+                        il.EmitOpCode(ILOpCode.Sub);
+                        return gen.CoreTypes.Double;
+                    }
+                    throw new NotImplementedException();
+                default:
+                    if (xtype == gen.CoreTypes.PhpNumber)
+                    {
+                        if (ytype == gen.CoreTypes.PhpNumber)
+                        {
+                            // number - number : number
+                            return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Subtract_number_number)
+                                .Expect(gen.CoreTypes.PhpNumber);
+                        }
+                        else if (ytype.SpecialType == SpecialType.System_Double)
+                        {
+                            // number - double : double
+                            return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Subtract_number_double)
+                                .Expect(SpecialType.System_Double);
+                        }
+                        else if (ytype.SpecialType == SpecialType.System_Int64 ||
+                            ytype.SpecialType == SpecialType.System_Int32 ||
+                            ytype.SpecialType == SpecialType.System_Boolean)
+                        {
+                            if (ytype.SpecialType != SpecialType.System_Int64)
+                                il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
+
+                            // number - long : number
+                            return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Subtract_number_long)
+                                .Expect(gen.CoreTypes.PhpNumber);
+                        }
+                    }
+                    throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
         /// Emits binary boolean operation (AND or OR).
         /// </summary>
         /// <param name="gen">A code generator.</param>
@@ -494,7 +551,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>*</c> operation.
         /// </summary>
-        TypeSymbol EmitMul(CodeGenerator gen)
+        TypeSymbol EmitMultiply(CodeGenerator gen)
         {
             var il = gen.Builder;
 
