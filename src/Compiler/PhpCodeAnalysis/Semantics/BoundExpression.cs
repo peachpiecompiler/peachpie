@@ -330,7 +330,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public Operations Operation { get; private set; }
 
-        public BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Operations op)
+        protected BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Operations op)
             :base(target, value)
         {
             this.Operation = op;

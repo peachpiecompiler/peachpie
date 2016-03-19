@@ -147,8 +147,7 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundExpression BindAssignEx(AST.AssignEx expr, AccessType access)
         {
             var op = expr.Operation;
-            var target = (BoundReferenceExpression)BindExpression(expr.LValue,
-                (op == AST.Operations.AssignValue || op == AST.Operations.AssignRef) ? AccessType.Write : AccessType.ReadAndWrite);
+            var target = (BoundReferenceExpression)BindExpression(expr.LValue, AccessType.Write);
             BoundExpression value;
 
             if (expr is AST.ValueAssignEx)
@@ -163,11 +162,65 @@ namespace Pchp.CodeAnalysis.Semantics
                 value = BindExpression(((AST.RefAssignEx)expr).RValue, AccessType.ReadRef);
             }
 
+            // compound assign -> assign
+            if (op != AST.Operations.AssignValue && op != AST.Operations.AssignRef)
+            {
+                AST.Operations binaryop;
+
+                switch (op)
+                {
+                    case AST.Operations.AssignAdd:
+                        binaryop = AST.Operations.Add;
+                        break;
+                    case AST.Operations.AssignAnd:
+                        binaryop = AST.Operations.And;
+                        break;
+                    case AST.Operations.AssignAppend:
+                        binaryop = AST.Operations.Concat;
+                        break;
+                    case AST.Operations.AssignDiv:
+                        binaryop = AST.Operations.Div;
+                        break;
+                    case AST.Operations.AssignMod:
+                        binaryop = AST.Operations.Mod;
+                        break;
+                    case AST.Operations.AssignMul:
+                        binaryop = AST.Operations.Mul;
+                        break;
+                    case AST.Operations.AssignOr:
+                        binaryop = AST.Operations.Or;
+                        break;
+                    case AST.Operations.AssignPow:
+                        binaryop = AST.Operations.Pow;
+                        break;
+                    //case AST.Operations.AssignPrepend:
+                    //    break;
+                    case AST.Operations.AssignShiftLeft:
+                        binaryop = AST.Operations.ShiftLeft;
+                        break;
+                    case AST.Operations.AssignShiftRight:
+                        binaryop = AST.Operations.ShiftRight;
+                        break;
+                    case AST.Operations.AssignSub:
+                        binaryop = AST.Operations.Sub;
+                        break;
+                    case AST.Operations.AssignXor:
+                        binaryop = AST.Operations.Xor;
+                        break;
+                    default:
+                        throw ExceptionUtilities.UnexpectedValue(op);
+                }
+
+                //
+                op = AST.Operations.AssignValue;
+                value = new BoundBinaryEx(BindExpression(expr.LValue, AccessType.Read), value, binaryop)
+                    .WithAccess(AccessType.Read);
+            }
+
             //
-            if (op == AST.Operations.AssignValue || op == AST.Operations.AssignRef)
-                return new BoundAssignEx(target, value).WithAccess(access);
-            else
-                return new BoundCompoundAssignEx(target, value, op).WithAccess(access);
+            Debug.Assert(op == AST.Operations.AssignValue || op == AST.Operations.AssignRef);
+            
+            return new BoundAssignEx(target, value).WithAccess(access);
         }
 
         static BoundExpression BindLiteral(AST.Literal expr)
