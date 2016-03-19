@@ -95,52 +95,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.Mul:
-                    //switch (lo_typecode = node.LeftExpr.Emit(codeGenerator))
-                    //{
-                    //    case PhpTypeCode.Double:
-                    //        // "x * (double)y"
-                    //        // Operators.Multiply((double)x,(object)y)
-
-                    //        switch (ro_typecode = node.RightExpr.Emit(codeGenerator))
-                    //        {
-                    //            case PhpTypeCode.Integer:
-                    //                codeGenerator.IL.Emit(OpCodes.Conv_R8);
-                    //                goto case PhpTypeCode.Double;   // fallback:
-                    //            case PhpTypeCode.Double:
-                    //                codeGenerator.IL.Emit(OpCodes.Mul);
-                    //                returned_typecode = PhpTypeCode.Double;
-                    //                break;
-                    //            default:
-                    //                codeGenerator.EmitBoxing(ro_typecode);
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Multiply.Double_Object);
-                    //                break;
-                    //        }
-
-                    //        break;
-                    //    default:
-                    //        //Template: "x * y"  Operators.Multiply((object)x,y) [overloads]
-                    //        codeGenerator.EmitBoxing(lo_typecode);
-
-                    //        ro_typecode = node.RightExpr.Emit(codeGenerator);
-                    //        switch (ro_typecode)
-                    //        {
-                    //            case PhpTypeCode.Integer:
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Multiply.Object_Int32);
-                    //                break;
-
-                    //            case PhpTypeCode.Double:
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Multiply.Object_Double);
-                    //                break;
-
-                    //            default:
-                    //                codeGenerator.EmitBoxing(ro_typecode);
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Multiply.Object_Object);
-                    //                break;
-                    //        }
-                    //        break;
-                    //}
-                    //break;
-                    throw new NotImplementedException();
+                    //Template: "x * y"
+                    returned_type = EmitMul(il);
+                    break;
 
                 case Operations.Pow:
                     //codeGenerator.EmitBoxing(node.LeftExpr.Emit(codeGenerator));
@@ -532,6 +489,78 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // always bool
             return gen.CoreTypes.Boolean;
+        }
+
+        /// <summary>
+        /// Emits <c>*</c> operation.
+        /// </summary>
+        TypeSymbol EmitMul(CodeGenerator gen)
+        {
+            var il = gen.Builder;
+
+            var xtype = gen.Emit(Left);
+
+            if (xtype.SpecialType == SpecialType.System_Int32 ||
+                xtype.SpecialType == SpecialType.System_Boolean)
+            {
+                il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
+                xtype = gen.CoreTypes.Long;
+            }
+
+            var ytype = gen.Emit(Right);
+
+            switch (xtype.SpecialType)
+            {
+                case SpecialType.System_Double:
+                    if (ytype.SpecialType == SpecialType.System_Boolean ||
+                        ytype.SpecialType == SpecialType.System_Double ||
+                        ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.SpecialType == SpecialType.System_Int64)
+                    {
+                        if (ytype.SpecialType != SpecialType.System_Double)
+                            il.EmitOpCode(ILOpCode.Conv_r8);    // i4|i8 -> r8
+                        il.EmitOpCode(ILOpCode.Mul);
+                        return xtype;   // r8
+                    }
+                    throw new NotImplementedException();
+                case SpecialType.System_Int64:
+                    if (ytype.SpecialType == SpecialType.System_Boolean ||
+                        ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.SpecialType == SpecialType.System_Int64)
+                    {
+                        if (ytype.SpecialType != SpecialType.System_Int64)
+                            il.EmitOpCode(ILOpCode.Conv_i8);    // i4 -> i8
+                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Mul_long_long)
+                                .Expect(gen.CoreTypes.PhpNumber);
+                    }
+                    throw new NotImplementedException();
+                default:
+                    if (xtype == gen.CoreTypes.PhpNumber)
+                    {
+                        if (ytype.SpecialType == SpecialType.System_Boolean ||
+                            ytype.SpecialType == SpecialType.System_Int32 ||
+                            ytype.SpecialType == SpecialType.System_Int64)
+                        {
+                            if (ytype.SpecialType != SpecialType.System_Int64)
+                                il.EmitOpCode(ILOpCode.Conv_i8);    // i4 -> i8
+                            return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Mul_number_long)
+                                .Expect(gen.CoreTypes.PhpNumber);
+                        }
+                        else if (ytype.SpecialType == SpecialType.System_Double)
+                        {
+                            return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Mul_number_double)
+                                .Expect(gen.CoreTypes.Double);
+                        }
+                        else
+                        {
+                            // number * number : number
+                            gen.EmitConvertToPhpNumber(ytype, Right.TypeRefMask);
+                            return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Mul_number_number)
+                                .Expect(gen.CoreTypes.PhpNumber);
+                        }
+                    }
+                    throw new NotImplementedException();
+            }
         }
 
         /// <summary>

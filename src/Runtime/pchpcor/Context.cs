@@ -35,7 +35,10 @@ namespace Pchp.Core
 
         public void Echo(PhpNumber value)
         {
-
+            if (value.IsLong)
+                Echo(value.Long);
+            else
+                Echo(value.Double);
         }
 
         public void Echo(double value)

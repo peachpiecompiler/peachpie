@@ -448,6 +448,75 @@ namespace Pchp.Core
                 : Create((double)lx / (double)y._long);
         }
 
+        /// <summary>
+        /// Multiplies two long numbers with eventual overflow to double.
+        /// </summary>
+        public static PhpNumber Multiply(long lx, long ly)
+        {
+            long lr = unchecked(lx * ly);
+            double dr = (double)lx * (double)ly;
+            double delta = (double)lr - dr;
+
+            // check for overflow
+            if ((dr + delta) != dr)
+                return Create(dr);
+            else
+                return Create(lr);
+
+            //try
+            //{
+            //    return Create(checked(x._long * y._long));
+            //}
+            //catch (OverflowException)
+            //{
+            //    // we need double
+            //    return Create((double)x._long * (double)y._long);
+            //}
+        }
+
+        /// <summary>
+        /// Mul operator.
+        /// </summary>
+        public static PhpNumber operator *(PhpNumber x, PhpNumber y)
+        {
+            x.AssertTypeCode();
+            y.AssertTypeCode();
+
+            // double * number
+            if (x.IsDouble)
+                return Create(x._double * y.ToDouble());
+
+            // long * double
+            if (y.IsDouble)
+                return Create((double)x._long * y._double);
+
+            // long * long
+            return Multiply(x._long, y._long);
+        }
+
+        /// <summary>
+        /// Mul operator.
+        /// </summary>
+        public static PhpNumber operator *(PhpNumber x, long ly)
+        {
+            x.AssertTypeCode();
+
+            // double * number
+            if (x.IsDouble)
+                return Create(x._double * (double)ly);
+
+            // long * long
+            return Multiply(x._long, ly);
+        }
+
+        /// <summary>
+        /// Mul operator.
+        /// </summary>
+        public static double operator *(PhpNumber x, double dy)
+        {
+            return x.ToDouble() * dy;
+        }
+
         #endregion
 
         #region Construction
