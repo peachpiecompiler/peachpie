@@ -33,11 +33,11 @@ namespace Pchp.CodeAnalysis.Semantics
 													f($a=$b);
                                 */
         WriteAndReadUnknown, //dtto, but it is used when the signature of called function is not known 
-            /* It is because of implementation of code generation that we
-             * do not use an AccessType WriteRefAndReadRef in case of ReafAssignEx
-             * f(&$x){} 
-             * f($a=&$b)
-             */
+                             /* It is because of implementation of code generation that we
+                              * do not use an AccessType WriteRefAndReadRef in case of ReafAssignEx
+                              * f(&$x){} 
+                              * f($a=&$b)
+                              */
         ReadAndWriteAndReadRef, //for f($a+=$b);
         ReadAndWriteAndReadUnknown
     }
@@ -131,7 +131,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool IsVirtual => false;
 
         public override OperationKind Kind => OperationKind.InvocationExpression;
-        
+
         public IMethodSymbol TargetMethod { get; set; }
 
         public BoundFunctionCall(ImmutableArray<BoundArgument> arguments)
@@ -154,7 +154,7 @@ namespace Pchp.CodeAnalysis.Semantics
     public sealed partial class BoundEcho : BoundFunctionCall
     {
         public BoundEcho(ImmutableArray<BoundArgument> arguments)
-            :base(arguments)
+            : base(arguments)
         {
         }
     }
@@ -267,12 +267,12 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.IncrementExpression;
 
         public BoundIncDecEx(BoundReferenceExpression target, UnaryOperationKind kind)
-            :base(target, new BoundLiteral(1L).WithAccess(AccessType.Read), Operations.IncDec)
+            : base(target, new BoundLiteral(1L).WithAccess(AccessType.Read), Operations.IncDec)
         {
             Debug.Assert(
                 kind == UnaryOperationKind.OperatorPostfixDecrement ||
                 kind == UnaryOperationKind.OperatorPostfixIncrement ||
-                kind == UnaryOperationKind.OperatorPrefixDecrement||
+                kind == UnaryOperationKind.OperatorPrefixDecrement ||
                 kind == UnaryOperationKind.OperatorPrefixIncrement);
 
             this.IncrementKind = kind;
@@ -283,6 +283,40 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitIncrementExpression(this, argument);
+    }
+
+    #endregion
+
+    #region BoundConditionalEx
+
+    public partial class BoundConditionalEx : BoundExpression, IConditionalChoiceExpression
+    {
+        IExpression IConditionalChoiceExpression.Condition => Condition;
+        IExpression IConditionalChoiceExpression.IfFalse => IfFalse;
+        IExpression IConditionalChoiceExpression.IfTrue => IfTrue;
+
+        public BoundExpression Condition { get; private set; }
+        public BoundExpression IfFalse { get; private set; }
+        public BoundExpression IfTrue { get; private set; }
+
+        public override OperationKind Kind => OperationKind.ConditionalChoiceExpression;
+
+        public BoundConditionalEx(BoundExpression condition, BoundExpression iftrue, BoundExpression iffalse)
+        {
+            Contract.ThrowIfNull(condition);
+            // Contract.ThrowIfNull(iftrue); // iftrue allowed to be null, condition used instead (condition ?: iffalse)
+            Contract.ThrowIfNull(iffalse);
+
+            this.Condition = condition;
+            this.IfTrue = iftrue;
+            this.IfFalse = iffalse;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitConditionalChoiceExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+        => visitor.VisitConditionalChoiceExpression(this, argument);
     }
 
     #endregion

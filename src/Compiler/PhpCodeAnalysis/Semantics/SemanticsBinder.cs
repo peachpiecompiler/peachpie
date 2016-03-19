@@ -83,8 +83,17 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr).WithAccess(access);
             if (expr is AST.GlobalConstUse) return BindGlobalConstUse((AST.GlobalConstUse)expr).WithAccess(access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
+            if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
             
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundExpression BindConditionalEx(AST.ConditionalEx expr)
+        {
+            return new BoundConditionalEx(
+                BindExpression(expr.CondExpr),
+                (expr.TrueExpr != null) ? BindExpression(expr.TrueExpr) : null,
+                BindExpression(expr.FalseExpr));
         }
 
         BoundExpression BindIncDec(AST.IncDecEx expr)

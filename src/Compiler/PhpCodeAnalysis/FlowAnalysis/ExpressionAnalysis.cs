@@ -775,6 +775,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             throw new NotImplementedException();
         }
 
+        public override void VisitConditionalChoiceExpression(IConditionalChoiceExpression operation)
+            => VisitConditionalChoiceExpression((BoundConditionalEx)operation);
+
+        protected virtual void VisitConditionalChoiceExpression(BoundConditionalEx x)
+        {
+            var state = State;
+            var trueExpr = x.IfTrue ?? x.Condition;
+
+            // true branch
+            var trueState = State = state.Clone();
+            VisitCondition(x.Condition, ConditionBranch.ToTrue);
+            Visit(trueExpr);
+
+            // false branch
+            var falseState = State = state.Clone();
+            VisitCondition(x.Condition, ConditionBranch.ToFalse);
+            Visit(x.IfFalse);
+
+            // merge both states
+            State = trueState.Merge(falseState);
+
+            //
+            x.TypeRefMask = trueExpr.TypeRefMask | x.IfFalse.TypeRefMask;
+        }
+
         public override void VisitExpressionStatement(IExpressionStatement operation)
             => Visit(operation.Expression);
 

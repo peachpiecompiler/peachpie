@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal virtual TypeSymbol Emit(CodeGenerator il)
         {
-            throw new NotImplementedException();
+            throw ExceptionUtilities.UnexpectedValue(this.GetType().FullName);
         }
     }
 
@@ -496,23 +496,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // <RESULT> = <(bool) Right>;
             gen.EmitConvertToBool(Right);
-            var resultvar = gen.GetTemporaryLocal(boolean);   // block the tempoarary variable as little as possible
-            il.EmitLocalStore(resultvar);
-
+            
             // GOTO end;
             il.EmitBranch(ILOpCode.Br, end_label);
+            il.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
 
             // partial_eval:
             il.MarkLabel(partial_eval_label);
             il.EmitOpCode(isAnd ? ILOpCode.Ldc_i4_0 : ILOpCode.Ldc_i4_1, 1);
-            il.EmitLocalStore(resultvar);
-
+            
             // end:
             il.MarkLabel(end_label);
-
-            // LOAD <RESULT>
-            il.EmitLocalLoad(resultvar);
-            gen.ReturnTemporaryLocal(resultvar);
 
             //
             return boolean;
@@ -1007,6 +1001,77 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 throw ExceptionUtilities.UnexpectedValue(this.IncrementKind);
             }
+        }
+    }
+
+    partial class BoundConditionalEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            var result_type = il.DeclaringCompilation.GetTypeFromTypeRef(il.Routine, this.TypeRefMask);
+
+            if (this.IfTrue != null)
+            {
+                object trueLbl = new object();
+                object endLbl = new object();
+
+                // Cond ? True : False
+                il.EmitConvertToBool(this.Condition);   // i4
+                il.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
+
+                // false:
+                il.EmitConvert(this.IfFalse, result_type);
+                il.Builder.EmitBranch(ILOpCode.Br, endLbl);
+                il.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+                // trueLbl:
+                il.Builder.MarkLabel(trueLbl);
+                il.EmitConvert(this.IfTrue, result_type);
+
+                // endLbl:
+                il.Builder.MarkLabel(endLbl);
+            }
+            else
+            {
+                object trueLbl = new object();
+                object endLbl = new object();
+
+                // Cond ?: False
+
+                // <stack> = <cond_var> = Cond
+                var cond_type = il.Emit(this.Condition);
+                var cond_var = il.GetTemporaryLocal(cond_type);
+                il.Builder.EmitOpCode(ILOpCode.Dup);
+                il.Builder.EmitLocalStore(cond_var);
+
+                il.EmitConvertToBool(cond_type, this.Condition.TypeRefMask);
+                il.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
+
+                // false:
+                il.EmitConvert(this.IfFalse, result_type);
+                il.Builder.EmitBranch(ILOpCode.Br, endLbl);
+                il.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+
+                // trueLbl:
+                il.Builder.MarkLabel(trueLbl);
+                il.Builder.EmitLocalLoad(cond_var);
+                il.EmitConvert(cond_type, this.Condition.TypeRefMask, result_type);
+                
+                // endLbl:
+                il.Builder.MarkLabel(endLbl);
+
+                //
+                il.ReturnTemporaryLocal(cond_var);
+            }
+
+            //
+            if (Access == AccessType.None)
+            {
+                il.EmitPop(result_type);
+                result_type = il.CoreTypes.Void;
+            }
+
+            //
+            return result_type;
         }
     }
 }
