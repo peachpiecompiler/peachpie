@@ -252,19 +252,26 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
                 Add_long_double = ct.PhpNumber.Method("Add", ct.Long, ct.Double);
                 Subtract_number_number = ct.PhpNumber.Operator("Subtraction", ct.PhpNumber, ct.PhpNumber);
+                Division_number_number = ct.PhpNumber.Operator("Division", ct.PhpNumber, ct.PhpNumber);
+                Division_long_number = ct.PhpNumber.Operator("Division", ct.Long, ct.PhpNumber);
+                Negation = ct.PhpNumber.Operator("UnaryNegation", ct.PhpNumber);
+                Negation_long = ct.PhpNumber.Method("Minus", ct.Long);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
                 CompareTo_number,
                 Add_long_long, Add_long_double, Add_number_double, Add_double_number,
+                Negation_long,
                 get_Long, get_Double,
                 Create_Long, Create_Double;
 
             public readonly CoreOperator
-                Eq_number_number, Ineq_number_number, 
+                Eq_number_number, Ineq_number_number,
                 Add_number_number, Add_number_long, Add_long_number,
-                Subtract_number_number;
+                Subtract_number_number,
+                Division_number_number, Division_long_number,
+                Negation;
         }
 
         public struct ConstructorsHolder

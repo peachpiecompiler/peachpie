@@ -598,7 +598,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Div:
                 case Operations.Mul:
                 case Operations.Pow:
-                    return TypeCtx.GetNumberTypeMask(); // or double if we are sure about operands
+                    return TypeCtx.GetNumberTypeMask(); // TODO: double if we are sure about operands
 
                 case Operations.Mod:
                     return TypeCtx.GetLongTypeMask();
@@ -673,7 +673,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.Minus:
-                    throw new NotImplementedException();
+                    return TypeCtx.GetNumberTypeMask(); // TODO: double in case operand is double, long in case operand is not a number
 
                 case Operations.ObjectCast:
                     throw new NotImplementedException();

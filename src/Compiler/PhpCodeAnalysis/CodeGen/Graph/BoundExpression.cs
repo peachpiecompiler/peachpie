@@ -90,53 +90,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw new NotImplementedException();
 
                 case Operations.Div:
-                    //Template: "x / y"   Operators.Divide(x,y)
-
-                    //lo_typecode = node.LeftExpr.Emit(codeGenerator);
-                    //switch (lo_typecode)
-                    //{
-                    //    case PhpTypeCode.Integer:
-                    //        codeGenerator.EmitBoxing(node.RightExpr.Emit(codeGenerator));
-                    //        returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Divide.Int32_Object);
-                    //        break;
-
-                    //    case PhpTypeCode.Double:
-                    //        switch (ro_typecode = node.RightExpr.Emit(codeGenerator))
-                    //        {
-                    //            case PhpTypeCode.Double:
-                    //                codeGenerator.IL.Emit(OpCodes.Div);
-                    //                returned_typecode = PhpTypeCode.Double;
-                    //                break;
-                    //            default:
-                    //                codeGenerator.EmitBoxing(ro_typecode);
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Divide.Double_Object);
-                    //                break;
-                    //        }
-                    //        break;
-
-                    //    default:
-                    //        codeGenerator.EmitBoxing(lo_typecode);
-                    //        ro_typecode = node.RightExpr.Emit(codeGenerator);
-
-                    //        switch (ro_typecode)
-                    //        {
-                    //            case PhpTypeCode.Integer:
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Divide.Object_Int32);
-                    //                break;
-
-                    //            case PhpTypeCode.Double:
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Divide.Object_Double);
-                    //                break;
-
-                    //            default:
-                    //                codeGenerator.EmitBoxing(ro_typecode);
-                    //                returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Divide.Object_Object);
-                    //                break;
-                    //        }
-                    //        break;
-                    //}
-                    //break;
-                    throw new NotImplementedException();
+                    //Template: "x / y"
+                    returned_type = EmitDivision(il);
+                    break;
 
                 case Operations.Mul:
                     //switch (lo_typecode = node.LeftExpr.Emit(codeGenerator))
@@ -555,6 +511,52 @@ namespace Pchp.CodeAnalysis.Semantics
             //
             return gen.CoreTypes.Boolean;
         }
+
+        /// <summary>
+        /// Emits <c>/</c> operator.
+        /// </summary>
+        TypeSymbol EmitDivision(CodeGenerator gen)
+        {
+            var il = gen.Builder;
+
+            var xtype = gen.Emit(Left);
+            var ytype = gen.Emit(Right);
+
+            switch (xtype.SpecialType)
+            {
+                case SpecialType.System_Double:
+                    if (ytype.SpecialType == SpecialType.System_Double ||
+                        ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.SpecialType == SpecialType.System_Int64)
+                    {
+                        if (ytype.SpecialType != SpecialType.System_Double)
+                            il.EmitOpCode(ILOpCode.Conv_r8);    // i4|i8 -> r8
+                        il.EmitOpCode(ILOpCode.Div);
+                        return xtype;   // r8
+                    }
+
+                    throw new NotImplementedException();
+                case SpecialType.System_Int64:
+                    if (ytype == gen.CoreTypes.PhpNumber)
+                    {
+                        // long / number : number
+                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Division_long_number)
+                            .Expect(gen.CoreTypes.PhpNumber);
+                    }
+                    throw new NotImplementedException();
+                default:
+                    if (xtype == gen.CoreTypes.PhpNumber)
+                    {
+                        if (ytype == gen.CoreTypes.PhpNumber)
+                        {
+                            // nmumber / number : number
+                            return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Division_number_number)
+                                .Expect(gen.CoreTypes.PhpNumber);
+                        }
+                    }
+                    throw new NotImplementedException();
+            }
+        }
     }
 
     partial class BoundUnaryEx
@@ -607,19 +609,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.Minus:
                     //Template: "-x"  Operators.Minus(x)
-                    //switch (o_typecode = node.Expr.Emit(codeGenerator))
-                    //{
-                    //    case PhpTypeCode.Double:
-                    //        il.Emit(OpCodes.Neg);
-                    //        returned_typecode = PhpTypeCode.Double;
-                    //        break;
-                    //    default:
-                    //        codeGenerator.EmitBoxing(o_typecode);
-                    //        returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Minus);
-                    //        break;
-                    //}
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = EmitMinus(il);
+                    break;
 
                 case Operations.ObjectCast:
                     //Template: "(object)x"   Convert.ObjectToDObject(x,ScriptContext)
@@ -769,9 +760,42 @@ namespace Pchp.CodeAnalysis.Semantics
                     il.EmitPop(returned_type);
                     returned_type = il.CoreTypes.Void;
                     break;
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(Access);
             }
 
             return returned_type;
+        }
+
+        TypeSymbol EmitMinus(CodeGenerator gen)
+        {
+            var il = gen.Builder;
+            var t = gen.Emit(this.Operand);
+
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Double:
+                    // -r8
+                    il.EmitOpCode(ILOpCode.Neg);
+                    return t;
+                case SpecialType.System_Int32:
+                    // -(i8)i4
+                    il.EmitOpCode(ILOpCode.Conv_i8);    // i4 -> i8
+                    il.EmitOpCode(ILOpCode.Neg);        // result will fit into long for sure
+                    return gen.CoreTypes.Long;
+                case SpecialType.System_Int64:
+                    // PhpNumber.Minus(i8) : number
+                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Negation_long)
+                            .Expect(gen.CoreTypes.PhpNumber);
+                default:
+                    if (t == gen.CoreTypes.PhpNumber)
+                    {
+                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Negation)
+                            .Expect(t);
+                    }
+
+                    throw new NotImplementedException();
+            }
         }
     }
 

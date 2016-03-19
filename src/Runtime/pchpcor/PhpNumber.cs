@@ -336,6 +336,17 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Unary minus operator for int64.
+        /// </summary>
+        public static PhpNumber Minus(long lx)
+        {
+            if (lx == long.MinValue)
+                return Create(-(double)long.MinValue);
+
+            return Create(-lx);
+        }
+
+        /// <summary>
         /// Implements <c>-</c> operator on numbers.
         /// </summary>
         /// <param name="x">First operand.</param>
@@ -378,6 +389,63 @@ namespace Pchp.Core
                 // long:
                 return Create(rl);
             }
+        }
+
+        /// <summary>
+        /// Unary minus operator.
+        /// </summary>
+        public static PhpNumber operator - (PhpNumber x)
+        {
+            x.AssertTypeCode();
+
+            if (x.IsDouble)
+            {
+                return Create(-x._double);
+            }
+            else
+            {
+                return Minus(x._long);
+            }
+        }
+
+        /// <summary>
+        /// Divide operator.
+        /// </summary>
+        public static PhpNumber operator / (PhpNumber x, PhpNumber y)
+        {
+            x.AssertTypeCode();
+            y.AssertTypeCode();
+
+            if (x.IsDouble) // double / number
+                return Create(x._double / y.ToDouble());
+
+            if (y.IsDouble) // long / double
+                return Create((double)x._long / y._double);
+
+            // long / long
+            var r = x._long % y._long;
+
+            return (r == 0)
+                ? Create(x._long / y._long)
+                : Create((double)x._long / (double)y._long);
+        }
+
+        /// <summary>
+        /// Divide operator.
+        /// </summary>
+        public static PhpNumber operator /(long lx, PhpNumber y)
+        {
+            y.AssertTypeCode();
+
+            if (y.IsDouble) // long / double
+                return Create((double)lx / y._double);
+
+            // long / long
+            var r = lx % y._long;
+
+            return (r == 0)
+                ? Create(lx / y._long)
+                : Create((double)lx / (double)y._long);
         }
 
         #endregion
