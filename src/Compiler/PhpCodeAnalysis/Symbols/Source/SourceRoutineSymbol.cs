@@ -145,7 +145,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// virtual = IsVirtual && NewSlot 
         /// override = IsVirtual && !NewSlot
         /// </summary>
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride;
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && !IsStatic;
 
         internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual;
     }

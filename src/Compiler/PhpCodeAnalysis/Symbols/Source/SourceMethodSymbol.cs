@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly MethodDecl/*!*/_syntax;
 
         ParameterSymbol _lazyThisSymbol;
-        
+
         public SourceMethodSymbol(SourceNamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
         {
             Contract.ThrowIfNull(type);
@@ -86,6 +86,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => !IsSealed;
+        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => !IsSealed && !IsStatic;
+
+        internal override bool IsMetadataFinal => base.IsMetadataFinal && !IsStatic;
     }
 }
