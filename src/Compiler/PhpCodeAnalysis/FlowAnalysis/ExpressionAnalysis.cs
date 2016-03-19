@@ -38,6 +38,55 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region Helpers
+
+        /// <summary>
+        /// Gets value indicating the given type represents a double and nothing else.
+        /// </summary>
+        bool IsDoubleOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && this.TypeCtx.IsDouble(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a double and nothing else.
+        /// </summary>
+        bool IsDoubleOnly(BoundExpression x) => IsDoubleOnly(x.TypeRefMask);
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        bool IsLongOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && this.TypeCtx.IsLong(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        bool IsLongOnly(BoundExpression x) => IsLongOnly(x.TypeRefMask);
+
+        /// <summary>
+        /// Gets value indicating the given type is long or double or both but nothing else.
+        /// </summary>
+        /// <param name="tmask"></param>
+        /// <returns></returns>
+        bool IsNumberOnly(TypeRefMask tmask)
+        {
+            if (TypeCtx.IsLong(tmask) || TypeCtx.IsDouble(tmask))
+            {
+                if (tmask.IsSingleType)
+                    return true;
+
+                return TypeCtx.GetTypes(tmask)
+                    .All(t => t.TypeCode == Core.PhpTypeCode.Long || t.TypeCode == Core.PhpTypeCode.Double);
+            }
+
+            return false;
+        }
+
+        #endregion
+
         #region Short-Circuit Evaluation
 
         /// <summary>
@@ -189,7 +238,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             public override int GetHashCode() => (int)flags ^ (int)RValueType.Mask;
 
-            public static bool operator == (Access x, Access y) => x.Equals(y);
+            public static bool operator ==(Access x, Access y) => x.Equals(y);
             public static bool operator !=(Access x, Access y) => !x.Equals(y);
 
             #endregion
@@ -429,7 +478,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var optype = TypeCtx.GetNumberTypeMask();
 
             Visit(x.Target, Access.Write(optype, Span.Invalid));
-            
+
             //            
             x.TypeRefMask = x.Target.TypeRefMask;
         }
@@ -559,6 +608,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // anytype + number => number
 
             var or = lValType | rValType;
+
+            // double + double => double
+            if (IsDoubleOnly(or))
+                return or;
+
+            //
             var type = TypeCtx.GetArraysFromMask(or);
 
             //
@@ -598,7 +653,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Div:
                 case Operations.Mul:
                 case Operations.Pow:
-                    return TypeCtx.GetNumberTypeMask(); // TODO: double if we are sure about operands
+                    if (IsDoubleOnly(x.Left.TypeRefMask | x.Right.TypeRefMask)) // both operands are double and nothing else
+                        return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
+                    return TypeCtx.GetNumberTypeMask();
 
                 case Operations.Mod:
                     return TypeCtx.GetLongTypeMask();
@@ -673,7 +730,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.Minus:
-                    return TypeCtx.GetNumberTypeMask(); // TODO: double in case operand is double, long in case operand is not a number
+                    if (IsDoubleOnly(x.Operand))
+                        return TypeCtx.GetDoubleTypeMask(); // double in case operand is double
+                    return TypeCtx.GetNumberTypeMask();     // TODO: long in case operand is not a number
 
                 case Operations.ObjectCast:
                     throw new NotImplementedException();
