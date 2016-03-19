@@ -213,11 +213,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return WithNewOrdinal(new CaseBlock(caseValue));
         }
 
-        private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition)
+        private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition, bool isloop = false)
         {
             if (condition != null)
             {
-                new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition));
+                new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition))
+                {
+                    IsLoop = isloop,
+                };
+
                 return ifTarget;
             }
             else
@@ -439,7 +443,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 if (condExpr.Count > 1)
                     condExpr.Take(condExpr.Count - 1).ForEach(expr => this.Add(new ExpressionStmt(expr.Span, expr)));
-                _current = WithNewOrdinal(Connect(_current, body, end, condExpr.LastOrDefault()));
+                _current = WithNewOrdinal(Connect(_current, body, end, condExpr.LastOrDefault(), true));
             }
             else
             {

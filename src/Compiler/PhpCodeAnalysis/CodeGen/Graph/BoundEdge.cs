@@ -32,13 +32,29 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Contract.ThrowIfNull(Condition);
 
-            // if (Condition)
-            il.EmitConvertToBool(this.Condition.Emit(il), this.Condition.TypeRefMask);
-            il.Builder.EmitBranch(ILOpCode.Brfalse, FalseTarget);
-            
-            // {
-            il.GenerateScope(TrueTarget, NextBlock.Ordinal);
-            // }
+            if (IsLoop) // perf
+            {
+                il.Builder.EmitBranch(ILOpCode.Br, this.Condition);
+
+                // {
+                il.GenerateScope(TrueTarget, NextBlock.Ordinal);
+                // }
+
+                // if (Condition)
+                il.Builder.MarkLabel(this.Condition);
+                il.EmitConvertToBool(this.Condition.Emit(il), this.Condition.TypeRefMask);
+                il.Builder.EmitBranch(ILOpCode.Brtrue, TrueTarget);
+            }
+            else
+            {
+                // if (Condition)
+                il.EmitConvertToBool(this.Condition.Emit(il), this.Condition.TypeRefMask);
+                il.Builder.EmitBranch(ILOpCode.Brfalse, FalseTarget);
+
+                // {
+                il.GenerateScope(TrueTarget, NextBlock.Ordinal);
+                // }
+            }
 
             il.Scope.ContinueWith(FalseTarget);
         }

@@ -120,6 +120,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override BoundBlock NextBlock => _false;
 
         /// <summary>
+        /// Gets a value indicating the condition within a loop construct.
+        /// </summary>
+        public bool IsLoop { get; internal set; }
+
+        /// <summary>
         /// Target true block
         /// </summary>
         public BoundBlock/*!*/TrueTarget => _true;
