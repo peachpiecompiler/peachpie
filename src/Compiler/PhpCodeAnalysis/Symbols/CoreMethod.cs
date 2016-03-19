@@ -235,6 +235,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Context = ct.PhpNumber.Method("ToString", ct.Context);
 
                 CompareTo_number = ct.PhpNumber.Method("CompareTo", ct.PhpNumber);
+                CompareTo_long = ct.PhpNumber.Method("CompareTo", ct.Long);
+                CompareTo_double = ct.PhpNumber.Method("CompareTo", ct.Double);
 
                 Create_Long = ct.PhpNumber.Method("Create", ct.Long);
                 Create_Double = ct.PhpNumber.Method("Create", ct.Double);
@@ -269,11 +271,18 @@ namespace Pchp.CodeAnalysis.Symbols
                 Mul_number_double = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.Double);
                 Mul_number_long = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.Long);
                 Mul_long_long = ct.PhpNumber.Method("Multiply", ct.Long, ct.Long);
+
+                gt_number_number = ct.PhpNumber.Operator("GreaterThan", ct.PhpNumber, ct.PhpNumber);
+                gt_number_long = ct.PhpNumber.Operator("GreaterThan", ct.PhpNumber, ct.Long);
+                gt_number_double = ct.PhpNumber.Operator("GreaterThan", ct.PhpNumber, ct.Double);
+                lt_number_number = ct.PhpNumber.Operator("LessThan", ct.PhpNumber, ct.PhpNumber);
+                lt_number_long = ct.PhpNumber.Operator("LessThan", ct.PhpNumber, ct.Long);
+                lt_number_double = ct.PhpNumber.Operator("LessThan", ct.PhpNumber, ct.Double);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
-                CompareTo_number,
+                CompareTo_number, CompareTo_long, CompareTo_double,
                 Add_long_long, Add_long_double, Add_number_double, Add_double_number,
                 Subtract_long_long, Subtract_number_double, Subtract_long_double,
                 Negation_long,
@@ -287,6 +296,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Subtract_number_number, Subtract_long_number, Subtract_number_long,
                 Division_number_number, Division_long_number,
                 Mul_number_number, Mul_number_double, Mul_number_long,
+                gt_number_number, gt_number_long, gt_number_double,
+                lt_number_number, lt_number_long, lt_number_double,
                 Negation;
         }
 

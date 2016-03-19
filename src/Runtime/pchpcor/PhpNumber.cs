@@ -69,19 +69,26 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Debug
+
         string GetDebuggerValue
         {
             get { return IsLong ? _long.ToString() : _double.ToString(); }
         }
 
+        /// <summary>
+        /// Checks the number type code is valid.
+        /// </summary>
         void AssertTypeCode()
         {
             Debug.Assert(_typeCode == PhpTypeCode.Long || _typeCode == PhpTypeCode.Double);
         }
 
+        #endregion
+
         #region Operators
 
-        #region Equality
+        #region Equality, Comparison
 
         /// <summary>
         /// Gets non strict comparison with another number.
@@ -103,6 +110,92 @@ namespace Pchp.Core
                 return (_typeCode == PhpTypeCode.Long)
                     ? ((double)_long).CompareTo(other._double)
                     : _double.CompareTo((double)other._long);
+            }
+        }
+
+        /// <summary>
+        /// Gets non strict comparison with another number.
+        /// </summary>
+        public int CompareTo(double dx)
+        {
+            this.AssertTypeCode();
+
+            //
+            if (IsDouble)
+            {
+                return _double.CompareTo(dx);
+            }
+            else
+            {
+                return ((double)_long).CompareTo(dx);
+            }
+        }
+
+        /// <summary>
+        /// Gets non strict comparison with another number.
+        /// </summary>
+        public int CompareTo(long lx)
+        {
+            this.AssertTypeCode();
+
+            //
+            if (IsLong)
+            {
+                return _long.CompareTo(lx);
+            }
+            else
+            {
+                return _double.CompareTo((double)lx);
+            }
+        }
+
+        public static bool operator <(PhpNumber x, PhpNumber y)
+        {
+            return x.CompareTo(y) < 0;
+        }
+
+        public static bool operator >(PhpNumber x, PhpNumber y)
+        {
+            return x.CompareTo(y) > 0;
+        }
+
+        public static bool operator <(PhpNumber x, double dy)
+        {
+            return x.CompareTo(dy) < 0;
+        }
+
+        public static bool operator >(PhpNumber x, double dy)
+        {
+            return x.CompareTo(dy) > 0;
+        }
+
+        public static bool operator <(PhpNumber x, long ly)
+        {
+            x.AssertTypeCode();
+
+            //
+            if (x.IsLong)
+            {
+                return x._long < ly;
+            }
+            else
+            {
+                return x._double < (double)ly;
+            }
+        }
+
+        public static bool operator >(PhpNumber x, long ly)
+        {
+            x.AssertTypeCode();
+
+            //
+            if (x.IsLong)
+            {
+                return x._long > ly;
+            }
+            else
+            {
+                return x._double > (double)ly;
             }
         }
 
@@ -302,6 +395,7 @@ namespace Pchp.Core
                 return Create((double)x._long - y._double);
 
             // long - long
+            Debug.Assert(x.IsLong && y.IsLong);
             return Sub(x._long, y._long);
         }
 
@@ -318,6 +412,7 @@ namespace Pchp.Core
                 return Create(x._double - (double)ly);
 
             // long - long
+            Debug.Assert(x.IsLong);
             return Sub(x._long, ly);
         }
 
@@ -333,6 +428,7 @@ namespace Pchp.Core
                 return Create((double)lx - y._double);
 
             // long - long
+            Debug.Assert(y.IsLong);
             return Sub(lx, y._long);
         }
 
@@ -386,7 +482,7 @@ namespace Pchp.Core
         /// <summary>
         /// Unary minus operator.
         /// </summary>
-        public static PhpNumber operator - (PhpNumber x)
+        public static PhpNumber operator -(PhpNumber x)
         {
             x.AssertTypeCode();
 
@@ -405,7 +501,7 @@ namespace Pchp.Core
         /// <summary>
         /// Divide operator.
         /// </summary>
-        public static PhpNumber operator / (PhpNumber x, PhpNumber y)
+        public static PhpNumber operator /(PhpNumber x, PhpNumber y)
         {
             x.AssertTypeCode();
             y.AssertTypeCode();

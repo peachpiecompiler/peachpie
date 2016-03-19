@@ -224,6 +224,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var il = gen.Builder;
 
             var xtype = gen.Emit(Left);
+            xtype = gen.EmitOptIntToLong(xtype);    // int|bool -> int64
             var ytype = gen.Emit(Right);
 
             //
@@ -330,14 +331,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var il = gen.Builder;
 
             var xtype = gen.Emit(Left);
-
-            if (xtype.SpecialType == SpecialType.System_Int32 ||
-                xtype.SpecialType == SpecialType.System_Boolean)
-            {
-                il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
-                xtype = gen.CoreTypes.Long;
-            }
-
+            xtype = gen.EmitOptIntToLong(xtype);    // int|bool -> int64
             var ytype = gen.Emit(Right);
 
             switch (xtype.SpecialType)
@@ -524,22 +518,51 @@ namespace Pchp.CodeAnalysis.Semantics
                         break;
                     }
                     throw new NotImplementedException();
+
                 case SpecialType.System_Double:
                     gen.EmitConvertToDouble(ytype, Right.TypeRefMask);
                     il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
                     break;
+
                 default:
                     if (xtype == gen.CoreTypes.PhpNumber)
                     {
-                        gen.EmitConvertToPhpNumber(ytype, Right.TypeRefMask);
-                        gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.CompareTo_number)
-                            .Expect(SpecialType.System_Int32);
-                        il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                        ytype = gen.EmitOptIntToLong(ytype);    // bool|int -> long
+                        if (ytype.SpecialType == SpecialType.System_Int64)
+                        {
+                            // number <> long
+                            return gen.EmitCall(ILOpCode.Call, lt
+                                ? gen.CoreMethods.PhpNumber.lt_number_long
+                                : gen.CoreMethods.PhpNumber.gt_number_long)
+                                .Expect(SpecialType.System_Boolean);
+                        }
+                        else if (ytype.SpecialType == SpecialType.System_Double)
+                        {
+                            // number <> double
+                            return gen.EmitCall(ILOpCode.Call, lt
+                                ? gen.CoreMethods.PhpNumber.lt_number_double
+                                : gen.CoreMethods.PhpNumber.gt_number_double)
+                                .Expect(SpecialType.System_Boolean);
+                        }
+                        else // TODO: only if convertable to number for sure
+                        {
+                            gen.EmitConvertToPhpNumber(ytype, Right.TypeRefMask);
+                            // number <> number
+                            return gen.EmitCall(ILOpCode.Call, lt
+                                ? gen.CoreMethods.PhpNumber.lt_number_number
+                                : gen.CoreMethods.PhpNumber.gt_number_number)
+                                .Expect(SpecialType.System_Boolean);
+                        }
+                        //else
+                        //{
+                        //    // Opewrator.Compare(x, y) : int
+                        //}
 
-                        // lt <=> comparison < 0
-                        // gt <=> comparison > 0
-                        il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                        break;
+                        //// lt <=> comparison < 0
+                        //// gt <=> comparison > 0
+                        //il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);    // +1 on stack
+                        //il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                        //break;
                     }
                     throw new NotImplementedException();
             }
@@ -556,14 +579,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var il = gen.Builder;
 
             var xtype = gen.Emit(Left);
-
-            if (xtype.SpecialType == SpecialType.System_Int32 ||
-                xtype.SpecialType == SpecialType.System_Boolean)
-            {
-                il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
-                xtype = gen.CoreTypes.Long;
-            }
-
+            xtype = gen.EmitOptIntToLong(xtype);    // int|bool -> int64
             var ytype = gen.Emit(Right);
 
             switch (xtype.SpecialType)
@@ -628,6 +644,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var il = gen.Builder;
 
             var xtype = gen.Emit(Left);
+            xtype = gen.EmitOptIntToLong(xtype);    // int|bool -> int64
             var ytype = gen.Emit(Right);
 
             switch (xtype.SpecialType)

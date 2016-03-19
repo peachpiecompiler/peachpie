@@ -348,6 +348,24 @@ namespace Pchp.CodeAnalysis.CodeGen
             return stack;
         }
 
+        /// <summary>
+        /// In case there is <c>Int32</c> or <c>bool</c> on the top of evaluation stack,
+        /// converts it to <c>Int64</c>.
+        /// </summary>
+        /// <param name="stack">New type on top of stack.</param>
+        /// <returns></returns>
+        internal TypeSymbol EmitOptIntToLong(TypeSymbol stack)
+        {
+            if (stack.SpecialType == SpecialType.System_Int32 ||
+                stack.SpecialType == SpecialType.System_Boolean)
+            {
+                _il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
+                return this.CoreTypes.Long;
+            }
+
+            return stack;
+        }
+
         public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
 
         public void EmitPop(TypeSymbol type)
