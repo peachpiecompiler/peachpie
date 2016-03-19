@@ -233,52 +233,24 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.GreaterThan:
-
-                    //// LOAD PhpComparer.Default.Compare > 0;
-                    //EmitComparison(node, codeGenerator, false);
-                    //codeGenerator.IL.Emit(OpCodes.Ldc_I4_0);
-                    //codeGenerator.IL.Emit(OpCodes.Cgt);
-
-                    //returned_typecode = PhpTypeCode.Boolean;
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = EmitComparison(il, false);
+                    break;
 
                 case Operations.LessThan:
-
-                    //// LOAD PhpComparer.Default.Compare < 0;
-                    //EmitComparison(node, codeGenerator, false);
-                    //codeGenerator.IL.Emit(OpCodes.Ldc_I4_0);
-                    //codeGenerator.IL.Emit(OpCodes.Clt);
-
-                    //returned_typecode = PhpTypeCode.Boolean;
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = EmitComparison(il, true);
+                    break;
 
                 case Operations.GreaterThanOrEqual:
-
-                    //// LOAD PhpComparer.Default.Compare >= 0 (not less than)
-                    //EmitComparison(node, codeGenerator, false);
-                    //codeGenerator.IL.Emit(OpCodes.Ldc_I4_0);
-                    //codeGenerator.IL.Emit(OpCodes.Clt);
-                    //codeGenerator.IL.Emit(OpCodes.Ldc_I4_0);
-                    //codeGenerator.IL.Emit(OpCodes.Ceq);
-
-                    //returned_typecode = PhpTypeCode.Boolean;
-                    //break;
-                    throw new NotImplementedException();
+                    // template: !(LessThan)
+                    returned_type = EmitComparison(il, true);
+                    il.EmitLogicNegation();
+                    break;
 
                 case Operations.LessThanOrEqual:
-
-                    //// LOAD PhpComparer.Default.Compare >= 0 (not greater than)
-                    //EmitComparison(node, codeGenerator, false);
-                    //codeGenerator.IL.Emit(OpCodes.Ldc_I4_0);
-                    //codeGenerator.IL.Emit(OpCodes.Cgt);
-                    //codeGenerator.IL.Emit(OpCodes.Ldc_I4_0);
-                    //codeGenerator.IL.Emit(OpCodes.Ceq);
-
-                    //returned_typecode = PhpTypeCode.Boolean;
-                    //break;
-                    throw new NotImplementedException();
+                    // template: !(GreaterThan)
+                    returned_type = EmitComparison(il, false);
+                    il.EmitLogicNegation();
+                    break;
 
                 case Operations.Identical:
 
@@ -509,6 +481,52 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
+            return gen.CoreTypes.Boolean;
+        }
+
+        /// <summary>
+        /// Emits comparison operator pushing <c>bool</c> (<c>i4</c> of value <c>0</c> or <c>1</c>) onto the evaluation stack.
+        /// </summary>
+        /// <param name="gen">Code generator helper.</param>
+        /// <param name="lt">True for <c>clt</c> (less than) otherwise <c>cgt</c> (greater than).</param>
+        /// <returns>Resulting type code pushed onto the top of evaliuation stack.</returns>
+        TypeSymbol EmitComparison(CodeGenerator gen, bool lt)
+        {
+            var il = gen.Builder;
+
+            var xtype = gen.Emit(Left);
+            var ytype = gen.Emit(Right);
+
+            switch (xtype.SpecialType)
+            {
+                case SpecialType.System_Int64:
+                    if (ytype.SpecialType == SpecialType.System_Int64)
+                    {
+                        il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                        break;
+                    }
+                    throw new NotImplementedException();
+                case SpecialType.System_Double:
+                    gen.EmitConvertToDouble(ytype, Right.TypeRefMask);
+                    il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                    break;
+                default:
+                    if (xtype == gen.CoreTypes.PhpNumber)
+                    {
+                        gen.EmitConvertToPhpNumber(ytype, Right.TypeRefMask);
+                        gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.CompareTo_number)
+                            .Expect(SpecialType.System_Int32);
+                        il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+
+                        // lt <=> comparison < 0
+                        // gt <=> comparison > 0
+                        il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                        break;
+                    }
+                    throw new NotImplementedException();
+            }
+
+            // always bool
             return gen.CoreTypes.Boolean;
         }
 
