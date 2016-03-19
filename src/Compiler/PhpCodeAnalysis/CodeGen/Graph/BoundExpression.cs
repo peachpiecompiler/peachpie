@@ -721,9 +721,17 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.Print:
                     il.EmitEcho(this.Operand);
 
-                    // Always returns 1
-                    il.Builder.EmitLongConstant(1);
-                    returned_type = il.CoreTypes.Long;
+                    if (Access == AccessType.Read)
+                    {
+                        // Always returns 1
+                        il.Builder.EmitLongConstant(1);
+                        returned_type = il.CoreTypes.Long;
+                    }
+                    else
+                    {
+                        // nobody reads the result anyway
+                        returned_type = il.CoreTypes.Void;
+                    }
                     break;
 
                 case Operations.BoolCast:
