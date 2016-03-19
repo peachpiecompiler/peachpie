@@ -500,8 +500,12 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (xtype.SpecialType)
             {
                 case SpecialType.System_Int64:
-                    if (ytype.SpecialType == SpecialType.System_Int64)
+                    if (ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.SpecialType == SpecialType.System_Int64)
                     {
+                        if (ytype.SpecialType != SpecialType.System_Int64)
+                            il.EmitOpCode(ILOpCode.Conv_i8);
+
                         il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
                         break;
                     }
@@ -666,60 +670,22 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.Int32Cast:
                 case Operations.UInt8Cast:
                 case Operations.UInt16Cast:
-                    // CALL int Convert.ObjectToInteger(<node.Expr>)
-                    //o_typecode = node.Expr.Emit(codeGenerator);
-                    //if (o_typecode != PhpTypeCode.Integer)
-                    //{
-                    //    codeGenerator.EmitBoxing(o_typecode);
-                    //    il.Emit(OpCodes.Call, Methods.Convert.ObjectToInteger);
-                    //}
-
-                    //// CONV for unsigned:
-                    //switch (node.Operation)
-                    //{
-                    //    case Operations.UInt8Cast: il.Emit(OpCodes.Conv_U1); il.Emit(OpCodes.Conv_I4); break;
-                    //    case Operations.UInt16Cast: il.Emit(OpCodes.Conv_U2); il.Emit(OpCodes.Conv_I4); break;
-                    //}
-
-                    //returned_typecode = PhpTypeCode.Integer;
-                    //break;
-                    throw new NotImplementedException();
 
                 case Operations.UInt64Cast:
                 case Operations.UInt32Cast:
                 case Operations.Int64Cast:
-                    // CALL long Convert.ObjectToLongInteger(<node.Expr>)
-                    //o_typecode = node.Expr.Emit(codeGenerator);
-                    //if (o_typecode != PhpTypeCode.LongInteger)
-                    //{
-                    //    codeGenerator.EmitBoxing(o_typecode);
-                    //    il.Emit(OpCodes.Call, Methods.Convert.ObjectToLongInteger);
-                    //}
 
-                    //// CONV for unsigned:
-                    //switch (node.Operation)
-                    //{
-                    //    case Operations.UInt32Cast: il.Emit(OpCodes.Conv_U4); il.Emit(OpCodes.Conv_I8); break;
-                    //    case Operations.UInt64Cast: il.Emit(OpCodes.Conv_U8); il.Emit(OpCodes.Conv_I8); break;
-                    //}
-
-                    //returned_typecode = PhpTypeCode.LongInteger;
-                    //break;
-                    throw new NotImplementedException();
+                    il.EmitConvertToLong(il.Emit(this.Operand), this.Operand.TypeRefMask);
+                    returned_type = il.CoreTypes.Long;
+                    break;
 
                 case Operations.DecimalCast:
                 case Operations.DoubleCast:
                 case Operations.FloatCast:
-                    // CALL double Convert.ObjectToDouble(<node.Expr>)
-                    //o_typecode = node.Expr.Emit(codeGenerator);
-                    //if (o_typecode != PhpTypeCode.Double)
-                    //{
-                    //    codeGenerator.EmitBoxing(o_typecode);
-                    //    il.Emit(OpCodes.Call, Methods.Convert.ObjectToDouble);
-                    //}
-                    //returned_typecode = PhpTypeCode.Double;
-                    //break;
-                    throw new NotImplementedException();
+
+                    il.EmitConvertToDouble(il.Emit(this.Operand), this.Operand.TypeRefMask);
+                    returned_type = il.CoreTypes.Double;
+                    break;
 
                 case Operations.UnicodeCast: // TODO
                 case Operations.StringCast:

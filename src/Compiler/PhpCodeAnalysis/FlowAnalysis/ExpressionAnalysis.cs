@@ -85,6 +85,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
+        /// <summary>
+        /// Gets value indicating the given type is long or double or both but nothing else.
+        /// </summary>
+        /// <param name="tmask"></param>
+        /// <returns></returns>
+        bool IsNumberOnly(BoundExpression x) => IsNumberOnly(x.TypeRefMask);
+
         #endregion
 
         #region Short-Circuit Evaluation
@@ -469,13 +476,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Visit(x.Target, Access.Read);
             Visit(x.Value, Access.Read);
 
-            Debug.Assert(TypeCtx.IsNumber(x.Value.TypeRefMask));    // 1L
+            Debug.Assert(IsNumberOnly(x.Value));    // 1L
+
+            TypeRefMask optype;
 
             // TODO: double++ [always] => double
             // TODO: long++ [where long < long.MaxValue] => long
 
             // long|double|anything++ => number
-            var optype = TypeCtx.GetNumberTypeMask();
+            if (IsDoubleOnly(x.Target))
+            {
+                optype = TypeCtx.GetDoubleTypeMask();
+            }
+            //else if (IsLongOnly(x.Target))
+            //{
+            //    // we'd like to keep long if we are sure we don't overflow to double
+
+            //}
+            else
+            {
+                optype = TypeCtx.GetNumberTypeMask();
+            }
 
             Visit(x.Target, Access.Write(optype, Span.Invalid));
 
