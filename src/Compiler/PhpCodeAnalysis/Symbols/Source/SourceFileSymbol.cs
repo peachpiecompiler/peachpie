@@ -27,6 +27,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly GlobalCode _syntax;
         readonly SourceGlobalMethodSymbol _mainMethod;
 
+        /// <summary>
+        /// List of functions declared within the file.
+        /// </summary>
+        readonly List<SourceFunctionSymbol> _functions = new List<SourceFunctionSymbol>();
+
         SynthesizedFieldSymbol _lazyIndexField;
 
         /// <summary>
@@ -60,6 +65,15 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return _lazyIndexField;
+        }
+
+        /// <summary>
+        /// Lazily adds a function into the list of global functions declared within this file.
+        /// </summary>
+        internal void AddFunction(SourceFunctionSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+            _functions.Add(routine);
         }
 
         public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath).Replace('.', '_');
@@ -132,7 +146,9 @@ namespace Pchp.CodeAnalysis.Symbols
             return ImmutableArray<NamedTypeSymbol>.Empty;
         }
 
-        public override ImmutableArray<Symbol> GetMembers() => ImmutableArray.Create((Symbol)_mainMethod, GetIndexField());
+        public override ImmutableArray<Symbol> GetMembers()
+            => _functions
+                .Concat(new Symbol[] { _mainMethod, GetIndexField() }).ToImmutableArray();
 
         public override ImmutableArray<Symbol> GetMembers(string name) => ImmutableArray<Symbol>.Empty;
 

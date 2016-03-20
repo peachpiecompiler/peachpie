@@ -50,8 +50,7 @@ namespace Pchp.CodeAnalysis
         {
             // DEBUG
             var sourcesymbols = _compilation.SourceSymbolTables;
-            var methods = sourcesymbols.GetFunctions()
-                    .Concat(sourcesymbols.GetFiles().SelectMany(t => t.GetMembers()))
+            var methods = sourcesymbols.GetFiles().SelectMany(t => t.GetMembers())
                     .Concat(sourcesymbols.GetTypes().SelectMany(t => t.GetMembers()))
                     .OfType<SourceRoutineSymbol>();
             methods.ForEach(action);

@@ -47,7 +47,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public override void VisitFunctionDecl(FunctionDecl x)
             {
-                _tables._functions.Add(NameUtils.MakeQualifiedName(x.Name, x.Namespace), new SourceFunctionSymbol(_currentFile, x));
+                var routine = new SourceFunctionSymbol(_currentFile, x);
+                _currentFile.AddFunction(routine);
+                _tables._functions.Add(NameUtils.MakeQualifiedName(x.Name, x.Namespace), routine);
             }
 
             public override void VisitTypeDecl(TypeDecl x)

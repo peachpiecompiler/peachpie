@@ -67,12 +67,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsOverride => false;
 
-        public override bool IsSealed => true;
+        public override bool IsSealed => false;
 
         public override bool IsStatic => true;
 
         public override bool IsVirtual => false;
-
+        
         public override ImmutableArray<Location> Locations
         {
             get
