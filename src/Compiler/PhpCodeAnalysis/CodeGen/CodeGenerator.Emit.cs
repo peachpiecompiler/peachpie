@@ -40,11 +40,22 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         #region EmitConvert
 
-        private void PhpNumberAddr() => StructAddr(CoreTypes.PhpNumber);
-        private void PhpValueAddr() => StructAddr(CoreTypes.PhpValue);
+        /// <summary>
+        /// Copies <c>PhpNumber</c> into a temp variable and loads its address.
+        /// </summary>
+        private void EmitPhpNumberAddr() => EmitStructAddr(CoreTypes.PhpNumber);
 
-        private void StructAddr(NamedTypeSymbol t)
+        /// <summary>
+        /// Copies <c>PhpValue</c> into a temp variable and loads its address.
+        /// </summary>
+        private void EmitPhpValueAddr() => EmitStructAddr(CoreTypes.PhpValue);
+
+        /// <summary>
+        /// Copies a value type from the top of evaluation stack into a temporary variable and loads its address.
+        /// </summary>
+        private void EmitStructAddr(NamedTypeSymbol t)
         {
+            Debug.Assert(t.IsStructType());
             var tmp = GetTemporaryLocal(t, true);
             _il.EmitLocalStore(tmp);
             _il.EmitLocalAddress(tmp);
@@ -81,13 +92,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     case SpecialType.None:
                         if (from == CoreTypes.PhpValue)
                         {
-                            PhpValueAddr();
+                            EmitPhpValueAddr();
                             EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
                             break;
                         }
                         else if (from == CoreTypes.PhpNumber)
                         {
-                            PhpNumberAddr();
+                            EmitPhpNumberAddr();
                             EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
                             break;
                         }
@@ -218,13 +229,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
-                        PhpNumberAddr();
+                        EmitPhpNumberAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToLong);
                         return;
                     }
                     else if (from == CoreTypes.PhpValue)
                     {
-                        PhpValueAddr();
+                        EmitPhpValueAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToLong);
                         return;
                     }
@@ -262,13 +273,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
-                        PhpNumberAddr();
+                        EmitPhpNumberAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
                         return;
                     }
                     else if (from == CoreTypes.PhpValue)
                     {
-                        PhpValueAddr();
+                        EmitPhpValueAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToDouble);
                         return;
                     }
@@ -405,7 +416,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (stack == CoreTypes.PhpNumber)
             {
-                PhpNumberAddr();
+                EmitPhpNumberAddr();
                 EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);    // number -> double
                 stack = this.CoreTypes.Double;
             }
