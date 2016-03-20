@@ -65,6 +65,7 @@
     <Compile Include="CodeGen\Symbols\SourceRoutineSymbol.cs" />
     <Compile Include="Compilation\AssemblyIdentityReferenceResolver.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
+    <Compile Include="Emitter\Model\AttributeDataAdapter.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\PropertySymbolAdapter.cs" />
     <Compile Include="FlowAnalysis\CFGAnalysis.cs" />
@@ -106,6 +107,10 @@
     <Compile Include="Compilation\PhpCompilationOptions.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeHelpers.cs" />
     <Compile Include="Semantics\ISemanticValue.cs" />
+    <Compile Include="Symbols\Attributes\BaseAttributeData.cs" />
+    <Compile Include="Symbols\Attributes\PEAttributeData.cs" />
+    <Compile Include="Symbols\Attributes\RetargetingAttributeData.cs" />
+    <Compile Include="Symbols\Attributes\SourceAttributeData.cs" />
     <Compile Include="Symbols\CoreMethod.cs" />
     <Compile Include="Symbols\CoreType.cs" />
     <Compile Include="Symbols\ErrorTypeSymbol.cs" />
@@ -172,6 +177,7 @@
     <Compile Include="Semantics\ISemanticModel.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedFieldSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedPropertySymbol.cs" />
+    <Compile Include="Symbols\TypedConstantExtensions.cs" />
     <Compile Include="Symbols\TypeSymbol.cs" />
     <Compile Include="Symbols\TypeSymbolExtensions.cs" />
     <Compile Include="Utilities\AstUtils.cs" />

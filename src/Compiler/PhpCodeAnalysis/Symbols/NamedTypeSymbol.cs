@@ -103,6 +103,27 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Returns a flag indicating whether this symbol has at least one applied/inherited conditional attribute.
+        /// </summary>
+        /// <remarks>
+        /// Forces binding and decoding of attributes.
+        /// </remarks>
+        internal bool IsConditional
+        {
+            get
+            {
+                //if (this.GetAppliedConditionalSymbols().Any())    // TODO
+                //{
+                //    return true;
+                //}
+
+                // Conditional attributes are inherited by derived types.
+                var baseType = this.BaseType;// NoUseSiteDiagnostics;
+                return (object)baseType != null ? baseType.IsConditional : false;
+            }
+        }
+
+        /// <summary>
         /// Type layout information (ClassLayout metadata and layout kind flags).
         /// </summary>
         internal abstract TypeLayout Layout { get; }
