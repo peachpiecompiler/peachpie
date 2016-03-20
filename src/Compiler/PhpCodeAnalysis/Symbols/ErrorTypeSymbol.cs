@@ -35,6 +35,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool MangleName => false;
 
+        internal override bool IsWindowsRuntimeImport => false;
+
+        internal override bool ShouldAddWinRTMembers => false;
+
         internal override TypeLayout Layout => default(TypeLayout);
 
         public override Symbol ContainingSymbol => null;

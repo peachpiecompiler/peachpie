@@ -1048,6 +1048,19 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal override bool ShouldAddWinRTMembers
+        {
+            get { return IsWindowsRuntimeImport; }
+        }
+
+        internal override bool IsWindowsRuntimeImport
+        {
+            get
+            {
+                return (_flags & TypeAttributes.WindowsRuntime) != 0;
+            }
+        }
+
         internal override Microsoft.CodeAnalysis.TypeLayout Layout
         {
             get

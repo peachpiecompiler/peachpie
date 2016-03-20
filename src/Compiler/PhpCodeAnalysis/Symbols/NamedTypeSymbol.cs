@@ -103,6 +103,23 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// True if the type is a Windows runtime type.
+        /// </summary>
+        /// <remarks>
+        /// A type can me marked as a Windows runtime type in source by applying the WindowsRuntimeImportAttribute.
+        /// WindowsRuntimeImportAttribute is a pseudo custom attribute defined as an internal class in System.Runtime.InteropServices.WindowsRuntime namespace.
+        /// This is needed to mark Windows runtime types which are redefined in mscorlib.dll and System.Runtime.WindowsRuntime.dll.
+        /// These two assemblies are special as they implement the CLR's support for WinRT.
+        /// </remarks>
+        internal abstract bool IsWindowsRuntimeImport { get; }
+
+        /// <summary>
+        /// True if the type should have its WinRT interfaces projected onto .NET types and
+        /// have missing .NET interface members added to the type.
+        /// </summary>
+        internal abstract bool ShouldAddWinRTMembers { get; }
+
+        /// <summary>
         /// Returns a flag indicating whether this symbol has at least one applied/inherited conditional attribute.
         /// </summary>
         /// <remarks>
@@ -122,7 +139,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return (object)baseType != null ? baseType.IsConditional : false;
             }
         }
-
+        
         /// <summary>
         /// Type layout information (ClassLayout metadata and layout kind flags).
         /// </summary>

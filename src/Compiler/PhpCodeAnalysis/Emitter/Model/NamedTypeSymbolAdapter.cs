@@ -510,7 +510,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                return true; // this.IsWindowsRuntimeImport;
+                return this.IsWindowsRuntimeImport;
             }
         }
 

@@ -60,13 +60,20 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyBaseType == null && _syntax.BaseClassName.HasValue)
+                if (_lazyBaseType == null)
                 {
-                    if (_syntax.BaseClassName.Value.IsGeneric)
-                        throw new NotImplementedException();
+                    if (_syntax.BaseClassName.HasValue)
+                    {
+                        if (_syntax.BaseClassName.Value.IsGeneric)
+                            throw new NotImplementedException();
 
-                    _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(_syntax.BaseClassName.Value.QualifiedName.ClrName())
-                        ?? new MissingMetadataTypeSymbol(_syntax.BaseClassName.Value.QualifiedName.ClrName(), 0, false);
+                        _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(_syntax.BaseClassName.Value.QualifiedName.ClrName())
+                            ?? new MissingMetadataTypeSymbol(_syntax.BaseClassName.Value.QualifiedName.ClrName(), 0, false);
+                    }
+                    else
+                    {
+                        _lazyBaseType = DeclaringCompilation.CoreTypes.Object.Symbol;
+                    }
                 }
 
                 return _lazyBaseType;
@@ -124,6 +131,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 throw new NotImplementedException();
             }
         }
+
+        internal override bool ShouldAddWinRTMembers => false;
+
+        internal override bool IsWindowsRuntimeImport => false;
 
         internal override TypeLayout Layout => default(TypeLayout);
 

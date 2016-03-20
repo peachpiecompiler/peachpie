@@ -73,6 +73,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override NamedTypeSymbol BaseType
+        {
+            get
+            {
+                return DeclaringCompilation.CoreTypes.Object.Symbol;
+            }
+        }
+
         public override int Arity => 0;
 
         public override Symbol ContainingSymbol => _compilation.SourceModule;
@@ -108,6 +116,10 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override TypeKind TypeKind => TypeKind.Class;
+
+        internal override bool ShouldAddWinRTMembers => false;
+
+        internal override bool IsWindowsRuntimeImport => false;
 
         internal override TypeLayout Layout => default(TypeLayout);
 
