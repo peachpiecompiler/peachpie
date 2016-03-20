@@ -45,10 +45,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Debug.Assert(this.IsDefinitionOrDistinct());
 
-            //if (this.IsDefinition)
-            //{
-            //    return this.PrimitiveTypeCode;
-            //}
+            if (this.IsDefinition)
+            {
+                return this.PrimitiveTypeCode;
+            }
 
             return Cci.PrimitiveTypeCode.NotPrimitive;
         }

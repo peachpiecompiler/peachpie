@@ -671,8 +671,7 @@ namespace Pchp.CodeAnalysis.Emit
             {
                 if (platformType == Cci.PlatformType.SystemType)
                 {
-                    throw new NotImplementedException(); // below is sufficient ?
-                    //return (object)namedType == (object)Compilation.GetWellKnownType(WellKnownType.System_Type);
+                    return (object)namedType == (object)Compilation.GetWellKnownType(WellKnownType.System_Type);
                 }
 
                 return namedType.SpecialType == (SpecialType)platformType;

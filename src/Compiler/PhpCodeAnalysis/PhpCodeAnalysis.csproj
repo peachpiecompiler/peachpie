@@ -111,6 +111,7 @@
     <Compile Include="Symbols\Attributes\PEAttributeData.cs" />
     <Compile Include="Symbols\Attributes\RetargetingAttributeData.cs" />
     <Compile Include="Symbols\Attributes\SourceAttributeData.cs" />
+    <Compile Include="Symbols\Attributes\SynthesizedAttributeData.cs" />
     <Compile Include="Symbols\CoreMethod.cs" />
     <Compile Include="Symbols\CoreType.cs" />
     <Compile Include="Symbols\ErrorTypeSymbol.cs" />
