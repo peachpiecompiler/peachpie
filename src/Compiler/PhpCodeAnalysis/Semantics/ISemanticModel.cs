@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,17 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <remarks>Use <see cref="SemanticModel"/> once we implement <see cref="SyntaxTree"/>.</remarks>
     internal interface ISemanticModel
     {
-        // TODO: source file, constant, variable
+        /// <summary>
+        /// Gets next semantics in the chain. Can be <c>null</c>.
+        /// </summary>
+        ISemanticModel Next { get; }
+
+        // TODO: constant, variable
+
+        /// <summary>
+        /// Gets a file by its path relative to current context.
+        /// </summary>
+        SourceFileSymbol GetFile(string relativePath);
 
         /// <summary>
         /// Gets type symbol by its name in current context.
@@ -27,7 +38,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Get global function symbol by its name in current context.
         /// Can be <c>null</c> if function could not be found.
         /// </summary>
-        ISemanticFunction GetFunction(QualifiedName name);
+        IEnumerable<ISemanticFunction> ResolveFunction(QualifiedName name);
 
         /// <summary>
         /// Gets value determining whether <paramref name="qname"/> type can be assigned from <paramref name="from"/>.

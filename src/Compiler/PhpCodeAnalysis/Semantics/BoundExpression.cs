@@ -9,6 +9,8 @@ using System.Collections.Immutable;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using System.Diagnostics;
 using Pchp.Syntax.AST;
+using Pchp.CodeAnalysis.Symbols;
+using Pchp.Syntax;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -69,7 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundFunctionCall
+    #region BoundFunctionCall, BoundArgument, BoundEcho
 
     public partial class BoundArgument : IArgument
     {
@@ -107,7 +109,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Represents a function call.
     /// </summary>
-    public partial class BoundFunctionCall : BoundExpression, IInvocationExpression
+    public abstract partial class BoundRoutineCall : BoundExpression, IInvocationExpression
     {
         protected ImmutableArray<BoundArgument> _arguments;
 
@@ -126,15 +128,25 @@ namespace Pchp.CodeAnalysis.Semantics
             return null;
         }
 
-        public virtual IExpression Instance => null;
+        IExpression IInvocationExpression.Instance => Instance;
 
-        public bool IsVirtual => false;
+        IMethodSymbol IInvocationExpression.TargetMethod => TargetMethod;
+
+        /// <summary>
+        /// <c>this</c> argument to be supplied to the method.
+        /// </summary>
+        public abstract BoundExpression Instance { get; }
+
+        /// <summary>
+        /// Method to be called.
+        /// </summary>
+        internal MethodSymbol TargetMethod { get; set; }
+
+        public virtual bool IsVirtual => false;
 
         public override OperationKind Kind => OperationKind.InvocationExpression;
-
-        public IMethodSymbol TargetMethod { get; set; }
-
-        public BoundFunctionCall(ImmutableArray<BoundArgument> arguments)
+        
+        public BoundRoutineCall(ImmutableArray<BoundArgument> arguments)
         {
             Debug.Assert(!arguments.IsDefault);
             _arguments = arguments;
@@ -147,12 +159,42 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.VisitInvocationExpression(this, argument);
     }
 
-    #endregion
-
-    #region BoundEcho
-
-    public sealed partial class BoundEcho : BoundFunctionCall
+    /// <summary>
+    /// Call to a global function.
+    /// </summary>
+    public partial class BoundFunctionCall : BoundRoutineCall
     {
+        QualifiedName _qname;
+        QualifiedName? _qnameAlt;
+
+        /// <summary>
+        /// Gets the function name.
+        /// </summary>
+        public QualifiedName Name => _qname;
+
+        public QualifiedName? AlternativeName => _qnameAlt;
+
+        public override BoundExpression Instance => null;
+
+        public BoundFunctionCall(QualifiedName qname, QualifiedName? qnameAlt, ImmutableArray<BoundArgument> arguments)
+            : base(arguments)
+        {
+            _qname = qname;
+            _qnameAlt = qnameAlt;
+
+            // not resolved:
+            this.TargetMethod = null;
+        }
+    }
+
+    /// <summary>
+    /// Specialized <c>echo</c> function call.
+    /// To be replaced with <c>Context.Echo</c> once overload resolution is implemented.
+    /// </summary>
+    public sealed partial class BoundEcho : BoundRoutineCall
+    {
+        public override BoundExpression Instance => null;
+
         public BoundEcho(ImmutableArray<BoundArgument> arguments)
             : base(arguments)
         {

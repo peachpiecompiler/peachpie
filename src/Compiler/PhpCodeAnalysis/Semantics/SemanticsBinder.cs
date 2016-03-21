@@ -46,6 +46,16 @@ namespace Pchp.CodeAnalysis.Semantics
                 .ToImmutableArray();
         }
 
+        ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.ActualParam> parameters)
+        {
+            if (parameters.Any(p => p.IsVariadic || p.Ampersand))
+                throw new NotImplementedException();
+
+            return BindExpressions(parameters.Select(p => p.Expression))
+                .Select(x => new BoundArgument(x))
+                .ToImmutableArray();
+        }
+
         #endregion
 
         public BoundStatement BindStatement(AST.Statement stmt)
@@ -84,8 +94,28 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.GlobalConstUse) return BindGlobalConstUse((AST.GlobalConstUse)expr).WithAccess(access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
             if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
+            if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
             
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundRoutineCall BindFunctionCall(AST.FunctionCall x, AccessType access)
+        {
+            if (access != AccessType.None && access != AccessType.Read && access != AccessType.ReadRef)
+            {
+                throw new NotSupportedException();
+            }
+
+            if (x is AST.DirectFcnCall)
+            {
+                var f = (AST.DirectFcnCall)x;
+                if (f.IsMemberOf == null)
+                {
+                    return new BoundFunctionCall(f.QualifiedName, f.FallbackQualifiedName, BindArguments(f.CallSignature.Parameters));
+                }
+            }
+
+            throw new NotImplementedException();
         }
 
         BoundExpression BindConditionalEx(AST.ConditionalEx expr)

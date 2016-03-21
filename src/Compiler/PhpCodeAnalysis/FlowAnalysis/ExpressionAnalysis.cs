@@ -22,6 +22,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         CFGAnalysis _analysis;
 
+        readonly ISemanticModel _model;
+
         /// <summary>
         /// Gets current type context for type masks resolving.
         /// </summary>
@@ -383,8 +385,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Construction
 
-        public ExpressionAnalysis()
+        public ExpressionAnalysis(ISemanticModel model)
         {
+            Contract.ThrowIfNull(model);
+            _model = model;
         }
 
         internal void SetAnalysis(CFGAnalysis analysis)
@@ -824,6 +828,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitEcho((BoundEcho)operation);
             }
+            else if (operation is BoundFunctionCall)
+            {
+                VisitFunctionCall((BoundFunctionCall)operation);
+            }
             else
             {
                 throw new NotImplementedException();
@@ -833,6 +841,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void VisitEcho(BoundEcho x)
         {
             x.TypeRefMask = 0;
+        }
+
+        protected virtual void VisitFunctionCall(BoundFunctionCall x)
+        {
+            // resolve function symbol
+            //var candidates = _model.ResolveFunction(x.Name || x.AlternativeName)
+            throw new NotImplementedException();
         }
 
         public override void VisitArgument(IArgument operation)

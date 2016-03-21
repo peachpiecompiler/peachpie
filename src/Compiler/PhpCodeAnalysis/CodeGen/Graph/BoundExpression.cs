@@ -933,6 +933,19 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundFunctionCall
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            if (this.TargetMethod == null)
+                throw new InvalidOperationException();
+
+
+
+            throw new NotImplementedException();
+        }
+    }
+
     partial class BoundEcho
     {
         internal override TypeSymbol Emit(CodeGenerator il)

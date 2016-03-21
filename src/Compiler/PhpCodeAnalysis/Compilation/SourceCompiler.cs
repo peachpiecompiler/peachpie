@@ -6,6 +6,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis.Visitors;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Pchp.CodeAnalysis.Semantics.Model;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -113,7 +114,7 @@ namespace Pchp.CodeAnalysis
             // TODO: pool of CFGAnalysis
             // TODO: async
             // TODO: in parallel
-            var analysis = CFGAnalysis.Create(_worklist, new ExpressionAnalysis());
+            var analysis = CFGAnalysis.Create(_worklist, new ExpressionAnalysis(new GlobalSemantics(_compilation)));
             analysis.VisitCFGBlock(block);
         }
 

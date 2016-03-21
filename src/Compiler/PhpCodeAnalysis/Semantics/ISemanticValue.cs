@@ -1,4 +1,5 @@
-﻿using Pchp.CodeAnalysis.FlowAnalysis;
+﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using System;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Represents a function.
     /// </summary>
-    internal interface ISemanticFunction : ISemanticValue
+    internal interface ISemanticFunction : ISemanticValue, IMethodSymbol
     {
         /// <summary>
         /// Optional. Gets control flow graph(s) of the function.
