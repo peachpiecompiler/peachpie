@@ -17,9 +17,9 @@ Peachpie makes use of Microsoft's Roslyn compiler and years worth of developing 
 Please note that the status is dynamic; Peachpie is a work in progress, which means that this list frequently changes and is updated on a regular basis. We are currently focused on providing a first demo.
 
 ###### Compiler:
-   :white_check_mark: Microsoft.CodeAnalysis (Roslyn) (ILBuilder, ObjectPool, MetadataReader, …)   
+   :white_check_mark: Microsoft.CodeAnalysis (Roslyn) (ILBuilder, ObjectPool, MetadataReader, ...)   
    :white_check_mark: Abstract Syntax Tree (AST)   
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: AST based on Roslyn ISymbol (optional)   
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: AST based on Roslyn SyntaxNode (optional)   
    :white_check_mark: Temporary parser (PHP5)   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; :white_medium_square: Parser (PHP7) based on PHP7 and SyntaxTree (optional)   
    :white_check_mark: Symbol tables, Metadata   
@@ -36,7 +36,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    :white_medium_square: SemanticModel (gets symbols to be used by emit)   
    :white_medium_square: GetTypeFromTypeRef  
    :white_medium_square: Code Analysis  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Type Analysis    
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Type Analysis    
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: AST transformation   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Constant propagation   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Analyze subsequent string concatenations to optimize as one   
@@ -116,7 +116,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
 
 ###### API:
    :white_medium_square: Context  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Events (begin request, end request, start app, exit, ..)  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Events (begin request, end request, start app, exit, ...)  
    :white_medium_square: Script invocation  
    :white_medium_square: Function call  
    :white_medium_square: Reflection (Runtime Tables, PHPDoc)  
