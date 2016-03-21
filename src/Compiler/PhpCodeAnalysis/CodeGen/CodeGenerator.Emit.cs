@@ -135,12 +135,22 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 // avoiding of load of full value
-                if (place != null && place.HasAddress && place.Type == CoreTypes.PhpNumber)
+                if (place != null && place.HasAddress)
                 {
-                    // < place >.ToBoolean()
-                    place.EmitLoadAddress(_il);
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
-                    return;
+                    if (place.Type == CoreTypes.PhpNumber)
+                    {
+                        // < place >.ToBoolean()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
+                        return;
+                    }
+                    else if (place.Type == CoreTypes.PhpValue)
+                    {
+                        // < place >.ToBoolean()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
+                        return;
+                    }
                 }
 
                 //
@@ -327,36 +337,71 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // avoiding of load of full value
-            if (place != null && place.HasAddress && place.Type == CoreTypes.PhpNumber)
+            if (place != null && place.HasAddress)
             {
-                if (to.SpecialType == SpecialType.System_Int64)
+                if (place.Type == CoreTypes.PhpNumber)
                 {
-                    // <place>.ToLong()
-                    place.EmitLoadAddress(_il);
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToLong);
-                    return;
+                    if (to.SpecialType == SpecialType.System_Int64)
+                    {
+                        // <place>.ToLong()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToLong);
+                        return;
+                    }
+                    if (to.SpecialType == SpecialType.System_Double)
+                    {
+                        // <place>.ToDouble()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
+                        return;
+                    }
+                    if (to.SpecialType == SpecialType.System_Boolean)
+                    {
+                        // <place>.ToBoolean()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
+                        return;
+                    }
+                    if (to.SpecialType == SpecialType.System_String)
+                    {
+                        // <place>.ToString(<ctx>)
+                        place.EmitLoadAddress(_il);
+                        EmitLoadContext();
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToString_Context);
+                        return;
+                    }
                 }
-                if (to.SpecialType == SpecialType.System_Double)
+                else if (place.Type == CoreTypes.PhpValue)
                 {
-                    // <place>.ToDouble()
-                    place.EmitLoadAddress(_il);
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
-                    return;
-                }
-                if (to.SpecialType == SpecialType.System_Boolean)
-                {
-                    // <place>.ToBoolean()
-                    place.EmitLoadAddress(_il);
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
-                    return;
-                }
-                if (to.SpecialType == SpecialType.System_String)
-                {
-                    // <place>.ToString(<ctx>)
-                    place.EmitLoadAddress(_il);
-                    EmitLoadContext();
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToString_Context);
-                    return;
+                    if (to.SpecialType == SpecialType.System_Int64)
+                    {
+                        // <place>.ToLong()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToLong);
+                        return;
+                    }
+                    if (to.SpecialType == SpecialType.System_Double)
+                    {
+                        // <place>.ToDouble()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToDouble);
+                        return;
+                    }
+                    if (to.SpecialType == SpecialType.System_Boolean)
+                    {
+                        // <place>.ToBoolean()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
+                        return;
+                    }
+                    if (to.SpecialType == SpecialType.System_String)
+                    {
+                        // <place>.ToString(<ctx>)
+                        place.EmitLoadAddress(_il);
+                        EmitLoadContext();
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToString_Context);
+                        return;
+                    }
                 }
             }
 
