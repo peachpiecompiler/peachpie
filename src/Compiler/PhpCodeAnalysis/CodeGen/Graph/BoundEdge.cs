@@ -42,13 +42,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // if (Condition)
                 il.Builder.MarkLabel(this.Condition);
-                il.EmitConvertToBool(this.Condition.Emit(il), this.Condition.TypeRefMask);
+                il.EmitConvert(this.Condition, il.CoreTypes.Boolean);
                 il.Builder.EmitBranch(ILOpCode.Brtrue, TrueTarget);
             }
             else
             {
                 // if (Condition)
-                il.EmitConvertToBool(this.Condition.Emit(il), this.Condition.TypeRefMask);
+                il.EmitConvert(this.Condition, il.CoreTypes.Boolean);
                 il.Builder.EmitBranch(ILOpCode.Brfalse, FalseTarget);
 
                 // {

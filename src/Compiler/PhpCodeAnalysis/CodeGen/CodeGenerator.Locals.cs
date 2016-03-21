@@ -8,6 +8,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -65,5 +66,20 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         #endregion
+
+        /// <summary>
+        /// If possible, gets <see cref="IPlace"/> representing given expression (in case of a field or variable).
+        /// </summary>
+        /// <param name="expr"></param>
+        /// <returns>Place or <c>null</c>.</returns>
+        internal IPlace GetPlace(BoundExpression expr)
+        {
+            if (expr is BoundVariableRef)
+            {
+                return ((BoundVariableRef)expr).GetPlace(this);
+            }
+
+            return null;
+        }
     }
 }

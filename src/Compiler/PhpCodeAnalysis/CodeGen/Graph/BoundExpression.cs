@@ -736,7 +736,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.BoolCast:
                     //Template: "(bool)x"     Convert.ObjectToBoolean(x)
-                    il.EmitConvertToBool(this.Operand);
+                    il.EmitConvert(this.Operand, il.CoreTypes.Boolean);
                     returned_type = il.CoreTypes.Boolean;
                     break;
 
@@ -750,7 +750,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.UInt32Cast:
                 case Operations.Int64Cast:
 
-                    il.EmitConvertToLong(il.Emit(this.Operand), this.Operand.TypeRefMask);
+                    il.EmitConvert(this.Operand, il.CoreTypes.Long);
                     returned_type = il.CoreTypes.Long;
                     break;
 
@@ -758,7 +758,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.DoubleCast:
                 case Operations.FloatCast:
 
-                    il.EmitConvertToDouble(il.Emit(this.Operand), this.Operand.TypeRefMask);
+                    il.EmitConvert(this.Operand, il.CoreTypes.Double);
                     returned_type = il.CoreTypes.Double;
                     break;
 
@@ -941,6 +941,11 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
+            return EmitLoad(il);
+        }
+
+        internal TypeSymbol EmitLoad(CodeGenerator il)
+        {
             return il.EmitLoad(this.Variable);
         }
     }

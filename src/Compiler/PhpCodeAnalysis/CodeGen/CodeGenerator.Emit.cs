@@ -74,6 +74,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
+            from = EmitSpecialize(from, fromHint);
+
+            //
             if (from.SpecialType != SpecialType.System_Boolean)
             {
                 switch (from.SpecialType)
@@ -122,7 +125,27 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitConvertToBool(BoundExpression expr, bool negation = false)
         {
             Contract.ThrowIfNull(expr);
-            EmitConvertToBool(EmitSpecialize(expr.Emit(this), expr.TypeRefMask), expr.TypeRefMask, negation);
+
+            var place = GetPlace(expr);
+            var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
+            if (type != null)
+            {
+                EmitConvertToBool(type, 0, negation);
+            }
+            else
+            {
+                // avoiding of load of full value
+                if (place != null && place.HasAddress && place.Type == CoreTypes.PhpNumber)
+                {
+                    // < place >.ToBoolean()
+                    place.EmitLoadAddress(_il);
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
+                    return;
+                }
+
+                //
+                EmitConvertToBool(Emit(expr), expr.TypeRefMask, negation);
+            }
         }
 
         public void EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
@@ -210,6 +233,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 from = CoreTypes.PhpValue;
             }
 
+            //
             from = EmitSpecialize(from, fromHint);
 
             switch (from.SpecialType)
@@ -246,7 +270,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public void EmitConvertToDouble(TypeSymbol from, TypeRefMask fromHint)
+        public NamedTypeSymbol EmitConvertToDouble(TypeSymbol from, TypeRefMask fromHint)
         {
             Contract.ThrowIfNull(from);
 
@@ -258,30 +282,31 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             from = EmitSpecialize(from, fromHint);
+            var dtype = CoreTypes.Double.Symbol;
 
             switch (from.SpecialType)
             {
                 case SpecialType.System_Int32:
                     _il.EmitOpCode(ILOpCode.Conv_r8);   // Int32 -> Double
-                    return;
+                    return dtype;
                 case SpecialType.System_Int64:
                     _il.EmitOpCode(ILOpCode.Conv_r8);   // Int64 -> Double
-                    return;
+                    return dtype;
                 case SpecialType.System_Double:
                     // nop
-                    return;
+                    return dtype;
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
                         EmitPhpNumberAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
-                        return;
+                        return dtype;
                     }
                     else if (from == CoreTypes.PhpValue)
                     {
                         EmitPhpValueAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToDouble);
-                        return;
+                        return dtype;
                     }
                     else
                     {
@@ -292,6 +317,50 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
         {
+            // loads value from place most effectively without runtime type checking
+            var place = GetPlace(expr);
+            var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);  
+            if (type != null)
+            {
+                EmitConvert(type, 0, to);
+                return;
+            }
+
+            // avoiding of load of full value
+            if (place != null && place.HasAddress && place.Type == CoreTypes.PhpNumber)
+            {
+                if (to.SpecialType == SpecialType.System_Int64)
+                {
+                    // <place>.ToLong()
+                    place.EmitLoadAddress(_il);
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToLong);
+                    return;
+                }
+                if (to.SpecialType == SpecialType.System_Double)
+                {
+                    // <place>.ToDouble()
+                    place.EmitLoadAddress(_il);
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
+                    return;
+                }
+                if (to.SpecialType == SpecialType.System_Boolean)
+                {
+                    // <place>.ToBoolean()
+                    place.EmitLoadAddress(_il);
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
+                    return;
+                }
+                if (to.SpecialType == SpecialType.System_String)
+                {
+                    // <place>.ToString(<ctx>)
+                    place.EmitLoadAddress(_il);
+                    EmitLoadContext();
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToString_Context);
+                    return;
+                }
+            }
+
+            //
             EmitConvert(expr.Emit(this), expr.TypeRefMask, to);
         }
 
@@ -352,7 +421,55 @@ namespace Pchp.CodeAnalysis.CodeGen
         #endregion
 
         /// <summary>
-        /// If possible, based on type analysis, unwraps more specific type from a value currently on stack.
+        /// If possible, based on type analysis, unwraps most specific type from give variable without a runtime type check.
+        /// </summary>
+        internal TypeSymbol TryEmitVariableSpecialize(BoundExpression expr)
+        {
+            // avoiding of load of full value
+            return TryEmitVariableSpecialize(GetPlace(expr), expr.TypeRefMask);
+        }
+
+        /// <summary>
+        /// If possible, based on type analysis, unwraps most specific type from give variable without a runtime type check.
+        /// </summary>
+        internal TypeSymbol TryEmitVariableSpecialize(IPlace place, TypeRefMask tmask)
+        {
+            if (place != null && tmask.IsSingleType)
+            {
+                if (place.HasAddress && place.Type == CoreTypes.PhpNumber)
+                {
+                    // access directly without type checking
+                    if (IsDoubleOnly(tmask))
+                    {
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Double)
+                            .Expect(SpecialType.System_Double);
+                    }
+                    else if (IsLongOnly(tmask))
+                    {
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Long)
+                            .Expect(SpecialType.System_Int64);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// If possible, based on type analysis, unwraps more specific type from a value currently on stack without a runtime type check.
+        /// </summary>
+        /// <param name="stack">Type of value currently on top of evaluationb stack.</param>
+        /// <param name="tmask">Result of analysis what type will be there in runtime.</param>
+        /// <returns>New type on top of evaluation stack.</returns>
+        internal TypeSymbol EmitSpecialize(BoundExpression expr)
+        {
+            return TryEmitVariableSpecialize(expr) ?? EmitSpecialize(expr.Emit(this), expr.TypeRefMask);
+        }
+
+        /// <summary>
+        /// If possible, based on type analysis, unwraps more specific type from a value currently on stack without a runtime type check.
         /// </summary>
         /// <param name="stack">Type of value currently on top of evaluationb stack.</param>
         /// <param name="tmask">Result of analysis what type will be there in runtime.</param>
@@ -366,11 +483,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (IsDoubleOnly(tmask))
                     {
+                        EmitPhpNumberAddr();
                         return EmitCall(ILOpCode.Call, this.CoreMethods.PhpNumber.get_Double)
                             .Expect(SpecialType.System_Double);
                     }
                     else if (IsLongOnly(tmask))
                     {
+                        EmitPhpNumberAddr();
                         return EmitCall(ILOpCode.Call, this.CoreMethods.PhpNumber.get_Long)
                             .Expect(SpecialType.System_Int64);
                     }
@@ -400,8 +519,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// In case there is <c>Int32</c> or <c>bool</c> on the top of evaluation stack,
-        /// converts it to <c>Int64</c>.
+        /// In case there is <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c> on the top of evaluation stack,
+        /// converts it to <c>double</c>.
         /// </summary>
         /// <param name="stack">New type on top of stack.</param>
         /// <returns></returns>
@@ -439,7 +558,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public TypeSymbol Emit(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
-            return EmitSpecialize(expr.Emit(this), expr.TypeRefMask);
+            return EmitSpecialize(expr);
         }
 
         /// <summary>
