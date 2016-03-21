@@ -569,23 +569,43 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         /// <param name="stack">New type on top of stack.</param>
         /// <returns></returns>
-        internal TypeSymbol EmitConvertNumberToDouble(TypeSymbol stack)
+        internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
         {
-            if (stack.SpecialType == SpecialType.System_Int32 ||
-                stack.SpecialType == SpecialType.System_Int64 ||
-                stack.SpecialType == SpecialType.System_Boolean)
+            var place = GetPlace(expr);
+            var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
+            if (type == null)
+            {
+                if (place != null && place.HasAddress)
+                {
+                    if (place.Type == CoreTypes.PhpNumber)
+                    {
+                        place.EmitLoadAddress(_il);
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble)
+                            .Expect(SpecialType.System_Double);
+                    }
+                }
+
+                type = EmitSpecialize(expr);
+            }
+
+            Debug.Assert(type != null);
+
+            if (type.SpecialType == SpecialType.System_Int32 ||
+                type.SpecialType == SpecialType.System_Int64 ||
+                type.SpecialType == SpecialType.System_Boolean)
             {
                 _il.EmitOpCode(ILOpCode.Conv_r8);    // int|bool -> long
-                stack = this.CoreTypes.Double;
+                type = this.CoreTypes.Double;
             }
-            else if (stack == CoreTypes.PhpNumber)
+            else if (type == CoreTypes.PhpNumber)
             {
                 EmitPhpNumberAddr();
                 EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);    // number -> double
-                stack = this.CoreTypes.Double;
+                type = this.CoreTypes.Double;
             }
 
-            return stack;
+            //
+            return type;
         }
 
         public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
