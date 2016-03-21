@@ -24,6 +24,13 @@ namespace Pchp.CodeAnalysis.Semantics
         // TODO: constant, variable
 
         /// <summary>
+        /// Gets value indicating whether the parameter won't be a part of analysis since it gets a special meaning during emit.
+        /// </summary>
+        /// <param name="p">A method call parameter.</param>
+        /// <returns>True if parameter will not be bound to an argument and won't be analysed.</returns>
+        bool IsSpecialParameter(ParameterSymbol p);
+
+        /// <summary>
         /// Gets a file by its path relative to current context.
         /// </summary>
         SourceFileSymbol GetFile(string relativePath);
@@ -32,7 +39,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Gets type symbol by its name in current context.
         /// Can be <c>null</c> if type cannot be found.
         /// </summary>
-        INamedTypeSymbol GetClass(QualifiedName name);
+        INamedTypeSymbol GetType(QualifiedName name);
 
         /// <summary>
         /// Get global function symbol by its name in current context.

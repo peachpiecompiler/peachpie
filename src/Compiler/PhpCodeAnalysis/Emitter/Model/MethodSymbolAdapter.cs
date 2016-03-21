@@ -61,6 +61,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Debug.Assert(this.IsDefinitionOrDistinct());
 
+            if (this is SourceFunctionSymbol)
+                return ((SourceFunctionSymbol)this).ContainingFile;
+
             //var synthesizedGlobalMethod = this as SynthesizedGlobalMethodSymbol;
             //if ((object)synthesizedGlobalMethod != null)
             //{

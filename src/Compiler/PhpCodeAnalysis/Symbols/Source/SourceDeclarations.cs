@@ -9,13 +9,14 @@ using System.Collections.Immutable;
 using Pchp.Syntax;
 using System.Diagnostics;
 using Pchp.Syntax.AST;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents declarations within given source trees.
     /// </summary>
-    internal class SourceDeclarations
+    internal class SourceDeclarations : ISemanticModel
     {
         #region PopulatorVisitor
 
@@ -63,7 +64,34 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Dictionary<QualifiedName, SourceNamedTypeSymbol> _types = new Dictionary<QualifiedName, SourceNamedTypeSymbol>();
         readonly Dictionary<QualifiedName, SourceRoutineSymbol> _functions = new Dictionary<QualifiedName, SourceRoutineSymbol>();
         readonly Dictionary<string, SourceFileSymbol> _files = new Dictionary<string, SourceFileSymbol>(StringComparer.OrdinalIgnoreCase);
-        
+
+        #region ISemanticModel
+
+        ISemanticModel ISemanticModel.Next => null;
+
+        SourceFileSymbol ISemanticModel.GetFile(string relativePath)
+        {
+            throw new NotImplementedException();
+        }
+
+        INamedTypeSymbol ISemanticModel.GetType(QualifiedName name) => GetType(name);
+
+        IEnumerable<ISemanticFunction> ISemanticModel.ResolveFunction(QualifiedName name)
+        {
+            var routine = GetFunction(name);
+            if (routine != null)
+                yield return routine;
+        }
+
+        bool ISemanticModel.IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsSpecialParameter(ParameterSymbol p) => false;
+
+        #endregion
+
         public SourceDeclarations()
         {
             

@@ -94,7 +94,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.GlobalConstUse) return BindGlobalConstUse((AST.GlobalConstUse)expr).WithAccess(access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
             if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
-            if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
             
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -145,6 +144,7 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, AccessType access)
         {
             if (expr is AST.DirectVarUse) return BindDirectVarUse((AST.DirectVarUse)expr, access);
+            if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }

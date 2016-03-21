@@ -937,12 +937,45 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            if (this.TargetMethod == null)
-                throw new InvalidOperationException();
+            var method = this.TargetMethod;
 
+            Debug.Assert(method != null);
 
+            if (method == null)
+                throw new InvalidOperationException();  // function call has to be analyzed first
 
-            throw new NotImplementedException();
+            Debug.Assert(method.IsStatic);
+            Debug.Assert(method.Arity == 0);
+
+            //
+            foreach (var p in method.Parameters)
+            {
+                Debug.Assert(p.Type.SpecialType != SpecialType.System_Void);
+
+                var arg = (BoundArgument)this.ArgumentMatchingParameter(p);
+                if (arg != null)
+                {
+                    il.EmitConvert(arg.Value, p.Type);
+                }
+                else
+                {
+                    // special parameter
+                    if (p.Type == il.CoreTypes.Context)
+                    {
+                        il.EmitLoadContext();
+                    }
+                    else
+                    {
+                        // load default value
+                        il.EmitLoadDefaultValue(p.Type, 0);
+                    }
+                }
+            }
+
+            Debug.Assert(method.Parameters.Length == method.ParameterCount);
+
+            //
+            return il.EmitCall(ILOpCode.Call, method);
         }
     }
 

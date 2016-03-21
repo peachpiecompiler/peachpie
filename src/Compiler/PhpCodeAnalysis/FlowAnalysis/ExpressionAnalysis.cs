@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax.AST;
 using Pchp.Syntax.Text;
 using Roslyn.Utilities;
@@ -846,8 +847,43 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void VisitFunctionCall(BoundFunctionCall x)
         {
             // resolve function symbol
-            //var candidates = _model.ResolveFunction(x.Name || x.AlternativeName)
-            throw new NotImplementedException();
+            var candidates = _model.ResolveFunction(x.Name).ToImmutableArray();
+            if (candidates.IsEmpty && x.AlternativeName.HasValue)
+                candidates = _model.ResolveFunction(x.AlternativeName.Value).ToImmutableArray();
+
+            // overload resolution
+
+            if (candidates.Length == 0)
+            {
+                //x.TargetMethod = new ErrorMethod(x.Name)
+                throw new NotImplementedException("unknown function");
+            }
+            else if (candidates.Length == 1)
+            {
+                x.TargetMethod = (MethodSymbol)candidates[0];
+
+                // TODO: interprocedural; analyze TargetMethod with x.Arguments
+
+                // bind parameters to arguments
+                var parameters = x.TargetMethod.Parameters;
+                var args = x.ArgumentsInSourceOrder;
+
+                int argindex = 0;
+                foreach (var p in x.TargetMethod.Parameters)
+                {
+                    if (!_model.IsSpecialParameter(p) && argindex < args.Length)
+                    {
+                        args[argindex++].Parameter = p;
+                    }
+                }
+
+                //
+                x.TypeRefMask = x.TargetMethod.GetResultType(TypeCtx);
+            }
+            else
+            {
+                throw new NotImplementedException("ambiguous call");
+            }
         }
 
         public override void VisitArgument(IArgument operation)

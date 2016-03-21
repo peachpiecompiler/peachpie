@@ -25,11 +25,13 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         #region ISemanticModel
 
-        public ISemanticModel Next => null;
+        public ISemanticModel Next => _compilation.SourceSymbolTables;
 
-        public INamedTypeSymbol GetClass(QualifiedName name)
+        public INamedTypeSymbol GetType(QualifiedName name)
         {
-            throw new NotImplementedException();
+            return Next.GetType(name);
+
+            // TODO: library types
         }
 
         public SourceFileSymbol GetFile(string relativePath)
@@ -39,12 +41,19 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IEnumerable<ISemanticFunction> ResolveFunction(QualifiedName name)
         {
-            throw new NotImplementedException();
+            return Next.ResolveFunction(name);
+
+            // TODO: library functions
         }
 
         public bool IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from)
         {
             throw new NotImplementedException();
+        }
+
+        public bool IsSpecialParameter(ParameterSymbol p)
+        {
+            return p.Type == _compilation.CoreTypes.Context;
         }
 
         #endregion

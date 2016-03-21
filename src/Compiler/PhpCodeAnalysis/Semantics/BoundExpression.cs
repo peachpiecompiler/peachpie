@@ -122,8 +122,10 @@ namespace Pchp.CodeAnalysis.Semantics
         public IArgument ArgumentMatchingParameter(IParameterSymbol parameter)
         {
             foreach (var arg in _arguments)
+            {
                 if (arg.Parameter == parameter)
                     return arg;
+            }
 
             return null;
         }

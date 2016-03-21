@@ -785,13 +785,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitCall(ILOpCode.Call, method);
         }
 
-        public void EmitReturnDefault()
+        public void EmitLoadDefaultValue(TypeSymbol type, TypeRefMask typemask)
         {
-            // return default(RETURN_TYPE);
-
-            var return_type = this.Routine.ReturnType;
-
-            switch (return_type.SpecialType)
+            switch (type.SpecialType)
             {
                 case SpecialType.System_Void:
                     break;
@@ -808,53 +804,52 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitStringConstant(string.Empty);
                     break;
                 default:
-                    if (return_type.IsReferenceType)
+                    if (type.IsReferenceType)
                     {
                         _il.EmitNullConstant();
                     }
                     else
                     {
-                        if (return_type == CoreTypes.PhpValue)
+                        if (type == CoreTypes.PhpNumber)
                         {
-                            var return_mask = this.Routine.ControlFlowGraph.ReturnTypeMask;
+                            // PhpNumber.Create(0L)
+                            _il.EmitLongConstant(0L);
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Long);
+                        }
+                        else if (type == CoreTypes.PhpValue)
+                        {
                             var typectx = this.Routine.ControlFlowGraph.FlowContext.TypeRefContext;
 
-                            if (typectx.IsBoolean(return_mask))
+                            if (typectx.IsBoolean(typemask))
                             {
                                 _il.EmitBoolConstant(false);
                                 EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
                             }
-                            else if (typectx.IsLong(return_mask))
+                            else if (typectx.IsLong(typemask))
                             {
                                 _il.EmitLongConstant(0);
                                 EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
                             }
-                            else if (typectx.IsDouble(return_mask))
+                            else if (typectx.IsDouble(typemask))
                             {
                                 _il.EmitDoubleConstant(0.0);
                                 EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Double);
                             }
-                            //else if (typectx.IsString(return_mask))
+                            //else if (typectx.IsString(typemask))
                             //{
                             //}
-                            //else if (typectx.IsArray(return_mask))
+                            //else if (typectx.IsArray(typemask))
                             //{
                             //}
-                            //else if (typectx.IsNullable(return_mask))
+                            //else if (typectx.IsNullable(typemask))
                             //{
                             //    _il.EmitNullConstant();
                             //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Object);
                             //}
                             else
                             {
-                                throw ExceptionUtilities.UnexpectedValue(return_type);
+                                throw ExceptionUtilities.UnexpectedValue(typemask);
                             }
-                        }
-                        else if (return_type == CoreTypes.PhpNumber)
-                        {
-                            // PhpNumber.Create(0L)
-                            _il.EmitLongConstant(0L);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Long);
                         }
                         else
                         {
@@ -863,8 +858,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     break;
             }
+        }
 
-            //
+        public void EmitReturnDefault()
+        {
+            // return default(RETURN_TYPE);
+
+            var return_type = this.Routine.ReturnType;
+
+            EmitLoadDefaultValue(return_type, this.Routine.ControlFlowGraph.ReturnTypeMask);
             _il.EmitRet(return_type.SpecialType == SpecialType.System_Void);
         }
     }
