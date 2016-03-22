@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsConst => _const != null;
 
-        public override bool IsReadOnly => IsConst;
+        public override bool IsReadOnly => false; // IsConst;
 
         public override bool IsStatic => _isStatic;
 
