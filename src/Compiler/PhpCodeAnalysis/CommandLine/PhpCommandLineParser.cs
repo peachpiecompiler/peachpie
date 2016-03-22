@@ -32,6 +32,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string outputFileName = null;
             string moduleName = null;
             string compilationName = null;
+            bool optimize = false;
             var outputKind = OutputKind.DynamicallyLinkedLibrary;
 
             // DEBUG
@@ -47,7 +48,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //preprocessorSymbols: defines.ToImmutableAndFree(),
                 //documentationMode: parseDocumentationComments ? DocumentationMode.Diagnose : DocumentationMode.None,
                 kind: SourceCodeKind.Regular//,
-                //features: parsedFeatures
+                                            //features: parsedFeatures
             );
 
             var scriptParseOptions = parseOptions.WithKind(SourceCodeKind.Script);
@@ -63,20 +64,20 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
                 //usings: usings,
-                optimizationLevel: OptimizationLevel.Debug, //optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
-                //checkOverflow: checkOverflow,
-                //allowUnsafe: allowUnsafe,
-                //deterministic: deterministic,
+                optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
+                checkOverflow: false, // checkOverflow,
+                allowUnsafe: false, // allowUnsafe,
+                                    //deterministic: deterministic,
                 concurrentBuild: false, //concurrentBuild,  // TODO: true in Release
-                //cryptoKeyContainer: keyContainerSetting,
-                //cryptoKeyFile: keyFileSetting,
-                //delaySign: delaySignSetting,
+                                        //cryptoKeyContainer: keyContainerSetting,
+                                        //cryptoKeyFile: keyFileSetting,
+                                        //delaySign: delaySignSetting,
                 platform: Platform.AnyCpu //, // platform,
-                //generalDiagnosticOption: generalDiagnosticOption,
-                //warningLevel: warningLevel,
-                //specificDiagnosticOptions: diagnosticOptions,
-                //reportSuppressedDiagnostics: reportSuppressedDiagnostics,
-                //publicSign: publicSign
+                                          //generalDiagnosticOption: generalDiagnosticOption,
+                                          //warningLevel: warningLevel,
+                                          //specificDiagnosticOptions: diagnosticOptions,
+                                          //reportSuppressedDiagnostics: reportSuppressedDiagnostics,
+                                          //publicSign: publicSign
             );
 
             //if (debugPlus)
@@ -87,7 +88,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var emitOptions = new EmitOptions
             (
                 //metadataOnly: false,
-                //debugInformationFormat: debugInformationFormat,
+                debugInformationFormat: DebugInformationFormat.Pdb,
                 //pdbFilePath: null, // to be determined later
                 //outputNameOverride: null, // to be determined later
                 //baseAddress: baseAddress,
