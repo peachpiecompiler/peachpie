@@ -571,6 +571,22 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns></returns>
         internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
         {
+            // emit number literal directly as double
+            if (expr is BoundLiteral && expr.ConstantValue.HasValue)
+            {
+                if (expr.ConstantValue.Value is long)
+                {
+                    _il.EmitDoubleConstant((long)expr.ConstantValue.Value);
+                    return this.CoreTypes.Double;
+                }
+                if (expr.ConstantValue.Value is int)
+                {
+                    _il.EmitDoubleConstant((int)expr.ConstantValue.Value);
+                    return this.CoreTypes.Double;
+                }
+            }
+
+            // emit fast ToDouble() in case of a PhpNumber variable
             var place = GetPlace(expr);
             var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
             if (type == null)
