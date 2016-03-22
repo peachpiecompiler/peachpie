@@ -128,15 +128,7 @@ namespace Pchp.Core
         {
             this.AssertTypeCode();
 
-            //
-            if (IsLong)
-            {
-                return _long.CompareTo(lx);
-            }
-            else
-            {
-                return _double.CompareTo((double)lx);
-            }
+            return IsLong ? _long.CompareTo(lx) : _double.CompareTo((double)lx);
         }
 
         public static bool operator <(PhpNumber x, PhpNumber y)
@@ -164,14 +156,7 @@ namespace Pchp.Core
             x.AssertTypeCode();
 
             //
-            if (x.IsLong)
-            {
-                return x._long < ly;
-            }
-            else
-            {
-                return x._double < (double)ly;
-            }
+            return x.IsLong ? (x._long < ly) : (x._double < (double)ly);
         }
 
         public static bool operator >(PhpNumber x, long ly)
@@ -179,14 +164,7 @@ namespace Pchp.Core
             x.AssertTypeCode();
 
             //
-            if (x.IsLong)
-            {
-                return x._long > ly;
-            }
-            else
-            {
-                return x._double > (double)ly;
-            }
+            return x.IsLong ? (x._long > ly) : (x._double > (double)ly);
         }
 
         /// <summary>
