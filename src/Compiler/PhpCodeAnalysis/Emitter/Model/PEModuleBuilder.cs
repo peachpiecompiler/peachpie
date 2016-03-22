@@ -99,6 +99,17 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
+                //if (targetfr == null)
+                //{
+                //    var TargetFrameworkType = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Runtime.Versioning.TargetFrameworkAttribute");
+
+                //    targetfr = new SynthesizedAttributeData(TargetFrameworkType.Constructors[0],
+                //        ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ".NETPortable,Version=v4.5,Profile=Profile7")),
+                //        ImmutableArray.Create(new KeyValuePair<string, TypedConstant>("FrameworkDisplayName", new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ".NET Portable Subset"))));
+                //}
+
+                //yield return targetfr;
+
                 yield break; // throw new NotImplementedException();
             }
         }
