@@ -518,29 +518,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             Debug.Assert(IsNumberOnly(x.Value));    // 1L
 
-            TypeRefMask optype;
+            TypeRefMask resulttype;
+            TypeRefMask sourcetype = x.Target.TypeRefMask;  // type of target before operation
 
-            // TODO: double++ [always] => double
-            // TODO: long++ [where long < long.MaxValue] => long
-
-            // long|double|anything++ => number
             if (IsDoubleOnly(x.Target))
             {
-                optype = TypeCtx.GetDoubleTypeMask();
+                // double++ => double
+                resulttype = TypeCtx.GetDoubleTypeMask();
             }
             else if (IsLTInt64Max(x.Target))    // we'd like to keep long if we are sure we don't overflow to double
             {
-                optype = TypeCtx.GetLongTypeMask();
+                // long++ [< long.MaxValue] => long
+                resulttype = TypeCtx.GetLongTypeMask();
             }
             else
             {
-                optype = TypeCtx.GetNumberTypeMask();
+                // long|double|anything++ => number
+                resulttype = TypeCtx.GetNumberTypeMask();
             }
 
-            Visit(x.Target, Access.Write(optype, Span.Invalid));
+            Visit(x.Target, Access.Write(resulttype, Span.Invalid));
 
-            //            
-            x.TypeRefMask = x.Target.TypeRefMask;
+            //
+            x.TypeRefMask = (x.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement ||
+                             x.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement)
+                            ? resulttype : sourcetype;
         }
 
         #endregion
