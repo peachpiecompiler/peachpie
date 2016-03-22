@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis
             // TODO: async
             // TODO: in parallel
             var analysis = CFGAnalysis.Create(_worklist, new ExpressionAnalysis(new GlobalSemantics(_compilation)));
-            analysis.VisitCFGBlock(block);
+            block.Accept(analysis);
         }
 
         /// <summary>

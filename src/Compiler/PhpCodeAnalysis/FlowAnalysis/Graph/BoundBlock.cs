@@ -1,6 +1,7 @@
 ﻿using Pchp.CodeAnalysis.FlowAnalysis;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +22,31 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ExitBlock
     {
-        // TODO: list of blocks making call to this routine (callers) (may be from another CFG!!!) waiting for return type of this function
-        // These blocks has to be reanalysed when merged return type changes
+        #region Callers // TODO: EdgeToCallers
+
+        /// <summary>
+        /// Subscribe a block to be analysed when the exit block is reached and the routine return value changes.
+        /// </summary>
+        internal void Subscribe(BoundBlock x)
+        {
+            if (_subscribers == null)
+                _subscribers = new HashSet<BoundBlock>();
+
+            _subscribers.Add(x);
+        }
+
+        internal IEnumerable<BoundBlock> Subscribers => (IEnumerable<BoundBlock>)_subscribers ?? ImmutableArray<BoundBlock>.Empty;
+
+        /// <summary>
+        /// Set of blocks making call to this routine (callers) (may be from another CFG) waiting for return type of this routine.
+        /// </summary>
+        HashSet<BoundBlock> _subscribers;
+
+        /// <summary>
+        /// Return type last seen by subscribers.
+        /// </summary>
+        internal TypeRefMask _lastReturnTypeMask = 0;
+
+        #endregion
     }
 }

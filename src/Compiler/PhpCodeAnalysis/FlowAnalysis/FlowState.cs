@@ -302,7 +302,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 types[varindex] |= type;
                 this.SetVarInitialized(varindex);
-                this.FlowContext.AddVarType(varindex, type);
+                this.FlowContext.AddVarType(varindex, type);    // TODO: collect merged type information at the end of analysis
             }
         }
 

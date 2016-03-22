@@ -5,6 +5,7 @@ using Pchp.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -43,13 +44,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         readonly DistinctQueue<T> _queue = new DistinctQueue<T>();
 
-        /// <summary>
-        /// Adds an analysis driver into the list of analyzers to be performed on bound operations.
-        /// </summary>
-        internal void AddAnalysis(AnalyzeBlockDelegate analyzer)
-        {
-            _analyzers.Add(analyzer);
-        }
+        ///// <summary>
+        ///// Adds an analysis driver into the list of analyzers to be performed on bound operations.
+        ///// </summary>
+        //internal void AddAnalysis(AnalyzeBlockDelegate analyzer)
+        //{
+        //    _analyzers.Add(analyzer);
+        //}
 
         public Worklist(params AnalyzeBlockDelegate[] analyzers)
         {
@@ -62,6 +63,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public void Enqueue(T block)
         {
             _queue.Enqueue(block);
+        }
+
+        public bool EnqueueRoutine(ISemanticFunction routine, T caller, ImmutableArray<BoundArgument> args)
+        {
+            var cfg = routine.CFG;
+            if (cfg.IsDefaultOrEmpty)
+            {
+                // library (sourceless) function
+                return false;
+            }
+
+            // ensure callerBlock is subscribed to routine's ExitBlock
+            ((ExitBlock)cfg[0].Exit).Subscribe(caller);
+
+            // check if routine has to be reanalyzed => enqueue routine's StartBlock
+            // TODO
+            return false;
         }
 
         /// <summary>

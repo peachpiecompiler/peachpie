@@ -67,6 +67,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             VisitCFGBlockInternal(x);
         }
 
+        public virtual void VisitCFGExitBlock(ExitBlock x)
+        {
+            VisitCFGBlock(x);
+        }
+
         public virtual void VisitCFGCatchBlock(CatchBlock x)
         {
             VisitCFGBlockInternal(x);

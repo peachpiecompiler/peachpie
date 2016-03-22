@@ -141,6 +141,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("Exit")]
     public sealed partial class ExitBlock : BoundBlock
     {
+        public override void Accept(GraphVisitor visitor) => visitor.VisitCFGExitBlock(this);
     }
 
     /// <summary>

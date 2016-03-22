@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax.AST;
 using Pchp.Syntax.Text;
@@ -38,6 +39,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             get { return _analysis.State; }
             set { _analysis.State = value; }
         }
+
+        /// <summary>
+        /// The worklist to be used to enqueue next blocks.
+        /// </summary>
+        protected Worklist<BoundBlock> Worklist => _analysis.Worklist;
 
         #endregion
 
@@ -922,8 +928,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TargetMethod = (MethodSymbol)candidates[0];
 
-                // TODO: interprocedural; analyze TargetMethod with x.Arguments
-
                 // bind parameters to arguments
                 var parameters = x.TargetMethod.Parameters;
                 var args = x.ArgumentsInSourceOrder;
@@ -934,6 +938,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     if (!_model.IsSpecialParameter(p) && argindex < args.Length)
                     {
                         args[argindex++].Parameter = p;
+                    }
+                }
+
+                // analyze TargetMethod with x.Arguments
+                // require method result type if access != none
+                var enqueued = this.Worklist.EnqueueRoutine(x.TargetMethod, _analysis.CurrentBlock, args);
+                if (enqueued)   // => target has to be reanalysed
+                {
+                    if (x.Access != AccessType.None)    // => and we need the return type
+                    {
+                        // TODO:
+                        // throw to cancel current block analysis ?
+                        // continue with void ?
                     }
                 }
 

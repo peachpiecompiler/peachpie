@@ -18,6 +18,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// The worklist to be used to enqueue next blocks.
         /// </summary>
+        internal Worklist<BoundBlock> Worklist => _worklist;
         readonly Worklist<BoundBlock> _worklist;
 
         /// <summary>
@@ -34,6 +35,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             set { _state = value; }
         }
         FlowState _state;
+
+        /// <summary>
+        /// Gets reference to current block.
+        /// </summary>
+        internal BoundBlock CurrentBlock { get; private set; }
 
         /// <summary>
         /// Gets underlaying <see cref="ExpressionAnalysis"/>.
@@ -130,7 +136,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void VisitCFGBlockInit(BoundBlock/*!*/x)
         {
             Contract.ThrowIfNull(x.FlowState);   // state should be already set by previous edge
-            _state = x.FlowState.Clone();        // TFlowState for the statements in the block            
+            _state = x.FlowState.Clone();        // TFlowState for the statements in the block
+
+            this.CurrentBlock = x;
         }
 
         #endregion
@@ -149,6 +157,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             VisitCFGBlockInit(x);
             VisitCFGBlockInternal(x);   // modifies _state, traverses to the edge
+        }
+
+        public override void VisitCFGExitBlock(ExitBlock x)
+        {
+            VisitCFGBlock(x);
+
+            // TODO: EdgeToCallers:
+            var rtype = _state.GetReturnType();
+            if (rtype != x._lastReturnTypeMask)
+            {
+                x._lastReturnTypeMask = rtype;
+                x.Subscribers.ForEach(_worklist.Enqueue);
+            }
         }
 
         public override void VisitCFGCaseBlock(CaseBlock x)
