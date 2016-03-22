@@ -95,6 +95,40 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <returns></returns>
         bool IsNumberOnly(BoundExpression x) => IsNumberOnly(x.TypeRefMask);
 
+        /// <summary>
+        /// Determines if given expression represents a variable which value is less than <c>Int64.Max</c> in current state.
+        /// </summary>
+        bool IsLTInt64Max(BoundReferenceExpression r)
+        {
+            var varname = AsVariableName(r);
+            return varname != null && State.IsLTInt64Max(varname);
+        }
+
+        /// <summary>
+        /// In case of a local variable or parameter, sets associated flag determining its value is less than Int64.Max.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="lt"></param>
+        void LTInt64Max(BoundReferenceExpression r, bool lt)
+        {
+            var varname = AsVariableName(r);
+            if (varname != null)
+                State.LTInt64Max(varname, lt);
+        }
+
+        /// <summary>
+        /// In case of a local variable or parameter, gets its name.
+        /// </summary>
+        string AsVariableName(BoundReferenceExpression r)
+        {
+            var vr = r as BoundVariableRef;
+            if (vr != null && (vr.Variable is BoundLocal || vr.Variable is BoundParameter))
+            {
+                return vr.Variable.Name;
+            }
+            return null;
+        }
+
         #endregion
 
         #region Short-Circuit Evaluation
@@ -458,6 +492,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Debug.Assert(!access.RValueType.IsUninitialized);
                 State.SetVarInitialized(v.Name);
                 State.SetVar(v.Name, access.RValueType);
+                State.LTInt64Max(v.Name, false);
 
                 if (access.IsRef)
                 {
@@ -493,11 +528,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 optype = TypeCtx.GetDoubleTypeMask();
             }
-            //else if (IsLongOnly(x.Target))
-            //{
-            //    // we'd like to keep long if we are sure we don't overflow to double
-
-            //}
+            else if (IsLTInt64Max(x.Target))    // we'd like to keep long if we are sure we don't overflow to double
+            {
+                optype = TypeCtx.GetLongTypeMask();
+            }
             else
             {
                 optype = TypeCtx.GetNumberTypeMask();
@@ -721,6 +755,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.LessThanOrEqual:
                 case Operations.Identical:
                 case Operations.NotIdentical:
+
+                    if (branch == ConditionBranch.ToTrue)
+                    {
+                        if (x.Operation == Operations.LessThan && IsLongOnly(x.Right))
+                            LTInt64Max(x.Left as BoundReferenceExpression, true);   // $x < LONG
+                    }
+
                     return TypeCtx.GetBooleanTypeMask();
 
                 #endregion

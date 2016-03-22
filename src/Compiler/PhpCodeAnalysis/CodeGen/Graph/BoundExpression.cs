@@ -947,6 +947,11 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(method.IsStatic);
             Debug.Assert(method.Arity == 0);
 
+            // TODO: emit check the routine is declared; options:
+            // 1. disable checks in release for better performance
+            // 2. autoload script containing routine declaration
+            // 3. throw if routine is not declared
+
             //
             foreach (var p in method.Parameters)
             {
@@ -1078,7 +1083,19 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw new NotImplementedException();
 
                 targetPlace.EmitStorePrepare(il.Builder);
-                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value);
+                TypeSymbol result;
+                if (targetPlace.Type == il.CoreTypes.Long)    // ++ won't overflow
+                {
+                    Debug.Assert(il.IsLongOnly(this.TypeRefMask));
+                    il.EmitConvert(this.Target, il.CoreTypes.Long);
+                    il.Builder.EmitLongConstant(1L);
+                    il.Builder.EmitOpCode(ILOpCode.Add);
+                    result = il.CoreTypes.Long;
+                }
+                else
+                {
+                    result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value);
+                }
                 il.EmitConvert(result, this.TypeRefMask, targetPlace.Type);
                 targetPlace.EmitStore(il.Builder);
 

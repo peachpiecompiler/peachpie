@@ -152,6 +152,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _varsType = EnumeratorExtension.MixArrays(state1._varsType, state2._varsType, TypeRefMask.Or);
             _common = state1._common;
             _initializedMask = state1._initializedMask & state2._initializedMask;
+
+            // intersection of other variable flags
+            if (state1._lessThanLongMax != null && state2._lessThanLongMax != null)
+            {
+                _lessThanLongMax = new HashSet<string>(state1._lessThanLongMax);
+                _lessThanLongMax.Intersect(state2._lessThanLongMax);
+            }
         }
 
         /// <summary>
@@ -183,6 +190,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             : this(other._common, other._varsType)
         {
             _initializedMask = other._initializedMask;
+
+            if (other._lessThanLongMax != null)
+                _lessThanLongMax = new HashSet<string>(other._lessThanLongMax);
         }
 
         /// <summary>
@@ -332,6 +342,36 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             SetVar(index, type);
         }
+
+        #endregion
+
+        #region Constraints
+
+        HashSet<string> _lessThanLongMax;
+        
+        /// <summary>
+        /// Sets or removes LTInt64 flag for a variable.
+        /// </summary>
+        public void LTInt64Max(string varname, bool lt)
+        {
+            if (lt)
+            {
+                if (_lessThanLongMax == null) _lessThanLongMax = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _lessThanLongMax.Add(varname);
+            }
+            else
+            {
+                if (_lessThanLongMax != null)
+                    _lessThanLongMax.Remove(varname);
+            }
+        }
+
+        /// <summary>
+        /// Gets LTInt64 flag for a variable.
+        /// </summary>
+        /// <param name="varname"></param>
+        /// <returns></returns>
+        public bool IsLTInt64Max(string varname) => _lessThanLongMax != null && _lessThanLongMax.Contains(varname);
 
         #endregion
     }
