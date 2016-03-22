@@ -42,7 +42,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Arithmetic Operations
 
                 case Operations.Add:
-                    returned_type = EmitAdd(il, Left, Right);
+                    returned_type = (il.IsLongOnly(this.TypeRefMask)) ? il.CoreTypes.Long.Symbol : null;
+                    returned_type = EmitAdd(il, Left, Right, returned_type);
                     break;
 
                 case Operations.Sub:
@@ -217,7 +218,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>+</c> operator suitable for actual operands.
         /// </summary>
-        internal static TypeSymbol EmitAdd(CodeGenerator gen, BoundExpression Left, BoundExpression Right)
+        internal static TypeSymbol EmitAdd(CodeGenerator gen, BoundExpression Left, BoundExpression Right, TypeSymbol resultTypeOpt = null)
         {
             // Template: x + y : Operators.Add(x,y) [overloads]
 
@@ -273,6 +274,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (ytype.SpecialType == SpecialType.System_Int64)
                 {
+                    if (resultTypeOpt != null)
+                    {
+                        if (resultTypeOpt.SpecialType == SpecialType.System_Int64)
+                        {
+                            // (long)(i8 + i8 : number)
+                            il.EmitOpCode(ILOpCode.Add);
+                            return gen.CoreTypes.Long;
+                        }
+                    }
+
                     // i8 + i8 : number
                     return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_long_long)
                         .Expect(gen.CoreTypes.PhpNumber);
@@ -289,7 +300,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Add_long_number)
                         .Expect(gen.CoreTypes.PhpNumber);
                 }
-                
+
                 //
                 throw new NotImplementedException();
             }
@@ -314,7 +325,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Int64:
                     ytype = gen.EmitConvertIntToLong(gen.Emit(Right));
                     if (ytype.SpecialType == SpecialType.System_Int64)
-                     {
+                    {
                         // i8 - i8 : number
                         return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Subtract_long_long)
                             .Expect(gen.CoreTypes.PhpNumber);
@@ -388,7 +399,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // <RESULT> = <(bool) Right>;
             gen.EmitConvertToBool(Right);
-            
+
             // GOTO end;
             il.EmitBranch(ILOpCode.Br, end_label);
             il.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
@@ -396,7 +407,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // partial_eval:
             il.MarkLabel(partial_eval_label);
             il.EmitOpCode(isAnd ? ILOpCode.Ldc_i4_0 : ILOpCode.Ldc_i4_1, 1);
-            
+
             // end:
             il.MarkLabel(end_label);
 
@@ -1083,19 +1094,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw new NotImplementedException();
 
                 targetPlace.EmitStorePrepare(il.Builder);
-                TypeSymbol result;
-                if (targetPlace.Type == il.CoreTypes.Long)    // ++ won't overflow
-                {
-                    Debug.Assert(il.IsLongOnly(this.TypeRefMask));
-                    il.EmitConvert(this.Target, il.CoreTypes.Long);
-                    il.Builder.EmitLongConstant(1L);
-                    il.Builder.EmitOpCode(ILOpCode.Add);
-                    result = il.CoreTypes.Long;
-                }
-                else
-                {
-                    result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value);
-                }
+                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value, targetPlace.Type);
                 il.EmitConvert(result, this.TypeRefMask, targetPlace.Type);
                 targetPlace.EmitStore(il.Builder);
 
@@ -1113,7 +1112,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement)
             {
                 targetPlace.EmitStorePrepare(il.Builder);
-                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value);
+                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value, targetPlace.Type);
                 il.EmitConvert(result, this.TypeRefMask, targetPlace.Type);
 
                 if (read)
@@ -1189,7 +1188,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 il.Builder.MarkLabel(trueLbl);
                 il.Builder.EmitLocalLoad(cond_var);
                 il.EmitConvert(cond_type, this.Condition.TypeRefMask, result_type);
-                
+
                 // endLbl:
                 il.Builder.MarkLabel(endLbl);
 

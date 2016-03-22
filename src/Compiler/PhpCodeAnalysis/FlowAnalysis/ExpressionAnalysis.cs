@@ -129,6 +129,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return null;
         }
 
+        bool IsLongConstant(BoundExpression expr, long value)
+        {
+            var l = (expr as BoundLiteral);
+            if (l != null && l.ConstantValue.HasValue)
+            {
+                if (l.ConstantValue.Value is long) return ((long)l.ConstantValue.Value) == value;
+                if (l.ConstantValue.Value is int) return ((int)l.ConstantValue.Value) == value;
+            }
+            return false;
+        }
+
         #endregion
 
         #region Short-Circuit Evaluation
@@ -661,8 +672,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets resulting type of <c>+</c> operation.
         /// </summary>
-        TypeRefMask GetPlusOperationType(TypeRefMask lValType, TypeRefMask rValType)
+        TypeRefMask GetPlusOperationType(BoundExpression left, BoundExpression right)
         {
+            var lValType = left.TypeRefMask;
+            var rValType = right.TypeRefMask;
+
             // array + array => array
             // array + number => 0 (ERROR)
             // number + number => number
@@ -676,6 +690,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 if (IsDoubleOnly(lValType) || IsDoubleOnly(rValType))
                     return TypeCtx.GetDoubleTypeMask();
+
+                if (IsLTInt64Max(left as BoundReferenceExpression) && IsLongConstant(right, 1)) // LONG + 1, where LONG < long.MaxValue
+                    return TypeCtx.GetLongTypeMask();
 
                 return TypeCtx.GetNumberTypeMask();
             }
@@ -714,7 +731,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 #region Arithmetic Operations
 
                 case Operations.Add:
-                    return GetPlusOperationType(x.Left.TypeRefMask, x.Right.TypeRefMask);
+                    return GetPlusOperationType(x.Left, x.Right);
 
                 case Operations.Sub:
                 case Operations.Div:
