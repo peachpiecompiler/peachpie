@@ -270,7 +270,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 Mul_number_number = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.PhpNumber);
                 Mul_number_double = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.Double);
                 Mul_number_long = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.Long);
+                Mul_long_number = ct.PhpNumber.Operator("Multiply", ct.Long, ct.PhpNumber);
                 Mul_long_long = ct.PhpNumber.Method("Multiply", ct.Long, ct.Long);
+                Mul_long_double = ct.PhpNumber.Method("Multiply", ct.Long, ct.Double);
 
                 gt_number_number = ct.PhpNumber.Operator("GreaterThan", ct.PhpNumber, ct.PhpNumber);
                 gt_number_long = ct.PhpNumber.Operator("GreaterThan", ct.PhpNumber, ct.Long);
@@ -287,7 +289,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Subtract_long_long, Subtract_number_double, Subtract_long_double,
                 Negation_long,
                 get_Long, get_Double,
-                Mul_long_long,
+                Mul_long_long, Mul_long_double,
                 Create_Long, Create_Double;
 
             public readonly CoreOperator
@@ -295,7 +297,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_number_number, Add_number_long, Add_long_number,
                 Subtract_number_number, Subtract_long_number, Subtract_number_long,
                 Division_number_number, Division_long_number,
-                Mul_number_number, Mul_number_double, Mul_number_long,
+                Mul_number_number, Mul_number_double, Mul_number_long, Mul_long_number,
                 gt_number_number, gt_number_long, gt_number_double,
                 lt_number_number, lt_number_long, lt_number_double,
                 Negation;

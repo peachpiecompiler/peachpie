@@ -539,6 +539,14 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Multiply operator.
+        /// </summary>
+        public static double Multiply(long lx, double dy)
+        {
+            return (double)lx * dy;
+        }
+
+        /// <summary>
         /// Mul operator.
         /// </summary>
         public static PhpNumber operator *(PhpNumber x, PhpNumber y)
@@ -556,6 +564,21 @@ namespace Pchp.Core
 
             // long * long
             return Multiply(x._long, y._long);
+        }
+
+        /// <summary>
+        /// Mul operator.
+        /// </summary>
+        public static PhpNumber operator *(long lx, PhpNumber y)
+        {
+            y.AssertTypeCode();
+
+            // long * double
+            if (y.IsDouble)
+                return Create((double)lx * y._double);
+
+            // long * long
+            return Multiply(lx, y._long);
         }
 
         /// <summary>

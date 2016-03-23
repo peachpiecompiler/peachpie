@@ -556,6 +556,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     ytype = gen.EmitConvertNumberToDouble(Right); // bool|int|long|number -> double
                     if (ytype.SpecialType == SpecialType.System_Double)
                     {
+                        // r8 * r8 : r8
                         il.EmitOpCode(ILOpCode.Mul);
                         return xtype;   // r8
                     }
@@ -564,7 +565,20 @@ namespace Pchp.CodeAnalysis.Semantics
                     ytype = gen.EmitConvertIntToLong(gen.Emit(Right));
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
+                        // i8 * i8 : number
                         return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Mul_long_long)
+                                .Expect(gen.CoreTypes.PhpNumber);
+                    }
+                    else if (ytype.SpecialType == SpecialType.System_Double)
+                    {
+                        // i8 * r8 : r8
+                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Mul_long_double)
+                                .Expect(SpecialType.System_Double);
+                    }
+                    else if (ytype == gen.CoreTypes.PhpNumber)
+                    {
+                        // i8 * number : number
+                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Mul_long_number)
                                 .Expect(gen.CoreTypes.PhpNumber);
                     }
                     throw new NotImplementedException();
