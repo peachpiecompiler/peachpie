@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using System.Diagnostics;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -31,6 +32,16 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly PENamespaceSymbol _namespace;
 
         /// <summary>
+        /// Module's custom attributes
+        /// </summary>
+        private ImmutableArray<AttributeData> _lazyCustomAttributes;
+
+        /// <summary>
+        /// Module's assembly attributes
+        /// </summary>
+        private ImmutableArray<AttributeData> _lazyAssemblyAttributes;
+
+        /// <summary>
         /// The same value as ConcurrentDictionary.DEFAULT_CAPACITY
         /// </summary>
         private const int DefaultTypeMapCapacity = 31;
@@ -52,8 +63,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal readonly ConcurrentDictionary<TypeReferenceHandle, TypeSymbol> TypeRefHandleToTypeMap =
                                     new ConcurrentDictionary<TypeReferenceHandle, TypeSymbol>(concurrencyLevel: 2, capacity: DefaultTypeMapCapacity);
-
-
+        
         public PEModuleSymbol(PEAssemblySymbol assembly, PEModule module, MetadataImportOptions importOptions, int ordinal)
         {
             _assembly = assembly;
@@ -71,13 +81,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string Name => _module.Name;
 
-        //private static EntityHandle Token
-        //{
-        //    get
-        //    {
-        //        return EntityHandle.ModuleDefinition;
-        //    }
-        //}
+        private static EntityHandle Token
+        {
+            get
+            {
+                return EntityHandle.ModuleDefinition;
+            }
+        }
 
         public override AssemblySymbol ContainingAssembly => _assembly;
 
@@ -91,13 +101,177 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override ObsoleteAttributeData ObsoleteAttributeData
+        #region Custom Attributes
+
+        public override ImmutableArray<AttributeData> GetAttributes()
         {
-            get
+            if (_lazyCustomAttributes.IsDefault)
             {
-                return ObsoleteAttributeData.Uninitialized; // throw new NotImplementedException();
+                this.LoadCustomAttributes(Token, ref _lazyCustomAttributes);
             }
+            return _lazyCustomAttributes;
         }
+
+        internal ImmutableArray<AttributeData> GetAssemblyAttributes()
+        {
+            if (_lazyAssemblyAttributes.IsDefault)
+            {
+                ArrayBuilder<AttributeData> moduleAssemblyAttributesBuilder = null;
+
+                string corlibName = ContainingAssembly.CorLibrary.Name;
+                EntityHandle assemblyMSCorLib = Module.GetAssemblyRef(corlibName);
+                if (!assemblyMSCorLib.IsNil)
+                {
+                    foreach (var qualifier in Cci.MetadataWriter.dummyAssemblyAttributeParentQualifier)
+                    {
+                        EntityHandle typerefAssemblyAttributesGoHere =
+                                    Module.GetTypeRef(
+                                        assemblyMSCorLib,
+                                        Cci.MetadataWriter.dummyAssemblyAttributeParentNamespace,
+                                        Cci.MetadataWriter.dummyAssemblyAttributeParentName + qualifier);
+
+                        if (!typerefAssemblyAttributesGoHere.IsNil)
+                        {
+                            try
+                            {
+                                foreach (var customAttributeHandle in Module.GetCustomAttributesOrThrow(typerefAssemblyAttributesGoHere))
+                                {
+                                    if (moduleAssemblyAttributesBuilder == null)
+                                    {
+                                        moduleAssemblyAttributesBuilder = new ArrayBuilder<AttributeData>();
+                                    }
+                                    moduleAssemblyAttributesBuilder.Add(new PEAttributeData(this, customAttributeHandle));
+                                }
+                            }
+                            catch (BadImageFormatException)
+                            { }
+                        }
+                    }
+                }
+
+                ImmutableInterlocked.InterlockedCompareExchange(
+                    ref _lazyAssemblyAttributes,
+                    (moduleAssemblyAttributesBuilder != null) ? moduleAssemblyAttributesBuilder.ToImmutableAndFree() : ImmutableArray<AttributeData>.Empty,
+                    default(ImmutableArray<AttributeData>));
+            }
+            return _lazyAssemblyAttributes;
+        }
+
+        internal void LoadCustomAttributes(EntityHandle token, ref ImmutableArray<AttributeData> customAttributes)
+        {
+            var loaded = GetCustomAttributesForToken(token);
+            ImmutableInterlocked.InterlockedInitialize(ref customAttributes, loaded);
+        }
+
+        /// <summary>
+        /// Returns a possibly ExtensionAttribute filtered roArray of attributes. If
+        /// filterExtensionAttributes is set to true, the method will remove all ExtensionAttributes
+        /// from the returned array. If it is false, the parameter foundExtension will always be set to
+        /// false and can be safely ignored.
+        /// 
+        /// The paramArrayAttribute parameter is similar to the foundExtension parameter, but instead
+        /// of just indicating if the attribute was found, the parameter is set to the attribute handle
+        /// for the ParamArrayAttribute if any is found and is null otherwise. This allows NoPia to filter
+        /// the attribute out for the symbol but still cache it separately for emit.
+        /// </summary>
+        internal ImmutableArray<AttributeData> GetCustomAttributesForToken(EntityHandle token,
+            out CustomAttributeHandle filteredOutAttribute1,
+            AttributeDescription filterOut1,
+            out CustomAttributeHandle filteredOutAttribute2,
+            AttributeDescription filterOut2)
+        {
+            filteredOutAttribute1 = default(CustomAttributeHandle);
+            filteredOutAttribute2 = default(CustomAttributeHandle);
+            ArrayBuilder<AttributeData> customAttributesBuilder = null;
+
+            try
+            {
+                foreach (var customAttributeHandle in _module.GetCustomAttributesOrThrow(token))
+                {
+                    if (filterOut1.Signatures != null &&
+                        Module.GetTargetAttributeSignatureIndex(customAttributeHandle, filterOut1) != -1)
+                    {
+                        // It is important to capture the last application of the attribute that we run into,
+                        // it makes a difference for default and constant values.
+                        filteredOutAttribute1 = customAttributeHandle;
+                        continue;
+                    }
+
+                    if (filterOut2.Signatures != null &&
+                        Module.GetTargetAttributeSignatureIndex(customAttributeHandle, filterOut2) != -1)
+                    {
+                        // It is important to capture the last application of the attribute that we run into,
+                        // it makes a difference for default and constant values.
+                        filteredOutAttribute2 = customAttributeHandle;
+                        continue;
+                    }
+
+                    if (customAttributesBuilder == null)
+                    {
+                        customAttributesBuilder = ArrayBuilder<AttributeData>.GetInstance();
+                    }
+
+                    customAttributesBuilder.Add(new PEAttributeData(this, customAttributeHandle));
+                }
+            }
+            catch (BadImageFormatException)
+            { }
+
+            if (customAttributesBuilder != null)
+            {
+                return customAttributesBuilder.ToImmutableAndFree();
+            }
+
+            return ImmutableArray<AttributeData>.Empty;
+        }
+
+        internal ImmutableArray<AttributeData> GetCustomAttributesForToken(EntityHandle token)
+        {
+            // Do not filter anything and therefore ignore the out results
+            CustomAttributeHandle ignore1;
+            CustomAttributeHandle ignore2;
+            return GetCustomAttributesForToken(token,
+                out ignore1,
+                default(AttributeDescription),
+                out ignore2,
+                default(AttributeDescription));
+        }
+
+        /// <summary>
+        /// Get the custom attributes, but filter out any ParamArrayAttributes.
+        /// </summary>
+        /// <param name="token">The parameter token handle.</param>
+        /// <param name="paramArrayAttribute">Set to a ParamArrayAttribute</param>
+        /// CustomAttributeHandle if any are found. Nil token otherwise.
+        internal ImmutableArray<AttributeData> GetCustomAttributesForToken(EntityHandle token,
+            out CustomAttributeHandle paramArrayAttribute)
+        {
+            CustomAttributeHandle ignore;
+            return GetCustomAttributesForToken(
+                token,
+                out paramArrayAttribute,
+                AttributeDescription.ParamArrayAttribute,
+                out ignore,
+                default(AttributeDescription));
+        }
+
+
+        internal bool HasAnyCustomAttributes(EntityHandle token)
+        {
+            try
+            {
+                foreach (var attr in _module.GetCustomAttributesOrThrow(token))
+                {
+                    return true;
+                }
+            }
+            catch (BadImageFormatException)
+            { }
+
+            return false;
+        }
+
+        #endregion
 
         /// <summary>
         /// Lookup a top level type referenced from metadata, names should be

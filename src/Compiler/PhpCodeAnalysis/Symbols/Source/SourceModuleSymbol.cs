@@ -53,14 +53,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PhpCompilation DeclaringCompilation => _sourceAssembly.DeclaringCompilation;
 
-        internal override ObsoleteAttributeData ObsoleteAttributeData
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
         /// <summary>
         /// Lookup a top level type referenced from metadata, names should be
         /// compared case-sensitively.
