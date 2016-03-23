@@ -540,7 +540,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     Debug.Assert(i != 0 && elseBlock != null);
                     var body = elseBlock;
                     elseBlock = end;    // last ConditionalStmt
-                    _current = WithNewOrdinal(Connect(_current, body));
+                    _current = WithNewOrdinal(body);
                 }
 
                 OpenScope(_current);
@@ -552,7 +552,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             Debug.Assert(_current == end);
-            _current.Ordinal = NewOrdinal();
+            WithNewOrdinal(_current);
         }
 
         public override void VisitLabelStmt(LabelStmt x)
