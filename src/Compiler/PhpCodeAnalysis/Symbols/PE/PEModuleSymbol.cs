@@ -163,6 +163,43 @@ namespace Pchp.CodeAnalysis.Symbols
             ImmutableInterlocked.InterlockedInitialize(ref customAttributes, loaded);
         }
 
+        internal void LoadCustomAttributesFilterExtensions(EntityHandle token,
+            ref ImmutableArray<AttributeData> customAttributes,
+            out bool foundExtension)
+        {
+            var loadedCustomAttributes = GetCustomAttributesFilterExtensions(token, out foundExtension);
+            ImmutableInterlocked.InterlockedInitialize(ref customAttributes, loadedCustomAttributes);
+        }
+
+        internal void LoadCustomAttributesFilterExtensions(EntityHandle token,
+            ref ImmutableArray<AttributeData> customAttributes)
+        {
+            // Ignore whether or not extension attributes were found
+            bool ignore;
+            var loadedCustomAttributes = GetCustomAttributesFilterExtensions(token, out ignore);
+            ImmutableInterlocked.InterlockedInitialize(ref customAttributes, loadedCustomAttributes);
+        }
+
+        /// <summary>
+        /// Filters extension attributes from the attribute results.
+        /// </summary>
+        /// <param name="token"></param>
+        /// <param name="foundExtension">True if we found an extension method, false otherwise.</param>
+        /// <returns>The attributes on the token, minus any ExtensionAttributes.</returns>
+        internal ImmutableArray<AttributeData> GetCustomAttributesFilterExtensions(EntityHandle token, out bool foundExtension)
+        {
+            CustomAttributeHandle extensionAttribute;
+            CustomAttributeHandle ignore;
+            var result = GetCustomAttributesForToken(token,
+                out extensionAttribute,
+                AttributeDescription.CaseSensitiveExtensionAttribute,
+                out ignore,
+                default(AttributeDescription));
+
+            foundExtension = !extensionAttribute.IsNil;
+            return result;
+        }
+
         /// <summary>
         /// Returns a possibly ExtensionAttribute filtered roArray of attributes. If
         /// filterExtensionAttributes is set to true, the method will remove all ExtensionAttributes

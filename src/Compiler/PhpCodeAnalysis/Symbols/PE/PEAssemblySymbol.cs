@@ -33,6 +33,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly bool _isLinked;
 
         /// <summary>
+        /// Assembly's custom attributes
+        /// </summary>
+        private ImmutableArray<AttributeData> _lazyCustomAttributes;
+
+        /// <summary>
         /// Whether this assembly is the COR library.
         /// </summary>
         readonly SpecialAssembly _specialAssembly;
@@ -91,6 +96,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 // initialize CoreTypes
                 this.PrimaryModule.GlobalNamespace.GetTypeMembers();
             }
+            else
+            {
+                // extension assembly ?
+                //var attrs = this.GetAttributes();
+            }
         }
 
         internal static PEAssemblySymbol Create(PortableExecutableReference reference)
@@ -140,6 +150,24 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return null;
+        }
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            if (_lazyCustomAttributes.IsDefault)
+            {
+                //if (this.MightContainExtensionMethods)
+                //{
+                //    this.PrimaryModule.LoadCustomAttributesFilterExtensions(_assembly.Handle,
+                //        ref _lazyCustomAttributes);
+                //}
+                //else
+                {
+                    this.PrimaryModule.LoadCustomAttributes(_assembly.Handle,
+                        ref _lazyCustomAttributes);
+                }
+            }
+            return _lazyCustomAttributes;
         }
     }
 }
