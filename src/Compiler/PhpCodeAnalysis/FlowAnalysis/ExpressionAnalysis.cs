@@ -921,7 +921,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (candidates.Length == 0)
             {
-                //x.TargetMethod = new ErrorMethod(x.Name)
+                //x.TargetMethod = new MissingMethod(x.Name)
                 throw new NotImplementedException("unknown function");
             }
             else if (candidates.Length == 1)

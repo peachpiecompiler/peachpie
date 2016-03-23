@@ -58,6 +58,8 @@ namespace Pchp.CodeAnalysis
                 yield break;
             }
 
+            internal IEnumerable<IAssemblySymbol> ExplicitReferencesSymbols => ExplicitReferences.Select(r => _referencesMap[r]).WhereNotNull();
+
             IEnumerable<string> CorLibReferences
             {
                 get

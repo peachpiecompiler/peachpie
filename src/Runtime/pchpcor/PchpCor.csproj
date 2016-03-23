@@ -43,6 +43,7 @@
     <Compile Include="Operators.cs" />
     <Compile Include="PhpAlias.cs" />
     <Compile Include="BinaryString.cs" />
+    <Compile Include="PhpAttributes.cs" />
     <Compile Include="PhpNumber.cs" />
     <Compile Include="PhpStringBuilder.cs" />
     <Compile Include="PhpTypeCode.cs" />

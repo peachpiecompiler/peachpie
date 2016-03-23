@@ -86,6 +86,11 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly PhpCompilation _compilation;
 
+        /// <summary>
+        /// Name of attribute class representing an extension library.
+        /// </summary>
+        public const string PhpExtensionAttributeName = "Pchp.Core.PhpExtensionAttribute";
+
         public readonly CoreType
             Context, Operators,
             PhpNumber, PhpValue, PhpAlias, BinaryString, PhpStringBuilder,

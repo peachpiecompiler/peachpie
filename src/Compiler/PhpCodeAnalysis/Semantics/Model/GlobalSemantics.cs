@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Semantics.Model
 {
@@ -15,12 +16,30 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         readonly PhpCompilation _compilation;
 
+        ImmutableArray<NamedTypeSymbol> _lazyExtensionContainers;
+
         #endregion
 
         public GlobalSemantics(PhpCompilation compilation)
         {
             Contract.ThrowIfNull(compilation);
             _compilation = compilation;
+        }
+
+        ImmutableArray<NamedTypeSymbol> ExtensionContainers
+        {
+            get
+            {
+                if (_lazyExtensionContainers.IsDefault)
+                {
+                    _lazyExtensionContainers = _compilation.GetBoundReferenceManager()
+                        .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>().Where(s => s.IsExtensionLibrary)
+                        .SelectMany(r => r.ExtensionContainers)
+                        .ToImmutableArray();
+                }
+
+                return _lazyExtensionContainers;
+            }
         }
 
         #region ISemanticModel
@@ -41,9 +60,13 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IEnumerable<ISemanticFunction> ResolveFunction(QualifiedName name)
         {
-            return Next.ResolveFunction(name);
+            var result =
+                // library functions
+                ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName()).OfType<ISemanticFunction>())
+                // source functions
+                .Concat(Next.ResolveFunction(name));
 
-            // TODO: library functions
+            return result;
         }
 
         public bool IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from)

@@ -38,9 +38,16 @@ namespace Pchp.CodeAnalysis.Symbols
         private ImmutableArray<AttributeData> _lazyCustomAttributes;
 
         /// <summary>
-        /// Whether this assembly is the COR library.
+        /// The assembly purpose, and whether the compiler treats it as a .NET reference, PHP extension or a Cor library.
         /// </summary>
-        readonly SpecialAssembly _specialAssembly;
+        SpecialAssembly _specialAssembly;
+
+        /// <summary>
+        /// Public static classes containing public static methods and nested classes seen as global declarations in source module.
+        /// </summary>
+        ImmutableArray<NamedTypeSymbol> _lazyExtensionContainers;
+
+        bool _lazyIsExtensionLibraryResolved;
 
         /// <summary>
         /// A DocumentationProvider that provides XML documentation comments for this assembly.
@@ -66,6 +73,29 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsCorLibrary => _specialAssembly == SpecialAssembly.CorLibrary;
 
         public override bool IsPchpCorLibrary => _specialAssembly == SpecialAssembly.PchpCorLibrary;
+
+        internal bool IsExtensionLibrary
+        {
+            get
+            {
+                if (_specialAssembly == SpecialAssembly.None && !_lazyIsExtensionLibraryResolved)
+                {
+                    var attrs = GetAttributes();
+                    foreach (var a in attrs)
+                    {
+                        if (a.AttributeClass.MetadataName == CoreTypes.PhpExtensionAttributeName)
+                        {
+                            _specialAssembly = SpecialAssembly.ExtensionLibrary;
+                            break;
+                        }
+                    }
+
+                    _lazyIsExtensionLibraryResolved = true;
+                }
+
+                return _specialAssembly == SpecialAssembly.ExtensionLibrary;
+            }
+        }
 
         public override string Name => _assembly.ManifestModule.Name;
 
@@ -150,6 +180,36 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets containers which members represent globals in source module context.
+        /// </summary>
+        internal ImmutableArray<NamedTypeSymbol> ExtensionContainers
+        {
+            get
+            {
+                if (_lazyExtensionContainers.IsDefault)
+                {
+                    if (this.IsExtensionLibrary)
+                    {
+                        var containers = new ArrayBuilder<NamedTypeSymbol>();
+                        containers.AddRange(
+                            this.PrimaryModule.GlobalNamespace
+                            .GetTypeMembers()
+                            .Where(t => t.IsStatic && t.DeclaredAccessibility == Accessibility.Public));
+
+                        //
+                        _lazyExtensionContainers = containers.ToImmutable();
+                    }
+                    else
+                    {
+                        _lazyExtensionContainers = ImmutableArray<NamedTypeSymbol>.Empty;
+                    }
+                }
+
+                return _lazyExtensionContainers;
+            }
         }
 
         public override ImmutableArray<AttributeData> GetAttributes()

@@ -420,7 +420,9 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        internal override CommonReferenceManager CommonGetBoundReferenceManager()
+        internal override CommonReferenceManager CommonGetBoundReferenceManager() => GetBoundReferenceManager();
+
+        internal new ReferenceManager GetBoundReferenceManager()
         {
             if (_lazyAssemblySymbol == null)
             {
