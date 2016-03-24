@@ -23,7 +23,7 @@ namespace Pchp.Core
             {
                 var str = ToString();
 
-                if (_type == PhpTypeCode.String || _type == PhpTypeCode.BinaryString || _type == PhpTypeCode.PhpStringBuilder)
+                if (_type == PhpTypeCode.String || _type == PhpTypeCode.WritableString)
                     str = $"'{str}'";
 
                 return str;

@@ -22,7 +22,7 @@ namespace Pchp.Core
         Boolean,
 
         /// <summary>
-        /// 32-bit integer value.
+        /// 32-bit integer value. For compatibility with CLR only.
         /// </summary>
         Int32,
 
@@ -42,19 +42,14 @@ namespace Pchp.Core
         PhpArray,
 
         /// <summary>
-        /// Unicode string value.
+        /// Unicode string value. Two-byte (UTF16) readonly string.
         /// </summary>
         String,
 
         /// <summary>
-        /// Binary string value.
+        /// Both Unicode and Binary writable string value. Encapsulates teo-byte (UTF16), single-byte (binary) string and string builder.
         /// </summary>
-        BinaryString,
-
-        /// <summary>
-        /// A result of strings concatenation, binary nor unicode.
-        /// </summary>
-        PhpStringBuilder,
+        WritableString,
 
         /// <summary>
         /// A class type, including <c>NULL</c>, <c>resource</c>, <c>Closure</c> or generic <c>Object</c>.

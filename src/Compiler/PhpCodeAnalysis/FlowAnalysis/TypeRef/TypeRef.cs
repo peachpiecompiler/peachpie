@@ -193,8 +193,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     case PhpTypeCode.Int32:
                     case PhpTypeCode.Long: return QualifiedName.Integer;
                     case PhpTypeCode.Double: return QualifiedName.Double;
-                    case PhpTypeCode.BinaryString:
-                    case PhpTypeCode.PhpStringBuilder:
+                    case PhpTypeCode.WritableString:
                     case PhpTypeCode.String: return QualifiedName.String;
                     case PhpTypeCode.PhpArray: return QualifiedName.Array;
                     default:
