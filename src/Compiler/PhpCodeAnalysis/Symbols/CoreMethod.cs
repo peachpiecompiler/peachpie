@@ -198,6 +198,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Long = ct.Convert.Method("ToString", ct.Long);
                 ToString_Double_Context = ct.Convert.Method("ToString", ct.Double, ct.Context);
                 Long_ToString = ct.Long.Method("ToString");
+                ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
 
                 Echo_String = ct.Context.Method("Echo", ct.String);
                 Echo_PhpString = ct.Context.Method("Echo", ct.PhpString);
@@ -213,6 +214,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Equal_Object_Object,
                 PhpAlias_GetValue,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
+                ToBoolean_String,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32;
         }
 
@@ -323,12 +325,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble = ct.PhpString.Method("ToDouble");
                 ToString_Context = ct.PhpString.Method("ToString", ct.Context);
 
-                Add_String = ct.PhpString.Method("Add", ct.String);
+                Append_String = ct.PhpString.Method("Append", ct.String);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
-                Add_String;
+                Append_String;
         }
 
         public struct ConstructorsHolder

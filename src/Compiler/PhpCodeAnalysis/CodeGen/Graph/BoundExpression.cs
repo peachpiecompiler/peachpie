@@ -1045,7 +1045,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 // TODO: Add overloads for specific types, not System.String only
                 il.EmitConvert(expr, il.CoreTypes.String);
-                il.EmitCall(ILOpCode.Callvirt, il.CoreMethods.PhpString.Add_String);
+                il.EmitCall(ILOpCode.Call, il.CoreMethods.PhpString.Append_String);
                 il.Builder.EmitOpCode(ILOpCode.Nop);
             }
 

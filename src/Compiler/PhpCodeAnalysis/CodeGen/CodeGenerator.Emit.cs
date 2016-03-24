@@ -99,6 +99,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                             EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
                             break;
                         }
+                        else if (from == CoreTypes.PhpString)
+                        {
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
+                            break;
+                        }
                         else if (from == CoreTypes.PhpNumber)
                         {
                             EmitPhpNumberAddr();

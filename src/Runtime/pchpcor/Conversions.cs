@@ -63,6 +63,8 @@ namespace Pchp.Core
     [DebuggerNonUserCode]
     public static class Convert
     {
+        #region ToString
+
         /// <summary>
         /// Gets string representation of a boolean value (according to PHP, it is <c>"1"</c> or <c>""</c>).
         /// </summary>
@@ -89,6 +91,23 @@ namespace Pchp.Core
             // TODO: according to ctx culture
             return value.ToString("G", NumberFormatInfo.InvariantInfo);
         }
+
+        #endregion
+
+        #region ToBoolean
+
+        /// <summary>
+        /// Converts string to boolean according to PHP.
+        /// </summary>
+        public static bool ToBoolean(string value)
+        {
+            // not null
+            // not empty
+            // not "0"
+            return value != null && value.Length != 0 && (value.Length != 1 || value[0] != '0');
+        }
+
+        #endregion
 
         #region String To Number
 

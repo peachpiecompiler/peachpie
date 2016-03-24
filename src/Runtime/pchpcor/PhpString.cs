@@ -13,7 +13,11 @@ namespace Pchp.Core
     {
         #region Fields & Properties
 
+        // TODO: optimize
+        // TODO: allow combination of binary string and unicode string
+        // TODO: lazy ToString
 
+        StringBuilder _builder;
 
         #endregion
 
@@ -25,7 +29,7 @@ namespace Pchp.Core
         /// <param name="capacity">Expected capacity hint.</param>
         public PhpString(int capacity)
         {
-
+            _builder = new StringBuilder(capacity);
         }
 
         // from builder, binary, unicode, concatenation
@@ -34,14 +38,15 @@ namespace Pchp.Core
 
         #region Operations
 
-        public void Append(string value) => Add(value);
+        #region Append
 
-        public virtual void Add(string value)
+        public void Append(string value)
         {
-            throw new NotImplementedException();
+            _builder.Append(value);
         }
 
-        // Append
+        #endregion
+
         // Prepend
         // this[] { get; set; }
 
@@ -53,33 +58,37 @@ namespace Pchp.Core
 
         public bool ToBoolean()
         {
-            throw new NotImplementedException();
+            return _builder.Length != 0 && (_builder.Length != 1 || _builder[0] != '0');
         }
 
         public double ToDouble()
         {
-            throw new NotImplementedException();
+            return Convert.StringToDouble(_builder.ToString());
         }
 
         public long ToLong()
         {
-            throw new NotImplementedException();
+            return Convert.StringToLongInteger(_builder.ToString());
         }
 
         public Convert.NumberInfo ToNumber(out PhpNumber number)
         {
-            throw new NotImplementedException();
+            double d;
+            long l;
+            var info = Convert.StringToNumber(_builder.ToString(), out l, out d);
+            number = (info & Convert.NumberInfo.Double) != 0
+                ? PhpNumber.Create(d)
+                : PhpNumber.Create(l);
+
+            return info;
         }
 
         public string ToString(Context ctx)
         {
-            throw new NotImplementedException();
+            return _builder.ToString();
         }
 
-        public string ToStringOrThrow(Context ctx)
-        {
-            throw new NotImplementedException();
-        }
+        public string ToStringOrThrow(Context ctx) => ToString(ctx);
 
         #endregion
     }
