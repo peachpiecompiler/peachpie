@@ -692,7 +692,7 @@ namespace Pchp.Core
         {
             AssertTypeCode();
 
-            return IsLong ? _long.ToString() : _double.ToString();    // TODO: Double conversion must respect ctx culture
+            return IsLong ? _long.ToString() : Convert.ToString(_double, ctx);
         }
 
         public string ToStringOrThrow(Context ctx)

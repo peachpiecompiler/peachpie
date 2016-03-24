@@ -87,7 +87,7 @@ namespace Pchp.Core
         public static string ToString(double value, Context ctx)
         {
             // TODO: according to ctx culture
-            return value.ToString();
+            return value.ToString("G", NumberFormatInfo.InvariantInfo);
         }
 
         #region String To Number
