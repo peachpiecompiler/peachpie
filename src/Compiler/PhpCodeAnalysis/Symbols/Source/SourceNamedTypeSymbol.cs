@@ -22,8 +22,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly ImmutableArray<Symbol> _members;
         
         NamedTypeSymbol _lazyBaseType;
+        MethodSymbol _lazyCtorMethod;   // .ctor
+        //SynthesizedFieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
 
         public SourceFileSymbol ContainingFile => _file;
+
 
         public SourceNamedTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
@@ -37,12 +40,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 .ToImmutableArray();
         }
 
-        IEnumerable<SourceMethodSymbol> LoadMethods()
+        IEnumerable<MethodSymbol> LoadMethods()
         {
+            // source methods
             foreach (var m in _syntax.Members.OfType<MethodDecl>())
             {
                 yield return new SourceMethodSymbol(this, m);
             }
+
+            // default .ctor
+            yield return CtorMethodSymbol;
         }
 
         IEnumerable<SourceFieldSymbol> LoadFields()
@@ -55,6 +62,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
         }
+
+        internal MethodSymbol CtorMethodSymbol => _lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedCtorSymbol(this));
 
         public override NamedTypeSymbol BaseType
         {

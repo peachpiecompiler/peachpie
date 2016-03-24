@@ -118,16 +118,35 @@ namespace Pchp.CodeAnalysis
             block.Accept(analysis);
         }
 
+        internal void EmitMethodBodies()
+        {
+            // default .ctors
+            _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
+                .Select(t => t.CtorMethodSymbol)
+                .ForEach(this.EmitCtorBody);
+
+            // source routines
+            this.WalkMethods(this.EmitMethodBody);
+        }
+
         /// <summary>
         /// Generates analyzed method.
         /// </summary>
-        internal void EmitMethodBody(SourceRoutineSymbol routine)
+        void EmitMethodBody(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
             Debug.Assert(routine.ControlFlowGraph.Start.FlowState != null);
 
             var body = MethodGenerator.GenerateMethodBody(_moduleBuilder, routine, 0, null, _diagnostics, _emittingPdb);
             _moduleBuilder.SetMethodBody(routine, body);
+        }
+
+        void EmitCtorBody(MethodSymbol ctorsymbol)
+        {
+            Contract.ThrowIfNull(ctorsymbol);
+            
+            var body = MethodGenerator.GenerateDefaultCtorBody(_moduleBuilder, ctorsymbol, null, _diagnostics, _emittingPdb);
+            _moduleBuilder.SetMethodBody(ctorsymbol, body);
         }
 
         public static void CompileSources(
@@ -158,7 +177,7 @@ namespace Pchp.CodeAnalysis
             compiler.AnalyzeMethods();
 
             // 4. Emit method bodies
-            compiler.WalkMethods(compiler.EmitMethodBody);
+            compiler.EmitMethodBodies();
         }
     }
 }

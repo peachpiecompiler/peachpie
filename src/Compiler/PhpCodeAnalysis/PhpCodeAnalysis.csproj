@@ -177,6 +177,7 @@
     <Compile Include="Symbols\SpecialTypeExtensions.cs" />
     <Compile Include="Symbols\Symbol.cs" />
     <Compile Include="Semantics\ISemanticModel.cs" />
+    <Compile Include="Symbols\Synthesized\SynthesizedCtorSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedFieldSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedPropertySymbol.cs" />
     <Compile Include="Symbols\TypedConstantExtensions.cs" />

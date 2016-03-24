@@ -157,5 +157,81 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //diagnosticsForThisMethod.Free();
             }
         }
+
+        internal static MethodBody GenerateDefaultCtorBody(
+            PEModuleBuilder moduleBuilder,
+            MethodSymbol routine,
+            VariableSlotAllocator variableSlotAllocatorOpt,
+            DiagnosticBag diagnostics,
+            bool emittingPdb)
+        {
+            var compilation = moduleBuilder.Compilation;
+            var localSlotManager = new LocalSlotManager(variableSlotAllocatorOpt);
+            var optimizations = compilation.Options.OptimizationLevel;
+
+            DebugDocumentProvider debugDocumentProvider = null;
+
+            if (emittingPdb)
+            {
+                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, CreateDebugDocumentForFile);
+            }
+
+            ILBuilder builder = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
+            try
+            {
+                // emit .ctor body
+                // TODO: call base CLR type .ctor
+                // TODO: save <Context> to instance field
+                builder.EmitRet(true);
+
+                //
+                builder.Realize();
+
+                //
+                var localVariables = builder.LocalSlotManager.LocalsInOrder();
+
+                // Only compiler-generated MoveNext methods have iterator scopes.  See if this is one.
+                var stateMachineHoistedLocalScopes = default(ImmutableArray<Cci.StateMachineHoistedLocalScope>);
+                
+                var stateMachineHoistedLocalSlots = default(ImmutableArray<EncHoistedLocalInfo>);
+                var stateMachineAwaiterSlots = default(ImmutableArray<Cci.ITypeReference>);
+                //if (optimizations == OptimizationLevel.Debug && stateMachineTypeOpt != null)
+                //{
+                //    Debug.Assert(method.IsAsync || method.IsIterator);
+                //    GetStateMachineSlotDebugInfo(moduleBuilder, moduleBuilder.GetSynthesizedFields(stateMachineTypeOpt), variableSlotAllocatorOpt, diagnosticsForThisMethod, out stateMachineHoistedLocalSlots, out stateMachineAwaiterSlots);
+                //    Debug.Assert(!diagnostics.HasAnyErrors());
+                //}
+
+                return new MethodBody(
+                    builder.RealizedIL,
+                    builder.MaxStack,
+                    (Cci.IMethodDefinition)routine.PartialDefinitionPart ?? routine,
+                    variableSlotAllocatorOpt?.MethodId ?? new DebugId(0, moduleBuilder.CurrentGenerationOrdinal),
+                    localVariables,
+                    builder.RealizedSequencePoints,
+                    debugDocumentProvider,
+                    builder.RealizedExceptionHandlers,
+                    builder.GetAllScopes(),
+                    builder.HasDynamicLocal,
+                    null, // importScopeOpt,
+                    ImmutableArray<LambdaDebugInfo>.Empty, // lambdaDebugInfo,
+                    ImmutableArray<ClosureDebugInfo>.Empty, // closureDebugInfo,
+                    null, //stateMachineTypeOpt?.Name,
+                    stateMachineHoistedLocalScopes,
+                    stateMachineHoistedLocalSlots,
+                    stateMachineAwaiterSlots,
+                    null);// asyncDebugInfo);
+            }
+            finally
+            {
+                // Basic blocks contain poolable builders for IL and sequence points. Free those back
+                // to their pools.
+                builder.FreeBasicBlocks();
+
+                //// Remember diagnostics.
+                //diagnostics.AddRange(diagnosticsForThisMethod);
+                //diagnosticsForThisMethod.Free();
+            }
+        }
     }
 }

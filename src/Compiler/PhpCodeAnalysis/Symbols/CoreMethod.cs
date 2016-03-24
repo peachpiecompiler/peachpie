@@ -143,9 +143,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <param name="name">Operator name, without <c>op_</c> prefix.</param>
         /// <param name="ptypes">CLR parameters.</param>
         public CoreOperator(CoreType declaringClass, string name, params CoreType[] ptypes)
-            :base(declaringClass, "op_" + name, ptypes)
+            :base(declaringClass, name, ptypes)
         {
-
+            Debug.Assert(name.StartsWith("op_"));
         }
 
         protected override MethodSymbol ResolveSymbol()
@@ -257,12 +257,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 get_Long = ct.PhpNumber.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpNumber.Method("get_Double");   // TODO: special name, property
 
-                Eq_number_number = ct.PhpNumber.Operator("Equality", ct.PhpNumber, ct.PhpNumber);
-                Ineq_number_number = ct.PhpNumber.Operator("Inequality", ct.PhpNumber, ct.PhpNumber);
+                Eq_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpNumber, ct.PhpNumber);
+                Ineq_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpNumber, ct.PhpNumber);
 
-                Add_number_number = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.PhpNumber);
-                Add_number_long = ct.PhpNumber.Operator("Addition", ct.PhpNumber, ct.Long);
-                Add_long_number = ct.PhpNumber.Operator("Addition", ct.Long, ct.PhpNumber);
+                Add_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.PhpNumber);
+                Add_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.Long);
+                Add_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.Long, ct.PhpNumber);
                 Add_double_number = ct.PhpNumber.Method("Add", ct.Double, ct.PhpNumber);
                 Add_number_double = ct.PhpNumber.Method("Add", ct.PhpNumber, ct.Double);
                 Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
@@ -271,28 +271,28 @@ namespace Pchp.CodeAnalysis.Symbols
                 Subtract_long_long = ct.PhpNumber.Method("Sub", ct.Long, ct.Long);
                 Subtract_number_double = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.Double);
                 Subtract_long_double = ct.PhpNumber.Method("Sub", ct.Long, ct.Double);
-                Subtract_number_number = ct.PhpNumber.Operator("Subtraction", ct.PhpNumber, ct.PhpNumber);
-                Subtract_long_number = ct.PhpNumber.Operator("Subtraction", ct.Long, ct.PhpNumber);
-                Subtract_number_long = ct.PhpNumber.Operator("Subtraction", ct.PhpNumber, ct.Long);
-                Negation = ct.PhpNumber.Operator("UnaryNegation", ct.PhpNumber);
+                Subtract_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.PhpNumber, ct.PhpNumber);
+                Subtract_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.Long, ct.PhpNumber);
+                Subtract_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.PhpNumber, ct.Long);
+                Negation = ct.PhpNumber.Operator(WellKnownMemberNames.UnaryNegationOperatorName, ct.PhpNumber);
                 Negation_long = ct.PhpNumber.Method("Minus", ct.Long);
 
-                Division_number_number = ct.PhpNumber.Operator("Division", ct.PhpNumber, ct.PhpNumber);
-                Division_long_number = ct.PhpNumber.Operator("Division", ct.Long, ct.PhpNumber);
+                Division_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.PhpNumber, ct.PhpNumber);
+                Division_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.Long, ct.PhpNumber);
 
-                Mul_number_number = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.PhpNumber);
-                Mul_number_double = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.Double);
-                Mul_number_long = ct.PhpNumber.Operator("Multiply", ct.PhpNumber, ct.Long);
-                Mul_long_number = ct.PhpNumber.Operator("Multiply", ct.Long, ct.PhpNumber);
+                Mul_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.PhpNumber);
+                Mul_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.Double);
+                Mul_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.Long);
+                Mul_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.Long, ct.PhpNumber);
                 Mul_long_long = ct.PhpNumber.Method("Multiply", ct.Long, ct.Long);
                 Mul_long_double = ct.PhpNumber.Method("Multiply", ct.Long, ct.Double);
 
-                gt_number_number = ct.PhpNumber.Operator("GreaterThan", ct.PhpNumber, ct.PhpNumber);
-                gt_number_long = ct.PhpNumber.Operator("GreaterThan", ct.PhpNumber, ct.Long);
-                gt_number_double = ct.PhpNumber.Operator("GreaterThan", ct.PhpNumber, ct.Double);
-                lt_number_number = ct.PhpNumber.Operator("LessThan", ct.PhpNumber, ct.PhpNumber);
-                lt_number_long = ct.PhpNumber.Operator("LessThan", ct.PhpNumber, ct.Long);
-                lt_number_double = ct.PhpNumber.Operator("LessThan", ct.PhpNumber, ct.Double);
+                gt_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.PhpNumber);
+                gt_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.Long);
+                gt_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.Double);
+                lt_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.LessThanOperatorName, ct.PhpNumber, ct.PhpNumber);
+                lt_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.LessThanOperatorName, ct.PhpNumber, ct.Long);
+                lt_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.LessThanOperatorName, ct.PhpNumber, ct.Double);
             }
 
             public readonly CoreMethod
