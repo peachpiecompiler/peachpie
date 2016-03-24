@@ -45,7 +45,7 @@
     <Compile Include="BinaryString.cs" />
     <Compile Include="PhpAttributes.cs" />
     <Compile Include="PhpNumber.cs" />
-    <Compile Include="PhpStringBuilder.cs" />
+    <Compile Include="PhpString.cs" />
     <Compile Include="PhpTypeCode.cs" />
     <Compile Include="PhpValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -94,8 +94,14 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.GlobalConstUse) return BindGlobalConstUse((AST.GlobalConstUse)expr).WithAccess(access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
             if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
+            if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
             
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundExpression BindConcatEx(AST.ConcatEx x)
+        {
+            return new BoundConcatEx(BindArguments(x.Expressions));
         }
 
         BoundRoutineCall BindFunctionCall(AST.FunctionCall x, AccessType access)

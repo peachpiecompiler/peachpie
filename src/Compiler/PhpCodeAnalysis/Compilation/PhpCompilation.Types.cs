@@ -44,7 +44,7 @@ namespace Pchp.CodeAnalysis
 
             Debug.Assert(first != CoreTypes.PhpAlias && second != CoreTypes.PhpAlias);
 
-            // merge is not needed,
+            // merge is not needed:
             if (first == second || first == CoreTypes.PhpValue)
                 return first;
 
@@ -55,12 +55,10 @@ namespace Pchp.CodeAnalysis
             if (IsNumber(first) && IsNumber(second))
                 return CoreTypes.PhpNumber;
 
-            //// a string builder
-            //if (first.IsString && second.IsString)
-            //    return CoreTypes.PhpStringBuilder;
-
-            //
-
+            // a string types unification
+            if (IsAString(first) && IsAString(second))
+                return CoreTypes.PhpString; // a string builder; if both are system.string, system.string is returned earlier
+            
             // most common PHP value type
             return CoreTypes.PhpValue;
         }
@@ -77,6 +75,18 @@ namespace Pchp.CodeAnalysis
                 type.SpecialType == SpecialType.System_Int32 ||
                 type.SpecialType == SpecialType.System_Int64 ||
                 type == CoreTypes.PhpNumber;
+        }
+
+        /// <summary>
+        /// Determines given type is treated as a string (UTF16 string or PHP string builder).
+        /// </summary>
+        public bool IsAString(TypeSymbol type)
+        {
+            Contract.ThrowIfNull(type);
+
+            return
+                type.SpecialType == SpecialType.System_String ||
+                type == CoreTypes.PhpString;
         }
 
         #endregion
@@ -184,6 +194,7 @@ namespace Pchp.CodeAnalysis
                 case PhpTypeCode.Int32: return CoreTypes.Int32;
                 case PhpTypeCode.Boolean: return CoreTypes.Boolean;
                 case PhpTypeCode.String: return CoreTypes.String;
+                case PhpTypeCode.WritableString: return CoreTypes.PhpString;
                 default:
                     throw new NotImplementedException();
             }

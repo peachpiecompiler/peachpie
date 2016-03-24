@@ -32,5 +32,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return tmask.IsSingleType && _routine.TypeRefContext.IsLong(tmask);
         }
+
+        /// <summary>
+        /// Gets value indicating the given type represents UTF16 readonly string and nothing else.
+        /// </summary>
+        internal bool IsReadonlyStringOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && _routine.TypeRefContext.IsReadonlyString(tmask);
+        }
     }
 }

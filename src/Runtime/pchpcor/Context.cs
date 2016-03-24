@@ -28,6 +28,11 @@ namespace Pchp.Core
 
         }
 
+        public void Echo(PhpString value)
+        {
+
+        }
+
         public void Echo(PhpValue value)
         {
 
@@ -47,6 +52,11 @@ namespace Pchp.Core
         }
 
         public void Echo(long value)
+        {
+
+        }
+
+        public void Echo(int value)
         {
 
         }

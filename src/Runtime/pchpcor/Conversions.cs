@@ -63,6 +63,33 @@ namespace Pchp.Core
     [DebuggerNonUserCode]
     public static class Convert
     {
+        /// <summary>
+        /// Gets string representation of a boolean value (according to PHP, it is <c>"1"</c> or <c>""</c>).
+        /// </summary>
+        public static string ToString(bool value)
+        {
+            return value ? "1" : string.Empty;
+        }
+
+        /// <summary>
+        /// Gets string representation of an integer value.
+        /// </summary>
+        public static string ToString(long value) => value.ToString();
+
+        /// <summary>
+        /// Gets string representation of an integer value.
+        /// </summary>
+        public static string ToString(int value) => value.ToString();
+
+        /// <summary>
+        /// Gets string representation of a floating point number value.
+        /// </summary>
+        public static string ToString(double value, Context ctx)
+        {
+            // TODO: according to ctx culture
+            return value.ToString();
+        }
+
         #region String To Number
 
         /// <summary>

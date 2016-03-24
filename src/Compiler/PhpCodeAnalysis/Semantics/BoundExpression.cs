@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundFunctionCall, BoundArgument, BoundEcho
+    #region BoundFunctionCall, BoundArgument, BoundEcho, BoundConcatEx
 
     public partial class BoundArgument : IArgument
     {
@@ -198,6 +198,19 @@ namespace Pchp.CodeAnalysis.Semantics
         public override BoundExpression Instance => null;
 
         public BoundEcho(ImmutableArray<BoundArgument> arguments)
+            : base(arguments)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Represents a string concatenation.
+    /// </summary>
+    public partial class BoundConcatEx : BoundRoutineCall
+    {
+        public override BoundExpression Instance => null;
+
+        public BoundConcatEx(ImmutableArray<BoundArgument> arguments)
             : base(arguments)
         {
         }

@@ -22,9 +22,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Bit masks initialized when such type is added to the context.
         /// Its bits corresponds to <see cref="_typeRefs"/> indices.
         /// </summary>
-        private ulong _isObjectMask, _isArrayMask, _isLongMask, _isDoubleMask, _isBoolMask, _isStringMask, _isPrimitiveMask, _isLambdaMask;
+        private ulong _isObjectMask, _isArrayMask, _isLongMask, _isDoubleMask, _isBoolMask, _isStringMask, _isWritableStringMask, _isPrimitiveMask, _isLambdaMask;
         private ulong IsNumberMask { get { return _isLongMask | _isDoubleMask; } }
-        private ulong IsNullableMask { get { return _isObjectMask | _isArrayMask | _isStringMask | _isLambdaMask; } }
+        private ulong IsAStringMask { get { return _isStringMask | _isWritableStringMask; } }
+        private ulong IsNullableMask { get { return _isObjectMask | _isArrayMask | IsAStringMask | _isLambdaMask; } }
 
         ///// <summary>
         ///// Allowed types for array key.
@@ -76,6 +77,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         internal static readonly PrimitiveTypeRef/*!*/LongTypeRef = new PrimitiveTypeRef(PhpTypeCode.Long);
         internal static readonly PrimitiveTypeRef/*!*/DoubleTypeRef = new PrimitiveTypeRef(PhpTypeCode.Double);
         internal static readonly PrimitiveTypeRef/*!*/StringTypeRef = new PrimitiveTypeRef(PhpTypeCode.String);
+        internal static readonly PrimitiveTypeRef/*!*/WritableStringRef = new PrimitiveTypeRef(PhpTypeCode.WritableString);
         internal static readonly PrimitiveTypeRef/*!*/ArrayTypeRef = new PrimitiveTypeRef(PhpTypeCode.PhpArray);
         
         #endregion
@@ -184,6 +186,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
                     case PhpTypeCode.String:
                         _isStringMask = mask;
+                        break;
+                    case PhpTypeCode.WritableString:
+                        _isWritableStringMask = mask;
                         break;
                 }
             }
@@ -424,6 +429,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 return GetPrimitiveTypeRefMaskNoCheck(StringTypeRef);
+            }
+        }
+
+        /// <summary>
+        /// Gets writable <c>string</c> type (a string builder) for this context.
+        /// </summary>
+        public TypeRefMask GetWritableStringTypeMask()
+        {
+            if (_isWritableStringMask != 0)
+            {
+                return new TypeRefMask(_isWritableStringMask);
+            }
+            else
+            {
+                return GetPrimitiveTypeRefMaskNoCheck(WritableStringRef);
             }
         }
 
@@ -699,9 +719,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsNumber(TypeRefMask mask) { return (mask.Mask & IsNumberMask) != 0; }
 
         /// <summary>
-        /// Gets value indicating whether given type mask represents a string type.
+        /// Gets value indicating whether given type mask represents a string type (readonly or writable).
         /// </summary>
-        public bool IsString(TypeRefMask mask) { return (mask.Mask & _isStringMask) != 0; }
+        public bool IsAString(TypeRefMask mask) { return (mask.Mask & IsAStringMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents UTF16 readonly string.
+        /// </summary>
+        public bool IsReadonlyString(TypeRefMask mask) { return (mask.Mask & _isStringMask) != 0; }
+
+        /// <summary>
+        /// Gets value indicating whether given type mask represents a writablke string (string builder).
+        /// </summary>
+        public bool IsWritableString(TypeRefMask mask) { return (mask.Mask & _isWritableStringMask) != 0; }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a boolean.

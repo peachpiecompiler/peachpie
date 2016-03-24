@@ -659,7 +659,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // type is string if both operands are string
             if ((lValType.IsAnyType && rValType.IsAnyType) ||
-                (TypeCtx.IsString(lValType) && TypeCtx.IsString(rValType)))
+                (TypeCtx.IsAString(lValType) && TypeCtx.IsAString(rValType)))
             {
                 type = TypeCtx.GetStringTypeMask();
             }
@@ -792,7 +792,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 #endregion
 
                 case Operations.Concat:
-                    return TypeCtx.GetStringTypeMask(); // TODO: or binary string, see operands
+                    return TypeCtx.GetWritableStringTypeMask();
 
                 default:
                     throw ExceptionUtilities.Unreachable;
@@ -864,7 +864,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetStringTypeMask(); // binary | unicode | both
 
                 case Operations.BinaryCast:
-                    throw new NotImplementedException();// binary
+                    return TypeCtx.GetWritableStringTypeMask(); // binary string builder
 
                 case Operations.ArrayCast:
                     return TypeCtx.GetArrayTypeMask();  // TODO: can we be more specific?
@@ -895,6 +895,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitEcho((BoundEcho)operation);
             }
+            else if (operation is BoundConcatEx)
+            {
+                VisitConcat((BoundConcatEx)operation);
+            }
             else if (operation is BoundFunctionCall)
             {
                 VisitFunctionCall((BoundFunctionCall)operation);
@@ -908,6 +912,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void VisitEcho(BoundEcho x)
         {
             x.TypeRefMask = 0;
+        }
+
+        protected virtual void VisitConcat(BoundConcatEx x)
+        {
+            x.TypeRefMask = TypeCtx.GetWritableStringTypeMask();
         }
 
         protected virtual void VisitFunctionCall(BoundFunctionCall x)

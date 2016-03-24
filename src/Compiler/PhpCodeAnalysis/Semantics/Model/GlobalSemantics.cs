@@ -61,8 +61,8 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         public IEnumerable<ISemanticFunction> ResolveFunction(QualifiedName name)
         {
             var result =
-                // library functions
-                ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName()).OfType<ISemanticFunction>())
+                // library functions, public static methods
+                ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName()).Where(s => s.IsStatic && s.DeclaredAccessibility == Accessibility.Public).OfType<ISemanticFunction>())
                 // source functions
                 .Concat(Next.ResolveFunction(name));
 

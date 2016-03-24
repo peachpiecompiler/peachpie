@@ -92,8 +92,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpExtensionAttributeName = "Pchp.Core.PhpExtensionAttribute";
 
         public readonly CoreType
-            Context, Operators,
-            PhpNumber, PhpValue, PhpAlias, BinaryString, PhpStringBuilder,
+            Context, Operators, Convert,
+            PhpNumber, PhpValue, PhpAlias, PhpString,
             Void, Object, Int32, Long, Double, Boolean, String;
 
         public CoreTypes(PhpCompilation compilation)
@@ -112,10 +112,10 @@ namespace Pchp.CodeAnalysis.Symbols
             this.PhpNumber = Create("PhpNumber");
             this.PhpAlias = Create("PhpAlias");
             this.PhpValue = Create("PhpValue");
-            this.BinaryString = Create("BinaryString");
-            this.PhpStringBuilder = Create("PhpStringBuilder");
+            this.PhpString = Create("PhpString");
             this.Context = Create("Context");
             this.Operators = Create("Operators");
+            this.Convert = Create("Convert");
         }
 
         #region Table of types

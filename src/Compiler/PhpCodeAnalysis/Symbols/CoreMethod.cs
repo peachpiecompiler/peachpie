@@ -171,6 +171,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly PhpValueHolder PhpValue;
         public readonly PhpNumberHolder PhpNumber;
         public readonly OperatorsHolder Operators;
+        public readonly PhpStringHolder PhpString;
         public readonly ConstructorsHolder Ctors;
 
         public CoreMethods(CoreTypes types)
@@ -179,6 +180,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             PhpValue = new PhpValueHolder(types);
             PhpNumber = new PhpNumberHolder(types);
+            PhpString = new PhpStringHolder(types);
             Operators = new OperatorsHolder(types);
             Ctors = new ConstructorsHolder(types);
         }
@@ -191,18 +193,27 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 PhpAlias_GetValue = ct.PhpAlias.Method("get_Value");
 
+                ToString_Bool = ct.Convert.Method("ToString", ct.Boolean);
+                ToString_Int32 = ct.Convert.Method("ToString", ct.Int32);
+                ToString_Long = ct.Convert.Method("ToString", ct.Long);
+                ToString_Double_Context = ct.Convert.Method("ToString", ct.Double, ct.Context);
+                Long_ToString = ct.Long.Method("ToString");
+
                 Echo_String = ct.Context.Method("Echo", ct.String);
+                Echo_PhpString = ct.Context.Method("Echo", ct.PhpString);
                 Echo_PhpNumber = ct.Context.Method("Echo", ct.PhpNumber);
                 Echo_PhpValue = ct.Context.Method("Echo", ct.PhpValue);
                 Echo_Object = ct.Context.Method("Echo", ct.Object);
                 Echo_Double = ct.Context.Method("Echo", ct.Double);
                 Echo_Long = ct.Context.Method("Echo", ct.Long);
+                Echo_Int32 = ct.Context.Method("Echo", ct.Int32);
             }
 
             public readonly CoreMethod
                 Equal_Object_Object,
                 PhpAlias_GetValue,
-                Echo_Object, Echo_String, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long;
+                ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
+                Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32;
         }
 
         public struct PhpValueHolder
@@ -303,15 +314,34 @@ namespace Pchp.CodeAnalysis.Symbols
                 Negation;
         }
 
+        public struct PhpStringHolder
+        {
+            public PhpStringHolder(CoreTypes ct)
+            {
+                ToBoolean = ct.PhpString.Method("ToBoolean");
+                ToLong = ct.PhpString.Method("ToLong");
+                ToDouble = ct.PhpString.Method("ToDouble");
+                ToString_Context = ct.PhpString.Method("ToString", ct.Context);
+
+                Add_String = ct.PhpString.Method("Add", ct.String);
+            }
+
+            public readonly CoreMethod
+                ToLong, ToDouble, ToBoolean, ToString_Context,
+                Add_String;
+        }
+
         public struct ConstructorsHolder
         {
             public ConstructorsHolder(CoreTypes ct)
             {
                 PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
+                PhpString_int = ct.PhpString.Ctor(ct.Int32);
             }
 
             public readonly CoreConstructor
-                PhpAlias_PhpValue_int;
+                PhpAlias_PhpValue_int,
+                PhpString_int;
         }
     }
 }

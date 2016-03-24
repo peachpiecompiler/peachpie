@@ -325,6 +325,69 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Emits conversion to <c>System.String</c>.
+        /// </summary>
+        public void EmitConvertToString(TypeSymbol from, TypeRefMask fromHint)
+        {
+            Contract.ThrowIfNull(from);
+
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            from = EmitSpecialize(from, fromHint);
+            
+            //
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_String:
+                    // nop
+                    break;
+                case SpecialType.System_Boolean:
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Bool);
+                    break;
+                case SpecialType.System_Int32:
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Int32);
+                    break;
+                case SpecialType.System_Int64:
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Long);
+                    break;
+                case SpecialType.System_Double:
+                    EmitLoadContext();
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Double_Context);
+                    break;
+                default:
+                    if (from == CoreTypes.PhpNumber)
+                    {
+                        EmitPhpNumberAddr(); // PhpNumber -> PhpNumber addr
+                        EmitLoadContext();  // Context
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToString_Context)
+                            .Expect(SpecialType.System_String);
+                        break;
+                    }
+                    else if (from == CoreTypes.PhpString)
+                    {
+                        EmitLoadContext();  // Context
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToString_Context)
+                            .Expect(SpecialType.System_String);
+                        break;
+                    }
+                    else if (from == CoreTypes.PhpValue)
+                    {
+                        EmitPhpValueAddr(); // PhpValue -> PhpValue addr
+                        EmitLoadContext();  // Context
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToString_Context)
+                            .Expect(SpecialType.System_String);
+                        break;
+                    }
+                    throw new NotImplementedException();
+            }
+        }
+
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
         {
             // loads value from place most effectively without runtime type checking
@@ -403,6 +466,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return;
                     }
                 }
+                else if (place.Type == CoreTypes.Long)
+                {
+                    if (to.SpecialType == SpecialType.System_String)
+                    {
+                        // <place>.ToString()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.Long_ToString);
+                        return;
+                    }
+                }
             }
 
             //
@@ -436,6 +509,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 case SpecialType.System_Double:
                     EmitConvertToDouble(from, fromHint);
+                    return;
+                case SpecialType.System_String:
+                    EmitConvertToString(from, fromHint);
                     return;
                 default:
                     if (to == CoreTypes.PhpValue)
@@ -731,6 +807,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitToken(CoreMethods.Ctors.PhpAlias_PhpValue_int.Symbol, null, _diagnostics);
         }
 
+        public void Emit_New_PhpString(int capacity)
+        {
+            // new PhpString(capacity)
+            _il.EmitIntConstant(capacity);
+            _il.EmitOpCode(ILOpCode.Newobj, -1 + 1);    // - 1 out, + 1 in
+            _il.EmitToken(CoreMethods.Ctors.PhpString_int.Symbol, null, _diagnostics);
+        }
+
         /// <summary>
         /// Emits call to given method.
         /// </summary>
@@ -755,7 +839,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // <ctx>.Echo(expr);
 
             this.EmitLoadContext();
-            var type = expr.Emit(this);
+            var type = EmitSpecialize(expr);
 
             MethodSymbol method = null;
 
@@ -771,11 +855,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Double:
                     method = CoreMethods.Operators.Echo_Double.Symbol;
                     break;
+                case SpecialType.System_Int32:
+                    method = CoreMethods.Operators.Echo_Int32.Symbol;
+                    break;
                 case SpecialType.System_Int64:
                     method = CoreMethods.Operators.Echo_Long.Symbol;
                     break;
+                case SpecialType.System_Boolean:
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Bool).Expect(SpecialType.System_String);
+                    method = CoreMethods.Operators.Echo_String.Symbol;
+                    break;
                 default:
-                    if (type == CoreTypes.PhpNumber)
+                    if (type == CoreTypes.PhpString)
+                    {
+                        method = CoreMethods.Operators.Echo_PhpString.Symbol;
+                    }
+                    else if (type == CoreTypes.PhpNumber)
                     {
                         method = CoreMethods.Operators.Echo_PhpNumber.Symbol;
                     }
@@ -798,6 +893,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
+            Debug.Assert(method != null);
             EmitCall(ILOpCode.Call, method);
         }
 

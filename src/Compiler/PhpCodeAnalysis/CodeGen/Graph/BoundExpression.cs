@@ -1024,6 +1024,82 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundConcatEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            var phpstring = il.CoreTypes.PhpString;
+
+            // new PhpString(capacity)
+            il.Emit_New_PhpString(CapacityHint());
+
+            // <STACK>.Add(<expr>)
+            foreach (var x in this.ArgumentsInSourceOrder)
+            {
+                var expr = x.Value;
+                if (IsEmpty(expr))
+                    continue;
+
+                //
+                il.Builder.EmitOpCode(ILOpCode.Dup);    // PhpString
+
+                // TODO: Add overloads for specific types, not System.String only
+                il.EmitConvert(expr, il.CoreTypes.String);
+                il.EmitCall(ILOpCode.Callvirt, il.CoreMethods.PhpString.Add_String);
+            }
+
+            //
+            return phpstring;
+        }
+
+        bool IsEmpty(BoundExpression x)
+        {
+            if (x.ConstantValue.HasValue)
+            {
+                var value = x.ConstantValue.Value;
+                if (value == null)
+                    return true;
+
+                if (value is string && ((string)value).Length == 0)
+                    return true;
+
+                if (value is bool && ((bool)value) == false)
+                    return true;
+            }
+
+            return false;
+        }
+
+
+        /// <summary>
+        /// Guesses initial string builder capacity.
+        /// </summary>
+        int CapacityHint()
+        {
+            int capacity = 0;
+            foreach (var x in this.ArgumentsInSourceOrder)
+            {
+                var expr = x.Value;
+                if (IsEmpty(expr))
+                    continue;
+
+                if (expr is BoundLiteral)
+                {
+                    var value = ((BoundExpression)expr).ConstantValue.Value;
+                    if (value != null)
+                    {
+                        capacity += value.ToString().Length;
+                    }
+                }
+                else
+                {
+                    capacity += 4;
+                }
+            }
+            return capacity;
+        }
+    }
+
     partial class BoundAssignEx
     {
         internal override TypeSymbol Emit(CodeGenerator il)
