@@ -47,7 +47,7 @@ namespace Pchp.Core
         String,
 
         /// <summary>
-        /// Both Unicode and Binary writable string value. Encapsulates teo-byte (UTF16), single-byte (binary) string and string builder.
+        /// Both Unicode and Binary writable string value. Encapsulates two-byte (UTF16), single-byte (binary) string and string builder.
         /// </summary>
         WritableString,
 
