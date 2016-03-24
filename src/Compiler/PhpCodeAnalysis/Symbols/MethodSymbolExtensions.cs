@@ -13,5 +13,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return method.ParameterCount != 0 && method.Parameters[method.ParameterCount - 1].IsParams;
         }
+
+        public static TypeSymbol[] ParametersType(this MethodSymbol method)
+        {
+            return method.Parameters.Select(p => p.Type).ToArray();
+        }
     }
 }

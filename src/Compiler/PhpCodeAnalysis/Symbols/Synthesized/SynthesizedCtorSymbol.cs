@@ -10,7 +10,9 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal class SynthesizedCtorSymbol : MethodSymbol
     {
-        readonly SourceNamedTypeSymbol _type;
+        protected readonly SourceNamedTypeSymbol _type;
+
+        ImmutableArray<ParameterSymbol> _lazyParameters;
 
         public SynthesizedCtorSymbol(SourceNamedTypeSymbol/*!*/type)
         {
@@ -18,13 +20,41 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = type;
         }
 
+        public sealed override Symbol ContainingSymbol => _type;
+
+        public sealed override INamedTypeSymbol ContainingType => _type;
+
         public override bool HidesBaseMethodsByName => false;
 
         internal override bool HasSpecialName => true;
 
-        public override Symbol ContainingSymbol => _type;
-
         public override Accessibility DeclaredAccessibility => Accessibility.Public;
+
+        public sealed override bool IsAbstract => false;
+
+        public sealed override bool IsExtern => false;
+
+        public sealed override bool IsOverride => false;
+
+        public sealed override bool IsSealed => false;
+
+        public override bool IsStatic => false;
+
+        public sealed override bool IsVirtual => false;
+
+        public sealed override MethodKind MethodKind => MethodKind.Constructor;
+
+        public sealed override string Name => IsStatic ? WellKnownMemberNames.StaticConstructorName : WellKnownMemberNames.InstanceConstructorName;
+
+        public sealed override bool ReturnsVoid => true;
+
+        public sealed override TypeSymbol ReturnType => _type.DeclaringCompilation.CoreTypes.Void;
+
+        internal override ObsoleteAttributeData ObsoleteAttributeData => null;
+
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
+
+        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => false;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
@@ -34,18 +64,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override bool IsAbstract => false;
-
-        public override bool IsExtern => false;
-
-        public override bool IsOverride => false;
-
-        public override bool IsSealed => false;
-
-        public override bool IsStatic => false;
-
-        public override bool IsVirtual => false;
-
         public override ImmutableArray<Location> Locations
         {
             get
@@ -54,20 +72,23 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override MethodKind MethodKind => MethodKind.Constructor;
+        public override ImmutableArray<ParameterSymbol> Parameters
+        {
+            get
+            {
+                if (_lazyParameters.IsDefault)
+                {
+                    var ps = new List<ParameterSymbol>(1);
 
-        public override string Name => WellKnownMemberNames.InstanceConstructorName;
+                    // Context <ctx>
+                    ps.Add(new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, ps.Count));
 
-        public override ImmutableArray<ParameterSymbol> Parameters => ImmutableArray<ParameterSymbol>.Empty;    // TODO: (Context)
+                    //
+                    _lazyParameters = ps.AsImmutable();
+                }
 
-        public override bool ReturnsVoid => true;
-
-        public override TypeSymbol ReturnType => _type.DeclaringCompilation.CoreTypes.Void;
-
-        internal override ObsoleteAttributeData ObsoleteAttributeData => null;
-
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
-
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => false;
+                return _lazyParameters;
+            }
+        }
     }
 }

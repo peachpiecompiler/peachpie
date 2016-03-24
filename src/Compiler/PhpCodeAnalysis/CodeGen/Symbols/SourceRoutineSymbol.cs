@@ -32,7 +32,14 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal override IPlace GetContextPlace()
         {
-            // TODO: <this>.<ctx> in instance methods
+            if (!IsStatic && this.ThisParameter != null)
+            {
+                // <this>.<ctx> in instance methods
+                var t = (SourceNamedTypeSymbol)this.ContainingType;
+                return new FieldPlace(GetThisPlace(), t.ContextField);
+            }
+
+            //
             return base.GetContextPlace();
         }
     }

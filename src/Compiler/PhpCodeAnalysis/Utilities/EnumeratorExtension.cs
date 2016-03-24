@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Checks two arrays for equality.
         /// </summary>
-        public static bool Equals<T>(T[]/*!*/arr1, T[]/*!*/arr2) where T : IEquatable<T>
+        public static bool Equals<T>(T[]/*!*/arr1, T[]/*!*/arr2)// where T : IEquatable<T>
         {
             Contract.ThrowIfNull(arr1);
             Contract.ThrowIfNull(arr2);

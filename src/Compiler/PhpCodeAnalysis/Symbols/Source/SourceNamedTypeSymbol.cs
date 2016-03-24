@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.Syntax;
 using Pchp.Syntax.AST;
 using Roslyn.Utilities;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -23,11 +24,10 @@ namespace Pchp.CodeAnalysis.Symbols
         
         NamedTypeSymbol _lazyBaseType;
         MethodSymbol _lazyCtorMethod;   // .ctor
-        //SynthesizedFieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
+        FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
 
         public SourceFileSymbol ContainingFile => _file;
-
-
+        
         public SourceNamedTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
             Contract.ThrowIfNull(file);
@@ -52,8 +52,9 @@ namespace Pchp.CodeAnalysis.Symbols
             yield return CtorMethodSymbol;
         }
 
-        IEnumerable<SourceFieldSymbol> LoadFields()
+        IEnumerable<FieldSymbol> LoadFields()
         {
+            // source fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
             {
                 foreach (var f in flist.Fields)
@@ -61,9 +62,48 @@ namespace Pchp.CodeAnalysis.Symbols
                     yield return new SourceFieldSymbol(this, f, flist.Modifiers);
                 }
             }
+
+            // special fields
+            if (object.ReferenceEquals(ContextField.ContainingType, this))
+                yield return ContextField;
         }
 
         internal MethodSymbol CtorMethodSymbol => _lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedCtorSymbol(this));
+
+        internal FieldSymbol ContextField
+        {
+            get
+            {
+                if (_lazyContextField == null)
+                {
+                    // resolve <ctx> field
+                    var types = DeclaringCompilation.CoreTypes;
+                    NamedTypeSymbol t = this.BaseType;
+                    while (t != null && t != types.Object.Symbol)
+                    {
+                        var candidates = t.GetMembers(SpecialParameterSymbol.ContextName)
+                            .OfType<FieldSymbol>()
+                            .Where(f => f.DeclaredAccessibility == Accessibility.Protected && !f.IsStatic && f.Type == types.Context.Symbol)
+                            .ToList();
+
+                        Debug.Assert(candidates.Count <= 1);
+                        if (candidates.Count != 0)
+                        {
+                            _lazyContextField = candidates[0];
+                            break;
+                        }
+
+                        t = t.BaseType;
+                    }
+
+                    //
+                    if (_lazyContextField == null)
+                        _lazyContextField = new SynthesizedFieldSymbol(this, types.Context.Symbol, SpecialParameterSymbol.ContextName, Accessibility.Protected, false);
+                }
+
+                return _lazyContextField;
+            }
+        }
 
         public override NamedTypeSymbol BaseType
         {

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Cci = Microsoft.Cci;
@@ -180,8 +181,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             try
             {
                 // emit .ctor body
-                // TODO: call base CLR type .ctor
-                // TODO: save <Context> to instance field
+
+                // call base CLR type .ctor
+                EmitBaseCtorCall(builder, routine, diagnostics);
+
+                // save <Context> to instance field
+                EmitContextStore(builder, routine, compilation);
+
+                // return;
+                builder.EmitOpCode(ILOpCode.Nop);
                 builder.EmitRet(true);
 
                 //
@@ -231,6 +239,49 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //// Remember diagnostics.
                 //diagnostics.AddRange(diagnosticsForThisMethod);
                 //diagnosticsForThisMethod.Free();
+            }
+        }
+
+        static void EmitBaseCtorCall(ILBuilder il, MethodSymbol routine, DiagnosticBag diagnostics)
+        {
+            var btype = (NamedTypeSymbol)routine.ContainingType.BaseType;
+            var ctors = btype.InstanceConstructors;
+            var default_ctor = ctors.FirstOrDefault(c => c.ParameterCount == 0);
+            var pass_ctor = ctors.FirstOrDefault(c =>
+                c.ParameterCount == routine.ParameterCount &&
+                EnumeratorExtension.Equals(c.ParametersType(), routine.ParametersType()));
+
+            var ctor = pass_ctor ?? default_ctor;
+            if (ctor != null)
+            {
+                il.EmitLoadArgumentOpcode(0);    // this
+                for (int i = 0; i < ctor.ParameterCount; i++)
+                    il.EmitLoadArgumentOpcode(i + 1);
+                il.EmitOpCode(ILOpCode.Call, -1 - ctor.ParameterCount);
+                il.EmitToken(ctor, null, diagnostics);
+            }
+            else
+            {
+                // nop
+            }
+        }
+
+        static void EmitContextStore(ILBuilder il, MethodSymbol ctor, PhpCompilation compilation)
+        {
+            var ps = ctor.Parameters;
+            if (ps.Length != 0 && ps[0].Type == compilation.CoreTypes.Context)
+            {
+                var t = ctor.ContainingType as SourceNamedTypeSymbol;
+                if (t != null && t.ContextField != null && object.ReferenceEquals(t.ContextField.ContainingType, t))
+                {
+                    // TODO: emit debug.assert(<ctx> != null)
+
+                    // this.<ctx> = <ctx>
+                    il.EmitLoadArgumentOpcode(0);   // this
+                    il.EmitLoadArgumentOpcode(1);   // <ctx>
+                    il.EmitOpCode(ILOpCode.Stfld);
+                    il.EmitToken(t.ContextField, null, DiagnosticBag.GetInstance());
+                }
             }
         }
     }
