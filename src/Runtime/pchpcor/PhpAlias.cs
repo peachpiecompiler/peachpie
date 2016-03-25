@@ -11,7 +11,7 @@ namespace Pchp.Core
     /// Represents an aliased value.
     /// </summary>
     [DebuggerDisplay("{_value.TypeCode} ({_value.GetDebuggerValue}), Refs#{_refcount}")]
-    public class PhpAlias
+    public class PhpAlias : IPhpConvertible
     {
         #region Fields
 
@@ -74,6 +74,24 @@ namespace Pchp.Core
                 // TODO: dispose implicitly
             }
         }
+
+        #endregion
+
+        #region IPhpConvertible
+
+        public PhpTypeCode TypeCode => _value.TypeCode;
+
+        public double ToDouble() => _value.ToDouble();
+
+        public long ToLong() => _value.ToLong();
+
+        public bool ToBoolean() => _value.ToBoolean();
+
+        public Convert.NumberInfo ToNumber(out PhpNumber number) => _value.ToNumber(out number);
+
+        public string ToString(Context ctx) => _value.ToString(ctx);
+
+        public string ToStringOrThrow(Context ctx) => _value.ToStringOrThrow(ctx);
 
         #endregion
     }
