@@ -1,0 +1,9 @@
+﻿{
+  "dependencies": {
+    "Microsoft.DiaSymReader": "1.0.7-beta1-51221",
+    "xunit": "2.1.0"
+  },
+  "frameworks": {
+    "net45": {}
+  }
+}

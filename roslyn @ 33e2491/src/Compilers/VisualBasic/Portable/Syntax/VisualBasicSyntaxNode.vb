@@ -1,0 +1,628 @@
+﻿' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
+Imports System.Collections.Immutable
+Imports System.Collections.ObjectModel
+Imports System.ComponentModel
+Imports System.Reflection
+Imports System.Threading
+Imports Microsoft.CodeAnalysis.Text
+Imports Microsoft.CodeAnalysis.VisualBasic.Symbols
+Imports Microsoft.CodeAnalysis.VisualBasic.Syntax
+
+Namespace Microsoft.CodeAnalysis.VisualBasic
+
+    ''' <summary>
+    ''' The base class for all nodes in the VB syntax tree.
+    ''' </summary>
+    Partial Public MustInherit Class VisualBasicSyntaxNode
+        Inherits SyntaxNode
+
+        ' Constructor. Called only by derived classes.
+        Friend Sub New(green As GreenNode, parent As SyntaxNode, position As Integer)
+            MyBase.New(green, parent, position)
+        End Sub
+
+        ''' <summary>
+        ''' Used by structured trivia which has no parent node, so need to know syntax tree explicitly
+        ''' </summary>
+        Friend Sub New(green As GreenNode, position As Integer, syntaxTree As SyntaxTree)
+            MyBase.New(green, Nothing, position)
+
+            _syntaxTree = syntaxTree
+        End Sub
+
+        Friend Overrides ReadOnly Property Navigator As AbstractSyntaxNavigator
+            Get
+                Return SyntaxNavigator.Instance
+            End Get
+        End Property
+
+        'TODO: may be eventually not needed
+        Friend ReadOnly Property VbGreen As InternalSyntax.VisualBasicSyntaxNode
+            Get
+                Return DirectCast(Me.Green, InternalSyntax.VisualBasicSyntaxNode)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Creates a clone of a red node that can be used as a root of given syntaxTree.
+        ''' New node has no parents, position == 0, and syntaxTree as specified.
+        ''' </summary>
+        Friend Shared Function CloneNodeAsRoot(Of T As VisualBasicSyntaxNode)(node As T, syntaxTree As SyntaxTree) As T
+            Dim clone = DirectCast(node.Green.CreateRed(Nothing, 0), T)
+            clone._syntaxTree = syntaxTree
+
+            Return clone
+        End Function
+
+        ''' <summary>
+        ''' Returns a non-null SyntaxTree that owns this node.
+        ''' If this node was created with an explicit non-null SyntaxTree, returns that tree.
+        ''' Otherwise, if this node has a non-null parent, then returns the parent's SyntaxTree.
+        ''' Otherwise, returns a newly created SyntaxTree rooted at this node, preserving this node's reference identity.
+        ''' </summary>
+        Friend Shadows ReadOnly Property SyntaxTree As SyntaxTree
+            Get
+                If Me._syntaxTree Is Nothing Then
+                    Dim stack = ArrayBuilder(Of SyntaxNode).GetInstance()
+                    Dim tree As SyntaxTree = Nothing
+
+                    Dim current As SyntaxNode = Me
+                    Dim rootCandidate As SyntaxNode = Nothing
+
+                    While current IsNot Nothing
+                        tree = current._syntaxTree
+                        If tree IsNot Nothing Then
+                            Exit While
+                        End If
+
+                        rootCandidate = current
+                        stack.Push(current)
+                        current = rootCandidate.Parent
+                    End While
+
+                    If tree Is Nothing Then
+                        Debug.Assert(rootCandidate IsNot Nothing)
+                        tree = VisualBasicSyntaxTree.CreateWithoutClone(DirectCast(rootCandidate, VisualBasicSyntaxNode))
+                    End If
+
+                    Debug.Assert(tree IsNot Nothing)
+
+                    While stack.Count > 0
+                        Dim alternativeTree As SyntaxTree = Interlocked.CompareExchange(stack.Pop()._syntaxTree, tree, Nothing)
+                        If alternativeTree IsNot Nothing Then
+                            tree = alternativeTree
+                        End If
+                    End While
+
+                    stack.Free()
+                End If
+
+                Return Me._syntaxTree
+            End Get
+        End Property
+
+        Public MustOverride Function Accept(Of TResult)(visitor As VisualBasicSyntaxVisitor(Of TResult)) As TResult
+
+        Public MustOverride Sub Accept(visitor As VisualBasicSyntaxVisitor)
+
+        ''' <summary>
+        ''' Returns the <see cref="SyntaxKind"/> of the node.
+        ''' </summary>
+        Public Function Kind() As SyntaxKind
+            Return CType(Me.Green.RawKind, SyntaxKind)
+        End Function
+
+        Protected Overrides ReadOnly Property KindText As String
+            Get
+                Return Me.Kind.ToString()
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The language name this node is syntax of.
+        ''' </summary>
+        Public Overrides ReadOnly Property Language As String
+            Get
+                Return LanguageNames.VisualBasic
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' The parent of this node.
+        ''' </summary>
+        ''' <value>The parent node of this node, or Nothing if this node is the root.</value>
+        Friend Shadows ReadOnly Property Parent As VisualBasicSyntaxNode
+            Get
+                Return DirectCast(MyBase.Parent, VisualBasicSyntaxNode)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Returns the string representation of this node, not including its leading and trailing trivia.
+        ''' </summary>
+        ''' <returns>The string representation of this node, not including its leading and trailing trivia.</returns>
+        ''' <remarks>The length of the returned string is always the same as Span.Length</remarks>
+        Public NotOverridable Overrides Function ToString() As String
+            Return Me.Green.ToString()
+        End Function
+
+        ''' <summary>
+        ''' Returns full string representation of this node including its leading and trailing trivia.
+        ''' </summary>
+        ''' <returns>The full string representation of this node including its leading and trailing trivia.</returns>
+        ''' <remarks>The length of the returned string is always the same as FullSpan.Length</remarks>
+        Public NotOverridable Overrides Function ToFullString() As String
+            Return Me.Green.ToFullString()
+        End Function
+
+        ''' <summary>
+        ''' Writes the full text of this node to the specified TextWriter
+        ''' </summary>
+        Public Overrides Sub WriteTo(writer As IO.TextWriter)
+            Me.Green.WriteTo(writer)
+        End Sub
+
+#Region "Serialization"
+
+        Private Shared ReadOnly s_binder As RecordingObjectBinder = New ConcurrentRecordingObjectBinder()
+        ''' <summary>
+        ''' Serialize this node to a byte stream.
+        ''' </summary>
+        Public Overrides Sub SerializeTo(stream As IO.Stream, Optional cancellationToken As CancellationToken = Nothing)
+            Using writer = New ObjectWriter(stream, GetDefaultObjectWriterData(), binder:=s_binder, cancellationToken:=cancellationToken)
+                writer.WriteValue(Me.Green)
+            End Using
+        End Sub
+
+        ''' <summary>
+        ''' Deserialize a syntax node from a byte stream.
+        ''' </summary>
+        Public Shared Function DeserializeFrom(stream As IO.Stream, Optional cancellationToken As CancellationToken = Nothing) As SyntaxNode
+            Using reader = New ObjectReader(stream, defaultData:=GetDefaultObjectReaderData(), binder:=s_binder)
+                Return DirectCast(reader.ReadValue(), InternalSyntax.VisualBasicSyntaxNode).CreateRed(Nothing, 0)
+            End Using
+        End Function
+
+        Private Shared s_defaultObjectReaderData As ObjectReaderData
+        Private Shared Function GetDefaultObjectReaderData() As ObjectReaderData
+            If s_defaultObjectReaderData Is Nothing Then
+                Interlocked.CompareExchange(s_defaultObjectReaderData, New ObjectReaderData(GetSerializationData()), Nothing)
+            End If
+            Return s_defaultObjectReaderData
+        End Function
+
+        Private Shared s_defaultObjectWriterData As ObjectWriterData
+        Private Shared Function GetDefaultObjectWriterData() As ObjectWriterData
+            If s_defaultObjectWriterData Is Nothing Then
+                Interlocked.CompareExchange(s_defaultObjectWriterData, New ObjectWriterData(GetSerializationData()), Nothing)
+            End If
+            Return s_defaultObjectWriterData
+        End Function
+
+        Private Shared ReadOnly s_serializationData As IEnumerable(Of Object)
+        Private Shared Function GetSerializationData() As IEnumerable(Of Object)
+            If s_serializationData Is Nothing Then
+                Dim data = New Object() {
+                    GetType(Object).GetTypeInfo().Assembly.FullName,
+                    GetType(Microsoft.CodeAnalysis.DiagnosticInfo).GetTypeInfo().Assembly.FullName,
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode).GetTypeInfo().Assembly.FullName,
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SyntaxToken.TriviaInfo),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SimpleIdentifierSyntax),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.ComplexIdentifierSyntax),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SyntaxList),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SyntaxList.WithTwoChildren),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SyntaxList.WithThreeChildren),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SyntaxList.WithManyChildren),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SyntaxList.WithLotsOfChildren),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.IntegerLiteralTokenSyntax(Of Int32)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.IntegerLiteralTokenSyntax(Of Int16)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.IntegerLiteralTokenSyntax(Of Int64)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.IntegerLiteralTokenSyntax(Of UInt32)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.IntegerLiteralTokenSyntax(Of UInt16)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.IntegerLiteralTokenSyntax(Of UInt64)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.IntegerLiteralTokenSyntax(Of Byte)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.IntegerLiteralTokenSyntax(Of SByte)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.FloatingLiteralTokenSyntax(Of Single)),
+                    GetType(Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.FloatingLiteralTokenSyntax(Of Double)),
+                    GetType(Microsoft.CodeAnalysis.DiagnosticInfo),
+                    GetType(Microsoft.CodeAnalysis.SyntaxAnnotation)
+                } _
+                .Concat(InternalSyntax.SyntaxFactory.GetNodeTypes()) _
+                .Concat(InternalSyntax.SyntaxFactory.GetWellKnownTrivia()) _
+                .ToImmutableArray()
+
+                Interlocked.CompareExchange(s_serializationData, data, Nothing)
+            End If
+
+            Return s_serializationData
+        End Function
+#End Region
+
+        ''' <summary>
+        ''' Returns True if this node represents a directive.
+        ''' </summary>
+        Public ReadOnly Property IsDirective As Boolean
+            Get
+                Return Me.Green.IsDirective
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Same as accessing <see cref="TextSpan.Start"/> on <see cref="Span"/>.
+        ''' </summary>
+        ''' <remarks>
+        ''' Slight performance improvement.
+        ''' </remarks>
+        Public Shadows ReadOnly Property SpanStart As Integer
+            Get
+                Return Position + Me.Green.GetLeadingTriviaWidth()
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Get the preceding trivia nodes of this node. If this node is a token, returns the preceding trivia
+        ''' associated with this node. If this is a non-terminal, returns the preceding trivia of the first token
+        ''' of this node. 
+        ''' </summary>
+        ''' <returns>A list of the preceding trivia.</returns>
+        ''' <remarks>If this node is a non-terminal, the parents of the trivia will be the first token of this 
+        ''' non-terminal; NOT this node.</remarks>
+        Public Shadows Function GetLeadingTrivia() As SyntaxTriviaList
+            Return GetFirstToken(includeZeroWidth:=True).LeadingTrivia
+        End Function
+
+        ''' <summary>
+        ''' Get the following trivia nodes of this node. If this node is a token, returns the following trivia
+        ''' associated with this node. If this is a non-terminal, returns the following trivia of the last token
+        ''' of this node. 
+        ''' </summary>
+        ''' <returns>A list of the following trivia.</returns>
+        ''' <remarks>If this node is a non-terminal, the parents of the trivia will be the first token of this 
+        ''' non-terminal; NOT this node.</remarks>
+        Public Shadows Function GetTrailingTrivia() As SyntaxTriviaList
+            Return GetLastToken(includeZeroWidth:=True).TrailingTrivia
+        End Function
+
+        Friend ReadOnly Property HasErrors As Boolean
+            Get
+                ' TODO (tomat): share impl with C#
+                Return Me.ContainsDiagnostics AndAlso Me.GetSyntaxErrors(Me.SyntaxTree).Any(Function(i) i.Severity = DiagnosticSeverity.Error)
+            End Get
+        End Property
+
+        ' an empty collection of syntax errors.
+        Friend Shared EmptyErrorCollection As New ReadOnlyCollection(Of Diagnostic)(New VBDiagnostic() {})
+
+        ''' <summary>
+        ''' Get all syntax errors associated with this node, or any child nodes, grand-child nodes, etc. The errors
+        ''' are not in order.
+        ''' </summary>
+        Friend Function GetSyntaxErrors(tree As SyntaxTree) As ReadOnlyCollection(Of Diagnostic)
+            Return DoGetSyntaxErrors(tree, Me)
+        End Function
+
+        Friend Shared Function DoGetSyntaxErrors(tree As SyntaxTree, nodeOrToken As SyntaxNodeOrToken) As ReadOnlyCollection(Of Diagnostic)
+            If Not nodeOrToken.ContainsDiagnostics Then
+                Return EmptyErrorCollection
+            Else
+                ' Accumulated a stack of nodes with errors to process.
+
+                Dim nodesToProcess As New Stack(Of SyntaxNodeOrToken)
+                Dim errorList As New List(Of Diagnostic)
+                nodesToProcess.Push(nodeOrToken)
+
+                While nodesToProcess.Count > 0
+                    ' Add errors from current node being processed to the list
+                    nodeOrToken = nodesToProcess.Pop()
+                    Dim node = nodeOrToken.UnderlyingNode
+                    If node.ContainsDiagnostics Then
+                        Dim errors = DirectCast(node, Syntax.InternalSyntax.VisualBasicSyntaxNode).GetDiagnostics
+                        If errors IsNot Nothing Then
+                            For i = 0 To errors.Count - 1
+                                Dim greenError = errors(i)
+                                Debug.Assert(greenError IsNot Nothing)
+                                errorList.Add(CreateSyntaxError(tree, nodeOrToken, greenError))
+                            Next
+                        End If
+                    End If
+
+                    ' Children or trivia must have errors too, based on the count. Add them.
+                    If Not nodeOrToken.IsToken Then
+                        PushNodesWithErrors(nodesToProcess, nodeOrToken.ChildNodesAndTokens())
+                    ElseIf nodeOrToken.IsToken Then
+                        ProcessTrivia(tree, errorList, nodesToProcess, nodeOrToken.GetLeadingTrivia())
+                        ProcessTrivia(tree, errorList, nodesToProcess, nodeOrToken.GetTrailingTrivia())
+                    End If
+                End While
+
+                Return New ReadOnlyCollection(Of Diagnostic)(errorList)
+            End If
+        End Function
+
+        ''' <summary>
+        ''' Push any nodes that have errors in the given collection onto a stack
+        ''' </summary>
+        Private Shared Sub PushNodesWithErrors(stack As Stack(Of SyntaxNodeOrToken), nodes As ChildSyntaxList)
+            Debug.Assert(stack IsNot Nothing)
+
+            For Each n In nodes
+                Debug.Assert(Not n.IsKind(SyntaxKind.None))
+                If n.ContainsDiagnostics Then
+                    stack.Push(n)
+                End If
+            Next
+        End Sub
+
+        Private Shared Sub ProcessTrivia(tree As SyntaxTree,
+                                         errorList As List(Of Diagnostic),
+                                         stack As Stack(Of SyntaxNodeOrToken),
+                                         nodes As SyntaxTriviaList)
+            Debug.Assert(stack IsNot Nothing)
+
+            For Each n In nodes
+                Debug.Assert(n.Kind <> SyntaxKind.None)
+                If n.UnderlyingNode.ContainsDiagnostics Then
+                    If n.HasStructure Then
+                        stack.Push(DirectCast(n.GetStructure, VisualBasicSyntaxNode))
+                    Else
+                        Dim errors = DirectCast(n.UnderlyingNode, InternalSyntax.VisualBasicSyntaxNode).GetDiagnostics
+                        If errors IsNot Nothing Then
+                            For i = 0 To errors.Length - 1
+                                Dim e = errors(i)
+                                errorList.Add(CreateSyntaxError(tree, n, e))
+                            Next
+                        End If
+                    End If
+                End If
+            Next
+        End Sub
+
+        ''' <summary>
+        ''' Given a error info from this node, create the corresponding syntax error with the right span.
+        ''' </summary>
+        Private Shared Function CreateSyntaxError(tree As SyntaxTree, nodeOrToken As SyntaxNodeOrToken, errorInfo As DiagnosticInfo) As Diagnostic
+            Debug.Assert(errorInfo IsNot Nothing)
+
+            ' Translate the green error offset/width relative to my location.
+            Return New VBDiagnostic(errorInfo, If(tree Is Nothing, New SourceLocation(tree, nodeOrToken.Span), tree.GetLocation(nodeOrToken.Span)))
+        End Function
+
+        Private Shared Function CreateSyntaxError(tree As SyntaxTree, nodeOrToken As SyntaxTrivia, errorInfo As DiagnosticInfo) As Diagnostic
+            Debug.Assert(errorInfo IsNot Nothing)
+
+            ' Translate the green error offset/width relative to my location.
+            Return New VBDiagnostic(errorInfo, If(tree Is Nothing, New SourceLocation(tree, nodeOrToken.Span), tree.GetLocation(nodeOrToken.Span)))
+        End Function
+
+        ''' <summary>
+        ''' Compares to tree for structural equivalence.
+        ''' </summary>
+        Friend Shadows Function IsEquivalentTo(other As VisualBasicSyntaxNode) As Boolean
+            If other Is Nothing Then
+                Return False
+            End If
+
+            If Me Is other Then
+                Return True
+            End If
+
+            Return Me.Green.IsEquivalentTo(other.Green)
+        End Function
+
+        ''' <summary>
+        ''' Add an error to the given node, creating a new node that is the same except it has no parent,
+        ''' and has the given error attached to it. The error span is the entire span of this node.
+        ''' </summary>
+        ''' <param name="err">The error to attach to this node</param>
+        ''' <returns>A new node, with no parent, that has this error added to it.</returns>
+        ''' <remarks>Since nodes are immutable, the only way to create nodes with errors attached is to create a node without an error,
+        ''' then add an error with this method to create another node.</remarks>
+        Friend Function AddError(err As DiagnosticInfo) As VisualBasicSyntaxNode
+            Dim errorInfos() As DiagnosticInfo
+
+            ' If the green node already has errors, add those on.
+            If Me.Green.GetDiagnostics Is Nothing Then
+                errorInfos = {err}
+            Else
+                ' Add the error to the error list.
+                errorInfos = Me.Green.GetDiagnostics
+                Dim length As Integer = errorInfos.Length
+                ReDim Preserve errorInfos(length)
+                errorInfos(length) = err
+            End If
+
+            ' Get a new green node with the errors added on.
+            Dim greenWithDiagnostics = Me.Green.SetDiagnostics(errorInfos)
+
+            ' convert to red node with no parent.
+            Dim result = greenWithDiagnostics.CreateRed(Nothing, 0)
+            Debug.Assert(result IsNot Nothing)
+            Return DirectCast(result, VisualBasicSyntaxNode)
+        End Function
+
+        Public Shadows Function GetFirstToken(Optional includeZeroWidth As Boolean = False,
+                                              Optional includeSkipped As Boolean = False,
+                                              Optional includeDirectives As Boolean = False,
+                                              Optional includeDocumentationComments As Boolean = False) As SyntaxToken
+            Return CType(MyBase.GetFirstToken(includeZeroWidth, includeSkipped, includeDirectives, includeDocumentationComments), SyntaxToken)
+        End Function
+
+        Public Shadows Function GetLastToken(Optional includeZeroWidth As Boolean = False,
+                                             Optional includeSkipped As Boolean = False,
+                                             Optional includeDirectives As Boolean = False,
+                                             Optional includeDocumentationComments As Boolean = False) As SyntaxToken
+            Return CType(MyBase.GetLastToken(includeZeroWidth, includeSkipped, includeDirectives, includeDocumentationComments), SyntaxToken)
+        End Function
+
+        Public Function GetDirectives(Optional filter As Func(Of DirectiveTriviaSyntax, Boolean) = Nothing) As IList(Of DirectiveTriviaSyntax)
+            Return (CType(Me, SyntaxNodeOrToken)).GetDirectives(Of DirectiveTriviaSyntax)(filter)
+        End Function
+
+        Public Function GetFirstDirective(Optional predicate As Func(Of DirectiveTriviaSyntax, Boolean) = Nothing) As DirectiveTriviaSyntax
+            Dim child As SyntaxNodeOrToken
+            For Each child In Me.ChildNodesAndTokens()
+                If child.ContainsDirectives Then
+                    If child.IsNode Then
+                        Dim d As DirectiveTriviaSyntax = DirectCast(child.AsNode, VisualBasicSyntaxNode).GetFirstDirective(predicate)
+                        If d IsNot Nothing Then
+                            Return d
+                        End If
+                    Else
+                        Dim tr As SyntaxTrivia
+                        For Each tr In child.AsToken.LeadingTrivia
+                            If tr.IsDirective Then
+                                Dim d As DirectiveTriviaSyntax = DirectCast(tr.GetStructure, DirectiveTriviaSyntax)
+                                If ((predicate Is Nothing) OrElse predicate(d)) Then
+                                    Return d
+                                End If
+                            End If
+                        Next
+                        Continue For
+                    End If
+                End If
+            Next
+            Return Nothing
+        End Function
+
+        Public Function GetLastDirective(Optional predicate As Func(Of DirectiveTriviaSyntax, Boolean) = Nothing) As DirectiveTriviaSyntax
+            Dim child As SyntaxNodeOrToken
+            For Each child In Me.ChildNodesAndTokens().Reverse
+                If child.ContainsDirectives Then
+                    If child.IsNode Then
+                        Dim d As DirectiveTriviaSyntax = DirectCast(child.AsNode, VisualBasicSyntaxNode).GetLastDirective(predicate)
+                        If d IsNot Nothing Then
+                            Return d
+                        End If
+                    Else
+                        Dim token As SyntaxToken = child.AsToken
+                        For Each tr In token.LeadingTrivia.Reverse()
+                            If tr.IsDirective Then
+                                Dim d As DirectiveTriviaSyntax = DirectCast(tr.GetStructure, DirectiveTriviaSyntax)
+                                If ((predicate Is Nothing) OrElse predicate(d)) Then
+                                    Return d
+                                End If
+                            End If
+                        Next
+                    End If
+                End If
+            Next
+            Return Nothing
+        End Function
+
+#Region "Node Lookup"
+        ''' <summary>
+        ''' Returns child node or token that contains given position.
+        ''' </summary>
+        Public Overrides Function ChildThatContainsPosition(position As Integer) As SyntaxNodeOrToken
+            'PERF: it is very important to keep this method fast.
+
+            If Not FullSpan.Contains(position) Then
+                Throw New ArgumentOutOfRangeException(NameOf(position))
+            End If
+
+            Dim childNodeOrToken = ChildSyntaxList.ChildThatContainsPosition(Me, position)
+            Debug.Assert(childNodeOrToken.FullSpan.Contains(position), "ChildThatContainsPosition's return value does not contain the requested position.")
+            Return childNodeOrToken
+        End Function
+#End Region
+
+#Region "Core Overloads"
+        Protected NotOverridable Overrides Function EquivalentToCore(other As SyntaxNode) As Boolean
+            Return Me.IsEquivalentTo(TryCast(other, VisualBasicSyntaxNode))
+        End Function
+
+        Protected Overrides ReadOnly Property SyntaxTreeCore As SyntaxTree
+            Get
+                Return Me.SyntaxTree
+            End Get
+        End Property
+
+        Protected Overrides Function ReplaceCore(Of TNode As SyntaxNode)(
+            Optional nodes As IEnumerable(Of TNode) = Nothing,
+            Optional computeReplacementNode As Func(Of TNode, TNode, SyntaxNode) = Nothing,
+            Optional tokens As IEnumerable(Of SyntaxToken) = Nothing,
+            Optional computeReplacementToken As Func(Of SyntaxToken, SyntaxToken, SyntaxToken) = Nothing,
+            Optional trivia As IEnumerable(Of SyntaxTrivia) = Nothing,
+            Optional computeReplacementTrivia As Func(Of SyntaxTrivia, SyntaxTrivia, SyntaxTrivia) = Nothing) As SyntaxNode
+            Return SyntaxReplacer.Replace(Me, nodes, computeReplacementNode, tokens, computeReplacementToken, trivia, computeReplacementTrivia)
+        End Function
+
+        Protected Overrides Function RemoveNodesCore(nodes As IEnumerable(Of SyntaxNode), options As SyntaxRemoveOptions) As SyntaxNode
+            Return SyntaxNodeRemover.RemoveNodes(Me, nodes, options)
+        End Function
+
+        Protected Overrides Function ReplaceNodeInListCore(originalNode As SyntaxNode, replacementNodes As IEnumerable(Of SyntaxNode)) As SyntaxNode
+            Return SyntaxReplacer.ReplaceNodeInList(Me, originalNode, replacementNodes)
+        End Function
+
+        Protected Overrides Function InsertNodesInListCore(nodeInList As SyntaxNode, nodesToInsert As IEnumerable(Of SyntaxNode), insertBefore As Boolean) As SyntaxNode
+            Return SyntaxReplacer.InsertNodeInList(Me, nodeInList, nodesToInsert, insertBefore)
+        End Function
+
+        Protected Overrides Function ReplaceTokenInListCore(originalToken As SyntaxToken, newTokens As IEnumerable(Of SyntaxToken)) As SyntaxNode
+            Return SyntaxReplacer.ReplaceTokenInList(Me, originalToken, newTokens)
+        End Function
+
+        Protected Overrides Function InsertTokensInListCore(originalToken As SyntaxToken, newTokens As IEnumerable(Of SyntaxToken), insertBefore As Boolean) As SyntaxNode
+            Return SyntaxReplacer.InsertTokenInList(Me, originalToken, newTokens, insertBefore)
+        End Function
+
+        Protected Overrides Function ReplaceTriviaInListCore(originalTrivia As SyntaxTrivia, newTrivia As IEnumerable(Of SyntaxTrivia)) As SyntaxNode
+            Return SyntaxReplacer.ReplaceTriviaInList(Me, originalTrivia, newTrivia)
+        End Function
+
+        Protected Overrides Function InsertTriviaInListCore(originalTrivia As SyntaxTrivia, newTrivia As IEnumerable(Of SyntaxTrivia), insertBefore As Boolean) As SyntaxNode
+            Return SyntaxReplacer.InsertTriviaInList(Me, originalTrivia, newTrivia, insertBefore)
+        End Function
+
+        Protected Overrides Function NormalizeWhitespaceCore(indentation As String, eol As String, elasticTrivia As Boolean) As SyntaxNode
+            Return SyntaxNormalizer.Normalize(Me, indentation, eol, elasticTrivia, useDefaultCasing:=False)
+        End Function
+#End Region
+
+        ''' <summary>
+        ''' Gets the location of this node.
+        ''' </summary>
+        Public Shadows Function GetLocation() As Location
+            ' Note that we want to return 'no location' for all nodes from embedded syntax trees
+            If Me.SyntaxTree IsNot Nothing Then
+                Dim tree = Me.SyntaxTree
+                If tree.IsEmbeddedSyntaxTree Then
+                    Return New EmbeddedTreeLocation(tree.GetEmbeddedKind, Me.Span)
+                ElseIf tree.IsMyTemplate Then
+                    Return New MyTemplateLocation(tree, Me.Span)
+                End If
+            End If
+            Return New SourceLocation(Me)
+        End Function
+
+        ''' <summary>
+        ''' Gets a SyntaxReference for this syntax node. SyntaxReferences can be used to regain access to a
+        ''' syntax node without keeping the entire tree and source text in memory.
+        ''' </summary>
+        Friend Shadows Function GetReference() As SyntaxReference
+            Return SyntaxTree.GetReference(Me)
+        End Function
+
+        ''' <summary>
+        ''' Gets a list of all the diagnostics in the sub tree that has this node as its root.
+        ''' This method does not filter diagnostics based on compiler options like nowarn, warnaserror etc.
+        ''' </summary>
+        Public Shadows Function GetDiagnostics() As IEnumerable(Of Diagnostic)
+            Return SyntaxTree.GetDiagnostics(Me)
+        End Function
+
+        Protected Overrides Function IsEquivalentToCore(node As SyntaxNode, Optional topLevel As Boolean = False) As Boolean
+            Return SyntaxFactory.AreEquivalent(Me, DirectCast(node, VisualBasicSyntaxNode), topLevel)
+        End Function
+
+        Friend Overrides Function TryGetCorrespondingLambdaBody(body As SyntaxNode) As SyntaxNode
+            Return LambdaUtilities.GetCorrespondingLambdaBody(body, Me)
+        End Function
+
+        Friend Overrides Function GetLambda() As SyntaxNode
+            Return LambdaUtilities.GetLambda(Me)
+        End Function
+    End Class
+End Namespace

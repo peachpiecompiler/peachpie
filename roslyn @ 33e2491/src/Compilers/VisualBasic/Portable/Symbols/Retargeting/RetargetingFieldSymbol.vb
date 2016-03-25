@@ -1,0 +1,251 @@
+﻿' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
+Imports System
+Imports System.Collections.Generic
+Imports System.Collections.Immutable
+Imports System.Globalization
+Imports System.Threading
+Imports Microsoft.CodeAnalysis.Text
+Imports Microsoft.CodeAnalysis.VisualBasic.Symbols
+Imports Microsoft.CodeAnalysis.VisualBasic.Syntax
+
+Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols.Retargeting
+
+    ''' <summary>
+    ''' Represents a field in a RetargetingModuleSymbol. Essentially this is a wrapper around 
+    ''' another FieldSymbol that is responsible for retargeting symbols from one assembly to another. 
+    ''' It can retarget symbols for multiple assemblies at the same time.
+    ''' </summary>
+    Friend NotInheritable Class RetargetingFieldSymbol
+        Inherits FieldSymbol
+
+        ''' <summary>
+        ''' Owning RetargetingModuleSymbol.
+        ''' </summary>
+        Private ReadOnly _retargetingModule As RetargetingModuleSymbol
+
+        ''' <summary>
+        ''' The underlying FieldSymbol, cannot be another RetargetingFieldSymbol.
+        ''' </summary>
+        Private ReadOnly _underlyingField As FieldSymbol
+
+        Private _lazyCustomModifiers As ImmutableArray(Of CustomModifier)
+
+        ''' <summary>
+        ''' Retargeted custom attributes
+        ''' </summary>
+        ''' <remarks></remarks>
+        Private _lazyCustomAttributes As ImmutableArray(Of VisualBasicAttributeData)
+
+        Private _lazyUseSiteErrorInfo As DiagnosticInfo = ErrorFactory.EmptyErrorInfo ' Indicates unknown state. 
+
+        Public Sub New(retargetingModule As RetargetingModuleSymbol, underlyingField As FieldSymbol)
+
+            Debug.Assert(retargetingModule IsNot Nothing)
+            Debug.Assert(underlyingField IsNot Nothing)
+
+            If TypeOf underlyingField Is RetargetingFieldSymbol Then
+                Throw New ArgumentException()
+            End If
+
+            _retargetingModule = retargetingModule
+            _underlyingField = underlyingField
+        End Sub
+
+        Private ReadOnly Property RetargetingTranslator As RetargetingModuleSymbol.RetargetingSymbolTranslator
+            Get
+                Return _retargetingModule.RetargetingTranslator
+            End Get
+        End Property
+
+        Public ReadOnly Property UnderlyingField As FieldSymbol
+            Get
+                Return _underlyingField
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property IsImplicitlyDeclared As Boolean
+            Get
+                Return _underlyingField.IsImplicitlyDeclared
+            End Get
+        End Property
+
+        Public ReadOnly Property RetargetingModule As RetargetingModuleSymbol
+            Get
+                Return _retargetingModule
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property Type As TypeSymbol
+            Get
+                Return RetargetingTranslator.Retarget(_underlyingField.Type, RetargetOptions.RetargetPrimitiveTypesByTypeCode)
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property CustomModifiers As ImmutableArray(Of CustomModifier)
+            Get
+                Return RetargetingTranslator.RetargetModifiers(_underlyingField.CustomModifiers, _lazyCustomModifiers)
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property ContainingSymbol As Symbol
+            Get
+                Return RetargetingTranslator.Retarget(_underlyingField.ContainingSymbol)
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property DeclaredAccessibility As Accessibility
+            Get
+                Return _underlyingField.DeclaredAccessibility
+            End Get
+        End Property
+
+        Public Overrides Function GetAttributes() As ImmutableArray(Of VisualBasicAttributeData)
+            Return RetargetingTranslator.GetRetargetedAttributes(_underlyingField, _lazyCustomAttributes)
+        End Function
+
+        Friend Overrides Function GetCustomAttributesToEmit(compilationState As ModuleCompilationState) As IEnumerable(Of VisualBasicAttributeData)
+            Return RetargetingTranslator.RetargetAttributes(_underlyingField.GetCustomAttributesToEmit(compilationState))
+        End Function
+
+        Public Overrides ReadOnly Property ContainingAssembly As AssemblySymbol
+            Get
+                Return _retargetingModule.ContainingAssembly
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property ContainingModule As ModuleSymbol
+            Get
+                Return _retargetingModule
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property Name As String
+            Get
+                Return _underlyingField.Name
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property MetadataName As String
+            Get
+                Return _underlyingField.MetadataName
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property HasSpecialName As Boolean
+            Get
+                Return _underlyingField.HasSpecialName
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property HasRuntimeSpecialName As Boolean
+            Get
+                Return _underlyingField.HasRuntimeSpecialName
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property IsNotSerialized As Boolean
+            Get
+                Return _underlyingField.IsNotSerialized
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property IsMarshalledExplicitly As Boolean
+            Get
+                Return _underlyingField.IsMarshalledExplicitly
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property MarshallingInformation As MarshalPseudoCustomAttributeData
+            Get
+                Return Me.RetargetingTranslator.Retarget(Me.UnderlyingField.MarshallingInformation)
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property MarshallingDescriptor As ImmutableArray(Of Byte)
+            Get
+                Return _underlyingField.MarshallingDescriptor
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property TypeLayoutOffset As Integer?
+            Get
+                Return _underlyingField.TypeLayoutOffset
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property AssociatedSymbol As Symbol
+            Get
+                Dim associated As Symbol = _underlyingField.AssociatedSymbol
+                Return If(associated Is Nothing, Nothing, Me.RetargetingTranslator.Retarget(associated))
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property IsReadOnly As Boolean
+            Get
+                Return _underlyingField.IsReadOnly
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property IsConst As Boolean
+            Get
+                Return _underlyingField.IsConst
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property ConstantValue As Object
+            Get
+                Return _underlyingField.ConstantValue
+            End Get
+        End Property
+
+        Friend Overrides Function GetConstantValue(inProgress As SymbolsInProgress(Of FieldSymbol)) As ConstantValue
+            Return _underlyingField.GetConstantValue(inProgress)
+        End Function
+
+        Public Overrides ReadOnly Property Locations As ImmutableArray(Of Location)
+            Get
+                Return _underlyingField.Locations
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property DeclaringSyntaxReferences As ImmutableArray(Of SyntaxReference)
+            Get
+                Return _underlyingField.DeclaringSyntaxReferences
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property IsShared As Boolean
+            Get
+                Return _underlyingField.IsShared
+            End Get
+        End Property
+
+        Friend Overrides ReadOnly Property ObsoleteAttributeData As ObsoleteAttributeData
+            Get
+                Return _underlyingField.ObsoleteAttributeData
+            End Get
+        End Property
+
+        Friend Overrides Function GetUseSiteErrorInfo() As DiagnosticInfo
+            If _lazyUseSiteErrorInfo Is ErrorFactory.EmptyErrorInfo Then
+                _lazyUseSiteErrorInfo = CalculateUseSiteErrorInfo()
+            End If
+
+            Return _lazyUseSiteErrorInfo
+        End Function
+
+        ''' <remarks>
+        ''' This is for perf, not for correctness.
+        ''' </remarks>
+        Friend Overrides ReadOnly Property DeclaringCompilation As VisualBasicCompilation
+            Get
+                Return Nothing
+            End Get
+        End Property
+
+        Public Overrides Function GetDocumentationCommentXml(Optional preferredCulture As CultureInfo = Nothing, Optional expandIncludes As Boolean = False, Optional cancellationToken As CancellationToken = Nothing) As String
+            Return _underlyingField.GetDocumentationCommentXml(preferredCulture, expandIncludes, cancellationToken)
+        End Function
+    End Class
+End Namespace

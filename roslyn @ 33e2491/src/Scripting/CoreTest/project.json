@@ -1,0 +1,12 @@
+﻿{
+  "dependencies": {
+    "Microsoft.CSharp": "4.0.0",
+    "System.Dynamic.Runtime": "4.0.10",
+    "xunit.runner.console": "2.1.0"
+  },
+  "frameworks": {
+    "dotnet": {
+      "imports": "portable-net452"
+    }
+  }
+}

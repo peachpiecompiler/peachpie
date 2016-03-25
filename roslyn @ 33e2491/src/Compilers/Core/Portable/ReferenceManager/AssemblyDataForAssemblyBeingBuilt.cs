@@ -1,0 +1,134 @@
+﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using Roslyn.Utilities;
+
+namespace Microsoft.CodeAnalysis
+{
+    internal partial class CommonReferenceManager<TCompilation, TAssemblySymbol>
+    {
+        protected sealed class AssemblyDataForAssemblyBeingBuilt : AssemblyData
+        {
+            private readonly AssemblyIdentity _assemblyIdentity;
+
+            // assemblies referenced directly by the assembly:
+            private readonly ImmutableArray<AssemblyData> _referencedAssemblyData;
+
+            // all referenced assembly names including assemblies referenced by modules:
+            private readonly ImmutableArray<AssemblyIdentity> _referencedAssemblies;
+
+            public AssemblyDataForAssemblyBeingBuilt(
+                AssemblyIdentity identity,
+                ImmutableArray<AssemblyData> referencedAssemblyData,
+                ImmutableArray<PEModule> modules)
+            {
+                Debug.Assert(identity != null);
+                Debug.Assert(!referencedAssemblyData.IsDefault);
+
+                _assemblyIdentity = identity;
+
+                _referencedAssemblyData = referencedAssemblyData;
+
+                var refs = ArrayBuilder<AssemblyIdentity>.GetInstance(referencedAssemblyData.Length + modules.Length); //approximate size
+                foreach (AssemblyData data in referencedAssemblyData)
+                {
+                    refs.Add(data.Identity);
+                }
+
+                // add assembly names from modules:
+                for (int i = 1; i <= modules.Length; i++)
+                {
+                    refs.AddRange(modules[i - 1].ReferencedAssemblies);
+                }
+
+                _referencedAssemblies = refs.ToImmutableAndFree();
+            }
+
+            public override AssemblyIdentity Identity
+            {
+                get
+                {
+                    return _assemblyIdentity;
+                }
+            }
+
+            public override ImmutableArray<AssemblyIdentity> AssemblyReferences
+            {
+                get
+                {
+                    return _referencedAssemblies;
+                }
+            }
+
+            public override IEnumerable<TAssemblySymbol> AvailableSymbols
+            {
+                get
+                {
+                    throw ExceptionUtilities.Unreachable;
+                }
+            }
+
+            public override AssemblyReferenceBinding[] BindAssemblyReferences(
+                ImmutableArray<AssemblyData> assemblies,
+                AssemblyIdentityComparer assemblyIdentityComparer)
+            {
+                var boundReferences = new AssemblyReferenceBinding[_referencedAssemblies.Length];
+
+                for (int i = 0; i < _referencedAssemblyData.Length; i++)
+                {
+                    Debug.Assert(ReferenceEquals(_referencedAssemblyData[i], assemblies[i + 1]));
+                    boundReferences[i] = new AssemblyReferenceBinding(assemblies[i + 1].Identity, i + 1);
+                }
+
+                // references from added modules shouldn't resolve against the assembly being built (definition #0)
+                const int definitionStartIndex = 1;
+
+                // resolve references coming from linked modules:
+                for (int i = _referencedAssemblyData.Length; i < _referencedAssemblies.Length; i++)
+                {
+                    boundReferences[i] = ResolveReferencedAssembly(
+                        _referencedAssemblies[i],
+                        assemblies,
+                        definitionStartIndex,
+                        assemblyIdentityComparer); 
+                }
+
+                return boundReferences;
+            }
+
+            public override bool IsMatchingAssembly(TAssemblySymbol assembly)
+            {
+                throw ExceptionUtilities.Unreachable;
+            }
+
+            public override bool ContainsNoPiaLocalTypes
+            {
+                get
+                {
+                    throw ExceptionUtilities.Unreachable;
+                }
+            }
+
+            public override bool IsLinked
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override bool DeclaresTheObjectClass
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override Compilation SourceCompilation => null;
+        }
+    }
+}
