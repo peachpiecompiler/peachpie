@@ -1,7 +1,9 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.Syntax;
 using Pchp.Syntax.AST;
 using Pchp.Syntax.Text;
 using Roslyn.Utilities;
@@ -903,6 +905,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitFunctionCall((BoundFunctionCall)operation);
             }
+            else if (operation is BoundNewEx)
+            {
+                VisitNewEx((BoundNewEx)operation);
+            }
             else
             {
                 throw new NotImplementedException();
@@ -969,6 +975,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 throw new NotImplementedException("ambiguous call");
+            }
+        }
+
+        protected virtual void VisitNewEx(BoundNewEx x)
+        {
+            x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeName, false);
+
+            // resolve target type
+            var type = _model.GetType(x.TypeName);
+            if (type != null)
+            {
+                x.ResultType = type;
+
+                ImmutableArray<IMethodSymbol> candidates;
+
+                // resolve .ctor method (CtorMethod)
+                candidates = type.InstanceConstructors;
+                if (candidates.Length != 1) throw new NotImplementedException();
+                x.CtorMethod = (MethodSymbol)candidates[0];
+
+                // resolve __construct method (TargetMethod)
+                candidates = type.GetMembers(Name.SpecialMethodNames.Construct.Value).OfType<IMethodSymbol>().Where(c => !c.IsStatic).AsImmutable();
+                if (candidates.Length == 1)
+                    x.TargetMethod = (MethodSymbol)candidates[0];
+                else if (candidates.Length > 1)
+                    throw new NotImplementedException();
             }
         }
 

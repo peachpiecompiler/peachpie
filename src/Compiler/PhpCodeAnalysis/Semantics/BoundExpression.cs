@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundFunctionCall, BoundArgument, BoundEcho, BoundConcatEx
+    #region BoundFunctionCall, BoundArgument, BoundEcho, BoundConcatEx, BoundNewEx
 
     public partial class BoundArgument : IArgument
     {
@@ -213,6 +213,31 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundConcatEx(ImmutableArray<BoundArgument> arguments)
             : base(arguments)
         {
+        }
+    }
+
+    /// <summary>
+    /// Direct new expression with a constructor call.
+    /// </summary>
+    public partial class BoundNewEx : BoundRoutineCall
+    {
+        /// <summary>
+        /// Instantiated class type name.
+        /// </summary>
+        public QualifiedName TypeName => _qname;
+        readonly QualifiedName _qname;
+
+        /// <summary>
+        /// Target constructor to be used.
+        /// </summary>
+        internal MethodSymbol CtorMethod { get; set; }
+
+        public override BoundExpression Instance => null;
+
+        public BoundNewEx(QualifiedName qname, ImmutableArray<BoundArgument> arguments)
+            :base(arguments)
+        {
+            _qname = qname;
         }
     }
 

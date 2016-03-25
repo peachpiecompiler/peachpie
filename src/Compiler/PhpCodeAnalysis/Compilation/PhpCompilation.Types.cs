@@ -8,6 +8,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System.Diagnostics;
 using Pchp.Core;
+using Pchp.CodeAnalysis.Semantics.Model;
 
 namespace Pchp.CodeAnalysis
 {
@@ -30,6 +31,13 @@ namespace Pchp.CodeAnalysis
         #endregion
 
         #region PHP Type Hierarchy
+
+        GlobalSemantics _model;
+
+        /// <summary>
+        /// Gets global semantics. To be replaced once we implement SyntaxNode (<see cref="CommonGetSemanticModel"/>).
+        /// </summary>
+        internal GlobalSemantics GlobalSemantics => _model ?? (_model = new GlobalSemantics(this));
 
         /// <summary>
         /// Merges two CLR types into one, according to PCHP type hierarchy.
@@ -171,7 +179,7 @@ namespace Pchp.CodeAnalysis
             }
             else if (t is ClassTypeRef)
             {
-                return CoreTypes.Object;
+                return (NamedTypeSymbol)GlobalSemantics.GetType(t.QualifiedName) ?? CoreTypes.Object.Symbol;
             }
             else if (t is ArrayTypeRef)
             {

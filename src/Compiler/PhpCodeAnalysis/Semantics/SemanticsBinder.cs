@@ -151,8 +151,24 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (expr is AST.DirectVarUse) return BindDirectVarUse((AST.DirectVarUse)expr, access);
             if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
+            if (expr is AST.NewEx) return BindNew((AST.NewEx)expr, access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundExpression BindNew(AST.NewEx x, AccessType access)
+        {
+            Debug.Assert(access == AccessType.Read || access == AccessType.None || access == AccessType.ReadRef);
+
+            if (x.ClassNameRef is AST.DirectTypeRef)
+            {
+                var qname = x.ClassNameRef.GenericQualifiedName;
+                if (!qname.IsGeneric && x.CallSignature.GenericParams.Length == 0)
+                    return new BoundNewEx(qname.QualifiedName, BindArguments(x.CallSignature.Parameters))
+                        .WithAccess(access);
+            }
+
+            throw new NotImplementedException();
         }
 
         BoundExpression BindDirectVarUse(AST.DirectVarUse expr, AccessType access)

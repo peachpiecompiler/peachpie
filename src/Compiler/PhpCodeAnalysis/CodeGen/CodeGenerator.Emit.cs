@@ -518,6 +518,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_String:
                     EmitConvertToString(from, fromHint);
                     return;
+                case SpecialType.System_Object:
+                    // TODO: find common parent
+                    throw new NotImplementedException();    //box ?
                 default:
                     if (to == CoreTypes.PhpValue)
                     {
@@ -829,9 +832,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method)
         {
             Contract.ThrowIfNull(method);
-            Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt);
+            Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt || code == ILOpCode.Newobj);
 
             var stack = GetCallStackBehavior(method);
+
+            if (code == ILOpCode.Newobj)
+                stack++;
+
             _il.EmitOpCode(code, stack);
             _il.EmitToken(_moduleBuilder.Translate(method, _diagnostics, false), null, _diagnostics);
             return method.ReturnType;

@@ -958,27 +958,12 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
-    partial class BoundFunctionCall
+    partial class BoundRoutineCall
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal TypeSymbol EmitCall(CodeGenerator il, ILOpCode code, MethodSymbol target)
         {
-            var method = this.TargetMethod;
-
-            Debug.Assert(method != null);
-
-            if (method == null)
-                throw new InvalidOperationException();  // function call has to be analyzed first
-
-            Debug.Assert(method.IsStatic);
-            Debug.Assert(method.Arity == 0);
-
-            // TODO: emit check the routine is declared; options:
-            // 1. disable checks in release for better performance
-            // 2. autoload script containing routine declaration
-            // 3. throw if routine is not declared
-
             //
-            foreach (var p in method.Parameters)
+            foreach (var p in target.Parameters)
             {
                 Debug.Assert(p.Type.SpecialType != SpecialType.System_Void);
 
@@ -1002,10 +987,31 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
 
-            Debug.Assert(method.Parameters.Length == method.ParameterCount);
-
             //
-            return il.EmitCall(ILOpCode.Call, method);
+            return il.EmitCall(code, target);
+        }
+    }
+
+    partial class BoundFunctionCall
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            var method = this.TargetMethod;
+
+            Debug.Assert(method != null);
+
+            if (method == null)
+                throw new InvalidOperationException();  // function call has to be analyzed first
+
+            Debug.Assert(method.IsStatic);
+            Debug.Assert(method.Arity == 0);
+
+            // TODO: emit check the routine is declared; options:
+            // 1. disable checks in release for better performance
+            // 2. autoload script containing routine declaration
+            // 3. throw if routine is not declared
+
+            return EmitCall(il, ILOpCode.Call, method);
         }
     }
 
@@ -1098,6 +1104,37 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
             return capacity;
+        }
+    }
+
+    partial class BoundNewEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            if (this.CtorMethod == null || this.ResultType == null || this.ResultType is ErrorTypeSymbol)// || this.CtorMethod is ErrorMethodSymbol)
+                throw new InvalidOperationException();
+
+            Debug.Assert(this.ResultType == this.CtorMethod.ContainingType);
+
+            //
+            var type = EmitCall(il, ILOpCode.Newobj, this.CtorMethod);
+
+            if (this.Access != AccessType.None)
+            {
+                il.Builder.EmitOpCode(ILOpCode.Dup);    // +1
+            }
+
+            // explicit __construct ?
+            if (this.TargetMethod != null)
+            {
+                Debug.Assert(!this.TargetMethod.IsStatic);
+                il.Builder.EmitOpCode(ILOpCode.Dup);    // +1
+                var result = EmitCall(il, ILOpCode.Call, this.TargetMethod);
+                il.EmitPop(result); // in case != void
+            }
+
+            //
+            return (TypeSymbol)this.ResultType;
         }
     }
 

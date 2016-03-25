@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
-        readonly ImmutableArray<Symbol> _members;
+        ImmutableArray<Symbol> _lazyMembers;
         
         NamedTypeSymbol _lazyBaseType;
         MethodSymbol _lazyCtorMethod;   // .ctor
@@ -35,9 +35,19 @@ namespace Pchp.CodeAnalysis.Symbols
             _syntax = syntax;
             _file = file;
 
-            _members = LoadMethods()
-                .Concat<Symbol>(LoadFields())
-                .ToImmutableArray();
+            
+        }
+
+        ImmutableArray<Symbol> Members()
+        {
+            if (_lazyMembers.IsDefault)
+            {
+                _lazyMembers = LoadMethods()
+                    .Concat<Symbol>(LoadFields())
+                    .ToImmutableArray();
+            }
+
+            return _lazyMembers;
         }
 
         IEnumerable<MethodSymbol> LoadMethods()
@@ -199,10 +209,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> Interfaces => GetDeclaredInterfaces(null);
 
-        public override ImmutableArray<Symbol> GetMembers() => _members;
+        public override ImmutableArray<Symbol> GetMembers() => Members();
 
         public override ImmutableArray<Symbol> GetMembers(string name)
-            => _members.Where(s => s.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable();
+            => Members().Where(s => s.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable();
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
@@ -216,7 +226,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
-            return _members.OfType<IFieldSymbol>();
+            return Members().OfType<IFieldSymbol>();
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
