@@ -39,6 +39,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string outputDirectory = baseDirectory;
             string outputFileName = null;
             string moduleName = null;
+            string runtimeMetadataVersion = null; // will be read from cor library if not specified in cmd
             string compilationName = null;
             bool optimize = false;
             OutputKind outputKind = OutputKind.ConsoleApplication;
