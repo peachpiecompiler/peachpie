@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +21,6 @@ namespace Pchp.Core
 
         private Context()
         {
-
         }
 
         /// <summary>
@@ -51,17 +51,17 @@ namespace Pchp.Core
 
         public void Echo(string value)
         {
-
+            Console.Write(value);
         }
 
         public void Echo(PhpString value)
         {
-
+            Console.Write(value.ToString(this));    // TODO: echo string builder chunks to avoid concatenation
         }
 
         public void Echo(PhpValue value)
         {
-
+            Console.Write(value.ToString(this));
         }
 
         public void Echo(PhpNumber value)
@@ -74,17 +74,17 @@ namespace Pchp.Core
 
         public void Echo(double value)
         {
-
+            Console.Write(Convert.ToString(value, this));
         }
 
         public void Echo(long value)
         {
-
+            Console.Write(value.ToString());
         }
 
         public void Echo(int value)
         {
-
+            Console.Write(value.ToString());
         }
 
         #endregion
