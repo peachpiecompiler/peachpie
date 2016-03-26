@@ -149,6 +149,23 @@ namespace Pchp.CodeAnalysis
             _moduleBuilder.SetMethodBody(ctorsymbol, body);
         }
 
+        void CompileEntryPoint(CancellationToken cancellationToken)
+        {
+            if (_compilation.Options.OutputKind.IsApplication() && _moduleBuilder != null)
+            {
+                var entryPoint = _compilation.GetEntryPoint(cancellationToken);
+                if (entryPoint != null)
+                {
+                    // wrap call to entryPoint within real <Script>.EntryPointSymbol
+                    _moduleBuilder.CreateEntryPoint((MethodSymbol)entryPoint, _diagnostics);
+
+                    //
+                    Debug.Assert(_moduleBuilder.ScriptType.EntryPointSymbol != null);
+                    _moduleBuilder.SetPEEntryPoint(_moduleBuilder.ScriptType.EntryPointSymbol, _diagnostics);
+                }
+            }
+        }
+
         public static void CompileSources(
             PhpCompilation compilation,
             PEModuleBuilder moduleBuilder,
@@ -178,6 +195,9 @@ namespace Pchp.CodeAnalysis
 
             // 4. Emit method bodies
             compiler.EmitMethodBodies();
+
+            // 5. Entry Point (.exe)
+            compiler.CompileEntryPoint(cancellationToken);
         }
     }
 }

@@ -17,13 +17,15 @@ using Pchp.CodeAnalysis.Emitter;
 
 namespace Pchp.CodeAnalysis.Emit
 {
-    internal class PEModuleBuilder : CommonPEModuleBuilder, Cci.IModule, ITokenDeferral
+    internal partial class PEModuleBuilder : CommonPEModuleBuilder, Cci.IModule, ITokenDeferral
     {
         private readonly SourceModuleSymbol _sourceModule;
         private readonly PhpCompilation _compilation;
         private readonly OutputKind _outputKind;
         private readonly EmitOptions _emitOptions;
         private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
+
+        SynthesizedScriptTypeSymbol _lazyScriptType;
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly StringTokenMap _stringsInILMap = new StringTokenMap();
@@ -146,6 +148,22 @@ namespace Pchp.CodeAnalysis.Emit
             //return normalizedPath;
 
             return path;
+        }
+
+        /// <summary>
+        /// Gets script type containing entry point and additional assembly level symbols.
+        /// </summary>
+        internal SynthesizedScriptTypeSymbol ScriptType
+        {
+            get
+            {
+                if (_lazyScriptType == null)
+                {
+                    _lazyScriptType = new SynthesizedScriptTypeSymbol(_compilation);
+                }
+
+                return _lazyScriptType;
+            }
         }
 
         public string DefaultNamespace
@@ -360,10 +378,7 @@ namespace Pchp.CodeAnalysis.Emit
             return _outputKind.IsNetModule() ? null : (Cci.IAssembly)this;
         }
 
-        public Cci.IAssemblyReference GetCorLibrary(EmitContext context)
-        {
-            throw new NotImplementedException();
-        }
+        public Cci.IAssemblyReference GetCorLibrary(EmitContext context) => Translate(_compilation.CorLibrary, DiagnosticBag.GetInstance());
 
         public IEnumerable<Cci.ITypeReference> GetExportedTypes(EmitContext context)
         {
@@ -487,8 +502,6 @@ namespace Pchp.CodeAnalysis.Emit
                 yield return type;
             }
 
-            // TODO: <global> type containing global functions, constants, variables
-
             var privateImpl = this.PrivateImplClass;
             if (privateImpl != null)
             {
@@ -515,6 +528,9 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal virtual IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypesCore(EmitContext context)
         {
+            // <script> type containing assembly level symbols
+            yield return this.ScriptType;
+
             //foreach (var type in GetAdditionalTopLevelTypes())
             //{
             //    yield return type;

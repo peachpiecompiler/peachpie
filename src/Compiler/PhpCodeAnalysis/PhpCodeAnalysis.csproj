@@ -64,6 +64,7 @@
     <Compile Include="CodeGen\Graph\BoundStatement.cs" />
     <Compile Include="CodeGen\Symbols\SourceRoutineSymbol.cs" />
     <Compile Include="Compilation\AssemblyIdentityReferenceResolver.cs" />
+    <Compile Include="Compilation\PEModuleBuilder.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Emitter\Model\AttributeDataAdapter.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
@@ -179,7 +180,9 @@
     <Compile Include="Semantics\ISemanticModel.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedCtorSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedFieldSymbol.cs" />
+    <Compile Include="Symbols\Synthesized\SynthesizedMethodSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedPropertySymbol.cs" />
+    <Compile Include="Symbols\Synthesized\SynthesizedScriptTypeSymbol.cs" />
     <Compile Include="Symbols\TypedConstantExtensions.cs" />
     <Compile Include="Symbols\TypeSymbol.cs" />
     <Compile Include="Symbols\TypeSymbolExtensions.cs" />

@@ -14,8 +14,34 @@ namespace Pchp.Core
     /// Its instance is passed to all PHP function.
     /// The context is not thread safe.
     /// </remarks>
-    public class Context
+    public class Context : IDisposable
     {
+        #region Create
+
+        private Context()
+        {
+
+        }
+
+        /// <summary>
+        /// Create context to be used within a console application.
+        /// </summary>
+        public static Context CreateConsole()
+        {
+            return new Context();
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        public void Dispose()
+        {
+
+        }
+
+        #endregion
+
         #region Echo
 
         public void Echo(object value)

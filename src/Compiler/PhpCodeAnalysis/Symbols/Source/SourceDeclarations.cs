@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.Symbols
             readonly PhpCompilation _compilation;
 
             SourceFileSymbol _currentFile;
-            
+
             public PopulatorVisitor(PhpCompilation compilation, SourceDeclarations tables)
             {
                 _tables = tables;
@@ -42,6 +42,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     VisitGlobalCode(unit.Ast);
 
+                    //
+                    if (_tables.FirstScript == null)
+                        _tables.FirstScript = _currentFile;
+
+                    //
                     _currentFile = null;
                 }
             }
@@ -64,6 +69,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Dictionary<QualifiedName, SourceNamedTypeSymbol> _types = new Dictionary<QualifiedName, SourceNamedTypeSymbol>();
         readonly Dictionary<QualifiedName, SourceRoutineSymbol> _functions = new Dictionary<QualifiedName, SourceRoutineSymbol>();
         readonly Dictionary<string, SourceFileSymbol> _files = new Dictionary<string, SourceFileSymbol>(StringComparer.OrdinalIgnoreCase);
+
+        internal SourceFileSymbol FirstScript { get; private set; }
 
         #region ISemanticModel
 

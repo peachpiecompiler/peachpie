@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsAbstract => false;
 
-        public override bool IsSealed => true;
+        public override bool IsSealed => false;
 
         public override bool IsStatic => true;
 

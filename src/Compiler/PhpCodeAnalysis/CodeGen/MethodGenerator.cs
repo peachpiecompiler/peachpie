@@ -242,6 +242,78 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Generates method body that calls another method.
+        /// Used for wrapping a method call into a method, e.g. an entry point.
+        /// </summary>
+        internal static MethodBody GenerateMethod(
+            PEModuleBuilder moduleBuilder,
+            MethodSymbol routine,
+            Action<ILBuilder> builder,
+            VariableSlotAllocator variableSlotAllocatorOpt,
+            DiagnosticBag diagnostics,
+            bool emittingPdb)
+        {
+            var compilation = moduleBuilder.Compilation;
+            var localSlotManager = new LocalSlotManager(variableSlotAllocatorOpt);
+            var optimizations = compilation.Options.OptimizationLevel;
+
+            DebugDocumentProvider debugDocumentProvider = null;
+
+            if (emittingPdb)
+            {
+                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, CreateDebugDocumentForFile);
+            }
+
+            ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
+            try
+            {
+                builder(il);
+
+                //
+                il.Realize();
+
+                //
+                var localVariables = il.LocalSlotManager.LocalsInOrder();
+
+                // Only compiler-generated MoveNext methods have iterator scopes.  See if this is one.
+                var stateMachineHoistedLocalScopes = default(ImmutableArray<Cci.StateMachineHoistedLocalScope>);
+
+                var stateMachineHoistedLocalSlots = default(ImmutableArray<EncHoistedLocalInfo>);
+                var stateMachineAwaiterSlots = default(ImmutableArray<Cci.ITypeReference>);
+                
+                return new MethodBody(
+                    il.RealizedIL,
+                    il.MaxStack,
+                    (Cci.IMethodDefinition)routine.PartialDefinitionPart ?? routine,
+                    variableSlotAllocatorOpt?.MethodId ?? new DebugId(0, moduleBuilder.CurrentGenerationOrdinal),
+                    localVariables,
+                    il.RealizedSequencePoints,
+                    debugDocumentProvider,
+                    il.RealizedExceptionHandlers,
+                    il.GetAllScopes(),
+                    il.HasDynamicLocal,
+                    null, // importScopeOpt,
+                    ImmutableArray<LambdaDebugInfo>.Empty, // lambdaDebugInfo,
+                    ImmutableArray<ClosureDebugInfo>.Empty, // closureDebugInfo,
+                    null, //stateMachineTypeOpt?.Name,
+                    stateMachineHoistedLocalScopes,
+                    stateMachineHoistedLocalSlots,
+                    stateMachineAwaiterSlots,
+                    null);// asyncDebugInfo);
+            }
+            finally
+            {
+                // Basic blocks contain poolable builders for IL and sequence points. Free those back
+                // to their pools.
+                il.FreeBasicBlocks();
+
+                //// Remember diagnostics.
+                //diagnostics.AddRange(diagnosticsForThisMethod);
+                //diagnosticsForThisMethod.Free();
+            }
+        }
+
         static void EmitBaseCtorCall(ILBuilder il, MethodSymbol routine, DiagnosticBag diagnostics)
         {
             var btype = (NamedTypeSymbol)routine.ContainingType.BaseType;

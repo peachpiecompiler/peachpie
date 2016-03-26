@@ -68,6 +68,11 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Special main method representing the script global code.
+        /// </summary>
+        internal SourceGlobalMethodSymbol MainMethod => _mainMethod;
+
+        /// <summary>
         /// Lazily adds a function into the list of global functions declared within this file.
         /// </summary>
         internal void AddFunction(SourceFunctionSymbol routine)
@@ -83,7 +88,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var path = _syntax.SourceUnit.FilePath;
-                return "<Files>" + PathUtilities.GetDirectoryName(path);   // TODO: something nice, relative directory
+                return "<Files>"; // + PathUtilities.GetDirectoryName(path);   // TODO: something nice, relative directory
             }
         }
 

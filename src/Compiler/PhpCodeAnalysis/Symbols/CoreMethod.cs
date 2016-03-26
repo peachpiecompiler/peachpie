@@ -173,6 +173,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly OperatorsHolder Operators;
         public readonly PhpStringHolder PhpString;
         public readonly ConstructorsHolder Ctors;
+        public readonly ContextHolder Context;
 
         public CoreMethods(CoreTypes types)
         {
@@ -183,6 +184,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpString = new PhpStringHolder(types);
             Operators = new OperatorsHolder(types);
             Ctors = new ConstructorsHolder(types);
+            Context = new ContextHolder(types);
         }
 
         public struct OperatorsHolder
@@ -344,6 +346,19 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpString_int;
+        }
+
+        public struct ContextHolder
+        {
+            public ContextHolder(CoreTypes ct)
+            {
+                CreateConsole = ct.Context.Method("CreateConsole");
+                Dispose = ct.Context.Method("Dispose");
+            }
+
+            public readonly CoreMethod
+                CreateConsole,
+                Dispose;
         }
     }
 }
