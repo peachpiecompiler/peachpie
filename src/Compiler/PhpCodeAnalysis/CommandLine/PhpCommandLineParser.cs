@@ -1,9 +1,11 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,23 +26,184 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         internal override CommandLineArguments CommonParse(IEnumerable<string> args, string baseDirectory, string sdkDirectoryOpt, string additionalReferenceDirectories)
         {
+            List<Diagnostic> diagnostics = new List<Diagnostic>();
+            List<string> flattenedArgs = new List<string>();
+            List<string> scriptArgs = IsScriptRunner ? new List<string>() : null;
+            FlattenArgs(args, diagnostics, flattenedArgs, scriptArgs, baseDirectory);
+
             var sourceFiles = new List<CommandLineSourceFile>();
             var metadataReferences = new List<CommandLineReference>();
             var analyzers = new List<CommandLineAnalyzerReference>();
             var additionalFiles = new List<CommandLineSourceFile>();
             var managedResources = new List<ResourceDescription>();
+            string outputDirectory = baseDirectory;
             string outputFileName = null;
             string moduleName = null;
+            string runtimeMetadataVersion = ".NET 4.0";
             string compilationName = null;
             bool optimize = false;
-            var outputKind = OutputKind.DynamicallyLinkedLibrary;
+            OutputKind outputKind = OutputKind.ConsoleApplication;
+            bool optionsEnded = false;
+            bool displayHelp = false, displayLogo = true;
+            bool emitPdb = false, debugPlus = false;
+            string mainTypeName = null, pdbPath = null;
+            DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
 
-            // DEBUG
-            sourceFiles.Add(new CommandLineSourceFile("test.php", false));
-            //metadataReferences.Add(new CommandLineReference(@"System.Collections, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", new MetadataReferenceProperties(MetadataImageKind.Assembly)));
-            compilationName = "test";
-            outputFileName = moduleName = "test" + outputKind.GetDefaultExtension();
-            // 
+            foreach (string arg in flattenedArgs)
+            {
+                Debug.Assert(optionsEnded || !arg.StartsWith("@", StringComparison.Ordinal));
+
+                string name, value;
+                if (optionsEnded || !TryParseOption(arg, out name, out value))
+                {
+                    sourceFiles.AddRange(ParseFileArgument(arg, baseDirectory, diagnostics));
+                    continue;
+                }
+
+                switch (name)
+                {
+                    case "?":
+                    case "help":
+                        displayHelp = true;
+                        continue;
+
+                    case "r":
+                    case "reference":
+                        metadataReferences.AddRange(ParseAssemblyReferences(arg, value, diagnostics, embedInteropTypes: false));
+                        continue;
+
+                    case "debug":
+                    case "debug+":
+                        //guard against "debug+:xx"
+                        if (value != null)
+                            break;
+
+                        emitPdb = true;
+                        debugPlus = true;
+                        continue;
+
+                    case "debug-":
+                        if (value != null)
+                            break;
+
+                        emitPdb = false;
+                        debugPlus = false;
+                        continue;
+
+                    case "o":
+                    case "optimize":
+                    case "o+":
+                    case "optimize+":
+                        if (value != null)
+                            break;
+
+                        optimize = true;
+                        continue;
+
+                    case "o-":
+                    case "optimize-":
+                        if (value != null)
+                            break;
+
+                        optimize = false;
+                        continue;
+
+                    case "nologo":
+                        displayLogo = false;
+                        continue;
+
+                    case "m":
+                    case "main":
+                        // Remove any quotes for consistent behavior as MSBuild can return quoted or 
+                        // unquoted main.    
+                        var unquoted = RemoveQuotesAndSlashes(value);
+                        if (string.IsNullOrEmpty(unquoted))
+                        {
+                            //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, "<text>", name);
+                            //continue;
+                            throw new ArgumentException("main");    // TODO: ErrorCode
+                        }
+
+                        mainTypeName = unquoted;
+                        continue;
+
+                    case "pdb":
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            //AddDiagnostic(diagnostics, ErrorCode.ERR_NoFileSpec, arg);
+                            throw new ArgumentException("pdb"); // TODO: ErrorCode
+                        }
+                        else
+                        {
+                            pdbPath = ParsePdbPath(value, diagnostics, baseDirectory);
+                        }
+                        continue;
+
+                    case "out":
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            //AddDiagnostic(diagnostics, ErrorCode.ERR_NoFileSpec, arg);
+                            throw new ArgumentException("out"); // TODO: ErrorCode
+                        }
+                        else
+                        {
+                            ParseOutputFile(value, diagnostics, baseDirectory, out outputFileName, out outputDirectory);
+                        }
+
+                        continue;
+
+                    case "t":
+                    case "target":
+                        if (value == null)
+                        {
+                            break; // force 'unrecognized option'
+                        }
+
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            //AddDiagnostic(diagnostics, ErrorCode.FTL_InvalidTarget);
+                            throw new ArgumentException("target"); // TODO: ErrorCode
+                        }
+                        else
+                        {
+                            outputKind = ParseTarget(value, diagnostics);
+                        }
+
+                        continue;
+
+                    case "modulename":
+                        var unquotedModuleName = RemoveQuotesAndSlashes(value);
+                        if (string.IsNullOrEmpty(unquotedModuleName))
+                        {
+                            //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, MessageID.IDS_Text.Localize(), "modulename");
+                            //continue;
+                            throw new ArgumentException("modulename"); // TODO: ErrorCode
+                        }
+                        else
+                        {
+                            moduleName = unquotedModuleName;
+                        }
+
+                        continue;
+
+                    case "runtimemetadataversion":
+                        unquoted = RemoveQuotesAndSlashes(value);
+                        if (string.IsNullOrEmpty(unquoted))
+                        {
+                            //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, "<text>", name);
+                            //continue;
+                            throw new ArgumentException("runtimemetadataversion"); // TODO: ErrorCode
+                        }
+
+                        runtimeMetadataVersion = unquoted;
+                        continue;
+
+                    default:
+                        break;
+                }
+            }
+
+            GetCompilationAndModuleNames(diagnostics, outputKind, sourceFiles, sourceFiles.Count != 0, /*moduleAssemblyName*/null, ref outputFileName, ref moduleName, out compilationName);
 
             var parseOptions = new PhpParseOptions
             (
@@ -61,7 +224,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             (
                 outputKind: outputKind,
                 moduleName: moduleName,
-                //mainTypeName: mainTypeName,
+                mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
@@ -80,22 +243,22 @@ namespace Pchp.CodeAnalysis.CommandLine
                                           //publicSign: publicSign
             );
 
-            //if (debugPlus)
-            //{
-            //    options = options.WithDebugPlusMode(debugPlus);
-            //}
+            if (debugPlus)
+            {
+                options = options.WithDebugPlusMode(debugPlus);
+            }
 
             var emitOptions = new EmitOptions
             (
                 //metadataOnly: false,
-                debugInformationFormat: DebugInformationFormat.Pdb,
+                debugInformationFormat: debugInformationFormat,
                 //pdbFilePath: null, // to be determined later
                 //outputNameOverride: null, // to be determined later
                 //baseAddress: baseAddress,
                 //highEntropyVirtualAddressSpace: highEntropyVA,
                 //fileAlignment: fileAlignment,
                 //subsystemVersion: subsystemVersion,
-                runtimeMetadataVersion: ".NET 4.0"
+                runtimeMetadataVersion: runtimeMetadataVersion
             );
 
             return new PhpCommandLineArguments()
@@ -109,8 +272,8 @@ namespace Pchp.CodeAnalysis.CommandLine
                 Utf8Output = true,
                 CompilationName = compilationName,
                 OutputFileName = outputFileName,
-                //PdbPath = pdbPath,
-                //EmitPdb = emitPdb,
+                PdbPath = pdbPath,
+                EmitPdb = emitPdb,
                 OutputDirectory = baseDirectory,     // TODO: out dir
                 //DocumentationPath = documentationPath,
                 //ErrorLogPath = errorLogPath,
@@ -128,8 +291,8 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //Win32Icon = win32IconFile,
                 //Win32Manifest = win32ManifestFile,
                 //NoWin32Manifest = noWin32Manifest,
-                //DisplayLogo = displayLogo,
-                //DisplayHelp = displayHelp,
+                DisplayLogo = displayLogo,
+                DisplayHelp = displayHelp,
                 ManifestResources = managedResources.AsImmutable(),
                 CompilationOptions = options,
                 ParseOptions = IsScriptRunner ? scriptParseOptions : parseOptions,
@@ -144,9 +307,144 @@ namespace Pchp.CodeAnalysis.CommandLine
             };
         }
 
+        private void GetCompilationAndModuleNames(
+            List<Diagnostic> diagnostics,
+            OutputKind outputKind,
+            List<CommandLineSourceFile> sourceFiles,
+            bool sourceFilesSpecified,
+            string moduleAssemblyName,
+            ref string outputFileName,
+            ref string moduleName,
+            out string compilationName)
+        {
+            // simple name
+            string simpleName = null;
+            if (outputFileName != null)
+            {
+                simpleName = PathUtilities.GetFileName(outputFileName, false);
+            }
+            else if (sourceFiles.Count != 0)
+            {
+                simpleName = PathUtilities.GetFileName(sourceFiles[0].Path, false);
+            }
+            else
+            {
+                throw new ArgumentException("No source files specified.");  // TODO: ErrorCode
+            }
+
+            // assembly name
+            compilationName = simpleName;
+
+            if (moduleName == null)
+            {
+                moduleName = simpleName;
+            }
+
+            // file name
+            if (outputFileName == null)
+            {
+                outputFileName = simpleName + outputKind.GetDefaultExtension();
+            }
+        }
+
+        private static OutputKind ParseTarget(string value, IList<Diagnostic> diagnostics)
+        {
+            switch (value.ToLowerInvariant())
+            {
+                case "exe":
+                    return OutputKind.ConsoleApplication;
+
+                case "winexe":
+                    return OutputKind.WindowsApplication;
+
+                case "library":
+                    return OutputKind.DynamicallyLinkedLibrary;
+
+                case "module":
+                    return OutputKind.NetModule;
+
+                case "appcontainerexe":
+                    return OutputKind.WindowsRuntimeApplication;
+
+                case "winmdobj":
+                    return OutputKind.WindowsRuntimeMetadata;
+
+                default:
+                    //AddDiagnostic(diagnostics, ErrorCode.FTL_InvalidTarget);
+                    //return OutputKind.ConsoleApplication;
+                    throw new ArgumentException("value");
+            }
+        }
+
         internal override void GenerateErrorForNoFilesFoundInRecurse(string path, IList<Diagnostic> errors)
         {
             // nothing
+        }
+
+        //private static void AddDiagnostic(IList<Diagnostic> diagnostics, ErrorCode errorCode, params object[] arguments)
+        //{
+        //    diagnostics.Add(Diagnostic.Create(Errors.MessageProvider.Instance, (int)errorCode, arguments));
+        //}
+
+        private IEnumerable<CommandLineReference> ParseAssemblyReferences(string arg, string value, IList<Diagnostic> diagnostics, bool embedInteropTypes)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("value");   // TODO: ErrorCode
+
+            //if (value == null)
+            //{
+            //    AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, MessageID.IDS_Text.Localize(), arg);
+            //    yield break;
+            //}
+            //else if (value.Length == 0)
+            //{
+            //    AddDiagnostic(diagnostics, ErrorCode.ERR_NoFileSpec, arg);
+            //    yield break;
+            //}
+
+            int eqlOrQuote = value.IndexOfAny(new[] { '"', '=' });
+
+            string alias;
+            if (eqlOrQuote >= 0 && value[eqlOrQuote] == '=')
+            {
+                alias = value.Substring(0, eqlOrQuote);
+                value = value.Substring(eqlOrQuote + 1);
+
+                //if (!SyntaxFacts.IsValidIdentifier(alias))
+                //{
+                //    AddDiagnostic(diagnostics, ErrorCode.ERR_BadExternIdentifier, alias);
+                //    yield break;
+                //}
+            }
+            else
+            {
+                alias = null;
+            }
+
+            List<string> paths = ParseSeparatedPaths(value).Where((path) => !string.IsNullOrWhiteSpace(path)).ToList();
+            if (alias != null)
+            {
+                //if (paths.Count > 1)
+                //{
+                //    AddDiagnostic(diagnostics, ErrorCode.ERR_OneAliasPerReference, value);
+                //    yield break;
+                //}
+
+                //if (paths.Count == 0)
+                //{
+                //    AddDiagnostic(diagnostics, ErrorCode.ERR_AliasMissingFile, alias);
+                //    yield break;
+                //}
+                throw new NotSupportedException();  // TODO: ErrorCode
+            }
+
+            foreach (string path in paths)
+            {
+                var aliases = (alias != null) ? ImmutableArray.Create(alias) : ImmutableArray<string>.Empty;
+
+                var properties = new MetadataReferenceProperties(MetadataImageKind.Assembly, aliases, embedInteropTypes);
+                yield return new CommandLineReference(path, properties);
+            }
         }
     }
 }
