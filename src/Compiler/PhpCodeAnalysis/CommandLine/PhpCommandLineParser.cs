@@ -224,7 +224,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             (
                 outputKind: outputKind,
                 moduleName: moduleName,
-                mainTypeName: mainTypeName ?? (sourceFiles.Count != 0 ? sourceFiles[0].Path : null),    // or first script file
+                mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,

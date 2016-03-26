@@ -374,52 +374,60 @@ namespace Pchp.CodeAnalysis
         {
             if (_lazyMainMethod == null && this.Options.OutputKind.IsApplication())
             {
-                var maintype = this.Options.MainTypeName;
-                if (string.IsNullOrEmpty(maintype))
+                _lazyMainMethod = FindEntryPoint(cancellationToken);
+                Debug.Assert(_lazyMainMethod != null);  // TODO: ErrorCode
+            }
+            return _lazyMainMethod;
+        }
+
+        MethodSymbol FindEntryPoint(CancellationToken cancellationToken)
+        {
+            var maintype = this.Options.MainTypeName;
+            if (string.IsNullOrEmpty(maintype))
+            {
+                // first script
+                if (this.SourceSymbolTables.FirstScript != null)
+                    return this.SourceSymbolTables.FirstScript.MainMethod;
+            }
+            else
+            {
+                // "ScriptFile"
+                var file = this.SourceSymbolTables.GetFile(maintype);
+                if (file != null)
+                    return file.MainMethod;
+
+                // "Function"
+                var func = this.SourceSymbolTables.GetFunction(new QualifiedName(new Name(maintype)));  // TODO: namespace
+                if (func != null)
+                    return func;
+
+                // Method
+                QualifiedName qname;
+                string methodname = WellKnownMemberNames.EntryPointMethodName;
+
+                var ddot = maintype.IndexOf(Name.ClassMemberSeparator);
+                if (ddot == -1)
                 {
-                    // first script
-                    if (this.SourceSymbolTables.FirstScript != null)
-                        return (_lazyMainMethod = this.SourceSymbolTables.FirstScript.MainMethod);
+                    // "Class"::Main
+                    qname = NameUtils.MakeQualifiedName(methodname, true);
                 }
                 else
                 {
-                    // "ScriptFile"
-                    var file = this.SourceSymbolTables.GetFile(maintype);
-                    if (file != null)
-                        return (_lazyMainMethod = file.MainMethod);
+                    // "Class::Method"
+                    qname = NameUtils.MakeQualifiedName(methodname.Remove(ddot), true);
+                    methodname = methodname.Substring(ddot + Name.ClassMemberSeparator.Length);
+                }
 
-                    // "Function"
-                    var func = this.SourceSymbolTables.GetFunction(new QualifiedName(new Name(maintype)));  // TODO: namespace
-                    if (func != null)
-                        return (_lazyMainMethod = func);
-
-                    // Method
-                    QualifiedName qname;
-                    string methodname = WellKnownMemberNames.EntryPointMethodName;
-
-                    var ddot = maintype.IndexOf(Name.ClassMemberSeparator);
-                    if (ddot == -1)
-                    {
-                        // "Class"::Main
-                        qname = NameUtils.MakeQualifiedName(methodname, true);
-                    }
-                    else
-                    {
-                        // "Class::Method"
-                        qname = NameUtils.MakeQualifiedName(methodname.Remove(ddot), true);
-                        methodname = methodname.Substring(ddot + Name.ClassMemberSeparator.Length);
-                    }
-
-                    var type = this.SourceSymbolTables.GetType(qname);
-                    if (type != null)
-                    {
-                        var mains = type.GetMembers(methodname).OfType<SourceMethodSymbol>().AsImmutable();
-                        if (mains.Length == 1)
-                            return (_lazyMainMethod = mains[0]);
-                    }
+                var type = this.SourceSymbolTables.GetType(qname);
+                if (type != null)
+                {
+                    var mains = type.GetMembers(methodname).OfType<SourceMethodSymbol>().AsImmutable();
+                    if (mains.Length == 1)
+                        return mains[0];
                 }
             }
-            return _lazyMainMethod;
+
+            return null;
         }
 
         protected override SemanticModel CommonGetSemanticModel(SyntaxTree syntaxTree, bool ignoreAccessibility)
