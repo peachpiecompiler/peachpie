@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         readonly DocumentationProvider _documentationProvider;
         
-        internal PEAssembly PEAssembly => _assembly;
+        internal PEAssembly Assembly => _assembly;
 
         public override AssemblyIdentity Identity => _assembly.Identity;
 

@@ -541,6 +541,36 @@ namespace Pchp.CodeAnalysis
             yield break;
         }
 
+        internal string GetRuntimeMetadataVersion(EmitOptions emitOptions, DiagnosticBag diagnostics)
+        {
+            string runtimeMDVersion = GetRuntimeMetadataVersion(emitOptions);
+            if (runtimeMDVersion != null)
+            {
+                return runtimeMDVersion;
+            }
+
+            //DiagnosticBag runtimeMDVersionDiagnostics = DiagnosticBag.GetInstance();
+            //runtimeMDVersionDiagnostics.Add(ErrorCode.WRN_NoRuntimeMetadataVersion, NoLocation.Singleton);
+            //if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref runtimeMDVersionDiagnostics))
+            //{
+            //    return null;
+            //}
+
+            return string.Empty; //prevent emitter from crashing.
+        }
+
+        private string GetRuntimeMetadataVersion(EmitOptions emitOptions)
+        {
+            var corAssembly = SourceAssembly.CorLibrary as PEAssemblySymbol;
+
+            if ((object)corAssembly != null)
+            {
+                return corAssembly.Assembly.ManifestModule.MetadataVersion;
+            }
+
+            return emitOptions.RuntimeMetadataVersion;
+        }
+
         private void SetupWin32Resources(PEModuleBuilder moduleBeingBuilt, Stream win32Resources, DiagnosticBag diagnostics)
         {
             if (win32Resources == null)
@@ -564,7 +594,7 @@ namespace Pchp.CodeAnalysis
         {
             Debug.Assert(!IsSubmission || HasCodeToEmit());
             
-            var runtimeMDVersion = emitOptions.RuntimeMetadataVersion; // GetRuntimeMetadataVersion(emitOptions, diagnostics);
+            var runtimeMDVersion = GetRuntimeMetadataVersion(emitOptions, diagnostics);
             if (runtimeMDVersion == null)
             {
                 Debug.Assert(runtimeMDVersion != null, "Set PhpCommandLineArguments.EmitOptions");

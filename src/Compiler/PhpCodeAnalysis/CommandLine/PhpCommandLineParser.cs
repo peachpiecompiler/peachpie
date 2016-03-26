@@ -39,7 +39,6 @@ namespace Pchp.CodeAnalysis.CommandLine
             string outputDirectory = baseDirectory;
             string outputFileName = null;
             string moduleName = null;
-            string runtimeMetadataVersion = ".NET 4.0";
             string compilationName = null;
             bool optimize = false;
             OutputKind outputKind = OutputKind.ConsoleApplication;
@@ -274,7 +273,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 OutputFileName = outputFileName,
                 PdbPath = pdbPath,
                 EmitPdb = emitPdb,
-                OutputDirectory = baseDirectory,     // TODO: out dir
+                OutputDirectory = outputDirectory,
                 //DocumentationPath = documentationPath,
                 //ErrorLogPath = errorLogPath,
                 //AppConfigPath = appConfigPath,
