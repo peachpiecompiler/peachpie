@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Pchp.Core
 {
-    public static class Console
+    internal static class ConsoleImports
     {
         #region Structure Declarations
 
@@ -96,7 +96,7 @@ namespace Pchp.Core
         private static int hConsoleOutput;  // handle to output buffer
         private static int hConsoleInput;   // handle to input buffer
         
-        static Console()
+        static ConsoleImports()
         {
             // Grab input and output buffer handles
             hConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);

@@ -46,22 +46,24 @@ namespace Pchp.Core
 
         public void Echo(object value)
         {
-            
+            if (value != null)
+                Echo(value.ToString());
         }
 
         public void Echo(string value)
         {
-            Console.Write(value);
+            if (value != null)
+                ConsoleImports.Write(value);
         }
 
         public void Echo(PhpString value)
         {
-            Console.Write(value.ToString(this));    // TODO: echo string builder chunks to avoid concatenation
+            Echo(value.ToString(this));    // TODO: echo string builder chunks to avoid concatenation
         }
 
         public void Echo(PhpValue value)
         {
-            Console.Write(value.ToString(this));
+            ConsoleImports.Write(value.ToString(this));
         }
 
         public void Echo(PhpNumber value)
@@ -74,17 +76,17 @@ namespace Pchp.Core
 
         public void Echo(double value)
         {
-            Console.Write(Convert.ToString(value, this));
+            ConsoleImports.Write(Convert.ToString(value, this));
         }
 
         public void Echo(long value)
         {
-            Console.Write(value.ToString());
+            ConsoleImports.Write(value.ToString());
         }
 
         public void Echo(int value)
         {
-            Console.Write(value.ToString());
+            ConsoleImports.Write(value.ToString());
         }
 
         #endregion
