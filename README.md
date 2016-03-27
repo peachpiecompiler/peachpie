@@ -32,21 +32,28 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Properties   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Interfaces   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Constants  
-   :white_check_mark: Control Flow Graph (CFG), Binder (Roslyn IOperation)     
-   :white_medium_square: SemanticModel (gets symbols to be used by emit)   
-   :white_medium_square: GetTypeFromTypeRef  
-   :white_medium_square: Code Analysis  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Type Analysis    
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Extension Assembly (for global functions, constants, types)  
+   :white_check_mark: Control Flow Graph (CFG)  
+   :white_check_mark: Binder (Roslyn IOperation)     
+   :white_check_mark: SemanticModel (gets symbols to be used by emit)   
+   :white_check_mark: GetTypeFromTypeRef  
+   :white_check_mark: Code Analysis  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Type Analysis  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Inter-procedure and recursion analysis  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: AST transformation   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Constant propagation   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Analyze subsequent string concatenations to optimize as one   
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Value range analysis (value fits into Long, no need for Double)     
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Value range analysis (value fits into Long, no need for Double)     
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Inter-procedure analysis     
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Security analysis     
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Parallelization (as a distributed algorithm)           
-   :white_medium_square: Code generation (Translation into .NET MSIL assembly)   
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Type system, conversions   
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Routines declaration   
+   :white_check_mark: Code generation (Translation into .NET MSIL assembly)   
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Type system, conversions   
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Routines declaration  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Numbers  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Strings  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Objects  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Arrays  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Types declaration   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Destructors (as Dispose)   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Ignore empty destructors   
@@ -80,17 +87,17 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Extended: UnicodeString, SimpleArray (not keyed, same type value)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: PhpValue (Any Type runtime value)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: PhpAlias (aliasing, ref counting, destructors)  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Specific type (known at compile time)  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Specific type (known at compile time)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Lazy copy-on-write (array, string)  
    :white_medium_square: Operators  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Generic operator mechanism for given operands  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Numbers  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Conversions    
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Numbers  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Arrays  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Strings (Unicode and binary)  
    :white_medium_square: Inclusion (static target, dynamic target)  
-   :white_medium_square: Function call  
+   :white_check_mark: Function call  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Ambiguous function call (the one resolved at runtime)  
-   :white_medium_square: Context (actual state of program, global variables, scripts, visible functions and types)  
+   :white_check_mark: Context (actual state of program, global variables, scripts, visible functions and types)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Fast/direct global variables access  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Delegates to actual functions  
    :white_medium_square: Output (echo, buffering)  
