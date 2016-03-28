@@ -571,13 +571,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     if (IsDoubleOnly(tmask))
                     {
                         place.EmitLoadAddress(_il);
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Double)
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Double)
                             .Expect(SpecialType.System_Double);
                     }
                     else if (IsLongOnly(tmask))
                     {
                         place.EmitLoadAddress(_il);
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Long)
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Long)
                             .Expect(SpecialType.System_Int64);
                     }
                 }
