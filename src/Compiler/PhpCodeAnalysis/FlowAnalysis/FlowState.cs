@@ -300,7 +300,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var types = _varsType;
             if (varindex >= 0 && varindex < types.Length)
             {
-                types[varindex] |= type;
+                types[varindex] = type;
                 this.SetVarInitialized(varindex);
                 this.FlowContext.AddVarType(varindex, type);    // TODO: collect merged type information at the end of analysis
             }
