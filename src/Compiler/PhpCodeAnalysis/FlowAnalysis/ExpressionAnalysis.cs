@@ -932,7 +932,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (candidates.IsEmpty && x.AlternativeName.HasValue)
                 candidates = _model.ResolveFunction(x.AlternativeName.Value).ToImmutableArray();
 
-            // overload resolution
+            // TODO: overload resolution
 
             if (candidates.Length == 0)
             {
@@ -950,7 +950,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 int argindex = 0;
                 foreach (var p in x.TargetMethod.Parameters)
                 {
-                    if (!_model.IsSpecialParameter(p) && argindex < args.Length)
+                    if (!p.IsImplicitlyDeclared && argindex < args.Length)
                     {
                         args[argindex++].Parameter = p;
                     }

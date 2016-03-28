@@ -66,6 +66,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
+        // TODO: MultiDictionary
+
         readonly Dictionary<QualifiedName, SourceNamedTypeSymbol> _types = new Dictionary<QualifiedName, SourceNamedTypeSymbol>();
         readonly Dictionary<QualifiedName, SourceRoutineSymbol> _functions = new Dictionary<QualifiedName, SourceRoutineSymbol>();
         readonly Dictionary<string, SourceFileSymbol> _files = new Dictionary<string, SourceFileSymbol>(StringComparer.OrdinalIgnoreCase);
@@ -94,8 +96,6 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             throw new NotImplementedException();
         }
-
-        public bool IsSpecialParameter(ParameterSymbol p) => false;
 
         #endregion
 

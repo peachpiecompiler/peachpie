@@ -38,6 +38,8 @@ namespace Pchp.CodeAnalysis.Symbols
             _index = index;
         }
 
+        public override bool IsImplicitlyDeclared => true;
+
         public override Symbol ContainingSymbol => _symbol;
 
         internal override IModuleSymbol ContainingModule => _symbol.ContainingModule;

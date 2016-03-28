@@ -74,11 +74,6 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             throw new NotImplementedException();
         }
 
-        public bool IsSpecialParameter(ParameterSymbol p)
-        {
-            return p.Type == _compilation.CoreTypes.Context;
-        }
-
         #endregion
     }
 }
