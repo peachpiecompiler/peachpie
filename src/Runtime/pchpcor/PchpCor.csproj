@@ -39,6 +39,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Console\ConsoleImports.cs" />
+    <Compile Include="Context.Output.cs" />
     <Compile Include="Context.cs" />
     <Compile Include="Conversions.cs" />
     <Compile Include="Operators.cs" />
