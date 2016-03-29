@@ -397,7 +397,7 @@ namespace Pchp.CodeAnalysis
                     return file.MainMethod;
 
                 // "Function"
-                var func = this.SourceSymbolTables.GetFunction(new QualifiedName(new Name(maintype)));  // TODO: namespace
+                var func = this.SourceSymbolTables.GetFunction(NameUtils.MakeQualifiedName(maintype, true));
                 if (func != null)
                     return func;
 
