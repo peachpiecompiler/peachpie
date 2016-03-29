@@ -8,6 +8,7 @@ using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Semantics.Model;
 using Pchp.CodeAnalysis.Symbols;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -122,7 +123,8 @@ namespace Pchp.CodeAnalysis
         {
             // default .ctors
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
-                .Select(t => t.CtorMethodSymbol)
+                .Select(t => (SynthesizedCtorSymbol)t.InstanceCtorMethodSymbol)
+                .WhereNotNull()
                 .ForEach(this.EmitCtorBody);
 
             // source routines
@@ -141,11 +143,11 @@ namespace Pchp.CodeAnalysis
             _moduleBuilder.SetMethodBody(routine, body);
         }
 
-        void EmitCtorBody(MethodSymbol ctorsymbol)
+        void EmitCtorBody(SynthesizedCtorSymbol ctorsymbol)
         {
             Contract.ThrowIfNull(ctorsymbol);
             
-            var body = MethodGenerator.GenerateDefaultCtorBody(_moduleBuilder, ctorsymbol, null, _diagnostics, _emittingPdb);
+            var body = MethodGenerator.GenerateCtorBody(_moduleBuilder, ctorsymbol, null, _diagnostics, _emittingPdb);
             _moduleBuilder.SetMethodBody(ctorsymbol, body);
         }
 

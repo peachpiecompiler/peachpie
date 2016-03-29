@@ -76,7 +76,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.Modifiers.IsStatic();
 
-        public override bool IsVirtual => !IsSealed && !_type.IsSealed && !IsStatic;
+        public override bool IsVirtual => !IsSealed && !_type.IsSealed && !IsStatic
+            && Pchp.Syntax.Name.SpecialMethodNames.Construct != _syntax.Name;   // __construct is not overridable
 
         public override ImmutableArray<Location> Locations
         {

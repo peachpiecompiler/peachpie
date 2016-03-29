@@ -227,11 +227,6 @@ namespace Pchp.CodeAnalysis.Semantics
         public QualifiedName TypeName => _qname;
         readonly QualifiedName _qname;
 
-        /// <summary>
-        /// Target constructor to be used.
-        /// </summary>
-        internal MethodSymbol CtorMethod { get; set; }
-
         public override BoundExpression Instance => null;
 
         public BoundNewEx(QualifiedName qname, ImmutableArray<BoundArgument> arguments)

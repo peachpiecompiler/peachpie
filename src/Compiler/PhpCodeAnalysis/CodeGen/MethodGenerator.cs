@@ -35,27 +35,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             //ImportChain importChainOpt,
             bool emittingPdb)
         {
-            // Note: don't call diagnostics.HasAnyErrors() in release; could be expensive if compilation has many warnings.
-            Debug.Assert(!diagnostics.HasAnyErrors(), "Running code generator when errors exist might be dangerous; code generator not expecting errors");
-
-            var compilation = moduleBuilder.Compilation;
-            var localSlotManager = new LocalSlotManager(variableSlotAllocatorOpt);
-            var optimizations = compilation.Options.OptimizationLevel;
-
-            DebugDocumentProvider debugDocumentProvider = null;
-
-            if (emittingPdb)
+            return GenerateMethodBody(moduleBuilder, routine, (builder) =>
             {
-                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, CreateDebugDocumentForFile);
-            }
-
-            ILBuilder builder = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
-            DiagnosticBag diagnosticsForThisMethod = DiagnosticBag.GetInstance();
-            try
-            {
-                Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
-
-                var codeGen = new CodeGenerator(routine, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
+                DiagnosticBag diagnosticsForThisMethod = DiagnosticBag.GetInstance();
+                var optimization = moduleBuilder.Compilation.Options.OptimizationLevel;
+                var codeGen = new CodeGenerator(routine, builder, moduleBuilder, diagnosticsForThisMethod, optimization, emittingPdb);
 
                 //if (diagnosticsForThisMethod.HasAnyErrors())
                 //{
@@ -87,12 +71,44 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     codeGen.Generate();
                 }
+            }, variableSlotAllocatorOpt, diagnostics, emittingPdb);
+        }
+
+        /// <summary>
+        /// Generates method body that calls another method.
+        /// Used for wrapping a method call into a method, e.g. an entry point.
+        /// </summary>
+        internal static MethodBody GenerateMethodBody(
+            PEModuleBuilder moduleBuilder,
+            MethodSymbol routine,
+            Action<ILBuilder> builder,
+            VariableSlotAllocator variableSlotAllocatorOpt,
+            DiagnosticBag diagnostics,
+            bool emittingPdb)
+        {
+            var compilation = moduleBuilder.Compilation;
+            var localSlotManager = new LocalSlotManager(variableSlotAllocatorOpt);
+            var optimizations = compilation.Options.OptimizationLevel;
+
+            DebugDocumentProvider debugDocumentProvider = null;
+
+            if (emittingPdb)
+            {
+                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, CreateDebugDocumentForFile);
+            }
+
+            ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
+            try
+            {
+                Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
+
+                builder(il);
 
                 //
-                builder.Realize();
+                il.Realize();
 
                 //
-                var localVariables = builder.LocalSlotManager.LocalsInOrder();
+                var localVariables = il.LocalSlotManager.LocalsInOrder();
 
                 if (localVariables.Length > 0xFFFE)
                 {
@@ -128,161 +144,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //}
 
                 return new MethodBody(
-                    builder.RealizedIL,
-                    builder.MaxStack,
-                    (Cci.IMethodDefinition)routine.PartialDefinitionPart ?? routine,
-                    variableSlotAllocatorOpt?.MethodId ?? new DebugId(methodOrdinal, moduleBuilder.CurrentGenerationOrdinal),
-                    localVariables,
-                    builder.RealizedSequencePoints,
-                    debugDocumentProvider,
-                    builder.RealizedExceptionHandlers,
-                    builder.GetAllScopes(),
-                    builder.HasDynamicLocal,
-                    null, // importScopeOpt,
-                    ImmutableArray<LambdaDebugInfo>.Empty, // lambdaDebugInfo,
-                    ImmutableArray<ClosureDebugInfo>.Empty, // closureDebugInfo,
-                    null, //stateMachineTypeOpt?.Name,
-                    stateMachineHoistedLocalScopes,
-                    stateMachineHoistedLocalSlots,
-                    stateMachineAwaiterSlots,
-                    asyncDebugInfo);
-            }
-            finally
-            {
-                // Basic blocks contain poolable builders for IL and sequence points. Free those back
-                // to their pools.
-                builder.FreeBasicBlocks();
-
-                //// Remember diagnostics.
-                //diagnostics.AddRange(diagnosticsForThisMethod);
-                //diagnosticsForThisMethod.Free();
-            }
-        }
-
-        internal static MethodBody GenerateDefaultCtorBody(
-            PEModuleBuilder moduleBuilder,
-            MethodSymbol routine,
-            VariableSlotAllocator variableSlotAllocatorOpt,
-            DiagnosticBag diagnostics,
-            bool emittingPdb)
-        {
-            var compilation = moduleBuilder.Compilation;
-            var localSlotManager = new LocalSlotManager(variableSlotAllocatorOpt);
-            var optimizations = compilation.Options.OptimizationLevel;
-
-            DebugDocumentProvider debugDocumentProvider = null;
-
-            if (emittingPdb)
-            {
-                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, CreateDebugDocumentForFile);
-            }
-
-            ILBuilder builder = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
-            try
-            {
-                // emit .ctor body
-
-                // call base CLR type .ctor
-                EmitBaseCtorCall(builder, routine, diagnostics);
-
-                // save <Context> to instance field
-                EmitContextStore(builder, routine, compilation);
-
-                // return;
-                builder.EmitOpCode(ILOpCode.Nop);
-                builder.EmitRet(true);
-
-                //
-                builder.Realize();
-
-                //
-                var localVariables = builder.LocalSlotManager.LocalsInOrder();
-
-                // Only compiler-generated MoveNext methods have iterator scopes.  See if this is one.
-                var stateMachineHoistedLocalScopes = default(ImmutableArray<Cci.StateMachineHoistedLocalScope>);
-                
-                var stateMachineHoistedLocalSlots = default(ImmutableArray<EncHoistedLocalInfo>);
-                var stateMachineAwaiterSlots = default(ImmutableArray<Cci.ITypeReference>);
-                //if (optimizations == OptimizationLevel.Debug && stateMachineTypeOpt != null)
-                //{
-                //    Debug.Assert(method.IsAsync || method.IsIterator);
-                //    GetStateMachineSlotDebugInfo(moduleBuilder, moduleBuilder.GetSynthesizedFields(stateMachineTypeOpt), variableSlotAllocatorOpt, diagnosticsForThisMethod, out stateMachineHoistedLocalSlots, out stateMachineAwaiterSlots);
-                //    Debug.Assert(!diagnostics.HasAnyErrors());
-                //}
-
-                return new MethodBody(
-                    builder.RealizedIL,
-                    builder.MaxStack,
-                    (Cci.IMethodDefinition)routine.PartialDefinitionPart ?? routine,
-                    variableSlotAllocatorOpt?.MethodId ?? new DebugId(0, moduleBuilder.CurrentGenerationOrdinal),
-                    localVariables,
-                    builder.RealizedSequencePoints,
-                    debugDocumentProvider,
-                    builder.RealizedExceptionHandlers,
-                    builder.GetAllScopes(),
-                    builder.HasDynamicLocal,
-                    null, // importScopeOpt,
-                    ImmutableArray<LambdaDebugInfo>.Empty, // lambdaDebugInfo,
-                    ImmutableArray<ClosureDebugInfo>.Empty, // closureDebugInfo,
-                    null, //stateMachineTypeOpt?.Name,
-                    stateMachineHoistedLocalScopes,
-                    stateMachineHoistedLocalSlots,
-                    stateMachineAwaiterSlots,
-                    null);// asyncDebugInfo);
-            }
-            finally
-            {
-                // Basic blocks contain poolable builders for IL and sequence points. Free those back
-                // to their pools.
-                builder.FreeBasicBlocks();
-
-                //// Remember diagnostics.
-                //diagnostics.AddRange(diagnosticsForThisMethod);
-                //diagnosticsForThisMethod.Free();
-            }
-        }
-
-        /// <summary>
-        /// Generates method body that calls another method.
-        /// Used for wrapping a method call into a method, e.g. an entry point.
-        /// </summary>
-        internal static MethodBody GenerateMethod(
-            PEModuleBuilder moduleBuilder,
-            MethodSymbol routine,
-            Action<ILBuilder> builder,
-            VariableSlotAllocator variableSlotAllocatorOpt,
-            DiagnosticBag diagnostics,
-            bool emittingPdb)
-        {
-            var compilation = moduleBuilder.Compilation;
-            var localSlotManager = new LocalSlotManager(variableSlotAllocatorOpt);
-            var optimizations = compilation.Options.OptimizationLevel;
-
-            DebugDocumentProvider debugDocumentProvider = null;
-
-            if (emittingPdb)
-            {
-                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, CreateDebugDocumentForFile);
-            }
-
-            ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
-            try
-            {
-                builder(il);
-
-                //
-                il.Realize();
-
-                //
-                var localVariables = il.LocalSlotManager.LocalsInOrder();
-
-                // Only compiler-generated MoveNext methods have iterator scopes.  See if this is one.
-                var stateMachineHoistedLocalScopes = default(ImmutableArray<Cci.StateMachineHoistedLocalScope>);
-
-                var stateMachineHoistedLocalSlots = default(ImmutableArray<EncHoistedLocalInfo>);
-                var stateMachineAwaiterSlots = default(ImmutableArray<Cci.ITypeReference>);
-                
-                return new MethodBody(
                     il.RealizedIL,
                     il.MaxStack,
                     (Cci.IMethodDefinition)routine.PartialDefinitionPart ?? routine,
@@ -300,7 +161,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     stateMachineHoistedLocalScopes,
                     stateMachineHoistedLocalSlots,
                     stateMachineAwaiterSlots,
-                    null);// asyncDebugInfo);
+                    asyncDebugInfo);
             }
             finally
             {
@@ -314,47 +175,88 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        static void EmitBaseCtorCall(ILBuilder il, MethodSymbol routine, DiagnosticBag diagnostics)
+        internal static MethodBody GenerateCtorBody(
+            PEModuleBuilder moduleBuilder,
+            SynthesizedCtorSymbol routine,
+            VariableSlotAllocator variableSlotAllocatorOpt,
+            DiagnosticBag diagnostics,
+            bool emittingPdb)
         {
-            var btype = (NamedTypeSymbol)routine.ContainingType.BaseType;
-            var ctors = btype.InstanceConstructors;
-            var default_ctor = ctors.FirstOrDefault(c => c.ParameterCount == 0);
-            var pass_ctor = ctors.FirstOrDefault(c =>
-                c.ParameterCount == routine.ParameterCount &&
-                EnumeratorExtension.Equals(c.ParametersType(), routine.ParametersType()));
+            Debug.Assert(!routine.IsStatic);
 
-            var ctor = pass_ctor ?? default_ctor;
-            if (ctor != null)
+            return GenerateMethodBody(moduleBuilder, routine, (il) =>
             {
-                il.EmitLoadArgumentOpcode(0);    // this
-                for (int i = 0; i < ctor.ParameterCount; i++)
-                    il.EmitLoadArgumentOpcode(i + 1);
-                il.EmitOpCode(ILOpCode.Call, -1 - ctor.ParameterCount);
-                il.EmitToken(ctor, null, diagnostics);
-            }
-            else
-            {
-                // nop
-            }
-        }
+                var compilation = moduleBuilder.Compilation;
+                var parameters = routine.Parameters;
+                Debug.Assert(parameters[0].Type == compilation.CoreTypes.Context);    // first parameter always <ctx>
 
-        static void EmitContextStore(ILBuilder il, MethodSymbol ctor, PhpCompilation compilation)
-        {
-            var ps = ctor.Parameters;
-            if (ps.Length != 0 && ps[0].Type == compilation.CoreTypes.Context)
-            {
-                var t = ctor.ContainingType as SourceNamedTypeSymbol;
-                if (t != null && t.ContextField != null && object.ReferenceEquals(t.ContextField.ContainingType, t))
+                var type = (SourceNamedTypeSymbol)routine.ContainingType;
+                var realctor = routine.RealCtorMethod;  // .ctor or __construct to be called
+                var ctxField = type.ContextField;       // .<ctx>
+
+                Debug.Assert(!type.IsStatic);
+
+                if (ctxField != null)
                 {
-                    // TODO: emit debug.assert(<ctx> != null)
+                    // if field is declared within this type or
+                    // realctor is __construct
+                    if (object.ReferenceEquals(ctxField.ContainingType, type) || object.ReferenceEquals(realctor?.ContainingType, type))
+                    {
+                        // TODO: emit debug.assert(<ctx> != null)
 
-                    // this.<ctx> = <ctx>
-                    il.EmitLoadArgumentOpcode(0);   // this
-                    il.EmitLoadArgumentOpcode(1);   // <ctx>
-                    il.EmitOpCode(ILOpCode.Stfld);
-                    il.EmitToken(t.ContextField, null, DiagnosticBag.GetInstance());
+                        // <this>.<ctx> = <ctx>
+                        il.EmitLoadArgumentOpcode(0);   // this
+                        il.EmitLoadArgumentOpcode(1);   // <ctx>
+                        il.EmitOpCode(ILOpCode.Stfld);
+                        il.EmitToken(ctxField, null, diagnostics);
+                    }
                 }
-            }
+
+                if (realctor != null)
+                {
+                    Debug.Assert(!realctor.IsStatic);
+                    var ps = realctor.Parameters;
+
+                    // call realctor
+                    il.EmitLoadArgumentOpcode(0);    // this
+
+                    // TODO: bind arguments using overload resolution, following is temporary:
+
+                    int source = 2; // skip <ctx>
+
+                    for (int i = 0; i < ps.Length; i++)
+                    {
+                        var targetp = ps[i];
+                        if (targetp.IsImplicitlyDeclared)
+                        {
+                            if (ps[i].Type == compilation.CoreTypes.Context)
+                            {
+                                // load <ctx>
+                                il.EmitLoadArgumentOpcode(1);
+                                continue;
+                            }
+                        }
+
+                        var srcp = parameters[source];
+                        if (targetp.Type == srcp.Type)
+                        {
+                            il.EmitLoadArgumentOpcode(source);
+                            source++;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("Signature does not match.");
+                        }
+                    }
+
+                    il.EmitOpCode(ILOpCode.Call, -1 - ps.Length);   // - this - ps
+                    il.EmitToken(realctor, null, diagnostics);
+                }
+
+                // return
+                il.EmitRet(true);
+
+            }, variableSlotAllocatorOpt, diagnostics, emittingPdb);
         }
     }
 }

@@ -653,6 +653,16 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override bool IsImplicitlyDeclared
+        {
+            get
+            {
+                // TODO: Context <ctx>
+
+                return base.IsImplicitlyDeclared;
+            }
+        }
+
         public override ImmutableArray<Location> Locations
         {
             get

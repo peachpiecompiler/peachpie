@@ -837,7 +837,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var stack = GetCallStackBehavior(method);
 
             if (code == ILOpCode.Newobj)
-                stack++;
+                stack += 1 + 1;    // there is no <this>, + it pushes <newinst> on stack
 
             _il.EmitOpCode(code, stack);
             _il.EmitToken(_moduleBuilder.Translate(method, _diagnostics, false), null, _diagnostics);

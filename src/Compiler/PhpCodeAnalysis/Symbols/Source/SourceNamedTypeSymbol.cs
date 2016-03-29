@@ -59,7 +59,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // default .ctor
-            yield return CtorMethodSymbol;
+            yield return InstanceCtorMethodSymbol;
         }
 
         IEnumerable<FieldSymbol> LoadFields()
@@ -78,13 +78,21 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return ContextField;
         }
 
-        internal MethodSymbol CtorMethodSymbol => _lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedCtorSymbol(this));
+        /// <summary>
+        /// <c>.ctor</c> synthesized method.
+        /// Only if type is not static.
+        /// </summary>
+        internal MethodSymbol InstanceCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedCtorSymbol(this)));
 
+        /// <summary>
+        /// Special field containing reference to current object's context.
+        /// May be a field from base type.
+        /// </summary>
         internal FieldSymbol ContextField
         {
             get
             {
-                if (_lazyContextField == null)
+                if (_lazyContextField == null && !this.IsStatic)
                 {
                     // resolve <ctx> field
                     var types = DeclaringCompilation.CoreTypes;

@@ -1111,30 +1111,27 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            if (this.CtorMethod == null || this.ResultType == null || this.ResultType is ErrorTypeSymbol)// || this.CtorMethod is ErrorMethodSymbol)
+            if (this.TargetMethod == null || this.ResultType == null || this.ResultType is ErrorTypeSymbol)// || this.CtorMethod is ErrorMethodSymbol)
                 throw new InvalidOperationException();
 
-            Debug.Assert(this.ResultType == this.CtorMethod.ContainingType);
+            Debug.Assert(this.ResultType == this.TargetMethod.ContainingType);
+
+            if (this.TargetMethod.MethodKind != MethodKind.Constructor)
+                throw new ArgumentException();
 
             //
-            var type = EmitCall(il, ILOpCode.Newobj, this.CtorMethod);
+            var type = (TypeSymbol)this.ResultType;
+            EmitCall(il, ILOpCode.Newobj, this.TargetMethod).Expect(il.CoreTypes.Void);
 
-            if (this.Access != AccessType.None)
+            //
+            if (this.Access == AccessType.None)
             {
-                il.Builder.EmitOpCode(ILOpCode.Dup);    // +1
-            }
-
-            // explicit __construct ?
-            if (this.TargetMethod != null)
-            {
-                Debug.Assert(!this.TargetMethod.IsStatic);
-                il.Builder.EmitOpCode(ILOpCode.Dup);    // +1
-                var result = EmitCall(il, ILOpCode.Call, this.TargetMethod);
-                il.EmitPop(result); // in case != void
+                il.EmitPop(type);
+                type = il.CoreTypes.Void;
             }
 
             //
-            return (TypeSymbol)this.ResultType;
+            return type;
         }
     }
 

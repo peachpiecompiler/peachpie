@@ -19,7 +19,7 @@ namespace Pchp.CodeAnalysis.Emit
             var realmethod = new SynthesizedMethodSymbol(this.ScriptType, "Main", true, _compilation.CoreTypes.Void);
 
             //
-            var body = MethodGenerator.GenerateMethod(this, realmethod,
+            var body = MethodGenerator.GenerateMethodBody(this, realmethod,
                 (il) =>
                 {
                     var types = this.Compilation.CoreTypes;

@@ -993,13 +993,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // resolve .ctor method (CtorMethod)
                 candidates = type.InstanceConstructors;
                 if (candidates.Length != 1) throw new NotImplementedException();
-                x.CtorMethod = (MethodSymbol)candidates[0];
+                x.TargetMethod = (MethodSymbol)candidates[0];
 
-                // resolve __construct method (TargetMethod)
-                candidates = type.GetMembers(Name.SpecialMethodNames.Construct.Value).OfType<IMethodSymbol>().Where(c => !c.IsStatic).AsImmutable();
-                if (candidates.Length == 1)
-                    x.TargetMethod = (MethodSymbol)candidates[0];
-                else if (candidates.Length > 1)
+                // TODO: bind arguments
+                if (x.TargetMethod.ParameterCount > 1)
                     throw new NotImplementedException();
             }
         }
