@@ -961,12 +961,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var enqueued = this.Worklist.EnqueueRoutine(x.TargetMethod, _analysis.CurrentBlock, args);
                 if (enqueued)   // => target has to be reanalysed
                 {
-                    if (x.Access != AccessType.None)    // => and we need the return type
-                    {
-                        // TODO:
-                        // throw to cancel current block analysis ?
-                        // continue with void ?
-                    }
+                    // note: continuing current block may be waste of time
                 }
 
                 //

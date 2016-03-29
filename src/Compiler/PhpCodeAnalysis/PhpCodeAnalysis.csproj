@@ -60,10 +60,12 @@
     <Compile Include="CodeGen\CodeGenerator.cs" />
     <Compile Include="CodeGen\Graph\BoundExpression.cs" />
     <Compile Include="CodeGen\CodeGenerator.Emit.cs" />
+    <Compile Include="CodeGen\OverloadResolution.cs" />
     <Compile Include="CodeGen\Places.cs" />
     <Compile Include="CodeGen\Graph\BoundStatement.cs" />
     <Compile Include="CodeGen\Symbols\SourceRoutineSymbol.cs" />
     <Compile Include="Compilation\AssemblyIdentityReferenceResolver.cs" />
+    <Compile Include="Compilation\OverloadResolution.cs" />
     <Compile Include="Compilation\PEModuleBuilder.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Emitter\Model\AttributeDataAdapter.cs" />
@@ -78,6 +80,7 @@
     <Compile Include="FlowAnalysis\Graph\BoundExpression.cs" />
     <Compile Include="FlowAnalysis\Graph\ControlFlowGraph.cs" />
     <Compile Include="FlowAnalysis\IFlowState.cs" />
+    <Compile Include="FlowAnalysis\OverloadResolution.cs" />
     <Compile Include="FlowAnalysis\PHPDoc.cs" />
     <Compile Include="FlowAnalysis\StateBinder.cs" />
     <Compile Include="FlowAnalysis\TypeRef\CallInfo.cs" />
