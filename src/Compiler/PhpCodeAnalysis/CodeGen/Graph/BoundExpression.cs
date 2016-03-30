@@ -7,6 +7,7 @@ using Pchp.Syntax.AST;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -960,58 +961,25 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundRoutineCall
     {
-        internal TypeSymbol EmitCall(CodeGenerator il, ILOpCode code, MethodSymbol target)
-        {
-            //
-            foreach (var p in target.Parameters)
-            {
-                Debug.Assert(p.Type.SpecialType != SpecialType.System_Void);
-
-                var arg = (BoundArgument)this.ArgumentMatchingParameter(p);
-                if (arg != null)
-                {
-                    il.EmitConvert(arg.Value, p.Type);
-                }
-                else
-                {
-                    // special parameter
-                    if (p.Type == il.CoreTypes.Context)
-                    {
-                        il.EmitLoadContext();
-                    }
-                    else
-                    {
-                        // load default value
-                        il.EmitLoadDefaultValue(p.Type, 0);
-                    }
-                }
-            }
-
-            //
-            return il.EmitCall(code, target);
-        }
+        
     }
 
     partial class BoundFunctionCall
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            var method = this.TargetMethod;
-
-            Debug.Assert(method != null);
-
-            if (method == null)
+            var overloads = this.Overloads;
+            if (overloads == null)
                 throw new InvalidOperationException();  // function call has to be analyzed first
 
-            Debug.Assert(method.IsStatic);
-            Debug.Assert(method.Arity == 0);
-
+            Debug.Assert(overloads.IsStaticCall);
+            
             // TODO: emit check the routine is declared; options:
             // 1. disable checks in release for better performance
             // 2. autoload script containing routine declaration
             // 3. throw if routine is not declared
 
-            return EmitCall(il, ILOpCode.Call, method);
+            return il.EmitCall(ILOpCode.Call, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
         }
     }
 
@@ -1111,17 +1079,15 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            if (this.TargetMethod == null || this.ResultType == null || this.ResultType is ErrorTypeSymbol)// || this.CtorMethod is ErrorMethodSymbol)
+            if (this.Overloads == null || this.ResultType == null || this.ResultType is ErrorTypeSymbol)
                 throw new InvalidOperationException();
 
-            Debug.Assert(this.ResultType == this.TargetMethod.ContainingType);
-
-            if (this.TargetMethod.MethodKind != MethodKind.Constructor)
+            if (this.Overloads.IsMethodKindConsistent() != MethodKind.Constructor)
                 throw new ArgumentException();
 
             //
-            var type = (TypeSymbol)this.ResultType;
-            EmitCall(il, ILOpCode.Newobj, this.TargetMethod).Expect(il.CoreTypes.Void);
+            var type = il.EmitCall(ILOpCode.Newobj, this.Overloads, _arguments.Select(a => a.Value).ToImmutableArray())
+                .Expect((TypeSymbol)this.ResultType);
 
             //
             if (this.Access == AccessType.None)

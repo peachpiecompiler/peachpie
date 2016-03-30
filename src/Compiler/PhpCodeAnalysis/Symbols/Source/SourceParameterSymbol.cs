@@ -68,6 +68,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsParams => _syntax.IsVariadic;
 
+        public override bool IsImplicitlyDeclared
+        {
+            get
+            {
+                return base.IsImplicitlyDeclared;
+            }
+        }
+
         public override int Ordinal => _index;
 
         public override ImmutableArray<Location> Locations

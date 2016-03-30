@@ -65,7 +65,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _queue.Enqueue(block);
         }
 
-        public bool EnqueueRoutine(ISemanticFunction routine, T caller, ImmutableArray<BoundArgument> args)
+        public bool EnqueueRoutine(ISemanticFunction routine, T caller, ImmutableArray<BoundExpression> args)
         {
             var cfgs = routine.CFG;
             if (cfgs.IsDefaultOrEmpty)

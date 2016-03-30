@@ -6,6 +6,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -345,7 +346,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             from = EmitSpecialize(from, fromHint);
-            
+
             //
             switch (from.SpecialType)
             {
@@ -397,7 +398,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // loads value from place most effectively without runtime type checking
             var place = GetPlace(expr);
-            var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);  
+            var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
             if (type != null)
             {
                 EmitConvert(type, 0, to);
@@ -841,7 +842,116 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _il.EmitOpCode(code, stack);
             _il.EmitToken(_moduleBuilder.Translate(method, _diagnostics, false), null, _diagnostics);
-            return method.ReturnType;
+            return (code == ILOpCode.Newobj) ? (TypeSymbol)method.ContainingType : method.ReturnType;
+        }
+
+        internal TypeSymbol EmitCall(ILOpCode code, OverloadResolution overloads, ImmutableArray<BoundExpression> arguments)
+        {
+            // at this point we do expect <this> is already emitted on top of the evaluation stack
+            // TODO: thisType: TypeSymbol of <this> or null
+
+            if (!overloads.IsFinal)
+                throw new NotImplementedException();    // we have to fallback to indirect call, there might be more overloads in runtime
+
+            if (!overloads.IsStaticIsConsistent())
+                throw new NotImplementedException();    // TODO: fallback to indirect call; some overloads expect <this>, others don't
+
+            if (overloads.Candidates.Length > 1)
+            {
+                if (overloads.Candidates.All(c => c.ParameterCount == 0))
+                    throw new InvalidOperationException("Ambiguous call."); // TODO: ErrorCode // NOTE: overrides should be resolved already
+            }
+
+            // parameter types actually emitted on top of evaluation stack; used for eventual generic indirect call
+            var actualParamTypes = new List<TypeSymbol>(arguments.Length + 1);
+
+            //
+            int arg_index = 0;      // next argument to be emitted from <arguments>
+            bool unable = false;    // whether we have to fallback to indirect call
+
+            while (true)
+            {
+                int param_index = actualParamTypes.Count;    // next candidates parameter index
+                var t = overloads.ConsistentParameterType(param_index);
+
+                if (overloads.IsImplicitlyDeclared(param_index) && !unable)
+                {
+                    // value for implicit parameter is not passed from source code
+
+                    if (t == CoreTypes.Context)
+                    {
+                        EmitLoadContext();
+                        actualParamTypes.Add(t);
+                        continue;
+                    }
+                    else
+                    {
+                        //throw new NotImplementedException();    // not handled implicit parameter (late static, global this, locals, ...)
+
+                        // ---> load arguments
+                    }
+                }
+
+                // all arguments and implicit parameters loaded
+                if (arg_index >= arguments.Length)
+                    break;
+
+                // magic
+                TypeSymbol arg_type;
+                if (t != null)                  // all overloads expect the same argument or there is just one overload
+                {
+                    EmitConvert(arguments[arg_index++], t); // load argument
+                    arg_type = t;
+                }
+                else
+                {
+                    arg_type = arguments[arg_index++].Emit(this);
+
+                    // candidates
+                    var bestmatch = overloads.CandidatesWithParameterType(arg_type, param_index);
+                    if (bestmatch.Length != 0)
+                    {
+                        overloads.WithParameterType(arg_type, param_index);
+                    }
+                    else
+                    {
+                        Debug.Assert(overloads.Candidates.Length != 1); // would be handled above
+                        unable = true;
+                    }
+                }
+
+                actualParamTypes.Add(arg_type);
+            }
+
+            //
+            if (overloads.Candidates.Length == 1)
+            {
+                var target = overloads.Candidates[0];
+
+                // pop unnecessary args
+                while (actualParamTypes.Count > target.ParameterCount)
+                {
+                    var last = actualParamTypes.Count - 1;
+                    this.EmitPop(actualParamTypes[last]);
+                    actualParamTypes.RemoveAt(last);
+                }
+
+                // emit default values for missing args
+                for (int i = actualParamTypes.Count; i < target.ParameterCount; i++)
+                {
+                    var t = target.Parameters[i].Type;
+                    EmitLoadDefaultValue(t, 0); // TODO: ErrorCode // Missing mandatory argument (if mandatory)
+                    actualParamTypes.Add(t);
+                }
+
+                //
+                return this.EmitCall(code, target);
+            }
+            else
+            {
+                // TODO: runtime overload resolution, indirect call with <actualParamTypes>
+                throw new NotImplementedException();
+            }
         }
 
         public void EmitEcho(BoundExpression expr)
@@ -959,20 +1069,23 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 _il.EmitDoubleConstant(0.0);
                                 EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Double);
                             }
-                            //else if (typectx.IsString(typemask))
-                            //{
-                            //}
-                            //else if (typectx.IsArray(typemask))
-                            //{
-                            //}
-                            //else if (typectx.IsNullable(typemask))
-                            //{
-                            //    _il.EmitNullConstant();
-                            //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Object);
-                            //}
-                            else
+                            else if (typectx.IsAString(typemask))
                             {
                                 throw ExceptionUtilities.UnexpectedValue(typemask);
+                            }
+                            else if (typectx.IsArray(typemask))
+                            {
+                                throw ExceptionUtilities.UnexpectedValue(typemask);
+                            }
+                            else if (typectx.IsNullable(typemask))
+                            {
+                                //_il.EmitNullConstant();
+                                //EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Object);
+                                throw ExceptionUtilities.UnexpectedValue(typemask);
+                            }
+                            else
+                            {
+                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.CreateNull);
                             }
                         }
                         else

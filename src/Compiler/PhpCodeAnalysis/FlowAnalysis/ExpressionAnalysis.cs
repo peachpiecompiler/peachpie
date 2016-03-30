@@ -927,73 +927,72 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitFunctionCall(BoundFunctionCall x)
         {
-            // resolve function symbol
-            var candidates = _model.ResolveFunction(x.Name).ToImmutableArray();
-            if (candidates.IsEmpty && x.AlternativeName.HasValue)
-                candidates = _model.ResolveFunction(x.AlternativeName.Value).ToImmutableArray();
+            // resolve candidates
+            var candidates = _model.ResolveFunction(x.Name).ToList();
+            if (candidates.Count == 0 && x.AlternativeName.HasValue)
+                candidates.AddRange(_model.ResolveFunction(x.AlternativeName.Value));
 
-            // TODO: overload resolution
+            //
+            var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();
 
-            if (candidates.Length == 0)
+            var overloads = new OverloadResolution(candidates.Cast<MethodSymbol>());
+            overloads.WithStaticCall();
+            overloads.WithParametersCount(args.Length);
+            overloads.WithParametersType(TypeCtx, args.Select(a => a.TypeRefMask).ToArray());
+
+            //
+            TypeRefMask result_type = 0;
+
+            // reanalyse candidates
+            foreach (var c in overloads.Candidates)
             {
-                //x.TargetMethod = new MissingMethod(x.Name)
-                throw new NotImplementedException("unknown function");
-            }
-            else if (candidates.Length == 1)
-            {
-                x.TargetMethod = (MethodSymbol)candidates[0];
-
-                // bind parameters to arguments
-                var parameters = x.TargetMethod.Parameters;
-                var args = x.ArgumentsInSourceOrder;
-
-                int argindex = 0;
-                foreach (var p in x.TargetMethod.Parameters)
-                {
-                    if (!p.IsImplicitlyDeclared && argindex < args.Length)
-                    {
-                        args[argindex++].Parameter = p;
-                    }
-                }
-
                 // analyze TargetMethod with x.Arguments
                 // require method result type if access != none
-                var enqueued = this.Worklist.EnqueueRoutine(x.TargetMethod, _analysis.CurrentBlock, args);
+                var enqueued = this.Worklist.EnqueueRoutine(c, _analysis.CurrentBlock, args);
                 if (enqueued)   // => target has to be reanalysed
                 {
                     // note: continuing current block may be waste of time
                 }
 
-                //
-                x.TypeRefMask = x.TargetMethod.GetResultType(TypeCtx);
+                result_type |= c.GetResultType(TypeCtx);
             }
-            else
-            {
-                throw new NotImplementedException("ambiguous call");
-            }
+
+            x.Overloads = overloads;
+            x.TypeRefMask = result_type;
         }
 
         protected virtual void VisitNewEx(BoundNewEx x)
         {
-            x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeName, false);
-
             // resolve target type
             var type = _model.GetType(x.TypeName);
             if (type != null)
             {
+                var candidates = type.InstanceConstructors;
+
+                //
+                var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();
+
+                var overloads = new OverloadResolution(candidates.Cast<MethodSymbol>());
+                overloads.WithParametersCount(args.Length);
+                overloads.WithParametersType(TypeCtx, args.Select(a => a.TypeRefMask).ToArray());
+
+                // reanalyse candidates
+                foreach (var c in overloads.Candidates)
+                {
+                    // analyze TargetMethod with x.Arguments
+                    // require method result type if access != none
+                    this.Worklist.EnqueueRoutine(c, _analysis.CurrentBlock, args);
+                }
+
+                x.Overloads = overloads;
                 x.ResultType = type;
-
-                ImmutableArray<IMethodSymbol> candidates;
-
-                // resolve .ctor method (CtorMethod)
-                candidates = type.InstanceConstructors;
-                if (candidates.Length != 1) throw new NotImplementedException();
-                x.TargetMethod = (MethodSymbol)candidates[0];
-
-                // TODO: bind arguments
-                if (x.TargetMethod.ParameterCount > 1)
-                    throw new NotImplementedException();
             }
+            else
+            {
+                x.ResultType = new MissingMetadataTypeSymbol(x.TypeName.ClrName(), 0, false);
+            }
+
+            x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeName, false);
         }
 
         public override void VisitArgument(IArgument operation)

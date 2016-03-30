@@ -233,11 +233,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_Long = ct.PhpValue.Method("Create", ct.Long);
                 Create_Double = ct.PhpValue.Method("Create", ct.Double);
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
+                CreateNull = ct.PhpValue.Method("CreateNull");
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
-                Create_Boolean, Create_Long, Create_Double, Create_PhpNumber;
+                Create_Boolean, Create_Long, Create_Double, Create_PhpNumber, CreateNull;
         }
 
         public struct PhpNumberHolder

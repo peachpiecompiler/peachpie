@@ -132,7 +132,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IExpression IInvocationExpression.Instance => Instance;
 
-        IMethodSymbol IInvocationExpression.TargetMethod => TargetMethod;
+        IMethodSymbol IInvocationExpression.TargetMethod => Overloads?.SingleOrNothing;
 
         /// <summary>
         /// <c>this</c> argument to be supplied to the method.
@@ -140,9 +140,9 @@ namespace Pchp.CodeAnalysis.Semantics
         public abstract BoundExpression Instance { get; }
 
         /// <summary>
-        /// Method to be called.
+        /// Resolved overloads to be called.
         /// </summary>
-        internal MethodSymbol TargetMethod { get; set; }
+        internal OverloadResolution Overloads { get; set; }
 
         public virtual bool IsVirtual => false;
 
@@ -183,9 +183,6 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             _qname = qname;
             _qnameAlt = qnameAlt;
-
-            // not resolved:
-            this.TargetMethod = null;
         }
     }
 

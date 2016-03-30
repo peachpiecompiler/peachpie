@@ -3,6 +3,7 @@ using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,15 +18,26 @@ namespace Pchp.CodeAnalysis
         string _nameOpt;
 
         bool _isFinal;
+        bool _isStatic;
         
         /// <summary>
         /// Gets value indicating the list of candidates is final and possible single candidate can be called statically.
         /// </summary>
         public bool IsFinal => _isFinal;
 
+        /// <summary>
+        /// Gets value indicating whether the overloads were resolved as static calls.
+        /// </summary>
+        public bool IsStaticCall => _isStatic;
+
         ImmutableArray<MethodSymbol> _candidates;
 
         public ImmutableArray<MethodSymbol> Candidates => _candidates;
+
+        /// <summary>
+        /// Gets reference to one and the only target routine.
+        /// </summary>
+        internal MethodSymbol SingleOrNothing => (_candidates.Length == 1 && _isFinal) ? _candidates[0] : null;
 
         void Filter(Func<MethodSymbol, bool> predicate)
         {
@@ -35,6 +47,9 @@ namespace Pchp.CodeAnalysis
         public OverloadResolution(IEnumerable<MethodSymbol> candidates)
         {
             _candidates = candidates.AsImmutableOrEmpty();
+
+            var kind = IsMethodKindConsistent();
+            _isFinal |= (kind == MethodKind.Constructor || kind == MethodKind.StaticConstructor);
         }
 
         public OverloadResolution Clone()
@@ -60,6 +75,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public void WithStaticCall()
         {
+            _isStatic = true;
             _isFinal = true;   // static calls are final (no more overloads possible)
             Filter(s => s.IsStatic);
         }
@@ -69,6 +85,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public void WithInstanceType(TypeSymbol t)
         {
+            _isStatic = false;
             _isFinal |= (t.IsSealed);   // type is sealed -> no more possible overrides
         }
 

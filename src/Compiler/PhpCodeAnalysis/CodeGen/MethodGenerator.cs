@@ -237,7 +237,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             }
                         }
 
-                        var srcp = parameters[source];
+                        var srcp = parameters[source - 1];
                         if (targetp.Type == srcp.Type)
                         {
                             il.EmitLoadArgumentOpcode(source);
