@@ -34,13 +34,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         INamedTypeSymbol INamedTypeSymbol.ConstructedFrom => ConstructedFrom;
 
-        public virtual NamedTypeSymbol ConstructedFrom
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public virtual NamedTypeSymbol ConstructedFrom => this;
 
         /// <summary>
         /// Get the both instance and static constructors for this type.

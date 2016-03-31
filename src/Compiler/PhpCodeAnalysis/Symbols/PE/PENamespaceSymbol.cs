@@ -57,7 +57,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
             ImmutableArray<NamedTypeSymbol> t;
 
-            return _types.TryGetValue(name, out t) ? t : ImmutableArray<NamedTypeSymbol>.Empty;
+            short arity;
+            name = MetadataHelpers.InferTypeArityAndUnmangleMetadataName(name, out arity);
+
+            if (_types.TryGetValue(name, out t) && t.Length != 0)
+            {
+                Debug.Assert(t != null);
+                return t.WhereAsArray(x => x.Arity == arity);
+            }
+            else
+            {
+                return ImmutableArray<NamedTypeSymbol>.Empty;
+            }
         }
 
         public sealed override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name, int arity)
