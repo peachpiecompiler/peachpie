@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override INamedTypeSymbol ContainingType => _containingType;
+        public override NamedTypeSymbol ContainingType => _containingType;
 
         public override string Name => _name;
 

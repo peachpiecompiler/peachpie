@@ -44,7 +44,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IModuleSymbol ContainingModule => _symbol.ContainingModule;
 
-        public override INamedTypeSymbol ContainingType => _symbol.ContainingType;
+        public override NamedTypeSymbol ContainingType => _symbol.ContainingType;
         
         public override string Name => _name;
 

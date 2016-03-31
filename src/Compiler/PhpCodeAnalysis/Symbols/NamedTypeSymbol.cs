@@ -161,21 +161,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual ImmutableArray<ITypeParameterSymbol> TypeParameters
-        {
-            get
-            {
-                return ImmutableArray<ITypeParameterSymbol>.Empty;
-            }
-        }
+        public virtual ImmutableArray<TypeParameterSymbol> TypeParameters => ImmutableArray<TypeParameterSymbol>.Empty;
 
-        INamedTypeSymbol INamedTypeSymbol.OriginalDefinition
-        {
-            get
-            {
-                return (INamedTypeSymbol)this.OriginalDefinition;
-            }
-        }
+        INamedTypeSymbol INamedTypeSymbol.OriginalDefinition => (INamedTypeSymbol)this.OriginalDefinition;
 
         #region INamedTypeSymbol
 
@@ -189,6 +177,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<IMethodSymbol> INamedTypeSymbol.StaticConstructors
             => StaticCast<IMethodSymbol>.From(StaticConstructors);
+
+        ImmutableArray<ITypeParameterSymbol> INamedTypeSymbol.TypeParameters => StaticCast<ITypeParameterSymbol>.From(this.TypeParameters);
 
         #endregion
 

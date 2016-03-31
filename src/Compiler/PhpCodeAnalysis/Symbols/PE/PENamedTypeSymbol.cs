@@ -446,7 +446,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _container;
 
-        public override INamedTypeSymbol ContainingType => _container as NamedTypeSymbol;
+        public override NamedTypeSymbol ContainingType => _container as NamedTypeSymbol;
 
         public override Accessibility DeclaredAccessibility
         {

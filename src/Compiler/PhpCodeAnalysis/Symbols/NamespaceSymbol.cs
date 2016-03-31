@@ -78,7 +78,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public sealed override INamedTypeSymbol ContainingType => null;
+        public sealed override NamedTypeSymbol ContainingType => null;
 
         /// <summary>
         /// Containing assembly.

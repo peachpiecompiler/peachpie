@@ -213,7 +213,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _containingType;
 
-        public override INamedTypeSymbol ContainingType => _containingType;
+        public override NamedTypeSymbol ContainingType => _containingType;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences => ImmutableArray<SyntaxReference>.Empty;
 

@@ -174,7 +174,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override INamedTypeSymbol ContainingType
+        public override NamedTypeSymbol ContainingType
         {
             get
             {

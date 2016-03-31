@@ -224,24 +224,24 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return count;
         //}
 
-        //internal static Symbol SymbolAsMember(this Symbol s, NamedTypeSymbol newOwner)
-        //{
-        //    switch (s.Kind)
-        //    {
-        //        case SymbolKind.Field:
-        //            return ((FieldSymbol)s).AsMember(newOwner);
-        //        case SymbolKind.Method:
-        //            return ((MethodSymbol)s).AsMember(newOwner);
-        //        case SymbolKind.NamedType:
-        //            return ((NamedTypeSymbol)s).AsMember(newOwner);
-        //        case SymbolKind.Property:
-        //            return ((PropertySymbol)s).AsMember(newOwner);
-        //        case SymbolKind.Event:
-        //            return ((EventSymbol)s).AsMember(newOwner);
-        //        default:
-        //            throw ExceptionUtilities.UnexpectedValue(s.Kind);
-        //    }
-        //}
+        internal static Symbol SymbolAsMember(this Symbol s, NamedTypeSymbol newOwner)
+        {
+            switch (s.Kind)
+            {
+                //case SymbolKind.Field:
+                //    return ((FieldSymbol)s).AsMember(newOwner);
+                //case SymbolKind.Method:
+                //    return ((MethodSymbol)s).AsMember(newOwner);
+                //case SymbolKind.NamedType:
+                //    return ((NamedTypeSymbol)s).AsMember(newOwner);
+                //case SymbolKind.Property:
+                //    return ((PropertySymbol)s).AsMember(newOwner);
+                //case SymbolKind.Event:
+                //    return ((EventSymbol)s).AsMember(newOwner);
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(s.Kind);
+            }
+        }
 
         /// <summary>
         /// Return the arity of a member.

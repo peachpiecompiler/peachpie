@@ -59,12 +59,13 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Returns the nearest lexically enclosing type, or null if there is none.
         /// </summary>
-        public virtual INamedTypeSymbol ContainingType
+        public virtual NamedTypeSymbol ContainingType
         {
             get
             {
                 var container = this.ContainingSymbol;
-                var containerAsType = container as INamedTypeSymbol;
+
+                var containerAsType = container as NamedTypeSymbol;
 
                 // NOTE: container could be null, so we do not check 
                 //       whether containerAsType is not null, but 
@@ -530,7 +531,6 @@ namespace Pchp.CodeAnalysis
         //    Debug.Assert(this.Kind == SymbolKind.NamedType || this.Kind == SymbolKind.Method);
         //    return this.ContainingModule.DefaultMarshallingCharSet;
         //}
-
 
         internal bool IsFromCompilation(PhpCompilation compilation)
         {
