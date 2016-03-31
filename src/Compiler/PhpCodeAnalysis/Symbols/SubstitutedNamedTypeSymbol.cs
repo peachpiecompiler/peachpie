@@ -166,10 +166,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return _originalDefinition.Kind; }
         }
 
-        protected override TypeSymbol OriginalTypeSymbolDefinition
-        {
-            get { return _originalDefinition; }
-        }
+        public override NamedTypeSymbol OriginalDefinition => _originalDefinition;
 
         public sealed override TypeKind TypeKind
         {

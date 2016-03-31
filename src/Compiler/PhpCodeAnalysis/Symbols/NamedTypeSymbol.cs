@@ -234,13 +234,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// symbol by type substitution then OriginalDefinition gets the original symbol as it was defined in
         /// source or metadata.
         /// </summary>
-        public new virtual NamedTypeSymbol OriginalDefinition
-        {
-            get
-            {
-                return this;
-            }
-        }
+        public new virtual NamedTypeSymbol OriginalDefinition => this;
+
+        protected override TypeSymbol OriginalTypeSymbolDefinition => OriginalDefinition;
 
         INamedTypeSymbol INamedTypeSymbol.OriginalDefinition => this.OriginalDefinition;
 

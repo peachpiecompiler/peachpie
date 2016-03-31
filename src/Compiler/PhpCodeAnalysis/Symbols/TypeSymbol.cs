@@ -99,7 +99,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual bool IsPointerType => false;
 
         public virtual SpecialType SpecialType => SpecialType.None;
-
+        
         /// <summary>
         /// The original definition of this symbol. If this symbol is constructed from another
         /// symbol by type substitution then OriginalDefinition gets the original symbol as it was defined in
@@ -115,13 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        protected override sealed Symbol OriginalSymbolDefinition
-        {
-            get
-            {
-                return this.OriginalTypeSymbolDefinition;
-            }
-        }
+        protected override sealed Symbol OriginalSymbolDefinition => this.OriginalTypeSymbolDefinition;
 
         /// <summary>
         /// Gets corresponding primitive type code for this type declaration.

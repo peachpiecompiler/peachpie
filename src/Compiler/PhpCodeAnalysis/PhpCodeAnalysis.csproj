@@ -71,6 +71,7 @@
     <Compile Include="Emitter\Model\AttributeDataAdapter.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\PropertySymbolAdapter.cs" />
+    <Compile Include="Emitter\Model\TypeParameterSymbolAdapter.cs" />
     <Compile Include="FlowAnalysis\CFGAnalysis.cs" />
     <Compile Include="FlowAnalysis\ConditionBranch.cs" />
     <Compile Include="FlowAnalysis\ExpressionAnalysis.cs" />

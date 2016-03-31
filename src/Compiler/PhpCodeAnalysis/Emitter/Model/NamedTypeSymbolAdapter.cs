@@ -167,17 +167,15 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 Debug.Assert(this.IsDefinitionOrDistinct());
 
-                throw new System.NotImplementedException();
+                if (!this.IsDefinition &&
+                    (this.Arity == 0 || PEModuleBuilder.IsGenericType(this.ContainingType)))
+                {
+                    Debug.Assert((object)this.ContainingType != null &&
+                            PEModuleBuilder.IsGenericType(this.ContainingType));
+                    return this;
+                }
 
-                //if (!this.IsDefinition &&
-                //    (this.Arity == 0 || PEModuleBuilder.IsGenericType(this.ContainingType)))
-                //{
-                //    Debug.Assert((object)this.ContainingType != null &&
-                //            PEModuleBuilder.IsGenericType(this.ContainingType));
-                //    return this;
-                //}
-
-                //return null;
+                return null;
             }
         }
 
@@ -253,6 +251,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (m.Kind == SymbolKind.Event)
                 {
                     //yield return (EventSymbol)m;
+                    throw new System.NotImplementedException();
                 }
             }
 
@@ -809,34 +808,32 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<Cci.ITypeReference> Cci.IGenericTypeInstanceReference.GetGenericArguments(EmitContext context)
         {
-            //PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
-            //var builder = ArrayBuilder<Microsoft.Cci.ITypeReference>.GetInstance();
-            //Debug.Assert(((Cci.ITypeReference)this).AsGenericTypeInstanceReference != null);
+            PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
+            var builder = ArrayBuilder<Microsoft.Cci.ITypeReference>.GetInstance();
+            Debug.Assert(((Cci.ITypeReference)this).AsGenericTypeInstanceReference != null);
 
-            //var modifiers = default(ImmutableArray<ImmutableArray<CustomModifier>>);
+            var modifiers = default(ImmutableArray<ImmutableArray<CustomModifier>>);
 
             //if (this.HasTypeArgumentsCustomModifiers)
             //{
             //    modifiers = this.TypeArgumentsCustomModifiers;
             //}
 
-            //var arguments = this.TypeArgumentsNoUseSiteDiagnostics;
+            var arguments = this.TypeArguments; // .TypeArgumentsNoUseSiteDiagnostics;
 
-            //for (int i = 0; i < arguments.Length; i++)
-            //{
-            //    var arg = moduleBeingBuilt.Translate(arguments[i], syntaxNodeOpt: (CSharpSyntaxNode)context.SyntaxNodeOpt, diagnostics: context.Diagnostics);
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                var arg = moduleBeingBuilt.Translate(arguments[i], syntaxNodeOpt: context.SyntaxNodeOpt, diagnostics: context.Diagnostics);
 
-            //    if (!modifiers.IsDefault && !modifiers[i].IsDefaultOrEmpty)
-            //    {
-            //        arg = new Cci.ModifiedTypeReference(arg, modifiers[i].As<Cci.ICustomModifier>());
-            //    }
+                if (!modifiers.IsDefault && !modifiers[i].IsDefaultOrEmpty)
+                {
+                    arg = new Cci.ModifiedTypeReference(arg, modifiers[i].As<Cci.ICustomModifier>());
+                }
 
-            //    builder.Add(arg);
-            //}
+                builder.Add(arg);
+            }
 
-            //return builder.ToImmutableAndFree();
-
-            return ImmutableArray<Cci.ITypeReference>.Empty;
+            return builder.ToImmutableAndFree();
         }
 
         Cci.INamedTypeReference Cci.IGenericTypeInstanceReference.GenericType

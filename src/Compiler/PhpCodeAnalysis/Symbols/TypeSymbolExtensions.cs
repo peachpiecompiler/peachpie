@@ -984,11 +984,10 @@ namespace Pchp.CodeAnalysis.Symbols
             //  In short - we are not interested in the type parameters of unconstructed types.
             if ((object)type.ConstructedFrom != (object)type)
             {
-                throw new NotImplementedException();
-                //foreach (var arg in type.TypeArgumentsNoUseSiteDiagnostics)
-                //{
-                //    code = Hash.Combine(arg, code);
-                //}
+                foreach (var arg in type.TypeArguments) // .TypeArgumentsNoUseSiteDiagnostics)
+                {
+                    code = Hash.Combine(arg, code);
+                }
             }
 
             // 0 may be used by the caller to indicate the hashcode is not

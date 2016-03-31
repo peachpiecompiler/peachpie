@@ -732,6 +732,23 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
+        internal Cci.INamedTypeReference GetSpecialType(SpecialType specialType, SyntaxNode syntaxNodeOpt, DiagnosticBag diagnostics)
+        {
+            Debug.Assert(diagnostics != null);
+
+            var typeSymbol = SourceModule.ContainingAssembly.GetSpecialType(specialType);
+
+            //DiagnosticInfo info = typeSymbol.GetUseSiteDiagnostic();
+            //if (info != null)
+            //{
+            //    Symbol.ReportUseSiteDiagnostic(info,
+            //                                   diagnostics,
+            //                                   syntaxNodeOpt != null ? syntaxNodeOpt.Location : NoLocation.Singleton);
+            //}
+
+            return (Cci.INamedTypeReference)Translate(typeSymbol, syntaxNodeOpt, diagnostics, needDeclaration: true);
+        }
+
         internal override Cci.IAssemblyReference Translate(IAssemblySymbol iassembly, DiagnosticBag diagnostics)
         {
             var assembly = (AssemblySymbol)iassembly;
