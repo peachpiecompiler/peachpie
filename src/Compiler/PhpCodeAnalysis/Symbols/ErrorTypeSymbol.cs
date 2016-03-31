@@ -33,6 +33,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual ImmutableArray<ISymbol> CandidateSymbols => ImmutableArray<ISymbol>.Empty;
 
+        /// <summary>
+        /// Called by <see cref="AbstractTypeMap.SubstituteType"/> to perform substitution
+        /// on types with TypeKind ErrorType.  The general pattern is to use the type map
+        /// to perform substitution on the wrapped type, if any, and then construct a new
+        /// error type symbol from the result (if there was a change).
+        /// </summary>
+        internal virtual TypeWithModifiers Substitute(AbstractTypeMap typeMap)
+        {
+            return new TypeWithModifiers((ErrorTypeSymbol)typeMap.SubstituteNamedType(this));
+        }
+
         internal override bool MangleName => false;
 
         internal override bool IsWindowsRuntimeImport => false;

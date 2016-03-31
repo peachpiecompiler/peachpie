@@ -32,7 +32,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public ISymbol AssociatedSymbol => null;
 
-        public virtual INamedTypeSymbol ConstructedFrom
+        INamedTypeSymbol INamedTypeSymbol.ConstructedFrom => ConstructedFrom;
+
+        public virtual NamedTypeSymbol ConstructedFrom
         {
             get
             {
@@ -153,17 +155,118 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual ImmutableArray<ITypeSymbol> TypeArguments
+        internal NamedTypeSymbol ConstructWithoutModifiers(ImmutableArray<TypeSymbol> arguments, bool unbound)
         {
-            get
+            ImmutableArray<TypeWithModifiers> modifiedArguments;
+
+            if (arguments.IsDefault)
             {
-                return ImmutableArray<ITypeSymbol>.Empty;
+                modifiedArguments = default(ImmutableArray<TypeWithModifiers>);
             }
+            else if (arguments.IsEmpty)
+            {
+                modifiedArguments = ImmutableArray<TypeWithModifiers>.Empty;
+            }
+            else
+            {
+                var builder = ArrayBuilder<TypeWithModifiers>.GetInstance(arguments.Length);
+                foreach (TypeSymbol t in arguments)
+                {
+                    builder.Add((object)t == null ? default(TypeWithModifiers) : new TypeWithModifiers(t));
+                }
+
+                modifiedArguments = builder.ToImmutableAndFree();
+            }
+
+            return Construct(modifiedArguments, unbound);
         }
+
+
+        internal NamedTypeSymbol Construct(ImmutableArray<TypeWithModifiers> arguments, bool unbound)
+        {
+            if (!ReferenceEquals(this, ConstructedFrom) || this.Arity == 0)
+            {
+                throw new InvalidOperationException();
+            }
+
+            if (arguments.IsDefault)
+            {
+                throw new ArgumentNullException(nameof(arguments));
+            }
+
+            //if (arguments.Any(TypeSymbolIsNullFunction))
+            //{
+            //    throw new ArgumentException(CSharpResources.TypeArgumentCannotBeNull, "typeArguments");
+            //}
+
+            if (arguments.Length != this.Arity)
+            {
+                throw new ArgumentException();// (CSharpResources.WrongNumberOfTypeArguments, "typeArguments");
+            }
+
+            //Debug.Assert(!unbound || arguments.All(TypeSymbolIsErrorType));
+
+            if (ConstructedNamedTypeSymbol.TypeParametersMatchTypeArguments(this.TypeParameters, arguments))
+            {
+                return this;
+            }
+
+            return this.ConstructCore(arguments, unbound);
+        }
+
+        protected virtual NamedTypeSymbol ConstructCore(ImmutableArray<TypeWithModifiers> typeArguments, bool unbound)
+        {
+            return new ConstructedNamedTypeSymbol(this, typeArguments, unbound);
+        }
+
+        internal NamedTypeSymbol GetUnboundGenericTypeOrSelf()
+        {
+            if (!this.IsGenericType)
+            {
+                return this;
+            }
+
+            return this.ConstructUnboundGenericType();
+        }
+
+        ImmutableArray<ITypeSymbol> INamedTypeSymbol.TypeArguments => StaticCast<ITypeSymbol>.From(TypeArguments);
+
+        public virtual ImmutableArray<TypeSymbol> TypeArguments => ImmutableArray<TypeSymbol>.Empty;
 
         public virtual ImmutableArray<TypeParameterSymbol> TypeParameters => ImmutableArray<TypeParameterSymbol>.Empty;
 
-        INamedTypeSymbol INamedTypeSymbol.OriginalDefinition => (INamedTypeSymbol)this.OriginalDefinition;
+        /// <summary>
+        /// The original definition of this symbol. If this symbol is constructed from another
+        /// symbol by type substitution then OriginalDefinition gets the original symbol as it was defined in
+        /// source or metadata.
+        /// </summary>
+        public new virtual NamedTypeSymbol OriginalDefinition
+        {
+            get
+            {
+                return this;
+            }
+        }
+
+        INamedTypeSymbol INamedTypeSymbol.OriginalDefinition => this.OriginalDefinition;
+
+        /// <summary>
+        /// Returns the map from type parameters to type arguments.
+        /// If this is not a generic type instantiation, returns null.
+        /// The map targets the original definition of the type.
+        /// </summary>
+        internal virtual TypeMap TypeSubstitution
+        {
+            get { return null; }
+        }
+
+        internal virtual NamedTypeSymbol AsMember(NamedTypeSymbol newOwner)
+        {
+            Debug.Assert(this.IsDefinition);
+            Debug.Assert(ReferenceEquals(newOwner.OriginalDefinition, this.ContainingSymbol.OriginalDefinition));
+            //return newOwner.IsDefinition ? this : new SubstitutedNestedTypeSymbol((SubstitutedNamedTypeSymbol)newOwner, this);
+            throw new NotImplementedException();
+        }
 
         #region INamedTypeSymbol
 
@@ -180,6 +283,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<ITypeParameterSymbol> INamedTypeSymbol.TypeParameters => StaticCast<ITypeParameterSymbol>.From(this.TypeParameters);
 
+        INamedTypeSymbol INamedTypeSymbol.ConstructUnboundGenericType() => ConstructUnboundGenericType();
+
+        INamedTypeSymbol INamedTypeSymbol.Construct(params ITypeSymbol[] arguments)
+        {
+            //foreach (var arg in arguments)
+            //{
+            //    arg.EnsureCSharpSymbolOrNull<ITypeSymbol, TypeSymbol>("typeArguments");
+            //}
+            Debug.Assert(arguments.All(t => t is TypeSymbol));
+
+            return this.Construct(arguments.Cast<TypeSymbol>().ToArray());
+        }
+
         #endregion
 
         #region ISymbol Members
@@ -194,14 +310,41 @@ namespace Pchp.CodeAnalysis.Symbols
             return visitor.VisitNamedType(this);
         }
 
-        public INamedTypeSymbol Construct(params ITypeSymbol[] typeArguments)
+        /// <summary>
+        /// Returns a constructed type given its type arguments.
+        /// </summary>
+        /// <param name="typeArguments">The immediate type arguments to be replaced for type
+        /// parameters in the type.</param>
+        public NamedTypeSymbol Construct(params TypeSymbol[] typeArguments)
         {
-            throw new NotImplementedException();
+            return ConstructWithoutModifiers(typeArguments.AsImmutableOrNull(), false);
         }
 
-        public INamedTypeSymbol ConstructUnboundGenericType()
+        /// <summary>
+        /// Returns a constructed type given its type arguments.
+        /// </summary>
+        /// <param name="typeArguments">The immediate type arguments to be replaced for type
+        /// parameters in the type.</param>
+        public NamedTypeSymbol Construct(ImmutableArray<TypeSymbol> typeArguments)
         {
-            throw new NotImplementedException();
+            return ConstructWithoutModifiers(typeArguments, false);
+        }
+
+        /// <summary>
+        /// Returns a constructed type given its type arguments.
+        /// </summary>
+        /// <param name="typeArguments"></param>
+        public NamedTypeSymbol Construct(IEnumerable<TypeSymbol> typeArguments)
+        {
+            return ConstructWithoutModifiers(typeArguments.AsImmutableOrNull(), false);
+        }
+
+        /// <summary>
+        /// Returns an unbound generic type of this named type.
+        /// </summary>
+        public NamedTypeSymbol ConstructUnboundGenericType()
+        {
+            return OriginalDefinition.AsUnboundGenericType();
         }
 
         #endregion

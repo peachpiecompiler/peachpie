@@ -27,7 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public sealed override Symbol ContainingSymbol => _type;
 
-        public sealed override INamedTypeSymbol ContainingType => _type;
+        public sealed override NamedTypeSymbol ContainingType => _type;
 
         public override bool HidesBaseMethodsByName => false;
 

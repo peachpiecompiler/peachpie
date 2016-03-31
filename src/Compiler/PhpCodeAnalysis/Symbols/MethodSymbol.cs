@@ -136,15 +136,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual ImmutableArray<ITypeSymbol> TypeArguments => ImmutableArray<ITypeSymbol>.Empty;
 
-        public virtual ImmutableArray<ITypeParameterSymbol> TypeParameters => ImmutableArray<ITypeParameterSymbol>.Empty;
+        public virtual ImmutableArray<TypeParameterSymbol> TypeParameters => ImmutableArray<TypeParameterSymbol>.Empty;
 
-        IMethodSymbol IMethodSymbol.OriginalDefinition
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        IMethodSymbol IMethodSymbol.OriginalDefinition => OriginalDefinition;
+
+        public new virtual MethodSymbol OriginalDefinition => (MethodSymbol)OriginalSymbolDefinition;
+
+        ImmutableArray<ITypeParameterSymbol> IMethodSymbol.TypeParameters => StaticCast<ITypeParameterSymbol>.From(this.TypeParameters);
 
         public IMethodSymbol Construct(params ITypeSymbol[] typeArguments)
         {

@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Symbols
             private readonly GenericParameterHandleCollection _genericParameterHandles;
             private readonly ushort _arity;
             private readonly bool _mangleName;
-            private ImmutableArray<ITypeParameterSymbol> _lazyTypeParameters;
+            private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
 
             internal PENamedTypeSymbolGeneric(
                     PEModuleSymbol moduleSymbol,
@@ -124,14 +124,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
+            public override ImmutableArray<TypeSymbol> TypeArguments
             //internal override ImmutableArray<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics
-            //{
-            //    get
-            //    {
-            //        // This is always the instance type, so the type arguments are the same as the type parameters.
-            //        return this.TypeParameters.Cast<TypeParameterSymbol, TypeSymbol>();
-            //    }
-            //}
+            {
+                get
+                {
+                    // This is always the instance type, so the type arguments are the same as the type parameters.
+                    return StaticCast<TypeSymbol>.From(this.TypeParameters);
+                }
+            }
 
             //internal override bool HasTypeArgumentsCustomModifiers
             //{
@@ -149,7 +150,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //    }
             //}
 
-            public override ImmutableArray<ITypeParameterSymbol> TypeParameters
+            public override ImmutableArray<TypeParameterSymbol> TypeParameters
             {
                 get
                 {
@@ -167,16 +168,13 @@ namespace Pchp.CodeAnalysis.Symbols
                     // If this is a nested type generic parameters in metadata include generic parameters of the outer types.
                     int firstIndex = _genericParameterHandles.Count - _arity;
 
-                    throw new NotImplementedException();
+                    var ownedParams = new TypeParameterSymbol[_arity];
+                    for (int i = 0; i < ownedParams.Length; i++)
+                    {
+                        ownedParams[i] = new PETypeParameterSymbol(moduleSymbol, this, (ushort)i, _genericParameterHandles[firstIndex + i]);
+                    }
 
-                    //var ownedParams = new ITypeParameterSymbol[_arity];
-                    //for (int i = 0; i < ownedParams.Length; i++)
-                    //{    
-                    //    ownedParams[i] = new PETypeParameterSymbol(moduleSymbol, this, (ushort)i, _genericParameterHandles[firstIndex + i]);
-                    //}
-
-                    //ImmutableInterlocked.InterlockedInitialize(ref _lazyTypeParameters,
-                    //    ImmutableArray.Create<ITypeParameterSymbol>(ownedParams));
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyTypeParameters, ImmutableArray.Create(ownedParams));
                 }
             }
 
