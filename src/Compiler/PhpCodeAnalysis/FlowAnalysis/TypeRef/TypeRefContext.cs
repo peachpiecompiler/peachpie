@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// Context of <see cref="TypeRefMask"/> and <see cref="ITypeRef"/> instances.
     /// Contains additional information for routine context like current namespace, current type context etc.
     /// </summary>
-    public sealed class TypeRefContext
+    public sealed partial class TypeRefContext
     {
         #region Fields & Properties
 

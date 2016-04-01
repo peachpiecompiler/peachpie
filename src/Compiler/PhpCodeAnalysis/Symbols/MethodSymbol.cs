@@ -175,7 +175,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual TypeRefMask GetResultType(TypeRefContext ctx)
         {
-            throw new NotImplementedException();
+            return ctx.AddToContext(this.ReturnType);
         }
 
         public virtual ImmutableArray<ControlFlowGraph> CFG => ImmutableArray<ControlFlowGraph>.Empty;
