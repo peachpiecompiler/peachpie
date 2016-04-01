@@ -83,7 +83,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     var attrs = GetAttributes();
                     foreach (var a in attrs)
                     {
-                        if (a.AttributeClass.MetadataName == CoreTypes.PhpExtensionAttributeName)
+                        var fullname = MetadataHelpers.BuildQualifiedName((a.AttributeClass as NamedTypeSymbol)?.NamespaceName, a.AttributeClass.Name);
+                        if (fullname == CoreTypes.PhpExtensionAttributeName)
                         {
                             _specialAssembly = SpecialAssembly.ExtensionLibrary;
                             break;

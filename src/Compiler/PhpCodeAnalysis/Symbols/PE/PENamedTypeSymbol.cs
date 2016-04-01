@@ -244,18 +244,22 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal static NamedTypeSymbol Create(PEModuleSymbol moduleSymbol, PENamespaceSymbol containingNamespace, TypeDefinitionHandle handle, string emittedNamespaceName)
         {
-            var genericParameterHandles = moduleSymbol.Module.GetTypeDefGenericParamsOrThrow(handle);
-            ushort arity = (ushort)genericParameterHandles.Count;
+            GenericParameterHandleCollection genericParameterHandles;
+            ushort arity;
+            BadImageFormatException mrEx = null;
+
+            GetGenericInfo(moduleSymbol, handle, out genericParameterHandles, out arity, out mrEx);
 
             bool mangleName;
+            PENamedTypeSymbol result;
 
             if (arity == 0)
             {
-                return new PENamedTypeSymbolNonGeneric(moduleSymbol, containingNamespace, handle, emittedNamespaceName, out mangleName);
+                result = new PENamedTypeSymbolNonGeneric(moduleSymbol, containingNamespace, handle, emittedNamespaceName, out mangleName);
             }
             else
             {
-                return new PENamedTypeSymbolGeneric(
+                result = new PENamedTypeSymbolGeneric(
                     moduleSymbol,
                     containingNamespace,
                     handle,
@@ -263,6 +267,75 @@ namespace Pchp.CodeAnalysis.Symbols
                     genericParameterHandles,
                     arity,
                     out mangleName);
+            }
+
+            if (mrEx != null)
+            {
+                //result._lazyUseSiteDiagnostic = new CSDiagnosticInfo(ErrorCode.ERR_BogusType, result);
+            }
+
+            return result;
+        }
+
+        internal static PENamedTypeSymbol Create(
+            PEModuleSymbol moduleSymbol,
+            PENamedTypeSymbol containingType,
+            TypeDefinitionHandle handle)
+        {
+            GenericParameterHandleCollection genericParameterHandles;
+            ushort metadataArity;
+            BadImageFormatException mrEx = null;
+
+            GetGenericInfo(moduleSymbol, handle, out genericParameterHandles, out metadataArity, out mrEx);
+
+            ushort arity = 0;
+            var containerMetadataArity = containingType.MetadataArity;
+
+            if (metadataArity > containerMetadataArity)
+            {
+                arity = (ushort)(metadataArity - containerMetadataArity);
+            }
+
+            bool mangleName;
+            PENamedTypeSymbol result;
+
+            if (metadataArity == 0)
+            {
+                result = new PENamedTypeSymbolNonGeneric(moduleSymbol, containingType, handle, null, out mangleName);
+            }
+            else
+            {
+                result = new PENamedTypeSymbolGeneric(
+                    moduleSymbol,
+                    containingType,
+                    handle,
+                    null,
+                    genericParameterHandles,
+                    arity,
+                    out mangleName);
+            }
+
+            if (mrEx != null || metadataArity < containerMetadataArity)
+            {
+                //result._lazyUseSiteDiagnostic = new CSDiagnosticInfo(ErrorCode.ERR_BogusType, result);
+            }
+
+            return result;
+        }
+
+        private static void GetGenericInfo(PEModuleSymbol moduleSymbol, TypeDefinitionHandle handle, out GenericParameterHandleCollection genericParameterHandles, out ushort arity, out BadImageFormatException mrEx)
+        {
+            try
+            {
+                genericParameterHandles = moduleSymbol.Module.GetTypeDefGenericParamsOrThrow(handle);
+                arity = (ushort)genericParameterHandles.Count;
+                mrEx = null;
+            }
+            catch (BadImageFormatException e)
+            {
+                arity = 0;
+                genericParameterHandles = default(GenericParameterHandleCollection);
+                mrEx = e;
             }
         }
 
@@ -395,12 +468,38 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
-            throw new NotImplementedException();
+            EnsureNestedTypesAreLoaded();
+            return GetMemberTypesPrivate();
         }
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
         {
-            throw new NotImplementedException();
+            EnsureNestedTypesAreLoaded();
+
+            ImmutableArray<PENamedTypeSymbol> t;
+
+            if (_lazyNestedTypes.TryGetValue(name, out t))
+            {
+                return StaticCast<NamedTypeSymbol>.From(t);
+            }
+
+            return ImmutableArray<NamedTypeSymbol>.Empty;
+        }
+
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name, int arity)
+        {
+            return GetTypeMembers(name).WhereAsArray(type => type.Arity == arity);
+        }
+
+        private ImmutableArray<NamedTypeSymbol> GetMemberTypesPrivate()
+        {
+            var builder = ArrayBuilder<NamedTypeSymbol>.GetInstance();
+            foreach (var typeArray in _lazyNestedTypes.Values)
+            {
+                builder.AddRange(typeArray);
+            }
+
+            return builder.ToImmutableAndFree();
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
@@ -617,7 +716,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyNestedTypes == null)
             {
                 var types = ArrayBuilder<PENamedTypeSymbol>.GetInstance();
-                //types.AddRange(this.CreateNestedTypes());
+                types.AddRange(this.CreateNestedTypes());
                 var typesDict = GroupByName(types);
 
                 var exchangeResult = Interlocked.CompareExchange(ref _lazyNestedTypes, typesDict, null);
@@ -851,6 +950,31 @@ namespace Pchp.CodeAnalysis.Symbols
             if (members != null)
             {
                 members.Free();
+            }
+        }
+
+        private IEnumerable<PENamedTypeSymbol> CreateNestedTypes()
+        {
+            var moduleSymbol = this.ContainingPEModule;
+            var module = moduleSymbol.Module;
+
+            ImmutableArray<TypeDefinitionHandle> nestedTypeDefs;
+
+            try
+            {
+                nestedTypeDefs = module.GetNestedTypeDefsOrThrow(_handle);
+            }
+            catch (BadImageFormatException)
+            {
+                yield break;
+            }
+
+            foreach (var typeRid in nestedTypeDefs)
+            {
+                if (module.ShouldImportNestedType(typeRid))
+                {
+                    yield return PENamedTypeSymbol.Create(moduleSymbol, this, typeRid);
+                }
             }
         }
 
