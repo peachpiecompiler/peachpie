@@ -48,8 +48,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal ImmutableArray<MethodSymbol> CandidatesWithParameterType(TypeSymbol pt, int pi)
         {
-            var selected = _candidates.Where(c => c.ParameterCount > pi && c.Parameters[pi].Type == pt);
-            return selected.ToImmutableArray();
+            return _candidates.WhereAsArray(c => c.ParameterCount > pi && c.Parameters[pi].Type == pt);
         }
 
         internal MethodKind IsMethodKindConsistent()

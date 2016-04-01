@@ -109,11 +109,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public void WithParameterType(TypeSymbol pt, int pi)
         {
-            Filter(s =>
-            {
-                var ps = s.Parameters;
-                return pi >= ps.Length || ps[pi].Type == pt;
-            });
+            _candidates = CandidatesWithParameterType(pt, pi);
         }
     }
 }

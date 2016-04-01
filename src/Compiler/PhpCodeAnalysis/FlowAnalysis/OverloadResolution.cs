@@ -22,6 +22,8 @@ namespace Pchp.CodeAnalysis
 
         public void WithParametersType(TypeRefContext ctx, TypeRefMask[] ptypes)
         {
+            WithParametersCount(ptypes.Length);
+
             // TODO: filter candidates which parameters are convertible from provided types
             // prefer single candidate matching types perfectly
 
