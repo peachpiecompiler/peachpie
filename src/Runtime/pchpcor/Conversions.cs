@@ -138,7 +138,7 @@ namespace Pchp.Core
         /// <param name="c">The character [0-9A-Za-z].</param>
         /// <returns>The digit represented by the character or <see cref="Int32.MaxValue"/> 
         /// on non-alpha-numeric characters.</returns>
-        internal static int AlphaNumericToDigit(char c)
+        public static int AlphaNumericToDigit(char c)
         {
             if (c >= '0' && c <= '9')
                 return (int)(c - '0');
