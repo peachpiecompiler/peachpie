@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Symbols.PE;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -112,11 +113,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override TypeSymbol LookupNestedTypeDefSymbol(TypeSymbol container, ref MetadataTypeName emittedName)
         {
-            throw new NotImplementedException();
-            //var result = container.LookupMetadataType(ref emittedName);
-            //Debug.Assert((object)result != null);
+            var result = container.LookupMetadataType(ref emittedName);
+            Debug.Assert((object)result != null);
 
-            //return result;
+            return result;
         }
 
         /// <summary>
@@ -341,29 +341,28 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override Symbol GetSymbolForMemberRef(MemberReferenceHandle memberRef, TypeSymbol scope = null, bool methodsOnly = false)
         {
-            throw new NotImplementedException();
-            //TypeSymbol targetTypeSymbol = GetMemberRefTypeSymbol(memberRef);
+            TypeSymbol targetTypeSymbol = GetMemberRefTypeSymbol(memberRef);
 
-            //if ((object)scope != null)
-            //{
-            //    Debug.Assert(scope.Kind == SymbolKind.NamedType || scope.Kind == SymbolKind.ErrorType);
+            if ((object)scope != null)
+            {
+                Debug.Assert(scope.Kind == SymbolKind.NamedType || scope.Kind == SymbolKind.ErrorType);
 
-            //    // We only want to consider members that are at or above "scope" in the type hierarchy.
-            //    HashSet<DiagnosticInfo> useSiteDiagnostics = null;
-            //    if (scope != targetTypeSymbol &&
-            //        !(targetTypeSymbol.IsInterfaceType()
-            //            ? scope.AllInterfacesNoUseSiteDiagnostics.Contains((NamedTypeSymbol)targetTypeSymbol)
-            //            : scope.IsDerivedFrom(targetTypeSymbol, ignoreDynamic: false, useSiteDiagnostics: ref useSiteDiagnostics)))
-            //    {
-            //        return null;
-            //    }
-            //}
+                // We only want to consider members that are at or above "scope" in the type hierarchy.
+                HashSet<DiagnosticInfo> useSiteDiagnostics = null;
+                if (scope != targetTypeSymbol &&
+                    !(targetTypeSymbol.IsInterfaceType()
+                        ? scope./*AllInterfacesNoUseSiteDiagnostics*/AllInterfaces.Contains((NamedTypeSymbol)targetTypeSymbol)
+                        : scope.IsDerivedFrom(targetTypeSymbol, ignoreDynamic: false, useSiteDiagnostics: ref useSiteDiagnostics)))
+                {
+                    return null;
+                }
+            }
 
-            //// We're going to use a special decoder that can generate usable symbols for type parameters without full context.
-            //// (We're not just using a different type - we're also changing the type context.)
-            //var memberRefDecoder = new MemberRefMetadataDecoder(moduleSymbol, targetTypeSymbol);
+            // We're going to use a special decoder that can generate usable symbols for type parameters without full context.
+            // (We're not just using a different type - we're also changing the type context.)
+            var memberRefDecoder = new MemberRefMetadataDecoder(moduleSymbol, targetTypeSymbol);
 
-            //return memberRefDecoder.FindMember(targetTypeSymbol, memberRef, methodsOnly);
+            return memberRefDecoder.FindMember(targetTypeSymbol, memberRef, methodsOnly);
         }
 
         protected override void EnqueueTypeSymbolInterfacesAndBaseTypes(Queue<TypeDefinitionHandle> typeDefsToSearch, Queue<TypeSymbol> typeSymbolsToSearch, TypeSymbol typeSymbol)

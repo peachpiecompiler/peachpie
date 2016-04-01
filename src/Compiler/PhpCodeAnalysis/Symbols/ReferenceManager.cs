@@ -69,6 +69,9 @@ namespace Pchp.CodeAnalysis
 
                     // pchpcor
                     yield return @"pchpcor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";
+
+                    // pchplib
+                    yield return @"pchplib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";
                 }
             }
 

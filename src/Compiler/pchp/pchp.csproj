@@ -69,6 +69,10 @@
       <Project>{9c5f04ef-13be-47c0-b416-45fad5722eef}</Project>
       <Name>PchpCor</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\Runtime\pchplib\PchpLib.csproj">
+      <Project>{ca76dca9-42cf-4373-be96-95de71aa0ed1}</Project>
+      <Name>PchpLib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PhpCodeAnalysis\PhpCodeAnalysis.csproj">
       <Project>{1a060993-2fed-42c2-a9bb-1ef9de9cbf83}</Project>
       <Name>PhpCodeAnalysis</Name>
