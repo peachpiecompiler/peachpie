@@ -268,7 +268,6 @@ namespace Pchp.Library
 
         public static int mt_rand()
         {
-            throw new NotImplementedException();
             return MTGenerator.Next();
         }
 
