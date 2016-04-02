@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Name of special late-bound parameter.
-        /// Is of type <see cref="System.Type"/>
+        /// Is of type <see cref="System.RuntimeTypeHandle"/>
         /// </summary>
         public const string StaticTypeName = "<static>";
 

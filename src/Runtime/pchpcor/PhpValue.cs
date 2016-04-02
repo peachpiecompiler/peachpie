@@ -74,49 +74,132 @@ namespace Pchp.Core
 
         public long ToLong()
         {
-            throw new NotImplementedException();
+            switch (_type)
+            {
+                case PhpTypeCode.Long:
+                    return _long;
+                case PhpTypeCode.Boolean:
+                    return _bool ? 1 : 0;
+                case PhpTypeCode.Double:
+                    return (long)_double;
+                case PhpTypeCode.String:
+                    return Convert.StringToLongInteger((string)_obj);
+                case PhpTypeCode.Object:
+                    if (_obj == null) return 0;
+                    throw new NotImplementedException();
+            }
+
+            throw new ArgumentException();
         }
 
         public double ToDouble()
         {
-            throw new NotImplementedException();
+            switch (_type)
+            {
+                case PhpTypeCode.Double:
+                    return _double;
+                case PhpTypeCode.Long:
+                    return (double)_long;
+                case PhpTypeCode.Boolean:
+                    return _bool ? 1.0 : 0.0;
+                case PhpTypeCode.String:
+                    return Convert.StringToDouble((string)_obj);
+                case PhpTypeCode.Object:
+                    if (_obj == null) return 0.0;
+                    throw new NotImplementedException();
+            }
+
+            throw new ArgumentException();
         }
 
         public bool ToBoolean()
         {
-            throw new NotImplementedException();
+            switch (_type)
+            {
+                case PhpTypeCode.Boolean:
+                    return _bool;
+                case PhpTypeCode.Long:
+                    return _long != 0;
+                case PhpTypeCode.Double:
+                    return _double != 0.0;
+                case PhpTypeCode.String:
+                    return Convert.ToBoolean((string)_obj);
+                case PhpTypeCode.Object:
+                    if (_obj == null) return false;
+                    throw new NotImplementedException();
+            }
+
+            throw new ArgumentException();
         }
 
         public Convert.NumberInfo ToNumber(out PhpNumber number)
         {
-            throw new NotImplementedException();
+            switch (_type)
+            {
+                case PhpTypeCode.Long:
+                    number = PhpNumber.Create(_long);
+                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
+                case PhpTypeCode.Double:
+                    number = PhpNumber.Create(_double);
+                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
+                case PhpTypeCode.Boolean:
+                    number = PhpNumber.Create(_bool ? 1L : 0L);
+                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
+                case PhpTypeCode.String:
+                    return Convert.ToNumber((string)_obj, out number);
+                case PhpTypeCode.Object:
+                    if (_obj == null)
+                    {
+                        number = PhpNumber.Create(0L);
+                        return Convert.NumberInfo.Unconvertible;
+                    }
+                    throw new NotImplementedException();
+            }
+
+            throw new ArgumentException();
         }
 
         public string ToString(Context ctx)
         {
-            throw new NotImplementedException();
+            switch (_type)
+            {
+                case PhpTypeCode.String:
+                    return (string)_obj;
+                case PhpTypeCode.Double:
+                    return Convert.ToString(_double, ctx);
+                case PhpTypeCode.Long:
+                    return _long.ToString();
+                case PhpTypeCode.Boolean:
+                    return Convert.ToString(_bool);
+                case PhpTypeCode.Object:
+                    if (_obj == null) return string.Empty;
+                    throw new NotImplementedException();
+            }
+
+            throw new ArgumentException();
         }
 
         public string ToStringOrThrow(Context ctx)
         {
-            throw new NotImplementedException();
+            return ToString(ctx);   // TODO: or throw
         }
-        
+
         #endregion
 
         #region Construction
 
         public static PhpValue Create(PhpNumber number)
         {
-            //return (number.IsLong)
-            //     ? Create(number.Long)
-            //     : Create(number.Double);
+            return (number.IsLong)
+                 ? Create(number.Long)
+                 : Create(number.Double);
 
-            return new PhpValue()
-            {
-                _type = number.TypeCode,    // Long || Double
-                _long = number._long // _long = Long <=> _double = Double
-            };
+            // TODO: does following work on all platforms?
+            //return new PhpValue()
+            //{
+            //    _type = number.TypeCode,    // Long || Double
+            //    _long = number._long // _long = Long <=> _double = Double
+            //};
         }
 
         public static PhpValue Create(long value)
@@ -131,14 +214,36 @@ namespace Pchp.Core
 
         public static PhpValue Create(int value) => Create((long)value);
 
-        public static PhpValue Create(bool value)
-        {
-            return new PhpValue() { _type = PhpTypeCode.Boolean, _bool = value };
-        }
+        public static PhpValue Create(bool value) => new PhpValue() { _type = PhpTypeCode.Boolean, _bool = value };
 
-        public static PhpValue CreateNull()
+        public static PhpValue CreateNull() => new PhpValue() { _type = PhpTypeCode.Object };
+
+        public static PhpValue Create(string value) => new PhpValue() { _type = (value != null) ? PhpTypeCode.String : PhpTypeCode.Object, _obj = value };
+
+        public static PhpValue Create(PhpString value) => new PhpValue() { _type = (value != null) ? PhpTypeCode.WritableString : PhpTypeCode.Object, _obj = value };
+
+        /// <summary>
+        /// Implicitly converts a CLR type to PHP type.
+        /// </summary>
+        public static PhpValue FromClr(object value)
         {
-            return new PhpValue() { _type = PhpTypeCode.Object };
+            // implicit conversion from CLR types to PHP types
+            if (value != null)
+            {
+                if (value.GetType() == typeof(int)) return Create((int)value);
+                if (value.GetType() == typeof(long)) return Create((long)value);
+                if (value.GetType() == typeof(double)) return Create((double)value);
+                if (value.GetType() == typeof(bool)) return Create((bool)value);
+                if (value.GetType() == typeof(string)) return Create((string)value);
+                if (value.GetType() == typeof(PhpString)) return Create((PhpString)value);
+
+                //
+                throw new ArgumentException();
+            }
+            else
+            {
+                return CreateNull();
+            }
         }
 
         #endregion

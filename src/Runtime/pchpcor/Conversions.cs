@@ -109,6 +109,19 @@ namespace Pchp.Core
 
         #endregion
 
+        #region ToNumber
+
+        public static NumberInfo ToNumber(string str, out PhpNumber number)
+        {
+            long l;
+            double d;
+            var info = StringToNumber(str, out l, out d);
+            number = ((info & NumberInfo.Double) != 0) ? PhpNumber.Create(d) : PhpNumber.Create(l);
+            return info;
+        }
+
+        #endregion
+
         #region String To Number
 
         /// <summary>
