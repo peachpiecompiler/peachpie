@@ -16,9 +16,19 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         /// <summary>
         /// Name of special context parameter.
+        /// Is of type <see cref="Pchp.Core.Context"/>
         /// </summary>
         public const string ContextName = "<ctx>";
 
+        /// <summary>
+        /// Name of special late-bound parameter.
+        /// Is of type <see cref="System.Type"/>
+        /// </summary>
+        public const string StaticTypeName = "<static>";
+
+        /// <summary>
+        /// Name of special <c>this</c> parameter.
+        /// </summary>
         public static string ThisName => Syntax.VariableName.ThisVariableName.Value;
 
         readonly MethodSymbol _symbol;
