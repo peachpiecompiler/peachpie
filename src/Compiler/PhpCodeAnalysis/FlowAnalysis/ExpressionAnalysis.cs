@@ -927,17 +927,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitFunctionCall(BoundFunctionCall x)
         {
+            string name;
             // resolve candidates
             var candidates = _model.ResolveFunction(x.Name).ToList();
             if (candidates.Count == 0 && x.AlternativeName.HasValue)
+            {
+                name = x.AlternativeName.Value.ClrName();
                 candidates.AddRange(_model.ResolveFunction(x.AlternativeName.Value));
+            }
+            else
+            {
+                name = x.Name.ClrName();
+            }
 
             //
             var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();
 
-            var overloads = new OverloadResolution(candidates.Cast<MethodSymbol>());
-            overloads.WithStaticCall();
-            overloads.WithParametersCount(args.Length);
+            var overloads = new OverloadsList(name, candidates.Cast<MethodSymbol>())
+            {
+                IsFinal = true,
+            };
             overloads.WithParametersType(TypeCtx, args.Select(a => a.TypeRefMask).ToArray());
 
             //
@@ -972,8 +981,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();
 
-                var overloads = new OverloadResolution(candidates.Cast<MethodSymbol>());
-                overloads.WithParametersCount(args.Length);
+                var overloads = new OverloadsList(WellKnownMemberNames.InstanceConstructorName, candidates.Cast<MethodSymbol>());
                 overloads.WithParametersType(TypeCtx, args.Select(a => a.TypeRefMask).ToArray());
 
                 // reanalyse candidates

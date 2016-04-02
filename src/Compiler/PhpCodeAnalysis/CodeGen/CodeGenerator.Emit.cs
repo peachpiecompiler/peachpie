@@ -845,7 +845,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             return (code == ILOpCode.Newobj) ? (TypeSymbol)method.ContainingType : method.ReturnType;
         }
 
-        internal TypeSymbol EmitCall(ILOpCode code, OverloadResolution overloads, ImmutableArray<BoundExpression> arguments)
+        internal TypeSymbol EmitCall(ILOpCode code, TypeSymbol thisType, OverloadsList overloads, ImmutableArray<BoundExpression> arguments)
         {
             // at this point we do expect <this> is already emitted on top of the evaluation stack
             // TODO: thisType: TypeSymbol of <this> or null
@@ -864,17 +864,16 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // parameter types actually emitted on top of evaluation stack; used for eventual generic indirect call
             var actualParamTypes = new List<TypeSymbol>(arguments.Length + 1);
-
+            
             //
             int arg_index = 0;      // next argument to be emitted from <arguments>
-            bool unable = false;    // whether we have to fallback to indirect call
-
+            
             while (true)
             {
                 int param_index = actualParamTypes.Count;    // next candidates parameter index
                 var t = overloads.ConsistentParameterType(param_index);
 
-                if (overloads.IsImplicitlyDeclared(param_index) && !unable)
+                if (overloads.IsImplicitlyDeclaredParameter(param_index))
                 {
                     // value for implicit parameter is not passed from source code
 
@@ -898,7 +897,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // magic
                 TypeSymbol arg_type;
-                if (t != null)                  // all overloads expect the same argument or there is just one overload
+                if (t != null)                  // all overloads expect the same argument or there is just one
                 {
                     EmitConvert(arguments[arg_index++], t); // load argument
                     arg_type = t;
@@ -906,27 +905,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else
                 {
                     arg_type = arguments[arg_index++].Emit(this);
-
-                    // candidates
-                    var bestmatch = overloads.CandidatesWithParameterType(arg_type, param_index);
-                    if (bestmatch.Length != 0)
-                    {
-                        overloads.WithParameterType(arg_type, param_index);
-                    }
-                    else
-                    {
-                        Debug.Assert(overloads.Candidates.Length != 1); // would be handled above
-                        unable = true;
-                    }
                 }
 
                 actualParamTypes.Add(arg_type);
             }
 
-            //
-            if (overloads.Candidates.Length == 1)
+            // find overloads matching emitted areguments
+            var candidates = overloads.FindByLoadedArgs(actualParamTypes).ToImmutableArray();
+            if (candidates.Length == 1 && overloads.IsFinal)
             {
-                var target = overloads.Candidates[0];
+                var target = candidates[0];
 
                 // pop unnecessary args
                 while (actualParamTypes.Count > target.ParameterCount)
@@ -949,7 +937,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                // TODO: runtime overload resolution, indirect call with <actualParamTypes>
+                // use call site and resolve the overload in runtime
                 throw new NotImplementedException();
             }
         }

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis
 {
-    internal static class TypeRefFactory
+    internal static partial class TypeRefFactory
     {
         #region Primitive Types
 

@@ -57,6 +57,22 @@ namespace Pchp.CodeAnalysis.Symbols
             return typeSymbol.IsReferenceType || typeSymbol.IsEnumType() || typeSymbol.SpecialType.CanBeConst();
         }
 
+        public static bool IsOfType(this TypeSymbol t, TypeSymbol oftype)
+        {
+            if (oftype != null)
+            {
+                HashSet<DiagnosticInfo> set = new HashSet<DiagnosticInfo>();
+                if (t.IsEqualToOrDerivedFrom(oftype, true, ref set))
+                    return true;
+
+                if (oftype.IsInterfaceType() && t.AllInterfaces.Contains(oftype))
+                    return true;
+            }
+
+            //
+            return false;
+        }
+
         //public static bool IsNonNullableValueType(this TypeSymbol typeArgument)
         //{
         //    if (!typeArgument.IsValueType)

@@ -132,7 +132,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IExpression IInvocationExpression.Instance => Instance;
 
-        IMethodSymbol IInvocationExpression.TargetMethod => Overloads?.SingleOrNothing;
+        IMethodSymbol IInvocationExpression.TargetMethod => Overloads?.Candidates.SingleOrDefault();
 
         /// <summary>
         /// <c>this</c> argument to be supplied to the method.
@@ -142,7 +142,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Resolved overloads to be called.
         /// </summary>
-        internal OverloadResolution Overloads { get; set; }
+        internal OverloadsList Overloads { get; set; }
 
         public virtual bool IsVirtual => false;
 
