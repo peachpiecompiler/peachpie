@@ -229,6 +229,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble = ct.PhpValue.Method("ToDouble");
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
 
+                get_Long = ct.PhpNumber.Method("get_Long");   // TODO: special name, property
+                get_Double = ct.PhpNumber.Method("get_Double");   // TODO: special name, property
+                get_Boolean = ct.PhpNumber.Method("get_Boolean");   // TODO: special name, property
+                get_String = ct.PhpNumber.Method("get_String");   // TODO: special name, property
+
                 Create_Boolean = ct.PhpValue.Method("Create", ct.Boolean);
                 Create_Long = ct.PhpValue.Method("Create", ct.Long);
                 Create_Double = ct.PhpValue.Method("Create", ct.Double);
@@ -238,6 +243,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
+                get_Long, get_Double, get_Boolean, get_String,
                 Create_Boolean, Create_Long, Create_Double, Create_PhpNumber, CreateNull;
         }
 

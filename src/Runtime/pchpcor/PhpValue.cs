@@ -63,6 +63,30 @@ namespace Pchp.Core
         /// </summary>
         public bool IsNull => object.ReferenceEquals(_obj, null) && TypeCode == PhpTypeCode.Object;
 
+        /// <summary>
+        /// Gets the long field of the value.
+        /// Does not perform a conversion, expects the value is of type long.
+        /// </summary>
+        public long Long { get { Debug.Assert(_type == PhpTypeCode.Long); return _long; } }
+
+        /// <summary>
+        /// Gets the double field of the value.
+        /// Does not perform a conversion, expects the value is of type double.
+        /// </summary>
+        public double Double { get { Debug.Assert(_type == PhpTypeCode.Double); return _double; } }
+
+        /// <summary>
+        /// Gets the boolean field of the value.
+        /// Does not perform a conversion, expects the value is of type boolean.
+        /// </summary>
+        public bool Boolean { get { Debug.Assert(_type == PhpTypeCode.Boolean); return _bool; } }
+
+        /// <summary>
+        /// Gets the object field of the value as string.
+        /// Does not perform a conversion, expects the value is of type (readonly UTF16) string.
+        /// </summary>
+        public string String { get { Debug.Assert(_type == PhpTypeCode.String && _obj != null); return (string)_obj; } }
+
         #endregion
 
         #region Operators

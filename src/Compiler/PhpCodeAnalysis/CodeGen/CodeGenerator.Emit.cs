@@ -566,20 +566,51 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (place != null && tmask.IsSingleType)
             {
-                if (place.HasAddress && place.Type == CoreTypes.PhpNumber)
+                if (place.HasAddress)
                 {
-                    // access directly without type checking
-                    if (IsDoubleOnly(tmask))
+                    if (place.Type == CoreTypes.PhpNumber)
                     {
-                        place.EmitLoadAddress(_il);
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Double)
-                            .Expect(SpecialType.System_Double);
+                        // access directly without type checking
+                        if (IsDoubleOnly(tmask))
+                        {
+                            place.EmitLoadAddress(_il);
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Double)
+                                .Expect(SpecialType.System_Double);
+                        }
+                        else if (IsLongOnly(tmask))
+                        {
+                            place.EmitLoadAddress(_il);
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Long)
+                                .Expect(SpecialType.System_Int64);
+                        }
                     }
-                    else if (IsLongOnly(tmask))
+                    else if (place.Type == CoreTypes.PhpValue)
                     {
-                        place.EmitLoadAddress(_il);
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.get_Long)
-                            .Expect(SpecialType.System_Int64);
+                        // access directly without type checking
+                        if (IsDoubleOnly(tmask))
+                        {
+                            place.EmitLoadAddress(_il);
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Double)
+                                .Expect(SpecialType.System_Double);
+                        }
+                        else if (IsLongOnly(tmask))
+                        {
+                            place.EmitLoadAddress(_il);
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Long)
+                                .Expect(SpecialType.System_Int64);
+                        }
+                        else if (IsBooleanOnly(tmask))
+                        {
+                            place.EmitLoadAddress(_il);
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Boolean)
+                                .Expect(SpecialType.System_Boolean);
+                        }
+                        else if (IsReadonlyStringOnly(tmask))
+                        {
+                            place.EmitLoadAddress(_il);
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_String)
+                                .Expect(SpecialType.System_String);
+                        }
                     }
                 }
             }
@@ -622,6 +653,34 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitPhpNumberAddr();
                         return EmitCall(ILOpCode.Call, this.CoreMethods.PhpNumber.get_Long)
                             .Expect(SpecialType.System_Int64);
+                    }
+                }
+                else if (stack == CoreTypes.PhpValue)
+                {
+                    // access directly without type checking
+                    if (IsDoubleOnly(tmask))
+                    {
+                        EmitPhpValueAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Double)
+                            .Expect(SpecialType.System_Double);
+                    }
+                    else if (IsLongOnly(tmask))
+                    {
+                        EmitPhpValueAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Long)
+                            .Expect(SpecialType.System_Int64);
+                    }
+                    else if (IsBooleanOnly(tmask))
+                    {
+                        EmitPhpValueAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Boolean)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+                    else if (IsReadonlyStringOnly(tmask))
+                    {
+                        EmitPhpValueAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_String)
+                            .Expect(SpecialType.System_String);
                     }
                 }
             }
@@ -667,6 +726,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (expr.ConstantValue.Value is int)
                 {
                     _il.EmitDoubleConstant((int)expr.ConstantValue.Value);
+                    return this.CoreTypes.Double;
+                }
+                if (expr.ConstantValue.Value is bool)
+                {
+                    _il.EmitDoubleConstant((bool)expr.ConstantValue.Value ? 1.0 : 0.0);
                     return this.CoreTypes.Double;
                 }
             }

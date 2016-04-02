@@ -32,6 +32,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return tmask.IsSingleType && _routine.TypeRefContext.IsLong(tmask);
         }
+        
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        internal bool IsBooleanOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && _routine.TypeRefContext.IsBoolean(tmask);
+        }
 
         /// <summary>
         /// Gets value indicating the given type represents UTF16 readonly string and nothing else.
