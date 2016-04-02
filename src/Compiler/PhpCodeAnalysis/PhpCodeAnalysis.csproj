@@ -68,7 +68,6 @@
     <Compile Include="Compilation\OverloadResolution.cs" />
     <Compile Include="Compilation\PEModuleBuilder.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
-    <Compile Include="Compilation\TypeRefContext.cs" />
     <Compile Include="Emitter\Model\AttributeDataAdapter.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\PropertySymbolAdapter.cs" />
@@ -89,6 +88,7 @@
     <Compile Include="FlowAnalysis\TypeRef\ITypeRef.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRef.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefContext.cs" />
+    <Compile Include="FlowAnalysis\TypeRef\TypeRefFactory.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRefMask.cs" />
     <Compile Include="FlowAnalysis\Visitors\GraphWalker.cs" />
     <Compile Include="FlowAnalysis\Visitors\LocalsWalker.cs" />

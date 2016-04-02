@@ -175,7 +175,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual TypeRefMask GetResultType(TypeRefContext ctx)
         {
-            return ctx.AddToContext(this.ReturnType);
+            return TypeRefFactory.CreateMask(ctx, this.ReturnType);
         }
 
         public virtual ImmutableArray<ControlFlowGraph> CFG => ImmutableArray<ControlFlowGraph>.Empty;

@@ -71,16 +71,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Primitive Types
-
-        internal static readonly PrimitiveTypeRef/*!*/BoolTypeRef = new PrimitiveTypeRef(PhpTypeCode.Boolean);
-        internal static readonly PrimitiveTypeRef/*!*/LongTypeRef = new PrimitiveTypeRef(PhpTypeCode.Long);
-        internal static readonly PrimitiveTypeRef/*!*/DoubleTypeRef = new PrimitiveTypeRef(PhpTypeCode.Double);
-        internal static readonly PrimitiveTypeRef/*!*/StringTypeRef = new PrimitiveTypeRef(PhpTypeCode.String);
-        internal static readonly PrimitiveTypeRef/*!*/WritableStringRef = new PrimitiveTypeRef(PhpTypeCode.WritableString);
-        internal static readonly PrimitiveTypeRef/*!*/ArrayTypeRef = new PrimitiveTypeRef(PhpTypeCode.PhpArray);
         
-        #endregion
 
         #region Initialization
 
@@ -428,7 +419,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(StringTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.StringTypeRef);
             }
         }
 
@@ -443,7 +434,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(WritableStringRef);
+                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.WritableStringRef);
             }
         }
 
@@ -458,7 +449,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(LongTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.LongTypeRef);
             }
         }
 
@@ -473,7 +464,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(BoolTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.BoolTypeRef);
             }
         }
 
@@ -488,7 +479,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(DoubleTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.DoubleTypeRef);
             }
         }
 
@@ -513,7 +504,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetArrayTypeMask()
         {
-            return GetPrimitiveTypeRefMask(ArrayTypeRef);
+            return GetPrimitiveTypeRefMask(TypeRefFactory.ArrayTypeRef);
         }
 
         /// <summary>
@@ -683,7 +674,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     if (elementtype != null)
                         types.Add(elementtype.QualifiedName.ToString() + "[]");
                     else
-                        types.Add(ArrayTypeRef.QualifiedName.ToString());
+                        types.Add(TypeRefFactory.ArrayTypeRef.QualifiedName.ToString());
                 }
 
                 //// int|double => number
