@@ -86,6 +86,7 @@ namespace Pchp.Core
                     return Convert.StringToLongInteger((string)_obj);
                 case PhpTypeCode.Object:
                     if (_obj == null) return 0;
+                    if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToLong();
                     throw new NotImplementedException();
             }
 
@@ -106,6 +107,7 @@ namespace Pchp.Core
                     return Convert.StringToDouble((string)_obj);
                 case PhpTypeCode.Object:
                     if (_obj == null) return 0.0;
+                    if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToDouble();
                     throw new NotImplementedException();
             }
 
@@ -126,6 +128,7 @@ namespace Pchp.Core
                     return Convert.ToBoolean((string)_obj);
                 case PhpTypeCode.Object:
                     if (_obj == null) return false;
+                    if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToBoolean();
                     throw new NotImplementedException();
             }
 
@@ -153,6 +156,10 @@ namespace Pchp.Core
                         number = PhpNumber.Create(0L);
                         return Convert.NumberInfo.Unconvertible;
                     }
+                    if (_obj is IPhpConvertible)
+                    {
+                        return ((IPhpConvertible)_obj).ToNumber(out number);
+                    }
                     throw new NotImplementedException();
             }
 
@@ -173,6 +180,7 @@ namespace Pchp.Core
                     return Convert.ToString(_bool);
                 case PhpTypeCode.Object:
                     if (_obj == null) return string.Empty;
+                    if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToString(ctx);
                     throw new NotImplementedException();
             }
 
