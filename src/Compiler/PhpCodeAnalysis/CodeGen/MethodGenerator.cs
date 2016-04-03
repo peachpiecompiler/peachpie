@@ -216,6 +216,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     Debug.Assert(!realctor.IsStatic);
                     var ps = realctor.Parameters;
+                    bool returnsValue = !realctor.ReturnsVoid;
 
                     // call realctor
                     il.EmitLoadArgumentOpcode(0);    // this
@@ -249,8 +250,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                     }
 
-                    il.EmitOpCode(ILOpCode.Call, -1 - ps.Length);   // - this - ps
+                    il.EmitOpCode(ILOpCode.Call, -1 - ps.Length + (returnsValue ? 1 : 0));   // - this - ps
                     il.EmitToken(realctor, null, diagnostics);
+
+                    if (returnsValue)
+                        il.EmitOpCode(ILOpCode.Pop);
                 }
 
                 // return
