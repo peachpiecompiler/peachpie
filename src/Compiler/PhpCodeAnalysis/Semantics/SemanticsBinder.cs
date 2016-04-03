@@ -111,12 +111,26 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotSupportedException();
             }
 
+            var boundargs = BindArguments(x.CallSignature.Parameters);
+
             if (x is AST.DirectFcnCall)
             {
                 var f = (AST.DirectFcnCall)x;
                 if (f.IsMemberOf == null)
                 {
-                    return new BoundFunctionCall(f.QualifiedName, f.FallbackQualifiedName, BindArguments(f.CallSignature.Parameters));
+                    return new BoundFunctionCall(f.QualifiedName, f.FallbackQualifiedName, boundargs)
+                        .WithAccess(access);
+                }
+            }
+            else if (x is AST.DirectStMtdCall)
+            {
+                var f = (AST.DirectStMtdCall)x;
+                Debug.Assert(f.IsMemberOf == null);
+                var containingType = f.TypeRef;
+                if (containingType is AST.DirectTypeRef)
+                {
+                    return new BoundStMethodCall(((AST.DirectTypeRef)containingType).GenericQualifiedName, f.MethodName, boundargs)
+                        .WithAccess(access);
                 }
             }
 

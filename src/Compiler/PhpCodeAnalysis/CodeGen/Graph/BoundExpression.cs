@@ -983,6 +983,25 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundStMethodCall
+    {
+        internal override TypeSymbol Emit(CodeGenerator il)
+        {
+            var overloads = this.Overloads;
+            if (overloads == null)
+                throw new InvalidOperationException();  // function call has to be analyzed first
+
+            Debug.Assert(overloads.Candidates.All(c => c.IsStatic));
+
+            // TODO: emit check the containing type is declared; options:
+            // 1. disable checks in release for better performance
+            // 2. autoload script containing the declaration
+            // 3. throw if type is not declared
+
+            return il.EmitCall(ILOpCode.Call, null, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
+        }
+    }
+
     partial class BoundEcho
     {
         internal override TypeSymbol Emit(CodeGenerator il)

@@ -187,6 +187,34 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     /// <summary>
+    /// Static call to a method.
+    /// </summary>
+    public partial class BoundStMethodCall : BoundRoutineCall
+    {
+        Name _name;
+        GenericQualifiedName _containingtype;
+
+        /// <summary>
+        /// Gets the method name.
+        /// </summary>
+        public Name Name => _name;
+
+        /// <summary>
+        /// Gets the containing type name.
+        /// </summary>
+        public GenericQualifiedName ContainingType => _containingtype;
+
+        public override BoundExpression Instance => null;
+
+        public BoundStMethodCall(GenericQualifiedName containingType, Name name, ImmutableArray<BoundArgument> arguments)
+            : base(arguments)
+        {
+            _containingtype = containingType;
+            _name = name;
+        }
+    }
+
+    /// <summary>
     /// Specialized <c>echo</c> function call.
     /// To be replaced with <c>Context.Echo</c> once overload resolution is implemented.
     /// </summary>

@@ -48,9 +48,10 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public INamedTypeSymbol GetType(QualifiedName name)
         {
-            return Next.GetType(name);
-
+            // TODO: reserved type names: self, parent, static
             // TODO: library types
+
+            return Next.GetType(name);
         }
 
         public SourceFileSymbol GetFile(string relativePath)
