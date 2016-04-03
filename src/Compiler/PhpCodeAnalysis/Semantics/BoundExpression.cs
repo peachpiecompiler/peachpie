@@ -187,6 +187,29 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     /// <summary>
+    /// Instance call to a method.
+    /// </summary>
+    public partial class BoundInstanceMethodCall : BoundRoutineCall
+    {
+        Name _name;
+        BoundExpression _instance;
+
+        /// <summary>
+        /// Gets the method name.
+        /// </summary>
+        public Name Name => _name;
+
+        public override BoundExpression Instance => _instance;
+
+        public BoundInstanceMethodCall(BoundExpression instance, Name name, ImmutableArray<BoundArgument> arguments)
+            : base(arguments)
+        {
+            _instance = instance;
+            _name = name;
+        }
+    }
+
+    /// <summary>
     /// Static call to a method.
     /// </summary>
     public partial class BoundStMethodCall : BoundRoutineCall

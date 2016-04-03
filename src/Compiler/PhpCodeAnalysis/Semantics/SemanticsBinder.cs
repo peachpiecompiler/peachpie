@@ -111,6 +111,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotSupportedException();
             }
 
+            var boundinstance = (x.IsMemberOf != null) ? BindExpression(x.IsMemberOf) : null;
             var boundargs = BindArguments(x.CallSignature.Parameters);
 
             if (x is AST.DirectFcnCall)
@@ -120,6 +121,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     return new BoundFunctionCall(f.QualifiedName, f.FallbackQualifiedName, boundargs)
                         .WithAccess(access);
+                }
+                else
+                {
+                    Debug.Assert(f.FallbackQualifiedName.HasValue == false);
+                    Debug.Assert(f.QualifiedName.IsSimpleName);
+                    return new BoundInstanceMethodCall(boundinstance, f.QualifiedName.Name, boundargs);
                 }
             }
             else if (x is AST.DirectStMtdCall)

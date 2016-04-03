@@ -35,22 +35,13 @@ namespace Pchp.Core
         #region Fields
 
         /// <summary>
-        /// Value type.
+        /// The value type.
         /// </summary>
-        [FieldOffset(0)]
-        PhpTypeCode _type;
-
-        [FieldOffset(4)]
-        object _obj;
-
-        [FieldOffset(8)]
-        long _long;
-
-        [FieldOffset(8)]
-        double _double;
-
-        [FieldOffset(8)]
-        bool _bool;
+        [FieldOffset(0)] PhpTypeCode _type;
+        [FieldOffset(4)] long _long;
+        [FieldOffset(4)] double _double;
+        [FieldOffset(4)] bool _bool;
+        [FieldOffset(16)] object _obj;
 
         #endregion
 

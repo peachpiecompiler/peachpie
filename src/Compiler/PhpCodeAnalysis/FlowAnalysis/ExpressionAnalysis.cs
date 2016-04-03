@@ -904,6 +904,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitFunctionCall((BoundFunctionCall)operation);
             }
+            else if (operation is BoundInstanceMethodCall)
+            {
+                VisitInstanceMethodCall((BoundInstanceMethodCall)operation);
+            }
             else if (operation is BoundStMethodCall)
             {
                 VisitStMethodCall((BoundStMethodCall)operation);
@@ -950,6 +954,72 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 IsFinal = true,
             };
+            overloads.WithParametersType(TypeCtx, args.Select(a => a.TypeRefMask).ToArray());
+
+            //
+            TypeRefMask result_type = 0;
+
+            // reanalyse candidates
+            foreach (var c in overloads.Candidates)
+            {
+                // analyze TargetMethod with x.Arguments
+                // require method result type if access != none
+                var enqueued = this.Worklist.EnqueueRoutine(c, _analysis.CurrentBlock, args);
+                if (enqueued)   // => target has to be reanalysed
+                {
+                    // note: continuing current block may be waste of time
+                }
+
+                result_type |= c.GetResultType(TypeCtx);
+            }
+
+            x.Overloads = overloads;
+            x.TypeRefMask = result_type;
+        }
+
+        protected virtual void VisitInstanceMethodCall(BoundInstanceMethodCall x)
+        {
+            Debug.Assert(x.Instance != null);
+
+            x.TypeRefMask = TypeRefMask.AnyType;    // temporarily until we won't resolve the method call
+
+            // resolve instance type
+            Visit(x.Instance);
+
+            var typeref = TypeCtx.GetTypes(x.Instance.TypeRefMask);
+            if (typeref.Count != 1)
+            {
+                // TODO: resolve common base
+
+                // otherwise dynamic call
+                return;
+            }
+
+            var classtypes = typeref.Where(t => t.IsObject).AsImmutable();
+            if (classtypes.Length != 1)
+            {
+                // dynamic call
+                return;
+            }
+
+            var qname = classtypes[0].QualifiedName;
+            var type = _model.GetType(qname);
+            if (type == null)
+            {
+                return;
+            }
+
+            // TODO: LookupMember: lookup in base classes, accessibility resolution
+            var candidates = type.GetMembers(x.Name.Value).OfType<MethodSymbol>();  // TODO: GetPhpMember: case insensitive
+
+            // TODO: merge following with VisitFunctionCall
+
+            //
+            var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();
+
+            var overloads = new OverloadsList(x.Name.Value, candidates);
+            overloads.WithInstanceCall((TypeSymbol)type);
+            overloads.WithInstanceCall(TypeCtx, x.Instance.TypeRefMask);
             overloads.WithParametersType(TypeCtx, args.Select(a => a.TypeRefMask).ToArray());
 
             //
