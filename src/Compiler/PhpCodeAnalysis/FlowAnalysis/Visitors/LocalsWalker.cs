@@ -245,7 +245,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                     case VariableKind.StaticVariable:
                         var boundstatic = new BoundStaticLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind), null);
                         if (e.Expression != null)
-                            boundstatic.Update(this.SemanticBinder.BindExpression(e.Expression));
+                            boundstatic.Update(this.SemanticBinder.BindExpression(e.Expression, BoundAccess.Read));
                         
                         _locals.Add(boundstatic);
                         break;

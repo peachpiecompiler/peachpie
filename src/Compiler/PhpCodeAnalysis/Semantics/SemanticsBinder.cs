@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return expressions.Select(BindExpression).ToImmutableArray();
         }
 
-        BoundExpression BindExpression(AST.Expression expr) => BindExpression(expr, AccessType.Read);
+        BoundExpression BindExpression(AST.Expression expr) => BindExpression(expr, BoundAccess.Read);
 
         ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.Expression> expressions)
         {
@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(stmt != null);
 
             if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters)));
-            if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, AccessType.None));
+            if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, BoundAccess.None));
             if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
 
             throw new NotImplementedException(stmt.GetType().FullName);
@@ -75,14 +75,14 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 return new BoundReturnStatement(
                     (stmt.Expression != null)
-                        ? BindExpression(stmt.Expression, AccessType.Read)   // ReadRef in case routine returns an aliased value
+                        ? BindExpression(stmt.Expression, BoundAccess.Read)   // ReadRef in case routine returns an aliased value
                         : null);
             }
 
             throw ExceptionUtilities.Unreachable;
         }
 
-        public BoundExpression BindExpression(AST.Expression expr, AccessType access = AccessType.Read)
+        public BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
             Debug.Assert(expr != null);
 
@@ -104,9 +104,9 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundConcatEx(BindArguments(x.Expressions));
         }
 
-        BoundRoutineCall BindFunctionCall(AST.FunctionCall x, AccessType access)
+        BoundRoutineCall BindFunctionCall(AST.FunctionCall x, BoundAccess access)
         {
-            if (access != AccessType.None && access != AccessType.Read && access != AccessType.ReadRef)
+            if (access.IsWrite)
             {
                 throw new NotSupportedException();
             }
@@ -155,7 +155,7 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundExpression BindIncDec(AST.IncDecEx expr)
         {
             // bind variable reference
-            var varref = (BoundReferenceExpression)BindExpression(expr.Variable, AccessType.ReadAndWrite);
+            var varref = (BoundReferenceExpression)BindExpression(expr.Variable, BoundAccess.ReadAndWrite);
 
             // resolve kind
             UnaryOperationKind kind;
@@ -168,7 +168,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundIncDecEx(varref, kind);
         }
 
-        BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, AccessType access)
+        BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, BoundAccess access)
         {
             if (expr is AST.DirectVarUse) return BindDirectVarUse((AST.DirectVarUse)expr, access);
             if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
@@ -177,9 +177,9 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException(expr.GetType().FullName);
         }
 
-        BoundExpression BindNew(AST.NewEx x, AccessType access)
+        BoundExpression BindNew(AST.NewEx x, BoundAccess access)
         {
-            Debug.Assert(access == AccessType.Read || access == AccessType.None || access == AccessType.ReadRef);
+            Debug.Assert(access.IsRead || access.IsReadRef || access.IsNone);
 
             if (x.ClassNameRef is AST.DirectTypeRef)
             {
@@ -192,7 +192,7 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException();
         }
 
-        BoundExpression BindDirectVarUse(AST.DirectVarUse expr, AccessType access)
+        BoundExpression BindDirectVarUse(AST.DirectVarUse expr, BoundAccess access)
         {
             if (expr.IsMemberOf == null)
             {
@@ -216,32 +216,32 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundExpression BindBinaryEx(AST.BinaryEx expr)
         {
             return new BoundBinaryEx(
-                BindExpression(expr.LeftExpr, AccessType.Read),
-                BindExpression(expr.RightExpr, AccessType.Read),
+                BindExpression(expr.LeftExpr, BoundAccess.Read),
+                BindExpression(expr.RightExpr, BoundAccess.Read),
                 expr.Operation);
         }
 
         BoundExpression BindUnaryEx(AST.UnaryEx expr)
         {
-            return new BoundUnaryEx(BindExpression(expr.Expr, AccessType.Read), expr.Operation);
+            return new BoundUnaryEx(BindExpression(expr.Expr, BoundAccess.Read), expr.Operation);
         }
 
-        BoundExpression BindAssignEx(AST.AssignEx expr, AccessType access)
+        BoundExpression BindAssignEx(AST.AssignEx expr, BoundAccess access)
         {
             var op = expr.Operation;
-            var target = (BoundReferenceExpression)BindExpression(expr.LValue, AccessType.Write);
+            var target = (BoundReferenceExpression)BindExpression(expr.LValue, BoundAccess.Write);
             BoundExpression value;
 
             if (expr is AST.ValueAssignEx)
             {
-                value = BindExpression(((AST.ValueAssignEx)expr).RValue, AccessType.Read);
+                value = BindExpression(((AST.ValueAssignEx)expr).RValue, BoundAccess.Read);
             }
             else
             {
                 Debug.Assert(expr is AST.RefAssignEx);
                 Debug.Assert(op == AST.Operations.AssignRef);
-                target.Access = AccessType.WriteRef;
-                value = BindExpression(((AST.RefAssignEx)expr).RValue, AccessType.ReadRef);
+                target.Access = target.Access.WithWriteRef(0); // note: analysis will write the write type
+                value = BindExpression(((AST.RefAssignEx)expr).RValue, BoundAccess.Read.WithEnsureRef());
             }
 
             // compound assign -> assign
@@ -295,8 +295,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 //
                 op = AST.Operations.AssignValue;
-                value = new BoundBinaryEx(BindExpression(expr.LValue, AccessType.Read), value, binaryop)
-                    .WithAccess(AccessType.Read);
+                value = new BoundBinaryEx(BindExpression(expr.LValue, BoundAccess.Read), value, binaryop)
+                    .WithAccess(BoundAccess.Read);
             }
 
             //

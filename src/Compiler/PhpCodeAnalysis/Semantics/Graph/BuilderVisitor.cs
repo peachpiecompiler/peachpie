@@ -209,7 +209,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             var caseitem = item as CaseItem;
             BoundExpression caseValue =  // null => DefaultItem
-                (caseitem != null) ? _binder.BindExpression(caseitem.CaseVal) : null;
+                (caseitem != null) ? _binder.BindExpression(caseitem.CaseVal, BoundAccess.Read) : null;
             return WithNewOrdinal(new CaseBlock(caseValue));
         }
 
@@ -217,7 +217,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             if (condition != null)
             {
-                new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition))
+                new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition, BoundAccess.Read))
                 {
                     IsLoop = isloop,
                 };
@@ -395,7 +395,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // ForeachEnumereeEdge : SimpleEdge
             // x.Enumeree.GetEnumerator();
-            var enumereeEdge = new ForeachEnumereeEdge(_current, move, _binder.BindExpression(x.Enumeree));
+            var enumereeEdge = new ForeachEnumereeEdge(_current, move, _binder.BindExpression(x.Enumeree, BoundAccess.Read));
 
             // ContinueTarget:
             OpenBreakScope(end, move);
@@ -592,7 +592,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // SwitchEdge // Connects _current to cases
-            var edge = new SwitchEdge(_current, _binder.BindExpression(x.SwitchValue), cases.ToArray(), end);
+            var edge = new SwitchEdge(_current, _binder.BindExpression(x.SwitchValue, BoundAccess.Read), cases.ToArray(), end);
             _current = WithNewOrdinal(cases[0]);
 
             OpenBreakScope(end, end); // NOTE: inside switch, Continue ~ Break

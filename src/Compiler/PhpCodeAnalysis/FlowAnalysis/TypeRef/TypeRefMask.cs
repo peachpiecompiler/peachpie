@@ -97,6 +97,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Gets copy of this type mask with the reference flag.
+        /// </summary>
+        public TypeRefMask WithRefFlag => _mask | (ulong)MaskFlags.IsRef;
+
+        /// <summary>
         /// Gets value indicating whether given type mask represents a type including its subclasses.
         /// </summary>
         public bool IncludesSubclasses

@@ -14,34 +14,210 @@ using Pchp.Syntax;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
-    #region AccessType
+    #region BoundAccess, AccessMask
+
+    [Flags]
+    public enum AccessMask
+    {
+        /// <summary>
+        /// Serves for case when Expression is body of a ExpressionStmt.
+        /// It is useless to push its value on the stack in that case.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// The result value will be read first.
+        /// </summary>
+        Read = 1,
+
+        /// <summary>
+        /// A value will be written to the place.
+        /// Only available for VariableUse (variables, fields, properties, array items, references).
+        /// </summary>
+        Write = 2,
+
+        /// <summary>
+        /// The expression will be aliased and the alias will be read.
+        /// </summary>
+        EnsureRef = 4 | Read,
+
+        /// <summary>
+        /// An aliased value will be written to the place.
+        /// Only available for VariableUse (variables, fields, properties, array items, references).
+        /// </summary>
+        WriteRef = 8 | Write,
+
+        /// <summary>
+        /// The expression is accessed as a part of chain,
+        /// its member field will be written to.
+        /// E.g. (EnsureObject)->Field = Value
+        /// </summary>
+        EnsureObject = 16 | Read,
+
+        /// <summary>
+        /// The expression is accessed as a part of chain,
+        /// its item entry will be written to.
+        /// E.g. (EnsureArray)[] = Value
+        /// </summary>
+        EnsureArray = 32 | Read,
+
+        /// <summary>
+        /// Read is check only and won't result in an exception in case the variable does not exist.
+        /// </summary>
+        ReadCheck = 64,
+
+        // NOTE: WriteAndReadRef has to be constructed by semantic binder as bound expression with Write and another bound expression with ReadRef
+        // NOTE: ReadAndWriteAndReadRef has to be constructed by semantic binder as bound expression with Read|Write and another bound expression with ReadRef
+    }
 
     /// <summary>
-    /// Access type - describes context within which an expression is used.
+    /// Expression access information.
+    /// Describes the context in which an expression is used.
     /// </summary>
-    public enum AccessType : byte
+    public struct BoundAccess
     {
-        None,          // serves for case when Expression is body of a ExpressionStmt.
-                       // It is useless to push its value on the stack in that case
-        Read,
-        Write,         // this access can only have VariableUse of course
-        ReadAndWrite,  // dtto, it serves for +=,*=, etc.
-        ReadRef,       // this access can only have VarLikeConstructUse and RefAssignEx (eg. f($a=&$b); where decl. is: function f(&$x) {} )
-        WriteRef,      // this access can only have VariableUse of course
-        ReadUnknown,   // this access can only have VarLikeConstructUse and NewEx, 
-                       // when they are act. param whose related formal param is not known
-        WriteAndReadRef,        /*this access can only have VariableUse, it is used in case like:
-													function f(&$x) {}
-													f($a=$b);
-                                */
-        WriteAndReadUnknown, //dtto, but it is used when the signature of called function is not known 
-                             /* It is because of implementation of code generation that we
-                              * do not use an AccessType WriteRefAndReadRef in case of ReafAssignEx
-                              * f(&$x){} 
-                              * f($a=&$b)
-                              */
-        ReadAndWriteAndReadRef, //for f($a+=$b);
-        ReadAndWriteAndReadUnknown
+        /// <summary>
+        /// 
+        /// </summary>
+        AccessMask _flags;
+
+        ///// <summary>
+        ///// Optional. Type the expression result will be converted to.
+        ///// </summary>
+        //TypeRefMask _readTypeMask;
+
+        /// <summary>
+        /// Type information for the write access (right value of the assignment).
+        /// In case of <see cref="EnsureArray"/>, the type represents the written element type.
+        /// </summary>
+        TypeRefMask _writeTypeMask;
+
+        #region Properties
+
+        /// <summary>
+        /// In case the expression's value will be read.
+        /// </summary>
+        public bool IsRead => (_flags & AccessMask.Read) != 0;
+
+        /// <summary>
+        /// In case a value will be written to the variable.
+        /// </summary>
+        public bool IsWrite => (_flags & AccessMask.Write) != 0;
+
+        /// <summary>
+        /// Gets type of value to be written.
+        /// </summary>
+        public TypeRefMask WriteMask => _writeTypeMask;
+
+        /// <summary>
+        /// Gets inyternal access flags.
+        /// </summary>
+        public AccessMask Flags => _flags;
+
+        /// <summary>
+        /// The variable will be aliased and read.
+        /// </summary>
+        public bool IsReadRef => (_flags & AccessMask.EnsureRef) == AccessMask.EnsureRef;
+
+        /// <summary>
+        /// A reference will be written.
+        /// </summary>
+        public bool IsWriteRef => (_flags & AccessMask.WriteRef) == AccessMask.WriteRef;
+
+        /// <summary>
+        /// The expression won't be read or written to.
+        /// </summary>
+        public bool IsNone => (_flags == 0);
+
+        /// <summary>
+        /// The read is for check purposes only and won't result in a warning in case the variable does not exist.
+        /// </summary>
+        public bool IsCheck => (_flags & AccessMask.ReadCheck) != 0;
+
+        /// <summary>
+        /// In case we might change the variable content to array, object or an alias (we may need write access).
+        /// </summary>
+        public bool IsEnsure => (_flags & ~AccessMask.Read & (AccessMask.EnsureRef | AccessMask.EnsureObject | AccessMask.EnsureArray)) != 0;
+
+        /// <summary>
+        /// In case an alias will be written to the variable.
+        /// </summary>
+        public bool WriteRef => (_flags & AccessMask.WriteRef) == AccessMask.WriteRef;
+
+        /// <summary>
+        /// In case the expression will be read as an alias.
+        /// In case of a variable, it has to be aliased.
+        /// </summary>
+        public bool EnsureRef => (_flags & AccessMask.EnsureRef) == AccessMask.EnsureRef;
+
+        /// <summary>
+        /// In case the expression has to read as an object to allow writing its fields.
+        /// In case of a variable, created object has to be written back.
+        /// </summary>
+        public bool EnsureObject => (_flags & AccessMask.EnsureObject) == AccessMask.EnsureObject;
+
+        /// <summary>
+        /// In case the expression has to read as an array to allow accessing its elements.
+        /// In case of a variable, created array has to be written back.
+        /// </summary>
+        public bool EnsureArray => (_flags & AccessMask.EnsureArray) == AccessMask.EnsureArray;
+
+        #endregion
+
+        #region Construction
+
+        public BoundAccess(AccessMask flags, TypeRefMask writeTypeMask)
+        {
+            _flags = flags;
+            _writeTypeMask = writeTypeMask;
+        }
+
+        public BoundAccess WithRead()
+        {
+            return new BoundAccess(_flags | AccessMask.Read, _writeTypeMask);
+        }
+
+        public BoundAccess WithWrite(TypeRefMask writeTypeMask)
+        {
+            return new BoundAccess(_flags | AccessMask.Write, _writeTypeMask | writeTypeMask);
+        }
+
+        public BoundAccess WithWriteRef(TypeRefMask writeTypeMask)
+        {
+            return new BoundAccess(_flags | AccessMask.WriteRef, _writeTypeMask | writeTypeMask);
+        }
+
+        public BoundAccess WithEnsureRef()
+        {
+            return new BoundAccess(_flags | AccessMask.EnsureRef, _writeTypeMask);
+        }
+
+        public BoundAccess WithCheck()
+        {
+            return new BoundAccess(_flags | AccessMask.ReadCheck, _writeTypeMask);
+        }
+
+        /// <summary>
+        /// Simple read access.
+        /// </summary>
+        public static BoundAccess Read => new BoundAccess(AccessMask.Read, 0);
+
+        /// <summary>
+        /// Simple write access without bound write type mask.
+        /// </summary>
+        public static BoundAccess Write => new BoundAccess(AccessMask.Write, 0);
+
+        /// <summary>
+        /// Expression won't be read or written to.
+        /// </summary>
+        public static BoundAccess None => new BoundAccess(AccessMask.None, 0);
+
+        /// <summary>
+        /// Read and write without bound write type mask
+        /// </summary>
+        public static BoundAccess ReadAndWrite => new BoundAccess(AccessMask.Read | AccessMask.Write, 0);
+
+        #endregion
     }
 
     #endregion
@@ -52,7 +228,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public TypeRefMask TypeRefMask { get; set; } = default(TypeRefMask);
 
-        public AccessType Access { get; internal set; }
+        public BoundAccess Access { get; internal set; }
 
         public virtual Optional<object> ConstantValue => default(Optional<object>);
 
@@ -392,7 +568,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.IncrementExpression;
 
         public BoundIncDecEx(BoundReferenceExpression target, UnaryOperationKind kind)
-            : base(target, new BoundLiteral(1L).WithAccess(AccessType.Read), Operations.IncDec)
+            : base(target, new BoundLiteral(1L).WithAccess(BoundAccess.Read), Operations.IncDec)
         {
             Debug.Assert(
                 kind == UnaryOperationKind.OperatorPostfixDecrement ||

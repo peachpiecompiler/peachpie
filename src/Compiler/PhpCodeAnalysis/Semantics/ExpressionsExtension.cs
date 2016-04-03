@@ -8,7 +8,7 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     static class ExpressionsExtension
     {
-        public static T WithAccess<T>(this T expr, AccessType access) where T : BoundExpression
+        public static T WithAccess<T>(this T expr, BoundAccess access) where T : BoundExpression
         {
             expr.Access = access;
             return expr;

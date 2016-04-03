@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            Debug.Assert(this.Access == AccessType.Read || this.Access == AccessType.None);
+            Debug.Assert(this.Access.IsRead || this.Access.IsNone);
 
             TypeSymbol returned_type;
 
@@ -198,14 +198,14 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            switch (Access)
+            switch (Access.Flags)
             {
-                case AccessType.Read:
+                case AccessMask.Read:
                     // Result is read, do nothing.
                     Debug.Assert(returned_type.SpecialType != SpecialType.System_Void);
                     break;
 
-                case AccessType.None:
+                case AccessMask.None:
                     // Result is not read, pop the result
                     il.EmitPop(returned_type);
                     returned_type = il.CoreTypes.Void;
@@ -661,7 +661,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            Debug.Assert(Access == AccessType.Read || Access == AccessType.None);
+            Debug.Assert(Access.IsRead || Access.IsNone);
 
             TypeSymbol returned_type;
 
@@ -730,7 +730,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.Print:
                     il.EmitEcho(this.Operand);
 
-                    if (Access == AccessType.Read)
+                    if (Access.IsRead)
                     {
                         // Always returns 1
                         il.Builder.EmitLongConstant(1);
@@ -817,13 +817,13 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw ExceptionUtilities.Unreachable;
             }
 
-            switch (Access)
+            switch (Access.Flags)
             {
-                case AccessType.Read:
+                case AccessMask.Read:
                     Debug.Assert(returned_type.SpecialType != SpecialType.System_Void);
                     // do nothing
                     break;
-                case AccessType.None:
+                case AccessMask.None:
                     // pop operation's result value from stack
                     il.EmitPop(returned_type);
                     returned_type = il.CoreTypes.Void;
@@ -871,10 +871,10 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            Debug.Assert(this.Access == AccessType.Read || this.Access == AccessType.None);
+            Debug.Assert(this.Access.IsRead || Access.IsNone);
 
             // do nothing
-            if (this.Access == AccessType.None)
+            if (this.Access.IsNone)
             {
                 return il.CoreTypes.Void;
             }
@@ -943,7 +943,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (this.Variable == null)
                 throw new InvalidOperationException(); // variable was not resolved
 
-            if (Access == AccessType.None)
+            if (Access.IsNone)
             {
                 // do nothing
                 return il.CoreTypes.Void;
@@ -961,7 +961,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundRoutineCall
     {
-        
+
     }
 
     partial class BoundFunctionCall
@@ -973,7 +973,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new InvalidOperationException();  // function call has to be analyzed first
 
             Debug.Assert(overloads.Candidates.All(c => c.IsStatic));
-            
+
             // TODO: emit check the routine is declared; options:
             // 1. disable checks in release for better performance
             // 2. autoload script containing routine declaration
@@ -1027,7 +1027,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            Debug.Assert(Access == AccessType.None);
+            Debug.Assert(Access.IsNone);
 
             foreach (var arg in _arguments)
             {
@@ -1130,7 +1130,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 .Expect((TypeSymbol)this.ResultType);
 
             //
-            if (this.Access == AccessType.None)
+            if (this.Access.IsNone)
             {
                 il.EmitPop(type);
                 type = il.CoreTypes.Void;
@@ -1157,29 +1157,28 @@ namespace Pchp.CodeAnalysis.Semantics
             target_place.EmitStorePrepare(il.Builder);
             il.EmitConvert(this.Value, t);
 
-            if (this.Access != AccessType.None)
+            switch (this.Access.Flags)
             {
-                switch (this.Access)
-                {
-                    case AccessType.Read:
-                        tmp = il.GetTemporaryLocal(t, false);
-                        il.Builder.EmitOpCode(ILOpCode.Dup);
-                        il.Builder.EmitLocalStore(tmp);
-                        break;
-                    default:
-                        throw ExceptionUtilities.UnexpectedValue(this.Access);
-                }
+                case AccessMask.Read:
+                    tmp = il.GetTemporaryLocal(t, false);
+                    il.Builder.EmitOpCode(ILOpCode.Dup);
+                    il.Builder.EmitLocalStore(tmp);
+                    break;
+                case AccessMask.None:
+                    break;
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(this.Access);
             }
 
             target_place.EmitStore(il.Builder);
 
             //
-            switch (this.Access)
+            switch (this.Access.Flags)
             {
-                case AccessType.None:
+                case AccessMask.None:
                     t = il.CoreTypes.Void;
                     break;
-                case AccessType.Read:
+                case AccessMask.Read:
                     il.Builder.EmitLocalLoad(tmp);
                     break;
                 default:
@@ -1208,7 +1207,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            Debug.Assert(this.Access == AccessType.None || this.Access == AccessType.Read);
+            Debug.Assert(this.Access.IsNone || Access.IsRead);
 
             if (this.UsesOperatorMethod)
             {
@@ -1216,7 +1215,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             var targetPlace = this.Target.GetPlace(il);
-            var read = this.Access == AccessType.Read;
+            var read = this.Access.IsRead;
 
             // Postfix (i++, i--)
             if (this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement)
@@ -1328,7 +1327,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            if (Access == AccessType.None)
+            if (Access.IsNone)
             {
                 il.EmitPop(result_type);
                 result_type = il.CoreTypes.Void;

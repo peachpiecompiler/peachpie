@@ -148,6 +148,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
+        /// <summary>
+        /// Updates the expression access and visits it.
+        /// </summary>
+        /// <param name="x">The expression.</param>
+        /// <param name="access">New access.</param>
+        void Visit(BoundExpression x, BoundAccess access)
+        {
+            x.Access = access;
+            Visit(x);
+        }
+
         #endregion
 
         #region Short-Circuit Evaluation
@@ -203,147 +214,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // no effect
             condition.Accept(this);
         }
-
-        #endregion
-
-        #region AccessType
-
-        /// <summary>
-        /// Access type - describes context within which an expression is used.
-        /// </summary>
-        [Flags]
-        protected enum AccessFlags : byte
-        {
-            /// <summary>
-            /// Expression is being read from.
-            /// </summary>
-            Read = 0,
-
-            /// <summary>
-            /// Expression is LValue of an assignment. Do not report uninitialized var use.
-            /// </summary>
-            Write = 1,
-
-            /// <summary>
-            /// Expression is LValue accessed with array item operator.
-            /// </summary>
-            EnsureArray = 2,
-
-            /// <summary>
-            /// Expression is LValue accessed by object operator (<c>-></c>).
-            /// </summary>
-            EnsureProperty = 4,
-
-            /// <summary>
-            /// Expression is being checked within <c>isset</c> function call. Do not report uninitialized var use.
-            /// </summary>
-            IsCheck = 8,
-
-            /// <summary>
-            /// Access by reference, read or write.
-            /// </summary>
-            IsRef = 16,
-
-            /// <summary>
-            /// Expression is used as a statement, return value is not used.
-            /// </summary>
-            None = Read,
-        }
-
-        #endregion
-
-        #region Access
-
-        protected struct Access : IEquatable<Access>
-        {
-            public bool IsRead { get { return !IsWrite; } }
-            public bool IsWrite { get { return (flags & AccessFlags.Write) != 0; } }
-            public bool IsCheck { get { return (flags & AccessFlags.IsCheck) != 0; } }
-            public bool IsEnsureArray { get { return (flags & AccessFlags.EnsureArray) != 0; } }
-            public bool IsEnsureHasProperty { get { return (flags & AccessFlags.EnsureProperty) != 0; } }
-            public bool IsRef
-            {
-                get { return (flags & AccessFlags.IsRef) != 0; }
-                set { if (value) flags |= AccessFlags.IsRef; else flags &= ~AccessFlags.IsRef; }
-            }
-
-            /// <summary>
-            /// Type of expression access.
-            /// </summary>
-            private AccessFlags flags;
-
-            /// <summary>
-            /// In case of Write* access, specifies the type being written.
-            /// </summary>
-            public TypeRefMask RValueType;
-
-            /// <summary>
-            /// Span of right value for error reporting.
-            /// </summary>
-            public Span RValueSpan;
-
-            public static Access Read { get { return new Access() { flags = AccessFlags.Read }; } }
-            public static Access Check { get { return new Access() { flags = AccessFlags.IsCheck | AccessFlags.Read }; } }
-            public static Access Write(TypeRefMask rValueType, Span rValueSpan) { return new Access() { flags = AccessFlags.Write, RValueType = rValueType, RValueSpan = rValueSpan }; }
-            public static Access EnsureArray(TypeRefMask elementType) { return new Access() { flags = AccessFlags.EnsureArray | AccessFlags.Read, RValueType = elementType }; }
-
-            #region IEquatable<Access>
-
-            public bool Equals(Access other)
-            {
-                return this.flags == other.flags && this.RValueType == other.RValueType;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is Access && Equals((Access)obj);
-            }
-
-            public override int GetHashCode() => (int)flags ^ (int)RValueType.Mask;
-
-            public static bool operator ==(Access x, Access y) => x.Equals(y);
-            public static bool operator !=(Access x, Access y) => !x.Equals(y);
-
-            #endregion
-
-            /// <summary>
-            /// Creates new <see cref="Access"/> with given check state.
-            /// </summary>
-            public static Access operator &(Access a, Access check)
-            {
-                a.flags |= (check.flags & AccessFlags.IsCheck);
-                return a;
-            }
-
-
-        }
-
-        #endregion
-
-        #region Visit with Access
-
-        protected void Visit(IOperation x, Access access)
-        {
-            if (access == Access.Read)
-            {
-                Visit(x);
-                return;
-            }
-
-            //
-            if (x is BoundVariableRef)
-            {
-                VisitBoundVariableRef((BoundVariableRef)x, access);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        #endregion
-
-        #region Visit Specialized
 
         //protected virtual void VisitBinaryEx(BinaryEx x, ConditionBranch branch)
         //{
@@ -466,15 +336,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual TypeRefMask VisitAssignmentExpression(BoundAssignEx op)
         {
-            Debug.Assert(op.Target.Access == AccessType.Write || op.Target.Access == AccessType.WriteRef);
-            Debug.Assert(op.Value.Access == AccessType.Read || op.Value.Access == AccessType.ReadRef);
+            Debug.Assert(op.Target.Access.IsWrite);
+            Debug.Assert(op.Value.Access.IsRead);
 
             Visit(op.Value);
 
-            var targetAccess = Access.Write(op.Value.TypeRefMask, Span.Invalid);
-            targetAccess.IsRef = (op.Target.Access == AccessType.WriteRef);
-
-            Visit(op.Target, targetAccess);
+            op.Target.Access = op.Target.Access.WithWrite(op.Value.TypeRefMask);
+            Visit(op.Target);
 
             //
             return op.Value.TypeRefMask;
@@ -491,7 +359,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (expr is BoundVariableRef)
             {
-                VisitBoundVariableRef((BoundVariableRef)expr, Access.Read);
+                VisitBoundVariableRef((BoundVariableRef)expr);
             }
             else
             {
@@ -499,25 +367,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        protected virtual void VisitBoundVariableRef(BoundVariableRef v, Access access)
+        protected virtual void VisitBoundVariableRef(BoundVariableRef v)
         {
-            if (access.IsRead)
+            if (v.Access.IsRead)
             {
                 State.SetVarUsed(v.Name);
                 v.TypeRefMask = State.GetVarType(v.Name);
             }
-            else if (access.IsWrite)
+
+            if (v.Access.IsWrite)
             {
                 State.SetVarInitialized(v.Name);
-                State.SetVar(v.Name, access.RValueType);
+                State.SetVar(v.Name, v.Access.WriteMask);
                 State.LTInt64Max(v.Name, false);
 
-                if (access.IsRef)
+                v.TypeRefMask = v.Access.WriteMask;
+
+                if (v.Access.IsWriteRef)
                 {
                     State.SetVarRef(v.Name);
+                    v.TypeRefMask = v.TypeRefMask.WithRefFlag;
                 }
-
-                v.TypeRefMask = access.RValueType;
             }
         }
 
@@ -528,11 +398,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             // <target> = <target> +/- 1L
 
-            Debug.Assert(x.Access == AccessType.Read || x.Access == AccessType.None);
-            Debug.Assert(x.Target.Access == AccessType.ReadAndWrite);
+            Debug.Assert(x.Access.IsRead || x.Access.IsNone);
+            Debug.Assert(x.Target.Access.IsRead && x.Target.Access.IsWrite);
 
-            Visit(x.Target, Access.Read);
-            Visit(x.Value, Access.Read);
+            Visit(x.Target, BoundAccess.Read);
+            Visit(x.Value, BoundAccess.Read);
 
             Debug.Assert(IsNumberOnly(x.Value));    // 1L
 
@@ -555,9 +425,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 resulttype = TypeCtx.GetNumberTypeMask();
             }
 
-            Visit(x.Target, Access.Write(resulttype, Span.Invalid));
+            Visit(x.Target, BoundAccess.Write.WithWrite(resulttype));
 
             //
+            x.Target.Access = x.Target.Access.WithRead();   // put read access back to the target
             x.TypeRefMask = (x.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement ||
                              x.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement)
                             ? resulttype : sourcetype;
