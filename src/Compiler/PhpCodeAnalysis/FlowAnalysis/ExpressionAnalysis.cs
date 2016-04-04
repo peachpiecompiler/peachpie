@@ -972,14 +972,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();
 
-                var overloads = new OverloadsList(WellKnownMemberNames.InstanceConstructorName, candidates.Cast<MethodSymbol>());
+                var overloads = new OverloadsList(WellKnownMemberNames.InstanceConstructorName, candidates.Cast<MethodSymbol>())
+                {
+                    IsFinal = true,
+                };
                 overloads.WithParametersType(TypeCtx, args.Select(a => a.TypeRefMask).ToArray());
 
                 // reanalyse candidates
                 foreach (var c in overloads.Candidates)
                 {
                     // analyze TargetMethod with x.Arguments
-                    // require method result type if access != none
                     this.Worklist.EnqueueRoutine(c, _analysis.CurrentBlock, args);
                 }
 
