@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Read is check only and won't result in an exception in case the variable does not exist.
         /// </summary>
-        ReadCheck = 64,
+        ReadQuiet = 64,
 
         // NOTE: WriteAndReadRef has to be constructed by semantic binder as bound expression with Write and another bound expression with ReadRef
         // NOTE: ReadAndWriteAndReadRef has to be constructed by semantic binder as bound expression with Read|Write and another bound expression with ReadRef
@@ -132,7 +132,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The read is for check purposes only and won't result in a warning in case the variable does not exist.
         /// </summary>
-        public bool IsCheck => (_flags & AccessMask.ReadCheck) != 0;
+        public bool IsCheck => (_flags & AccessMask.ReadQuiet) != 0;
 
         /// <summary>
         /// In case we might change the variable content to array, object or an alias (we may need write access).
@@ -194,7 +194,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundAccess WithCheck()
         {
-            return new BoundAccess(_flags | AccessMask.ReadCheck, _writeTypeMask);
+            return new BoundAccess(_flags | AccessMask.ReadQuiet, _writeTypeMask);
         }
 
         /// <summary>
@@ -236,7 +236,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public abstract OperationKind Kind { get; }
 
-        public virtual ITypeSymbol ResultType { get; set; }
+        ITypeSymbol IExpression.ResultType => ResultType;
+
+        /// <summary>
+        /// The expression result type.
+        /// Can be <c>null</c> until emit.
+        /// </summary>
+        internal TypeSymbol ResultType { get; set; }
 
         public SyntaxNode Syntax => null;
 

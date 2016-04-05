@@ -964,7 +964,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void VisitNewEx(BoundNewEx x)
         {
             // resolve target type
-            var type = _model.GetType(x.TypeName);
+            var type = (NamedTypeSymbol)_model.GetType(x.TypeName);
             if (type != null)
             {
                 var candidates = type.InstanceConstructors;

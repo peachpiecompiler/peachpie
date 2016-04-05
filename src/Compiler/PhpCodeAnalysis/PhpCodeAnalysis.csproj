@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CodeGen\CodeGenerator.TypeRef.cs" />
+    <Compile Include="CodeGen\DynamicOperationFactory.cs" />
     <Compile Include="CodeGen\Graph\BoundBlock.cs" />
     <Compile Include="CodeGen\Graph\BoundEdge.cs" />
     <Compile Include="CodeGen\Graph\BoundVariable.cs" />
