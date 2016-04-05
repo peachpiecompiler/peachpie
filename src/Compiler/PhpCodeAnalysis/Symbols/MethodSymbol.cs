@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public ISymbol AssociatedSymbol
+        public virtual ISymbol AssociatedSymbol
         {
             get
             {
@@ -44,7 +44,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public ImmutableArray<IMethodSymbol> ExplicitInterfaceImplementations
+        public virtual ImmutableArray<IMethodSymbol> ExplicitInterfaceImplementations
         {
             get
             {
@@ -99,6 +99,19 @@ namespace Pchp.CodeAnalysis.Symbols
         public abstract MethodKind MethodKind { get; }
 
         public virtual IMethodSymbol OverriddenMethod => null;
+
+        /// <summary>
+        /// Source: Was the member name qualified with a type name?
+        /// Metadata: Is the member an explicit implementation?
+        /// </summary>
+        /// <remarks>
+        /// Will not always agree with ExplicitInterfaceImplementations.Any()
+        /// (e.g. if binding of the type part of the name fails).
+        /// </remarks>
+        internal virtual bool IsExplicitInterfaceImplementation
+        {
+            get { return ExplicitInterfaceImplementations.Any(); }
+        }
 
         ImmutableArray<IParameterSymbol> IMethodSymbol.Parameters => StaticCast<IParameterSymbol>.From(Parameters);
 

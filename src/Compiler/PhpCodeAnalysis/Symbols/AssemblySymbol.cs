@@ -160,6 +160,46 @@ namespace Pchp.CodeAnalysis.Symbols
             return (NamedTypeSymbol)this.GlobalNamespace.GetTypeMembers(fullyQualifiedMetadataName).FirstOrDefault();
         }
 
+        /// <summary>
+        /// Not yet known value is represented by ErrorTypeSymbol.UnknownResultType
+        /// </summary>
+        private Symbol[] _lazySpecialTypeMembers;
+
+        /// <summary>
+        /// Lookup member declaration in predefined CorLib type in this Assembly. Only valid if this 
+        /// assembly is the Cor Library
+        /// </summary>
+        internal Symbol GetDeclaredSpecialTypeMember(SpecialMember member)
+        {
+            if (_lazySpecialTypeMembers == null || ReferenceEquals(_lazySpecialTypeMembers[(int)member], ErrorTypeSymbol.UnknownResultType))
+            {
+                if (_lazySpecialTypeMembers == null)
+                {
+                    var specialTypeMembers = new Symbol[(int)SpecialMember.Count];
+
+                    for (int i = 0; i < specialTypeMembers.Length; i++)
+                    {
+                        specialTypeMembers[i] = ErrorTypeSymbol.UnknownResultType;
+                    }
+
+                    Interlocked.CompareExchange(ref _lazySpecialTypeMembers, specialTypeMembers, null);
+                }
+
+                var descriptor = SpecialMembers.GetDescriptor(member);
+                NamedTypeSymbol type = GetDeclaredSpecialType((SpecialType)descriptor.DeclaringTypeId);
+                Symbol result = null;
+
+                if (!type.IsErrorType())
+                {
+                    result = PhpCompilation.GetRuntimeMember(type, ref descriptor, PhpCompilation.SpecialMembersSignatureComparer.Instance, null);
+                }
+
+                Interlocked.CompareExchange(ref _lazySpecialTypeMembers[(int)member], result, ErrorTypeSymbol.UnknownResultType);
+            }
+
+            return _lazySpecialTypeMembers[(int)member];
+        }
+
         public virtual bool GivesAccessTo(IAssemblySymbol toAssembly)
         {
             throw new NotImplementedException();

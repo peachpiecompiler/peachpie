@@ -86,8 +86,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             int parameterCount = delegateSignature.Length - (returnsVoid ? 0 : 1);
 
-            //return _compilation.AnonymousTypeManager.SynthesizeDelegate(parameterCount, byRefs, returnsVoid).Construct(delegateSignature);
-            throw new NotImplementedException();
+            return _compilation.AnonymousTypeManager.SynthesizeDelegate(parameterCount, byRefs, returnsVoid).Construct(delegateSignature);
         }
 
         internal TypeSymbol[] MakeCallSiteDelegateSignature(TypeSymbol callSiteType, BoundExpression receiver, ImmutableArray<BoundExpression> arguments, BoundExpression right, TypeSymbol resultType)

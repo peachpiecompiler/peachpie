@@ -399,6 +399,43 @@ namespace Pchp.CodeAnalysis.Symbols
             yield break;
         }
 
+        protected ImmutableArray<NamedTypeSymbol> CalculateInterfacesToEmit()
+        {
+            Debug.Assert(this.IsDefinition);
+            Debug.Assert(this.ContainingModule is SourceModuleSymbol);
+
+            ArrayBuilder<NamedTypeSymbol> builder = ArrayBuilder<NamedTypeSymbol>.GetInstance();
+            HashSet<NamedTypeSymbol> seen = null;
+            InterfacesVisit(this, builder, ref seen);
+            return builder.ToImmutableAndFree();
+        }
+
+        /// <summary>
+        /// Add the type to the builder and then recurse on its interfaces.
+        /// </summary>
+        /// <remarks>
+        /// Pre-order depth-first search.
+        /// </remarks>
+        private static void InterfacesVisit(NamedTypeSymbol namedType, ArrayBuilder<NamedTypeSymbol> builder, ref HashSet<NamedTypeSymbol> seen)
+        {
+            // It's not clear how important the order of these interfaces is, but Dev10
+            // maintains pre-order depth-first/declaration order, so we probably should as well.
+            // That's why we're not using InterfacesAndTheirBaseInterfaces - it's an unordered set.
+            foreach (NamedTypeSymbol @interface in namedType.Interfaces) // NoUseSiteDiagnostics())
+            {
+                if (seen == null)
+                {
+                    // Don't allocate until we see at least one interface.
+                    seen = new HashSet<NamedTypeSymbol>();
+                }
+                if (seen.Add(@interface))
+                {
+                    builder.Add(@interface);
+                    InterfacesVisit(@interface, builder, ref seen);
+                }
+            }
+        }
+
         /// <summary>
         /// Gets the set of interfaces to emit on this type. This set can be different from the set returned by Interfaces property.
         /// </summary>

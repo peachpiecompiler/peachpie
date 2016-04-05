@@ -29,6 +29,11 @@ namespace Pchp.CodeAnalysis
         readonly PhpCompilationOptions _options;
 
         /// <summary>
+        /// Manages anonymous types declared in this compilation. Unifies types that are structurally equivalent.
+        /// </summary>
+        readonly AnonymousTypeManager _anonymousTypeManager;
+
+        /// <summary>
         /// The <see cref="SourceAssemblySymbol"/> for this compilation. Do not access directly, use Assembly property
         /// instead. This field is lazily initialized by ReferenceManager, ReferenceManager.CacheLockObject must be locked
         /// while ReferenceManager "calculates" the value and assigns it, several threads must not perform duplicate
@@ -97,11 +102,15 @@ namespace Pchp.CodeAnalysis
             )
             : base(assemblyName, references, SyntaxTreeCommonFeatures(ImmutableArray<SyntaxTree>.Empty), false, eventQueue)
         {
+            _wellKnownMemberSignatureComparer = new WellKnownMembersSignatureComparer(this);
+
             _options = options;
             _referenceManager = new ReferenceManager();
             _tables = new SourceDeclarations();
             _coreTypes = new CoreTypes(this);
             _coreMethods = new CoreMethods(_coreTypes);
+
+            _anonymousTypeManager = new AnonymousTypeManager(this);
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences
@@ -121,7 +130,9 @@ namespace Pchp.CodeAnalysis
         public override bool IsCaseSensitive => false;
 
         public override string Language { get; } = Constants.PhpLanguageName;
-            
+
+        internal AnonymousTypeManager AnonymousTypeManager => _anonymousTypeManager;
+
         public override IEnumerable<AssemblyIdentity> ReferencedAssemblyNames => Assembly.Modules.SelectMany(module => module.ReferencedAssemblies);
 
         protected override IAssemblySymbol CommonAssembly => SourceAssembly;
@@ -492,7 +503,7 @@ namespace Pchp.CodeAnalysis
 
         internal override ISymbol CommonGetWellKnownTypeMember(WellKnownMember member)
         {
-            throw new NotImplementedException();
+            return GetWellKnownTypeMember(member);
         }
 
         internal override int CompareSourceLocations(Location loc1, Location loc2)
