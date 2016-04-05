@@ -34,8 +34,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _syntax = syntax;
             _file = file;
-
-            
         }
 
         ImmutableArray<Symbol> Members()

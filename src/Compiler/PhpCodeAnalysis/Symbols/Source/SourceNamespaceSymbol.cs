@@ -72,4 +72,68 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
     }
+
+    internal class SourceGlobalNamespaceSymbol : NamespaceSymbol
+    {
+        readonly SourceModuleSymbol _sourceModule;
+        
+        public SourceGlobalNamespaceSymbol(SourceModuleSymbol module)
+        {
+            _sourceModule = module;
+        }
+
+        internal override PhpCompilation DeclaringCompilation => _sourceModule.DeclaringCompilation;
+
+        public override PhpCompilation ContainingCompilation => _sourceModule.DeclaringCompilation;
+
+        public override void Accept(SymbolVisitor visitor) => visitor.VisitNamespace(this);
+
+        public override TResult Accept<TResult>(SymbolVisitor<TResult> visitor) => visitor.VisitNamespace(this);
+
+        public override AssemblySymbol ContainingAssembly => _sourceModule.ContainingAssembly;
+
+        internal override IModuleSymbol ContainingModule => _sourceModule;
+
+        public override Symbol ContainingSymbol => _sourceModule;
+
+        public override string Name => string.Empty;
+
+        public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override ImmutableArray<Location> Locations
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override ImmutableArray<Symbol> GetMembers()
+        {
+            //var table = _sourceModule.SymbolTables;
+            //return table.GetFunctions().Cast<Symbol>().Concat(table.GetTypes()).AsImmutable();
+            throw new NotImplementedException();
+        }
+
+        public override ImmutableArray<Symbol> GetMembers(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
+        {
+            return _sourceModule.SymbolTables.GetTypes().AsImmutable();
+        }
+
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
+        {
+            return ImmutableArray.Create(_sourceModule.SymbolTables.GetType(NameUtils.MakeQualifiedName(name, true)));
+        }
+    }
 }

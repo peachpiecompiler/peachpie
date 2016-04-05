@@ -157,8 +157,87 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual NamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
         {
-            return (NamedTypeSymbol)this.GlobalNamespace.GetTypeMembers(fullyQualifiedMetadataName).FirstOrDefault();
+            if (fullyQualifiedMetadataName == null)
+            {
+                throw new ArgumentNullException(nameof(fullyQualifiedMetadataName));
+            }
+
+            return this.GetTypeByMetadataName(fullyQualifiedMetadataName, includeReferences: false, isWellKnownType: false);
         }
+
+        /// <summary>
+        /// Lookup a type within the assembly using its canonical CLR metadata name.
+        /// </summary>
+        /// <param name="metadataName"></param>
+        /// <param name="includeReferences">
+        /// If search within assembly fails, lookup in assemblies referenced by the primary module.
+        /// For source assembly, this is equivalent to all assembly references given to compilation.
+        /// </param>
+        /// <param name="isWellKnownType">
+        /// Extra restrictions apply when searching for a well-known type.  In particular, the type must be public.
+        /// </param>
+        /// <param name="useCLSCompliantNameArityEncoding">
+        /// While resolving the name, consider only types following CLS-compliant generic type names and arity encoding (ECMA-335, section 10.7.2).
+        /// I.e. arity is inferred from the name and matching type must have the same emitted name and arity.
+        /// </param>
+        /// <param name="warnings">
+        /// A diagnostic bag to receive warnings if we should allow multiple definitions and pick one.
+        /// </param>
+        /// <returns>Null if the type can't be found.</returns>
+        internal NamedTypeSymbol GetTypeByMetadataName(
+            string metadataName,
+            bool includeReferences,
+            bool isWellKnownType,
+            bool useCLSCompliantNameArityEncoding = false,
+            DiagnosticBag warnings = null)
+        {
+            NamedTypeSymbol type = null;
+            MetadataTypeName mdName;
+
+            if (metadataName.IndexOf('+') >= 0)
+            {
+                var parts = metadataName.Split(s_nestedTypeNameSeparators);
+                Debug.Assert(parts.Length > 0);
+                mdName = MetadataTypeName.FromFullName(parts[0], useCLSCompliantNameArityEncoding);
+                //type = GetTopLevelTypeByMetadataName(ref mdName, assemblyOpt: null, includeReferences: includeReferences, isWellKnownType: isWellKnownType, warnings: warnings);
+                //for (int i = 1; (object)type != null && !type.IsErrorType() && i < parts.Length; i++)
+                //{
+                //    mdName = MetadataTypeName.FromTypeName(parts[i]);
+                //    NamedTypeSymbol temp = type.LookupMetadataType(ref mdName);
+                //    type = (!isWellKnownType || IsValidWellKnownType(temp)) ? temp : null;
+                //}
+                throw new NotImplementedException();
+            }
+            else
+            {
+                mdName = MetadataTypeName.FromFullName(metadataName, useCLSCompliantNameArityEncoding);
+                //type = GetTopLevelTypeByMetadataName(ref mdName, assemblyOpt: null, includeReferences: includeReferences, isWellKnownType: isWellKnownType, warnings: warnings);
+
+                var assemblies = new HashSet<AssemblySymbol>() { this };
+
+                if (includeReferences)
+                    assemblies.UnionWith(this.DeclaringCompilation.GetBoundReferenceManager().GetReferencedAssemblies().Select(x => (AssemblySymbol)x.Value));
+
+                foreach (var ass in assemblies)
+                {
+                    var t = ass.GlobalNamespace.GetTypeMembers(mdName.FullName, mdName.ForcedArity);
+                    if (!t.IsDefaultOrEmpty)
+                    {
+                        if ((object)type != null || t.Length > 1)
+                        {
+                            // TODO: ambiguity
+                            return null;
+                        }
+
+                        type = (NamedTypeSymbol)t[0];
+                    }
+                }
+            }
+
+            return ((object)type == null || type.IsErrorType()) ? null : type;
+        }
+
+        static readonly char[] s_nestedTypeNameSeparators = new char[] { '+' };
 
         /// <summary>
         /// Not yet known value is represented by ErrorTypeSymbol.UnknownResultType

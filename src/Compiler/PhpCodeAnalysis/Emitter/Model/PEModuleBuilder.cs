@@ -529,7 +529,10 @@ namespace Pchp.CodeAnalysis.Emit
         internal virtual IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypesCore(EmitContext context)
         {
             // <script> type containing assembly level symbols
-            yield return this.ScriptType;
+            yield return this.ScriptType;   // TODO: move to anonymous type manager
+
+            foreach (var t in this.Compilation.AnonymousTypeManager.GetAllCreatedTemplates())
+                yield return t;
 
             //foreach (var type in GetAdditionalTopLevelTypes())
             //{

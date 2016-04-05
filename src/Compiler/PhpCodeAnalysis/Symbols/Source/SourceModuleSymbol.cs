@@ -14,6 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SourceAssemblySymbol _sourceAssembly;
         readonly string _name;
         readonly SourceDeclarations _tables;
+        readonly NamespaceSymbol _ns;
 
         /// <summary>
         /// Tables of all source symbols to be compiled within the source module.
@@ -25,19 +26,14 @@ namespace Pchp.CodeAnalysis.Symbols
             _sourceAssembly = sourceAssembly;
             _name = name;
             _tables = tables;
+            _ns = new SourceGlobalNamespaceSymbol(this);
         }
 
         public override string Name => _name;
 
         public override Symbol ContainingSymbol => _sourceAssembly;
 
-        public override NamespaceSymbol GlobalNamespace
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override NamespaceSymbol GlobalNamespace => _ns;
 
         internal SourceAssemblySymbol SourceAssemblySymbol => _sourceAssembly;
 

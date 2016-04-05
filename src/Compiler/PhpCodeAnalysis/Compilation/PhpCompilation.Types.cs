@@ -184,8 +184,8 @@ namespace Pchp.CodeAnalysis
                 }
                 else
                 {
-                    result = this.CorLibrary.GetTypeByMetadataName(
-                        mdName/*, includeReferences: true, useCLSCompliantNameArityEncoding: true, isWellKnownType: true, warnings: warnings*/);
+                    result = this.SourceAssembly.GetTypeByMetadataName(
+                        mdName, includeReferences: true, useCLSCompliantNameArityEncoding: true, isWellKnownType: true, warnings: warnings);
                 }
 
                 if ((object)result == null)
@@ -205,8 +205,7 @@ namespace Pchp.CodeAnalysis
                 }
                 else
                 {
-                    //AdditionalCodegenWarnings.AddRange(warnings);
-                    Debug.Assert(false);
+                    // TODO //AdditionalCodegenWarnings.AddRange(warnings);
                 }
 
                 warnings.Free();

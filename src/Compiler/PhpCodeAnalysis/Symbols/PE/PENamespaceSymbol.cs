@@ -73,7 +73,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public sealed override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name, int arity)
         {
-            return GetTypeMembers(name).WhereAsArray(type => type.Arity == arity);
+            var result = GetTypeMembers(name);
+            if (arity >= 0)
+            {
+                result= result.WhereAsArray(type => type.Arity == arity);
+            }
+
+            return result;
         }
 
         public sealed override ImmutableArray<Location> Locations

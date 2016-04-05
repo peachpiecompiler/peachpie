@@ -64,8 +64,13 @@ namespace Pchp.CodeAnalysis
             {
                 get
                 {
+                    // TODO: mscorlib + System.Core as System.Runtime + type forwards
+
                     // mscorlib
                     yield return @"mscorlib";
+
+                    // System.Core // 
+                    yield return @"System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 
                     // pchpcor
                     yield return @"pchpcor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";

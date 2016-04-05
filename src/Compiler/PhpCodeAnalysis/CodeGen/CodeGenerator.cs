@@ -158,6 +158,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly OptimizationLevel _optimizations;
         readonly bool _emittingPdb;
         readonly DiagnosticBag _diagnostics;
+        readonly DynamicOperationFactory _factory;
 
         /// <summary>
         /// Place for loading a reference to <c>Pchp.Core.Context</c>.
@@ -212,6 +213,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public CoreMethods CoreMethods => DeclaringCompilation.CoreMethods;
 
+        /// <summary>
+        /// Factory for dynamic and anonymous types.
+        /// </summary>
+        public DynamicOperationFactory Factory => _factory;
+
         #endregion
 
         #region Construction
@@ -235,6 +241,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _contextPlace = routine.GetContextPlace();
             _thisPlace = routine.GetThisPlace();
+
+            _factory = new DynamicOperationFactory(moduleBuilder.Compilation);
         }
 
         #endregion

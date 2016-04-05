@@ -95,7 +95,14 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             // default implementation does a post-filter. We can override this if its a performance burden, but 
             // experience is that it won't be.
-            return GetTypeMembers(name).WhereAsArray(t => t.Arity == arity);
+
+            var result = GetTypeMembers(name);
+            if (arity >= 0)
+            {
+                result = result.WhereAsArray(type => type.Arity == arity);
+            }
+
+            return result;
         }
 
         /// <summary>

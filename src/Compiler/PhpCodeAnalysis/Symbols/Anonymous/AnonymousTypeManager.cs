@@ -5,6 +5,7 @@ using Roslyn.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -25,6 +26,28 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Current compilation.
         /// </summary>
         public PhpCompilation Compilation { get; }
+
+        /// <summary>
+        /// Returns all templates owned by this type manager
+        /// </summary>
+        internal ImmutableArray<NamedTypeSymbol> GetAllCreatedTemplates()
+        {
+            // NOTE: templates may not be sealed in case metadata is being emitted without IL
+
+            var builder = ArrayBuilder<NamedTypeSymbol>.GetInstance();
+
+            //var anonymousTypes = ArrayBuilder<AnonymousTypeTemplateSymbol>.GetInstance();
+            //GetCreatedAnonymousTypeTemplates(anonymousTypes);
+            //builder.AddRange(anonymousTypes);
+            //anonymousTypes.Free();
+
+            var synthesizedDelegates = ArrayBuilder<SynthesizedDelegateSymbol>.GetInstance();
+            GetCreatedSynthesizedDelegates(synthesizedDelegates);
+            builder.AddRange(synthesizedDelegates);
+            synthesizedDelegates.Free();
+
+            return builder.ToImmutableAndFree();
+        }
 
         #region Delegates
 
@@ -110,6 +133,37 @@ namespace Pchp.CodeAnalysis.Symbols
                 Debug.Assert(manager != null && (object)@delegate != null);
                 this.Manager = manager;
                 this.Delegate = @delegate;
+            }
+        }
+
+        private class SynthesizedDelegateSymbolComparer : IComparer<SynthesizedDelegateSymbol>
+        {
+            public static readonly SynthesizedDelegateSymbolComparer Instance = new SynthesizedDelegateSymbolComparer();
+
+            public int Compare(SynthesizedDelegateSymbol x, SynthesizedDelegateSymbol y)
+            {
+                return x.MetadataName.CompareTo(y.MetadataName);
+            }
+        }
+
+        /// <summary>
+        /// The set of synthesized delegates created by
+        /// this AnonymousTypeManager.
+        /// </summary>
+        private void GetCreatedSynthesizedDelegates(ArrayBuilder<SynthesizedDelegateSymbol> builder)
+        {
+            Debug.Assert(!builder.Any());
+            var delegates = _lazySynthesizedDelegates;
+            if (delegates != null)
+            {
+                foreach (var template in delegates.Values)
+                {
+                    if (ReferenceEquals(template.Manager, this))
+                    {
+                        builder.Add(template.Delegate);
+                    }
+                }
+                builder.Sort(SynthesizedDelegateSymbolComparer.Instance);
             }
         }
 
