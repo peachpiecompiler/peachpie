@@ -909,10 +909,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             return (code == ILOpCode.Newobj) ? (TypeSymbol)method.ContainingType : method.ReturnType;
         }
 
-        internal TypeSymbol EmitCall(ILOpCode code, TypeSymbol thisType, OverloadsList overloads, ImmutableArray<BoundExpression> arguments)
+        internal TypeSymbol EmitCall(ILOpCode code, BoundExpression thisExpr, OverloadsList overloads, ImmutableArray<BoundExpression> arguments)
         {
             // at this point we do expect <this> is already emitted on top of the evaluation stack
-            // TODO: thisType: TypeSymbol of <this> or null
 
             if (!overloads.IsFinal)
                 throw new NotImplementedException();    // we have to fallback to indirect call, there might be more overloads in runtime
@@ -928,7 +927,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // parameter types actually emitted on top of evaluation stack; used for eventual generic indirect call
             var actualParamTypes = new List<TypeSymbol>(arguments.Length + 1);
-            
+
+            //
+            var thisType = (thisExpr != null) ? Emit(thisExpr) : null;
+
             //
             int arg_index = 0;      // next argument to be emitted from <arguments>
             

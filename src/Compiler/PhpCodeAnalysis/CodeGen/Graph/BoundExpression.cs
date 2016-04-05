@@ -998,9 +998,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // 2. autoload script containing the declaration
             // 3. throw if type is not declared
 
-            var thisType = this.Instance.Emit(il);
-
-            return il.EmitCall(ILOpCode.Callvirt, thisType, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
+            return il.EmitCall(ILOpCode.Callvirt, this.Instance, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
         }
     }
 
