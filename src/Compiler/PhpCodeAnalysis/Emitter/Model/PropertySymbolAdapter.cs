@@ -178,8 +178,8 @@ namespace Pchp.CodeAnalysis.Symbols
         Cci.ITypeReference Cci.ISignature.GetType(EmitContext context)
         {
             CheckDefinitionInvariant();
-            return ((PEModuleBuilder)context.Module).Translate(this.Type, 
-                                                      syntaxOpt: null, //(CSharpSyntaxNode)context.SyntaxNodeOpt,
+            return ((PEModuleBuilder)context.Module).Translate(this.Type,
+                                                      syntaxNodeOpt: context.SyntaxNodeOpt,
                                                       diagnostics: context.Diagnostics);
         }
 

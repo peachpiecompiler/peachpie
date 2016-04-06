@@ -901,5 +901,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return result;
             }
         }
+
+        public IEnumerable<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics { get; internal set; }
     }
 }

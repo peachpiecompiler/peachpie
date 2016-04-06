@@ -982,6 +982,14 @@ namespace Pchp.CodeAnalysis.Emit
         //    return methodRef;
         //}
 
+        internal static Cci.IGenericParameterReference Translate(TypeParameterSymbol param)
+        {
+            if (!param.IsDefinition)
+                throw new InvalidOperationException(/*string.Format(CSharpResources.GenericParameterDefinition, param.Name)*/);
+
+            return param;
+        }
+
         internal sealed override Cci.ITypeReference Translate(ITypeSymbol typeSymbol, SyntaxNode syntaxNodeOpt, DiagnosticBag diagnostics)
         {
             Debug.Assert(diagnostics != null);
@@ -1001,15 +1009,15 @@ namespace Pchp.CodeAnalysis.Emit
                 //case SymbolKind.PointerType:
                 //    return Translate((PointerTypeSymbol)typeSymbol);
 
-                //case SymbolKind.TypeParameter:
-                //    return Translate((TypeParameterSymbol)typeSymbol);
+                case SymbolKind.TypeParameter:
+                    return Translate((TypeParameterSymbol)typeSymbol);
             }
 
             throw ExceptionUtilities.UnexpectedValue(typeSymbol.Kind);
         }
 
         internal Cci.ITypeReference Translate(
-            TypeSymbol namedTypeSymbol, SyntaxNode syntaxOpt, DiagnosticBag diagnostics,
+            NamedTypeSymbol namedTypeSymbol, SyntaxNode syntaxOpt, DiagnosticBag diagnostics,
             bool fromImplements = false,
             bool needDeclaration = false)
         {
@@ -1046,73 +1054,73 @@ namespace Pchp.CodeAnalysis.Emit
                 throw new NotImplementedException();
             }
 
-            //if (!namedTypeSymbol.IsDefinition)
-            //{
-            //    // generic instantiation for sure
-            //    Debug.Assert(!needDeclaration);
+            if (!namedTypeSymbol.IsDefinition)
+            {
+                // generic instantiation for sure
+                Debug.Assert(!needDeclaration);
 
-            //    if (namedTypeSymbol.IsUnboundGenericType)
-            //    {
-            //        namedTypeSymbol = namedTypeSymbol.OriginalDefinition;
-            //    }
-            //    else
-            //    {
-            //        return namedTypeSymbol;
-            //    }
-            //}
-            //else if (!needDeclaration)
-            //{
-            //    object reference;
-            //    Cci.INamedTypeReference typeRef;
+                if (namedTypeSymbol.IsUnboundGenericType)
+                {
+                    namedTypeSymbol = namedTypeSymbol.OriginalDefinition;
+                }
+                else
+                {
+                    return namedTypeSymbol;
+                }
+            }
+            else if (!needDeclaration)
+            {
+                object reference;
+                Cci.INamedTypeReference typeRef;
 
-            //    NamedTypeSymbol container = namedTypeSymbol.ContainingType;
+                NamedTypeSymbol container = namedTypeSymbol.ContainingType;
 
-            //    if (namedTypeSymbol.Arity > 0)
-            //    {
-            //        if (_genericInstanceMap.TryGetValue(namedTypeSymbol, out reference))
-            //        {
-            //            return (Cci.INamedTypeReference)reference;
-            //        }
+                if (namedTypeSymbol.Arity > 0)
+                {
+                    if (_genericInstanceMap.TryGetValue(namedTypeSymbol, out reference))
+                    {
+                        return (Cci.INamedTypeReference)reference;
+                    }
 
-            //        if ((object)container != null)
-            //        {
-            //            if (IsGenericType(container))
-            //            {
-            //                // Container is a generic instance too.
-            //                typeRef = new SpecializedGenericNestedTypeInstanceReference(namedTypeSymbol);
-            //            }
-            //            else
-            //            {
-            //                typeRef = new GenericNestedTypeInstanceReference(namedTypeSymbol);
-            //            }
-            //        }
-            //        else
-            //        {
-            //            typeRef = new GenericNamespaceTypeInstanceReference(namedTypeSymbol);
-            //        }
+                    if ((object)container != null)
+                    {
+                        if (IsGenericType(container))
+                        {
+                            // Container is a generic instance too.
+                            typeRef = new SpecializedGenericNestedTypeInstanceReference(namedTypeSymbol);
+                        }
+                        else
+                        {
+                            typeRef = new GenericNestedTypeInstanceReference(namedTypeSymbol);
+                        }
+                    }
+                    else
+                    {
+                        typeRef = new GenericNamespaceTypeInstanceReference(namedTypeSymbol);
+                    }
 
-            //        typeRef = (Cci.INamedTypeReference)_genericInstanceMap.GetOrAdd(namedTypeSymbol, typeRef);
+                    typeRef = (Cci.INamedTypeReference)_genericInstanceMap.GetOrAdd(namedTypeSymbol, typeRef);
 
-            //        return typeRef;
-            //    }
-            //    else if (IsGenericType(container))
-            //    {
-            //        Debug.Assert((object)container != null);
+                    return typeRef;
+                }
+                else if (IsGenericType(container))
+                {
+                    Debug.Assert((object)container != null);
 
-            //        if (_genericInstanceMap.TryGetValue(namedTypeSymbol, out reference))
-            //        {
-            //            return (Cci.INamedTypeReference)reference;
-            //        }
+                    if (_genericInstanceMap.TryGetValue(namedTypeSymbol, out reference))
+                    {
+                        return (Cci.INamedTypeReference)reference;
+                    }
 
-            //        typeRef = new SpecializedNestedTypeReference(namedTypeSymbol);
-            //        typeRef = (Cci.INamedTypeReference)_genericInstanceMap.GetOrAdd(namedTypeSymbol, typeRef);
+                    typeRef = new SpecializedNestedTypeReference(namedTypeSymbol);
+                    typeRef = (Cci.INamedTypeReference)_genericInstanceMap.GetOrAdd(namedTypeSymbol, typeRef);
 
-            //        return typeRef;
-            //    }
-            //}
+                    return typeRef;
+                }
+            }
 
-            //// NoPia: See if this is a type, which definition we should copy into our assembly.
-            //Debug.Assert(namedTypeSymbol.IsDefinition);
+            // NoPia: See if this is a type, which definition we should copy into our assembly.
+            Debug.Assert(namedTypeSymbol.IsDefinition);
 
             //if (_embeddedTypesManagerOpt != null)
             //{
