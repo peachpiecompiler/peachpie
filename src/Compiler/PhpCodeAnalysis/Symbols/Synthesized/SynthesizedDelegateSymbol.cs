@@ -236,9 +236,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 get { return _parameters; }
             }
 
-            public override ImmutableArray<IMethodSymbol> ExplicitInterfaceImplementations
+            public override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations
             {
-                get { return ImmutableArray<IMethodSymbol>.Empty; }
+                get { return ImmutableArray<MethodSymbol>.Empty; }
             }
 
             public override ImmutableArray<CustomModifier> ReturnTypeCustomModifiers

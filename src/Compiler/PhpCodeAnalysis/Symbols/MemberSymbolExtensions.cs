@@ -230,8 +230,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 //case SymbolKind.Field:
                 //    return ((FieldSymbol)s).AsMember(newOwner);
-                //case SymbolKind.Method:
-                //    return ((MethodSymbol)s).AsMember(newOwner);
+                case SymbolKind.Method:
+                    return ((MethodSymbol)s).AsMember(newOwner);
                 //case SymbolKind.NamedType:
                 //    return ((NamedTypeSymbol)s).AsMember(newOwner);
                 //case SymbolKind.Property:

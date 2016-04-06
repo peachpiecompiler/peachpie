@@ -9,6 +9,7 @@ using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -36,15 +37,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public IMethodSymbol ConstructedFrom
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public virtual IMethodSymbol ConstructedFrom => null;
 
-        public virtual ImmutableArray<IMethodSymbol> ExplicitInterfaceImplementations
+        ImmutableArray<IMethodSymbol> IMethodSymbol.ExplicitInterfaceImplementations => StaticCast<IMethodSymbol>.From(ExplicitInterfaceImplementations);
+
+        public virtual ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations
         {
             get
             {
@@ -113,6 +110,13 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return ExplicitInterfaceImplementations.Any(); }
         }
 
+        internal MethodSymbol AsMember(NamedTypeSymbol newOwner)
+        {
+            Debug.Assert(this.IsDefinition);
+            Debug.Assert(ReferenceEquals(newOwner.OriginalDefinition, this.ContainingSymbol.OriginalDefinition));
+            return (newOwner == this.ContainingSymbol) ? this : new SubstitutedMethodSymbol((SubstitutedNamedTypeSymbol)newOwner, this);
+        }
+
         ImmutableArray<IParameterSymbol> IMethodSymbol.Parameters => StaticCast<IParameterSymbol>.From(Parameters);
 
         public abstract ImmutableArray<ParameterSymbol> Parameters { get; }
@@ -122,16 +126,19 @@ namespace Pchp.CodeAnalysis.Symbols
         public IMethodSymbol PartialDefinitionPart => null;
 
         public IMethodSymbol PartialImplementationPart => null;
-        
-        public ITypeSymbol ReceiverType
+
+        /// <summary>
+        /// If this method can be applied to an object, returns the type of object it is applied to.
+        /// </summary>
+        public virtual ITypeSymbol ReceiverType
         {
             get
             {
-                throw new NotImplementedException();
+                return this.ContainingType;
             }
         }
 
-        public IMethodSymbol ReducedFrom
+        public virtual IMethodSymbol ReducedFrom
         {
             get
             {
@@ -162,6 +169,25 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Returns the map from type parameters to type arguments.
+        /// If this is not a generic method instantiation, returns null.
+        /// The map targets the original definition of the method.
+        /// </summary>
+        internal virtual TypeMap TypeSubstitution
+        {
+            get { return null; }
+        }
+
+        /// <summary>
+        /// If this method is a reduced extension method, returns the extension method that
+        /// should be used at call site during ILGen. Otherwise, returns null.
+        /// </summary>
+        internal virtual MethodSymbol CallsiteReducedFromMethod
+        {
+            get { return null; }
+        }
+
         public virtual DllImportData GetDllImportData() => null;
 
         public ImmutableArray<AttributeData> GetReturnTypeAttributes()
@@ -169,7 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
-        public ITypeSymbol GetTypeInferredDuringReduction(ITypeParameterSymbol reducedFromTypeParameter)
+        public virtual ITypeSymbol GetTypeInferredDuringReduction(ITypeParameterSymbol reducedFromTypeParameter)
         {
             throw new NotImplementedException();
         }

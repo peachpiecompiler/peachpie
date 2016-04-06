@@ -310,19 +310,19 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return type.TypeKind == TypeKind.Array && ((ArrayTypeSymbol)type).IsSZArray;
         //}
 
-        //// If the type is a delegate type, it returns it. If the type is an
-        //// expression tree type associated with a delegate type, it returns
-        //// the delegate type. Otherwise, null.
-        //public static NamedTypeSymbol GetDelegateType(this TypeSymbol type)
-        //{
-        //    if ((object)type == null) return null;
-        //    if (type.IsExpressionTree())
-        //    {
-        //        type = ((NamedTypeSymbol)type).TypeArgumentsNoUseSiteDiagnostics[0];
-        //    }
+        // If the type is a delegate type, it returns it. If the type is an
+        // expression tree type associated with a delegate type, it returns
+        // the delegate type. Otherwise, null.
+        public static NamedTypeSymbol GetDelegateType(this TypeSymbol type)
+        {
+            if ((object)type == null) return null;
+            if (type.IsExpressionTree())
+            {
+                type = ((NamedTypeSymbol)type).TypeArguments[0]; //TypeArgumentsNoUseSiteDiagnostics[0];
+            }
 
-        //    return type.IsDelegateType() ? (NamedTypeSymbol)type : null;
-        //}
+            return type.IsDelegateType() ? (NamedTypeSymbol)type : null;
+        }
 
         /// <summary>
         /// return true if the type is constructed from System.Linq.Expressions.Expression`1
@@ -387,19 +387,19 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.TypeKind == TypeKind.Delegate;
         }
 
-        //public static ImmutableArray<ParameterSymbol> DelegateParameters(this TypeSymbol type)
-        //{
-        //    Debug.Assert((object)type.DelegateInvokeMethod() != null && !type.DelegateInvokeMethod().HasUseSiteError,
-        //                 "This method should only be called on valid delegate types.");
-        //    return type.DelegateInvokeMethod().Parameters;
-        //}
+        public static ImmutableArray<ParameterSymbol> DelegateParameters(this TypeSymbol type)
+        {
+            Debug.Assert((object)type.DelegateInvokeMethod() != null,// && !type.DelegateInvokeMethod().HasUseSiteError,
+                         "This method should only be called on valid delegate types.");
+            return type.DelegateInvokeMethod().Parameters;
+        }
 
-        //public static MethodSymbol DelegateInvokeMethod(this TypeSymbol type)
-        //{
-        //    Debug.Assert((object)type != null);
-        //    Debug.Assert(type.IsDelegateType() || type.IsExpressionTree());
-        //    return type.GetDelegateType().DelegateInvokeMethod;
-        //}
+        public static MethodSymbol DelegateInvokeMethod(this TypeSymbol type)
+        {
+            Debug.Assert((object)type != null);
+            Debug.Assert(type.IsDelegateType() || type.IsExpressionTree());
+            return (MethodSymbol)type.GetDelegateType().DelegateInvokeMethod;
+        }
 
         /// <summary>
         /// Return the default value constant for the given type,

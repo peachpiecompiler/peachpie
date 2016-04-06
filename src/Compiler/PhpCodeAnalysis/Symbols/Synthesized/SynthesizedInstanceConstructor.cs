@@ -248,9 +248,9 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return false; }
         }
 
-        public sealed override ImmutableArray<IMethodSymbol> ExplicitInterfaceImplementations
+        public sealed override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations
         {
-            get { return ImmutableArray<IMethodSymbol>.Empty; }
+            get { return ImmutableArray<MethodSymbol>.Empty; }
         }
 
         //internal sealed override int CalculateLocalSyntaxOffset(int localPosition, SyntaxTree localTree)

@@ -69,14 +69,38 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// For delegate types, gets the delegate's invoke method.  Returns null on
-        /// all other kinds of types.
+        /// all other kinds of types.  Note that it is possible to have an ill-formed
+        /// delegate type imported from metadata which does not have an Invoke method.
+        /// Such a type will be classified as a delegate but its DelegateInvokeMethod
+        /// would be null.
         /// </summary>
-        public virtual IMethodSymbol DelegateInvokeMethod
+        public IMethodSymbol DelegateInvokeMethod
         {
             get
             {
-                // TODO: look for __invoke method
-                return null;
+                if (TypeKind != TypeKind.Delegate)
+                {
+                    return null;
+                }
+
+                var methods = GetMembers(WellKnownMemberNames.DelegateInvokeName);
+                if (methods.Length != 1)
+                {
+                    return null;
+                }
+
+                var method = methods[0] as MethodSymbol;
+
+                //EDMAURER we used to also check 'method.IsVirtual' because section 13.6
+                //of the CLI spec dictates that it be virtual, but real world
+                //working metadata has been found that contains an Invoke method that is
+                //marked as virtual but not newslot (both of those must be combined to
+                //meet the C# definition of virtual). Rather than weaken the check
+                //I've removed it, as the Dev10 compiler makes no check, and we don't
+                //stand to gain anything by having it.
+
+                //return method != null && method.IsVirtual ? method : null;
+                return method;
             }
         }
 
