@@ -521,6 +521,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             this.EmitLoadContext();
             var type = EmitSpecialize(expr);
 
+            //
             MethodSymbol method = null;
 
             switch (type.SpecialType)
@@ -542,6 +543,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     method = CoreMethods.Operators.Echo_Long.Symbol;
                     break;
                 case SpecialType.System_Boolean:
+                    // TODO: if (VALUE) echo("1");
                     EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Bool).Expect(SpecialType.System_String);
                     method = CoreMethods.Operators.Echo_String.Symbol;
                     break;
@@ -563,6 +565,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         Emit_PhpAlias_GetValue();
                         method = CoreMethods.Operators.Echo_PhpValue.Symbol;
                     }
+                    // TODO: PhpArray
                     else
                     {
                         // TODO: check expr.TypeRefMask if it is only NULL

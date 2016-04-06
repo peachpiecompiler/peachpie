@@ -710,20 +710,17 @@ namespace Pchp.CodeAnalysis.Semantics
                     returned_type = EmitMinus(il);
                     break;
 
+                case Operations.Plus:
+                    //Template: "+x"
+                    returned_type = EmitPlus(il);
+                    break;
+
                 case Operations.ObjectCast:
                     //Template: "(object)x"
                     il.EmitConvert(this.Operand, il.CoreTypes.Object);
                     returned_type = il.CoreTypes.Object;
                     break;
                     
-                case Operations.Plus:
-                    //Template: "+x"  Operators.Plus(x)
-                    //codeGenerator.EmitBoxing(node.Expr.Emit(codeGenerator));
-                    //il.Emit(OpCodes.Call, Methods.Operators.Plus);
-                    //returned_typecode = PhpTypeCode.Object;
-                    //break;
-                    throw new NotImplementedException();
-
                 case Operations.Print:
                     il.EmitEcho(this.Operand);
 
@@ -770,15 +767,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.UnicodeCast: // TODO
                 case Operations.StringCast:
-                    //if ((returned_typecode = node.Expr.Emit(codeGenerator)) != PhpTypeCode.String)
-                    //{
-                    //    codeGenerator.EmitBoxing(returned_typecode);
-                    //    //codeGenerator.EmitLoadClassContext();
-                    //    il.Emit(OpCodes.Call, Methods.Convert.ObjectToString);
-                    //    returned_typecode = PhpTypeCode.String;
-                    //}
-                    //break;
-                    throw new NotImplementedException();
+                    // (string)x
+                    il.EmitConvert(this.Operand, il.CoreTypes.String);  // TODO: to String or PhpString ? to not corrupt single-byte string
+                    return il.CoreTypes.String;
 
                 case Operations.BinaryCast:
                     //if ((returned_typecode = node.Expr.Emit(codeGenerator)) != PhpTypeCode.PhpBytes)
@@ -858,6 +849,36 @@ namespace Pchp.CodeAnalysis.Semantics
                         return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Negation)
                             .Expect(t);
                     }
+
+                    throw new NotImplementedException();
+            }
+        }
+
+        TypeSymbol EmitPlus(CodeGenerator gen)
+        {
+            // convert value to a number
+
+            var il = gen.Builder;
+            var t = gen.Emit(this.Operand);
+
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Double:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64:
+                    return t;
+                case SpecialType.System_Boolean:
+                    // (long)(int)bool
+                    il.EmitOpCode(ILOpCode.Conv_i4);
+                    il.EmitOpCode(ILOpCode.Conv_i8);
+                    return gen.CoreTypes.Long;
+                default:
+                    if (t == gen.CoreTypes.PhpNumber)
+                    {
+                        return t;
+                    }
+
+                    // TODO: IPhpConvertible.ToNumber otherwise 0L
 
                     throw new NotImplementedException();
             }

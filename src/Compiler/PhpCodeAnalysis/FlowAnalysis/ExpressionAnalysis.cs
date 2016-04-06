@@ -718,7 +718,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetSystemObjectTypeMask();   // TODO: return the exact type in case we know, return stdClass in case of a scalar
 
                 case Operations.Plus:
-                    throw new NotImplementedException();
+                    if (IsNumberOnly(x.Operand.TypeRefMask))
+                        return x.Operand.TypeRefMask;
+                    return TypeCtx.GetNumberTypeMask();
 
                 case Operations.Print:
                     return TypeCtx.GetLongTypeMask();
