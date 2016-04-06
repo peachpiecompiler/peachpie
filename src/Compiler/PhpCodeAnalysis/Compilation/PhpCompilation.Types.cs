@@ -85,6 +85,14 @@ namespace Pchp.CodeAnalysis
             if (IsAString(first) && IsAString(second))
                 return CoreTypes.PhpString; // a string builder; if both are system.string, system.string is returned earlier
             
+            // unify class types to the common one (lowest)
+            if (first.IsReferenceType && second.IsReferenceType)
+            {
+                if (first.IsOfType(second)) return second;
+                if (second.IsOfType(first)) return first;
+                // TODO: otherwise find a common interface
+            }
+
             // most common PHP value type
             return CoreTypes.PhpValue;
         }
