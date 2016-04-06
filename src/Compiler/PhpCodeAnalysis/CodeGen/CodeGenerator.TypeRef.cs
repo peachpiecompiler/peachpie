@@ -48,5 +48,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return tmask.IsSingleType && _routine.TypeRefContext.IsReadonlyString(tmask);
         }
+
+        /// <summary>
+        /// Gets value indicating the given type represents only class types.
+        /// </summary>
+        internal bool IsClassOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && _routine.TypeRefContext.GetTypes(tmask).All(x => x.IsObject);
+        }
     }
 }

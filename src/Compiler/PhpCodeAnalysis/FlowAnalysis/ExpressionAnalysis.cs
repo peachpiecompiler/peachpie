@@ -704,7 +704,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetNumberTypeMask();     // TODO: long in case operand is not a number
 
                 case Operations.ObjectCast:
-                    throw new NotImplementedException();
+                    return TypeCtx.GetSystemObjectTypeMask();   // TODO: return the exact trype in case we know, return stdClass in case of a scalar
 
                 case Operations.Plus:
                     throw new NotImplementedException();

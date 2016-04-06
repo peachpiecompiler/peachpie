@@ -93,6 +93,8 @@ namespace Pchp.Core
 
         public string ToStringOrThrow(Context ctx) => _value.ToStringOrThrow(ctx);
 
+        public object ToClass(Context ctx) => _value.ToClass(ctx);
+
         #endregion
     }
 }

@@ -78,13 +78,36 @@ namespace Pchp.Core
         /// </summary>
         public string String { get { Debug.Assert(_type == PhpTypeCode.String && _obj != null); return (string)_obj; } }
 
+        /// <summary>
+        /// Gets underlaying reference object.
+        /// </summary>
+        public object Object { get { Debug.Assert(_type == PhpTypeCode.Object); return _obj; } }
+
         #endregion
 
         #region Operators
 
-        public object ToObject()
+        public object ToClass(Context ctx)
         {
-            throw new NotImplementedException();
+            switch (_type)
+            {
+                case PhpTypeCode.Object:
+                    if (_obj == null) // new stdClass()
+                        throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
+                    //if (_obj is IPhpConvertible)
+                    //    return ((IPhpConvertible)_obj).ToClass(ctx);
+                    return _obj;
+                case PhpTypeCode.Long:
+                    throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
+                case PhpTypeCode.Boolean:
+                    throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
+                case PhpTypeCode.Double:
+                    throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
+                case PhpTypeCode.String:
+                    throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
+            }
+
+            throw new ArgumentException();
         }
 
         public long ToLong()
@@ -244,6 +267,12 @@ namespace Pchp.Core
         public static PhpValue Create(string value) => new PhpValue() { _type = (value != null) ? PhpTypeCode.String : PhpTypeCode.Object, _obj = value };
 
         public static PhpValue Create(PhpString value) => new PhpValue() { _type = (value != null) ? PhpTypeCode.WritableString : PhpTypeCode.Object, _obj = value };
+
+        public static PhpValue FromClass(object value)
+        {
+            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double));
+            return new PhpValue() { _type = PhpTypeCode.Object, _obj = value };
+        }
 
         /// <summary>
         /// Implicitly converts a CLR type to PHP type.

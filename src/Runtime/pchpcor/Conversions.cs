@@ -54,6 +54,11 @@ namespace Pchp.Core
 		/// Converts instance to its string representation according to PHP conversion algorithm.
 		/// </summary>
 		string ToStringOrThrow(Context ctx);
+
+        /// <summary>
+        /// In case of a non class object, boxes value to an object.
+        /// </summary>
+        object ToClass(Context ctx);
     }
 
     #endregion

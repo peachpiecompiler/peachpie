@@ -706,19 +706,16 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.Minus:
-                    //Template: "-x"  Operators.Minus(x)
+                    //Template: "-x"
                     returned_type = EmitMinus(il);
                     break;
 
                 case Operations.ObjectCast:
-                    //Template: "(object)x"   Convert.ObjectToDObject(x,ScriptContext)
-                    //codeGenerator.EmitBoxing(node.Expr.Emit(codeGenerator));
-                    //codeGenerator.EmitLoadScriptContext();
-                    //il.Emit(OpCodes.Call, Methods.Convert.ObjectToDObject);
-                    //returned_typecode = PhpTypeCode.Object;
-                    //break;
-                    throw new NotImplementedException();
-
+                    //Template: "(object)x"
+                    il.EmitConvert(this.Operand, il.CoreTypes.Object);
+                    returned_type = il.CoreTypes.Object;
+                    break;
+                    
                 case Operations.Plus:
                     //Template: "+x"  Operators.Plus(x)
                     //codeGenerator.EmitBoxing(node.Expr.Emit(codeGenerator));
@@ -744,7 +741,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.BoolCast:
-                    //Template: "(bool)x"     Convert.ObjectToBoolean(x)
+                    //Template: "(bool)x"
                     il.EmitConvert(this.Operand, il.CoreTypes.Boolean);
                     returned_type = il.CoreTypes.Boolean;
                     break;

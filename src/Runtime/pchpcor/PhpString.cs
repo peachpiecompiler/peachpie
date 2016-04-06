@@ -90,6 +90,12 @@ namespace Pchp.Core
 
         public string ToStringOrThrow(Context ctx) => ToString(ctx);
 
+        public object ToClass(Context ctx)
+        {
+            // TODO: new stdClass(){ $scalar = VALUE }
+            throw new NotImplementedException();
+        }
+
         #endregion
     }
 }

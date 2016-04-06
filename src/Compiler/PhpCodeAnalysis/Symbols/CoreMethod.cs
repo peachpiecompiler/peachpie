@@ -228,23 +228,29 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = ct.PhpValue.Method("ToLong");
                 ToDouble = ct.PhpValue.Method("ToDouble");
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
+                ToClass_Context = ct.PhpValue.Method("ToClass", ct.Context);
 
-                get_Long = ct.PhpNumber.Method("get_Long");   // TODO: special name, property
-                get_Double = ct.PhpNumber.Method("get_Double");   // TODO: special name, property
-                get_Boolean = ct.PhpNumber.Method("get_Boolean");   // TODO: special name, property
-                get_String = ct.PhpNumber.Method("get_String");   // TODO: special name, property
+                get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
+                get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
+                get_Boolean = ct.PhpValue.Method("get_Boolean");   // TODO: special name, property
+                get_String = ct.PhpValue.Method("get_String");   // TODO: special name, property
+                get_Object = ct.PhpValue.Method("get_Object");   // TODO: special name, property
 
                 Create_Boolean = ct.PhpValue.Method("Create", ct.Boolean);
                 Create_Long = ct.PhpValue.Method("Create", ct.Long);
                 Create_Double = ct.PhpValue.Method("Create", ct.Double);
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
                 CreateNull = ct.PhpValue.Method("CreateNull");
+
+                FromClr_Object = ct.PhpValue.Method("FromClr", ct.Object);
+                FromClass_Object = ct.PhpValue.Method("FromClass", ct.Object);
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context,
-                get_Long, get_Double, get_Boolean, get_String,
-                Create_Boolean, Create_Long, Create_Double, Create_PhpNumber, CreateNull;
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context,
+                get_Long, get_Double, get_Boolean, get_String, get_Object,
+                Create_Boolean, Create_Long, Create_Double, Create_PhpNumber, CreateNull,
+                FromClr_Object, FromClass_Object;
         }
 
         public struct PhpNumberHolder
@@ -255,6 +261,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = ct.PhpNumber.Method("ToLong");
                 ToDouble = ct.PhpNumber.Method("ToDouble");
                 ToString_Context = ct.PhpNumber.Method("ToString", ct.Context);
+                ToClass_Context = ct.PhpNumber.Method("ToClass", ct.Context);
 
                 CompareTo_number = ct.PhpNumber.Method("CompareTo", ct.PhpNumber);
                 CompareTo_long = ct.PhpNumber.Method("CompareTo", ct.Long);
@@ -305,7 +312,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context,
                 CompareTo_number, CompareTo_long, CompareTo_double,
                 Add_long_long, Add_long_double, Add_number_double, Add_double_number,
                 Subtract_long_long, Subtract_number_double, Subtract_long_double,
