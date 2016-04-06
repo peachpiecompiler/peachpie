@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override SourceFileSymbol ContainingFile => _file;
 
-        public override NamedTypeSymbol ContainingType => null; //_file;
+        public override NamedTypeSymbol ContainingType => _file;
 
         protected override TypeRefContext CreateTypeRefContext()
             => new TypeRefContext(NameUtils.GetNamingContext(_syntax.Namespace, _syntax.SourceUnit.Ast), _syntax.SourceUnit, null);

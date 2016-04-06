@@ -133,7 +133,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
         {
-            return ImmutableArray.Create(_sourceModule.SymbolTables.GetType(NameUtils.MakeQualifiedName(name, true)));
+            var x = _sourceModule.SymbolTables.GetType(NameUtils.MakeQualifiedName(name, true));
+            return (x != null) ? ImmutableArray.Create(x) : ImmutableArray<NamedTypeSymbol>.Empty;
         }
     }
 }

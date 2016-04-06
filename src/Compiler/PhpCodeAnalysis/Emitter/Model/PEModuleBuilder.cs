@@ -28,6 +28,7 @@ namespace Pchp.CodeAnalysis.Emit
         SynthesizedScriptTypeSymbol _lazyScriptType;
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
+        readonly ConcurrentDictionary<Symbol, object> _genericInstanceMap = new ConcurrentDictionary<Symbol, object>();
         readonly StringTokenMap _stringsInILMap = new StringTokenMap();
         readonly ConcurrentDictionary<IMethodSymbol, Cci.IMethodBody> _methodBodyMap = new ConcurrentDictionary<IMethodSymbol, Cci.IMethodBody>(ReferenceEqualityComparer.Instance);
         readonly TokenMap<Cci.IReference> _referencesInILMap = new TokenMap<Cci.IReference>();
@@ -831,9 +832,155 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal override Cci.IMethodReference Translate(IMethodSymbol symbol, DiagnosticBag diagnostics, bool needDeclaration)
         {
-            // TODO
-            return (Cci.IMethodReference)symbol;
+            return Translate((MethodSymbol)symbol, null, diagnostics, /*null,*/ needDeclaration);
         }
+
+        //internal Cci.IMethodReference Translate(
+        //    MethodSymbol methodSymbol,
+        //    SyntaxNode syntaxNodeOpt,
+        //    DiagnosticBag diagnostics,
+        //    BoundArgListOperator optArgList = null,
+        //    bool needDeclaration = false)
+        //{
+        //    Debug.Assert(optArgList == null || (methodSymbol.IsVararg && !needDeclaration));
+
+        //    Cci.IMethodReference unexpandedMethodRef = Translate(methodSymbol, syntaxNodeOpt, diagnostics, needDeclaration);
+
+        //    if (optArgList != null && optArgList.Arguments.Length > 0)
+        //    {
+        //        Cci.IParameterTypeInformation[] @params = new Cci.IParameterTypeInformation[optArgList.Arguments.Length];
+        //        int ordinal = methodSymbol.ParameterCount;
+
+        //        for (int i = 0; i < @params.Length; i++)
+        //        {
+        //            @params[i] = new ArgListParameterTypeInformation(ordinal,
+        //                                                            !optArgList.ArgumentRefKindsOpt.IsDefaultOrEmpty && optArgList.ArgumentRefKindsOpt[i] != RefKind.None,
+        //                                                            Translate(optArgList.Arguments[i].Type, syntaxNodeOpt, diagnostics));
+        //            ordinal++;
+        //        }
+
+        //        return new ExpandedVarargsMethodReference(unexpandedMethodRef, @params.AsImmutableOrNull());
+        //    }
+        //    else
+        //    {
+        //        return unexpandedMethodRef;
+        //    }
+        //}
+
+        internal Cci.IMethodReference Translate(
+            MethodSymbol methodSymbol,
+            SyntaxNode syntaxNodeOpt,
+            DiagnosticBag diagnostics,
+            bool needDeclaration)
+        {
+            object reference;
+            Cci.IMethodReference methodRef;
+            NamedTypeSymbol container = methodSymbol.ContainingType;
+
+            Debug.Assert(methodSymbol.IsDefinitionOrDistinct());
+
+            // Method of anonymous type being translated
+            if (container.IsAnonymousType)
+            {
+                //methodSymbol = AnonymousTypeManager.TranslateAnonymousTypeMethodSymbol(methodSymbol);
+                throw new NotImplementedException();
+            }
+
+            if (!methodSymbol.IsDefinition)
+            {
+                Debug.Assert(!needDeclaration);
+
+                return methodSymbol;
+            }
+            else if (!needDeclaration)
+            {
+                bool methodIsGeneric = methodSymbol.IsGenericMethod;
+                bool typeIsGeneric = IsGenericType(container);
+
+                if (methodIsGeneric || typeIsGeneric)
+                {
+                    if (_genericInstanceMap.TryGetValue(methodSymbol, out reference))
+                    {
+                        return (Cci.IMethodReference)reference;
+                    }
+
+                    if (methodIsGeneric)
+                    {
+                        if (typeIsGeneric)
+                        {
+                            // Specialized and generic instance at the same time.
+                            methodRef = new SpecializedGenericMethodInstanceReference(methodSymbol);
+                        }
+                        else
+                        {
+                            methodRef = new GenericMethodInstanceReference(methodSymbol);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(typeIsGeneric);
+                        methodRef = new SpecializedMethodReference(methodSymbol);
+                    }
+
+                    methodRef = (Cci.IMethodReference)_genericInstanceMap.GetOrAdd(methodSymbol, methodRef);
+
+                    return methodRef;
+                }
+            }
+
+            //if (_embeddedTypesManagerOpt != null)
+            //{
+            //    return _embeddedTypesManagerOpt.EmbedMethodIfNeedTo(methodSymbol, syntaxNodeOpt, diagnostics);
+            //}
+
+            return methodSymbol;
+        }
+
+        //internal Cci.IMethodReference TranslateOverriddenMethodReference(
+        //    MethodSymbol methodSymbol,
+        //    SyntaxNode syntaxNodeOpt,
+        //    DiagnosticBag diagnostics)
+        //{
+        //    Cci.IMethodReference methodRef;
+        //    NamedTypeSymbol container = methodSymbol.ContainingType;
+
+        //    if (IsGenericType(container))
+        //    {
+        //        if (methodSymbol.IsDefinition)
+        //        {
+        //            object reference;
+
+        //            if (_genericInstanceMap.TryGetValue(methodSymbol, out reference))
+        //            {
+        //                methodRef = (Cci.IMethodReference)reference;
+        //            }
+        //            else
+        //            {
+        //                methodRef = new SpecializedMethodReference(methodSymbol);
+        //                methodRef = (Cci.IMethodReference)_genericInstanceMap.GetOrAdd(methodSymbol, methodRef);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            methodRef = new SpecializedMethodReference(methodSymbol);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        Debug.Assert(methodSymbol.IsDefinition);
+
+        //        if (_embeddedTypesManagerOpt != null)
+        //        {
+        //            methodRef = _embeddedTypesManagerOpt.EmbedMethodIfNeedTo(methodSymbol, syntaxNodeOpt, diagnostics);
+        //        }
+        //        else
+        //        {
+        //            methodRef = methodSymbol;
+        //        }
+        //    }
+
+        //    return methodRef;
+        //}
 
         internal sealed override Cci.ITypeReference Translate(ITypeSymbol typeSymbol, SyntaxNode syntaxNodeOpt, DiagnosticBag diagnostics)
         {
