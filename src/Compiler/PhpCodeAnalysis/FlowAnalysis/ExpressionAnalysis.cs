@@ -97,6 +97,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Gets value indicating the given type represents only class types.
+        /// </summary>
+        bool IsClassOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && TypeCtx.GetTypes(tmask).All(x => x.IsObject);
+        }
+
+        /// <summary>
         /// Gets value indicating the given type is long or double or both but nothing else.
         /// </summary>
         /// <param name="tmask"></param>
@@ -704,7 +712,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetNumberTypeMask();     // TODO: long in case operand is not a number
 
                 case Operations.ObjectCast:
-                    return TypeCtx.GetSystemObjectTypeMask();   // TODO: return the exact trype in case we know, return stdClass in case of a scalar
+                    if (IsClassOnly(x.Operand.TypeRefMask))
+                        return x.Operand.TypeRefMask;   // (object)<object>
+                    
+                    return TypeCtx.GetSystemObjectTypeMask();   // TODO: return the exact type in case we know, return stdClass in case of a scalar
 
                 case Operations.Plus:
                     throw new NotImplementedException();
