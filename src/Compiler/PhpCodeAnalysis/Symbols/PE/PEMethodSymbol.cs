@@ -170,9 +170,9 @@ namespace Pchp.CodeAnalysis.Symbols
         private PackedFlags _packedFlags;
         private readonly ushort _flags;     // MethodAttributes
         private readonly ushort _implFlags; // MethodImplAttributes
-        //private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
+        private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
         private SignatureData _lazySignature;
-        //private ImmutableArray<MethodSymbol> _lazyExplicitMethodImplementations;
+        private ImmutableArray<MethodSymbol> _lazyExplicitMethodImplementations;
         readonly string _name;
 
         #endregion
@@ -282,93 +282,93 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal MethodDefinitionHandle Handle => _handle;
 
-        //public override int Arity
-        //{
-        //    get
-        //    {
-        //        if (!_lazyTypeParameters.IsDefault)
-        //        {
-        //            return _lazyTypeParameters.Length;
-        //        }
+        public override int Arity
+        {
+            get
+            {
+                if (!_lazyTypeParameters.IsDefault)
+                {
+                    return _lazyTypeParameters.Length;
+                }
 
-        //        try
-        //        {
-        //            int parameterCount;
-        //            int typeParameterCount;
-        //            MetadataDecoder.GetSignatureCountsOrThrow(_containingType.ContainingPEModule.Module, _handle, out parameterCount, out typeParameterCount);
-        //            return typeParameterCount;
-        //        }
-        //        catch (BadImageFormatException)
-        //        {
-        //            return TypeParameters.Length;
-        //        }
-        //    }
-        //}
+                try
+                {
+                    int parameterCount;
+                    int typeParameterCount;
+                    MetadataDecoder.GetSignatureCountsOrThrow(_containingType.ContainingPEModule.Module, _handle, out parameterCount, out typeParameterCount);
+                    return typeParameterCount;
+                }
+                catch (BadImageFormatException)
+                {
+                    return TypeParameters.Length;
+                }
+            }
+        }
 
-        //public override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations
-        //{
-        //    get
-        //    {
-        //        var explicitInterfaceImplementations = _lazyExplicitMethodImplementations;
-        //        if (!explicitInterfaceImplementations.IsDefault)
-        //        {
-        //            return explicitInterfaceImplementations;
-        //        }
+        public override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations
+        {
+            get
+            {
+                var explicitInterfaceImplementations = _lazyExplicitMethodImplementations;
+                if (!explicitInterfaceImplementations.IsDefault)
+                {
+                    return explicitInterfaceImplementations;
+                }
 
-        //        var moduleSymbol = _containingType.ContainingPEModule;
+                var moduleSymbol = _containingType.ContainingPEModule;
 
-        //        // Context: we need the containing type of this method as context so that we can substitute appropriately into
-        //        // any generic interfaces that we might be explicitly implementing.  There is no reason to pass in the method
-        //        // context, however, because any method type parameters will belong to the implemented (i.e. interface) method,
-        //        // which we do not yet know.
-        //        var explicitlyOverriddenMethods = new MetadataDecoder(moduleSymbol, _containingType).GetExplicitlyOverriddenMethods(_containingType.Handle, _handle, this.ContainingType);
+                // Context: we need the containing type of this method as context so that we can substitute appropriately into
+                // any generic interfaces that we might be explicitly implementing.  There is no reason to pass in the method
+                // context, however, because any method type parameters will belong to the implemented (i.e. interface) method,
+                // which we do not yet know.
+                var explicitlyOverriddenMethods = new MetadataDecoder(moduleSymbol, _containingType).GetExplicitlyOverriddenMethods(_containingType.Handle, _handle, this.ContainingType);
 
-        //        //avoid allocating a builder in the common case
-        //        var anyToRemove = false;
-        //        var sawObjectFinalize = false;
-        //        foreach (var method in explicitlyOverriddenMethods)
-        //        {
-        //            if (!method.ContainingType.IsInterface)
-        //            {
-        //                anyToRemove = true;
-        //                sawObjectFinalize =
-        //                    (method.ContainingType.SpecialType == SpecialType.System_Object &&
-        //                     method.Name == WellKnownMemberNames.DestructorName && // Cheaper than MethodKind.
-        //                     method.MethodKind == MethodKind.Destructor);
-        //            }
+                //avoid allocating a builder in the common case
+                var anyToRemove = false;
+                var sawObjectFinalize = false;
+                foreach (var method in explicitlyOverriddenMethods)
+                {
+                    if (!method.ContainingType.IsInterface)
+                    {
+                        anyToRemove = true;
+                        sawObjectFinalize =
+                            (method.ContainingType.SpecialType == SpecialType.System_Object &&
+                             method.Name == WellKnownMemberNames.DestructorName && // Cheaper than MethodKind.
+                             method.MethodKind == MethodKind.Destructor);
+                    }
 
-        //            if (anyToRemove && sawObjectFinalize)
-        //            {
-        //                break;
-        //            }
-        //        }
+                    if (anyToRemove && sawObjectFinalize)
+                    {
+                        break;
+                    }
+                }
 
-        //        // CONSIDER: could assert that we're writing the existing value if it's already there
-        //        // CONSIDER: what we'd really like to do is set this bit only in cases where the explicitly
-        //        // overridden method matches the method that will be returned by MethodSymbol.OverriddenMethod.
-        //        // Unfortunately, this MethodSymbol will not be sufficiently constructed (need IsOverride and MethodKind,
-        //        // which depend on this property) to determine which method OverriddenMethod will return.
-        //        _packedFlags.InitializeIsExplicitOverride(isExplicitFinalizerOverride: sawObjectFinalize, isExplicitClassOverride: anyToRemove);
+                // CONSIDER: could assert that we're writing the existing value if it's already there
+                // CONSIDER: what we'd really like to do is set this bit only in cases where the explicitly
+                // overridden method matches the method that will be returned by MethodSymbol.OverriddenMethod.
+                // Unfortunately, this MethodSymbol will not be sufficiently constructed (need IsOverride and MethodKind,
+                // which depend on this property) to determine which method OverriddenMethod will return.
+                _packedFlags.InitializeIsExplicitOverride(isExplicitFinalizerOverride: sawObjectFinalize, isExplicitClassOverride: anyToRemove);
 
-        //        explicitInterfaceImplementations = explicitlyOverriddenMethods;
+                explicitInterfaceImplementations = explicitlyOverriddenMethods;
 
-        //        if (anyToRemove)
-        //        {
-        //            var explicitInterfaceImplementationsBuilder = ArrayBuilder<MethodSymbol>.GetInstance();
-        //            foreach (var method in explicitlyOverriddenMethods)
-        //            {
-        //                if (method.ContainingType.IsInterface)
-        //                {
-        //                    explicitInterfaceImplementationsBuilder.Add(method);
-        //                }
-        //            }
+                if (anyToRemove)
+                {
+                    var explicitInterfaceImplementationsBuilder = ArrayBuilder<MethodSymbol>.GetInstance();
+                    foreach (var method in explicitlyOverriddenMethods)
+                    {
+                        if (method.ContainingType.IsInterface)
+                        {
+                            explicitInterfaceImplementationsBuilder.Add(method);
+                        }
+                    }
 
-        //            explicitInterfaceImplementations = explicitInterfaceImplementationsBuilder.ToImmutableAndFree();
-        //        }
+                    explicitInterfaceImplementations = explicitInterfaceImplementationsBuilder.ToImmutableAndFree();
+                }
 
-        //        return InterlockedOperations.Initialize(ref _lazyExplicitMethodImplementations, explicitInterfaceImplementations);
-        //    }
-        //}
+                return InterlockedOperations.Initialize(ref _lazyExplicitMethodImplementations, explicitInterfaceImplementations);
+            }
+        }
 
         // Has to have the abstract flag.
         // NOTE: dev10 treats the method as abstract (i.e. requiring an impl in subtypes) event if it is not metadata virtual.
@@ -589,12 +589,12 @@ namespace Pchp.CodeAnalysis.Symbols
             ParamInfo<TypeSymbol>[] paramInfo = new MetadataDecoder(moduleSymbol, this).GetSignatureForMethod(_handle, out signatureHeader, out mrEx);
             bool makeBad = (mrEx != null);
 
-            //// If method is not generic, let's assign empty list for type parameters
-            //if (!signatureHeader.IsGeneric &&
-            //    _lazyTypeParameters.IsDefault)
-            //{
-            //    ImmutableInterlocked.InterlockedInitialize(ref _lazyTypeParameters, ImmutableArray<TypeParameterSymbol>.Empty);
-            //}
+            // If method is not generic, let's assign empty list for type parameters
+            if (!signatureHeader.IsGeneric &&
+                _lazyTypeParameters.IsDefault)
+            {
+                ImmutableInterlocked.InterlockedInitialize(ref _lazyTypeParameters, ImmutableArray<TypeParameterSymbol>.Empty);
+            }
 
             int count = paramInfo.Length - 1;
             ImmutableArray<ParameterSymbol> @params;
@@ -637,20 +637,60 @@ namespace Pchp.CodeAnalysis.Symbols
             return InterlockedOperations.Initialize(ref _lazySignature, signature);
         }
 
-        //public override ImmutableArray<TypeParameterSymbol> TypeParameters
-        //{
-        //    get
-        //    {
-        //        DiagnosticInfo diagnosticInfo = null;
-        //        var typeParams = EnsureTypeParametersAreLoaded(ref diagnosticInfo);
-        //        if (diagnosticInfo != null)
-        //        {
-        //            InitializeUseSiteDiagnostic(diagnosticInfo);
-        //        }
+        private ImmutableArray<TypeParameterSymbol> EnsureTypeParametersAreLoaded(ref DiagnosticInfo diagnosticInfo)
+        {
+            var typeParams = _lazyTypeParameters;
+            if (!typeParams.IsDefault)
+            {
+                return typeParams;
+            }
 
-        //        return typeParams;
-        //    }
-        //}
+            return InterlockedOperations.Initialize(ref _lazyTypeParameters, LoadTypeParameters(ref diagnosticInfo));
+        }
+
+        private ImmutableArray<TypeParameterSymbol> LoadTypeParameters(ref DiagnosticInfo diagnosticInfo)
+        {
+            try
+            {
+                var moduleSymbol = _containingType.ContainingPEModule;
+                var gpHandles = moduleSymbol.Module.GetGenericParametersForMethodOrThrow(_handle);
+
+                if (gpHandles.Count == 0)
+                {
+                    return ImmutableArray<TypeParameterSymbol>.Empty;
+                }
+                else
+                {
+                    var ownedParams = ImmutableArray.CreateBuilder<TypeParameterSymbol>(gpHandles.Count);
+                    for (int i = 0; i < gpHandles.Count; i++)
+                    {
+                        ownedParams.Add(new PETypeParameterSymbol(moduleSymbol, this, (ushort)i, gpHandles[i]));
+                    }
+
+                    return ownedParams.ToImmutable();
+                }
+            }
+            catch (BadImageFormatException)
+            {
+                //diagnosticInfo = new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, this); // TODO: ErrorCode
+                return ImmutableArray<TypeParameterSymbol>.Empty;
+            }
+        }
+
+        public override ImmutableArray<TypeParameterSymbol> TypeParameters
+        {
+            get
+            {
+                DiagnosticInfo diagnosticInfo = null;
+                var typeParams = EnsureTypeParametersAreLoaded(ref diagnosticInfo);
+                if (diagnosticInfo != null)
+                {
+                    //InitializeUseSiteDiagnostic(diagnosticInfo);
+                }
+
+                return typeParams;
+            }
+        }
 
         public override bool ReturnsVoid => this.ReturnType.SpecialType == SpecialType.System_Void;
 
@@ -695,6 +735,5 @@ namespace Pchp.CodeAnalysis.Symbols
                 return null;
             }
         }
-
     }
 }
