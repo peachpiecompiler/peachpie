@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual IMethodSymbol ConstructedFrom => null;
+        public virtual IMethodSymbol ConstructedFrom => this;
 
         ImmutableArray<IMethodSymbol> IMethodSymbol.ExplicitInterfaceImplementations => StaticCast<IMethodSymbol>.From(ExplicitInterfaceImplementations);
 
