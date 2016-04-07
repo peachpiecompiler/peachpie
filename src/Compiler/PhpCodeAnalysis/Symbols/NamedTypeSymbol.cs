@@ -74,7 +74,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Such a type will be classified as a delegate but its DelegateInvokeMethod
         /// would be null.
         /// </summary>
-        public IMethodSymbol DelegateInvokeMethod
+        public MethodSymbol DelegateInvokeMethod
         {
             get
             {
