@@ -309,6 +309,8 @@ namespace Pchp.CodeAnalysis.Symbols
             return this.Construct(arguments.Cast<TypeSymbol>().ToArray());
         }
 
+        IMethodSymbol INamedTypeSymbol.DelegateInvokeMethod => DelegateInvokeMethod;
+
         #endregion
 
         #region ISymbol Members
