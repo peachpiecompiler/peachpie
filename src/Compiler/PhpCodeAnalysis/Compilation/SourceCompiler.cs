@@ -130,7 +130,7 @@ namespace Pchp.CodeAnalysis
                 .WhereNotNull()
                 .ForEach(this.EmitCtorBody);
 
-            // realize .cctor
+            // realize .cctor if any
             _moduleBuilder.GetTopLevelTypes(default(Microsoft.CodeAnalysis.Emit.EmitContext)).OfType<NamedTypeSymbol>()
                 .ForEach(_moduleBuilder.SetStaticCtorBody);
         }

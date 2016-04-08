@@ -268,6 +268,9 @@ namespace Pchp.CodeAnalysis.Emit
             _methodBodyMap.Add(methodSymbol, body);
         }
 
+        /// <summary>
+        /// Gets IL builder for lazy static constructor.
+        /// </summary>
         public ILBuilder GetStaticCtorBuilder(NamedTypeSymbol container)
         {
             var withcctor = container as IWithSynthesizedStaticCtor;
@@ -286,6 +289,9 @@ namespace Pchp.CodeAnalysis.Emit
             return il;
         }
 
+        /// <summary>
+        /// Any lazily emitted static constructor will be realized and its body saved to method map.
+        /// </summary>
         public void SetStaticCtorBody(NamedTypeSymbol container)
         {
             if (container is IWithSynthesizedStaticCtor)
@@ -294,9 +300,11 @@ namespace Pchp.CodeAnalysis.Emit
                     ILBuilder il;
                     if (_cctorBuilders.TryGetValue(cctor, out il))
                     {
+                        //
                         Debug.Assert(cctor.ReturnsVoid);
                         il.EmitRet(true);
 
+                        //
                         var body = CodeGen.MethodGenerator.CreateSynthesizedBody(this, cctor, il);
                         SetMethodBody(cctor, body);
                     }

@@ -156,6 +156,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var builder = ImmutableArray.CreateBuilder<Symbol>();
 
+            builder.Add(_mainMethod);
+
             builder.AddRange(_functions);
 
             if (_lazyCctorSymbol != null)
