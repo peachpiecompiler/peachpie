@@ -175,92 +175,172 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        internal static MethodBody GenerateCtorBody(
+        internal static void EmitCtorBody(
             PEModuleBuilder moduleBuilder,
             SynthesizedCtorSymbol routine,
-            VariableSlotAllocator variableSlotAllocatorOpt,
             DiagnosticBag diagnostics,
             bool emittingPdb)
         {
             Debug.Assert(!routine.IsStatic);
 
-            return GenerateMethodBody(moduleBuilder, routine, (il) =>
+            var compilation = moduleBuilder.Compilation;
+            var parameters = routine.Parameters;
+
+            var il = new ILBuilder(moduleBuilder, new LocalSlotManager(null), compilation.Options.OptimizationLevel);
+
+            Debug.Assert(parameters[0].Type == compilation.CoreTypes.Context);    // first parameter always <ctx>
+
+            var type = (SourceNamedTypeSymbol)routine.ContainingType;
+            var realctor = routine.RealCtorMethod;  // .ctor or __construct to be called
+            var ctxField = type.ContextField;       // .<ctx>
+
+            Debug.Assert(!type.IsStatic);
+
+            if (ctxField != null)
             {
-                var compilation = moduleBuilder.Compilation;
-                var parameters = routine.Parameters;
-                Debug.Assert(parameters[0].Type == compilation.CoreTypes.Context);    // first parameter always <ctx>
-
-                var type = (SourceNamedTypeSymbol)routine.ContainingType;
-                var realctor = routine.RealCtorMethod;  // .ctor or __construct to be called
-                var ctxField = type.ContextField;       // .<ctx>
-
-                Debug.Assert(!type.IsStatic);
-
-                if (ctxField != null)
+                // if field is declared within this type or
+                // realctor is __construct
+                if (object.ReferenceEquals(ctxField.ContainingType, type) || object.ReferenceEquals(realctor?.ContainingType, type))
                 {
-                    // if field is declared within this type or
-                    // realctor is __construct
-                    if (object.ReferenceEquals(ctxField.ContainingType, type) || object.ReferenceEquals(realctor?.ContainingType, type))
-                    {
-                        // TODO: emit debug.assert(<ctx> != null)
+                    // TODO: emit debug.assert(<ctx> != null)
 
-                        // <this>.<ctx> = <ctx>
-                        il.EmitLoadArgumentOpcode(0);   // this
-                        il.EmitLoadArgumentOpcode(1);   // <ctx>
-                        il.EmitOpCode(ILOpCode.Stfld);
-                        il.EmitToken(ctxField, null, diagnostics);
-                    }
+                    // <this>.<ctx> = <ctx>
+                    il.EmitLoadArgumentOpcode(0);   // this
+                    il.EmitLoadArgumentOpcode(1);   // <ctx>
+                    il.EmitOpCode(ILOpCode.Stfld);
+                    il.EmitToken(ctxField, null, diagnostics);
                 }
+            }
 
-                if (realctor != null)
+            if (realctor != null)
+            {
+                Debug.Assert(!realctor.IsStatic);
+                var ps = realctor.Parameters;
+                bool returnsValue = !realctor.ReturnsVoid;
+
+                // call realctor
+                il.EmitLoadArgumentOpcode(0);    // this
+
+                // TODO: bind arguments using overload resolution, following is temporary:
+
+                int source = 2; // skip <ctx>
+
+                for (int i = 0; i < ps.Length; i++)
                 {
-                    Debug.Assert(!realctor.IsStatic);
-                    var ps = realctor.Parameters;
-                    bool returnsValue = !realctor.ReturnsVoid;
-
-                    // call realctor
-                    il.EmitLoadArgumentOpcode(0);    // this
-
-                    // TODO: bind arguments using overload resolution, following is temporary:
-
-                    int source = 2; // skip <ctx>
-
-                    for (int i = 0; i < ps.Length; i++)
+                    var targetp = ps[i];
+                    if (targetp.IsImplicitlyDeclared)
                     {
-                        var targetp = ps[i];
-                        if (targetp.IsImplicitlyDeclared)
+                        if (ps[i].Type == compilation.CoreTypes.Context)
                         {
-                            if (ps[i].Type == compilation.CoreTypes.Context)
-                            {
-                                // load <ctx>
-                                il.EmitLoadArgumentOpcode(1);
-                                continue;
-                            }
-                        }
-
-                        var srcp = parameters[source - 1];
-                        if (targetp.Type == srcp.Type)
-                        {
-                            il.EmitLoadArgumentOpcode(source);
-                            source++;
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException("Signature does not match.");
+                            // load <ctx>
+                            il.EmitLoadArgumentOpcode(1);
+                            continue;
                         }
                     }
 
-                    il.EmitOpCode(ILOpCode.Call, -1 - ps.Length + (returnsValue ? 1 : 0));   // - this - ps
-                    il.EmitToken(realctor, null, diagnostics);
-
-                    if (returnsValue)
-                        il.EmitOpCode(ILOpCode.Pop);
+                    var srcp = parameters[source - 1];
+                    if (targetp.Type == srcp.Type)
+                    {
+                        il.EmitLoadArgumentOpcode(source);
+                        source++;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Signature does not match.");
+                    }
                 }
 
-                // return
+                il.EmitOpCode(ILOpCode.Call, -1 - ps.Length + (returnsValue ? 1 : 0));   // - this - ps
+                il.EmitToken(realctor, null, diagnostics);
+
+                if (returnsValue)
+                    il.EmitOpCode(ILOpCode.Pop);
+
+                //
                 il.EmitRet(true);
 
-            }, variableSlotAllocatorOpt, diagnostics, emittingPdb);
+                //
+                var body = CreateSynthesizedBody(moduleBuilder, routine, il);
+                moduleBuilder.SetMethodBody(routine, body);
+            }
+        }
+
+        internal static MethodBody CreateSynthesizedBody(PEModuleBuilder moduleBuilder, IMethodSymbol routine, ILBuilder il)
+        {
+            var compilation = moduleBuilder.Compilation;
+            var localSlotManager = il.LocalSlotManager;
+            var optimizations = compilation.Options.OptimizationLevel;
+
+            try
+            {
+                il.Realize();
+
+                //
+                var localVariables = il.LocalSlotManager.LocalsInOrder();
+
+                if (localVariables.Length > 0xFFFE)
+                {
+                    //diagnosticsForThisMethod.Add(ErrorCode.ERR_TooManyLocals, method.Locations.First());
+                }
+
+                //if (diagnosticsForThisMethod.HasAnyErrors())
+                //{
+                //    // we are done here. Since there were errors we should not emit anything.
+                //    return null;
+                //}
+
+                //// We will only save the IL builders when running tests.
+                //if (moduleBuilder.SaveTestData)
+                //{
+                //    moduleBuilder.SetMethodTestData(method, builder.GetSnapshot());
+                //}
+
+                // Only compiler-generated MoveNext methods have iterator scopes.  See if this is one.
+                var stateMachineHoistedLocalScopes = default(ImmutableArray<Cci.StateMachineHoistedLocalScope>);
+                //if (isStateMachineMoveNextMethod)
+                //{
+                //    stateMachineHoistedLocalScopes = builder.GetHoistedLocalScopes();
+                //}
+
+                var stateMachineHoistedLocalSlots = default(ImmutableArray<EncHoistedLocalInfo>);
+                var stateMachineAwaiterSlots = default(ImmutableArray<Cci.ITypeReference>);
+                //if (optimizations == OptimizationLevel.Debug && stateMachineTypeOpt != null)
+                //{
+                //    Debug.Assert(method.IsAsync || method.IsIterator);
+                //    GetStateMachineSlotDebugInfo(moduleBuilder, moduleBuilder.GetSynthesizedFields(stateMachineTypeOpt), variableSlotAllocatorOpt, diagnosticsForThisMethod, out stateMachineHoistedLocalSlots, out stateMachineAwaiterSlots);
+                //    Debug.Assert(!diagnostics.HasAnyErrors());
+                //}
+
+                return new MethodBody(
+                    il.RealizedIL,
+                    il.MaxStack,
+                    (Cci.IMethodDefinition)routine,
+                    new DebugId(0, moduleBuilder.CurrentGenerationOrdinal),
+                    localVariables,
+                    il.RealizedSequencePoints,
+                    null,
+                    il.RealizedExceptionHandlers,
+                    il.GetAllScopes(),
+                    il.HasDynamicLocal,
+                    null, // importScopeOpt,
+                    ImmutableArray<LambdaDebugInfo>.Empty, // lambdaDebugInfo,
+                    ImmutableArray<ClosureDebugInfo>.Empty, // closureDebugInfo,
+                    null, //stateMachineTypeOpt?.Name,
+                    stateMachineHoistedLocalScopes,
+                    stateMachineHoistedLocalSlots,
+                    stateMachineAwaiterSlots,
+                    null);
+            }
+            finally
+            {
+                // Basic blocks contain poolable builders for IL and sequence points. Free those back
+                // to their pools.
+                il.FreeBasicBlocks();
+
+                //// Remember diagnostics.
+                //diagnostics.AddRange(diagnosticsForThisMethod);
+                //diagnosticsForThisMethod.Free();
+            }
         }
     }
 }

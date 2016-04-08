@@ -184,6 +184,7 @@
     <Compile Include="Symbols\PE\PENamespaceSymbol.cs" />
     <Compile Include="Symbols\Source\ExplicitInterfaceHelpers.cs" />
     <Compile Include="Symbols\Source\IndexedTypeParameterSymbol.cs" />
+    <Compile Include="Symbols\Source\IWithSynthesizedStaticCtor.cs" />
     <Compile Include="Symbols\Source\MemberAttributesAdapter.cs" />
     <Compile Include="Symbols\Source\SourceAssemblySymbol.cs" />
     <Compile Include="Symbols\Source\SourceFieldSymbol.cs" />
@@ -208,6 +209,7 @@
     <Compile Include="Symbols\Symbol.cs" />
     <Compile Include="Semantics\ISemanticModel.cs" />
     <Compile Include="Symbols\SymbolExtensions.cs" />
+    <Compile Include="Symbols\Synthesized\SynthesizedCctorSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedContainer.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedCtorSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedDelegateSymbol.cs" />

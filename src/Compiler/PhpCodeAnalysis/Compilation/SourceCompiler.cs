@@ -121,14 +121,18 @@ namespace Pchp.CodeAnalysis
 
         internal void EmitMethodBodies()
         {
+            // source routines
+            this.WalkMethods(this.EmitMethodBody);
+
             // default .ctors
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
                 .Select(t => (SynthesizedCtorSymbol)t.InstanceCtorMethodSymbol)
                 .WhereNotNull()
                 .ForEach(this.EmitCtorBody);
 
-            // source routines
-            this.WalkMethods(this.EmitMethodBody);
+            // realize .cctor
+            _moduleBuilder.GetTopLevelTypes(default(Microsoft.CodeAnalysis.Emit.EmitContext)).OfType<NamedTypeSymbol>()
+                .ForEach(_moduleBuilder.SetStaticCtorBody);
         }
 
         /// <summary>
@@ -146,9 +150,7 @@ namespace Pchp.CodeAnalysis
         void EmitCtorBody(SynthesizedCtorSymbol ctorsymbol)
         {
             Contract.ThrowIfNull(ctorsymbol);
-            
-            var body = MethodGenerator.GenerateCtorBody(_moduleBuilder, ctorsymbol, null, _diagnostics, _emittingPdb);
-            _moduleBuilder.SetMethodBody(ctorsymbol, body);
+            MethodGenerator.EmitCtorBody(_moduleBuilder, ctorsymbol, _diagnostics, _emittingPdb);
         }
 
         void CompileEntryPoint(CancellationToken cancellationToken)

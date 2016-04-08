@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol
+    internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol, IWithSynthesizedStaticCtor
     {
         readonly TypeDecl _syntax;
         readonly SourceFileSymbol _file;
@@ -24,6 +24,7 @@ namespace Pchp.CodeAnalysis.Symbols
         
         NamedTypeSymbol _lazyBaseType;
         MethodSymbol _lazyCtorMethod;   // .ctor
+        SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
 
         public SourceFileSymbol ContainingFile => _file;
@@ -57,7 +58,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // default .ctor
-            yield return InstanceCtorMethodSymbol;
+            if (InstanceCtorMethodSymbol != null)
+                yield return InstanceCtorMethodSymbol;
+
+            if (_lazyCctorSymbol != null)
+                yield return _lazyCctorSymbol;
         }
 
         IEnumerable<FieldSymbol> LoadFields()
@@ -81,6 +86,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Only if type is not static.
         /// </summary>
         internal MethodSymbol InstanceCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedCtorSymbol(this)));
+
+        public override ImmutableArray<MethodSymbol> StaticConstructors
+        {
+            get
+            {
+                if (_lazyCctorSymbol != null)
+                    return ImmutableArray.Create<MethodSymbol>(_lazyCctorSymbol);
+
+                return ImmutableArray<MethodSymbol>.Empty;
+            }
+        }
 
         /// <summary>
         /// Special field containing reference to current object's context.
@@ -256,6 +272,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             return ifaces.AsImmutable();
+        }
+
+        MethodSymbol IWithSynthesizedStaticCtor.GetOrCreateStaticCtorSymbol()
+        {
+            if (_lazyCctorSymbol == null)
+            {
+                _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
+
+                if (!_lazyMembers.IsDefault)
+                    _lazyMembers = _lazyMembers.Add(_lazyCctorSymbol);
+            }
+
+            return _lazyCctorSymbol;
         }
     }
 }

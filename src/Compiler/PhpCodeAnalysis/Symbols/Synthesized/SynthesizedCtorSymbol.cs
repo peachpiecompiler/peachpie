@@ -10,24 +10,15 @@ using Pchp.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal class SynthesizedCtorSymbol : MethodSymbol
+    internal class SynthesizedCtorSymbol : SynthesizedMethodSymbol
     {
-        protected readonly SourceNamedTypeSymbol _type;
-
-        ImmutableArray<ParameterSymbol> _lazyParameters;
-
         MethodSymbol _lazyRealCtorMethod;
 
-        public SynthesizedCtorSymbol(SourceNamedTypeSymbol/*!*/type)
+        public SynthesizedCtorSymbol(SourceNamedTypeSymbol/*!*/container)
+            :base(container, WellKnownMemberNames.InstanceConstructorName, false, container.DeclaringCompilation.CoreTypes.Void)
         {
-            Contract.ThrowIfNull(type);
-            Debug.Assert(!type.IsStatic);
-            _type = type;
+            Debug.Assert(!container.IsStatic);
         }
-
-        public sealed override Symbol ContainingSymbol => _type;
-
-        public sealed override NamedTypeSymbol ContainingType => _type;
 
         public override bool HidesBaseMethodsByName => false;
 
@@ -43,17 +34,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public sealed override bool IsSealed => false;
 
-        public override bool IsStatic => false;
-
         public sealed override bool IsVirtual => false;
 
         public sealed override MethodKind MethodKind => MethodKind.Constructor;
 
         public sealed override string Name => IsStatic ? WellKnownMemberNames.StaticConstructorName : WellKnownMemberNames.InstanceConstructorName;
-
-        public sealed override bool ReturnsVoid => true;
-
-        public sealed override TypeSymbol ReturnType => _type.DeclaringCompilation.CoreTypes.Void;
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;
 
@@ -94,7 +79,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         private MethodSymbol ResolveRealCtorSymbol()
         {
-            var ctor = _type.GetMembers(Syntax.Name.SpecialMethodNames.Construct.Value).OfType<MethodSymbol>().FirstOrDefault();
+            var ctor = this.ContainingType.GetMembers(Syntax.Name.SpecialMethodNames.Construct.Value).OfType<MethodSymbol>().FirstOrDefault();
             if (ctor != null)
             {
                 if (ctor.IsStatic) { }  // TODO: ErrorCode
@@ -102,7 +87,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             
             // lookup base .ctor
-            var btype = _type.BaseType;
+            var btype = this.ContainingType.BaseType;
             if (btype != null)
             {
                 var ctors = btype.InstanceConstructors;
@@ -125,7 +110,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyParameters.IsDefault)
+                if (_parameters.IsDefaultOrEmpty)
                 {
                     var ctor = this.RealCtorMethod;
                     var ps = new List<ParameterSymbol>(1);
@@ -143,10 +128,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
 
                     //
-                    _lazyParameters = ps.AsImmutable();
+                    _parameters = ps.AsImmutable();
                 }
 
-                return _lazyParameters;
+                return _parameters;
             }
         }
     }

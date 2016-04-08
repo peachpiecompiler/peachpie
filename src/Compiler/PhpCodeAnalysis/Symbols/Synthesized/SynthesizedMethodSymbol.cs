@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -13,8 +14,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly TypeSymbol _type;
         readonly bool _static;
         readonly string _name;
-        readonly ImmutableArray<ParameterSymbol> _parameters;
-        readonly TypeSymbol _return;
+        protected ImmutableArray<ParameterSymbol> _parameters;
+        TypeSymbol _return;
 
         public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, TypeSymbol returnType, params ParameterSymbol[] ps)
         {

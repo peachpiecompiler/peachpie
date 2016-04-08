@@ -46,7 +46,12 @@ namespace Pchp.CodeAnalysis.Emit
         // Neither language trims the names, so they are both sensitive to the leading and trailing whitespaces.
         // NOTE: We are not considering how filesystem or debuggers do the comparisons, but how native implementations did.
         // Deviating from that may result in unexpected warnings or different behavior (possibly without warnings).
-        private readonly ConcurrentDictionary<string, Cci.DebugSourceDocument> _debugDocuments;
+        readonly ConcurrentDictionary<string, Cci.DebugSourceDocument> _debugDocuments;
+
+        /// <summary>
+        /// Builders for synthesized static constructors.
+        /// </summary>
+        readonly ConcurrentDictionary<IMethodSymbol, ILBuilder> _cctorBuilders = new ConcurrentDictionary<IMethodSymbol, ILBuilder>(ReferenceEqualityComparer.Instance);
 
         protected PEModuleBuilder(
             PhpCompilation compilation,
@@ -261,6 +266,41 @@ namespace Pchp.CodeAnalysis.Emit
             Debug.Assert(body == null || (object)methodSymbol == body.MethodDefinition);
 
             _methodBodyMap.Add(methodSymbol, body);
+        }
+
+        public ILBuilder GetStaticCtorBuilder(NamedTypeSymbol container)
+        {
+            var withcctor = container as IWithSynthesizedStaticCtor;
+            if (withcctor == null)
+                throw new ArgumentException();
+
+            var method = withcctor.GetOrCreateStaticCtorSymbol();
+            Debug.Assert(method != null);
+
+            ILBuilder il;
+            if (!_cctorBuilders.TryGetValue(method, out il))
+            {
+                _cctorBuilders[method] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel);
+            }
+
+            return il;
+        }
+
+        public void SetStaticCtorBody(NamedTypeSymbol container)
+        {
+            if (container is IWithSynthesizedStaticCtor)
+                foreach (var cctor in container.StaticConstructors)
+                {
+                    ILBuilder il;
+                    if (_cctorBuilders.TryGetValue(cctor, out il))
+                    {
+                        Debug.Assert(cctor.ReturnsVoid);
+                        il.EmitRet(true);
+
+                        var body = CodeGen.MethodGenerator.CreateSynthesizedBody(this, cctor, il);
+                        SetMethodBody(cctor, body);
+                    }
+                }
         }
 
         #endregion
