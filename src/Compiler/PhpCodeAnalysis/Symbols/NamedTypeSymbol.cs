@@ -49,11 +49,11 @@ namespace Pchp.CodeAnalysis.Symbols
             .Where(m => m.MethodKind == MethodKind.Constructor)
             .ToImmutableArray();
 
-        public virtual ImmutableArray<MethodSymbol> StaticConstructors => /*GetMembers()
+        public virtual ImmutableArray<MethodSymbol> StaticConstructors =>
+            GetMembers()
             .OfType<MethodSymbol>()
             .Where(m => m.MethodKind == MethodKind.StaticConstructor)
-            .ToImmutableArray();*/
-            ImmutableArray<MethodSymbol>.Empty;
+            .ToImmutableArray();
 
         internal abstract ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved);
 

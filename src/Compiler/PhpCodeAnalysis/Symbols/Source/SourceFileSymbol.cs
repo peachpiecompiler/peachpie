@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         int Index{get;};
     ///     }
     /// }</remarks>
-    sealed class SourceFileSymbol : NamedTypeSymbol
+    sealed class SourceFileSymbol : NamedTypeSymbol, IWithSynthesizedStaticCtor
     {
         readonly PhpCompilation _compilation;
         readonly GlobalCode _syntax;
@@ -33,6 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly List<SourceFunctionSymbol> _functions = new List<SourceFunctionSymbol>();
 
         SynthesizedFieldSymbol _lazyIndexField;
+        SynthesizedCctorSymbol _lazyCctorSymbol;
 
         /// <summary>
         /// Unique ordinal of the source file.
@@ -152,10 +153,31 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override ImmutableArray<Symbol> GetMembers()
-            => _functions
-                .Concat(new Symbol[] { _mainMethod, GetIndexField() }).ToImmutableArray();
+        {
+            var builder = ImmutableArray.CreateBuilder<Symbol>();
 
-        public override ImmutableArray<Symbol> GetMembers(string name) => ImmutableArray<Symbol>.Empty;
+            builder.AddRange(_functions);
+
+            if (_lazyCctorSymbol != null)
+                builder.Add(_lazyCctorSymbol);
+
+            builder.Add(GetIndexField());
+
+            return builder.ToImmutable();
+        }
+
+        public override ImmutableArray<Symbol> GetMembers(string name) => GetMembers().Where(x => x.Name == name).ToImmutableArray();
+
+        public override ImmutableArray<MethodSymbol> StaticConstructors
+        {
+            get
+            {
+                if (_lazyCctorSymbol != null)
+                    return ImmutableArray.Create<MethodSymbol>(_lazyCctorSymbol);
+
+                return ImmutableArray<MethodSymbol>.Empty;
+            }
+        }
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => ImmutableArray<NamedTypeSymbol>.Empty;
 
@@ -167,5 +189,13 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
+
+        MethodSymbol IWithSynthesizedStaticCtor.GetOrCreateStaticCtorSymbol()
+        {
+            if (_lazyCctorSymbol == null)
+                _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
+
+            return _lazyCctorSymbol;
+        }
     }
 }
