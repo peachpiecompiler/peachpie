@@ -406,6 +406,71 @@ namespace Pchp.CodeAnalysis.CodeGen
             return (code == ILOpCode.Newobj) ? (TypeSymbol)method.ContainingType : method.ReturnType;
         }
 
+        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundExpression> arguments)
+        {
+            Contract.ThrowIfNull(method);
+
+            TypeSymbol thisType;
+
+            // <this>
+            if (thisExpr != null)
+            {
+                thisType = Emit(thisExpr);
+                Debug.Assert(thisType != null && thisType.SpecialType != SpecialType.System_Void);
+
+                if (!method.HasThis)
+                {
+                    EmitPop(thisType);
+                    thisType = null;
+                }
+            }
+            else
+            {
+                if (method.HasThis)
+                {
+                    throw new ArgumentException();  // TODO: PHP would create temporary instance of class
+                }
+
+                thisType = null;
+            }
+
+            // arguments
+            var parameters = method.Parameters;
+            int arg_index = 0;      // next argument to be emitted from <arguments>
+            var param_index = 0;    // loaded parameters
+
+            for (;  param_index < parameters.Length; param_index++)
+            {
+                var p = parameters[param_index];
+
+                // <ctx>
+                if (p.Type == CoreTypes.Context)
+                {
+                    EmitLoadContext();
+                    continue;
+                }
+
+                // all arguments loaded
+                if (arg_index < arguments.Length)
+                {
+                    EmitConvert(arguments[arg_index++], p.Type); // load argument
+                }
+                else
+                {
+                    EmitLoadDefaultValue(p.Type, 0);
+                }
+            }
+
+            // emit remaining not used arguments
+            for (; arg_index < arguments.Length; arg_index++)
+            {
+                EmitPop(Emit(arguments[arg_index]));
+            }
+
+            // call the method
+            return EmitCall(code, method);
+        }
+
         internal TypeSymbol EmitCall(ILOpCode code, BoundExpression thisExpr, OverloadsList overloads, ImmutableArray<BoundExpression> arguments)
         {
             // at this point we do expect <this> is already emitted on top of the evaluation stack
