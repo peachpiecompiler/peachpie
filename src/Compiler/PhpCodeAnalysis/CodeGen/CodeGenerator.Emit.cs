@@ -434,6 +434,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 thisType = null;
             }
 
+            // TODO: varargs
+
             // arguments
             var parameters = method.Parameters;
             int arg_index = 0;      // next argument to be emitted from <arguments>

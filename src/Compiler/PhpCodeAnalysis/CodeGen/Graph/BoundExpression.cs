@@ -1016,7 +1016,20 @@ namespace Pchp.CodeAnalysis.Semantics
             // 2. autoload script containing the declaration
             // 3. throw if type is not declared
 
-            return il.EmitCall(ILOpCode.Callvirt, this.Instance, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
+            if (overloads.IsFinal && overloads.Candidates.Length == 1)
+            {
+                // direct call
+                var method = overloads.Candidates[0];
+                return il.EmitCall(
+                    (method.IsOverride && !method.IsMetadataFinal) ? ILOpCode.Callvirt : ILOpCode.Call,
+                    method,
+                    this.Instance, _arguments.Select(a => a.Value).ToImmutableArray());
+            }
+            else
+            {
+                // call site call
+                throw new NotImplementedException();
+            }
         }
     }
 
