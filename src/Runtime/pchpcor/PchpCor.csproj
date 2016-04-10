@@ -43,6 +43,7 @@
     <Compile Include="Context.cs" />
     <Compile Include="Conversions.cs" />
     <Compile Include="Dynamic\CallMethodBinder.cs" />
+    <Compile Include="Dynamic\ConvertExpression.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="PhpAlias.cs" />
     <Compile Include="BinaryString.cs" />
