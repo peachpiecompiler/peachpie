@@ -175,7 +175,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (emittedTypeName.ForcedArity == -1 || emittedTypeName.ForcedArity == emittedTypeName.InferredArity)
                 {
                     // Let's handle mangling case first.
-                    namespaceOrTypeMembers = scope.GetTypeMembers(emittedTypeName.UnmangledTypeName);
+                    //namespaceOrTypeMembers = scope.GetTypeMembers(emittedTypeName.UnmangledTypeName);
+                    namespaceOrTypeMembers = scope.GetTypeMembers(emittedTypeName.FullName);
 
                     foreach (var named in namespaceOrTypeMembers)
                     {

@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         int Index{get;};
     ///     }
     /// }</remarks>
-    sealed class SourceFileSymbol : NamedTypeSymbol, IWithSynthesizedStaticCtor
+    sealed class SourceFileSymbol : NamedTypeSymbol, IWithSynthesized
     {
         readonly PhpCompilation _compilation;
         readonly GlobalCode _syntax;
@@ -196,7 +196,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
 
-        MethodSymbol IWithSynthesizedStaticCtor.GetOrCreateStaticCtorSymbol()
+        MethodSymbol IWithSynthesized.GetOrCreateStaticCtorSymbol()
         {
             if (_lazyCctorSymbol == null)
                 _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
@@ -204,7 +204,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyCctorSymbol;
         }
 
-        SynthesizedFieldSymbol IWithSynthesizedStaticCtor.CreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
+        SynthesizedFieldSymbol IWithSynthesized.CreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
         {
             var field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic);
 

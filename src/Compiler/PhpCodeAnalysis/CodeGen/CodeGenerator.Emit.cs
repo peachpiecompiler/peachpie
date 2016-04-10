@@ -1,4 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeGen;
+using Microsoft.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
@@ -298,29 +301,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             return variable.GetPlace(_il).EmitLoad(_il);
         }
 
-        private static int GetCallStackBehavior(MethodSymbol method)
+        /// <summary>
+        /// Loads <see cref="RuntimeTypeHandle"/> of given type.
+        /// </summary>
+        public TypeSymbol EmitLoadToken(TypeSymbol type, SyntaxNode syntaxNodeOpt)
         {
-            int stack = 0;
+            _il.EmitLoadToken(_moduleBuilder, _diagnostics, type, syntaxNodeOpt);
 
-            if (!method.ReturnsVoid)
-            {
-                // The call puts the return value on the stack.
-                stack += 1;
-            }
-
-            if (!method.IsStatic)
-            {
-                // The call pops the receiver off the stack.
-                stack -= 1;
-            }
-
-            // The call pops all the arguments.
-            stack -= method.ParameterCount;
-
-            //
-            return stack;
+            return this.CoreTypes.RuntimeTypeHandle;
         }
-
+        
         public void EmitBox(TypeSymbol valuetype)
         {
             Contract.ThrowIfNull(valuetype);
@@ -343,7 +333,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitSymbolToken(TypeSymbol symbol, SyntaxNode syntaxNode)
         {
-            _il.EmitToken(_moduleBuilder.Translate(symbol, syntaxNode, _diagnostics), syntaxNode, _diagnostics);
+            _il.EmitSymbolToken(_moduleBuilder, _diagnostics, symbol, syntaxNode);
         }
 
         internal void EmitSymbolToken(FieldSymbol symbol, SyntaxNode syntaxNode)
@@ -399,17 +389,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>Method return type.</returns>
         internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method)
         {
-            Contract.ThrowIfNull(method);
-            Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt || code == ILOpCode.Newobj);
-
-            var stack = GetCallStackBehavior(method);
-
-            if (code == ILOpCode.Newobj)
-                stack += 1 + 1;    // there is no <this>, + it pushes <newinst> on stack
-
-            _il.EmitOpCode(code, stack);
-            _il.EmitToken(_moduleBuilder.Translate(method, _diagnostics, false), null, _diagnostics);
-            return (code == ILOpCode.Newobj) ? (TypeSymbol)method.ContainingType : method.ReturnType;
+            return _il.EmitCall(_moduleBuilder, _diagnostics, code, method);
         }
 
         internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundExpression> arguments)
@@ -739,6 +719,41 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             EmitLoadDefaultValue(return_type, this.Routine.ControlFlowGraph.ReturnTypeMask);
             _il.EmitRet(return_type.SpecialType == SpecialType.System_Void);
+        }
+    }
+
+    internal static class ILBuilderExtension
+    {
+        public static void EmitLoadToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, TypeSymbol type, SyntaxNode syntaxNodeOpt)
+        {
+            il.EmitOpCode(ILOpCode.Ldtoken);
+            EmitSymbolToken(il, module, diagnostics, type, syntaxNodeOpt);
+        }
+
+        public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics,  TypeSymbol symbol, SyntaxNode syntaxNode)
+        {
+            il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics), syntaxNode, diagnostics);
+        }
+
+        /// <summary>
+        /// Emits call to given method.
+        /// </summary>
+        /// <param name="code">Call op code, Call, Callvirt, Calli.</param>
+        /// <param name="method">Method reference.</param>
+        /// <returns>Method return type.</returns>
+        public static TypeSymbol EmitCall(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, ILOpCode code, MethodSymbol method)
+        {
+            Contract.ThrowIfNull(method);
+            Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt || code == ILOpCode.Newobj);
+
+            var stack = method.GetCallStackBehavior();
+
+            if (code == ILOpCode.Newobj)
+                stack += 1 + 1;    // there is no <this>, + it pushes <newinst> on stack
+
+            il.EmitOpCode(code, stack);
+            il.EmitToken(module.Translate(method, diagnostics, false), null, diagnostics);
+            return (code == ILOpCode.Newobj) ? (TypeSymbol)method.ContainingType : method.ReturnType;
         }
     }
 }

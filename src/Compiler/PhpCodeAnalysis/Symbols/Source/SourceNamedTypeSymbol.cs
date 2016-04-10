@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol, IWithSynthesizedStaticCtor
+    internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol, IWithSynthesized
     {
         readonly TypeDecl _syntax;
         readonly SourceFileSymbol _file;
@@ -274,7 +274,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return ifaces.AsImmutable();
         }
 
-        MethodSymbol IWithSynthesizedStaticCtor.GetOrCreateStaticCtorSymbol()
+        MethodSymbol IWithSynthesized.GetOrCreateStaticCtorSymbol()
         {
             if (_lazyCctorSymbol == null)
             {
@@ -287,7 +287,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyCctorSymbol;
         }
 
-        SynthesizedFieldSymbol IWithSynthesizedStaticCtor.CreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
+        SynthesizedFieldSymbol IWithSynthesized.CreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
         {
             GetMembers();
 

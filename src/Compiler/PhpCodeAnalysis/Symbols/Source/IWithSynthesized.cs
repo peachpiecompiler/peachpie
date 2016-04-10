@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal interface IWithSynthesizedStaticCtor
+    internal interface IWithSynthesized
     {
         /// <summary>
         /// Gets or initializes static constructor symbol.

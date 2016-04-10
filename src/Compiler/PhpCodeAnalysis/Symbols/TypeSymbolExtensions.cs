@@ -1071,37 +1071,37 @@ namespace Pchp.CodeAnalysis.Symbols
         //    }
         //}
 
-        ///// <summary>
-        ///// Return all of the type parameters in this type and enclosing types,
-        ///// from outer-most to inner-most type.
-        ///// </summary>
-        //internal static ImmutableArray<TypeParameterSymbol> GetAllTypeParameters(this NamedTypeSymbol type)
-        //{
-        //    // Avoid allocating a builder in the common case.
-        //    if ((object)type.ContainingType == null)
-        //    {
-        //        return type.TypeParameters;
-        //    }
+        /// <summary>
+        /// Return all of the type parameters in this type and enclosing types,
+        /// from outer-most to inner-most type.
+        /// </summary>
+        internal static ImmutableArray<TypeParameterSymbol> GetAllTypeParameters(this NamedTypeSymbol type)
+        {
+            // Avoid allocating a builder in the common case.
+            if ((object)type.ContainingType == null)
+            {
+                return type.TypeParameters;
+            }
 
-        //    var builder = ArrayBuilder<TypeParameterSymbol>.GetInstance();
-        //    type.GetAllTypeParameters(builder);
-        //    return builder.ToImmutableAndFree();
-        //}
+            var builder = ArrayBuilder<TypeParameterSymbol>.GetInstance();
+            type.GetAllTypeParameters(builder);
+            return builder.ToImmutableAndFree();
+        }
 
-        ///// <summary>
-        ///// Return all of the type parameters in this type and enclosing types,
-        ///// from outer-most to inner-most type.
-        ///// </summary>
-        //internal static void GetAllTypeParameters(this NamedTypeSymbol type, ArrayBuilder<TypeParameterSymbol> result)
-        //{
-        //    var containingType = type.ContainingType;
-        //    if ((object)containingType != null)
-        //    {
-        //        containingType.GetAllTypeParameters(result);
-        //    }
+        /// <summary>
+        /// Return all of the type parameters in this type and enclosing types,
+        /// from outer-most to inner-most type.
+        /// </summary>
+        internal static void GetAllTypeParameters(this NamedTypeSymbol type, ArrayBuilder<TypeParameterSymbol> result)
+        {
+            var containingType = type.ContainingType;
+            if ((object)containingType != null)
+            {
+                containingType.GetAllTypeParameters(result);
+            }
 
-        //    result.AddRange(type.TypeParameters);
-        //}
+            result.AddRange(type.TypeParameters);
+        }
 
         ///// <summary>
         ///// Return the nearest type parameter with the given name in

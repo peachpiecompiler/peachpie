@@ -1031,14 +1031,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 var callsitetype = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);    // temporary, we will change to specific generic once we know
                 var callsitetype_generic = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T);    // temporary, we will change to specific generic once we know
+                var callsite_create_generic = il.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Create);
                 var target = (FieldSymbol)il.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target);
                 target = new SubstitutedFieldSymbol(callsitetype_generic, target); // AsMember // we'll change containing type later once we know
 
-                var container = (IWithSynthesizedStaticCtor)il.Routine.ContainingType;
-                var fld = container.CreateSynthesizedField(callsitetype, "__" + this.Name + "'" + (this.GetHashCode() % 100), Accessibility.Private, true);
-                var ctor = il.Module.GetStaticCtorBuilder(il.Routine.ContainingType);
+                var container = (IWithSynthesized)il.Routine.ContainingType;
+                var fld = container.CreateSynthesizedField(callsitetype, "__'" + this.Name + "'" + (this.GetHashCode() % 128).ToString("x"), Accessibility.Private, true);
+                var cctor = il.Module.GetStaticCtorBuilder(il.Routine.ContainingType);
 
                 var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
+                var return_type = il.CoreTypes.PhpValue.Symbol;
 
                 // callsite
                 var fldPlace = new FieldPlace(null, fld);
@@ -1065,7 +1067,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     callsiteargs.AsImmutable(),
                     default(ImmutableArray<RefKind>),
                     null,
-                    il.CoreTypes.PhpValue);
+                    return_type);
 
                 callsitetype = callsitetype_generic.Construct(functype);
                 ((SubstitutedFieldSymbol)target).SetContainingType((SubstitutedNamedTypeSymbol)callsitetype);
@@ -1076,8 +1078,26 @@ namespace Pchp.CodeAnalysis.Semantics
                 var invoke = functype.DelegateInvokeMethod;
                 il.EmitCall(ILOpCode.Callvirt, invoke);
 
+                // static .cctor {
+
+                // fld = CallSite<T>.Create( CallMethodBinder.Create( name, currentclass, returntype, generics ) )
+
+                fldPlace.EmitStorePrepare(cctor);
+
+                cctor.EmitStringConstant(this.Name.Value);
+                cctor.EmitLoadToken(il.Module, il.Diagnostics, il.Routine.ContainingType, null);
+                cctor.EmitLoadToken(il.Module, il.Diagnostics, return_type, null);
+                cctor.EmitIntConstant(0);
+                cctor.EmitCall(il.Module, il.Diagnostics, ILOpCode.Call, il.CoreMethods.CallMethodBinder.Create);
+
+                cctor.EmitCall(il.Module, il.Diagnostics, ILOpCode.Call, (MethodSymbol)callsite_create_generic.SymbolAsMember(callsitetype));
+
+                fldPlace.EmitStore(cctor);
+
+                // }
+
                 //
-                return il.CoreTypes.PhpValue;
+                return return_type;
             }
         }
     }

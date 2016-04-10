@@ -18,5 +18,28 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return method.Parameters.Select(p => p.Type).ToArray();
         }
+
+        public static int GetCallStackBehavior(this MethodSymbol method)
+        {
+            int stack = 0;
+
+            if (!method.ReturnsVoid)
+            {
+                // The call puts the return value on the stack.
+                stack += 1;
+            }
+
+            if (!method.IsStatic)
+            {
+                // The call pops the receiver off the stack.
+                stack -= 1;
+            }
+
+            // The call pops all the arguments.
+            stack -= method.ParameterCount;
+
+            //
+            return stack;
+        }
     }
 }

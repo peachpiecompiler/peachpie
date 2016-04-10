@@ -109,7 +109,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             NamedTypeSymbol genericType = (NamedTypeSymbol)genericTypeDef;
 
-            throw new NotImplementedException();
             //// See if it is or its enclosing type is a non-interface closed over NoPia local types. 
             //ImmutableArray<AssemblySymbol> linkedAssemblies = moduleSymbol.ContainingAssembly.GetLinkedReferencedAssemblies();
 
@@ -147,26 +146,26 @@ namespace Pchp.CodeAnalysis.Symbols
             //    }
             //}
 
-            //// Collect generic parameters for the type and its containers in the order
-            //// that matches passed in arguments, i.e. sorted by the nesting.
-            //ImmutableArray<TypeParameterSymbol> typeParameters = genericType.GetAllTypeParameters();
-            //Debug.Assert(typeParameters.Length > 0);
+            // Collect generic parameters for the type and its containers in the order
+            // that matches passed in arguments, i.e. sorted by the nesting.
+            ImmutableArray<TypeParameterSymbol> typeParameters = genericType.GetAllTypeParameters();
+            Debug.Assert(typeParameters.Length > 0);
 
-            //if (typeParameters.Length != arguments.Length)
-            //{
-            //    return new UnsupportedMetadataTypeSymbol();
-            //}
+            if (typeParameters.Length != arguments.Length)
+            {
+                return new UnsupportedMetadataTypeSymbol();
+            }
 
-            //TypeMap substitution = new TypeMap(typeParameters, arguments.SelectAsArray(arg => new TypeWithModifiers(arg.Key, CSharpCustomModifier.Convert(arg.Value))));
+            TypeMap substitution = new TypeMap(typeParameters, arguments.SelectAsArray(arg => new TypeWithModifiers(arg.Key/*, CSharpCustomModifier.Convert(arg.Value)*/)));
 
-            //NamedTypeSymbol constructedType = substitution.SubstituteNamedType(genericType);
+            NamedTypeSymbol constructedType = substitution.SubstituteNamedType(genericType);
 
             //if (noPiaIllegalGenericInstantiation)
             //{
             //    constructedType = new NoPiaIllegalGenericInstantiationSymbol(moduleSymbol, constructedType);
             //}
 
-            //return constructedType;
+            return constructedType;
         }
 
         internal override TypeSymbol MakeUnboundIfGeneric(PEModuleSymbol moduleSymbol, TypeSymbol type)

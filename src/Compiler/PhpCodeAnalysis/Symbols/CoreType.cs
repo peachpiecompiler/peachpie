@@ -93,8 +93,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert,
+            CallMethodBinder,
             PhpNumber, PhpValue, PhpAlias, PhpString,
-            Void, Object, Int32, Long, Double, Boolean, String;
+            Void, Object, Int32, Long, Double, Boolean, String, RuntimeTypeHandle;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -109,6 +110,7 @@ namespace Pchp.CodeAnalysis.Symbols
             this.Double = Create(SpecialType.System_Double);
             this.Boolean = Create(SpecialType.System_Boolean);
             this.String = Create(SpecialType.System_String);
+            this.RuntimeTypeHandle = Create(SpecialType.System_RuntimeTypeHandle);
             this.PhpNumber = Create("PhpNumber");
             this.PhpAlias = Create("PhpAlias");
             this.PhpValue = Create("PhpValue");
@@ -116,6 +118,7 @@ namespace Pchp.CodeAnalysis.Symbols
             this.Context = Create("Context");
             this.Operators = Create("Operators");
             this.Convert = Create("Convert");
+            this.CallMethodBinder = Create("Dynamic.CallMethodBinder");
         }
 
         #region Table of types

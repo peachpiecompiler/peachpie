@@ -273,7 +273,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         public ILBuilder GetStaticCtorBuilder(NamedTypeSymbol container)
         {
-            var withcctor = container as IWithSynthesizedStaticCtor;
+            var withcctor = container as IWithSynthesized;
             if (withcctor == null)
                 throw new ArgumentException();
 
@@ -294,7 +294,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         public void SetStaticCtorBody(NamedTypeSymbol container)
         {
-            if (container is IWithSynthesizedStaticCtor)
+            if (container is IWithSynthesized)
                 foreach (var cctor in container.StaticConstructors)
                 {
                     ILBuilder il;

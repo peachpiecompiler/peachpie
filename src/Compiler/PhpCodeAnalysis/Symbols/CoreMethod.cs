@@ -174,6 +174,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly PhpStringHolder PhpString;
         public readonly ConstructorsHolder Ctors;
         public readonly ContextHolder Context;
+        public readonly CallMethodBinderHolder CallMethodBinder;
 
         public CoreMethods(CoreTypes types)
         {
@@ -185,6 +186,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Operators = new OperatorsHolder(types);
             Ctors = new ConstructorsHolder(types);
             Context = new ContextHolder(types);
+            CallMethodBinder = new CallMethodBinderHolder(types);
         }
 
         public struct OperatorsHolder
@@ -373,6 +375,17 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 CreateConsole,
                 Dispose;
+        }
+
+        public struct CallMethodBinderHolder
+        {
+            public CallMethodBinderHolder(CoreTypes ct)
+            {
+                this.Create = ct.CallMethodBinder.Method("Create", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
+            }
+
+            public readonly CoreMethod
+                Create;
         }
     }
 }
