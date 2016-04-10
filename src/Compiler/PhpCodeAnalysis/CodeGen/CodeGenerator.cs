@@ -187,6 +187,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public ILBuilder Builder => _il;
 
         /// <summary>
+        /// Module builder.
+        /// </summary>
+        public PEModuleBuilder Module => _moduleBuilder;
+
+        /// <summary>
         /// Gets the routine we are emitting.
         /// </summary>
         public SourceRoutineSymbol Routine => _routine;

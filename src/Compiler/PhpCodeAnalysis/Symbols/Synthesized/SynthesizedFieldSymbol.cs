@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
     class SynthesizedFieldSymbol : FieldSymbol
     {
         readonly NamedTypeSymbol _containing;
-        readonly TypeSymbol _type;
+        TypeSymbol _type;
         readonly string _name;
         readonly Accessibility _accessibility;
         readonly bool _isStatic;
@@ -80,5 +80,10 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes) => _const;
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound) => _type;
+
+        internal void SetFieldType(TypeSymbol type)
+        {
+            _type = type;
+        }
     }
 }

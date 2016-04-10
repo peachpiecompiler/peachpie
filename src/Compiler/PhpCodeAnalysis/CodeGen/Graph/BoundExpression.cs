@@ -1006,17 +1006,17 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator il)
         {
             var overloads = this.Overloads;
-            if (overloads == null)
-                throw new InvalidOperationException();  // function call has to be analyzed first
-
-            Debug.Assert(overloads.Candidates.All(c => !c.IsStatic));
+            if (overloads != null)
+            {
+                Debug.Assert(overloads.Candidates.All(c => !c.IsStatic));
+            }
 
             // TODO: emit check the containing type is declared; options:
             // 1. disable checks in release for better performance
             // 2. autoload script containing the declaration
             // 3. throw if type is not declared
 
-            if (overloads.IsFinal && overloads.Candidates.Length == 1)
+            if (overloads != null && overloads.IsFinal && overloads.Candidates.Length == 1)
             {
                 // direct call
                 var method = overloads.Candidates[0];
@@ -1028,7 +1028,54 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 // call site call
-                throw new NotImplementedException();
+
+                var callsitetype = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);    // temporary, we will change to specific generic once we know
+                var target = (FieldSymbol)il.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target);
+
+                var container = (IWithSynthesizedStaticCtor)il.Routine.ContainingType;
+                var fld = container.CreateSynthesizedField(callsitetype, "__" + this.Name + "'" + (this.GetHashCode() % 100), Accessibility.Private, true);
+                var ctor = il.Module.GetStaticCtorBuilder(il.Routine.ContainingType);
+
+                var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
+
+                // callsite
+                var fldPlace = new FieldPlace(null, fld);
+
+                // callsite.Target
+                fldPlace.EmitLoad(il.Builder);
+                il.Builder.EmitOpCode(ILOpCode.Ldfld);
+                il.EmitSymbolToken(target, null);   // TODO: change to generic instance
+
+                // (callsite, instance, ctx, ...)
+                fldPlace.EmitLoad(il.Builder);
+                il.Emit(this.Instance);   // instance
+
+                callsiteargs.Add(il.EmitLoadContext());     // ctx
+
+                foreach (var a in _arguments)
+                {
+                    callsiteargs.Add(il.Emit(a.Value));
+                }
+
+                //
+                var functype = il.Factory.GetCallSiteDelegateType(
+                    this.Instance.ResultType, RefKind.None,
+                    callsiteargs.AsImmutable(),
+                    default(ImmutableArray<RefKind>),
+                    null,
+                    il.CoreTypes.PhpValue);
+
+                callsitetype = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T).Construct(functype);
+                target = callsitetype.GetMembers("Target").OfType<FieldSymbol>().Single();
+
+                fld.SetFieldType(callsitetype);
+
+                // Target()
+                var invoke = functype.DelegateInvokeMethod;
+                il.EmitCall(ILOpCode.Callvirt, invoke);
+
+                //
+                return il.CoreTypes.PhpValue;
             }
         }
     }

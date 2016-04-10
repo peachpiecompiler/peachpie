@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,5 +14,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         /// <returns></returns>
         MethodSymbol GetOrCreateStaticCtorSymbol();
+
+        /// <summary>
+        /// Creates synthesized field.
+        /// </summary>
+        SynthesizedFieldSymbol CreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic);
     }
 }

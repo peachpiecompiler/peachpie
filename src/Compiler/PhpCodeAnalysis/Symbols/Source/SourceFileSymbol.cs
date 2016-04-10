@@ -32,7 +32,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         readonly List<SourceFunctionSymbol> _functions = new List<SourceFunctionSymbol>();
 
+        readonly List<SynthesizedFieldSymbol> _fields = new List<SynthesizedFieldSymbol>();
         SynthesizedFieldSymbol _lazyIndexField;
+
         SynthesizedCctorSymbol _lazyCctorSymbol;
 
         /// <summary>
@@ -63,6 +65,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyIndexField == null)
             {
                 _lazyIndexField = new SynthesizedFieldSymbol(this, (NamedTypeSymbol)_compilation.GetSpecialType(SpecialType.System_Int32), "<Ordinal>", Accessibility.Internal, ConstantValue.Create(_index));
+                _fields.Add(_lazyIndexField);
             }
 
             return _lazyIndexField;
@@ -163,7 +166,8 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyCctorSymbol != null)
                 builder.Add(_lazyCctorSymbol);
 
-            builder.Add(GetIndexField());
+            GetIndexField();
+            builder.AddRange(_fields);
 
             return builder.ToImmutable();
         }
@@ -198,6 +202,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
 
             return _lazyCctorSymbol;
+        }
+
+        SynthesizedFieldSymbol IWithSynthesizedStaticCtor.CreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
+        {
+            var field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic);
+
+            _fields.Add(field);
+
+            return field;
         }
     }
 }

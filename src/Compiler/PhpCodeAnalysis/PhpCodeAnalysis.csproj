@@ -202,6 +202,7 @@
     <Compile Include="Symbols\SpecialAssembly.cs" />
     <Compile Include="Symbols\SpecialParameterSymbol.cs" />
     <Compile Include="Symbols\SpecialTypeExtensions.cs" />
+    <Compile Include="Symbols\SubstitutedFieldSymbol.cs" />
     <Compile Include="Symbols\SubstitutedMethodSymbol.cs" />
     <Compile Include="Symbols\SubstitutedNamedTypeSymbol.cs" />
     <Compile Include="Symbols\SubstitutedParameterSymbol.cs" />

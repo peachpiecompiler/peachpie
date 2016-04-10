@@ -258,7 +258,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Null if unspecified.
         /// </summary>
         internal abstract int? TypeLayoutOffset { get; }
-        
+
+        internal FieldSymbol AsMember(NamedTypeSymbol newOwner)
+        {
+            Debug.Assert(this.IsDefinition);
+            Debug.Assert(ReferenceEquals(newOwner.OriginalDefinition, this.ContainingSymbol.OriginalDefinition));
+            return (newOwner == this.ContainingSymbol) ? this : new SubstitutedFieldSymbol(newOwner as SubstitutedNamedTypeSymbol, this);
+        }
+
         #region IFieldSymbol Members
 
         ISymbol IFieldSymbol.AssociatedSymbol

@@ -286,5 +286,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return _lazyCctorSymbol;
         }
+
+        SynthesizedFieldSymbol IWithSynthesizedStaticCtor.CreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
+        {
+            GetMembers();
+
+            var field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic);
+
+            _lazyMembers = _lazyMembers.Add(field);
+
+            return field;
+        }
     }
 }

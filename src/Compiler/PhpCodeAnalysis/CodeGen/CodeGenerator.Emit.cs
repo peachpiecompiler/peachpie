@@ -20,9 +20,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits <c>context</c> onto the evaluation stack.
         /// </summary>
-        public void EmitLoadContext()
+        public TypeSymbol EmitLoadContext()
         {
-            _contextPlace.EmitLoad(_il);
+            return _contextPlace.EmitLoad(_il);
         }
 
         /// <summary>
@@ -123,7 +123,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
-            return TryEmitVariableSpecialize(expr) ?? EmitSpecialize(expr.Emit(this), expr.TypeRefMask);
+            return expr.ResultType = 
+                TryEmitVariableSpecialize(expr) ?? EmitSpecialize(expr.Emit(this), expr.TypeRefMask);
         }
 
         /// <summary>
@@ -343,6 +344,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal void EmitSymbolToken(TypeSymbol symbol, SyntaxNode syntaxNode)
         {
             _il.EmitToken(_moduleBuilder.Translate(symbol, syntaxNode, _diagnostics), syntaxNode, _diagnostics);
+        }
+
+        internal void EmitSymbolToken(FieldSymbol symbol, SyntaxNode syntaxNode)
+        {
+            _il.EmitToken(symbol, syntaxNode, _diagnostics);
         }
 
         //private void EmitSymbolToken(MethodSymbol method, SyntaxNode syntaxNode)

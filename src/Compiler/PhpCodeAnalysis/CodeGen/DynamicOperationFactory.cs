@@ -22,11 +22,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         internal NamedTypeSymbol GetCallSiteDelegateType(
-            BoundExpression loweredReceiver,
+            TypeSymbol loweredReceiver,
             RefKind receiverRefKind,
-            ImmutableArray<BoundExpression> loweredArguments,
+            ImmutableArray<TypeSymbol> loweredArguments,
             ImmutableArray<RefKind> refKinds,
-            BoundExpression loweredRight,
+            TypeSymbol loweredRight,
             TypeSymbol resultType)
         {
             Debug.Assert(refKinds.IsDefaultOrEmpty || refKinds.Length == loweredArguments.Length);
@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             return _compilation.AnonymousTypeManager.SynthesizeDelegate(parameterCount, byRefs, returnsVoid).Construct(delegateSignature);
         }
 
-        internal TypeSymbol[] MakeCallSiteDelegateSignature(TypeSymbol callSiteType, BoundExpression receiver, ImmutableArray<BoundExpression> arguments, BoundExpression right, TypeSymbol resultType)
+        internal TypeSymbol[] MakeCallSiteDelegateSignature(TypeSymbol callSiteType, TypeSymbol receiver, ImmutableArray<TypeSymbol> arguments, TypeSymbol right, TypeSymbol resultType)
         {
             var systemObjectType = (TypeSymbol)_compilation.GetSpecialType(SpecialType.System_Object);
             var result = new TypeSymbol[1 + (receiver != null ? 1 : 0) + arguments.Length + (right != null ? 1 : 0) + (resultType.SpecialType == SpecialType.System_Void ? 0 : 1)];
@@ -101,25 +101,25 @@ namespace Pchp.CodeAnalysis.CodeGen
             // receiver:
             if (receiver != null)
             {
-                result[j++] = receiver.ResultType ?? systemObjectType;
+                result[j++] = receiver;
             }
 
             // argument types:
             for (int i = 0; i < arguments.Length; i++)
             {
-                result[j++] = arguments[i].ResultType ?? systemObjectType;
+                result[j++] = arguments[i];
             }
 
             // right hand side of an assignment:
             if (right != null)
             {
-                result[j++] = right.ResultType ?? systemObjectType;
+                result[j++] = right;
             }
 
             // return type:
             if (j < result.Length)
             {
-                result[j++] = resultType ?? systemObjectType;
+                result[j++] = resultType;
             }
 
             return result;
