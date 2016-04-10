@@ -61,16 +61,21 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Debug.Assert(this.IsDefinitionOrDistinct());
 
-            if (this is SourceFunctionSymbol)
-                return ((SourceFunctionSymbol)this).ContainingFile;
-
             //var synthesizedGlobalMethod = this as SynthesizedGlobalMethodSymbol;
             //if ((object)synthesizedGlobalMethod != null)
             //{
             //    return synthesizedGlobalMethod.ContainingPrivateImplementationDetailsType;
             //}
 
-            return (Cci.ITypeReference)this.ContainingType;
+            if (!this.IsDefinition)
+            {
+                PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
+                return moduleBeingBuilt.Translate(this.ContainingType,
+                                                  syntaxNodeOpt: context.SyntaxNodeOpt,
+                                                  diagnostics: context.Diagnostics);
+            }
+
+            return this.ContainingType;
         }
 
         void Cci.IReference.Dispatch(Cci.MetadataVisitor visitor)
@@ -231,7 +236,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         Cci.ITypeReference Cci.ISignature.GetType(EmitContext context)
         {
-            return (Cci.ITypeReference)this.ReturnType;
+            //ByRefReturnErrorTypeSymbol byRefType = this.ReturnType as ByRefReturnErrorTypeSymbol;
+            return ((PEModuleBuilder)context.Module).Translate(
+                this.ReturnType, // (object)byRefType == null ? this.ReturnType : byRefType.ReferencedType,
+                syntaxNodeOpt: context.SyntaxNodeOpt,
+                diagnostics: context.Diagnostics);
         }
 
         IEnumerable<Cci.ITypeReference> Cci.IGenericMethodInstanceReference.GetGenericArguments(EmitContext context)
@@ -242,10 +251,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var arg in this.TypeArguments)
             {
-                throw new NotImplementedException();
-                //yield return moduleBeingBuilt.Translate(arg,
-                //                                        syntaxNodeOpt: (CSharpSyntaxNode)context.SyntaxNodeOpt,
-                //                                        diagnostics: context.Diagnostics);
+                yield return moduleBeingBuilt.Translate(arg,
+                                                        syntaxNodeOpt: context.SyntaxNodeOpt,
+                                                        diagnostics: context.Diagnostics);
             }
 
             yield break;
