@@ -1030,7 +1030,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 // call site call
 
                 var callsitetype = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);    // temporary, we will change to specific generic once we know
+                var callsitetype_generic = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T);    // temporary, we will change to specific generic once we know
                 var target = (FieldSymbol)il.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target);
+                target = new SubstitutedFieldSymbol(callsitetype_generic, target); // AsMember // we'll change containing type later once we know
 
                 var container = (IWithSynthesizedStaticCtor)il.Routine.ContainingType;
                 var fld = container.CreateSynthesizedField(callsitetype, "__" + this.Name + "'" + (this.GetHashCode() % 100), Accessibility.Private, true);
@@ -1044,8 +1046,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 // callsite.Target
                 fldPlace.EmitLoad(il.Builder);
                 il.Builder.EmitOpCode(ILOpCode.Ldfld);
-                il.EmitSymbolToken(target, null);   // TODO: change to generic instance
-
+                il.EmitSymbolToken(target, null);
+                
                 // (callsite, instance, ctx, ...)
                 fldPlace.EmitLoad(il.Builder);
                 il.Emit(this.Instance);   // instance
@@ -1065,8 +1067,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     null,
                     il.CoreTypes.PhpValue);
 
-                callsitetype = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T).Construct(functype);
-                target = callsitetype.GetMembers("Target").OfType<FieldSymbol>().Single();
+                callsitetype = callsitetype_generic.Construct(functype);
+                ((SubstitutedFieldSymbol)target).SetContainingType((SubstitutedNamedTypeSymbol)callsitetype);
 
                 fld.SetFieldType(callsitetype);
 

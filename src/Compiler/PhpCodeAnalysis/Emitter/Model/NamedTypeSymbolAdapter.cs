@@ -902,6 +902,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public IEnumerable<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics { get; internal set; }
+        public IEnumerable<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics => TypeArguments;
     }
 }

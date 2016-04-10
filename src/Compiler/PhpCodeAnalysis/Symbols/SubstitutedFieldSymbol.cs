@@ -10,12 +10,12 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal sealed class SubstitutedFieldSymbol : FieldSymbol
     {
-        private readonly SubstitutedNamedTypeSymbol _containingType;
-        private readonly FieldSymbol _originalDefinition;
+        NamedTypeSymbol _containingType;
+        readonly FieldSymbol _originalDefinition;
 
         private TypeSymbol _lazyType;
 
-        internal SubstitutedFieldSymbol(SubstitutedNamedTypeSymbol containingType, FieldSymbol substitutedFrom)
+        internal SubstitutedFieldSymbol(NamedTypeSymbol containingType, FieldSymbol substitutedFrom)
         {
             _containingType = containingType;
             _originalDefinition = substitutedFrom.OriginalDefinition as FieldSymbol;
@@ -90,6 +90,11 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 return _containingType;
             }
+        }
+
+        internal void SetContainingType(SubstitutedNamedTypeSymbol type)
+        {
+            _containingType = type;
         }
 
         public override FieldSymbol OriginalDefinition
