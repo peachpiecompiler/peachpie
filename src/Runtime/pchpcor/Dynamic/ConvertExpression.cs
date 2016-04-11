@@ -31,7 +31,7 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(int)) return Expression.Convert(expr, typeof(long));
             if (source == typeof(long)) return expr;    // unreachable
-            if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetRuntimeMethod("ToLong", new Type[0]));
+            if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
 
             throw new NotImplementedException();
         }
@@ -48,8 +48,8 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            if (source == typeof(long)) return Expression.Call(typeof(PhpNumber).GetRuntimeMethod("Create", new Type[] { typeof(long) }), expr);
-            if (source == typeof(double)) return Expression.Call(typeof(PhpNumber).GetRuntimeMethod("Create", new Type[] { typeof(double) }), expr);
+            if (source == typeof(long)) return Expression.Call(typeof(PhpNumber).GetMethod("Create", Cache.Types.Long), expr);
+            if (source == typeof(double)) return Expression.Call(typeof(PhpNumber).GetMethod("Create", Cache.Types.Double), expr);
 
             throw new NotImplementedException(source.FullName);
         }
@@ -59,10 +59,10 @@ namespace Pchp.Core.Dynamic
             var source = expr.Type;
 
             //
-            if (source == typeof(bool)) return Expression.Call(typeof(PhpValue).GetRuntimeMethod("Create", new Type[] { typeof(bool) }), expr);
-            if (source == typeof(int)) return Expression.Call(typeof(PhpValue).GetRuntimeMethod("Create", new Type[] { typeof(int) }), expr);
-            if (source == typeof(long)) return Expression.Call(typeof(PhpValue).GetRuntimeMethod("Create", new Type[] { typeof(long) }), expr);
-            if (source == typeof(double)) return Expression.Call(typeof(PhpValue).GetRuntimeMethod("Create", new Type[] { typeof(double) }), expr);
+            if (source == typeof(bool)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Bool), expr);
+            if (source == typeof(int)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Int), expr);
+            if (source == typeof(long)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), expr);
+            if (source == typeof(double)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Double), expr);
 
             throw new NotImplementedException(source.FullName);
         }
