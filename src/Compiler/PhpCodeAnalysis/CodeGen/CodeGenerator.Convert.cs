@@ -445,8 +445,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (from.IsReferenceType)
                     {
                         Debug.Assert(from != CoreTypes.PhpAlias);
-                        // (T)obj // let .NET deal with eventual cast error for now
-                        EmitCastClass(to);
+                        HashSet<DiagnosticInfo> useSiteDiag = null;
+                        if (!from.IsDerivedFrom(to, false, ref useSiteDiag))
+                        {
+                            // (T)obj // let .NET deal with eventual cast error for now
+                            EmitCastClass(to);
+                        }
                         return;
                     }
                     throw new NotImplementedException();

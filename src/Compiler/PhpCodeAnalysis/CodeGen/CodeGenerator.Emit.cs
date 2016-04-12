@@ -184,6 +184,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(SpecialType.System_String);
                     }
                 }
+                else if (stack.IsReferenceType)
+                {
+                    var tref = this.Routine.TypeRefContext.GetTypes(tmask)[0];
+                    if (tref.IsObject)
+                    {
+                        HashSet<DiagnosticInfo> useSiteDiagnostic = null;
+                        var t = _routine.DeclaringCompilation.SourceAssembly.GetTypeByMetadataName(tref.QualifiedName.ClrName(), true, false);
+                        if (t != null && t.IsDerivedFrom(stack, false, ref useSiteDiagnostic)) // TODO: or interface
+                        {
+                            EmitCastClass(t);
+                            return t;
+                        }
+                    }
+                }
             }
 
             //
