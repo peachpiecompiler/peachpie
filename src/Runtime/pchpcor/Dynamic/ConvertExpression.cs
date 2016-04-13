@@ -21,6 +21,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(double)) return BindToDouble(arg);
             if (target == typeof(PhpNumber)) return BindToNumber(arg);
             if (target == typeof(PhpValue)) return BindToValue(arg);
+            if (target == typeof(void)) return BindToVoid(arg);
 
             //
             throw new NotImplementedException(target.ToString());
@@ -77,6 +78,20 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(double)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Double), expr);
 
             throw new NotImplementedException(source.FullName);
+        }
+
+        private static Expression BindToVoid(Expression expr)
+        {
+            var source = expr.Type;
+
+            if (source != typeof(void))
+            {
+                return Expression.Block(expr);
+            }
+            else
+            {
+                return expr;
+            }
         }
     }
 }

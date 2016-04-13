@@ -1040,7 +1040,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var cctor = il.Module.GetStaticCtorBuilder(il.Routine.ContainingType);
 
                 var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
-                var return_type = il.CoreTypes.PhpValue.Symbol;
+                var return_type = this.Access.IsRead ? il.CoreTypes.PhpValue.Symbol : il.CoreTypes.Void.Symbol;
 
                 // callsite
                 var fldPlace = new FieldPlace(null, fld);
