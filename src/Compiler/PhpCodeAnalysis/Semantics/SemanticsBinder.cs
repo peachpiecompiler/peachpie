@@ -126,7 +126,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     Debug.Assert(f.FallbackQualifiedName.HasValue == false);
                     Debug.Assert(f.QualifiedName.IsSimpleName);
-                    return new BoundInstanceMethodCall(boundinstance, f.QualifiedName.Name, boundargs);
+                    return new BoundInstanceMethodCall(boundinstance, f.QualifiedName.Name, boundargs)
+                        .WithAccess(access);
                 }
             }
             else if (x is AST.DirectStMtdCall)
