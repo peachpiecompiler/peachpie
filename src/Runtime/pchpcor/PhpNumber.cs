@@ -610,15 +610,21 @@ namespace Pchp.Core
 
         #region Construction
 
-        public static PhpNumber Create(long value)
+        private PhpNumber(long value) : this()
         {
-            return new PhpNumber() { _typeCode = PhpTypeCode.Long, _long = value };
+            _typeCode = PhpTypeCode.Long;
+            _long = value;
         }
 
-        public static PhpNumber Create(double value)
+        private PhpNumber(double value) : this()
         {
-            return new PhpNumber() { _typeCode = PhpTypeCode.Double, _double = value };
+            _typeCode = PhpTypeCode.Double;
+            _double = value;
         }
+
+        public static PhpNumber Create(long value) => new PhpNumber(value);
+
+        public static PhpNumber Create(double value) => new PhpNumber(value);
 
         #endregion
 
