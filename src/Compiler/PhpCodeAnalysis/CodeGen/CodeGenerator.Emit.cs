@@ -196,6 +196,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                             EmitCastClass(t);
                             return t;
                         }
+                        else
+                        {
+                            // TODO: class aliasing, ErrorNamedType, ...
+                            Debug.Assert(t != null);
+                        }
                     }
                 }
             }

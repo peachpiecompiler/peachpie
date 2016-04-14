@@ -170,6 +170,8 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             _flags = flags;
             _writeTypeMask = writeTypeMask;
+
+            Debug.Assert(EnsureArray ^ EnsureObject ^ EnsureRef || !IsEnsure);  // only single ensure is possible
         }
 
         public BoundAccess WithRead()
