@@ -37,11 +37,16 @@ namespace Pchp.Core
         /// <summary>
         /// The value type.
         /// </summary>
-        [FieldOffset(0)] PhpTypeCode _type;
-        [FieldOffset(4)] long _long;
-        [FieldOffset(4)] double _double;
-        [FieldOffset(4)] bool _bool;
-        [FieldOffset(16)] object _obj;
+        [FieldOffset(0)]
+        PhpTypeCode _type;
+        [FieldOffset(4)]
+        long _long;
+        [FieldOffset(4)]
+        double _double;
+        [FieldOffset(4)]
+        bool _bool;
+        [FieldOffset(16)]
+        object _obj;
 
         #endregion
 
@@ -234,44 +239,53 @@ namespace Pchp.Core
 
         #region Construction
 
-        public static PhpValue Create(PhpNumber number)
+        private PhpValue(long value) : this()
         {
-            return (number.IsLong)
+            _type = PhpTypeCode.Long;
+            _long = value;
+        }
+
+        private PhpValue(double value) : this()
+        {
+            _type = PhpTypeCode.Double;
+            _double = value;
+        }
+
+        private PhpValue(bool value) : this()
+        {
+            _type = PhpTypeCode.Boolean;
+            _bool = value;
+        }
+
+        private PhpValue(PhpTypeCode code, object obj) : this()
+        {
+            _type = code;
+            _obj = obj;
+        }
+
+        public static PhpValue Create(PhpNumber number)
+            => (number.IsLong)
                  ? Create(number.Long)
                  : Create(number.Double);
 
-            // TODO: does following work on all platforms?
-            //return new PhpValue()
-            //{
-            //    _type = number.TypeCode,    // Long || Double
-            //    _long = number._long // _long = Long <=> _double = Double
-            //};
-        }
+        public static PhpValue Create(long value) => new PhpValue(value);
 
-        public static PhpValue Create(long value)
-        {
-            return new PhpValue() { _type = PhpTypeCode.Long, _long = value };
-        }
+        public static PhpValue Create(double value) => new PhpValue(value);
 
-        public static PhpValue Create(double value)
-        {
-            return new PhpValue() { _type = PhpTypeCode.Double, _double = value };
-        }
+        public static PhpValue Create(int value) => new PhpValue((long)value);
 
-        public static PhpValue Create(int value) => Create((long)value);
+        public static PhpValue Create(bool value) => new PhpValue(value);
 
-        public static PhpValue Create(bool value) => new PhpValue() { _type = PhpTypeCode.Boolean, _bool = value };
+        public static PhpValue CreateNull() => new PhpValue(PhpTypeCode.Object, null);
 
-        public static PhpValue CreateNull() => new PhpValue() { _type = PhpTypeCode.Object };
+        public static PhpValue Create(string value) => new PhpValue((value != null) ? PhpTypeCode.String : PhpTypeCode.Object, value);
 
-        public static PhpValue Create(string value) => new PhpValue() { _type = (value != null) ? PhpTypeCode.String : PhpTypeCode.Object, _obj = value };
-
-        public static PhpValue Create(PhpString value) => new PhpValue() { _type = (value != null) ? PhpTypeCode.WritableString : PhpTypeCode.Object, _obj = value };
+        public static PhpValue Create(PhpString value) => new PhpValue((value != null) ? PhpTypeCode.WritableString : PhpTypeCode.Object, value);
 
         public static PhpValue FromClass(object value)
         {
             Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double));
-            return new PhpValue() { _type = PhpTypeCode.Object, _obj = value };
+            return new PhpValue(PhpTypeCode.Object, value);
         }
 
         /// <summary>
