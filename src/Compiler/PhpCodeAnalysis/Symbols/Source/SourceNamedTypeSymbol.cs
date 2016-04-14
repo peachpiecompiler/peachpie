@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 foreach (var f in flist.Fields)
                 {
-                    yield return new SourceFieldSymbol(this, f, flist.Modifiers);
+                    yield return new SourceFieldSymbol(this, f, flist.Modifiers, flist.PHPDoc);
                 }
             }
 

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 using Pchp.Syntax;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -16,8 +17,9 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SourceNamedTypeSymbol _type;
         readonly Syntax.AST.FieldDecl _syntax;
         readonly PhpMemberAttributes _modifiers;
+        readonly PHPDocBlock _phpdoc;
 
-        public SourceFieldSymbol(SourceNamedTypeSymbol type, Syntax.AST.FieldDecl syntax, PhpMemberAttributes modifiers)
+        public SourceFieldSymbol(SourceNamedTypeSymbol type, Syntax.AST.FieldDecl syntax, PhpMemberAttributes modifiers, PHPDocBlock phpdoc)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(syntax);
@@ -25,6 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = type;
             _syntax = syntax;
             _modifiers = modifiers;
+            _phpdoc = phpdoc;
         }
 
         public override string Name => _syntax.Name.Value;
@@ -82,7 +85,23 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
         {
-            return (TypeSymbol)DeclaringCompilation.GetSpecialType(SpecialType.System_Object);  // TODO: analysed PHP type
+            var vartag = _phpdoc.GetElement<PHPDocBlock.VarTag>();
+            if (vartag != null && vartag.TypeNamesArray.Length != 0)
+            {
+                var typectx = TypeRefFactory.CreateTypeRefContext(_type.Syntax);
+                var tmask = PHPDoc.GetTypeMask(typectx, vartag.TypeNamesArray);
+                var t = DeclaringCompilation.GetTypeFromTypeRef(typectx, tmask);
+                return t;
+            }
+
+            // TODO: analysed PHP type
+
+            return DeclaringCompilation.CoreTypes.PhpValue;
+        }
+
+        public override TypeRefMask GetResultType(TypeRefContext ctx)
+        {
+            return base.GetResultType(ctx); // convert typemask from CLR type
         }
     }
 }

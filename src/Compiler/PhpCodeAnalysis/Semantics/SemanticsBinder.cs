@@ -199,8 +199,17 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 return new BoundVariableRef(expr.VarName.Value).WithAccess(access);
             }
+            else
+            {
+                var instanceAccess = BoundAccess.Read;
 
-            throw new NotImplementedException();
+                if (access.IsWrite || access.EnsureObject || access.EnsureArray)
+                    instanceAccess = instanceAccess.WithEnsureObject();
+                if (access.IsCheck)
+                    instanceAccess = instanceAccess.WithCheck();
+
+                return new BoundFieldRef(expr.VarName, BindExpression(expr.IsMemberOf, instanceAccess)).WithAccess(access);
+            }
         }
 
         BoundExpression BindGlobalConstUse(AST.GlobalConstUse expr)
@@ -245,7 +254,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 value = BindExpression(((AST.RefAssignEx)expr).RValue, BoundAccess.ReadRef);
             }
 
-            // compound assign -> assign    // TODO: don't do that
+            // compound assign -> assign    // TODO: don't do that, use BoundAccess.ReadAndWrite instead
             if (op != AST.Operations.AssignValue && op != AST.Operations.AssignRef)
             {
                 AST.Operations binaryop;

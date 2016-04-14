@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IList<Statement> Statements => _syntax.Body;
 
-        protected override TypeRefContext CreateTypeRefContext() => CreateTypeRefContext(_type.Syntax);
+        protected override TypeRefContext CreateTypeRefContext() => TypeRefFactory.CreateTypeRefContext(_type.Syntax);
 
         internal override SourceFileSymbol ContainingFile => _type.ContainingFile;
 

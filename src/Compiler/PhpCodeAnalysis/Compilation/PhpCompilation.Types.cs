@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         private Symbol[] _lazyWellKnownTypeMembers;
 
-        #region CoreTypes, CoreMethods, Merging
+        #region CoreTypes, CoreMethods
 
         /// <summary>
         /// Well known types associated with this compilation.

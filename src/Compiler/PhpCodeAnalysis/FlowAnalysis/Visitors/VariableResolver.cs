@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         public override void VisitLocalReferenceExpression(ILocalReferenceExpression operation)
         {
             var vref = ((BoundVariableRef)operation);
-            vref.Update(_ctx.GetVar(vref.Name));
+            vref.Variable = _ctx.GetVar(vref.Name);
         }
     }
 }

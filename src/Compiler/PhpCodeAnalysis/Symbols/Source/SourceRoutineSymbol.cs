@@ -57,20 +57,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
-        #region Helpers
-
-        /// <summary>
-        /// Creates type context for a method within given type, determines naming, type context.
-        /// </summary>
-        protected static TypeRefContext/*!*/CreateTypeRefContext(TypeDecl/*!*/typeDecl)
-        {
-            Contract.ThrowIfNull(typeDecl);
-
-            return new TypeRefContext(NameUtils.GetNamingContext(typeDecl), typeDecl.SourceUnit, typeDecl);
-        }
-
-        #endregion
-
         internal abstract IList<Statement> Statements { get; }
 
         internal TypeRefContext TypeRefContext => _typeCtx ?? (_typeCtx = CreateTypeRefContext());

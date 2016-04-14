@@ -11,6 +11,7 @@ using System.Diagnostics;
 using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax;
+using Pchp.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -39,7 +40,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The expression will be aliased and the alias will be read.
         /// </summary>
-        EnsureRef = 4 | Read,
+        ReadRef = 4 | Read,
 
         /// <summary>
         /// An aliased value will be written to the place.
@@ -117,7 +118,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The variable will be aliased and read.
         /// </summary>
-        public bool IsReadRef => (_flags & AccessMask.EnsureRef) == AccessMask.EnsureRef;
+        public bool IsReadRef => (_flags & AccessMask.ReadRef) == AccessMask.ReadRef;
 
         /// <summary>
         /// A reference will be written.
@@ -137,18 +138,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// In case we might change the variable content to array, object or an alias (we may need write access).
         /// </summary>
-        public bool IsEnsure => (_flags & ~AccessMask.Read & (AccessMask.EnsureRef | AccessMask.EnsureObject | AccessMask.EnsureArray)) != 0;
+        public bool IsEnsure => (_flags & ~AccessMask.Read & (AccessMask.ReadRef | AccessMask.EnsureObject | AccessMask.EnsureArray)) != 0;
 
         /// <summary>
         /// In case an alias will be written to the variable.
         /// </summary>
         public bool WriteRef => (_flags & AccessMask.WriteRef) == AccessMask.WriteRef;
-
-        /// <summary>
-        /// In case the expression will be read as an alias.
-        /// In case of a variable, it has to be aliased.
-        /// </summary>
-        public bool EnsureRef => (_flags & AccessMask.EnsureRef) == AccessMask.EnsureRef;
 
         /// <summary>
         /// In case the expression has to read as an object to allow writing its fields.
@@ -171,7 +166,7 @@ namespace Pchp.CodeAnalysis.Semantics
             _flags = flags;
             _writeTypeMask = writeTypeMask;
 
-            Debug.Assert(EnsureArray ^ EnsureObject ^ EnsureRef || !IsEnsure);  // only single ensure is possible
+            Debug.Assert(EnsureArray ^ EnsureObject ^ IsReadRef || !IsEnsure);  // only single ensure is possible
         }
 
         public BoundAccess WithRead()
@@ -189,14 +184,19 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundAccess(_flags | AccessMask.WriteRef, _writeTypeMask | writeTypeMask);
         }
 
-        public BoundAccess WithEnsureRef()
+        public BoundAccess WithReadRef()
         {
-            return new BoundAccess(_flags | AccessMask.EnsureRef, _writeTypeMask);
+            return new BoundAccess(_flags | AccessMask.ReadRef, _writeTypeMask);
         }
 
         public BoundAccess WithCheck()
         {
             return new BoundAccess(_flags | AccessMask.ReadQuiet, _writeTypeMask);
+        }
+
+        public BoundAccess WithEnsureObject()
+        {
+            return new BoundAccess(_flags | AccessMask.EnsureObject, _writeTypeMask);
         }
 
         /// <summary>
@@ -207,7 +207,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Read as a reference access.
         /// </summary>
-        public static BoundAccess ReadRef => new BoundAccess(AccessMask.Read | AccessMask.EnsureRef, 0);
+        public static BoundAccess ReadRef => new BoundAccess(AccessMask.Read | AccessMask.ReadRef, 0);
 
         /// <summary>
         /// Simple write access without bound write type mask.
@@ -709,25 +709,22 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     public partial class BoundVariableRef : BoundReferenceExpression, ILocalReferenceExpression
     {
-        readonly string _name;
-        BoundVariable _variable;
-        
         /// <summary>
         /// Name of the variable.
         /// </summary>
-        public string Name => _name;
+        public string Name { get; private set; }
         
         /// <summary>
         /// Resolved variable source.
         /// </summary>
-        public BoundVariable Variable => _variable;
+        public BoundVariable Variable { get; set; }
 
         public override OperationKind Kind => OperationKind.LocalReferenceExpression;
 
         /// <summary>
         /// Local in case of the variable is resolved local variable.
         /// </summary>
-        ILocalSymbol ILocalReferenceExpression.Local => _variable?.Symbol as ILocalSymbol;
+        ILocalSymbol ILocalReferenceExpression.Local => this.Variable?.Symbol as ILocalSymbol;
 
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitLocalReferenceExpression(this);
@@ -737,14 +734,41 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundVariableRef(string name)
         {
-            _name = name;
+            this.Name = name;
         }
-        
-        public void Update(BoundVariable variable)
+    }
+
+    #endregion
+
+    #region BoundPropertyRef
+
+    public partial class BoundFieldRef : BoundReferenceExpression, IFieldReferenceExpression
+    {
+        ISymbol IMemberReferenceExpression.Member => Field;
+
+        IFieldSymbol IFieldReferenceExpression.Field => Field;
+
+        IExpression IMemberReferenceExpression.Instance => Instance;
+
+        public BoundExpression Instance { get; set; }
+
+        internal FieldSymbol Field { get; set; }
+
+        public VariableName Name { get; private set; }
+
+        public override OperationKind Kind => OperationKind.FieldReferenceExpression;
+
+        public BoundFieldRef(VariableName name, BoundExpression instance)
         {
-            Debug.Assert(variable != null);
-            _variable = variable;
+            this.Name = name;
+            this.Instance = instance;
         }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitFieldReferenceExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitFieldReferenceExpression(this, argument);
     }
 
     #endregion

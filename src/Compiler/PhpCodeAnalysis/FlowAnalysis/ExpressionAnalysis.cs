@@ -1027,6 +1027,46 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region Visit FieldRef
+
+        public sealed override void VisitFieldReferenceExpression(IFieldReferenceExpression operation)
+        {
+            VisitFieldRef((BoundFieldRef)operation);
+        }
+
+        protected void VisitFieldRef(BoundFieldRef x)
+        {
+            Debug.Assert(x.Instance != null);
+            Debug.Assert(x.Instance.Access.IsRead);
+
+            Visit(x.Instance);
+
+            x.TypeRefMask = TypeRefMask.AnyType;
+
+            var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
+            if (typerefs.Count == 1 && typerefs[0].IsObject)
+            {
+                // TODO: x.Instance.ResultType instead of following
+                var t = _model.GetType(typerefs[0].QualifiedName);
+                if (t != null)
+                {
+                    // TODO: visibility and resolution (model)
+                    x.Field = t.GetMembers(x.Name.Value).OfType<FieldSymbol>().SingleOrDefault();
+
+                    if (x.Field != null)
+                    {
+                        x.TypeRefMask = x.Field.GetResultType(TypeCtx);
+                    }
+                }
+            }
+            else
+            {
+                // TODO: ErrCode
+            }
+        }
+
+        #endregion
+
         #region Visit
 
         public override void DefaultVisit(IOperation operation)

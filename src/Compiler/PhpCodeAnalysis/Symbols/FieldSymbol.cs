@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Semantics;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -10,13 +11,14 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents a field in a class, struct or enum
     /// </summary>
-    internal abstract partial class FieldSymbol : Symbol, IFieldSymbol
+    internal abstract partial class FieldSymbol : Symbol, IFieldSymbol, ISemanticValue
     {
         internal FieldSymbol()
         {
@@ -306,6 +308,15 @@ namespace Pchp.CodeAnalysis.Symbols
         public override TResult Accept<TResult>(SymbolVisitor<TResult> visitor)
         {
             return visitor.VisitField(this);
+        }
+
+        #endregion
+
+        #region ISemanticValue
+
+        public virtual TypeRefMask GetResultType(TypeRefContext ctx)
+        {
+            return TypeRefFactory.CreateMask(ctx, this.Type);
         }
 
         #endregion

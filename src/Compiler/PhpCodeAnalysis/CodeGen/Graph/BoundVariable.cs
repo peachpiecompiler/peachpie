@@ -51,4 +51,12 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException();
         }
     }
+
+    partial class BoundFieldRef
+    {
+        internal override IPlace GetPlace(CodeGenerator il)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

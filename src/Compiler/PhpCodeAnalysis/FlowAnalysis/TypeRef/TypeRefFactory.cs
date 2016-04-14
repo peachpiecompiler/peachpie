@@ -69,5 +69,15 @@ namespace Pchp.CodeAnalysis
 
             return result;
         }
+
+        /// <summary>
+        /// Creates type context for a method within given type, determines naming, type context.
+        /// </summary>
+        public static TypeRefContext/*!*/CreateTypeRefContext(Syntax.AST.TypeDecl/*!*/typeDecl)
+        {
+            Contract.ThrowIfNull(typeDecl);
+
+            return new TypeRefContext(NameUtils.GetNamingContext(typeDecl), typeDecl.SourceUnit, typeDecl);
+        }
     }
 }
