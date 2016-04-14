@@ -242,10 +242,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 Debug.Assert(expr is AST.RefAssignEx);
                 Debug.Assert(op == AST.Operations.AssignRef);
                 target.Access = target.Access.WithWriteRef(0); // note: analysis will write the write type
-                value = BindExpression(((AST.RefAssignEx)expr).RValue, BoundAccess.Read.WithEnsureRef());
+                value = BindExpression(((AST.RefAssignEx)expr).RValue, BoundAccess.ReadRef);
             }
 
-            // compound assign -> assign
+            // compound assign -> assign    // TODO: don't do that
             if (op != AST.Operations.AssignValue && op != AST.Operations.AssignRef)
             {
                 AST.Operations binaryop;

@@ -205,6 +205,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public static BoundAccess Read => new BoundAccess(AccessMask.Read, 0);
 
         /// <summary>
+        /// Read as a reference access.
+        /// </summary>
+        public static BoundAccess ReadRef => new BoundAccess(AccessMask.Read | AccessMask.EnsureRef, 0);
+
+        /// <summary>
         /// Simple write access without bound write type mask.
         /// </summary>
         public static BoundAccess Write => new BoundAccess(AccessMask.Write, 0);
