@@ -75,6 +75,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// Expression access information.
     /// Describes the context in which an expression is used.
     /// </summary>
+    [DebuggerDisplay("[{_flags}]")]
     public struct BoundAccess
     {
         /// <summary>

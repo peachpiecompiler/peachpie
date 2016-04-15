@@ -65,17 +65,4 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException();
         }
     }
-
-    partial class BoundFieldRef
-    {
-        internal override IBoundPlace BindPlace(CodeGenerator cg)
-        {
-            return new BoundFieldPlace(this);
-        }
-
-        internal override IPlace Place(ILBuilder il)
-        {
-            throw new NotImplementedException();
-        }
-    }
 }

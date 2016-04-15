@@ -319,7 +319,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(variable);
 
             var place = variable.BindPlace(_il);
-            var tinst = place.EmitPrepare(this);
+            var tinst = place.EmitPreamble(this);
             return place.EmitLoad(this);
         }
 
@@ -659,6 +659,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Double:
                     _il.EmitDoubleConstant(0.0);
                     break;
+                case SpecialType.System_Int32:
+                    _il.EmitIntConstant(0);
+                    break;
                 case SpecialType.System_Int64:
                     _il.EmitLongConstant(0);
                     break;
@@ -671,6 +674,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 default:
                     if (type.IsReferenceType)
                     {
+                        // TODO: PhpArray, PhpAlias, PhpString
                         _il.EmitNullConstant();
                     }
                     else

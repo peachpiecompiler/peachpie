@@ -972,12 +972,45 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            return EmitLoad(cg);
-        }
-
-        internal TypeSymbol EmitLoad(CodeGenerator cg)
-        {
             return cg.EmitLoad(this.Variable);
+        }
+    }
+
+    partial class BoundFieldRef
+    {
+        internal override IBoundPlace BindPlace(CodeGenerator cg) => new BoundFieldPlace(this);
+
+        internal override IPlace Place(ILBuilder il) => null;
+
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            if (Access.IsNone)
+            {
+                // do nothing
+                return cg.CoreTypes.Void;
+            }
+
+            var place = this.BindPlace(cg);
+            place.EmitPreamble(cg);
+
+            if (Access.IsRead)
+            {
+                if (Access.IsReadRef)
+                {
+                    throw new NotImplementedException();
+                }
+
+                if (Access.IsEnsure)
+                {
+                    throw new NotImplementedException();
+                }
+
+                return place.EmitLoad(cg);
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
         }
     }
 
@@ -1044,7 +1077,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var cctor = cg.Module.GetStaticCtorBuilder(cg.Routine.ContainingType);
 
                 var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
-                var return_type = this.Access.IsRead ? cg.CoreTypes.PhpValue.Symbol : cg.CoreTypes.Void.Symbol;
+                var return_type = this.Access.IsRead ? this.Access.IsReadRef ? cg.CoreTypes.PhpAlias.Symbol : cg.CoreTypes.PhpValue.Symbol : cg.CoreTypes.Void.Symbol;
 
                 // callsite
                 var fldPlace = new FieldPlace(null, fld);
@@ -1256,7 +1289,7 @@ namespace Pchp.CodeAnalysis.Semantics
             LocalDefinition tmp = null;
 
             // <target> = <value>
-            target_place.EmitPrepare(cg);
+            target_place.EmitPreamble(cg);
             if (t_value != null) cg.EmitConvert(this.Value, t_value);
             else t_value = cg.Emit(this.Value);
 
@@ -1327,7 +1360,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (read)
                     throw new NotImplementedException();
 
-                targetPlace.EmitPrepare(cg);
+                targetPlace.EmitPreamble(cg);
                 var result = BoundBinaryEx.EmitAdd(cg, this.Target, this.Value, t_value);
                 cg.EmitConvert(result, this.TypeRefMask, t_value);
                 targetPlace.EmitStore(cg, t_value);
@@ -1345,7 +1378,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Prefix (++i, --i)
             if (this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement)
             {
-                targetPlace.EmitPrepare(cg);
+                targetPlace.EmitPreamble(cg);
                 var result = BoundBinaryEx.EmitAdd(cg, this.Target, this.Value, t_value);
                 cg.EmitConvert(result, this.TypeRefMask, t_value);
 
