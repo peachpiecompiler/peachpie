@@ -11,52 +11,52 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     partial class BoundStatement : IGenerator
     {
-        internal virtual void Emit(CodeGenerator il)
+        internal virtual void Emit(CodeGenerator cg)
         {
             throw new NotImplementedException();
         }
 
-        void IGenerator.Generate(CodeGenerator il) => Emit(il);
+        void IGenerator.Generate(CodeGenerator cg) => Emit(cg);
     }
 
     partial class BoundExpressionStatement
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Emit(CodeGenerator cg)
         {
-            il.EmitPop(this.Expression.Emit(il));
+            cg.EmitPop(this.Expression.Emit(cg));
         }
     }
 
     partial class BoundReturnStatement
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Emit(CodeGenerator cg)
         {
             if (this.Returned == null)
             {
-                if (il.Routine.ReturnsVoid)
+                if (cg.Routine.ReturnsVoid)
                 {
                     // return;
-                    il.Builder.EmitRet(true);
+                    cg.Builder.EmitRet(true);
                 }
                 else
                 {
                     // return <default>;
-                    il.EmitReturnDefault();
+                    cg.EmitReturnDefault();
                 }
             }
             else
             {
-                if (il.Routine.ReturnsVoid)
+                if (cg.Routine.ReturnsVoid)
                 {
                     // <expr>;
                     // return;
-                    il.EmitPop(this.Returned.Emit(il));
+                    cg.EmitPop(this.Returned.Emit(cg));
                 }
                 else
                 {
                     // return (T)<expr>;
-                    il.EmitConvert(this.Returned, il.Routine.ReturnType);
-                    il.Builder.EmitRet(false);
+                    cg.EmitConvert(this.Returned, cg.Routine.ReturnType);
+                    cg.Builder.EmitRet(false);
                 }
             }
         }

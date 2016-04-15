@@ -335,6 +335,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits IL into the underlaying <see cref="ILBuilder"/>.
         /// </summary>
-        void Generate(CodeGenerator il);
+        void Generate(CodeGenerator cg);
     }
 }

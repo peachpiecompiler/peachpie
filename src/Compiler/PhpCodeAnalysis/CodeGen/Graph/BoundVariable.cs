@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundFieldRef
     {
-        internal override IBoundPlace BindPlace(CodeGenerator il)
+        internal override IBoundPlace BindPlace(CodeGenerator cg)
         {
             return new BoundFieldPlace(this);
         }

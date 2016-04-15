@@ -13,56 +13,56 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Generates or enqueues next blocks to the worklist.
         /// </summary>
-        internal abstract void Generate(CodeGenerator il);
+        internal abstract void Generate(CodeGenerator cg);
 
-        void IGenerator.Generate(CodeGenerator il) => this.Generate(il);
+        void IGenerator.Generate(CodeGenerator cg) => this.Generate(cg);
     }
 
     partial class SimpleEdge
     {
-        internal override void Generate(CodeGenerator il)
+        internal override void Generate(CodeGenerator cg)
         {
-            il.Scope.ContinueWith(NextBlock);
+            cg.Scope.ContinueWith(NextBlock);
         }
     }
 
     partial class ConditionalEdge
     {
-        internal override void Generate(CodeGenerator il)
+        internal override void Generate(CodeGenerator cg)
         {
             Contract.ThrowIfNull(Condition);
 
             if (IsLoop) // perf
             {
-                il.Builder.EmitBranch(ILOpCode.Br, this.Condition);
+                cg.Builder.EmitBranch(ILOpCode.Br, this.Condition);
 
                 // {
-                il.GenerateScope(TrueTarget, NextBlock.Ordinal);
+                cg.GenerateScope(TrueTarget, NextBlock.Ordinal);
                 // }
 
                 // if (Condition)
-                il.Builder.MarkLabel(this.Condition);
-                il.EmitConvert(this.Condition, il.CoreTypes.Boolean);
-                il.Builder.EmitBranch(ILOpCode.Brtrue, TrueTarget);
+                cg.Builder.MarkLabel(this.Condition);
+                cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);
+                cg.Builder.EmitBranch(ILOpCode.Brtrue, TrueTarget);
             }
             else
             {
                 // if (Condition)
-                il.EmitConvert(this.Condition, il.CoreTypes.Boolean);
-                il.Builder.EmitBranch(ILOpCode.Brfalse, FalseTarget);
+                cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);
+                cg.Builder.EmitBranch(ILOpCode.Brfalse, FalseTarget);
 
                 // {
-                il.GenerateScope(TrueTarget, NextBlock.Ordinal);
+                cg.GenerateScope(TrueTarget, NextBlock.Ordinal);
                 // }
             }
 
-            il.Scope.ContinueWith(FalseTarget);
+            cg.Scope.ContinueWith(FalseTarget);
         }
     }
 
     partial class TryCatchEdge
     {
-        internal override void Generate(CodeGenerator il)
+        internal override void Generate(CodeGenerator cg)
         {
             throw new NotImplementedException();
         }
@@ -70,7 +70,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ForeachEnumereeEdge
     {
-        internal override void Generate(CodeGenerator il)
+        internal override void Generate(CodeGenerator cg)
         {
             throw new NotImplementedException();
         }
@@ -78,7 +78,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ForeachMoveNextEdge
     {
-        internal override void Generate(CodeGenerator il)
+        internal override void Generate(CodeGenerator cg)
         {
             throw new NotImplementedException();
         }
@@ -86,7 +86,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class SwitchEdge
     {
-        internal override void Generate(CodeGenerator il)
+        internal override void Generate(CodeGenerator cg)
         {
             throw new NotImplementedException();
         }

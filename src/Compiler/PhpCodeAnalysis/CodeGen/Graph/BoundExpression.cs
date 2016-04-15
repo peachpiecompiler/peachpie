@@ -19,7 +19,7 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     partial class BoundExpression
     {
-        internal virtual TypeSymbol Emit(CodeGenerator il)
+        internal virtual TypeSymbol Emit(CodeGenerator cg)
         {
             throw ExceptionUtilities.UnexpectedValue(this.GetType().FullName);
         }
@@ -27,7 +27,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundBinaryEx
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             Debug.Assert(this.Access.IsRead || this.Access.IsNone);
 
@@ -43,23 +43,23 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Arithmetic Operations
 
                 case Operations.Add:
-                    returned_type = (il.IsLongOnly(this.TypeRefMask)) ? il.CoreTypes.Long.Symbol : null;
-                    returned_type = EmitAdd(il, Left, Right, returned_type);
+                    returned_type = (cg.IsLongOnly(this.TypeRefMask)) ? cg.CoreTypes.Long.Symbol : null;
+                    returned_type = EmitAdd(cg, Left, Right, returned_type);
                     break;
 
                 case Operations.Sub:
                     //Template: "x - y"        Operators.Subtract(x,y) [overloads]
-                    returned_type = EmitSub(il, Left, Right);
+                    returned_type = EmitSub(cg, Left, Right);
                     break;
 
                 case Operations.Div:
                     //Template: "x / y"
-                    returned_type = EmitDivision(il);
+                    returned_type = EmitDivision(cg);
                     break;
 
                 case Operations.Mul:
                     //Template: "x * y"
-                    returned_type = EmitMultiply(il);
+                    returned_type = EmitMultiply(cg);
                     break;
 
                 case Operations.Pow:
@@ -111,15 +111,15 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Boolean and Bitwise Operations
 
                 case Operations.And:
-                    returned_type = EmitBinaryBooleanOperation(il, true);
+                    returned_type = EmitBinaryBooleanOperation(cg, true);
                     break;
 
                 case Operations.Or:
-                    returned_type = EmitBinaryBooleanOperation(il, false);
+                    returned_type = EmitBinaryBooleanOperation(cg, false);
                     break;
 
                 case Operations.Xor:
-                    returned_type = EmitBinaryXor(il);
+                    returned_type = EmitBinaryXor(cg);
                     break;
 
                 case Operations.BitAnd:
@@ -142,34 +142,34 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Comparing Operations
 
                 case Operations.Equal:
-                    EmitEquality(il);
-                    returned_type = il.CoreTypes.Boolean;
+                    EmitEquality(cg);
+                    returned_type = cg.CoreTypes.Boolean;
                     break;
 
                 case Operations.NotEqual:
-                    EmitEquality(il);
-                    il.EmitLogicNegation();
-                    returned_type = il.CoreTypes.Boolean;
+                    EmitEquality(cg);
+                    cg.EmitLogicNegation();
+                    returned_type = cg.CoreTypes.Boolean;
                     break;
 
                 case Operations.GreaterThan:
-                    returned_type = EmitComparison(il, false);
+                    returned_type = EmitComparison(cg, false);
                     break;
 
                 case Operations.LessThan:
-                    returned_type = EmitComparison(il, true);
+                    returned_type = EmitComparison(cg, true);
                     break;
 
                 case Operations.GreaterThanOrEqual:
                     // template: !(LessThan)
-                    returned_type = EmitComparison(il, true);
-                    il.EmitLogicNegation();
+                    returned_type = EmitComparison(cg, true);
+                    cg.EmitLogicNegation();
                     break;
 
                 case Operations.LessThanOrEqual:
                     // template: !(GreaterThan)
-                    returned_type = EmitComparison(il, false);
-                    il.EmitLogicNegation();
+                    returned_type = EmitComparison(cg, false);
+                    cg.EmitLogicNegation();
                     break;
 
                 case Operations.Identical:
@@ -207,8 +207,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case AccessMask.None:
                     // Result is not read, pop the result
-                    il.EmitPop(returned_type);
-                    returned_type = il.CoreTypes.Void;
+                    cg.EmitPop(returned_type);
+                    returned_type = cg.CoreTypes.Void;
                     break;
             }
 
@@ -659,7 +659,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundUnaryEx
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             Debug.Assert(Access.IsRead || Access.IsNone);
 
@@ -701,46 +701,46 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.LogicNegation:
                     //Template: !(bool)(x);                              
-                    il.EmitConvertToBool(this.Operand, true);
-                    returned_type = il.CoreTypes.Boolean;
+                    cg.EmitConvertToBool(this.Operand, true);
+                    returned_type = cg.CoreTypes.Boolean;
                     break;
 
                 case Operations.Minus:
                     //Template: "-x"
-                    returned_type = EmitMinus(il);
+                    returned_type = EmitMinus(cg);
                     break;
 
                 case Operations.Plus:
                     //Template: "+x"
-                    returned_type = EmitPlus(il);
+                    returned_type = EmitPlus(cg);
                     break;
 
                 case Operations.ObjectCast:
                     //Template: "(object)x"
-                    il.EmitConvert(this.Operand, il.CoreTypes.Object);
-                    returned_type = il.CoreTypes.Object;
+                    cg.EmitConvert(this.Operand, cg.CoreTypes.Object);
+                    returned_type = cg.CoreTypes.Object;
                     break;
                     
                 case Operations.Print:
-                    il.EmitEcho(this.Operand);
+                    cg.EmitEcho(this.Operand);
 
                     if (Access.IsRead)
                     {
                         // Always returns 1
-                        il.Builder.EmitLongConstant(1);
-                        returned_type = il.CoreTypes.Long;
+                        cg.Builder.EmitLongConstant(1);
+                        returned_type = cg.CoreTypes.Long;
                     }
                     else
                     {
                         // nobody reads the result anyway
-                        returned_type = il.CoreTypes.Void;
+                        returned_type = cg.CoreTypes.Void;
                     }
                     break;
 
                 case Operations.BoolCast:
                     //Template: "(bool)x"
-                    il.EmitConvert(this.Operand, il.CoreTypes.Boolean);
-                    returned_type = il.CoreTypes.Boolean;
+                    cg.EmitConvert(this.Operand, cg.CoreTypes.Boolean);
+                    returned_type = cg.CoreTypes.Boolean;
                     break;
 
                 case Operations.Int8Cast:
@@ -753,23 +753,23 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.UInt32Cast:
                 case Operations.Int64Cast:
 
-                    il.EmitConvert(this.Operand, il.CoreTypes.Long);
-                    returned_type = il.CoreTypes.Long;
+                    cg.EmitConvert(this.Operand, cg.CoreTypes.Long);
+                    returned_type = cg.CoreTypes.Long;
                     break;
 
                 case Operations.DecimalCast:
                 case Operations.DoubleCast:
                 case Operations.FloatCast:
 
-                    il.EmitConvert(this.Operand, il.CoreTypes.Double);
-                    returned_type = il.CoreTypes.Double;
+                    cg.EmitConvert(this.Operand, cg.CoreTypes.Double);
+                    returned_type = cg.CoreTypes.Double;
                     break;
 
                 case Operations.UnicodeCast: // TODO
                 case Operations.StringCast:
                     // (string)x
-                    il.EmitConvert(this.Operand, il.CoreTypes.String);  // TODO: to String or PhpString ? to not corrupt single-byte string
-                    return il.CoreTypes.String;
+                    cg.EmitConvert(this.Operand, cg.CoreTypes.String);  // TODO: to String or PhpString ? to not corrupt single-byte string
+                    return cg.CoreTypes.String;
 
                 case Operations.BinaryCast:
                     //if ((returned_typecode = node.Expr.Emit(codeGenerator)) != PhpTypeCode.PhpBytes)
@@ -813,8 +813,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
                 case AccessMask.None:
                     // pop operation's result value from stack
-                    il.EmitPop(returned_type);
-                    returned_type = il.CoreTypes.Void;
+                    cg.EmitPop(returned_type);
+                    returned_type = cg.CoreTypes.Void;
                     break;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(Access);
@@ -823,10 +823,10 @@ namespace Pchp.CodeAnalysis.Semantics
             return returned_type;
         }
 
-        TypeSymbol EmitMinus(CodeGenerator gen)
+        TypeSymbol EmitMinus(CodeGenerator cg)
         {
-            var il = gen.Builder;
-            var t = gen.Emit(this.Operand);
+            var il = cg.Builder;
+            var t = cg.Emit(this.Operand);
 
             switch (t.SpecialType)
             {
@@ -838,15 +838,15 @@ namespace Pchp.CodeAnalysis.Semantics
                     // -(i8)i4
                     il.EmitOpCode(ILOpCode.Conv_i8);    // i4 -> i8
                     il.EmitOpCode(ILOpCode.Neg);        // result will fit into long for sure
-                    return gen.CoreTypes.Long;
+                    return cg.CoreTypes.Long;
                 case SpecialType.System_Int64:
                     // PhpNumber.Minus(i8) : number
-                    return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Negation_long)
-                            .Expect(gen.CoreTypes.PhpNumber);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Negation_long)
+                            .Expect(cg.CoreTypes.PhpNumber);
                 default:
-                    if (t == gen.CoreTypes.PhpNumber)
+                    if (t == cg.CoreTypes.PhpNumber)
                     {
-                        return gen.EmitCall(ILOpCode.Call, gen.CoreMethods.PhpNumber.Negation)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Negation)
                             .Expect(t);
                     }
 
@@ -854,12 +854,12 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        TypeSymbol EmitPlus(CodeGenerator gen)
+        TypeSymbol EmitPlus(CodeGenerator cg)
         {
             // convert value to a number
 
-            var il = gen.Builder;
-            var t = gen.Emit(this.Operand);
+            var il = cg.Builder;
+            var t = cg.Emit(this.Operand);
 
             switch (t.SpecialType)
             {
@@ -871,9 +871,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     // (long)(int)bool
                     il.EmitOpCode(ILOpCode.Conv_i4);
                     il.EmitOpCode(ILOpCode.Conv_i8);
-                    return gen.CoreTypes.Long;
+                    return cg.CoreTypes.Long;
                 default:
-                    if (t == gen.CoreTypes.PhpNumber)
+                    if (t == cg.CoreTypes.PhpNumber)
                     {
                         return t;
                     }
@@ -887,14 +887,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundLiteral
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cxg)
         {
             Debug.Assert(this.Access.IsRead || Access.IsNone);
 
             // do nothing
             if (this.Access.IsNone)
             {
-                return il.CoreTypes.Void;
+                return cxg.CoreTypes.Void;
             }
 
             // push value onto the evaluation stack
@@ -906,35 +906,35 @@ namespace Pchp.CodeAnalysis.Semantics
             var value = ConstantValue.Value;
             if (value == null)
             {
-                il.Builder.EmitNullConstant();
-                return il.CoreTypes.Object;
+                cxg.Builder.EmitNullConstant();
+                return cxg.CoreTypes.Object;
             }
             else
             {
                 if (value is int)
                 {
-                    il.Builder.EmitIntConstant((int)value);
-                    return il.CoreTypes.Int32;
+                    cxg.Builder.EmitIntConstant((int)value);
+                    return cxg.CoreTypes.Int32;
                 }
                 else if (value is long)
                 {
-                    il.Builder.EmitLongConstant((long)value);
-                    return il.CoreTypes.Long;
+                    cxg.Builder.EmitLongConstant((long)value);
+                    return cxg.CoreTypes.Long;
                 }
                 else if (value is string)
                 {
-                    il.Builder.EmitStringConstant((string)value);
-                    return il.CoreTypes.String;
+                    cxg.Builder.EmitStringConstant((string)value);
+                    return cxg.CoreTypes.String;
                 }
                 else if (value is bool)
                 {
-                    il.Builder.EmitBoolConstant((bool)value);
-                    return il.CoreTypes.Boolean;
+                    cxg.Builder.EmitBoolConstant((bool)value);
+                    return cxg.CoreTypes.Boolean;
                 }
                 else if (value is double)
                 {
-                    il.Builder.EmitDoubleConstant((double)value);
-                    return il.CoreTypes.Double;
+                    cxg.Builder.EmitDoubleConstant((double)value);
+                    return cxg.CoreTypes.Double;
                 }
                 else
                 {
@@ -960,7 +960,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
 
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             if (this.Variable == null)
                 throw new InvalidOperationException(); // variable was not resolved
@@ -968,16 +968,16 @@ namespace Pchp.CodeAnalysis.Semantics
             if (Access.IsNone)
             {
                 // do nothing
-                return il.CoreTypes.Void;
+                return cg.CoreTypes.Void;
             }
 
             //
-            return EmitLoad(il);
+            return EmitLoad(cg);
         }
 
-        internal TypeSymbol EmitLoad(CodeGenerator il)
+        internal TypeSymbol EmitLoad(CodeGenerator cg)
         {
-            return il.EmitLoad(this.Variable);
+            return cg.EmitLoad(this.Variable);
         }
     }
 
@@ -988,7 +988,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundFunctionCall
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             var overloads = this.Overloads;
             if (overloads == null)
@@ -1001,13 +1001,13 @@ namespace Pchp.CodeAnalysis.Semantics
             // 2. autoload script containing routine declaration
             // 3. throw if routine is not declared
 
-            return il.EmitCall(ILOpCode.Call, null, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
+            return cg.EmitCall(ILOpCode.Call, null, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
         }
     }
 
     partial class BoundInstanceMethodCall
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             var overloads = this.Overloads;
             if (overloads != null)
@@ -1024,7 +1024,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // direct call
                 var method = overloads.Candidates[0];
-                return il.EmitCall(
+                return cg.EmitCall(
                     (method.IsOverride && !method.IsMetadataFinal) ? ILOpCode.Callvirt : ILOpCode.Call,
                     method,
                     this.Instance, _arguments.Select(a => a.Value).ToImmutableArray());
@@ -1033,40 +1033,40 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // call site call
 
-                var callsitetype = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);    // temporary, we will change to specific generic once we know
-                var callsitetype_generic = il.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T);    // temporary, we will change to specific generic once we know
-                var callsite_create_generic = il.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Create);
-                var target = (FieldSymbol)il.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target);
+                var callsitetype = cg.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);    // temporary, we will change to specific generic once we know
+                var callsitetype_generic = cg.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T);    // temporary, we will change to specific generic once we know
+                var callsite_create_generic = cg.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Create);
+                var target = (FieldSymbol)cg.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target);
                 target = new SubstitutedFieldSymbol(callsitetype_generic, target); // AsMember // we'll change containing type later once we know
 
-                var container = (IWithSynthesized)il.Routine.ContainingType;
+                var container = (IWithSynthesized)cg.Routine.ContainingType;
                 var fld = container.CreateSynthesizedField(callsitetype, "__'" + this.Name + "'" + (this.GetHashCode() % 128).ToString("x"), Accessibility.Private, true);
-                var cctor = il.Module.GetStaticCtorBuilder(il.Routine.ContainingType);
+                var cctor = cg.Module.GetStaticCtorBuilder(cg.Routine.ContainingType);
 
                 var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
-                var return_type = this.Access.IsRead ? il.CoreTypes.PhpValue.Symbol : il.CoreTypes.Void.Symbol;
+                var return_type = this.Access.IsRead ? cg.CoreTypes.PhpValue.Symbol : cg.CoreTypes.Void.Symbol;
 
                 // callsite
                 var fldPlace = new FieldPlace(null, fld);
 
                 // callsite.Target
-                fldPlace.EmitLoad(il.Builder);
-                il.Builder.EmitOpCode(ILOpCode.Ldfld);
-                il.EmitSymbolToken(target, null);
+                fldPlace.EmitLoad(cg.Builder);
+                cg.Builder.EmitOpCode(ILOpCode.Ldfld);
+                cg.EmitSymbolToken(target, null);
                 
                 // (callsite, instance, ctx, ...)
-                fldPlace.EmitLoad(il.Builder);
-                il.Emit(this.Instance);   // instance
+                fldPlace.EmitLoad(cg.Builder);
+                cg.Emit(this.Instance);   // instance
 
-                callsiteargs.Add(il.EmitLoadContext());     // ctx
+                callsiteargs.Add(cg.EmitLoadContext());     // ctx
 
                 foreach (var a in _arguments)
                 {
-                    callsiteargs.Add(il.Emit(a.Value));
+                    callsiteargs.Add(cg.Emit(a.Value));
                 }
 
                 //
-                var functype = il.Factory.GetCallSiteDelegateType(
+                var functype = cg.Factory.GetCallSiteDelegateType(
                     this.Instance.ResultType, RefKind.None,
                     callsiteargs.AsImmutable(),
                     default(ImmutableArray<RefKind>),
@@ -1080,7 +1080,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 // Target()
                 var invoke = functype.DelegateInvokeMethod;
-                il.EmitCall(ILOpCode.Callvirt, invoke);
+                cg.EmitCall(ILOpCode.Callvirt, invoke);
 
                 // static .cctor {
 
@@ -1089,12 +1089,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 fldPlace.EmitStorePrepare(cctor);
 
                 cctor.EmitStringConstant(this.Name.Value);
-                cctor.EmitLoadToken(il.Module, il.Diagnostics, il.Routine.ContainingType, null);
-                cctor.EmitLoadToken(il.Module, il.Diagnostics, return_type, null);
+                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
+                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
                 cctor.EmitIntConstant(0);
-                cctor.EmitCall(il.Module, il.Diagnostics, ILOpCode.Call, il.CoreMethods.CallMethodBinder.Create);
+                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.CallMethodBinder.Create);
 
-                cctor.EmitCall(il.Module, il.Diagnostics, ILOpCode.Call, (MethodSymbol)callsite_create_generic.SymbolAsMember(callsitetype));
+                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, (MethodSymbol)callsite_create_generic.SymbolAsMember(callsitetype));
 
                 fldPlace.EmitStore(cctor);
 
@@ -1108,7 +1108,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundStMethodCall
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             var overloads = this.Overloads;
             if (overloads == null)
@@ -1121,33 +1121,33 @@ namespace Pchp.CodeAnalysis.Semantics
             // 2. autoload script containing the declaration
             // 3. throw if type is not declared
 
-            return il.EmitCall(ILOpCode.Call, null, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
+            return cg.EmitCall(ILOpCode.Call, null, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
         }
     }
 
     partial class BoundEcho
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             Debug.Assert(Access.IsNone);
 
             foreach (var arg in _arguments)
             {
-                il.EmitEcho(arg.Value);
+                cg.EmitEcho(arg.Value);
             }
 
-            return il.CoreTypes.Void;
+            return cg.CoreTypes.Void;
         }
     }
 
     partial class BoundConcatEx
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var phpstring = il.CoreTypes.PhpString;
+            var phpstring = cg.CoreTypes.PhpString;
 
             // new PhpString(capacity)
-            il.Emit_New_PhpString(CapacityHint());
+            cg.Emit_New_PhpString(CapacityHint());
 
             // <STACK>.Add(<expr>)
             foreach (var x in this.ArgumentsInSourceOrder)
@@ -1157,12 +1157,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     continue;
 
                 //
-                il.Builder.EmitOpCode(ILOpCode.Dup);    // PhpString
+                cg.Builder.EmitOpCode(ILOpCode.Dup);    // PhpString
 
                 // TODO: Add overloads for specific types, not System.String only
-                il.EmitConvert(expr, il.CoreTypes.String);
-                il.EmitCall(ILOpCode.Call, il.CoreMethods.PhpString.Append_String);
-                il.Builder.EmitOpCode(ILOpCode.Nop);
+                cg.EmitConvert(expr, cg.CoreTypes.String);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.Append_String);
+                cg.Builder.EmitOpCode(ILOpCode.Nop);
             }
 
             //
@@ -1219,7 +1219,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundNewEx
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             if (this.Overloads == null || this.ResultType == null || this.ResultType is ErrorTypeSymbol)
                 throw new InvalidOperationException();
@@ -1228,14 +1228,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new ArgumentException();
 
             //
-            var type = il.EmitCall(ILOpCode.Newobj, null, this.Overloads, _arguments.Select(a => a.Value).ToImmutableArray())
+            var type = cg.EmitCall(ILOpCode.Newobj, null, this.Overloads, _arguments.Select(a => a.Value).ToImmutableArray())
                 .Expect((TypeSymbol)this.ResultType);
 
             //
             if (this.Access.IsNone)
             {
-                il.EmitPop(type);
-                type = il.CoreTypes.Void;
+                cg.EmitPop(type);
+                type = cg.CoreTypes.Void;
             }
 
             //
@@ -1245,9 +1245,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundAssignEx
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var target_place = this.Target.BindPlace(il);
+            var target_place = this.Target.BindPlace(cg);
             Debug.Assert(target_place != null);
             Debug.Assert(target_place.Type == null || target_place.Type.SpecialType != SpecialType.System_Void);
 
@@ -1256,16 +1256,16 @@ namespace Pchp.CodeAnalysis.Semantics
             LocalDefinition tmp = null;
 
             // <target> = <value>
-            target_place.EmitPrepare(il);
-            if (t_value != null) il.EmitConvert(this.Value, t_value);
-            else t_value = il.Emit(this.Value);
+            target_place.EmitPrepare(cg);
+            if (t_value != null) cg.EmitConvert(this.Value, t_value);
+            else t_value = cg.Emit(this.Value);
 
             switch (this.Access.Flags)
             {
                 case AccessMask.Read:
-                    tmp = il.GetTemporaryLocal(t_value, false);
-                    il.Builder.EmitOpCode(ILOpCode.Dup);
-                    il.Builder.EmitLocalStore(tmp);
+                    tmp = cg.GetTemporaryLocal(t_value, false);
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.Builder.EmitLocalStore(tmp);
                     break;
                 case AccessMask.None:
                     break;
@@ -1273,16 +1273,16 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw ExceptionUtilities.UnexpectedValue(this.Access);
             }
 
-            target_place.EmitStore(il, t_value);
+            target_place.EmitStore(cg, t_value);
 
             //
             switch (this.Access.Flags)
             {
                 case AccessMask.None:
-                    t_value = il.CoreTypes.Void;
+                    t_value = cg.CoreTypes.Void;
                     break;
                 case AccessMask.Read:
-                    il.Builder.EmitLocalLoad(tmp);
+                    cg.Builder.EmitLocalLoad(tmp);
                     break;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(this.Access);
@@ -1290,7 +1290,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (tmp != null)
             {
-                il.ReturnTemporaryLocal(tmp);
+                cg.ReturnTemporaryLocal(tmp);
             }
 
             //
@@ -1300,7 +1300,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundCompoundAssignEx
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             throw new NotSupportedException();  // transform to BoundAssignEx with BoundBinaryEx as its Value
         }
@@ -1308,7 +1308,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundIncDecEx
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
             Debug.Assert(this.Access.IsNone || Access.IsRead);
 
@@ -1317,7 +1317,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotImplementedException();
             }
 
-            var targetPlace = this.Target.BindPlace(il);
+            var targetPlace = this.Target.BindPlace(cg);
             var t_value = targetPlace.Type;
             var read = this.Access.IsRead;
 
@@ -1327,13 +1327,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (read)
                     throw new NotImplementedException();
 
-                targetPlace.EmitPrepare(il);
-                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value, t_value);
-                il.EmitConvert(result, this.TypeRefMask, t_value);
-                targetPlace.EmitStore(il, t_value);
+                targetPlace.EmitPrepare(cg);
+                var result = BoundBinaryEx.EmitAdd(cg, this.Target, this.Value, t_value);
+                cg.EmitConvert(result, this.TypeRefMask, t_value);
+                targetPlace.EmitStore(cg, t_value);
 
                 //
-                return il.CoreTypes.Void;
+                return cg.CoreTypes.Void;
             }
             else if (this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement)
             {
@@ -1345,20 +1345,20 @@ namespace Pchp.CodeAnalysis.Semantics
             // Prefix (++i, --i)
             if (this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement)
             {
-                targetPlace.EmitPrepare(il);
-                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value, t_value);
-                il.EmitConvert(result, this.TypeRefMask, t_value);
+                targetPlace.EmitPrepare(cg);
+                var result = BoundBinaryEx.EmitAdd(cg, this.Target, this.Value, t_value);
+                cg.EmitConvert(result, this.TypeRefMask, t_value);
 
                 if (read)
-                    il.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
 
-                targetPlace.EmitStore(il, t_value);
+                targetPlace.EmitStore(cg, t_value);
 
                 //
                 if (read)
                     return t_value;
                 else
-                    return il.CoreTypes.Void;
+                    return cg.CoreTypes.Void;
             }
             else if (this.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement)
             {
@@ -1373,9 +1373,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundConditionalEx
     {
-        internal override TypeSymbol Emit(CodeGenerator il)
+        internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var result_type = il.DeclaringCompilation.GetTypeFromTypeRef(il.Routine, this.TypeRefMask);
+            var result_type = cg.DeclaringCompilation.GetTypeFromTypeRef(cg.Routine, this.TypeRefMask);
 
             if (this.IfTrue != null)
             {
@@ -1383,19 +1383,19 @@ namespace Pchp.CodeAnalysis.Semantics
                 object endLbl = new object();
 
                 // Cond ? True : False
-                il.EmitConvertToBool(this.Condition);   // i4
-                il.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
+                cg.EmitConvertToBool(this.Condition);   // i4
+                cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
 
                 // false:
-                il.EmitConvert(this.IfFalse, result_type);
-                il.Builder.EmitBranch(ILOpCode.Br, endLbl);
-                il.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+                cg.EmitConvert(this.IfFalse, result_type);
+                cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
+                cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
                 // trueLbl:
-                il.Builder.MarkLabel(trueLbl);
-                il.EmitConvert(this.IfTrue, result_type);
+                cg.Builder.MarkLabel(trueLbl);
+                cg.EmitConvert(this.IfTrue, result_type);
 
                 // endLbl:
-                il.Builder.MarkLabel(endLbl);
+                cg.Builder.MarkLabel(endLbl);
             }
             else
             {
@@ -1405,36 +1405,36 @@ namespace Pchp.CodeAnalysis.Semantics
                 // Cond ?: False
 
                 // <stack> = <cond_var> = Cond
-                var cond_type = il.Emit(this.Condition);
-                var cond_var = il.GetTemporaryLocal(cond_type);
-                il.Builder.EmitOpCode(ILOpCode.Dup);
-                il.Builder.EmitLocalStore(cond_var);
+                var cond_type = cg.Emit(this.Condition);
+                var cond_var = cg.GetTemporaryLocal(cond_type);
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(cond_var);
 
-                il.EmitConvertToBool(cond_type, this.Condition.TypeRefMask);
-                il.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
+                cg.EmitConvertToBool(cond_type, this.Condition.TypeRefMask);
+                cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
 
                 // false:
-                il.EmitConvert(this.IfFalse, result_type);
-                il.Builder.EmitBranch(ILOpCode.Br, endLbl);
-                il.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+                cg.EmitConvert(this.IfFalse, result_type);
+                cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
+                cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
 
                 // trueLbl:
-                il.Builder.MarkLabel(trueLbl);
-                il.Builder.EmitLocalLoad(cond_var);
-                il.EmitConvert(cond_type, this.Condition.TypeRefMask, result_type);
+                cg.Builder.MarkLabel(trueLbl);
+                cg.Builder.EmitLocalLoad(cond_var);
+                cg.EmitConvert(cond_type, this.Condition.TypeRefMask, result_type);
 
                 // endLbl:
-                il.Builder.MarkLabel(endLbl);
+                cg.Builder.MarkLabel(endLbl);
 
                 //
-                il.ReturnTemporaryLocal(cond_var);
+                cg.ReturnTemporaryLocal(cond_var);
             }
 
             //
             if (Access.IsNone)
             {
-                il.EmitPop(result_type);
-                result_type = il.CoreTypes.Void;
+                cg.EmitPop(result_type);
+                result_type = cg.CoreTypes.Void;
             }
 
             //

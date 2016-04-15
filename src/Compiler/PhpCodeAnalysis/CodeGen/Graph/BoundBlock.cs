@@ -10,23 +10,23 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 {
     partial class BoundBlock : IGenerator
     {
-        internal virtual void Emit(CodeGenerator il)
+        internal virtual void Emit(CodeGenerator cg)
         {
             // emit contained statements
-            _statements.ForEach(il.Generate);
+            _statements.ForEach(cg.Generate);
 
             //
-            il.Generate(this.NextEdge);
+            cg.Generate(this.NextEdge);
         }
 
-        void IGenerator.Generate(CodeGenerator il) => Emit(il);
+        void IGenerator.Generate(CodeGenerator cg) => Emit(cg);
     }
 
     partial class StartBlock
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Emit(CodeGenerator cg)
         {
-            if (il.IsDebug)
+            if (cg.IsDebug)
             {
                 // emit Debug.Assert(<context> != null);
                 // emit parameters checks
@@ -36,19 +36,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // ...
 
             //
-            base.Emit(il);
+            base.Emit(cg);
         }
     }
 
     partial class ExitBlock
     {
-        internal override void Emit(CodeGenerator il)
+        internal override void Emit(CodeGenerator cg)
         {
             // note: ILBuider removes eventual unreachable .ret opcode
 
             // return <default>;
-            il.EmitReturnDefault();
-            il.Builder.AssertStackEmpty();
+            cg.EmitReturnDefault();
+            cg.Builder.AssertStackEmpty();
         }
     }
 }
