@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol TryEmitVariableSpecialize(BoundExpression expr)
         {
             // avoiding of load of full value
-            return TryEmitVariableSpecialize(GetPlace(expr), expr.TypeRefMask);
+            return TryEmitVariableSpecialize(PlaceOrNull(expr), expr.TypeRefMask);
         }
 
         /// <summary>
@@ -256,7 +256,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // emit fast ToDouble() in case of a PhpNumber variable
-            var place = GetPlace(expr);
+            var place = PlaceOrNull(expr);
             var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
             if (type == null)
             {
@@ -317,7 +317,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         public TypeSymbol EmitLoad(BoundVariable variable)
         {
             Contract.ThrowIfNull(variable);
-            return variable.GetPlace(_il).EmitLoad(_il);
+
+            var place = variable.BindPlace(_il);
+            var tinst = place.EmitPrepare(this);
+            return place.EmitLoad(this);
         }
 
         /// <summary>
@@ -357,17 +360,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitSymbolToken(FieldSymbol symbol, SyntaxNode syntaxNode)
         {
-            _il.EmitToken(symbol, syntaxNode, _diagnostics);
+            _il.EmitSymbolToken(_moduleBuilder, _diagnostics, symbol, syntaxNode);
         }
 
         //private void EmitSymbolToken(MethodSymbol method, SyntaxNode syntaxNode)
         //{
         //    _il.EmitToken(_moduleBuilder.Translate(method, syntaxNode, _diagnostics, null), syntaxNode, _diagnostics);
-        //}
-
-        //private void EmitSymbolToken(FieldSymbol symbol, SyntaxNode syntaxNode)
-        //{
-        //    _il.EmitToken(_moduleBuilder.Translate(symbol, syntaxNode, _diagnostics), syntaxNode, _diagnostics);
         //}
 
         /// <summary>
@@ -752,6 +750,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics,  TypeSymbol symbol, SyntaxNode syntaxNode)
         {
             il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics), syntaxNode, diagnostics);
+        }
+
+        public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, FieldSymbol symbol, SyntaxNode syntaxNode)
+        {
+            il.EmitToken(symbol, syntaxNode, diagnostics);
         }
 
         /// <summary>

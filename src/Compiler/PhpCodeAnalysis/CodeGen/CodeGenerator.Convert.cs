@@ -108,7 +108,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(expr);
 
-            var place = GetPlace(expr);
+            var place = PlaceOrNull(expr);
             var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
             if (type != null)
             {
@@ -460,7 +460,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
         {
             // loads value from place most effectively without runtime type checking
-            var place = GetPlace(expr);
+            var place = PlaceOrNull(expr);
             var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
             if (type != null)
             {

@@ -947,14 +947,18 @@ namespace Pchp.CodeAnalysis.Semantics
     partial class BoundReferenceExpression
     {
         /// <summary>
-        /// Gets <see cref="IPlace"/> providing load and store operations.
+        /// Gets <see cref="IBoundPlace"/> providing load and store operations.
         /// </summary>
-        internal abstract IPlace GetPlace(CodeGenerator il);
+        internal abstract IBoundPlace BindPlace(CodeGenerator cg);
+
+        internal abstract IPlace Place(ILBuilder il);
     }
 
     partial class BoundVariableRef
     {
-        internal override IPlace GetPlace(CodeGenerator il) => this.Variable.GetPlace(il.Builder);
+        internal override IBoundPlace BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder);
+
+        internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
 
         internal override TypeSymbol Emit(CodeGenerator il)
         {
@@ -1243,22 +1247,23 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator il)
         {
-            var target_place = this.Target.GetPlace(il);
+            var target_place = this.Target.BindPlace(il);
             Debug.Assert(target_place != null);
-            Debug.Assert(target_place.Type != null && target_place.Type.SpecialType != SpecialType.System_Void);
+            Debug.Assert(target_place.Type == null || target_place.Type.SpecialType != SpecialType.System_Void);
 
             // T tmp; // in case access is Read
-            var t = target_place.Type;
+            var t_value = target_place.Type;
             LocalDefinition tmp = null;
 
             // <target> = <value>
-            target_place.EmitStorePrepare(il.Builder);
-            il.EmitConvert(this.Value, t);
+            target_place.EmitPrepare(il);
+            if (t_value != null) il.EmitConvert(this.Value, t_value);
+            else t_value = il.Emit(this.Value);
 
             switch (this.Access.Flags)
             {
                 case AccessMask.Read:
-                    tmp = il.GetTemporaryLocal(t, false);
+                    tmp = il.GetTemporaryLocal(t_value, false);
                     il.Builder.EmitOpCode(ILOpCode.Dup);
                     il.Builder.EmitLocalStore(tmp);
                     break;
@@ -1268,13 +1273,13 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw ExceptionUtilities.UnexpectedValue(this.Access);
             }
 
-            target_place.EmitStore(il.Builder);
+            target_place.EmitStore(il, t_value);
 
             //
             switch (this.Access.Flags)
             {
                 case AccessMask.None:
-                    t = il.CoreTypes.Void;
+                    t_value = il.CoreTypes.Void;
                     break;
                 case AccessMask.Read:
                     il.Builder.EmitLocalLoad(tmp);
@@ -1289,7 +1294,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            return t;
+            return t_value;
         }
     }
 
@@ -1312,7 +1317,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotImplementedException();
             }
 
-            var targetPlace = this.Target.GetPlace(il);
+            var targetPlace = this.Target.BindPlace(il);
+            var t_value = targetPlace.Type;
             var read = this.Access.IsRead;
 
             // Postfix (i++, i--)
@@ -1321,10 +1327,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (read)
                     throw new NotImplementedException();
 
-                targetPlace.EmitStorePrepare(il.Builder);
-                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value, targetPlace.Type);
-                il.EmitConvert(result, this.TypeRefMask, targetPlace.Type);
-                targetPlace.EmitStore(il.Builder);
+                targetPlace.EmitPrepare(il);
+                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value, t_value);
+                il.EmitConvert(result, this.TypeRefMask, t_value);
+                targetPlace.EmitStore(il, t_value);
 
                 //
                 return il.CoreTypes.Void;
@@ -1339,18 +1345,18 @@ namespace Pchp.CodeAnalysis.Semantics
             // Prefix (++i, --i)
             if (this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement)
             {
-                targetPlace.EmitStorePrepare(il.Builder);
-                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value, targetPlace.Type);
-                il.EmitConvert(result, this.TypeRefMask, targetPlace.Type);
+                targetPlace.EmitPrepare(il);
+                var result = BoundBinaryEx.EmitAdd(il, this.Target, this.Value, t_value);
+                il.EmitConvert(result, this.TypeRefMask, t_value);
 
                 if (read)
                     il.Builder.EmitOpCode(ILOpCode.Dup);
 
-                targetPlace.EmitStore(il.Builder);
+                targetPlace.EmitStore(il, t_value);
 
                 //
                 if (read)
-                    return targetPlace.Type;
+                    return t_value;
                 else
                     return il.CoreTypes.Void;
             }

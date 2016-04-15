@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -13,11 +14,11 @@ using Cci = Microsoft.Cci;
 namespace Pchp.CodeAnalysis.CodeGen
 {
     #region IPlace
-    
+
     /// <summary>
-	/// Interface supported by storage places.
-	/// </summary>
-	internal interface IPlace
+    /// Interface supported by storage places.
+    /// </summary>
+    internal interface IPlace
     {
         /// <summary>
         /// Gets the type of place.
@@ -56,6 +57,8 @@ namespace Pchp.CodeAnalysis.CodeGen
     }
 
     #endregion
+
+    #region Places
 
     internal class LocalPlace : IPlace
     {
@@ -232,7 +235,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 stack -= 1;
             }
-            
+
             //
             il.EmitOpCode(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, stack);
             il.EmitToken(setter, null, null);
@@ -241,4 +244,273 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(setter.ReturnType.SpecialType == SpecialType.System_Void);
         }
     }
+
+    #endregion
+
+    #region IBoundPlace
+
+    /// <summary>
+    /// Interface wrapping bound storage places.
+    /// </summary>
+    /// <remarks>
+    /// Provides methods for load and store to the place.
+    /// 1. EmitPrepare. Optionally emits first argument of load/store operation. Can be stored to a temporary variable to both load and store.
+    /// 2. EmitLoad. Loads value to the top of stack. Expect 1. to be on stack first.
+    /// 3. EmitStore. Stores value from top of stack to the place. Expects 1. to be on stack before.
+    /// </remarks>
+    internal interface IBoundPlace
+    {
+        /// <summary>
+        /// Type of place. Can be <c>null</c>.
+        /// </summary>
+        TypeSymbol Type { get; }
+
+        /// <summary>
+        /// Emits the instance of the place if any.
+        /// </summary>
+        /// <param name="cg">Code generator, cannot be <c>null</c>.</param>
+        /// <returns>Type of instance emitted onto the evaluation stack. May be <c>null</c> or <c>void</c> in case of a local variable or a static field or property.</returns>
+        TypeSymbol EmitPrepare(CodeGenerator cg);
+
+        /// <summary>
+        /// Emits load of value.
+        /// Expects <see cref="EmitPrepare(CodeGenerator)"/> to be called first.
+        /// </summary>
+        TypeSymbol EmitLoad(CodeGenerator cg);
+
+        /// <summary>
+        /// Emits code to storee a value to this place.
+        /// Expects <see cref="EmitPrepare(CodeGenerator)"/> and actual value to be loaded on stack.
+        /// </summary>
+        void EmitStore(CodeGenerator cg, TypeSymbol valueType);
+
+        ///// <summary>
+        ///// Emits code that loads address of this storage place.
+        ///// Expects <see cref="EmitPrepare(CodeGenerator)"/> to be called first. 
+        ///// </summary>
+        //void EmitLoadAddress(CodeGenerator cg);
+
+        ///// <summary>
+        ///// Gets whether the place has an address.
+        ///// </summary>
+        //bool HasAddress { get; }
+    }
+
+    #endregion
+
+    #region Bound Places
+
+    internal class BoundLocalPlace : IBoundPlace, IPlace
+    {
+        readonly LocalDefinition _def;
+
+        public BoundLocalPlace(LocalDefinition def)
+        {
+            Contract.ThrowIfNull(def);
+            _def = def;
+        }
+
+        public TypeSymbol Type => (TypeSymbol)_def.Type;
+
+        public bool HasAddress => true;
+
+        public TypeSymbol EmitLoad(CodeGenerator cg) => ((IPlace)this).EmitLoad(cg.Builder);
+
+        public void EmitLoadAddress(CodeGenerator cg) => ((IPlace)this).EmitLoadAddress(cg.Builder);
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType) => ((IPlace)this).EmitStore(cg.Builder);
+        public TypeSymbol EmitPrepare(CodeGenerator cg) => null;
+
+        #region IPlace
+
+        TypeSymbol IPlace.EmitLoad(ILBuilder il)
+        {
+            il.EmitLocalLoad(_def);
+            return (TypeSymbol)_def.Type;
+        }
+
+        void IPlace.EmitStorePrepare(ILBuilder il) { }
+
+        void IPlace.EmitStore(ILBuilder il)
+        {
+            il.EmitLocalStore(_def);
+        }
+
+        void IPlace.EmitLoadAddress(ILBuilder il)
+        {
+            il.EmitLocalAddress(_def);
+        }
+
+        #endregion
+    }
+
+    internal class BoundParamPlace : IBoundPlace, IPlace
+    {
+        readonly ParameterSymbol _p;
+
+        public int Index => ((MethodSymbol)_p.ContainingSymbol).HasThis ? _p.Ordinal + 1 : _p.Ordinal;
+
+        public BoundParamPlace(ParameterSymbol p)
+        {
+            Contract.ThrowIfNull(p);
+            _p = p;
+        }
+
+        public TypeSymbol Type => _p.Type;
+
+        public bool HasAddress => true;
+
+        public TypeSymbol EmitLoad(CodeGenerator cg) => ((IPlace)this).EmitLoad(cg.Builder);
+
+        public void EmitLoadAddress(CodeGenerator cg) => ((IPlace)this).EmitLoadAddress(cg.Builder);
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType) => ((IPlace)this).EmitStore(cg.Builder);
+
+        public TypeSymbol EmitPrepare(CodeGenerator cg) => null;
+
+        #region IPlace
+
+        TypeSymbol IPlace.EmitLoad(ILBuilder il)
+        {
+            il.EmitLoadArgumentOpcode(Index);
+            return _p.Type;
+        }
+
+        void IPlace.EmitStorePrepare(ILBuilder il) { }
+
+        void IPlace.EmitStore(ILBuilder il)
+        {
+            il.EmitStoreArgumentOpcode(Index);
+        }
+
+        void IPlace.EmitLoadAddress(ILBuilder il)
+        {
+            il.EmitLoadArgumentAddrOpcode(Index);
+        }
+
+        #endregion
+    }
+
+    internal class BoundFieldPlace : IBoundPlace
+    {
+        readonly BoundFieldRef _field;
+
+        public BoundFieldPlace(BoundFieldRef field)
+        {
+            Contract.ThrowIfNull(field);
+
+            _field = field;
+        }
+
+        void EmitOpCode(CodeGenerator cg, ILOpCode code)
+        {
+            Debug.Assert(_field.Field != null);
+
+            cg.Builder.EmitOpCode(code);
+            cg.EmitSymbolToken(_field.Field, null);
+        }
+
+        public TypeSymbol Type => _field.Field?.Type;
+
+        public bool HasAddress => true;
+
+        public TypeSymbol EmitPrepare(CodeGenerator cg)
+        {
+            if (_field.Field == null)
+            {
+                // TODO: callsite.Target callsite
+                throw new NotImplementedException();
+            }
+
+            if (_field.Instance != null)
+                return cg.Emit(_field.Instance);
+
+            return null;
+        }
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            var def = _field.Field;
+            if (def != null)
+            {
+                if (def.IsStatic && _field.Instance != null)
+                    cg.EmitPop(_field.Instance.ResultType);
+                else if (!def.IsStatic && _field.Instance == null)
+                    throw new NotImplementedException();
+
+                EmitOpCode(cg, def.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
+                return def.Type;
+            }
+            else
+            {
+                // call site
+                throw new NotImplementedException();
+            }
+        }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            var def = _field.Field;
+            if (def != null)
+            {
+                if (!def.IsStatic && _field.Instance == null)
+                    throw new NotImplementedException();
+
+                EmitOpCode(cg, def.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
+
+                if (def.IsStatic && _field.Instance != null)
+                    cg.EmitPop(_field.Instance.ResultType);
+            }
+            else
+            {
+                // call site
+                throw new NotImplementedException();
+            }
+        }
+    }
+
+    internal class BoundPropertyPlace : IBoundPlace
+    {
+        readonly BoundExpression _instance;
+        readonly PropertySymbol _property;
+
+        public BoundPropertyPlace(BoundExpression instance, Cci.IPropertyDefinition property)
+        {
+            Contract.ThrowIfNull(property);
+
+            _instance = instance;
+            _property = (PropertySymbol)property;
+        }
+
+        public TypeSymbol Type => _property.Type;
+
+        public bool HasAddress => false;
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            //if (_property.Getter == null)
+            //    throw new InvalidOperationException();
+
+            var getter = _property.GetMethod;
+            return cg.EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
+        }
+
+        public void EmitLoadAddress(CodeGenerator cg)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            //if (_property.Setter == null)
+            //    throw new InvalidOperationException();
+
+            var setter = _property.SetMethod;
+            cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
+        }
+
+        public TypeSymbol EmitPrepare(CodeGenerator cg) => cg.Emit(_instance);
+    }
+
+    #endregion
 }

@@ -72,11 +72,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         /// <param name="expr"></param>
         /// <returns>Place or <c>null</c>.</returns>
-        internal IPlace GetPlace(BoundExpression expr)
+        internal IPlace PlaceOrNull(BoundExpression expr)
         {
             if (expr is BoundVariableRef)
             {
-                return ((BoundVariableRef)expr).GetPlace(this);
+                return ((BoundVariableRef)expr).Place(_il);
             }
 
             return null;

@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
         {
-            var vartag = _phpdoc.GetElement<PHPDocBlock.VarTag>();
+            var vartag = _phpdoc?.GetElement<PHPDocBlock.VarTag>();
             if (vartag != null && vartag.TypeNamesArray.Length != 0)
             {
                 var typectx = TypeRefFactory.CreateTypeRefContext(_type.Syntax);
