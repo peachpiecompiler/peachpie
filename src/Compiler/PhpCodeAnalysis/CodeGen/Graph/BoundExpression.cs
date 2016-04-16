@@ -947,16 +947,16 @@ namespace Pchp.CodeAnalysis.Semantics
     partial class BoundReferenceExpression
     {
         /// <summary>
-        /// Gets <see cref="IBoundPlace"/> providing load and store operations.
+        /// Gets <see cref="IBoundReference"/> providing load and store operations.
         /// </summary>
-        internal abstract IBoundPlace BindPlace(CodeGenerator cg);
+        internal abstract IBoundReference BindPlace(CodeGenerator cg);
 
         internal abstract IPlace Place(ILBuilder il);
     }
 
     partial class BoundVariableRef
     {
-        internal override IBoundPlace BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder);
+        internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder);
 
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
 
@@ -996,9 +996,9 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
-    partial class BoundFieldRef
+    partial class BoundFieldRef : IBoundReference
     {
-        internal override IBoundPlace BindPlace(CodeGenerator cg) => new BoundFieldPlace(this);
+        internal override IBoundReference BindPlace(CodeGenerator cg) => this;
 
         internal override IPlace Place(ILBuilder il) => null;
 
@@ -1015,17 +1015,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (Access.IsRead)
             {
                 place.EmitLoadPrepare(cg);
-
-                if (Access.IsReadRef)
-                {
-                    throw new NotImplementedException();
-                }
-
-                if (Access.IsEnsure)
-                {
-                    throw new NotImplementedException();
-                }
-
                 return place.EmitLoad(cg);
             }
             else
@@ -1033,6 +1022,88 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new InvalidOperationException();
             }
         }
+
+        #region IBoundReference
+
+        void EmitOpCode(CodeGenerator cg, ILOpCode code)
+        {
+            Debug.Assert(Field != null);
+
+            cg.Builder.EmitOpCode(code);
+            cg.EmitSymbolToken(Field, null);
+        }
+
+        TypeSymbol IBoundReference.Type => Field?.Type;
+
+        public bool HasAddress => true;
+
+        TypeSymbol IBoundReference.EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        {
+            if (Field == null)
+            {
+                // Template: site.Target(site, instance)
+
+                // TODO: callsite.Target callsite
+                throw new NotImplementedException();
+            }
+
+            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, Instance, instanceOpt);
+        }
+
+        TypeSymbol IBoundReference.EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        {
+            if (Field == null)
+            {
+                // Template: site.Target(site, instance, value)
+
+                // TODO: callsite.Target callsite
+                throw new NotImplementedException();
+            }
+
+            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, Instance, instanceOpt);
+        }
+
+        TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
+        {
+            var def = Field;
+            if (def != null)
+            {
+                if (def.IsStatic && Instance != null)
+                    cg.EmitPop(Instance.ResultType);
+                else if (!def.IsStatic && Instance == null)
+                    throw new NotImplementedException();
+
+                EmitOpCode(cg, def.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
+                return def.Type;
+            }
+            else
+            {
+                // call site
+                throw new NotImplementedException();
+            }
+        }
+
+        void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            var def = Field;
+            if (def != null)
+            {
+                if (!def.IsStatic && Instance == null)
+                    throw new NotImplementedException();
+
+                EmitOpCode(cg, def.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
+
+                if (def.IsStatic && Instance != null)
+                    cg.EmitPop(Instance.ResultType);
+            }
+            else
+            {
+                // call site
+                throw new NotImplementedException();
+            }
+        }
+
+        #endregion
     }
 
     partial class BoundRoutineCall

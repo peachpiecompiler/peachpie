@@ -16,9 +16,9 @@ namespace Pchp.CodeAnalysis.Semantics
         // TODO: initialization at routine begin
 
         /// <summary>
-        /// Gets <see cref="IBoundPlace"/> providing load and store operations.
+        /// Gets <see cref="IBoundReference"/> providing load and store operations.
         /// </summary>
-        internal abstract IBoundPlace BindPlace(ILBuilder il);
+        internal abstract IBoundReference BindPlace(ILBuilder il);
 
         /// <summary>
         /// Gets <see cref="IPlace"/> providing load and store operations.
@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         BoundLocalPlace _place;
 
-        internal override IBoundPlace BindPlace(ILBuilder il)
+        internal override IBoundReference BindPlace(ILBuilder il)
         {
             if (_place == null)
             {
@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundParameter
     {
-        internal override IBoundPlace BindPlace(ILBuilder il)
+        internal override IBoundReference BindPlace(ILBuilder il)
         {
             return new BoundParamPlace(this.Parameter);
         }
@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundGlobalVariable
     {
-        internal override IBoundPlace BindPlace(ILBuilder il)
+        internal override IBoundReference BindPlace(ILBuilder il)
         {
             throw new NotImplementedException();
         }

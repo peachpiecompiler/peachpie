@@ -258,7 +258,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     /// 2. EmitLoad. Loads value to the top of stack. Expect 1. to be on stack first.
     /// 3. EmitStore. Stores value from top of stack to the place. Expects 1. to be on stack before.
     /// </remarks>
-    internal interface IBoundPlace
+    internal interface IBoundReference
     {
         /// <summary>
         /// Type of place. Can be <c>null</c>.
@@ -296,7 +296,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <remarks>
         /// <paramref name="expected"/> is the target type. It can be <c>array</c> or <c>object</c> or <c>alias</c> in case the expression is ensured to be array or object or to be passed as a reference. 
         /// </remarks>
-        TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected = null);
+        TypeSymbol EmitLoad(CodeGenerator cg);
 
         /// <summary>
         /// Emits code to storee a value to this place.
@@ -351,7 +351,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
-    internal class BoundLocalPlace : IBoundPlace, IPlace
+    internal class BoundLocalPlace : IBoundReference, IPlace
     {
         readonly LocalDefinition _def;
 
@@ -365,7 +365,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => true;
 
-        public TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected) => ((IPlace)this).EmitLoad(cg.Builder);
+        public TypeSymbol EmitLoad(CodeGenerator cg) => ((IPlace)this).EmitLoad(cg.Builder);
 
         public void EmitLoadAddress(CodeGenerator cg) => ((IPlace)this).EmitLoadAddress(cg.Builder);
 
@@ -398,7 +398,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         #endregion
     }
 
-    internal class BoundParamPlace : IBoundPlace, IPlace
+    internal class BoundParamPlace : IBoundReference, IPlace
     {
         readonly ParameterSymbol _p;
 
@@ -414,7 +414,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => true;
 
-        public TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected) => ((IPlace)this).EmitLoad(cg.Builder);
+        public TypeSymbol EmitLoad(CodeGenerator cg) => ((IPlace)this).EmitLoad(cg.Builder);
 
         public void EmitLoadAddress(CodeGenerator cg) => ((IPlace)this).EmitLoadAddress(cg.Builder);
 
@@ -447,97 +447,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         #endregion
     }
 
-    internal class BoundFieldPlace : IBoundPlace
-    {
-        readonly BoundFieldRef _field;
-
-        public BoundFieldPlace(BoundFieldRef field)
-        {
-            Contract.ThrowIfNull(field);
-
-            _field = field;
-        }
-
-        void EmitOpCode(CodeGenerator cg, ILOpCode code)
-        {
-            Debug.Assert(_field.Field != null);
-
-            cg.Builder.EmitOpCode(code);
-            cg.EmitSymbolToken(_field.Field, null);
-        }
-
-        public TypeSymbol Type => _field.Field?.Type;
-
-        public bool HasAddress => true;
-
-        public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt)
-        {
-            if (_field.Field == null)
-            {
-                // Template: site.Target(site, instance)
-
-                // TODO: callsite.Target callsite
-                throw new NotImplementedException();
-            }
-
-            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, _field.Instance, instanceOpt);
-        }
-
-        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
-        {
-            if (_field.Field == null)
-            {
-                // Template: site.Target(site, instance, value)
-
-                // TODO: callsite.Target callsite
-                throw new NotImplementedException();
-            }
-
-            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, _field.Instance, instanceOpt);
-        }
-
-        public TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected)
-        {
-            var def = _field.Field;
-            if (def != null)
-            {
-                if (def.IsStatic && _field.Instance != null)
-                    cg.EmitPop(_field.Instance.ResultType);
-                else if (!def.IsStatic && _field.Instance == null)
-                    throw new NotImplementedException();
-
-                EmitOpCode(cg, def.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
-                return def.Type;
-            }
-            else
-            {
-                // call site
-                throw new NotImplementedException();
-            }
-        }
-
-        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
-        {
-            var def = _field.Field;
-            if (def != null)
-            {
-                if (!def.IsStatic && _field.Instance == null)
-                    throw new NotImplementedException();
-
-                EmitOpCode(cg, def.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
-
-                if (def.IsStatic && _field.Instance != null)
-                    cg.EmitPop(_field.Instance.ResultType);
-            }
-            else
-            {
-                // call site
-                throw new NotImplementedException();
-            }
-        }
-    }
-
-    internal class BoundPropertyPlace : IBoundPlace
+    internal class BoundPropertyPlace : IBoundReference
     {
         readonly BoundExpression _instance;
         readonly PropertySymbol _property;
@@ -554,7 +464,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => false;
 
-        public TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected)
+        public TypeSymbol EmitLoad(CodeGenerator cg)
         {
             //if (_property.Getter == null)
             //    throw new InvalidOperationException();
