@@ -459,6 +459,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
         {
+            // bind target expression type
+            expr.Access = expr.Access.WithRead(to);
+
             // loads value from place most effectively without runtime type checking
             var place = PlaceOrNull(expr);
             var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
@@ -555,9 +558,29 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
+            // literals
+            if (expr.ConstantValue.HasValue && to != null)    // <= (expr is BoundLiteral)
+            {
+                //EmitLiteral(expr.ConstantValue.Value, to);
+            }
+
             //
             EmitConvert(expr.Emit(this), expr.TypeRefMask, to);
         }
+
+        //public TypeSymbol EmitLiteral(object value, TypeSymbol astype)
+        //{
+        //    Contract.ThrowIfNull(astype);
+
+        //    if (value == null)
+        //    {
+        //        EmitLoadDefaultValue(astype, 0);
+        //    }
+        //    else
+        //    {
+        //        // TODO
+        //    }
+        //}
 
         /// <summary>
         /// Emits conversion from one CLR type to another using PHP conventions.

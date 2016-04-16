@@ -266,23 +266,37 @@ namespace Pchp.CodeAnalysis.CodeGen
         TypeSymbol Type { get; }
 
         /// <summary>
-        /// Emits the preamble to the load and store operations if any.
-        /// Must be called before <see cref="EmitLoad(CodeGenerator)"/> and <see cref="EmitStore(CodeGenerator, TypeSymbol)"/>.
+        /// Emits the preamble to the load operation.
+        /// Must be called before <see cref="EmitLoad(CodeGenerator)"/>.
         /// </summary>
         /// <param name="cg">Code generator, must not be <c>null</c>.</param>
         /// <param name="instanceOpt">Temporary variable holding value of instance expression.</param>
         /// <returns>Type of instance emitted onto the evaluation stack. May be <c>null</c> or <c>void</c> in case of a local variable or a static field or a static property.</returns>
         /// <remarks>
-        /// This method must be called before <see cref="EmitLoad(CodeGenerator)"/> and <see cref="EmitStore(CodeGenerator, TypeSymbol)"/>.
-        /// The returned type corresponds to the instance expression emitted onto top of the evaluation stack. The value can be stored to a tenmporary variable and passed to the next call to <see cref="EmitPreamble(CodeGenerator, LocalDefinition)"/> to avoid evaluating of instance again.
+        /// The returned type corresponds to the instance expression emitted onto top of the evaluation stack. The value can be stored to a temporary variable and passed to the next call to Emit**Prepare to avoid evaluating of instance again.
         /// </remarks>
-        TypeSymbol EmitPreamble(CodeGenerator cg, LocalDefinition instanceOpt = null);
+        TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt = null);
+
+        /// <summary>
+        /// Emits the preamble to the load operation.
+        /// Must be called before <see cref="EmitStore(CodeGenerator, TypeSymbol)"/>.
+        /// </summary>
+        /// <param name="cg">Code generator, must not be <c>null</c>.</param>
+        /// <param name="instanceOpt">Temporary variable holding value of instance expression.</param>
+        /// <returns>Type of instance emitted onto the evaluation stack. May be <c>null</c> or <c>void</c> in case of a local variable or a static field or a static property.</returns>
+        /// <remarks>
+        /// The returned type corresponds to the instance expression emitted onto top of the evaluation stack. The value can be stored to a temporary variable and passed to the next call to Emit**Prepare to avoid evaluating of instance again.
+        /// </remarks>
+        TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt = null);
 
         /// <summary>
         /// Emits load of value.
         /// Expects <see cref="EmitPreamble(CodeGenerator)"/> to be called first.
         /// </summary>
-        TypeSymbol EmitLoad(CodeGenerator cg);
+        /// <remarks>
+        /// <paramref name="expected"/> is the target type. It can be <c>array</c> or <c>object</c> or <c>alias</c> in case the expression is ensured to be array or object or to be passed as a reference. 
+        /// </remarks>
+        TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected = null);
 
         /// <summary>
         /// Emits code to storee a value to this place.
@@ -351,12 +365,15 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => true;
 
-        public TypeSymbol EmitLoad(CodeGenerator cg) => ((IPlace)this).EmitLoad(cg.Builder);
+        public TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected) => ((IPlace)this).EmitLoad(cg.Builder);
 
         public void EmitLoadAddress(CodeGenerator cg) => ((IPlace)this).EmitLoadAddress(cg.Builder);
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType) => ((IPlace)this).EmitStore(cg.Builder);
-        public TypeSymbol EmitPreamble(CodeGenerator cg, LocalDefinition instanceOpt) => null;
+
+        public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
+
+        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
 
         #region IPlace
 
@@ -397,13 +414,15 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => true;
 
-        public TypeSymbol EmitLoad(CodeGenerator cg) => ((IPlace)this).EmitLoad(cg.Builder);
+        public TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected) => ((IPlace)this).EmitLoad(cg.Builder);
 
         public void EmitLoadAddress(CodeGenerator cg) => ((IPlace)this).EmitLoadAddress(cg.Builder);
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType) => ((IPlace)this).EmitStore(cg.Builder);
 
-        public TypeSymbol EmitPreamble(CodeGenerator cg, LocalDefinition instanceOpt) => null;
+        public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
+
+        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
 
         #region IPlace
 
@@ -451,10 +470,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => true;
 
-        public TypeSymbol EmitPreamble(CodeGenerator cg, LocalDefinition instanceOpt)
+        public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt)
         {
             if (_field.Field == null)
             {
+                // Template: site.Target(site, instance)
+
                 // TODO: callsite.Target callsite
                 throw new NotImplementedException();
             }
@@ -462,7 +483,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             return BoundPlaceHelpers.EmitInstanceOrTmp(cg, _field.Instance, instanceOpt);
         }
 
-        public TypeSymbol EmitLoad(CodeGenerator cg)
+        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        {
+            if (_field.Field == null)
+            {
+                // Template: site.Target(site, instance, value)
+
+                // TODO: callsite.Target callsite
+                throw new NotImplementedException();
+            }
+
+            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, _field.Instance, instanceOpt);
+        }
+
+        public TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected)
         {
             var def = _field.Field;
             if (def != null)
@@ -520,7 +554,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public bool HasAddress => false;
 
-        public TypeSymbol EmitLoad(CodeGenerator cg)
+        public TypeSymbol EmitLoad(CodeGenerator cg, TypeSymbol expected)
         {
             //if (_property.Getter == null)
             //    throw new InvalidOperationException();
@@ -543,13 +577,24 @@ namespace Pchp.CodeAnalysis.CodeGen
             cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
         }
 
-        public TypeSymbol EmitPreamble(CodeGenerator cg, LocalDefinition instanceOpt)
+        public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt)
         {
-            //if (_property.Property == null)
-            //{
-            //    // TODO: callsite.Target callsite
-            //    throw new NotImplementedException();
-            //}
+            if (_property == null)
+            {
+                // TODO: callsite.Target callsite
+                throw new NotImplementedException();
+            }
+
+            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, _instance, instanceOpt);
+        }
+
+        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        {
+            if (_property == null)
+            {
+                // TODO: callsite.Target callsite
+                throw new NotImplementedException();
+            }
 
             return BoundPlaceHelpers.EmitInstanceOrTmp(cg, _instance, instanceOpt);
         }

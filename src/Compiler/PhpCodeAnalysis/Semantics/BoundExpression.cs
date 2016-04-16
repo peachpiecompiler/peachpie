@@ -89,6 +89,11 @@ namespace Pchp.CodeAnalysis.Semantics
         //TypeRefMask _readTypeMask;
 
         /// <summary>
+        /// Optional. Type the expression will be converted to.
+        /// </summary>
+        TypeSymbol _targetType;
+
+        /// <summary>
         /// Type information for the write access (right value of the assignment).
         /// In case of <see cref="EnsureArray"/>, the type represents the written element type.
         /// </summary>
@@ -110,6 +115,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Gets type of value to be written.
         /// </summary>
         public TypeRefMask WriteMask => _writeTypeMask;
+
+        /// <summary>
+        /// Optional. Type the expression will be converted to.
+        /// </summary>
+        internal TypeSymbol TargetType => _targetType;
 
         /// <summary>
         /// Gets inyternal access flags.
@@ -162,68 +172,75 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Construction
 
-        public BoundAccess(AccessMask flags, TypeRefMask writeTypeMask)
+        private BoundAccess(AccessMask flags, TypeSymbol targetType, TypeRefMask writeTypeMask)
         {
             _flags = flags;
             _writeTypeMask = writeTypeMask;
+            _targetType = targetType;
 
             Debug.Assert(EnsureArray ^ EnsureObject ^ IsReadRef || !IsEnsure);  // only single ensure is possible
         }
 
         public BoundAccess WithRead()
         {
-            return new BoundAccess(_flags | AccessMask.Read, _writeTypeMask);
+            return new BoundAccess(_flags | AccessMask.Read, _targetType, _writeTypeMask);
         }
 
         public BoundAccess WithWrite(TypeRefMask writeTypeMask)
         {
-            return new BoundAccess(_flags | AccessMask.Write, _writeTypeMask | writeTypeMask);
+            return new BoundAccess(_flags | AccessMask.Write, _targetType, _writeTypeMask | writeTypeMask);
         }
 
         public BoundAccess WithWriteRef(TypeRefMask writeTypeMask)
         {
-            return new BoundAccess(_flags | AccessMask.WriteRef, _writeTypeMask | writeTypeMask);
+            return new BoundAccess(_flags | AccessMask.WriteRef, _targetType, _writeTypeMask | writeTypeMask);
         }
 
         public BoundAccess WithReadRef()
         {
-            return new BoundAccess(_flags | AccessMask.ReadRef, _writeTypeMask);
+            return new BoundAccess(_flags | AccessMask.ReadRef, _targetType, _writeTypeMask);
+        }
+
+        internal BoundAccess WithRead(TypeSymbol target)
+        {
+            Contract.ThrowIfNull(target);
+            return new BoundAccess(_flags | AccessMask.Read, target, _writeTypeMask);
         }
 
         public BoundAccess WithCheck()
         {
-            return new BoundAccess(_flags | AccessMask.ReadQuiet, _writeTypeMask);
+            return new BoundAccess(_flags | AccessMask.ReadQuiet, _targetType, _writeTypeMask);
         }
 
         public BoundAccess WithEnsureObject()
         {
-            return new BoundAccess(_flags | AccessMask.EnsureObject, _writeTypeMask);
+            return new BoundAccess(_flags | AccessMask.EnsureObject, _targetType, _writeTypeMask);
         }
 
         /// <summary>
         /// Simple read access.
         /// </summary>
-        public static BoundAccess Read => new BoundAccess(AccessMask.Read, 0);
+        public static BoundAccess Read => new BoundAccess(AccessMask.Read, null, 0);
 
         /// <summary>
         /// Read as a reference access.
         /// </summary>
-        public static BoundAccess ReadRef => new BoundAccess(AccessMask.Read | AccessMask.ReadRef, 0);
+        public static BoundAccess ReadRef => new BoundAccess(AccessMask.Read | AccessMask.ReadRef, null, 0);
 
         /// <summary>
         /// Simple write access without bound write type mask.
         /// </summary>
-        public static BoundAccess Write => new BoundAccess(AccessMask.Write, 0);
+        public static BoundAccess Write => new BoundAccess(AccessMask.Write, null, 0);
 
         /// <summary>
         /// Expression won't be read or written to.
         /// </summary>
-        public static BoundAccess None => new BoundAccess(AccessMask.None, 0);
+        public static BoundAccess None => new BoundAccess(AccessMask.None, null, 0);
 
         /// <summary>
         /// Read and write without bound write type mask
         /// </summary>
-        public static BoundAccess ReadAndWrite => new BoundAccess(AccessMask.Read | AccessMask.Write, 0);
+        public static BoundAccess ReadAndWrite => new BoundAccess(AccessMask.Read | AccessMask.Write, null, 0);
 
         #endregion
     }
@@ -337,7 +354,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual bool IsVirtual => false;
 
         public override OperationKind Kind => OperationKind.InvocationExpression;
-        
+
         public BoundRoutineCall(ImmutableArray<BoundArgument> arguments)
         {
             Debug.Assert(!arguments.IsDefault);
@@ -468,7 +485,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override BoundExpression Instance => null;
 
         public BoundNewEx(QualifiedName qname, ImmutableArray<BoundArgument> arguments)
-            :base(arguments)
+            : base(arguments)
         {
             _qname = qname;
         }
@@ -652,7 +669,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundReferenceExpression Target { get; set; }
 
-        public BoundExpression Value { get; set; }        
+        public BoundExpression Value { get; set; }
 
         public BoundAssignEx(BoundReferenceExpression target, BoundExpression value)
         {
@@ -680,7 +697,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public Operations Operation { get; private set; }
 
         protected BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Operations op)
-            :base(target, value)
+            : base(target, value)
         {
             this.Operation = op;
         }
@@ -698,7 +715,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public abstract partial class BoundReferenceExpression : BoundExpression, IReferenceExpression
     {
-        
+
     }
 
     #endregion
@@ -714,7 +731,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Name of the variable.
         /// </summary>
         public string Name { get; private set; }
-        
+
         /// <summary>
         /// Resolved variable source.
         /// </summary>

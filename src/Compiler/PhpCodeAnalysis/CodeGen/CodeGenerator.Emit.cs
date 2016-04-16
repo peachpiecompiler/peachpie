@@ -319,7 +319,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(variable);
 
             var place = variable.BindPlace(_il);
-            var tinst = place.EmitPreamble(this);
+            var tinst = place.EmitLoadPrepare(this);
             return place.EmitLoad(this);
         }
 
