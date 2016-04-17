@@ -1038,7 +1038,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (Field == null)
             {
                 if (_lazyLoadCallSite == null)
-                    _lazyLoadCallSite = cg.Factory.StartCallSite(this.Name.Value);
+                    _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.Name.Value);
 
                 // callsite.Target callsite
                 _lazyLoadCallSite.EmitLoadTarget(cg.Builder);
@@ -1081,7 +1081,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cctor.EmitStringConstant(this.Name.Value);
                     cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
                     cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
-                    cctor.EmitIntConstant(0);   // flags    // TODO: EnsureArray, EnsureObject, ReadRef
+                    cctor.EmitIntConstant(0);   // flags    // TODO: EnsureArray, EnsureObject, ReadRef, ReadCheck
                     cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
                 });
 
@@ -1107,7 +1107,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (Field == null)
             {
                 if (_lazyStoreCallSite == null)
-                    _lazyStoreCallSite = cg.Factory.StartCallSite(this.Name.Value);
+                    _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.Name.Value);
 
                 // callsite.Target callsite
                 _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
