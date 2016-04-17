@@ -758,7 +758,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundPropertyRef
+    #region BoundFieldRef
 
     public partial class BoundFieldRef : BoundReferenceExpression, IFieldReferenceExpression
     {

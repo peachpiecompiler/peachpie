@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
@@ -13,12 +14,80 @@ namespace Pchp.CodeAnalysis.CodeGen
 {
     internal class DynamicOperationFactory
     {
-        readonly PhpCompilation _compilation;
+        public class CallSiteData
+        {
+            /// <summary>
+            /// CallSite_T.Target method.
+            /// </summary>
+            public FieldSymbol Target => _target;
+            SubstitutedFieldSymbol _target;
 
-        public DynamicOperationFactory(PhpCompilation compilation)
+            /// <summary>
+            /// CallSite_T field.
+            /// </summary>
+            public IPlace Place => new FieldPlace(null, _fld);
+            SynthesizedFieldSymbol _fld;
+
+            /// <summary>
+            /// Gets CallSite.Create method.
+            /// </summary>
+            public MethodSymbol CallSite_Create => _callsite_create;
+            MethodSymbol _callsite_create;
+
+            public void Construct(NamedTypeSymbol functype)
+            {
+                var callsitetype = _factory.CallSite_T.Construct(functype);
+
+                _target.SetContainingType((SubstitutedNamedTypeSymbol)callsitetype);
+                _fld.SetFieldType(callsitetype);
+                _callsite_create = (MethodSymbol)_factory.CallSite_T_Create.SymbolAsMember(callsitetype);
+            }
+
+            readonly DynamicOperationFactory _factory;
+
+            internal CallSiteData(DynamicOperationFactory factory, string fldname = null)
+            {
+                _factory = factory;
+
+                _target = new SubstitutedFieldSymbol(factory.CallSite_T, factory.CallSite_T_Target); // AsMember // we'll change containing type later once we know, important to have Substitued symbol before calling it
+                _fld = factory.CreateCallSiteField(fldname ?? string.Empty);
+            }
+        }
+
+        readonly PhpCompilation _compilation;
+        readonly NamedTypeSymbol _container;
+
+        NamedTypeSymbol _callsitetype;
+        NamedTypeSymbol _callsitetype_generic;
+        MethodSymbol _callsite_generic_create;
+        FieldSymbol _callsite_generic_target;
+
+        public NamedTypeSymbol CallSite => _callsitetype ?? (_callsitetype = _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite));
+        public NamedTypeSymbol CallSite_T => _callsitetype_generic ?? (_callsitetype_generic = _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T));
+        public MethodSymbol CallSite_T_Create => _callsite_generic_create ?? (_callsite_generic_create = (MethodSymbol)_compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Create));
+        public FieldSymbol CallSite_T_Target => _callsite_generic_target ?? (_callsite_generic_target = (FieldSymbol)_compilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target));
+
+        public CallSiteData StartCallSite(string fldname) => new CallSiteData(this, fldname);
+
+        /// <summary>
+        /// Static constructor IL builder for dynamic sites in current context.
+        /// </summary>
+        public ILBuilder CctorBuilder => ((Emit.PEModuleBuilder)_container.ContainingModule).GetStaticCtorBuilder(_container);
+
+        int _fieldIndex;
+
+        public SynthesizedFieldSymbol CreateCallSiteField(string namehint)
+            => ((IWithSynthesized)_container).CreateSynthesizedField(CallSite, "<>" + namehint + "'" + (_fieldIndex++), Accessibility.Private, true);
+
+        public DynamicOperationFactory(PhpCompilation compilation, NamedTypeSymbol container)
         {
             Contract.ThrowIfNull(compilation);
+            Contract.ThrowIfNull(container);
+
+            Debug.Assert(container is IWithSynthesized);
+
             _compilation = compilation;
+            _container = container;
         }
 
         internal NamedTypeSymbol GetCallSiteDelegateType(

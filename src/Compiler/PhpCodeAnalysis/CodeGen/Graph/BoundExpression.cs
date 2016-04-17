@@ -19,6 +19,12 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     partial class BoundExpression
     {
+        /// <summary>
+        /// Emits the expression with its bound access.
+        /// Only Read or None access is possible. Write access has to be handled separately.
+        /// </summary>
+        /// <param name="cg">Associated code generator.</param>
+        /// <returns>The type of expression emitted on top of the evaluation stack.</returns>
         internal virtual TypeSymbol Emit(CodeGenerator cg)
         {
             throw ExceptionUtilities.UnexpectedValue(this.GetType().FullName);
@@ -976,17 +982,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (Access.IsRead)
             {
                 place.EmitLoadPrepare(cg);
-
-                if (Access.IsReadRef)
-                {
-                    throw new NotImplementedException();
-                }
-
-                if (Access.IsEnsure)
-                {
-                    throw new NotImplementedException();
-                }
-
                 return place.EmitLoad(cg);
             }
             else
@@ -1004,6 +999,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            Debug.Assert(this.Access.IsRead || this.Access.IsNone);
+
             if (Access.IsNone)
             {
                 // do nothing
@@ -1011,32 +1008,31 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             var place = this.BindPlace(cg);
-            
-            if (Access.IsRead)
-            {
-                place.EmitLoadPrepare(cg);
-                return place.EmitLoad(cg);
-            }
-            else
-            {
-                throw new InvalidOperationException();
-            }
+            place.EmitLoadPrepare(cg);
+            return place.EmitLoad(cg);
         }
 
         #region IBoundReference
 
+        //DynamicOperationFactory.CallSiteData _lazyLoadCallSite = null;
+        //DynamicOperationFactory.CallSiteData _lazyStoreCallSite = null;
+
+        public bool HasAddress => Field != null;
+
+        /// <summary>
+        /// Emits ldfld, stfld, ldflda, ldsfld, stsfld.
+        /// </summary>
+        /// <param name="cg"></param>
+        /// <param name="code">ld* or st* OP code.</param>
         void EmitOpCode(CodeGenerator cg, ILOpCode code)
         {
             Debug.Assert(Field != null);
-
             cg.Builder.EmitOpCode(code);
             cg.EmitSymbolToken(Field, null);
         }
 
         TypeSymbol IBoundReference.Type => Field?.Type;
-
-        public bool HasAddress => true;
-
+        
         TypeSymbol IBoundReference.EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt)
         {
             if (Field == null)
@@ -1158,26 +1154,18 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // call site call
 
-                var callsitetype = cg.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);    // temporary, we will change to specific generic once we know
-                var callsitetype_generic = cg.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite_T);    // temporary, we will change to specific generic once we know
-                var callsite_create_generic = cg.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Create);
-                var target = (FieldSymbol)cg.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CallSite_T__Target);
-                target = new SubstitutedFieldSymbol(callsitetype_generic, target); // AsMember // we'll change containing type later once we know
-
-                var container = (IWithSynthesized)cg.Routine.ContainingType;
-                var fld = container.CreateSynthesizedField(callsitetype, "__'" + this.Name + "'" + (this.GetHashCode() % 128).ToString("x"), Accessibility.Private, true);
-                var cctor = cg.Module.GetStaticCtorBuilder(cg.Routine.ContainingType);
-
+                var callsite = cg.Factory.StartCallSite(this.Name.Value);
+                
                 var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
                 var return_type = this.Access.IsRead ? this.Access.IsReadRef ? cg.CoreTypes.PhpAlias.Symbol : cg.CoreTypes.PhpValue.Symbol : cg.CoreTypes.Void.Symbol;
 
                 // callsite
-                var fldPlace = new FieldPlace(null, fld);
+                var fldPlace = callsite.Place;
 
                 // callsite.Target
                 fldPlace.EmitLoad(cg.Builder);
                 cg.Builder.EmitOpCode(ILOpCode.Ldfld);
-                cg.EmitSymbolToken(target, null);
+                cg.EmitSymbolToken(callsite.Target, null);
                 
                 // (callsite, instance, ctx, ...)
                 fldPlace.EmitLoad(cg.Builder);
@@ -1191,6 +1179,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
+                Debug.Assert(this.Instance.ResultType != null);
+
                 var functype = cg.Factory.GetCallSiteDelegateType(
                     this.Instance.ResultType, RefKind.None,
                     callsiteargs.AsImmutable(),
@@ -1198,16 +1188,14 @@ namespace Pchp.CodeAnalysis.Semantics
                     null,
                     return_type);
 
-                callsitetype = callsitetype_generic.Construct(functype);
-                ((SubstitutedFieldSymbol)target).SetContainingType((SubstitutedNamedTypeSymbol)callsitetype);
-
-                fld.SetFieldType(callsitetype);
-
+                callsite.Construct(functype);
+                
                 // Target()
                 var invoke = functype.DelegateInvokeMethod;
                 cg.EmitCall(ILOpCode.Callvirt, invoke);
 
                 // static .cctor {
+                var cctor = cg.Factory.CctorBuilder;
 
                 // fld = CallSite<T>.Create( CallMethodBinder.Create( name, currentclass, returntype, generics ) )
 
@@ -1217,9 +1205,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
                 cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
                 cctor.EmitIntConstant(0);
-                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.CallMethodBinder.Create);
+                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallMethodBinder_Create);
 
-                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, (MethodSymbol)callsite_create_generic.SymbolAsMember(callsitetype));
+                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, callsite.CallSite_Create);
 
                 fldPlace.EmitStore(cctor);
 

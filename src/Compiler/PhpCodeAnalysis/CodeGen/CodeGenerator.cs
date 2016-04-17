@@ -247,7 +247,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _contextPlace = routine.GetContextPlace();
             _thisPlace = routine.GetThisPlace();
 
-            _factory = new DynamicOperationFactory(moduleBuilder.Compilation);
+            _factory = new DynamicOperationFactory(moduleBuilder.Compilation, _routine.ContainingType);
         }
 
         #endregion

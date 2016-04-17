@@ -48,10 +48,13 @@ namespace Pchp.CodeAnalysis.Symbols
         private ImmutableArray<TypeParameterSymbol> CreateTypeParameters(int parameterCount, bool returnsVoid)
         {
             var typeParameters = ArrayBuilder<TypeParameterSymbol>.GetInstance(parameterCount + (returnsVoid ? 0 : 1));
-            for (int i = 0; i < parameterCount; i++)
+            if (parameterCount != 0)
             {
-                //typeParameters.Add(new AnonymousTypeManager.AnonymousTypeParameterSymbol(this, i, "T" + (i + 1)));
                 throw new NotImplementedException();
+                //for (int i = 0; i < parameterCount; i++)
+                //{
+                //    typeParameters.Add(new AnonymousTypeManager.AnonymousTypeParameterSymbol(this, i, "T" + (i + 1)));
+                //}
             }
 
             if (!returnsVoid)
