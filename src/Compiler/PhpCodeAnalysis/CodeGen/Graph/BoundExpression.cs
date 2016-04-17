@@ -1014,8 +1014,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region IBoundReference
 
-        //DynamicOperationFactory.CallSiteData _lazyLoadCallSite = null;
-        //DynamicOperationFactory.CallSiteData _lazyStoreCallSite = null;
+        DynamicOperationFactory.CallSiteData _lazyLoadCallSite = null;
+        DynamicOperationFactory.CallSiteData _lazyStoreCallSite = null;
 
         public bool HasAddress => Field != null;
 
@@ -1037,65 +1037,121 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (Field == null)
             {
-                // Template: site.Target(site, instance)
+                if (_lazyLoadCallSite == null)
+                    _lazyLoadCallSite = cg.Factory.StartCallSite(this.Name.Value);
 
-                // TODO: callsite.Target callsite
-                throw new NotImplementedException();
+                // callsite.Target callsite
+                _lazyLoadCallSite.EmitLoadTarget(cg.Builder);
+                _lazyLoadCallSite.Place.EmitLoad(cg.Builder);
             }
 
+            // instance
             return BoundPlaceHelpers.EmitInstanceOrTmp(cg, Instance, instanceOpt);
+        }
+
+        TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
+        {
+            if (Field == null)
+            {
+                Debug.Assert(_lazyLoadCallSite != null);
+                Debug.Assert(this.Instance.ResultType != null);
+
+                // resolve actual return type
+                TypeSymbol return_type;
+                if (Access.IsNone) return_type = cg.CoreTypes.Void;
+                //else if (Access.EnsureArray) return_type = cg.CoreTypes.PhpArray;
+                else if (Access.EnsureObject) return_type = cg.CoreTypes.Object;
+                else if (Access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
+                else return_type = Access.TargetType ?? cg.CoreTypes.PhpValue;
+
+                // Target()
+                var functype = cg.Factory.GetCallSiteDelegateType(
+                    this.Instance.ResultType, RefKind.None,
+                    ImmutableArray<TypeSymbol>.Empty,
+                    default(ImmutableArray<RefKind>),
+                    null,
+                    return_type);
+
+
+                cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
+
+                //
+                _lazyLoadCallSite.Construct(functype, cctor =>
+                {
+                    cctor.EmitStringConstant(this.Name.Value);
+                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
+                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
+                    cctor.EmitIntConstant(0);   // flags    // TODO: EnsureArray, EnsureObject, ReadRef
+                    cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
+                });
+
+                //
+                return return_type;
+            }
+            else
+            {
+                if (Field.IsStatic && Instance != null)
+                    cg.EmitPop(Instance.ResultType);
+                else if (!Field.IsStatic && Instance == null)
+                    throw new NotImplementedException();
+
+                // TODO: EnsureArray, EnsureObject, ReadRef
+
+                EmitOpCode(cg, Field.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
+                return Field.Type;
+            }
         }
 
         TypeSymbol IBoundReference.EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
         {
             if (Field == null)
             {
-                // Template: site.Target(site, instance, value)
+                if (_lazyStoreCallSite == null)
+                    _lazyStoreCallSite = cg.Factory.StartCallSite(this.Name.Value);
 
-                // TODO: callsite.Target callsite
-                throw new NotImplementedException();
+                // callsite.Target callsite
+                _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
+                _lazyStoreCallSite.Place.EmitLoad(cg.Builder);
             }
 
+            // instance
             return BoundPlaceHelpers.EmitInstanceOrTmp(cg, Instance, instanceOpt);
-        }
-
-        TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
-        {
-            var def = Field;
-            if (def != null)
-            {
-                if (def.IsStatic && Instance != null)
-                    cg.EmitPop(Instance.ResultType);
-                else if (!def.IsStatic && Instance == null)
-                    throw new NotImplementedException();
-
-                EmitOpCode(cg, def.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
-                return def.Type;
-            }
-            else
-            {
-                // call site
-                throw new NotImplementedException();
-            }
         }
 
         void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            var def = Field;
-            if (def != null)
+            if (Field == null)
             {
-                if (!def.IsStatic && Instance == null)
-                    throw new NotImplementedException();
+                Debug.Assert(_lazyStoreCallSite != null);
+                Debug.Assert(this.Instance.ResultType != null);
 
-                EmitOpCode(cg, def.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
+                // Target()
+                var functype = cg.Factory.GetCallSiteDelegateType(
+                    this.Instance.ResultType, RefKind.None,
+                    ImmutableArray.Create(valueType),
+                    default(ImmutableArray<RefKind>),
+                    null,
+                    cg.CoreTypes.Void);
+                
+                cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
 
-                if (def.IsStatic && Instance != null)
-                    cg.EmitPop(Instance.ResultType);
+                _lazyStoreCallSite.Construct(functype, cctor =>
+                {
+                    cctor.EmitStringConstant(this.Name.Value);
+                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
+                    cctor.EmitIntConstant(0);   // flags
+                    cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
+                });
             }
             else
             {
-                // call site
-                throw new NotImplementedException();
+                if (!Field.IsStatic && Instance == null)
+                    throw new NotImplementedException();
+
+                EmitOpCode(cg, Field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
+
+                if (Field.IsStatic && Instance != null)
+                    cg.EmitPop(Instance.ResultType);
             }
         }
 
@@ -1163,9 +1219,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var fldPlace = callsite.Place;
 
                 // callsite.Target
-                fldPlace.EmitLoad(cg.Builder);
-                cg.Builder.EmitOpCode(ILOpCode.Ldfld);
-                cg.EmitSymbolToken(callsite.Target, null);
+                callsite.EmitLoadTarget(cg.Builder);
                 
                 // (callsite, instance, ctx, ...)
                 fldPlace.EmitLoad(cg.Builder);
@@ -1181,6 +1235,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 //
                 Debug.Assert(this.Instance.ResultType != null);
 
+                // Target()
                 var functype = cg.Factory.GetCallSiteDelegateType(
                     this.Instance.ResultType, RefKind.None,
                     callsiteargs.AsImmutable(),
@@ -1188,30 +1243,16 @@ namespace Pchp.CodeAnalysis.Semantics
                     null,
                     return_type);
 
-                callsite.Construct(functype);
-                
-                // Target()
-                var invoke = functype.DelegateInvokeMethod;
-                cg.EmitCall(ILOpCode.Callvirt, invoke);
+                cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
 
-                // static .cctor {
-                var cctor = cg.Factory.CctorBuilder;
-
-                // fld = CallSite<T>.Create( CallMethodBinder.Create( name, currentclass, returntype, generics ) )
-
-                fldPlace.EmitStorePrepare(cctor);
-
-                cctor.EmitStringConstant(this.Name.Value);
-                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
-                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
-                cctor.EmitIntConstant(0);
-                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallMethodBinder_Create);
-
-                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, callsite.CallSite_Create);
-
-                fldPlace.EmitStore(cctor);
-
-                // }
+                callsite.Construct(functype, cctor =>
+                {
+                    cctor.EmitStringConstant(this.Name.Value);
+                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
+                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
+                    cctor.EmitIntConstant(0);
+                    cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallMethodBinder_Create);
+                });
 
                 //
                 return return_type;

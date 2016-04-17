@@ -779,7 +779,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             il.EmitOpCode(code, stack);
             il.EmitToken(module.Translate(method, diagnostics, false), null, diagnostics);
-            return (code == ILOpCode.Newobj) ? (TypeSymbol)method.ContainingType : method.ReturnType;
+            return (code == ILOpCode.Newobj) ? method.ContainingType : method.ReturnType;
         }
     }
 }

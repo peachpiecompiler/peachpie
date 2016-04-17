@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -34,13 +35,39 @@ namespace Pchp.CodeAnalysis.CodeGen
             public MethodSymbol CallSite_Create => _callsite_create;
             MethodSymbol _callsite_create;
 
-            public void Construct(NamedTypeSymbol functype)
+            public void Construct(NamedTypeSymbol functype, Action<ILBuilder> binder_builder)
             {
                 var callsitetype = _factory.CallSite_T.Construct(functype);
+
+                // TODO: check if it wasn't constructed already
 
                 _target.SetContainingType((SubstitutedNamedTypeSymbol)callsitetype);
                 _fld.SetFieldType(callsitetype);
                 _callsite_create = (MethodSymbol)_factory.CallSite_T_Create.SymbolAsMember(callsitetype);
+
+                // create callsite
+
+                // static .cctor {
+                var cctor = _factory.CctorBuilder;
+
+                // fld = CallSite<T>.Create( <BINDER> )
+                var fldPlace = this.Place;
+                fldPlace.EmitStorePrepare(cctor);
+
+                binder_builder(cctor);
+                
+                cctor.EmitCall(_factory._module, DiagnosticBag.GetInstance(), ILOpCode.Call, this.CallSite_Create);
+
+                fldPlace.EmitStore(cctor);
+
+                // }
+            }
+
+            public void EmitLoadTarget(ILBuilder il)
+            {
+                this.Place.EmitLoad(il);
+                il.EmitOpCode(ILOpCode.Ldfld);
+                il.EmitSymbolToken(_factory._module, DiagnosticBag.GetInstance(), _target, null);
             }
 
             readonly DynamicOperationFactory _factory;
@@ -56,6 +83,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         readonly PhpCompilation _compilation;
         readonly NamedTypeSymbol _container;
+        readonly Emit.PEModuleBuilder _module;
 
         NamedTypeSymbol _callsitetype;
         NamedTypeSymbol _callsitetype_generic;
@@ -72,21 +100,22 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Static constructor IL builder for dynamic sites in current context.
         /// </summary>
-        public ILBuilder CctorBuilder => ((Emit.PEModuleBuilder)_container.ContainingModule).GetStaticCtorBuilder(_container);
+        public ILBuilder CctorBuilder => _module.GetStaticCtorBuilder(_container);
 
         int _fieldIndex;
 
         public SynthesizedFieldSymbol CreateCallSiteField(string namehint)
-            => ((IWithSynthesized)_container).CreateSynthesizedField(CallSite, "<>" + namehint + "'" + (_fieldIndex++), Accessibility.Private, true);
+            => ((IWithSynthesized)_container).CreateSynthesizedField(CallSite, "<>" + namehint + "`" + (_fieldIndex++), Accessibility.Private, true);
 
-        public DynamicOperationFactory(PhpCompilation compilation, NamedTypeSymbol container)
+        public DynamicOperationFactory(Emit.PEModuleBuilder module, NamedTypeSymbol container)
         {
-            Contract.ThrowIfNull(compilation);
+            Contract.ThrowIfNull(module);
             Contract.ThrowIfNull(container);
 
             Debug.Assert(container is IWithSynthesized);
 
-            _compilation = compilation;
+            _module = module;
+            _compilation = module.Compilation;
             _container = container;
         }
 

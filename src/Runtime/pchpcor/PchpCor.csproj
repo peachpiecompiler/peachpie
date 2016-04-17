@@ -45,6 +45,8 @@
     <Compile Include="Dynamic\Cache.cs" />
     <Compile Include="Dynamic\CallMethodBinder.cs" />
     <Compile Include="Dynamic\ConvertExpression.cs" />
+    <Compile Include="Dynamic\SetFieldBinder.cs" />
+    <Compile Include="Dynamic\GetFieldBinder.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="PhpAlias.cs" />
     <Compile Include="BinaryString.cs" />
