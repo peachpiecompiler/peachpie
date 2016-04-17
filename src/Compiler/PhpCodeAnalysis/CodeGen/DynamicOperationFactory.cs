@@ -54,9 +54,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var fldPlace = this.Place;
                 fldPlace.EmitStorePrepare(cctor);
 
-                binder_builder(cctor);
-                
-                cctor.EmitCall(_factory._module, DiagnosticBag.GetInstance(), ILOpCode.Call, this.CallSite_Create);
+                binder_builder(cctor);                
+                cctor.EmitCall(_factory._cg.Module, _factory._cg.Diagnostics, ILOpCode.Call, this.CallSite_Create);
 
                 fldPlace.EmitStore(cctor);
 
@@ -67,7 +66,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 this.Place.EmitLoad(il);
                 il.EmitOpCode(ILOpCode.Ldfld);
-                il.EmitSymbolToken(_factory._module, DiagnosticBag.GetInstance(), _target, null);
+                il.EmitSymbolToken(_factory._cg.Module, _factory._cg.Diagnostics, _target, null);
             }
 
             readonly DynamicOperationFactory _factory;
@@ -83,7 +82,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         readonly PhpCompilation _compilation;
         readonly NamedTypeSymbol _container;
-        readonly Emit.PEModuleBuilder _module;
+        readonly CodeGenerator _cg;
 
         NamedTypeSymbol _callsitetype;
         NamedTypeSymbol _callsitetype_generic;
@@ -100,22 +99,23 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Static constructor IL builder for dynamic sites in current context.
         /// </summary>
-        public ILBuilder CctorBuilder => _module.GetStaticCtorBuilder(_container);
+        public ILBuilder CctorBuilder => _cg.Module.GetStaticCtorBuilder(_container);
 
         int _fieldIndex;
 
         public SynthesizedFieldSymbol CreateCallSiteField(string namehint)
             => ((IWithSynthesized)_container).CreateSynthesizedField(CallSite, "<>" + namehint + "`" + (_fieldIndex++), Accessibility.Private, true);
 
-        public DynamicOperationFactory(Emit.PEModuleBuilder module, NamedTypeSymbol container)
+        public DynamicOperationFactory(CodeGenerator cg)
         {
-            Contract.ThrowIfNull(module);
-            Contract.ThrowIfNull(container);
+            Contract.ThrowIfNull(cg);
+
+            var container = cg.Routine.ContainingType;
 
             Debug.Assert(container is IWithSynthesized);
 
-            _module = module;
-            _compilation = module.Compilation;
+            _cg = cg;
+            _compilation = cg.DeclaringCompilation;
             _container = container;
         }
 

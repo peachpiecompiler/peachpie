@@ -903,12 +903,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
+            
             // push value onto the evaluation stack
-            if (!ConstantValue.HasValue)
-                throw new InvalidOperationException();
 
-            // TOOD: use ConstantValue
-
+            Debug.Assert(ConstantValue.HasValue);
             var value = ConstantValue.Value;
             if (value == null)
             {
@@ -958,44 +956,6 @@ namespace Pchp.CodeAnalysis.Semantics
         internal abstract IBoundReference BindPlace(CodeGenerator cg);
 
         internal abstract IPlace Place(ILBuilder il);
-    }
-
-    partial class BoundVariableRef
-    {
-        internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder);
-
-        internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
-
-        internal override TypeSymbol Emit(CodeGenerator cg)
-        {
-            if (this.Variable == null)
-                throw new InvalidOperationException(); // variable was not resolved
-
-            if (Access.IsNone)
-            {
-                // do nothing
-                return cg.CoreTypes.Void;
-            }
-
-            var place = this.BindPlace(cg);
-
-            if (Access.IsRead)
-            {
-                place.EmitLoadPrepare(cg);
-                return place.EmitLoad(cg);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-        }
-    }
-
-    partial class BoundFieldRef : IBoundReference
-    {
-        internal override IBoundReference BindPlace(CodeGenerator cg) => this;
-
-        internal override IPlace Place(ILBuilder il) => null;
 
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
@@ -1011,6 +971,20 @@ namespace Pchp.CodeAnalysis.Semantics
             place.EmitLoadPrepare(cg);
             return place.EmitLoad(cg);
         }
+    }
+
+    partial class BoundVariableRef
+    {
+        internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder);
+
+        internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
+    }
+
+    partial class BoundFieldRef : IBoundReference
+    {
+        internal override IBoundReference BindPlace(CodeGenerator cg) => this;
+
+        internal override IPlace Place(ILBuilder il) => null;
 
         #region IBoundReference
 
@@ -1340,8 +1314,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             return false;
         }
-
-
+        
         /// <summary>
         /// Guesses initial string builder capacity.
         /// </summary>
@@ -1356,7 +1329,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (expr is BoundLiteral)
                 {
-                    var value = ((BoundExpression)expr).ConstantValue.Value;
+                    var value = expr.ConstantValue.Value;
                     if (value != null)
                     {
                         capacity += value.ToString().Length;
@@ -1456,7 +1429,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            throw new NotSupportedException();  // transform to BoundAssignEx with BoundBinaryEx as its Value
+            throw new NotSupportedException();  // TODO
         }
     }
 
