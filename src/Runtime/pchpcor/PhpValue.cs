@@ -12,6 +12,7 @@ namespace Pchp.Core
     /// Represents a non-aliased PHP value.
     /// </summary>
     [DebuggerDisplay("{TypeCode} ({DisplayString,nq})")]
+    [StructLayout(LayoutKind.Sequential)]   // {_type} has to be first for performance reasons
     public partial struct PhpValue : IPhpConvertible // <T>
     {
         #region DisplayString
