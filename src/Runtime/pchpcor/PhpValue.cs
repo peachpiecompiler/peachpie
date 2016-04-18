@@ -192,7 +192,7 @@ namespace Pchp.Core
 
         public static PhpValue FromClass(object value)
         {
-            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias));
+            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString));
             return new PhpValue(TypeTable.ClassTable, value);
         }
 
@@ -210,9 +210,10 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(bool)) return Create((bool)value);
                 if (value.GetType() == typeof(string)) return Create((string)value);
                 if (value.GetType() == typeof(PhpString)) return Create((PhpString)value);
-
-                //
-                throw new ArgumentException();
+                if (value.GetType() == typeof(PhpAlias)) return Create((PhpAlias)value);
+                
+                //                
+                return FromClass(value);
             }
             else
             {
