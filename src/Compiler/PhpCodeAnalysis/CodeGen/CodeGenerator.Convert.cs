@@ -169,6 +169,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // nop
                         break;
                     }
+                    else if (from == CoreTypes.String)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_String);
+                        break;
+                    }
                     else if (from == CoreTypes.PhpNumber)
                     {
                         EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpNumber);

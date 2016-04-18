@@ -10,7 +10,7 @@ namespace Pchp.Core
     /// <summary>
     /// Represents an aliased value.
     /// </summary>
-    [DebuggerDisplay("{_value.TypeCode} ({_value.GetDebuggerValue}), Refs#{_refcount}")]
+    [DebuggerDisplay("{_value.TypeCode} ({_value.DisplayString}), Refs#{_refcount}")]
     public class PhpAlias : IPhpConvertible
     {
         #region Fields
@@ -53,6 +53,7 @@ namespace Pchp.Core
         public PhpAlias(PhpValue value, int refcount = 1)
         {
             Debug.Assert(refcount >= 1);
+            Debug.Assert(value.TypeCode != PhpTypeCode.Alias);
 
             _value = value;
             _refcount = refcount;

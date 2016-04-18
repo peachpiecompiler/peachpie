@@ -11,23 +11,43 @@ namespace Pchp.Core
     /// <summary>
     /// Represents a non-aliased PHP value.
     /// </summary>
-    [DebuggerDisplay("{_type} ({GetDebuggerValue,nq})")]
-    [StructLayout(LayoutKind.Explicit)]
-    public struct PhpValue : IPhpConvertible // <T>
+    [DebuggerDisplay("{TypeCode} ({DisplayString,nq})")]
+    public partial struct PhpValue : IPhpConvertible // <T>
     {
-        #region GetDebuggerValue
+        #region DisplayString
 
-        string GetDebuggerValue
+        internal string DisplayString => _type.DisplayString(ref this);
+
+        #endregion
+
+        #region Nested struct: ValueField
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct ValueField
         {
-            get
-            {
-                var str = ToString();
+            [FieldOffset(0)]
+            public long Long;
+            [FieldOffset(0)]
+            public double Double;
+            [FieldOffset(0)]
+            public bool Bool;
+            [FieldOffset(0)]
+            public int Int;
+        }
 
-                if (_type == PhpTypeCode.String || _type == PhpTypeCode.WritableString)
-                    str = $"'{str}'";
+        #endregion
 
-                return str;
-            }
+        #region Nested struct: ObjectField
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct ObjectField
+        {
+            [FieldOffset(0)]
+            public object Obj;
+            [FieldOffset(0)]
+            public string String;
+            [FieldOffset(0)]
+            public PhpAlias Alias;
         }
 
         #endregion
@@ -37,22 +57,23 @@ namespace Pchp.Core
         /// <summary>
         /// The value type.
         /// </summary>
-        [FieldOffset(0)]
-        PhpTypeCode _type;
-        [FieldOffset(4)]
-        long _long;
-        [FieldOffset(4)]
-        double _double;
-        [FieldOffset(4)]
-        bool _bool;
-        [FieldOffset(16)]
-        object _obj;
+        TypeTable _type;
+
+        /// <summary>
+        /// A value type container.
+        /// </summary>
+        ValueField _value;
+
+        /// <summary>
+        /// A reference type container.
+        /// </summary>
+        ObjectField _obj;
 
         #endregion
 
         #region Properties
 
-        public PhpTypeCode TypeCode => _type;
+        public PhpTypeCode TypeCode => _type.Type;
 
         /// <summary>
         /// Gets value indicating whether the value is a <c>NULL</c>.
@@ -63,194 +84,59 @@ namespace Pchp.Core
         /// Gets the long field of the value.
         /// Does not perform a conversion, expects the value is of type long.
         /// </summary>
-        public long Long { get { Debug.Assert(_type == PhpTypeCode.Long); return _long; } }
+        public long Long { get { Debug.Assert(TypeCode == PhpTypeCode.Long); return _value.Long; } }
 
         /// <summary>
         /// Gets the double field of the value.
         /// Does not perform a conversion, expects the value is of type double.
         /// </summary>
-        public double Double { get { Debug.Assert(_type == PhpTypeCode.Double); return _double; } }
+        public double Double { get { Debug.Assert(TypeCode == PhpTypeCode.Double); return _value.Double; } }
 
         /// <summary>
         /// Gets the boolean field of the value.
         /// Does not perform a conversion, expects the value is of type boolean.
         /// </summary>
-        public bool Boolean { get { Debug.Assert(_type == PhpTypeCode.Boolean); return _bool; } }
+        public bool Boolean { get { Debug.Assert(TypeCode == PhpTypeCode.Boolean); return _value.Bool; } }
 
         /// <summary>
         /// Gets the object field of the value as string.
         /// Does not perform a conversion, expects the value is of type (readonly UTF16) string.
         /// </summary>
-        public string String { get { Debug.Assert(_type == PhpTypeCode.String && _obj != null); return (string)_obj; } }
+        public string String { get { Debug.Assert(_obj.Obj is string); return _obj.String; } }
+
+        /// <summary>
+        /// Gets the object field of the value as PHP writable string.
+        /// Does not perform a conversion, expects the value is of type (writable UTF16 or single-byte) string.
+        /// </summary>
+        public PhpString WritableString { get { Debug.Assert(_obj.Obj is PhpString); return (PhpString)_obj.Obj; } }
 
         /// <summary>
         /// Gets underlaying reference object.
         /// </summary>
-        public object Object { get { Debug.Assert(_type == PhpTypeCode.Object); return _obj; } }
+        public object Object { get { Debug.Assert(TypeCode == PhpTypeCode.Object); return _obj.Obj; } }
 
         /// <summary>
         /// Gets underaying alias object.
         /// </summary>
-        public PhpAlias Alias { get { Debug.Assert(_type == PhpTypeCode.Alias); return (PhpAlias)_obj; } }
+        public PhpAlias Alias { get { Debug.Assert(_obj.Obj is PhpAlias); return _obj.Alias; } }
 
         #endregion
 
         #region Operators
 
-        public object ToClass(Context ctx)
-        {
-            switch (_type)
-            {
-                case PhpTypeCode.Object:
-                    if (_obj == null) // new stdClass()
-                        throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
-                    //if (_obj is IPhpConvertible)
-                    //    return ((IPhpConvertible)_obj).ToClass(ctx);
-                    return _obj;
-                case PhpTypeCode.Alias:
-                    return this.Alias.ToClass(ctx);
-                case PhpTypeCode.Long:
-                    throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
-                case PhpTypeCode.Boolean:
-                    throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
-                case PhpTypeCode.Double:
-                    throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
-                case PhpTypeCode.String:
-                    throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
-            }
+        public object ToClass(Context ctx) => _type.ToClass(ref this, ctx);
 
-            throw new ArgumentException();
-        }
+        public long ToLong() => _type.ToLong(ref this);
 
-        public long ToLong()
-        {
-            switch (_type)
-            {
-                case PhpTypeCode.Long:
-                    return _long;
-                case PhpTypeCode.Boolean:
-                    return _bool ? 1 : 0;
-                case PhpTypeCode.Double:
-                    return (long)_double;
-                case PhpTypeCode.String:
-                    return Convert.StringToLongInteger((string)_obj);
-                case PhpTypeCode.Object:
-                    if (_obj == null) return 0;
-                    if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToLong();
-                    throw new NotImplementedException();
-                case PhpTypeCode.Alias:
-                    return this.Alias.ToLong();
-            }
+        public double ToDouble() => _type.ToDouble(ref this);
 
-            throw new ArgumentException();
-        }
+        public bool ToBoolean() => _type.ToBoolean(ref this);
 
-        public double ToDouble()
-        {
-            switch (_type)
-            {
-                case PhpTypeCode.Double:
-                    return _double;
-                case PhpTypeCode.Long:
-                    return (double)_long;
-                case PhpTypeCode.Boolean:
-                    return _bool ? 1.0 : 0.0;
-                case PhpTypeCode.String:
-                    return Convert.StringToDouble((string)_obj);
-                case PhpTypeCode.Object:
-                    if (_obj == null) return 0.0;
-                    if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToDouble();
-                    throw new NotImplementedException();
-                case PhpTypeCode.Alias:
-                    return this.Alias.ToDouble();
-            }
+        public Convert.NumberInfo ToNumber(out PhpNumber number) => _type.ToNumber(ref this, out number);
 
-            throw new ArgumentException();
-        }
+        public string ToString(Context ctx) => _type.ToString(ref this, ctx);
 
-        public bool ToBoolean()
-        {
-            switch (_type)
-            {
-                case PhpTypeCode.Boolean:
-                    return _bool;
-                case PhpTypeCode.Long:
-                    return _long != 0;
-                case PhpTypeCode.Double:
-                    return _double != 0.0;
-                case PhpTypeCode.String:
-                    return Convert.ToBoolean((string)_obj);
-                case PhpTypeCode.Object:
-                    if (_obj == null) return false;
-                    if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToBoolean();
-                    throw new NotImplementedException();
-                case PhpTypeCode.Alias:
-                    return this.Alias.ToBoolean();
-            }
-
-            throw new ArgumentException();
-        }
-
-        public Convert.NumberInfo ToNumber(out PhpNumber number)
-        {
-            switch (_type)
-            {
-                case PhpTypeCode.Long:
-                    number = PhpNumber.Create(_long);
-                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
-                case PhpTypeCode.Double:
-                    number = PhpNumber.Create(_double);
-                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
-                case PhpTypeCode.Boolean:
-                    number = PhpNumber.Create(_bool ? 1L : 0L);
-                    return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
-                case PhpTypeCode.String:
-                    return Convert.ToNumber((string)_obj, out number);
-                case PhpTypeCode.Object:
-                    if (_obj == null)
-                    {
-                        number = PhpNumber.Create(0L);
-                        return Convert.NumberInfo.Unconvertible;
-                    }
-                    if (_obj is IPhpConvertible)
-                    {
-                        return ((IPhpConvertible)_obj).ToNumber(out number);
-                    }
-                    throw new NotImplementedException();
-                case PhpTypeCode.Alias:
-                    return this.Alias.ToNumber(out number);
-            }
-
-            throw new ArgumentException();
-        }
-
-        public string ToString(Context ctx)
-        {
-            switch (_type)
-            {
-                case PhpTypeCode.String:
-                    return (string)_obj;
-                case PhpTypeCode.Double:
-                    return Convert.ToString(_double, ctx);
-                case PhpTypeCode.Long:
-                    return _long.ToString();
-                case PhpTypeCode.Boolean:
-                    return Convert.ToString(_bool);
-                case PhpTypeCode.Object:
-                    if (_obj == null) return string.Empty;
-                    if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToString(ctx);
-                    throw new NotImplementedException();
-                case PhpTypeCode.Alias:
-                    return this.Alias.ToString(ctx);
-            }
-
-            throw new ArgumentException();
-        }
-
-        public string ToStringOrThrow(Context ctx)
-        {
-            return ToString(ctx);   // TODO: or throw
-        }
+        public string ToStringOrThrow(Context ctx) => _type.ToStringOrThrow(ref this, ctx);
 
         #endregion
 
@@ -258,26 +144,26 @@ namespace Pchp.Core
 
         private PhpValue(long value) : this()
         {
-            _type = PhpTypeCode.Long;
-            _long = value;
+            _type = TypeTable.LongTable;
+            _value.Long = value;
         }
 
         private PhpValue(double value) : this()
         {
-            _type = PhpTypeCode.Double;
-            _double = value;
+            _type = TypeTable.DoubleTable;
+            _value.Double = value;
         }
 
         private PhpValue(bool value) : this()
         {
-            _type = PhpTypeCode.Boolean;
-            _bool = value;
+            _type = TypeTable.BoolTable;
+            _value.Bool = value;
         }
 
-        private PhpValue(PhpTypeCode code, object obj) : this()
+        private PhpValue(TypeTable type, object obj) : this()
         {
-            _type = code;
-            _obj = obj;
+            _type = (obj != null) ? type : TypeTable.NullTable;
+            _obj.Obj = obj;
         }
 
         public static PhpValue Create(PhpNumber number)
@@ -293,20 +179,20 @@ namespace Pchp.Core
 
         public static PhpValue Create(bool value) => new PhpValue(value);
 
-        public static PhpValue CreateNull() => new PhpValue(PhpTypeCode.Object, null);
+        public static PhpValue CreateNull() => new PhpValue(TypeTable.NullTable, null);
 
-        public static PhpValue CreateVoid() => new PhpValue();
+        public static PhpValue CreateVoid() => new PhpValue(TypeTable.VoidTable, null);
 
-        public static PhpValue Create(string value) => new PhpValue((value != null) ? PhpTypeCode.String : PhpTypeCode.Object, value);
+        public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 
-        public static PhpValue Create(PhpString value) => new PhpValue((value != null) ? PhpTypeCode.WritableString : PhpTypeCode.Object, value);
+        public static PhpValue Create(PhpString value) => new PhpValue(TypeTable.WritableStringTable, value);
 
-        public static PhpValue Create(PhpAlias value) => new PhpValue((value != null) ? PhpTypeCode.Alias : PhpTypeCode.Object, value);
+        public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
 
         public static PhpValue FromClass(object value)
         {
             Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias));
-            return new PhpValue(PhpTypeCode.Object, value);
+            return new PhpValue(TypeTable.ClassTable, value);
         }
 
         /// <summary>
