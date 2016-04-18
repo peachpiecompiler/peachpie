@@ -8,8 +8,13 @@ namespace Pchp.Core
 {
     partial struct PhpValue
     {
+        /// <summary>
+        /// Methods table for <see cref="PhpValue"/> instance.
+        /// </summary>
         abstract class TypeTable
         {
+            #region Singletons
+
             public static readonly NullTable NullTable = new NullTable();
             public static TypeTable VoidTable => NullTable;
             public static readonly LongTable LongTable = new LongTable();
@@ -20,8 +25,10 @@ namespace Pchp.Core
             public static readonly ClassTable ClassTable = new ClassTable();
             public static readonly AliasTable AliasTable = new AliasTable();
 
+            #endregion
+
             public abstract PhpTypeCode Type { get; }
-			public abstract bool IsNull { get; }
+            public abstract bool IsNull { get; }
             public abstract object ToClass(ref PhpValue me, Context ctx);
             public abstract string ToString(ref PhpValue me, Context ctx);
             public abstract string ToStringOrThrow(ref PhpValue me, Context ctx);
@@ -32,7 +39,7 @@ namespace Pchp.Core
             public abstract string DisplayString(ref PhpValue me);
         }
 
-		sealed class NullTable : TypeTable
+        sealed class NullTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
             public override bool IsNull => true;
@@ -167,7 +174,7 @@ namespace Pchp.Core
                 if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToNumber(out number);
                 throw new NotImplementedException();
             }
-            public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName + "#" + me.Object.GetHashCode().ToString("X");
+            public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
         }
 
         sealed class AliasTable : TypeTable

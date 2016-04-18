@@ -79,7 +79,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the value is a <c>NULL</c>.
         /// </summary>
-        public bool IsNull => object.ReferenceEquals(_obj, null) && TypeCode == PhpTypeCode.Object;
+        public bool IsNull => _type.IsNull;
 
         /// <summary>
         /// Gets the long field of the value.
