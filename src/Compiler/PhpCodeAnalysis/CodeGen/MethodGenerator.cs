@@ -196,6 +196,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             Debug.Assert(!type.IsStatic);
 
+            // initialize <ctx> field
             if (ctxField != null)
             {
                 // if field is declared within this type or
@@ -212,6 +213,23 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
+            // initialize class fields,
+            // default(PhpValue) is not a valid value, its TypeTable must not be null
+            foreach (var fld in type.GetFieldsToEmit().OfType<SourceFieldSymbol>().Where(fld => !fld.IsStatic))
+            {
+                // TODO: extract following code as a field initializer
+                // TODO: init static fields as well in .cctor
+                if (fld.Type == compilation.CoreTypes.PhpValue)
+                {
+                    // this.fld = PhpValue.CreateVoid()
+                    il.EmitLoadArgumentOpcode(0);   // this
+                    il.EmitCall(moduleBuilder, diagnostics, ILOpCode.Call, compilation.CoreMethods.PhpValue.CreateVoid);    // (PhpValue)void
+                    il.EmitOpCode(ILOpCode.Stfld);
+                    il.EmitSymbolToken(moduleBuilder, diagnostics, fld, null);
+                }
+            }
+
+            // call __construct method
             if (realctor != null)
             {
                 Debug.Assert(!realctor.IsStatic);

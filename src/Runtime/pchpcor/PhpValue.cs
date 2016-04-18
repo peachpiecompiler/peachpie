@@ -11,18 +11,26 @@ namespace Pchp.Core
     /// <summary>
     /// Represents a non-aliased PHP value.
     /// </summary>
+    /// <remarks>
+    /// Note, <c>default(PhpValue)</c> does not represent a valid state of the object.</remarks>
     [DebuggerDisplay("{TypeCode} ({DisplayString,nq})")]
-    [StructLayout(LayoutKind.Sequential)]   // {_type} has to be first for performance reasons
+    [StructLayout(LayoutKind.Sequential)]   // {_type} has to be first for performance reasons.
     public partial struct PhpValue : IPhpConvertible // <T>
     {
         #region DisplayString
 
+        /// <summary>
+        /// Debug textual representation of the value.
+        /// </summary>
         internal string DisplayString => _type.DisplayString(ref this);
 
         #endregion
 
         #region Nested struct: ValueField
 
+        /// <summary>
+        /// Union for possible value types.
+        /// </summary>
         [StructLayout(LayoutKind.Explicit)]
         private struct ValueField
         {
@@ -31,15 +39,18 @@ namespace Pchp.Core
             [FieldOffset(0)]
             public double Double;
             [FieldOffset(0)]
-            public bool Bool;
-            [FieldOffset(0)]
             public int Int;
+            [FieldOffset(0)]
+            public bool Bool;
         }
 
         #endregion
 
         #region Nested struct: ObjectField
 
+        /// <summary>
+        /// Union for reference types.
+        /// </summary>
         [StructLayout(LayoutKind.Explicit)]
         private struct ObjectField
         {
@@ -61,25 +72,38 @@ namespace Pchp.Core
         TypeTable _type;
 
         /// <summary>
-        /// A value type container.
-        /// </summary>
-        ValueField _value;
-
-        /// <summary>
         /// A reference type container.
         /// </summary>
         ObjectField _obj;
+        
+        /// <summary>
+        /// A value type container.
+        /// </summary>
+        ValueField _value;
 
         #endregion
 
         #region Properties
 
+        /// <summary>
+        /// Gets the underlaying value type.
+        /// </summary>
         public PhpTypeCode TypeCode => _type.Type;
 
         /// <summary>
         /// Gets value indicating whether the value is a <c>NULL</c>.
         /// </summary>
         public bool IsNull => _type.IsNull;
+
+        /// <summary>
+        /// Gets value indicating whether the value is set.
+        /// </summary>
+        public bool IsSet => (TypeCode != PhpTypeCode.Undefined);
+
+        /// <summary>
+        /// Gets value indicating whether the value is an alias containing another value.
+        /// </summary>
+        public bool IsAlias => (TypeCode == PhpTypeCode.Alias);
 
         /// <summary>
         /// Gets the long field of the value.
@@ -117,7 +141,7 @@ namespace Pchp.Core
         public object Object { get { Debug.Assert(TypeCode == PhpTypeCode.Object); return _obj.Obj; } }
 
         /// <summary>
-        /// Gets underaying alias object.
+        /// Gets underlaying alias object.
         /// </summary>
         public PhpAlias Alias { get { Debug.Assert(_obj.Obj is PhpAlias); return _obj.Alias; } }
 
@@ -167,6 +191,12 @@ namespace Pchp.Core
             _obj.Obj = obj;
         }
 
+        private PhpValue(TypeTable type) : this()
+        {
+            _type = type;
+            Debug.Assert(IsNull || !IsSet);
+        }
+
         public static PhpValue Create(PhpNumber number)
             => (number.IsLong)
                  ? Create(number.Long)
@@ -176,13 +206,13 @@ namespace Pchp.Core
 
         public static PhpValue Create(double value) => new PhpValue(value);
 
-        public static PhpValue Create(int value) => new PhpValue((long)value);
+        public static PhpValue Create(int value) => new PhpValue(value);
 
         public static PhpValue Create(bool value) => new PhpValue(value);
 
-        public static PhpValue CreateNull() => new PhpValue(TypeTable.NullTable, null);
+        public static PhpValue CreateNull() => new PhpValue(TypeTable.NullTable);
 
-        public static PhpValue CreateVoid() => new PhpValue(TypeTable.VoidTable, null);
+        public static PhpValue CreateVoid() => new PhpValue(TypeTable.VoidTable);
 
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 

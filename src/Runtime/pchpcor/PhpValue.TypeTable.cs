@@ -16,7 +16,7 @@ namespace Pchp.Core
             #region Singletons
 
             public static readonly NullTable NullTable = new NullTable();
-            public static TypeTable VoidTable => NullTable;
+            public static readonly VoidTable VoidTable = new VoidTable();
             public static readonly LongTable LongTable = new LongTable();
             public static readonly DoubleTable DoubleTable = new DoubleTable();
             public static readonly BoolTable BoolTable = new BoolTable();
@@ -36,10 +36,14 @@ namespace Pchp.Core
             public abstract double ToDouble(ref PhpValue me);
             public abstract bool ToBoolean(ref PhpValue me);
             public abstract Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number);
+
+            /// <summary>
+            /// Debug textual representation of the value.
+            /// </summary>
             public abstract string DisplayString(ref PhpValue me);
         }
 
-        sealed class NullTable : TypeTable
+        class NullTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
             public override bool IsNull => true;
@@ -55,6 +59,12 @@ namespace Pchp.Core
                 return Convert.NumberInfo.Unconvertible;
             }
             public override string DisplayString(ref PhpValue me) => "NULL";
+        }
+
+        sealed class VoidTable : NullTable
+        {
+            public override PhpTypeCode Type => PhpTypeCode.Undefined;
+            public override string DisplayString(ref PhpValue me) => "void";
         }
 
         sealed class LongTable : TypeTable

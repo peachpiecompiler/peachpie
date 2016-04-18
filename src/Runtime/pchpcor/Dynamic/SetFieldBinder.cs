@@ -50,10 +50,40 @@ namespace Pchp.Core.Dynamic
             if (fld != null)
             {
                 restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target.Expression, target.RuntimeType));
+
                 // TODO: value restrictions
 
-                var setter = Expression.Assign(Expression.Field(Expression.Convert(target.Expression, targetType), fld), ConvertExpression.Bind(value, fld.FieldType));
-                return new DynamicMetaObject(setter, restrictions);
+                Expression lvalue = Expression.Field(Expression.Convert(target.Expression, targetType), fld);
+                Expression setter;
+
+                if (value.Type == typeof(PhpAlias))
+                {
+                    // assigning alias
+                    throw new NotImplementedException();    // AssignRef
+                }
+                else
+                {
+                    // assigning to alias <=> fld.FieldType is PhpAlias || fld.FieldType is PhpValue && fld.Value.IsAlias
+                    if (fld.FieldType == typeof(PhpAlias))
+                    {
+                        // Template: fld.Value = (PhpValue)value
+                        setter = Expression.Assign(Expression.Property(lvalue, "Value"), ConvertExpression.Bind(value, typeof(PhpValue)));
+                    }
+                    else if (fld.FieldType == typeof(PhpValue))
+                    {
+                        // Template: Operators.SetValue(ref fld, (PhpValue)value)
+                        setter = Expression.Call(Cache.Operators.SetValue_PhpValueRef_PhpValue, lvalue, ConvertExpression.Bind(value, typeof(PhpValue)));
+                    }
+                    else
+                    {
+                        // Template: fld = value
+                        // default behaviour by value to value
+                        setter = Expression.Assign(lvalue, ConvertExpression.Bind(value, fld.FieldType));
+                    }
+
+                    //
+                    return new DynamicMetaObject(setter, restrictions);
+                }
             }
             else
             {
