@@ -12,7 +12,7 @@ namespace Pchp.Core
     public enum PhpTypeCode : int
     {
         /// <summary>
-        /// An invalid value.
+        /// An invalid value, <c>void</c>.
         /// </summary>
         Undefined = 0,
 
@@ -55,6 +55,11 @@ namespace Pchp.Core
         /// A class type, including <c>NULL</c>, <c>resource</c>, <c>Closure</c> or generic <c>Object</c>.
         /// </summary>
         Object,
+
+        /// <summary>
+        /// <see cref="PhpAlias"/> type.
+        /// </summary>
+        Alias,
     }
 
     /// <summary>

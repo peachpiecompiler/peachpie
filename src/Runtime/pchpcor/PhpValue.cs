@@ -88,6 +88,11 @@ namespace Pchp.Core
         /// </summary>
         public object Object { get { Debug.Assert(_type == PhpTypeCode.Object); return _obj; } }
 
+        /// <summary>
+        /// Gets underaying alias object.
+        /// </summary>
+        public PhpAlias Alias { get { Debug.Assert(_type == PhpTypeCode.Alias); return (PhpAlias)_obj; } }
+
         #endregion
 
         #region Operators
@@ -102,6 +107,8 @@ namespace Pchp.Core
                     //if (_obj is IPhpConvertible)
                     //    return ((IPhpConvertible)_obj).ToClass(ctx);
                     return _obj;
+                case PhpTypeCode.Alias:
+                    return this.Alias.ToClass(ctx);
                 case PhpTypeCode.Long:
                     throw new NotImplementedException(); // // new stdClass(){ $scalar = VALUE }
                 case PhpTypeCode.Boolean:
@@ -131,6 +138,8 @@ namespace Pchp.Core
                     if (_obj == null) return 0;
                     if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToLong();
                     throw new NotImplementedException();
+                case PhpTypeCode.Alias:
+                    return this.Alias.ToLong();
             }
 
             throw new ArgumentException();
@@ -152,6 +161,8 @@ namespace Pchp.Core
                     if (_obj == null) return 0.0;
                     if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToDouble();
                     throw new NotImplementedException();
+                case PhpTypeCode.Alias:
+                    return this.Alias.ToDouble();
             }
 
             throw new ArgumentException();
@@ -173,6 +184,8 @@ namespace Pchp.Core
                     if (_obj == null) return false;
                     if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToBoolean();
                     throw new NotImplementedException();
+                case PhpTypeCode.Alias:
+                    return this.Alias.ToBoolean();
             }
 
             throw new ArgumentException();
@@ -204,6 +217,8 @@ namespace Pchp.Core
                         return ((IPhpConvertible)_obj).ToNumber(out number);
                     }
                     throw new NotImplementedException();
+                case PhpTypeCode.Alias:
+                    return this.Alias.ToNumber(out number);
             }
 
             throw new ArgumentException();
@@ -225,6 +240,8 @@ namespace Pchp.Core
                     if (_obj == null) return string.Empty;
                     if (_obj is IPhpConvertible) return ((IPhpConvertible)_obj).ToString(ctx);
                     throw new NotImplementedException();
+                case PhpTypeCode.Alias:
+                    return this.Alias.ToString(ctx);
             }
 
             throw new ArgumentException();
@@ -278,13 +295,17 @@ namespace Pchp.Core
 
         public static PhpValue CreateNull() => new PhpValue(PhpTypeCode.Object, null);
 
+        public static PhpValue CreateVoid() => new PhpValue();
+
         public static PhpValue Create(string value) => new PhpValue((value != null) ? PhpTypeCode.String : PhpTypeCode.Object, value);
 
         public static PhpValue Create(PhpString value) => new PhpValue((value != null) ? PhpTypeCode.WritableString : PhpTypeCode.Object, value);
 
+        public static PhpValue Create(PhpAlias value) => new PhpValue((value != null) ? PhpTypeCode.Alias : PhpTypeCode.Object, value);
+
         public static PhpValue FromClass(object value)
         {
-            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double));
+            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias));
             return new PhpValue(PhpTypeCode.Object, value);
         }
 

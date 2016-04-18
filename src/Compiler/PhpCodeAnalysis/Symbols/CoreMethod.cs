@@ -242,7 +242,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_Long = ct.PhpValue.Method("Create", ct.Long);
                 Create_Double = ct.PhpValue.Method("Create", ct.Double);
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
+                Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
                 CreateNull = ct.PhpValue.Method("CreateNull");
+                CreateVoid = ct.PhpValue.Method("CreateVoid");
 
                 FromClr_Object = ct.PhpValue.Method("FromClr", ct.Object);
                 FromClass_Object = ct.PhpValue.Method("FromClass", ct.Object);
@@ -251,7 +253,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context,
                 get_Long, get_Double, get_Boolean, get_String, get_Object,
-                Create_Boolean, Create_Long, Create_Double, Create_PhpNumber, CreateNull,
+                Create_Boolean, Create_Long, Create_Double, Create_PhpNumber, Create_PhpAlias, CreateNull, CreateVoid,
                 FromClr_Object, FromClass_Object;
         }
 

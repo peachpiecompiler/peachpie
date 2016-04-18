@@ -22,7 +22,7 @@ namespace Pchp.Core
         PhpTypeCode _typeCode;
 
         [FieldOffset(4)]
-        internal long _long;
+        long _long;
 
         [FieldOffset(4)]
         double _double;
