@@ -168,6 +168,25 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public bool EnsureArray => (_flags & AccessMask.EnsureArray) == AccessMask.EnsureArray;
 
+        /// <summary>
+        /// Gets AccesFlags to be used at runtime.
+        /// </summary>
+        public Core.Dynamic.AccessFlags AccessFlags
+        {
+            get
+            {
+                // TODO: use AccessMask instead
+                Core.Dynamic.AccessFlags result = Core.Dynamic.AccessFlags.Default;
+
+                if (EnsureObject) result |= Core.Dynamic.AccessFlags.EnsureObject;
+                if (EnsureArray) result |= Core.Dynamic.AccessFlags.EnsureArray;
+                if (IsReadRef) result |= Core.Dynamic.AccessFlags.EnsureAlias;
+                if (IsCheck) result |= Core.Dynamic.AccessFlags.CheckOnly;
+
+                return result;
+            }
+        }
+
         #endregion
 
         #region Construction

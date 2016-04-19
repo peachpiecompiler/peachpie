@@ -1068,10 +1068,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 //
                 _lazyLoadCallSite.Construct(functype, cctor =>
                 {
+                    // new GetFieldBinder(field_name, context, return, flags)
                     cctor.EmitStringConstant(this.Name.Value);
                     cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
                     cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
-                    cctor.EmitIntConstant(0);   // flags    // TODO: EnsureArray, EnsureObject, ReadRef, ReadCheck
+                    cctor.EmitIntConstant((int)Access.AccessFlags);
                     cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
                 });
 

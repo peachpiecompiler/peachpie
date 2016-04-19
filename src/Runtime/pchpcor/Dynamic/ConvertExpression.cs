@@ -56,7 +56,7 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(int) ||
                 source == typeof(long) ||
-                source == typeof(double))
+                source == typeof(double))   // TODO: Convert.ToString(double, context)
                 return Expression.Call(expr, Cache.Object.ToString);
 
             if (source == typeof(string))
@@ -96,8 +96,18 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(long)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), expr);
             if (source == typeof(double)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Double), expr);
             if (source == typeof(string)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.String), expr);
+            if (source == typeof(PhpString)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpString), expr);
+            if (source == typeof(PhpAlias)) return Expression.PropertyOrField(expr, "Value");
 
-            throw new NotImplementedException(source.FullName);
+            if (source.GetTypeInfo().IsValueType)
+            {
+                throw new NotImplementedException(source.FullName);
+            }
+            else
+            {
+                // TODO: FromClr
+                return Expression.Call(typeof(PhpValue).GetMethod("FromClass", Cache.Types.Object), expr);
+            }
         }
 
         private static Expression BindToVoid(Expression expr)

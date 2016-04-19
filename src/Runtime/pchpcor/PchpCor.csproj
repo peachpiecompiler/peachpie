@@ -42,6 +42,7 @@
     <Compile Include="Context.Output.cs" />
     <Compile Include="Context.cs" />
     <Compile Include="Conversions.cs" />
+    <Compile Include="Dynamic\AccessFlags.cs" />
     <Compile Include="Dynamic\BinderHelpers.cs" />
     <Compile Include="Dynamic\Cache.cs" />
     <Compile Include="Dynamic\CallMethodBinder.cs" />

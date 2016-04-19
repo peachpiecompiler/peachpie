@@ -418,7 +418,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public DynamicHolder(CoreTypes ct)
             {
                 this.CallMethodBinder_Create = ct.CallMethodBinder.Method("Create", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
-                this.GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
+                this.GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
                 this.SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.Int32);
             }
 

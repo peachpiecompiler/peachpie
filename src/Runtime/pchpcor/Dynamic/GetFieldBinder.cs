@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -14,14 +15,14 @@ namespace Pchp.Core.Dynamic
         readonly string _name;
         readonly Type _classContext;
         readonly Type _returnType;
-        readonly int _flags;
+        readonly AccessFlags _access;
 
-        public GetFieldBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int flags)
+        public GetFieldBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessFlags access)
         {
             _name = name;
-            _returnType = Type.GetTypeFromHandle(returnType);
+            _returnType = Type.GetTypeFromHandle(returnType); // should correspond to AccessFlags
             _classContext = Type.GetTypeFromHandle(classContext);
-            _flags = flags;
+            _access = access;
         }
 
         string ResolveName(DynamicMetaObject[] args, ref BindingRestrictions restrictions)
@@ -57,8 +58,48 @@ namespace Pchp.Core.Dynamic
                     target_expr = Expression.Convert(target_expr, runtime_type);
                 }
 
-                var getter = Expression.Field(target_expr, fld);
-                // TODO: _flags // ensure array, object, alias
+                Expression getter = Expression.Field(target_expr, fld);
+                
+                // Ensure Object
+                if (_access.EnsureObject())
+                {
+                    if (fld.FieldType == typeof(PhpAlias))
+                    {
+                        // ((PhpAlias)fld).EnsureObject(ctx)
+                        getter = Expression.Call(getter, Cache.Operators.PhpAlias_EnsureObject_Context, Expression.Constant(null, typeof(Context)));
+                    }
+                    else if (fld.FieldType == typeof(PhpValue))
+                    {
+                        // ((PhpValue)fld).EnsureObject(ctx)
+                        getter = Expression.Call(getter, Cache.Operators.PhpValue_EnsureObject_Context, Expression.Constant(null, typeof(Context)));
+                    }
+                    else
+                    {
+                        // getter
+                    }
+                }
+                else if (_access.EnsureArray())
+                {
+                    throw new NotImplementedException();
+                }
+                else if (_access.EnsureAlias())
+                {
+                    if (fld.FieldType == typeof(PhpAlias))
+                    {
+                        // (PhpAlias)getter
+                    }
+                    else if (fld.FieldType == typeof(PhpValue))
+                    {
+                        // ((PhpValue)fld).EnsureAlias()
+                        getter = Expression.Call(getter, Cache.Operators.PhpValue_EnsureAlias);
+                    }
+                    else
+                    {
+                        // getter // cannot read as reference
+                    }
+                }
+
+                //
                 return new DynamicMetaObject(ConvertExpression.Bind(getter, _returnType), restrictions);
             }
             else
