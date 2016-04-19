@@ -67,7 +67,7 @@ namespace Pchp.Core.Dynamic
                     if (fld.FieldType == typeof(PhpAlias))
                     {
                         // Template: fld.Value = (PhpValue)value
-                        setter = Expression.Assign(Expression.Property(lvalue, "Value"), ConvertExpression.Bind(value, typeof(PhpValue)));
+                        setter = Expression.Assign(Expression.PropertyOrField(lvalue, "Value"), ConvertExpression.Bind(value, typeof(PhpValue)));
                     }
                     else if (fld.FieldType == typeof(PhpValue))
                     {

@@ -26,7 +26,13 @@ namespace Pchp.Core.Dynamic
             /// <summary><see cref="Core.Operators.SetValue(ref PhpValue, PhpValue)"/>.</summary>
             public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", typeof(PhpValue).MakeByRefType(), typeof(PhpValue));
         }
-        
+
+        public static class Object
+        {
+            /// <summary><see cref="System.Object"/>.</summary>
+            public static new MethodInfo ToString = typeof(System.Object).GetMethod("ToString");
+        }
+
         /// <summary>
         /// Gets method info in given type.
         /// </summary>

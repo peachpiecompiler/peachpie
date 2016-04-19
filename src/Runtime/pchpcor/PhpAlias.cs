@@ -16,9 +16,10 @@ namespace Pchp.Core
         #region Fields
 
         /// <summary>
-        /// Underlaying value.
+        /// Gets or sets the underlaying value.
         /// </summary>
-        PhpValue _value;
+        /// <remarks>The field is not wrapped into a property, some internals need to access the raw field.</remarks>
+        public PhpValue Value;
 
         /// <summary>
         /// References count.
@@ -33,15 +34,7 @@ namespace Pchp.Core
         /// Gets references count.
         /// </summary>
         public int ReferenceCount => _refcount;
-
-        /// <summary>
-        /// Gets or sets the underlaying value.
-        /// </summary>
-        public PhpValue Value
-        {
-            get { return _value; }
-            set { _value = value; }
-        }
+        
 
         #endregion
 
@@ -55,7 +48,7 @@ namespace Pchp.Core
             Debug.Assert(refcount >= 1);
             Debug.Assert(value.TypeCode != PhpTypeCode.Alias);
 
-            _value = value;
+            Value = value;
             _refcount = refcount;
         }
 
@@ -76,25 +69,31 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Ensures the underlaying value is an object and gets its instance.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public object EnsureObject(Context ctx) => Value.EnsureObject(ctx);
+
         #endregion
 
         #region IPhpConvertible
 
-        public PhpTypeCode TypeCode => _value.TypeCode;
+        public PhpTypeCode TypeCode => Value.TypeCode;
 
-        public double ToDouble() => _value.ToDouble();
+        public double ToDouble() => Value.ToDouble();
 
-        public long ToLong() => _value.ToLong();
+        public long ToLong() => Value.ToLong();
 
-        public bool ToBoolean() => _value.ToBoolean();
+        public bool ToBoolean() => Value.ToBoolean();
 
-        public Convert.NumberInfo ToNumber(out PhpNumber number) => _value.ToNumber(out number);
+        public Convert.NumberInfo ToNumber(out PhpNumber number) => Value.ToNumber(out number);
 
-        public string ToString(Context ctx) => _value.ToString(ctx);
+        public string ToString(Context ctx) => Value.ToString(ctx);
 
-        public string ToStringOrThrow(Context ctx) => _value.ToStringOrThrow(ctx);
+        public string ToStringOrThrow(Context ctx) => Value.ToStringOrThrow(ctx);
 
-        public object ToClass(Context ctx) => _value.ToClass(ctx);
+        public object ToClass(Context ctx) => Value.ToClass(ctx);
 
         #endregion
     }

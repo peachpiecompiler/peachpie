@@ -975,7 +975,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundVariableRef
     {
-        internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder);
+        internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder, this.Access);
 
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
     }

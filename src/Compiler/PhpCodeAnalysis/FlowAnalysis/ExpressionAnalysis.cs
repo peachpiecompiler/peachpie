@@ -105,6 +105,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Gets value indicating the given type represents only array types.
+        /// </summary>
+        bool IsArrayOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && TypeCtx.GetTypes(tmask).All(x => x.IsArray);
+        }
+
+        /// <summary>
         /// Gets value indicating the given type is long or double or both but nothing else.
         /// </summary>
         /// <param name="tmask"></param>
@@ -375,26 +383,48 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        protected virtual void VisitBoundVariableRef(BoundVariableRef v)
+        protected virtual void VisitBoundVariableRef(BoundVariableRef x)
         {
-            if (v.Access.IsRead)
+            if (x.Access.IsRead)
             {
-                State.SetVarUsed(v.Name);
-                v.TypeRefMask = State.GetVarType(v.Name);
+                State.SetVarUsed(x.Name);
+                var vartype = State.GetVarType(x.Name);
+
+                if (x.Access.IsEnsure)
+                {
+                    if (x.Access.IsReadRef)
+                    {
+                        State.SetVarRef(x.Name);
+                        vartype.IsRef = true;
+                    }
+                    if (x.Access.EnsureObject && !IsClassOnly(vartype))
+                    {
+                        vartype |= TypeCtx.GetSystemObjectTypeMask();
+                    }
+                    if (x.Access.EnsureArray && !IsArrayOnly(vartype))
+                    {
+                        vartype |= TypeCtx.GetArrayTypeMask();
+                    }
+
+                    State.SetVarInitialized(x.Name);
+                    State.SetVar(x.Name, vartype);
+                }
+
+                x.TypeRefMask = vartype;
             }
 
-            if (v.Access.IsWrite)
+            if (x.Access.IsWrite)
             {
-                State.SetVarInitialized(v.Name);
-                State.SetVar(v.Name, v.Access.WriteMask);
-                State.LTInt64Max(v.Name, false);
+                State.SetVarInitialized(x.Name);
+                State.SetVar(x.Name, x.Access.WriteMask);
+                State.LTInt64Max(x.Name, false);
 
-                v.TypeRefMask = v.Access.WriteMask;
+                x.TypeRefMask = x.Access.WriteMask;
 
-                if (v.Access.IsWriteRef)
+                if (x.Access.IsWriteRef)
                 {
-                    State.SetVarRef(v.Name);
-                    v.TypeRefMask = v.TypeRefMask.WithRefFlag;
+                    State.SetVarRef(x.Name);
+                    x.TypeRefMask = x.TypeRefMask.WithRefFlag;
                 }
             }
         }
@@ -714,7 +744,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.ObjectCast:
                     if (IsClassOnly(x.Operand.TypeRefMask))
                         return x.Operand.TypeRefMask;   // (object)<object>
-                    
+
                     return TypeCtx.GetSystemObjectTypeMask();   // TODO: return the exact type in case we know, return stdClass in case of a scalar
 
                 case Operations.Plus:
@@ -931,7 +961,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             // resolve candidates
             Debug.Assert(!x.ContainingType.IsGeneric, "Not Implemented");
-            
+
             var type = _model.GetType(x.ContainingType.QualifiedName);
             if (type == null)
             {

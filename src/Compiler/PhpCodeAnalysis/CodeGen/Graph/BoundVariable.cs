@@ -18,44 +18,47 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets <see cref="IBoundReference"/> providing load and store operations.
         /// </summary>
-        internal abstract IBoundReference BindPlace(ILBuilder il);
+        internal abstract IBoundReference BindPlace(ILBuilder il, BoundAccess access);
 
-        /// <summary>
-        /// Gets <see cref="IPlace"/> providing load and store operations.
-        /// </summary>
         internal abstract IPlace Place(ILBuilder il);
     }
 
     partial class BoundLocal
     {
-        BoundLocalPlace _place;
+        LocalPlace _place;
 
-        internal override IBoundReference BindPlace(ILBuilder il)
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access)
+        {
+            return new BoundLocalPlace(Place(il), access);
+        }
+
+        internal override IPlace Place(ILBuilder il) => LocalPlace(il);
+
+        private LocalPlace LocalPlace(ILBuilder il)
         {
             if (_place == null)
-            {
-                _place = new BoundLocalPlace(il.LocalSlotManager.DeclareLocal((Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal, this.Name, SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false));
-            }
+                _place = new LocalPlace(il.LocalSlotManager.DeclareLocal((Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal, this.Name, SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false));
 
             return _place;
         }
-
-        internal override IPlace Place(ILBuilder il) => (IPlace)BindPlace(il);
     }
 
     partial class BoundParameter
     {
-        internal override IBoundReference BindPlace(ILBuilder il)
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access)
         {
-            return new BoundParamPlace(this.Parameter);
+            return new BoundLocalPlace(Place(il), access);
         }
 
-        internal override IPlace Place(ILBuilder il) => (IPlace)BindPlace(il);
+        internal override IPlace Place(ILBuilder il)
+        {
+            return new ParamPlace(this.Parameter);
+        }
     }
 
     partial class BoundGlobalVariable
     {
-        internal override IBoundReference BindPlace(ILBuilder il)
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access)
         {
             throw new NotImplementedException();
         }

@@ -353,23 +353,99 @@ namespace Pchp.CodeAnalysis.CodeGen
 
     internal class BoundLocalPlace : IBoundReference, IPlace
     {
-        readonly LocalDefinition _def;
+        readonly IPlace _place;
+        readonly BoundAccess _access;
 
-        public BoundLocalPlace(LocalDefinition def)
+        public BoundLocalPlace(IPlace place, BoundAccess access)
         {
-            Contract.ThrowIfNull(def);
-            _def = def;
+            Contract.ThrowIfNull(place);
+            Debug.Assert(place.HasAddress);
+            Debug.Assert(place is LocalPlace || place is ParamPlace);
+
+            _place = place;
+            _access = access;
         }
 
-        public TypeSymbol Type => (TypeSymbol)_def.Type;
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            Debug.Assert(_access.IsRead);
 
-        public bool HasAddress => true;
+            var type = _place.Type;
 
-        public TypeSymbol EmitLoad(CodeGenerator cg) => ((IPlace)this).EmitLoad(cg.Builder);
+            // Ensure Object ($x->.. =)
+            if (_access.EnsureObject)
+            {
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    _place.EmitLoad(cg.Builder);
+                    cg.EmitLoadContext();
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureObject_Context)
+                        .Expect(SpecialType.System_Object);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    _place.EmitLoadAddress(cg.Builder);
+                    cg.EmitLoadContext();
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject_Context)
+                        .Expect(SpecialType.System_Object);
+                }
+                else
+                {
+                    if (type.IsReferenceType)
+                    {
+                        // TODO: ensure it is not null
+                        return _place.EmitLoad(cg.Builder);
+                    }
+                    else
+                    {
+                        // return new stdClass(ctx)
+                        throw new NotImplementedException();
+                    }
+                }
+            }
+            // Ensure Array ($x[] =)
+            else if (_access.EnsureArray)
+            {
+                throw new NotImplementedException();
+            }
+            // Ensure Alias (&$x)
+            else if (_access.IsReadRef)
+            {
+                throw new NotImplementedException();
+            }
+            // Read Value & Dereference eventually
+            else
+            {
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    _place.EmitLoad(cg.Builder);
+                    return cg.Emit_PhpAlias_GetValue();
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    // TODO: dereference if applicable (=> PhpValue.Alias.Value)
+                    return _place.EmitLoad(cg.Builder);
+                }
+                else
+                {
+                    return _place.EmitLoad(cg.Builder);
+                }
+            }
+        }
 
-        public void EmitLoadAddress(CodeGenerator cg) => ((IPlace)this).EmitLoadAddress(cg.Builder);
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            Debug.Assert(_access.IsWrite);
 
-        public void EmitStore(CodeGenerator cg, TypeSymbol valueType) => ((IPlace)this).EmitStore(cg.Builder);
+            // Write Ref
+            if (_access.IsWriteRef)
+            {
+                throw new NotImplementedException();
+            }
+
+            // Write Value
+            _place.EmitStore(cg.Builder);
+        }
 
         public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
 
@@ -377,72 +453,17 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         #region IPlace
 
-        TypeSymbol IPlace.EmitLoad(ILBuilder il)
-        {
-            il.EmitLocalLoad(_def);
-            return (TypeSymbol)_def.Type;
-        }
+        public TypeSymbol Type => _place.Type;
+
+        public bool HasAddress => _place.HasAddress;
+
+        TypeSymbol IPlace.EmitLoad(ILBuilder il) => _place.EmitLoad(il);
 
         void IPlace.EmitStorePrepare(ILBuilder il) { }
 
-        void IPlace.EmitStore(ILBuilder il)
-        {
-            il.EmitLocalStore(_def);
-        }
+        void IPlace.EmitStore(ILBuilder il) => _place.EmitStore(il);
 
-        void IPlace.EmitLoadAddress(ILBuilder il)
-        {
-            il.EmitLocalAddress(_def);
-        }
-
-        #endregion
-    }
-
-    internal class BoundParamPlace : IBoundReference, IPlace
-    {
-        readonly ParameterSymbol _p;
-
-        public int Index => ((MethodSymbol)_p.ContainingSymbol).HasThis ? _p.Ordinal + 1 : _p.Ordinal;
-
-        public BoundParamPlace(ParameterSymbol p)
-        {
-            Contract.ThrowIfNull(p);
-            _p = p;
-        }
-
-        public TypeSymbol Type => _p.Type;
-
-        public bool HasAddress => true;
-
-        public TypeSymbol EmitLoad(CodeGenerator cg) => ((IPlace)this).EmitLoad(cg.Builder);
-
-        public void EmitLoadAddress(CodeGenerator cg) => ((IPlace)this).EmitLoadAddress(cg.Builder);
-
-        public void EmitStore(CodeGenerator cg, TypeSymbol valueType) => ((IPlace)this).EmitStore(cg.Builder);
-
-        public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
-
-        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
-
-        #region IPlace
-
-        TypeSymbol IPlace.EmitLoad(ILBuilder il)
-        {
-            il.EmitLoadArgumentOpcode(Index);
-            return _p.Type;
-        }
-
-        void IPlace.EmitStorePrepare(ILBuilder il) { }
-
-        void IPlace.EmitStore(ILBuilder il)
-        {
-            il.EmitStoreArgumentOpcode(Index);
-        }
-
-        void IPlace.EmitLoadAddress(ILBuilder il)
-        {
-            il.EmitLoadArgumentAddrOpcode(Index);
-        }
+        void IPlace.EmitLoadAddress(ILBuilder il) => _place.EmitLoadAddress(il);
 
         #endregion
     }

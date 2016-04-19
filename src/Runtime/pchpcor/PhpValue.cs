@@ -106,6 +106,11 @@ namespace Pchp.Core
         public bool IsAlias => (TypeCode == PhpTypeCode.Alias);
 
         /// <summary>
+        /// Gets value indicating the value represents an object.
+        /// </summary>
+        public bool IsObject => (TypeCode == PhpTypeCode.Object);
+
+        /// <summary>
         /// Gets the long field of the value.
         /// Does not perform a conversion, expects the value is of type long.
         /// </summary>
@@ -162,6 +167,8 @@ namespace Pchp.Core
         public string ToString(Context ctx) => _type.ToString(ref this, ctx);
 
         public string ToStringOrThrow(Context ctx) => _type.ToStringOrThrow(ref this, ctx);
+
+        public object EnsureObject(Context ctx) => _type.EnsureObject(ref this, ctx);
 
         #endregion
 

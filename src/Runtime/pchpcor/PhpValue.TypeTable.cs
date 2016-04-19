@@ -38,6 +38,13 @@ namespace Pchp.Core
             public abstract Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number);
 
             /// <summary>
+            /// Ensures the value is a class object.
+            /// In case it isn't, creates stdClass according to PHP semantics. In case current value is empty, replaces current value with newly creates stdClass.
+            /// </summary>
+            /// <returns>Non-null object.</returns>
+            public abstract object EnsureObject(ref PhpValue me, Context ctx);
+
+            /// <summary>
             /// Debug textual representation of the value.
             /// </summary>
             public abstract string DisplayString(ref PhpValue me);
@@ -57,6 +64,12 @@ namespace Pchp.Core
             {
                 number = PhpNumber.Create(0L);
                 return Convert.NumberInfo.Unconvertible;
+            }
+            public override object EnsureObject(ref PhpValue me, Context ctx)
+            {
+                var obj = ToClass(ref me, ctx);
+                me = PhpValue.FromClass(obj);
+                return obj;
             }
             public override string DisplayString(ref PhpValue me) => "NULL";
         }
@@ -82,6 +95,10 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Long);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
+            public override object EnsureObject(ref PhpValue me, Context ctx)
+            {
+                throw new NotImplementedException();	// return PhpValue.Create(new stdClass(ctx)) // me is not changed
+            }
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
         }
 
@@ -99,6 +116,10 @@ namespace Pchp.Core
             {
                 number = PhpNumber.Create(me.Double);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
+            }
+            public override object EnsureObject(ref PhpValue me, Context ctx)
+            {
+                throw new NotImplementedException();	// return PhpValue.Create(new stdClass(ctx)) // me is not changed
             }
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
         }
@@ -118,6 +139,17 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Boolean ? 1L : 0L);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
+            public override object EnsureObject(ref PhpValue me, Context ctx)
+            {
+                //var obj = PhpValue.Create(new stdClass(ctx));
+                //if (me.Boolean == false)
+                //{
+                //    // me is changed if me.Boolean == FALSE
+                //    me = obj;
+                //}
+                //return obj;
+                throw new NotImplementedException();
+            }
             public override string DisplayString(ref PhpValue me) => me.Boolean ? "TRUE" : "FALSE";
         }
 
@@ -132,6 +164,17 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => Convert.StringToDouble(me.String);
             public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.String);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => Convert.ToNumber(me.String, out number);
+            public override object EnsureObject(ref PhpValue me, Context ctx)
+            {
+                //var obj = PhpValue.Create(new stdClass(ctx));
+                //if (string.IsNullOrempty(me.String))
+                //{
+                //    // me is changed if value is empty
+                //    me = obj;
+                //}
+                //return obj;
+                throw new NotImplementedException();
+            }
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
         }
 
@@ -146,6 +189,17 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.WritableString.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.WritableString.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.WritableString.ToNumber(out number);
+            public override object EnsureObject(ref PhpValue me, Context ctx)
+            {
+                //var obj = PhpValue.Create(new stdClass(ctx));
+                //if (me.WritableString.IsEmpty)
+                //{
+                //    // me is changed if value is empty
+                //    me = obj;
+                //}
+                //return obj;
+                throw new NotImplementedException();
+            }
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
         }
 
@@ -184,6 +238,7 @@ namespace Pchp.Core
                 if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToNumber(out number);
                 throw new NotImplementedException();
             }
+            public override object EnsureObject(ref PhpValue me, Context ctx) => me.Object;
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
         }
 
@@ -198,6 +253,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.Alias.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Alias.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Alias.ToNumber(out number);
+            public override object EnsureObject(ref PhpValue me, Context ctx) => me.Alias.Value.EnsureObject(ctx);
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
         }
     }

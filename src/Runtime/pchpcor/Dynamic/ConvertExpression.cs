@@ -19,6 +19,7 @@ namespace Pchp.Core.Dynamic
             //
             if (target == typeof(long)) return BindToLong(arg);
             if (target == typeof(double)) return BindToDouble(arg);
+            if (target == typeof(string)) return BindToString(arg);
             if (target == typeof(PhpNumber)) return BindToNumber(arg);
             if (target == typeof(PhpValue)) return BindToValue(arg);
             if (target == typeof(void)) return BindToVoid(arg);
@@ -45,6 +46,24 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(int)) return Expression.Convert(expr, typeof(double));
             if (source == typeof(long)) return Expression.Convert(expr, typeof(double));
             if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
+
+            throw new NotImplementedException(source.FullName);
+        }
+
+        private static Expression BindToString(Expression expr)
+        {
+            var source = expr.Type;
+
+            if (source == typeof(int) ||
+                source == typeof(long) ||
+                source == typeof(double))
+                return Expression.Call(expr, Cache.Object.ToString);
+
+            if (source == typeof(string))
+                return expr;
+
+            if (source == typeof(void))
+                return Expression.Constant(string.Empty, typeof(string));
 
             throw new NotImplementedException(source.FullName);
         }

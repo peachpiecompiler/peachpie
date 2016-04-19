@@ -312,18 +312,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits load of a variable.
-        /// </summary>
-        public TypeSymbol EmitLoad(BoundVariable variable)
-        {
-            Contract.ThrowIfNull(variable);
-
-            var place = variable.BindPlace(_il);
-            var tinst = place.EmitLoadPrepare(this);
-            return place.EmitLoad(this);
-        }
-
-        /// <summary>
         /// Loads <see cref="RuntimeTypeHandle"/> of given type.
         /// </summary>
         public TypeSymbol EmitLoadToken(TypeSymbol type, SyntaxNode syntaxNodeOpt)
@@ -369,14 +357,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         //}
 
         /// <summary>
-        /// Emits call to <c>PhpAlias.Value</c>,
+        /// Emits load of <c>PhpAlias.Value</c>,
         /// expecting <c>PhpAlias</c> on top of evaluation stack,
         /// pushing <c>PhpValue</c> on top of the stack.
         /// </summary>
-        public void Emit_PhpAlias_GetValue()
+        public TypeSymbol Emit_PhpAlias_GetValue()
         {
             // <stack>.get_Value
-            EmitCall(ILOpCode.Call, CoreMethods.Operators.PhpAlias_GetValue);
+            EmitOpCode(ILOpCode.Ldfld);
+            EmitSymbolToken(CoreTypes.PhpAlias.Symbol.GetMembers("Value").OfType<FieldSymbol>().First(), null);
+            return this.CoreTypes.PhpValue;
         }
 
         /// <summary>

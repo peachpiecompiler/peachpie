@@ -169,6 +169,7 @@ namespace Pchp.CodeAnalysis.Symbols
     class CoreMethods
     {
         public readonly PhpValueHolder PhpValue;
+        public readonly PhpAliasHolder PhpAlias;
         public readonly PhpNumberHolder PhpNumber;
         public readonly OperatorsHolder Operators;
         public readonly PhpStringHolder PhpString;
@@ -181,6 +182,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(types);
 
             PhpValue = new PhpValueHolder(types);
+            PhpAlias = new PhpAliasHolder(types);
             PhpNumber = new PhpNumberHolder(types);
             PhpString = new PhpStringHolder(types);
             Operators = new OperatorsHolder(types);
@@ -194,8 +196,6 @@ namespace Pchp.CodeAnalysis.Symbols
             public OperatorsHolder(CoreTypes ct)
             {
                 Equal_Object_Object = ct.Operators.Method("Equal", ct.Object, ct.Object);
-
-                PhpAlias_GetValue = ct.PhpAlias.Method("get_Value");
 
                 ToString_Bool = ct.Convert.Method("ToString", ct.Boolean);
                 ToString_Int32 = ct.Convert.Method("ToString", ct.Int32);
@@ -216,7 +216,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 Equal_Object_Object,
-                PhpAlias_GetValue,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32;
@@ -231,6 +230,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble = ct.PhpValue.Method("ToDouble");
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
                 ToClass_Context = ct.PhpValue.Method("ToClass", ct.Context);
+                EnsureObject_Context = ct.PhpValue.Method("EnsureObject", ct.Context);
 
                 get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
@@ -252,10 +252,21 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context,
                 get_Long, get_Double, get_Boolean, get_String, get_Object,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, CreateNull, CreateVoid,
                 FromClr_Object, FromClass_Object;
+        }
+
+        public struct PhpAliasHolder
+        {
+            public PhpAliasHolder(CoreTypes ct)
+            {
+                EnsureObject_Context = ct.PhpAlias.Method("EnsureObject", ct.Context);
+            }
+
+            public readonly CoreMethod
+                EnsureObject_Context;
         }
 
         public struct PhpNumberHolder
