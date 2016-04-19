@@ -251,6 +251,79 @@ namespace Pchp.CodeAnalysis.CodeGen
     #region IBoundPlace
 
     /// <summary>
+    /// Helper object emitting value of a member instance.
+    /// Used to avoid repetitious evaluation of the instance in case of BoundCompoundAssignEx or Increment/Decrement.
+    /// </summary>
+    internal sealed class InstanceCacheHolder : IDisposable
+    {
+        LocalDefinition _local;
+        CodeGenerator _cg;
+
+        public void Dispose()
+        {
+            if (_local != null)
+            {
+                _cg.ReturnTemporaryLocal(_local);
+
+                _cg = null;
+                _local = null;
+            }
+        }
+
+        /// <summary>
+        /// Emits instance. Caches the result if holder is provided, or loads evaluated instance if holder was initialized already.
+        /// </summary>
+        public static TypeSymbol EmitInstance(InstanceCacheHolder holderOrNull, CodeGenerator cg, BoundExpression instance)
+        {
+            if (instance != null)
+            {
+                if (holderOrNull != null)
+                {
+                    return holderOrNull.EmitInstance(cg, instance);
+                }
+                else
+                {
+                    return cg.Emit(instance);
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Emits <paramref name="instance"/>, uses cached value if initialized already.
+        /// </summary>
+        TypeSymbol EmitInstance(CodeGenerator cg, BoundExpression instance)
+        {
+            Debug.Assert(cg != null);
+
+            if (instance != null)
+            {
+                if (_local != null)
+                {
+                    Debug.Assert(instance.ResultType == (TypeSymbol)_local.Type);
+                    cg.Builder.EmitLocalLoad(_local);
+                }
+                else
+                {
+                    _cg = cg;
+
+                    // return (<loc> = <instance>);
+                    _local = cg.GetTemporaryLocal(cg.Emit(instance));
+                    cg.EmitOpCode(ILOpCode.Dup);
+                    cg.Builder.EmitLocalStore(_local);
+                }
+
+                return (TypeSymbol)_local.Type;
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Interface wrapping bound storage places.
     /// </summary>
     /// <remarks>
@@ -272,11 +345,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         /// <param name="cg">Code generator, must not be <c>null</c>.</param>
         /// <param name="instanceOpt">Temporary variable holding value of instance expression.</param>
-        /// <returns>Type of instance emitted onto the evaluation stack. May be <c>null</c> or <c>void</c> in case of a local variable or a static field or a static property.</returns>
         /// <remarks>
         /// The returned type corresponds to the instance expression emitted onto top of the evaluation stack. The value can be stored to a temporary variable and passed to the next call to Emit**Prepare to avoid evaluating of instance again.
         /// </remarks>
-        TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt = null);
+        void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null);
 
         /// <summary>
         /// Emits the preamble to the load operation.
@@ -284,11 +356,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         /// <param name="cg">Code generator, must not be <c>null</c>.</param>
         /// <param name="instanceOpt">Temporary variable holding value of instance expression.</param>
-        /// <returns>Type of instance emitted onto the evaluation stack. May be <c>null</c> or <c>void</c> in case of a local variable or a static field or a static property.</returns>
         /// <remarks>
         /// The returned type corresponds to the instance expression emitted onto top of the evaluation stack. The value can be stored to a temporary variable and passed to the next call to Emit**Prepare to avoid evaluating of instance again.
         /// </remarks>
-        TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt = null);
+        void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null);
 
         /// <summary>
         /// Emits load of value.
@@ -320,38 +391,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     #endregion
 
     #region Bound Places
-
-    internal static class BoundPlaceHelpers
-    {
-        /// <summary>
-        /// Emits <paramref name="instance"/>. Uses <paramref name="instanceCacheOpt"/> if provided.
-        /// </summary>
-        public static TypeSymbol EmitInstanceOrTmp(CodeGenerator cg, BoundExpression instance, LocalDefinition instanceCacheOpt)
-        {
-            Debug.Assert(cg != null);
-
-            if (instance != null)
-            {
-                if (instanceCacheOpt != null)
-                {
-                    Debug.Assert(instance.ResultType == (TypeSymbol)instanceCacheOpt.Type);
-                    cg.Builder.EmitLocalLoad(instanceCacheOpt);
-                    return (TypeSymbol)instanceCacheOpt.Type;
-                }
-                else
-                {
-                    return cg.Emit(instance);
-                }
-            }
-            else
-            {
-                Debug.Assert(instanceCacheOpt == null);
-            }
-
-            return null;
-        }
-    }
-
+    
     internal class BoundLocalPlace : IBoundReference, IPlace
     {
         readonly IPlace _place;
@@ -368,6 +408,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             _access = access;
             _thint = thint;
         }
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt) { }
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
@@ -478,6 +520,40 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            Debug.Assert(_access.IsWrite);
+            Debug.Assert(instanceOpt == null);
+
+            var type = _place.Type;
+
+            if (_access.IsWriteRef)
+            {
+                // no need for preparation
+            }
+            else
+            {
+                //
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // (PhpAlias)<place>
+                    _place.EmitLoad(cg.Builder);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    if (_thint.IsRef)
+                    {
+                        // Operators.SetValue(ref <place>, (PhpValue)<value>);
+                        _place.EmitLoadAddress(cg.Builder);
+                    }
+                }
+                else
+                {
+                    // no need for preparation
+                }
+            }
+        }
+
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
             Debug.Assert(_access.IsWrite);
@@ -545,44 +621,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
-
-        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
-        {
-            Debug.Assert(_access.IsWrite);
-            Debug.Assert(instanceOpt == null);
-
-            var type = _place.Type;
-
-            if (_access.IsWriteRef)
-            {
-                // no need for preparation
-            }
-            else
-            {
-                //
-                if (type == cg.CoreTypes.PhpAlias)
-                {
-                    // (PhpAlias)<place>
-                    _place.EmitLoad(cg.Builder);
-                }
-                else if (type == cg.CoreTypes.PhpValue)
-                {
-                    if (_thint.IsRef)
-                    {
-                        // Operators.SetValue(ref <place>, (PhpValue)<value>);
-                        _place.EmitLoadAddress(cg.Builder);
-                    }
-                }
-                else
-                {
-                    // no need for preparation
-                }
-            }
-
-            return null;
-        }
-
         #region IPlace
 
         public TypeSymbol Type => _place.Type;
@@ -642,7 +680,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
         }
 
-        public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             if (_property == null)
             {
@@ -650,10 +688,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 throw new NotImplementedException();
             }
 
-            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, _instance, instanceOpt);
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
         }
 
-        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             if (_property == null)
             {
@@ -661,7 +699,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 throw new NotImplementedException();
             }
 
-            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, _instance, instanceOpt);
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
         }
     }
 

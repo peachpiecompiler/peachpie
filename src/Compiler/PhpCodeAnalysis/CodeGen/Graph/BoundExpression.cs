@@ -1005,9 +1005,24 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitSymbolToken(Field, null);
         }
 
+        void EmitOpCode_Load(CodeGenerator cg)
+        {
+            EmitOpCode(cg, Field.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
+        }
+
+        void EmitOpCode_LoadAddress(CodeGenerator cg)
+        {
+            EmitOpCode(cg, Field.IsStatic ? ILOpCode.Ldsflda : ILOpCode.Ldflda);
+        }
+
+        void EmitOpCode_Store(CodeGenerator cg)
+        {
+            EmitOpCode(cg, Field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
+        }
+
         TypeSymbol IBoundReference.Type => Field?.Type;
         
-        TypeSymbol IBoundReference.EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             if (Field == null)
             {
@@ -1020,21 +1035,22 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             // instance
-            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, Instance, instanceOpt);
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
         }
 
         TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
         {
-            if (Field == null)
+            Debug.Assert(Access.IsRead);
+
+            if (Field == null)  // call site
             {
                 Debug.Assert(_lazyLoadCallSite != null);
                 Debug.Assert(this.Instance.ResultType != null);
 
                 // resolve actual return type
                 TypeSymbol return_type;
-                if (Access.IsNone) return_type = cg.CoreTypes.Void;
+                if (Access.EnsureObject) return_type = cg.CoreTypes.Object;
                 //else if (Access.EnsureArray) return_type = cg.CoreTypes.PhpArray;
-                else if (Access.EnsureObject) return_type = cg.CoreTypes.Object;
                 else if (Access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
                 else return_type = Access.TargetType ?? cg.CoreTypes.PhpValue;
 
@@ -1062,22 +1078,105 @@ namespace Pchp.CodeAnalysis.Semantics
                 //
                 return return_type;
             }
-            else
+            else // direct
             {
+                var type = Field.Type;
+
                 if (Field.IsStatic && Instance != null)
                     cg.EmitPop(Instance.ResultType);
                 else if (!Field.IsStatic && Instance == null)
                     throw new NotImplementedException();
 
-                // TODO: EnsureArray, EnsureObject, ReadRef
+                // Ensure Object (..->Field->.. =)
+                if (Access.EnsureObject)
+                {
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        EmitOpCode_Load(cg);    // PhpAlias
+                        cg.EmitLoadContext();   // Context
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureObject_Context)
+                            .Expect(SpecialType.System_Object);
+                    }
+                    else if (type == cg.CoreTypes.PhpValue)
+                    {
+                        EmitOpCode_LoadAddress(cg); // &PhpValue
+                        cg.EmitLoadContext();       // Context
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject_Context)
+                            .Expect(SpecialType.System_Object);
+                    }
+                    else
+                    {
+                        if (type.IsReferenceType)
+                        {
+                            // TODO: ensure it is not null
+                            EmitOpCode_Load(cg);
+                            return type;
+                        }
+                        else
+                        {
+                            // return new stdClass(ctx)
+                            throw new NotImplementedException();
+                        }
+                    }
+                }
+                // Ensure Array (xxx->Field[] =)
+                else if (Access.EnsureArray)
+                {
+                    throw new NotImplementedException();
+                }
+                // Ensure Alias (&...->Field)
+                else if (Access.IsReadRef)
+                {
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        // TODO: <place>.AddRef()
+                        EmitOpCode_Load(cg);
+                        return type;
+                    }
+                    else if (type == cg.CoreTypes.PhpValue)
+                    {
+                        // return <place>.EnsureAlias()
+                        EmitOpCode_LoadAddress(cg); // &PhpValue
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias)
+                            .Expect(cg.CoreTypes.PhpAlias);
+                    }
+                    else
+                    {
+                        Debug.Assert(false, "value cannot be aliased");
 
-                EmitOpCode(cg, Field.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
-                return Field.Type;
+                        // new PhpAlias((PhpValue)<place>, 1)
+                        EmitOpCode_Load(cg);
+                        cg.EmitConvertToPhpValue(type, 0);
+                        return cg.Emit_PhpValue_MakeAlias();
+                    }
+                }
+                // Read (...->Field) & Dereference eventually
+                else
+                {
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        EmitOpCode_Load(cg);
+                        return cg.Emit_PhpAlias_GetValue();
+                    }
+                    else if (type == cg.CoreTypes.PhpValue)
+                    {
+                        // TODO: dereference if applicable (=> PhpValue.Alias.Value)
+                        EmitOpCode_Load(cg);
+                        return type;
+                    }
+                    else
+                    {
+                        EmitOpCode_Load(cg);
+                        return type;
+                    }
+                }
             }
         }
 
-        TypeSymbol IBoundReference.EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        void IBoundReference.EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
+            Debug.Assert(Access.IsWrite);
+
             if (Field == null)
             {
                 if (_lazyStoreCallSite == null)
@@ -1086,14 +1185,46 @@ namespace Pchp.CodeAnalysis.Semantics
                 // callsite.Target callsite
                 _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
                 _lazyStoreCallSite.Place.EmitLoad(cg.Builder);
-            }
 
-            // instance
-            return BoundPlaceHelpers.EmitInstanceOrTmp(cg, Instance, instanceOpt);
+                // instance
+                InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+            }
+            else
+            {
+                var type = Field.Type;
+
+                // instance
+                InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+
+                //
+                if (Access.IsWriteRef)
+                {
+                    // no need for preparation
+                }
+                else
+                {
+                    //
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        // (PhpAlias)<place>
+                        EmitOpCode_Load(cg);    // PhpAlias
+                    }
+                    else if (type == cg.CoreTypes.PhpValue)
+                    {
+                        EmitOpCode_LoadAddress(cg); // &PhpValue
+                    }
+                    else
+                    {
+                        // no need for preparation
+                    }
+                }
+            }
         }
 
         void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
+            Debug.Assert(Access.IsWrite);
+
             if (Field == null)
             {
                 Debug.Assert(_lazyStoreCallSite != null);
@@ -1122,12 +1253,59 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (!Field.IsStatic && Instance == null)
                     throw new NotImplementedException();
 
-                // value
-                cg.EmitConvert(valueType, 0, Field.Type);
+                var type = Field.Type;
 
+                if (Access.IsWriteRef)
+                {
+                    if (valueType != cg.CoreTypes.PhpAlias)
+                    {
+                        Debug.Assert(false, "caller should get aliased value");
+                        cg.EmitConvertToPhpValue(valueType, 0);
+                        valueType = cg.Emit_PhpValue_MakeAlias();
+                    }
+
+                    //
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        // <place> = <alias>
+                        EmitOpCode_Store(cg);
+                    }
+                    else if (type == cg.CoreTypes.PhpValue)
+                    {
+                        // <place> = PhpValue.Create(<alias>)
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
+                        EmitOpCode_Store(cg);
+                    }
+                    else
+                    {
+                        Debug.Assert(false, "Assigning alias to non-aliasable field.");
+                        cg.EmitConvert(valueType, 0, type);
+                        EmitOpCode_Store(cg);
+                    }
+                }
+                else
+                {
+                    //
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        // <Field>.Value = <value>
+                        cg.EmitConvertToPhpValue(valueType, 0);
+                        cg.Emit_PhpAlias_SetValue();
+                    }
+                    else if (type == cg.CoreTypes.PhpValue)
+                    {
+                        // Operators.SetValue(ref <Field>, (PhpValue)<value>);
+                        cg.EmitConvertToPhpValue(valueType, 0);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetValue_PhpValueRef_PhpValue);
+                    }
+                    else
+                    {
+                        cg.EmitConvert(valueType, 0, type);
+                        EmitOpCode_Store(cg);
+                    }
+                }
+                
                 // 
-                EmitOpCode(cg, Field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
-
                 if (Field.IsStatic && Instance != null)
                     cg.EmitPop(Instance.ResultType);
             }
