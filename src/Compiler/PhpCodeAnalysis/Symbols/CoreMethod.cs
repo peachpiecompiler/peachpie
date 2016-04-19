@@ -263,11 +263,32 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public PhpAliasHolder(CoreTypes ct)
             {
+                _value = null;
+
                 EnsureObject_Context = ct.PhpAlias.Method("EnsureObject", ct.Context);
             }
 
             public readonly CoreMethod
                 EnsureObject_Context;
+
+            /// <summary>
+            /// Lazily gets <c>PhpAlias.Value</c> field.
+            /// </summary>
+            public FieldSymbol Value
+            {
+                get
+                {
+                    if (_value == null)
+                    {
+                        Debug.Assert(EnsureObject_Context.DeclaringClass.Symbol != null);
+                        _value = (EnsureObject_Context.DeclaringClass.Symbol)
+                            .GetMembers("Value").OfType<FieldSymbol>().First();
+                        Debug.Assert(_value != null);
+                    }
+                    return _value;
+                }
+            }
+            FieldSymbol _value;
         }
 
         public struct PhpNumberHolder

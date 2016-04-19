@@ -379,7 +379,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // <stack>.Value
             EmitOpCode(ILOpCode.Ldfld);
-            EmitSymbolToken(CoreTypes.PhpAlias.Symbol.GetMembers("Value").OfType<FieldSymbol>().First(), null);
+            EmitSymbolToken(CoreMethods.PhpAlias.Value, null);
             return this.CoreTypes.PhpValue;
         }
 
@@ -391,7 +391,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // <stack_1>.Value = <stack_2>
             EmitOpCode(ILOpCode.Stfld);
-            EmitSymbolToken(CoreTypes.PhpAlias.Symbol.GetMembers("Value").OfType<FieldSymbol>().First(), null);
+            EmitSymbolToken(CoreMethods.PhpAlias.Value, null);
         }
 
         /// <summary>

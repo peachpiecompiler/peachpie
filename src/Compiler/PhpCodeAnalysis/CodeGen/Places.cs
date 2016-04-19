@@ -523,8 +523,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             Debug.Assert(_access.IsWrite);
-            Debug.Assert(instanceOpt == null);
-
+            
             var type = _place.Type;
 
             if (_access.IsWriteRef)
