@@ -47,19 +47,31 @@ namespace Pchp.Core.Dynamic
         {
             BindingRestrictions restrictions = BindingRestrictions.Empty;
 
-            if (target.Value == null)
-            {
-                throw new NotImplementedException();    // TODO: call on NULL
-            }
+            Expression target_expr;
+            object target_value;
+            BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
 
             var methodName = ResolveName(args, ref restrictions);
-            var targetType = target.Value.GetType();
-            var method = targetType.GetTypeInfo().GetDeclaredMethod(methodName);
 
-            restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target.Expression, target.RuntimeType));
-            var invocation = Expression.Call(Expression.Convert(target.Expression, targetType), method, BindArguments(method.GetParameters(), args, ref restrictions));
+            var runtime_type = target_value.GetType();
 
-            return new DynamicMetaObject(ConvertExpression.Bind(invocation, _returnType), restrictions);
+            var method = runtime_type.GetTypeInfo().GetDeclaredMethod(methodName);
+            if (method != null)
+            {
+                if (target_expr.Type != runtime_type)
+                {
+                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
+                    target_expr = Expression.Convert(target_expr, runtime_type);
+                }
+
+                var invocation = Expression.Call(target_expr, method, BindArguments(method.GetParameters(), args, ref restrictions));
+                // TODO: by alias or by value
+                return new DynamicMetaObject(ConvertExpression.Bind(invocation, _returnType), restrictions);
+            }
+            else
+            {
+                throw new NotImplementedException("__call or method not found");
+            }
         }
 
         #endregion

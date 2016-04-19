@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
@@ -355,8 +356,9 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         readonly IPlace _place;
         readonly BoundAccess _access;
+        readonly TypeRefMask _thint;
 
-        public BoundLocalPlace(IPlace place, BoundAccess access)
+        public BoundLocalPlace(IPlace place, BoundAccess access, TypeRefMask thint)
         {
             Contract.ThrowIfNull(place);
             Debug.Assert(place.HasAddress);
@@ -364,6 +366,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _place = place;
             _access = access;
+            _thint = thint;
         }
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
@@ -384,10 +387,33 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (type == cg.CoreTypes.PhpValue)
                 {
-                    _place.EmitLoadAddress(cg.Builder);
-                    cg.EmitLoadContext();
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject_Context)
-                        .Expect(SpecialType.System_Object);
+                    if (cg.IsClassOnly(_thint))
+                    {
+                        // uses typehint and accesses .Object directly if possible
+                        _place.EmitLoadAddress(cg.Builder);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.get_Object)
+                            .Expect(SpecialType.System_Object);
+
+                        if (_thint.IsSingleType)
+                        {
+                            var tref = cg.Routine.TypeRefContext.GetTypes(_thint)[0];
+                            var clrtype = (TypeSymbol)cg.DeclaringCompilation.GetTypeByMetadataName(tref.QualifiedName.ClrName());
+                            if (clrtype != null && !clrtype.IsErrorType())
+                            {
+                                cg.EmitCastClass(clrtype);
+                                return clrtype;
+                            }
+                        }
+
+                        return cg.CoreTypes.Object;
+                    }
+                    else
+                    {
+                        _place.EmitLoadAddress(cg.Builder);
+                        cg.EmitLoadContext();
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject_Context)
+                            .Expect(SpecialType.System_Object);
+                    }
                 }
                 else
                 {
@@ -411,7 +437,26 @@ namespace Pchp.CodeAnalysis.CodeGen
             // Ensure Alias (&$x)
             else if (_access.IsReadRef)
             {
-                throw new NotImplementedException();
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // TODO: <place>.AddRef()
+                    return _place.EmitLoad(cg.Builder);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    // return <place>.EnsureAlias()
+                    _place.EmitLoadAddress(cg.Builder);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias)
+                        .Expect(cg.CoreTypes.PhpAlias);
+                }
+                else
+                {
+                    Debug.Assert(false, "value cannot be aliased");
+
+                    // new PhpAlias((PhpValue)<place>, 1)
+                    cg.EmitConvertToPhpValue(_place.EmitLoad(cg.Builder), 0);
+                    return cg.Emit_PhpValue_MakeAlias();
+                }
             }
             // Read Value & Dereference eventually
             else
@@ -437,19 +482,106 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(_access.IsWrite);
 
+            var type = _place.Type;
+
             // Write Ref
             if (_access.IsWriteRef)
             {
-                throw new NotImplementedException();
-            }
+                if (valueType != cg.CoreTypes.PhpAlias)
+                {
+                    Debug.Assert(false, "caller should get aliased value");
+                    cg.EmitConvertToPhpValue(valueType, 0);
+                    valueType = cg.Emit_PhpValue_MakeAlias();
+                }
 
-            // Write Value
-            _place.EmitStore(cg.Builder);
+                //
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // <place> = <alias>
+                    _place.EmitStore(cg.Builder);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    // <place> = PhpValue.Create(<alias>)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
+                    _place.EmitStore(cg.Builder);
+                }
+                else
+                {
+                    Debug.Assert(false, "Assigning alias to non-aliasable variable.");
+                    cg.EmitConvert(valueType, 0, type);
+                    _place.EmitStore(cg.Builder);
+                }
+            }
+            else
+            {
+                //
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // <place>.Value = <value>
+                    cg.EmitConvertToPhpValue(valueType, 0);
+                    cg.Emit_PhpAlias_SetValue();
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    if (_thint.IsRef)
+                    {
+                        // Operators.SetValue(ref <place>, (PhpValue)<value>);
+                        cg.EmitConvertToPhpValue(valueType, 0);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetValue_PhpValueRef_PhpValue);
+                    }
+                    else
+                    {
+                        // <place> = <value>
+                        cg.EmitConvertToPhpValue(valueType, 0);
+                        _place.EmitStore(cg.Builder);
+                    }
+                }
+                else
+                {
+                    cg.EmitConvert(valueType, 0, type);
+                    _place.EmitStore(cg.Builder);
+                }
+            }
         }
 
         public TypeSymbol EmitLoadPrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
 
-        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt) => null;
+        public TypeSymbol EmitStorePrepare(CodeGenerator cg, LocalDefinition instanceOpt)
+        {
+            Debug.Assert(_access.IsWrite);
+            Debug.Assert(instanceOpt == null);
+
+            var type = _place.Type;
+
+            if (_access.IsWriteRef)
+            {
+                // no need for preparation
+            }
+            else
+            {
+                //
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // (PhpAlias)<place>
+                    _place.EmitLoad(cg.Builder);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    if (_thint.IsRef)
+                    {
+                        // Operators.SetValue(ref <place>, (PhpValue)<value>);
+                        _place.EmitLoadAddress(cg.Builder);
+                    }
+                }
+                else
+                {
+                    // no need for preparation
+                }
+            }
+
+            return null;
+        }
 
         #region IPlace
 
@@ -505,6 +637,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             //    throw new InvalidOperationException();
 
             var setter = _property.SetMethod;
+
+            cg.EmitConvert(valueType, 0, setter.Parameters[0].Type);
             cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
         }
 

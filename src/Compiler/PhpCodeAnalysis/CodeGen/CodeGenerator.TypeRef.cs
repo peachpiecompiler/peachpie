@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsClassOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && _routine.TypeRefContext.GetTypes(tmask).All(x => x.IsObject);
+            return !tmask.IsVoid && !tmask.IsAnyType && _routine.TypeRefContext.GetTypes(tmask).All(x => x.IsObject);
         }
     }
 }

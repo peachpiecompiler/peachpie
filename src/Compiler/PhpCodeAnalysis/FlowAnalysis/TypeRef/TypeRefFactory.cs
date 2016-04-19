@@ -46,9 +46,23 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(t);
 
-            if (t.SpecialType == SpecialType.System_Void)
+            switch (t.SpecialType)
             {
-                return 0;
+                case SpecialType.System_Void: return 0;
+                case SpecialType.System_Int64: return ctx.GetLongTypeMask();
+                case SpecialType.System_String: return ctx.GetStringTypeMask();
+                case SpecialType.System_Double: return ctx.GetDoubleTypeMask();
+                case SpecialType.System_Boolean: return ctx.GetBooleanTypeMask();
+                case SpecialType.None:
+                    if (t.ContainingAssembly.IsPchpCorLibrary)
+                    {
+                        if (t.Name == "PhpValue") return TypeRefMask.AnyType;
+                        if (t.Name == "PhpAlias") return TypeRefMask.AnyType.WithRefFlag;
+                        if (t.Name == "PhpNumber") return ctx.GetNumberTypeMask();
+                        if (t.Name == "PhpString") return ctx.GetWritableStringTypeMask();
+                    }
+
+                    break;
             }
 
             return CreateMask(ctx, Create(t));

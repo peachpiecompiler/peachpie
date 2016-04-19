@@ -170,6 +170,8 @@ namespace Pchp.Core
 
         public object EnsureObject(Context ctx) => _type.EnsureObject(ref this, ctx);
 
+        public PhpAlias EnsureAlias() => _type.EnsureAlias(ref this);
+
         #endregion
 
         #region Construction

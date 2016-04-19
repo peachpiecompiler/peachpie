@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public OperatorsHolder(CoreTypes ct)
             {
-                Equal_Object_Object = ct.Operators.Method("Equal", ct.Object, ct.Object);
+                SetValue_PhpValueRef_PhpValue = ct.Operators.Method("SetValue", ct.PhpValue, ct.PhpValue);
 
                 ToString_Bool = ct.Convert.Method("ToString", ct.Boolean);
                 ToString_Int32 = ct.Convert.Method("ToString", ct.Int32);
@@ -215,7 +215,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                Equal_Object_Object,
+                SetValue_PhpValueRef_PhpValue,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32;
@@ -231,6 +231,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
                 ToClass_Context = ct.PhpValue.Method("ToClass", ct.Context);
                 EnsureObject_Context = ct.PhpValue.Method("EnsureObject", ct.Context);
+                EnsureAlias = ct.PhpValue.Method("EnsureAlias");
 
                 get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
@@ -252,7 +253,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureAlias,
                 get_Long, get_Double, get_Boolean, get_String, get_Object,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, CreateNull, CreateVoid,
                 FromClr_Object, FromClass_Object;

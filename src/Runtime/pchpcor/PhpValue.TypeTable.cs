@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Pchp.Core
 {
@@ -43,6 +44,19 @@ namespace Pchp.Core
             /// </summary>
             /// <returns>Non-null object.</returns>
             public abstract object EnsureObject(ref PhpValue me, Context ctx);
+
+			/// <summary>
+            /// Ensures the value as an alias.
+            /// In case it isn't, the value is aliased.
+            /// </summary>
+            /// <returns>Non-null alias of the value.</returns>
+            public virtual PhpAlias EnsureAlias(ref PhpValue me)
+            {
+                Debug.Assert(Type != PhpTypeCode.Alias, "To be overriden!");
+                var alias = new PhpAlias(me, 1);
+                me = Create(alias);
+                return alias;
+            }
 
             /// <summary>
             /// Debug textual representation of the value.
@@ -254,6 +268,7 @@ namespace Pchp.Core
             public override bool ToBoolean(ref PhpValue me) => me.Alias.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Alias.ToNumber(out number);
             public override object EnsureObject(ref PhpValue me, Context ctx) => me.Alias.Value.EnsureObject(ctx);
+            public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
         }
     }

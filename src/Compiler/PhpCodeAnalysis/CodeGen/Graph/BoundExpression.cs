@@ -975,7 +975,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundVariableRef
     {
-        internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder, this.Access);
+        internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder, this.Access, this.TypeRefMask);
 
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
     }
@@ -1122,6 +1122,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (!Field.IsStatic && Instance == null)
                     throw new NotImplementedException();
 
+                // value
+                cg.EmitConvert(valueType, 0, Field.Type);
+
+                // 
                 EmitOpCode(cg, Field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
 
                 if (Field.IsStatic && Instance != null)
@@ -1380,11 +1384,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // T tmp; // in case access is Read
             var t_value = target_place.Type;
+            if (t_value == cg.CoreTypes.PhpAlias || t_value == cg.CoreTypes.PhpValue)
+                t_value = null; // no inplace conversion
+
             LocalDefinition tmp = null;
 
             // <target> = <value>
             target_place.EmitStorePrepare(cg);
-            if (t_value != null) cg.EmitConvert(this.Value, t_value);
+            
+            // TODO: load value & dereference eventually
+            if (t_value != null) cg.EmitConvert(this.Value, t_value);   // TODO: do not convert here yet
             else t_value = cg.Emit(this.Value);
 
             switch (this.Access.Flags)

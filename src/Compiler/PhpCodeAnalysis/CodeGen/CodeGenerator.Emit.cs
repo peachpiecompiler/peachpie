@@ -106,8 +106,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                         else if (IsClassOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
-                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Object)
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Object)
                                 .Expect(SpecialType.System_Object);
+
+                            // DEBUG:
+                            //if (tmask.IsSingleType)
+                            //{
+                            //    var tref = this.Routine.TypeRefContext.GetTypes(tmask)[0];
+                            //    var clrtype = (TypeSymbol)this.DeclaringCompilation.GetTypeByMetadataName(tref.QualifiedName.ClrName());
+                            //    if (clrtype != null && !clrtype.IsErrorType())
+                            //    {
+                            //        this.EmitCastClass(clrtype);
+                            //        return clrtype;
+                            //    }
+                            //}
+
+                            return this.CoreTypes.Object;
                         }
 
                         // TODO: Array
@@ -363,21 +377,31 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol Emit_PhpAlias_GetValue()
         {
-            // <stack>.get_Value
+            // <stack>.Value
             EmitOpCode(ILOpCode.Ldfld);
             EmitSymbolToken(CoreTypes.PhpAlias.Symbol.GetMembers("Value").OfType<FieldSymbol>().First(), null);
             return this.CoreTypes.PhpValue;
         }
 
         /// <summary>
+        /// Emits store to <c>PhpAlias.Value</c>,
+        /// expecting <c>PhpAlias</c> and <c>PhpValue</c> on top of evaluation stack.
+        /// </summary>
+        public void Emit_PhpAlias_SetValue()
+        {
+            // <stack_1>.Value = <stack_2>
+            EmitOpCode(ILOpCode.Stfld);
+            EmitSymbolToken(CoreTypes.PhpAlias.Symbol.GetMembers("Value").OfType<FieldSymbol>().First(), null);
+        }
+
+        /// <summary>
         /// Emits <c>new PhpAlias</c>, expecting <c>PhpValue</c> on top of the evaluation stack.
         /// </summary>
-        public void Emit_PhpValue_MakeAlias()
+        public TypeSymbol Emit_PhpValue_MakeAlias()
         {
             // new PhpAlias(<STACK>, 1)
             _il.EmitIntConstant(1);
-            _il.EmitOpCode(ILOpCode.Newobj, -1);    // - 2 out, + 1 in
-            _il.EmitToken(CoreMethods.Ctors.PhpAlias_PhpValue_int.Symbol, null, _diagnostics);
+            return EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpAlias_PhpValue_int);
         }
 
         public void Emit_New_PhpString(int capacity)

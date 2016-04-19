@@ -401,6 +401,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(to);
             Debug.Assert(to.IsReferenceType);   // TODO: structs other than primitive types
 
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
             if (from == to)
                 return;
 

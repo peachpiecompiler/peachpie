@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.FlowAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -18,7 +19,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets <see cref="IBoundReference"/> providing load and store operations.
         /// </summary>
-        internal abstract IBoundReference BindPlace(ILBuilder il, BoundAccess access);
+        internal abstract IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint);
 
         internal abstract IPlace Place(ILBuilder il);
     }
@@ -27,9 +28,9 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         LocalPlace _place;
 
-        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access)
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            return new BoundLocalPlace(Place(il), access);
+            return new BoundLocalPlace(Place(il), access, thint);
         }
 
         internal override IPlace Place(ILBuilder il) => LocalPlace(il);
@@ -45,9 +46,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundParameter
     {
-        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access)
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            return new BoundLocalPlace(Place(il), access);
+            return new BoundLocalPlace(Place(il), access, thint);
         }
 
         internal override IPlace Place(ILBuilder il)
@@ -58,7 +59,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundGlobalVariable
     {
-        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access)
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
             throw new NotImplementedException();
         }
