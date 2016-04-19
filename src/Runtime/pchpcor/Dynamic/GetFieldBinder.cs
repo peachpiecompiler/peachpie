@@ -84,6 +84,8 @@ namespace Pchp.Core.Dynamic
                 }
                 else if (_access.EnsureAlias())
                 {
+                    Debug.Assert(_returnType == typeof(PhpAlias));
+
                     if (fld.FieldType == typeof(PhpAlias))
                     {
                         // (PhpAlias)getter

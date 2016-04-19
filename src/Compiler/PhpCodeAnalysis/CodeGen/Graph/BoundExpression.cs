@@ -1245,7 +1245,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     cctor.EmitStringConstant(this.Name.Value);
                     cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
-                    cctor.EmitIntConstant(0);   // flags
+                    cctor.EmitIntConstant((int)Access.AccessFlags);   // flags
                     cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
                 });
             }

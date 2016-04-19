@@ -21,6 +21,7 @@ namespace Pchp.Core.Dynamic
             public static Type[] Object = new Type[] { typeof(object) };
             public static Type[] PhpString = new Type[] { typeof(PhpString) };
             public static Type[] PhpValue = new Type[] { typeof(PhpValue) };
+            public static Type[] PhpAlias = new Type[] { typeof(PhpAlias) };
         }
 
         public static class Operators

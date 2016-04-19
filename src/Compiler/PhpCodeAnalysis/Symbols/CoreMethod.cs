@@ -419,7 +419,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 this.CallMethodBinder_Create = ct.CallMethodBinder.Method("Create", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
                 this.GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
-                this.SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.Int32);
+                this.SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessFlags);
             }
 
             public readonly CoreConstructor

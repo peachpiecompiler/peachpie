@@ -33,6 +33,11 @@ namespace Pchp.Core.Dynamic
         /// Value is read within <c>isset</c> operator and all read warnings should be ignored.
         /// </summary>
         CheckOnly = 8,
+
+        /// <summary>
+        /// Alias will be written, RValue is expected to be <see cref="PhpAlias"/>.
+        /// </summary>
+        WriteAlias = 16,
     }
 
     internal static class AccessFlagsExtensions
@@ -41,5 +46,6 @@ namespace Pchp.Core.Dynamic
         public static bool EnsureArray(this AccessFlags flags) => (flags & AccessFlags.EnsureArray) == AccessFlags.EnsureArray;
         public static bool EnsureAlias(this AccessFlags flags) => (flags & AccessFlags.EnsureAlias) == AccessFlags.EnsureAlias;
         public static bool CheckOnly(this AccessFlags flags) => (flags & AccessFlags.CheckOnly) == AccessFlags.CheckOnly;
+        public static bool WriteAlias(this AccessFlags flags) => (flags & AccessFlags.WriteAlias) == AccessFlags.WriteAlias;
     }
 }
