@@ -47,8 +47,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal TypeSymbol TryEmitVariableSpecialize(BoundExpression expr)
         {
-            // avoiding of load of full value
-            return TryEmitVariableSpecialize(PlaceOrNull(expr), expr.TypeRefMask);
+            Debug.Assert(expr.Access.IsRead);
+
+            if (!expr.Access.IsEnsure)
+            {
+                // avoiding of load of full value if not necessary
+                return TryEmitVariableSpecialize(PlaceOrNull(expr), expr.TypeRefMask);
+            }
+            else
+            {
+                // we has to call expr.Emit() to generate ensureness correctly (Ensure Object, Ensure Array, Read Alias)
+                return null;
+            }
         }
 
         /// <summary>
@@ -140,8 +150,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
-            return expr.ResultType = 
-                TryEmitVariableSpecialize(expr) ?? EmitSpecialize(expr.Emit(this), expr.TypeRefMask);
+            Debug.Assert(expr.Access.IsRead);
+
+            return expr.ResultType = (TryEmitVariableSpecialize(expr) ?? EmitSpecialize(expr.Emit(this), expr.TypeRefMask));
         }
 
         /// <summary>
@@ -205,14 +216,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         HashSet<DiagnosticInfo> useSiteDiagnostic = null;
                         var t = _routine.DeclaringCompilation.SourceAssembly.GetTypeByMetadataName(tref.QualifiedName.ClrName(), true, false);
-                        if (t != null && t.IsDerivedFrom(stack, false, ref useSiteDiagnostic)) // TODO: or interface
+                        if (t != null && !t.IsErrorType() && t.IsDerivedFrom(stack, false, ref useSiteDiagnostic)) // TODO: or interface
                         {
                             EmitCastClass(t);
                             return t;
                         }
                         else
                         {
-                            // TODO: class aliasing, ErrorNamedType, ...
+                            // TODO: class aliasing
                             Debug.Assert(t != null);
                         }
                     }
