@@ -225,13 +225,19 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>+</c> operator suitable for actual operands.
         /// </summary>
-        internal static TypeSymbol EmitAdd(CodeGenerator cg, BoundExpression Left, BoundExpression Right, TypeSymbol resultTypeOpt = null)
+        private static TypeSymbol EmitAdd(CodeGenerator cg, BoundExpression Left, BoundExpression Right, TypeSymbol resultTypeOpt = null)
         {
-            // Template: x + y : Operators.Add(x,y) [overloads]
+            // Template: x + y
+            return EmitAdd(cg, cg.Emit(Left), Right, resultTypeOpt);
+        }
 
+        /// <summary>
+        /// Emits <c>+</c> operator suitable for actual operands.
+        /// </summary>
+        internal static TypeSymbol EmitAdd(CodeGenerator cg, TypeSymbol xtype, BoundExpression Right, TypeSymbol resultTypeOpt = null)
+        {
             var il = cg.Builder;
 
-            var xtype = cg.Emit(Left);
             xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> long
 
             //
@@ -319,11 +325,18 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits subtraction operator.
         /// </summary>
-        internal static TypeSymbol EmitSub(CodeGenerator cg, BoundExpression Left, BoundExpression Right)
+        internal static TypeSymbol EmitSub(CodeGenerator cg, BoundExpression Left, BoundExpression Right, TypeSymbol resultTypeOpt = null)
+        {
+            return EmitSub(cg, cg.Emit(Left), Right, resultTypeOpt);
+        }
+
+        /// <summary>
+        /// Emits subtraction operator.
+        /// </summary>
+        internal static TypeSymbol EmitSub(CodeGenerator cg, TypeSymbol xtype, BoundExpression Right, TypeSymbol resultTypeOpt = null)
         {
             var il = cg.Builder;
 
-            var xtype = cg.Emit(Left);
             xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> int64
             TypeSymbol ytype;
 
@@ -726,7 +739,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitConvert(this.Operand, cg.CoreTypes.Object);
                     returned_type = cg.CoreTypes.Object;
                     break;
-                    
+
                 case Operations.Print:
                     cg.EmitEcho(this.Operand);
 
@@ -903,7 +916,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
-            
+
             // push value onto the evaluation stack
 
             Debug.Assert(ConstantValue.HasValue);
@@ -1021,7 +1034,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         TypeSymbol IBoundReference.Type => Field?.Type;
-        
+
         void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             if (Field == null)
@@ -1263,7 +1276,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     default(ImmutableArray<RefKind>),
                     null,
                     cg.CoreTypes.Void);
-                
+
                 cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
 
                 _lazyStoreCallSite.Construct(functype, cctor =>
@@ -1330,7 +1343,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         EmitOpCode_Store(cg);
                     }
                 }
-                
+
                 // 
                 if (Field.IsStatic && Instance != null)
                     cg.EmitPop(Instance.ResultType);
@@ -1393,7 +1406,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // call site call
 
                 var callsite = cg.Factory.StartCallSite(this.Name.Value);
-                
+
                 var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
                 var return_type = this.Access.IsRead ? this.Access.IsReadRef ? cg.CoreTypes.PhpAlias.Symbol : cg.CoreTypes.PhpValue.Symbol : cg.CoreTypes.Void.Symbol;
 
@@ -1402,7 +1415,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 // callsite.Target
                 callsite.EmitLoadTarget(cg.Builder);
-                
+
                 // (callsite, instance, ctx, ...)
                 fldPlace.EmitLoad(cg.Builder);
                 cg.Emit(this.Instance);   // instance
@@ -1522,7 +1535,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             return false;
         }
-        
+
         /// <summary>
         /// Guesses initial string builder capacity.
         /// </summary>
@@ -1595,7 +1608,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // <target> = <value>
             target_place.EmitStorePrepare(cg);
-            
+
             // TODO: load value & dereference eventually
             if (t_value != null) cg.EmitConvert(this.Value, t_value);   // TODO: do not convert here yet
             else t_value = cg.Emit(this.Value);
@@ -1651,64 +1664,91 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             Debug.Assert(this.Access.IsNone || Access.IsRead);
+            Debug.Assert(!this.Access.IsReadRef);
+            Debug.Assert(!this.Access.IsWrite);
+            Debug.Assert(this.Target.Access.IsRead && this.Target.Access.IsWrite);
+            Debug.Assert(this.Value.Access.IsRead);
+
+            Debug.Assert(this.Value is BoundLiteral);
 
             if (this.UsesOperatorMethod)
             {
                 throw new NotImplementedException();
             }
 
-            var targetPlace = this.Target.BindPlace(cg);
-            var t_value = targetPlace.Type;
+            TypeSymbol result_type = cg.CoreTypes.Void;
+            LocalDefinition postfix_temp = null;
+
             var read = this.Access.IsRead;
 
-            // Postfix (i++, i--)
-            if (this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement)
+            var target_place = this.Target.BindPlace(cg);
+            var instance_holder = new InstanceCacheHolder();
+            Debug.Assert(target_place != null);
+
+            // prepare target for store operation
+            target_place.EmitStorePrepare(cg, instance_holder);
+
+            // load target value
+            target_place.EmitLoadPrepare(cg, instance_holder);
+            var target_load_type = target_place.EmitLoad(cg);
+
+            TypeSymbol op_type;
+
+            if (read && IsPostfix)
             {
-                if (read)
-                    throw new NotImplementedException();
-
-                targetPlace.EmitStorePrepare(cg);
-                var result = BoundBinaryEx.EmitAdd(cg, this.Target, this.Value, t_value);
-                cg.EmitConvert(result, this.TypeRefMask, t_value);
-                targetPlace.EmitStore(cg, t_value);
-
-                //
-                return cg.CoreTypes.Void;
+                // store original value of target
+                // <temp> = TARGET
+                postfix_temp = cg.GetTemporaryLocal(target_load_type);
+                cg.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(postfix_temp);
             }
-            else if (this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement)
+
+            if (IsIncrement)
             {
-                if (read)
-                    throw new NotImplementedException();
-
-                throw new NotImplementedException();
-            }
-            // Prefix (++i, --i)
-            if (this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement)
-            {
-                targetPlace.EmitStorePrepare(cg);
-                var result = BoundBinaryEx.EmitAdd(cg, this.Target, this.Value, t_value);
-                cg.EmitConvert(result, this.TypeRefMask, t_value);
-
-                if (read)
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-
-                targetPlace.EmitStore(cg, t_value);
-
-                //
-                if (read)
-                    return t_value;
-                else
-                    return cg.CoreTypes.Void;
-            }
-            else if (this.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement)
-            {
-                throw new NotImplementedException();
+                op_type = BoundBinaryEx.EmitAdd(cg, target_load_type, this.Value, target_place.Type);
             }
             else
             {
-                throw ExceptionUtilities.UnexpectedValue(this.IncrementKind);
+                Debug.Assert(IsDecrement);
+                op_type = BoundBinaryEx.EmitSub(cg, target_load_type, this.Value, target_place.Type);
             }
+
+            if (read)
+            {
+                if (IsPostfix)
+                {
+                    // READ <temp>
+                    cg.Builder.EmitLocalLoad(postfix_temp);
+                    result_type = target_load_type;
+
+                    //
+                    cg.ReturnTemporaryLocal(postfix_temp);
+                    postfix_temp = null;
+                }
+                else
+                {
+                    // dup resulting value
+                    // READ (++TARGET OR --TARGET)
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    result_type = op_type;
+                }
+            }
+
+            //
+            target_place.EmitStore(cg, op_type);
+
+            //
+            instance_holder.Dispose();
+            Debug.Assert(postfix_temp == null);
+            Debug.Assert(!read || result_type.SpecialType != SpecialType.System_Void);
+            
+            //
+            return result_type;
         }
+
+        bool IsPostfix => this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement || this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement;
+        bool IsIncrement => this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement || this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement;
+        bool IsDecrement => this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement || this.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement;
     }
 
     partial class BoundConditionalEx
