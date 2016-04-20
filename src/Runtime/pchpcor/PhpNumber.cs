@@ -343,6 +343,54 @@ namespace Pchp.Core
             return x + y.ToDouble();
         }
 
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        public static PhpNumber Add(PhpValue x, long y)
+        {
+            PhpNumber x_number;
+
+            var x_info = x.ToNumber(out x_number);
+            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new NotImplementedException();
+            }
+
+            return x_number + y;
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        public static PhpNumber Add(PhpValue x, double y)
+        {
+            PhpNumber x_number;
+
+            var x_info = x.ToNumber(out x_number);
+            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new NotImplementedException();
+            }
+
+            return Create(x_number.ToDouble() + y);
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        public static PhpNumber Add(PhpValue x, PhpNumber y)
+        {
+            PhpNumber x_number;
+
+            var x_info = x.ToNumber(out x_number);
+            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new NotImplementedException();
+            }
+
+            return x_number + y;
+        }
+
         #endregion
 
         #region Sub

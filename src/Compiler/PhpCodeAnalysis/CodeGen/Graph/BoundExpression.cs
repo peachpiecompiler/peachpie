@@ -49,13 +49,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Arithmetic Operations
 
                 case Operations.Add:
-                    returned_type = (cg.IsLongOnly(this.TypeRefMask)) ? cg.CoreTypes.Long.Symbol : null;
+                    returned_type = (cg.IsLongOnly(this.TypeRefMask)) ? cg.CoreTypes.Long.Symbol : this.Access.TargetType;
                     returned_type = EmitAdd(cg, Left, Right, returned_type);
                     break;
 
                 case Operations.Sub:
                     //Template: "x - y"        Operators.Subtract(x,y) [overloads]
-                    returned_type = EmitSub(cg, Left, Right);
+                    returned_type = EmitSub(cg, Left, Right, this.Access.TargetType);
                     break;
 
                 case Operations.Div:
@@ -311,6 +311,32 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     // i8 + number : number
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_long_number)
+                        .Expect(cg.CoreTypes.PhpNumber);
+                }
+
+                //
+                throw new NotImplementedException();
+            }
+            else if (xtype == cg.CoreTypes.PhpValue)
+            {
+                var ytype = cg.EmitConvertIntToLong(cg.Emit(Right));    // int|bool -> long
+
+                if (ytype.SpecialType == SpecialType.System_Int64)
+                {
+                    // value + i8 : number
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_long)
+                        .Expect(cg.CoreTypes.PhpNumber);
+                }
+                else if (ytype.SpecialType == SpecialType.System_Double)
+                {
+                    // value + r8 : r8
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_double)
+                        .Expect(SpecialType.System_Double);
+                }
+                else if (ytype == cg.CoreTypes.PhpNumber)
+                {
+                    // value + number : number
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_number)
                         .Expect(cg.CoreTypes.PhpNumber);
                 }
 

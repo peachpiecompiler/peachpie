@@ -321,6 +321,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_number_double = ct.PhpNumber.Method("Add", ct.PhpNumber, ct.Double);
                 Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
                 Add_long_double = ct.PhpNumber.Method("Add", ct.Long, ct.Double);
+                Add_value_long = ct.PhpNumber.Method("Add", ct.PhpValue, ct.Long);
+                Add_value_double = ct.PhpNumber.Method("Add", ct.PhpValue, ct.Double);
+                Add_value_number = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpNumber);
 
                 Subtract_long_long = ct.PhpNumber.Method("Sub", ct.Long, ct.Long);
                 Subtract_number_double = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.Double);
@@ -352,7 +355,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context,
                 CompareTo_number, CompareTo_long, CompareTo_double,
-                Add_long_long, Add_long_double, Add_number_double, Add_double_number,
+                Add_long_long, Add_long_double, Add_number_double, Add_double_number, Add_value_long, Add_value_double, Add_value_number,
                 Subtract_long_long, Subtract_number_double, Subtract_long_double,
                 Negation_long,
                 get_Long, get_Double,
