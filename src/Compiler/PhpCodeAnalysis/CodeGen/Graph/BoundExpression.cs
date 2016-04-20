@@ -1431,10 +1431,14 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // call site call
 
-                var callsite = cg.Factory.StartCallSite(this.Name.Value);
+                var callsite = cg.Factory.StartCallSite("call_" + this.Name.Value);
 
                 var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
-                var return_type = this.Access.IsRead ? this.Access.IsReadRef ? cg.CoreTypes.PhpAlias.Symbol : cg.CoreTypes.PhpValue.Symbol : cg.CoreTypes.Void.Symbol;
+                var return_type = this.Access.IsRead
+                        ? this.Access.IsReadRef
+                            ? cg.CoreTypes.PhpAlias.Symbol
+                            : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
+                        : cg.CoreTypes.Void.Symbol;
 
                 // callsite
                 var fldPlace = callsite.Place;

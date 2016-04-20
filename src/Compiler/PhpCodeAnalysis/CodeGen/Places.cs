@@ -256,18 +256,25 @@ namespace Pchp.CodeAnalysis.CodeGen
     /// </summary>
     internal sealed class InstanceCacheHolder : IDisposable
     {
-        LocalDefinition _local;
+        LocalDefinition _instance_loc;
+        LocalDefinition _name_loc;
         CodeGenerator _cg;
 
         public void Dispose()
         {
-            if (_local != null)
+            if (_instance_loc != null)
             {
-                _cg.ReturnTemporaryLocal(_local);
-
-                _cg = null;
-                _local = null;
+                _cg.ReturnTemporaryLocal(_instance_loc);
+                _instance_loc = null;
             }
+
+            if (_name_loc != null)
+            {
+                _cg.ReturnTemporaryLocal(_name_loc);
+                _name_loc = null;
+            }
+
+            _cg = null;
         }
 
         /// <summary>
@@ -293,6 +300,24 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits name as string. Caches the result if holder is provided, or loads evaluated name if holder was initialized already.
+        /// </summary>
+        public static void EmitName(InstanceCacheHolder holderOrNull, CodeGenerator cg, BoundExpression name)
+        {
+            Contract.ThrowIfNull(cg);
+            Contract.ThrowIfNull(name);
+
+            if (holderOrNull != null)
+            {
+                holderOrNull.EmitName(cg, name);
+            }
+            else
+            {
+                cg.EmitConvert(name, cg.CoreTypes.String);
+            }
+        }
+
+        /// <summary>
         /// Emits <paramref name="instance"/>, uses cached value if initialized already.
         /// </summary>
         TypeSymbol EmitInstance(CodeGenerator cg, BoundExpression instance)
@@ -301,25 +326,49 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (instance != null)
             {
-                if (_local != null)
+                if (_instance_loc != null)
                 {
-                    Debug.Assert(instance.ResultType == (TypeSymbol)_local.Type);
-                    cg.Builder.EmitLocalLoad(_local);
+                    Debug.Assert(instance.ResultType == (TypeSymbol)_instance_loc.Type);
+                    cg.Builder.EmitLocalLoad(_instance_loc);
                 }
                 else
                 {
                     _cg = cg;
 
                     // return (<loc> = <instance>);
-                    _local = cg.GetTemporaryLocal(cg.Emit(instance));
+                    _instance_loc = cg.GetTemporaryLocal(cg.Emit(instance));
                     cg.EmitOpCode(ILOpCode.Dup);
-                    cg.Builder.EmitLocalStore(_local);
+                    cg.Builder.EmitLocalStore(_instance_loc);
                 }
 
-                return (TypeSymbol)_local.Type;
+                return (TypeSymbol)_instance_loc.Type;
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Emits name as string, uses cached variable.
+        /// </summary>
+        void EmitName(CodeGenerator cg, BoundExpression name)
+        {
+            Contract.ThrowIfNull(cg);
+            Contract.ThrowIfNull(name);
+
+            if (_name_loc != null)
+            {
+                cg.Builder.EmitLocalLoad(_name_loc);
+            }
+            else
+            {
+                _cg = cg;
+
+                // return (<loc> = <name>)
+                _name_loc = cg.GetTemporaryLocal(cg.CoreTypes.String);
+                cg.EmitConvert(name, cg.CoreTypes.String);
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(_name_loc);
+            }
         }
     }
 
