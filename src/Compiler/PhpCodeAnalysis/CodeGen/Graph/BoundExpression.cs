@@ -1161,6 +1161,31 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (type == cg.CoreTypes.PhpValue)
                     {
+                        if (Access.TargetType != null)
+                        {
+                            // convert PhpValue to target type without loading whole value and storing to temporary variable
+                            switch (Access.TargetType.SpecialType)
+                            {
+                                case SpecialType.System_Double:
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToDouble()
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToDouble);
+                                case SpecialType.System_Int64:
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToLong()
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToLong);
+                                case SpecialType.System_Boolean:
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToBoolean()
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToBoolean);
+                                case SpecialType.System_String:
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToString(ctx)
+                                    cg.EmitLoadContext();
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToString_Context);
+                                case SpecialType.System_Object:
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass(ctx)
+                                    cg.EmitLoadContext();
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass_Context);
+                            }
+                        }
+
                         // TODO: dereference if applicable (=> PhpValue.Alias.Value)
                         EmitOpCode_Load(cg);
                         return type;

@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (tmask.IsSingleType)
                     return true;
 
-                return TypeCtx.GetTypes(tmask)
+                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask)
                     .All(t => t.TypeCode == Core.PhpTypeCode.Long || t.TypeCode == Core.PhpTypeCode.Double);
             }
 
@@ -101,7 +101,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         bool IsClassOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && TypeCtx.GetTypes(tmask).All(x => x.IsObject);
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(x => x.IsObject);
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         bool IsArrayOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && TypeCtx.GetTypes(tmask).All(x => x.IsArray);
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(x => x.IsArray);
         }
 
         /// <summary>
