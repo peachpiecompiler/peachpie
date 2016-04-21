@@ -479,20 +479,42 @@ namespace Pchp.CodeAnalysis.Semantics
 
         /// <summary>
         /// Emits check for values equality.
+        /// Lefts <c>bool</c> on top of evaluation stack.
         /// </summary>
         TypeSymbol EmitEquality(CodeGenerator cg)
         {
             // x == y
+            return EmitEquality(cg, Left, Right);
+        }
 
-            var xtype = cg.Emit(Left);
+        /// <summary>
+        /// Emits check for values equality.
+        /// Lefts <c>bool</c> on top of evaluation stack.
+        /// </summary>
+        internal static TypeSymbol EmitEquality(CodeGenerator cg, BoundExpression left, BoundExpression right)
+        {
+            return EmitEquality(cg, cg.Emit(left), right);
+        }
+
+        /// <summary>
+        /// Emits check for values equality.
+        /// Lefts <c>bool</c> on top of evaluation stack.
+        /// </summary>
+        internal static TypeSymbol EmitEquality(CodeGenerator cg, TypeSymbol xtype, BoundExpression right)
+        {
             if (xtype.SpecialType == SpecialType.System_Double)
             {
-                cg.EmitConvertToDouble(cg.Emit(Right), Right.TypeRefMask);    // TODO: only value types, otherwise fallback to generic CompareOp(double, object)
+                cg.EmitConvert(right, cg.CoreTypes.Double);    // TODO: only value types, otherwise fallback to generic CompareOp(double, object)
+                cg.Builder.EmitOpCode(ILOpCode.Ceq);
+            }
+            else if (xtype.SpecialType == SpecialType.System_Int64)
+            {
+                cg.EmitConvert(right, cg.CoreTypes.Long);    // TODO: only value types, otherwise fallback to generic CompareOp(double, object)
                 cg.Builder.EmitOpCode(ILOpCode.Ceq);
             }
             else if (xtype == cg.CoreTypes.PhpNumber)
             {
-                cg.EmitConvertToPhpNumber(cg.Emit(Right), Right.TypeRefMask); // TODO: only value types, otherwise fallback to generic CompareOp(double, object)
+                cg.EmitConvert(right, cg.CoreTypes.PhpNumber); // TODO: only value types, otherwise fallback to generic CompareOp(double, object)
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_number_number)
                     .Expect(SpecialType.System_Boolean);
             }

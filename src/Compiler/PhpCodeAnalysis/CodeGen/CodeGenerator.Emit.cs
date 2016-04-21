@@ -123,7 +123,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             //if (tmask.IsSingleType)
                             //{
                             //    var tref = this.Routine.TypeRefContext.GetTypes(tmask)[0];
-                            //    var clrtype = (TypeSymbol)this.DeclaringCompilation.GetTypeByMetadataName(tref.QualifiedName.ClrName());
+                            //    var clrtype = (TypeSymbol)this.DeclaringCompilation.GlobalSemantics.GetType(tref.QualifiedName);
                             //    if (clrtype != null && !clrtype.IsErrorType())
                             //    {
                             //        this.EmitCastClass(clrtype);

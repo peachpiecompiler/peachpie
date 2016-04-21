@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Forwards the operation to the <see cref="OperationVisitor"/>.
         /// </summary>
-        protected void Accept(IOperation op) => op.Accept(_opvisitor);
+        protected void Accept(IOperation op) => op?.Accept(_opvisitor);
 
         #endregion
 

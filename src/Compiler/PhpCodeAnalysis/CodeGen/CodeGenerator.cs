@@ -146,6 +146,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //
                 return block;
             }
+
+            internal void BlockGenerated(BoundBlock block)
+            {
+                // remove block from parent todo list
+                var scope = this.Parent;
+                while (scope != null)
+                {
+                    if (scope._blocks != null && scope._blocks.Remove(block))
+                    {
+                        return;
+                    }
+
+                    scope = scope.Parent;
+                }
+            }
         }
 
         #endregion
@@ -301,6 +316,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             // mark location as a label
             // to allow branching to the block
             _il.MarkLabel(block);
+
+            //
+            _scope.BlockGenerated(block);
 
             //
             Generate(block);

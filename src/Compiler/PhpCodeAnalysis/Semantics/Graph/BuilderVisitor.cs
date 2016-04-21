@@ -489,10 +489,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitJumpStmt(JumpStmt x)
         {
-            Add(x);
 
             if (x.Type == JumpStmt.Types.Return)
             {
+                Add(x);
                 Connect(_current, this.Exit);
             }
             else if (x.Type == JumpStmt.Types.Break || x.Type == JumpStmt.Types.Continue)
