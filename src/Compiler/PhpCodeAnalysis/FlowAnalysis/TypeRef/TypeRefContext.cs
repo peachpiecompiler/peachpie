@@ -7,6 +7,7 @@ using System.Text;
 using Pchp.Syntax;
 using Pchp.CodeAnalysis.Utilities;
 using Pchp.Core;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -38,19 +39,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         private readonly List<ITypeRef>/*!*/_typeRefs;
 
         /// <summary>
-        /// Name of <c>parent</c> class type if any.
+        /// Contains type of current context (refers to <c>self</c> or <c>$this</c>).
+        /// Can be <c>null</c>.
         /// </summary>
-        private readonly QualifiedName? _parentTypeCtx;
-
-        /// <summary>
-        /// contains type mask of <c>self</c> type with <c>includesSubclasses</c> flag set whether type is not final.
-        /// </summary>
-        private readonly TypeRefMask _typeCtxMask;
-
-        /// <summary>
-        /// When resolved, contains type mask of <c>parent</c> type.
-        /// </summary>
-        private TypeRefMask _parentTypeMask;
+        internal NamedTypeSymbol ContainingType => _containingType;
+        private readonly SourceNamedTypeSymbol _containingType;
 
         /// <summary>
         /// When resolved, contains type mask of <c>static</c> type.
@@ -71,19 +64,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        
-
         #region Initialization
 
-        public TypeRefContext(NamingContext naming, SourceUnit sourceUnit, AST.TypeDecl typeCtx)
+        internal TypeRefContext(NamingContext naming, SourceUnit sourceUnit, SourceNamedTypeSymbol containingType)
         {
             _namingCtx = naming;
             _sourceUnit = sourceUnit;
             _typeRefs = new List<ITypeRef>();
-            _typeCtxMask = GetTypeCtxMask(typeCtx);
-
-            if (typeCtx != null && typeCtx.BaseClassName.HasValue)
-                _parentTypeCtx = typeCtx.BaseClassName.Value.QualifiedName;
+            _containingType = containingType;
         }
 
         /// <summary>
@@ -96,9 +84,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var typeIsFinal = (typeCtx.MemberAttributes & PhpMemberAttributes.Final) != 0;
                 return GetTypeMask(new ClassTypeRef(NameUtils.MakeQualifiedName(typeCtx)), !typeIsFinal);
             }
-
-            //
-            return 0;
+            else
+            {
+                return TypeRefMask.AnyType;
+            }
         }
 
         /// <summary>
@@ -558,8 +547,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetSelfTypeMask()
         {
-            var result = _typeCtxMask;
-            result.IncludesSubclasses = false;
+            TypeRefMask result = TypeRefMask.AnyType;
+
+            if (_containingType != null)
+            {
+                result = GetTypeCtxMask(_containingType.Syntax);
+                result.IncludesSubclasses = false;
+            }
 
             return result;
         }
@@ -569,7 +563,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetThisTypeMask()
         {
-            return _typeCtxMask;    // the same as $this
+            return GetTypeCtxMask(_containingType?.Syntax);
         }
 
         /// <summary>
@@ -577,10 +571,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetParentTypeMask()
         {
-            if (_parentTypeMask == 0 && _parentTypeCtx.HasValue)
-                _parentTypeMask = GetTypeMask(new ClassTypeRef(_parentTypeCtx.Value), false);
+            TypeRefMask result = TypeRefMask.AnyType;
+
+            if (_containingType != null && _containingType.Syntax.BaseClassName.HasValue)
+            {
+                result = GetTypeMask(new ClassTypeRef(_containingType.Syntax.BaseClassName.Value.QualifiedName), false);
+            }
             
-            return _parentTypeMask;
+            return result;
         }
 
         /// <summary>
@@ -590,7 +588,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_staticTypeMask == 0)
             {
-                var mask = _typeCtxMask;
+                var mask = GetThisTypeMask();
                 if (mask != 0)
                     mask.IncludesSubclasses = true;
 

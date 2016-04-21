@@ -14,7 +14,15 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     partial class BoundVariable
     {
-        // TODO: initialization at routine begin
+        // if (loc is PhpValue):
+        // TODO: init local with default value if it is used uninitialized later
+        // TODO: copy parameter by value
+
+        /// <summary>
+        /// Emits initialization of the variable if needed.
+        /// Called from within <see cref="Graph.StartBlock"/>.
+        /// </summary>
+        internal virtual void EmitInit(CodeGenerator cg) { }
 
         /// <summary>
         /// Gets <see cref="IBoundReference"/> providing load and store operations.

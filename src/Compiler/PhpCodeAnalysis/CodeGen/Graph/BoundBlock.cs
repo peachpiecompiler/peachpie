@@ -32,8 +32,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // emit parameters checks
             }
 
-            // parameters initialization
-            // ...
+            // variables/parameters initialization
+            foreach (var loc in cg.Routine.ControlFlowGraph.FlowContext.Locals)
+            {
+                loc.EmitInit(cg);
+            }
 
             //
             base.Emit(cg);
