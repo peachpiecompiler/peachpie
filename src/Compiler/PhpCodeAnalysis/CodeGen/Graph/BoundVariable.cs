@@ -14,10 +14,6 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     partial class BoundVariable
     {
-        // if (loc is PhpValue):
-        // TODO: init local with default value if it is used uninitialized later
-        // TODO: copy parameter by value
-
         /// <summary>
         /// Emits initialization of the variable if needed.
         /// Called from within <see cref="Graph.StartBlock"/>.
@@ -35,6 +31,11 @@ namespace Pchp.CodeAnalysis.Semantics
     partial class BoundLocal
     {
         LocalPlace _place;
+
+        internal override void EmitInit(CodeGenerator cg)
+        {
+            // TODO: in case of PhpValue, PhpAlias, PhpArray - init local with default value if it is used uninitialized later
+        }
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
@@ -54,6 +55,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundParameter
     {
+        internal override void EmitInit(CodeGenerator cg)
+        {
+            // TODO: copy parameter by value in case of PhpValue, Array, PhpString
+            // TODO: create local variable in case of parameter type is not enough for its use within routine
+        }
+
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
             return new BoundLocalPlace(Place(il), access, thint);
@@ -67,6 +74,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundGlobalVariable
     {
+        internal override void EmitInit(CodeGenerator cg)
+        {
+            // TODO: copy to local var in case we can
+        }
+
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
             throw new NotImplementedException();
