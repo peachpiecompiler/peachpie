@@ -23,6 +23,7 @@ namespace Pchp.Core
 
         private Context()
         {
+            _statics = new object[_staticsCount];
         }
 
         /// <summary>
@@ -51,29 +52,45 @@ namespace Pchp.Core
 
         /// <summary>
         /// Gets static object instance within the context with given index.
+        /// Initializes the index with new unique value if necessary.
         /// </summary>
         T GetStatic<T>(ref int idx) where T : new()
         {
-            if (idx <= 0) idx = NewIdx();
-            return EnsureInitialized<T>(idx);
+            if (idx <= 0)
+                idx = NewIdx();
+
+            return GetStatic<T>(idx);
         }
 
         /// <summary>
-        /// Ensures the object at given index is initialized and returns its instance.
+        /// Gets static object instance within the context with given index.
         /// </summary>
-        T EnsureInitialized<T>(int idx) where T : new()
+        T GetStatic<T>(int idx) where T : new()
         {
-            Debug.Assert(idx > 0);
+            EnsureStaticsSize(idx);
+            return GetStatic<T>(ref _statics[idx]);
+        }
 
-            if (_statics == null || idx >= _statics.Length)
+        /// <summary>
+        /// Ensures the <see cref="_statics"/> array has sufficient size to hold <paramref name="idx"/>;
+        /// </summary>
+        /// <param name="idx">Index of an object to be stored within statics.</param>
+        void EnsureStaticsSize(int idx)
+        {
+            if (_statics.Length <= idx)
             {
-                Array.Resize(ref _statics, idx << 1);
+                Array.Resize(ref _statics, idx * 2);
             }
+        }
 
-            var obj = _statics[idx];
+        /// <summary>
+        /// Ensures the context static object is initialized.
+        /// </summary>
+        T GetStatic<T>(ref object obj) where T : new()
+        {
             if (obj == null)
             {
-                _statics[idx] = obj = new T();
+                obj = new T();
                 //if (obj is IStaticInit) ((IStaticInit)obj).Init(this);
             }
 
@@ -82,8 +99,9 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Gets static object instance within the context.
+        /// Gets context static object of type <typeparamref name="T"/>.
         /// </summary>
+        /// <typeparam name="T">Type of the object to be stored within context.</typeparam>
         public T GetStatic<T>() where T : new() => GetStatic<T>(ref IndexHolder<T>.Index);
 
         /// <summary>
@@ -103,11 +121,12 @@ namespace Pchp.Core
 
         /// <summary>
         /// Static objects within the context.
+        /// Cannot be <c>null</c>.
         /// </summary>
         object[] _statics;
 
         /// <summary>
-        /// Number of static objects within context.
+        /// Number of static objects so far registered within context.
         /// </summary>
         static volatile int/*!*/_staticsCount;
 
