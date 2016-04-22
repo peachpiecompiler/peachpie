@@ -15,7 +15,7 @@ namespace Pchp.Core
     /// Note, <c>default(PhpValue)</c> does not represent a valid state of the object.</remarks>
     [DebuggerDisplay("{TypeCode} ({DisplayString,nq})")]
     [StructLayout(LayoutKind.Sequential)]   // {_type} has to be first for performance reasons.
-    public partial struct PhpValue : IPhpConvertible // <T>
+    public partial struct PhpValue : IPhpConvertible, IEquatable<PhpValue> // <T>
     {
         #region DisplayString
 
@@ -171,6 +171,15 @@ namespace Pchp.Core
         public object EnsureObject(Context ctx) => _type.EnsureObject(ref this, ctx);
 
         public PhpAlias EnsureAlias() => _type.EnsureAlias(ref this);
+
+        #endregion
+
+        #region IEquatable<PhpValue>
+
+        public bool Equals(PhpValue other)
+        {
+            return _type == other._type && _obj.Obj == other._obj.Obj && _value.Long == other._value.Long;
+        }
 
         #endregion
 
