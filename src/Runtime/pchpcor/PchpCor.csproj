@@ -38,6 +38,7 @@
     <AssemblyOriginatorKeyFile>$(SolutionDir)build\StrongKeys\core.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="OrderedDictionary.cs" />
     <Compile Include="std\stdClass.cs" />
     <Compile Include="std\__PHP_Incomplete_Class.cs" />
     <Compile Include="Console\ConsoleImports.cs" />
