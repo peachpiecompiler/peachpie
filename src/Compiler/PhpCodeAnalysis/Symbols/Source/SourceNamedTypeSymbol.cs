@@ -26,6 +26,7 @@ namespace Pchp.CodeAnalysis.Symbols
         MethodSymbol _lazyCtorMethod;   // .ctor
         SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
+        // TODO: FieldSymbol _lazyRuntimeFieldsField; // PhpArray __runtimeFields;
 
         public SourceFileSymbol ContainingFile => _file;
         

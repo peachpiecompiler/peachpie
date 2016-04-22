@@ -45,7 +45,7 @@ namespace Pchp.Core
             /// <returns>Non-null object.</returns>
             public abstract object EnsureObject(ref PhpValue me, Context ctx);
 
-			/// <summary>
+            /// <summary>
             /// Ensures the value as an alias.
             /// In case it isn't, the value is aliased.
             /// </summary>
@@ -68,7 +68,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
             public override bool IsNull => true;
-            public override object ToClass(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }	// new stdClass()
+            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass();
             public override string ToString(ref PhpValue me, Context ctx) => string.Empty;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => string.Empty;
             public override long ToLong(ref PhpValue me) => 0;
@@ -109,10 +109,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Long);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
-            public override object EnsureObject(ref PhpValue me, Context ctx)
-            {
-                throw new NotImplementedException();	// return PhpValue.Create(new stdClass(ctx)) // me is not changed
-            }
+            public override object EnsureObject(ref PhpValue me, Context ctx) => PhpValue.FromClass(ToClass(ref me, ctx)); // me is not changed
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
         }
 
@@ -131,10 +128,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Double);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
             }
-            public override object EnsureObject(ref PhpValue me, Context ctx)
-            {
-                throw new NotImplementedException();	// return PhpValue.Create(new stdClass(ctx)) // me is not changed
-            }
+            public override object EnsureObject(ref PhpValue me, Context ctx) => PhpValue.FromClass(ToClass(ref me, ctx)); // me is not changed
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
         }
 
@@ -155,14 +149,13 @@ namespace Pchp.Core
             }
             public override object EnsureObject(ref PhpValue me, Context ctx)
             {
-                //var obj = PhpValue.Create(new stdClass(ctx));
-                //if (me.Boolean == false)
-                //{
-                //    // me is changed if me.Boolean == FALSE
-                //    me = obj;
-                //}
-                //return obj;
-                throw new NotImplementedException();
+                var obj = ToClass(ref me, ctx);
+                
+                // me is changed if me.Boolean == FALSE
+                if (me.Boolean == false)
+                    me = PhpValue.FromClass(obj);
+                
+                return obj;
             }
             public override string DisplayString(ref PhpValue me) => me.Boolean ? "TRUE" : "FALSE";
         }
@@ -180,14 +173,13 @@ namespace Pchp.Core
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => Convert.ToNumber(me.String, out number);
             public override object EnsureObject(ref PhpValue me, Context ctx)
             {
-                //var obj = PhpValue.Create(new stdClass(ctx));
-                //if (string.IsNullOrempty(me.String))
-                //{
-                //    // me is changed if value is empty
-                //    me = obj;
-                //}
-                //return obj;
-                throw new NotImplementedException();
+                var obj = ToClass(ref me, ctx);
+
+                // me is changed if value is empty
+                if (string.IsNullOrEmpty(me.String))
+                    me = PhpValue.FromClass(obj);
+
+                return obj;
             }
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
         }

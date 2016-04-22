@@ -48,6 +48,12 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public INamedTypeSymbol GetType(QualifiedName name)
         {
+            // std // TODO: table of types in PchpCor
+            if (name == NameUtils.SpecialNames.stdClass)
+            {
+                return _compilation.PhpCorLibrary.GetTypeByMetadataName(name.ClrName());
+            }
+
             // TODO: reserved type names: self, parent, static
             // TODO: library types
 

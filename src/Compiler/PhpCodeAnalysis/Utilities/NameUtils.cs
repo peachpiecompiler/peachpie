@@ -227,6 +227,7 @@ namespace Pchp.CodeAnalysis
             public static QualifiedName Traversable { get { return new QualifiedName(new Name("Traversable")); } }
             public static QualifiedName Closure { get { return new QualifiedName(new Name("Closure")); } }
             public static QualifiedName Exception { get { return new QualifiedName(new Name("Exception")); } }
+            public static QualifiedName stdClass { get { return new QualifiedName(new Name("stdClass")); } }
 
             public static Name offsetGet { get { return new Name("offsetGet"); } }
             public static Name offsetSet { get { return new Name("offsetSet"); } }
