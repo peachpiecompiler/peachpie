@@ -264,34 +264,16 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.PhpArray;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }
-            public override string ToString(ref PhpValue me, Context ctx)
-            {
-                throw new NotImplementedException();
-            }
-            public override string ToStringOrThrow(ref PhpValue me, Context ctx)
-            {
-                throw new NotImplementedException();
-            }
-            public override long ToLong(ref PhpValue me)
-            {
-                throw new NotImplementedException();
-            }
-            public override double ToDouble(ref PhpValue me)
-            {
-                throw new NotImplementedException();
-            }
-            public override bool ToBoolean(ref PhpValue me)
-            {
-                throw new NotImplementedException();
-            }
-            public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number)
-            {
-                throw new NotImplementedException();
-            }
-            public override object EnsureObject(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }
+            public override object ToClass(ref PhpValue me, Context ctx) => me.Array.ToClass(ctx);
+            public override string ToString(ref PhpValue me, Context ctx) => me.Array.ToString(ctx);
+            public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
+            public override long ToLong(ref PhpValue me) => me.Array.ToLong();
+            public override double ToDouble(ref PhpValue me) => me.Array.ToDouble();
+            public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();
+            public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Array.ToNumber(out number);
+            public override object EnsureObject(ref PhpValue me, Context ctx) => ToClass(ref me, ctx);    // me is not modified
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
-            public override string DisplayString(ref PhpValue me) => $"array[length={me.Array.Count}]";
+            public override string DisplayString(ref PhpValue me) => $"array(length = {me.Array.Count})";
         }
 
         sealed class AliasTable : TypeTable

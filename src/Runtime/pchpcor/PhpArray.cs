@@ -1,20 +1,32 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
-    public class PhpArray : PhpHashtable
+    [DebuggerDisplay("array(length = {Count})", Type = PhpArray.PhpTypeName)]
+    public class PhpArray : PhpHashtable, IPhpConvertible
     {
+        /// <summary>
+        /// Used in all PHP functions determining the type name. (var_dump, ...)
+        /// </summary>
+        public const string PhpTypeName = "array";
+
+        /// <summary>
+        /// Used in print_r function.
+        /// </summary>
+        public const string PrintablePhpTypeName = "Array";
+
         #region Constructors
 
         /// <summary>
-		/// Creates a new instance of <see cref="PhpArray"/> with specified capacities for integer and string keys respectively.
-		/// </summary>
-		public PhpArray() : base() { }
+        /// Creates a new instance of <see cref="PhpArray"/> with specified capacities for integer and string keys respectively.
+        /// </summary>
+        public PhpArray() : base() { }
 
         /// <summary>
         /// Creates a new instance of <see cref="PhpArray"/> with specified capacities for integer and string keys respectively.
@@ -134,7 +146,45 @@ namespace Pchp.Core
         /// Creates copy of this instance using shared underlaying hashtable.
         /// </summary>
         public PhpArray DeepCopy() => new PhpArray(this);
-        
+
+        #endregion
+
+        #region IPhpConvertible
+
+        public PhpTypeCode TypeCode => PhpTypeCode.PhpArray;
+
+        public double ToDouble() => Count;
+
+        public long ToLong() => Count;
+
+        public bool ToBoolean() => Count != 0;
+
+        public Convert.NumberInfo ToNumber(out PhpNumber number)
+        {
+            number = PhpNumber.Create(Count);
+            return Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.LongInteger;
+        }
+
+        public string ToString(Context ctx)
+        {
+            return PrintablePhpTypeName;
+        }
+
+        public string ToStringOrThrow(Context ctx)
+        {
+            //PhpException.Throw(PhpError.Notice, CoreResources.GetString("array_to_string_conversion"));
+            
+            return ToString(ctx);
+        }
+
+        public object ToClass(Context ctx)
+        {
+            return new stdClass()
+            {
+                // TODO: RuntimeFields
+            };
+        }
+
         #endregion
     }
 }
