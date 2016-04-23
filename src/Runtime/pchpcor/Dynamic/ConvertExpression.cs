@@ -47,7 +47,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(long)) return Expression.Convert(expr, typeof(double));
             if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
 
-            // TODO: following conversions may fail, we should it failed and throw an error
+            // TODO: following conversions may fail, we should report it failed and throw an error
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToDouble", Cache.Types.Empty));
 
             throw new NotImplementedException(source.FullName);

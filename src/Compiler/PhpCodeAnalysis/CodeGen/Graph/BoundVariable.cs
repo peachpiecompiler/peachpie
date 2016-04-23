@@ -25,6 +25,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal abstract IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint);
 
+        /// <summary>
+        /// Gets <see cref="IPlace"/> of the variable.
+        /// </summary>
         internal abstract IPlace Place(ILBuilder il);
     }
 
