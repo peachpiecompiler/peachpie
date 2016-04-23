@@ -809,4 +809,43 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     #endregion
+
+    #region BoundArrayEx
+
+    public partial class BoundArrayEx : BoundExpression, IArrayCreationExpression
+    {
+        public override OperationKind Kind => OperationKind.ArrayCreationExpression;
+
+        ITypeSymbol IArrayCreationExpression.ElementType
+        {
+            get
+            {
+                // TODO: PhpValue
+                throw new NotImplementedException();
+            }
+        }
+
+        ImmutableArray<IExpression> IArrayCreationExpression.DimensionSizes => ImmutableArray.Create<IExpression>(new BoundLiteral(_items.Length));
+
+        IArrayInitializer IArrayCreationExpression.Initializer => null;
+
+        /// <summary>
+        /// Array items.
+        /// </summary>
+        public ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> Items => _items;
+        ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> _items;
+
+        public BoundArrayEx(IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> items)
+        {
+            _items = items.ToImmutableArray();
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitArrayCreationExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitArrayCreationExpression(this, argument);
+    }
+
+    #endregion
 }

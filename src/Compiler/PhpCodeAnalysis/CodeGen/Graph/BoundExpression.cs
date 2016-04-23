@@ -1892,4 +1892,13 @@ namespace Pchp.CodeAnalysis.Semantics
             return result_type;
         }
     }
+
+    partial class BoundArrayEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray)
+                .Expect(cg.CoreTypes.PhpArray);
+        }
+    }
 }

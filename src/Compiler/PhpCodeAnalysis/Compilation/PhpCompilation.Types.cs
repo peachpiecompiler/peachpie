@@ -85,6 +85,8 @@ namespace Pchp.CodeAnalysis
             if (IsAString(first) && IsAString(second))
                 return CoreTypes.PhpString; // a string builder; if both are system.string, system.string is returned earlier
 
+            // TODO: simple array & PhpArray => PhpArray
+
             // unify class types to the common one (lowest)
             if (first.IsReferenceType && second.IsReferenceType)
             {
@@ -446,6 +448,7 @@ namespace Pchp.CodeAnalysis
                 case PhpTypeCode.Boolean: return CoreTypes.Boolean;
                 case PhpTypeCode.String: return CoreTypes.String;
                 case PhpTypeCode.WritableString: return CoreTypes.PhpString;
+                case PhpTypeCode.PhpArray: return CoreTypes.PhpArray;
                 default:
                     throw new NotImplementedException();
             }

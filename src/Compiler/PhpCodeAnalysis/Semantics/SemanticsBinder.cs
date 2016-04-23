@@ -174,6 +174,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.DirectVarUse) return BindDirectVarUse((AST.DirectVarUse)expr, access);
             if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
             if (expr is AST.NewEx) return BindNew((AST.NewEx)expr, access);
+            if (expr is AST.ArrayEx) return BindArrayEx((AST.ArrayEx)expr, access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -191,6 +192,26 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             throw new NotImplementedException();
+        }
+
+        BoundExpression BindArrayEx(AST.ArrayEx x, BoundAccess access)
+        {
+            Debug.Assert(access.IsRead && !access.IsReadRef);
+
+            return new BoundArrayEx(BindArrayItems(x.Items)).WithAccess(access);
+        }
+
+        IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items)
+        {
+            foreach (var x in items)
+            {
+                var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
+                var boundValue = (x is AST.RefItem)
+                    ? BindExpression(((AST.RefItem)x).RefToGet, BoundAccess.ReadRef)
+                    : BindExpression(((AST.ValueItem)x).ValueExpr, BoundAccess.Read);
+
+                yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
+            }
         }
 
         BoundExpression BindDirectVarUse(AST.DirectVarUse expr, BoundAccess access)
