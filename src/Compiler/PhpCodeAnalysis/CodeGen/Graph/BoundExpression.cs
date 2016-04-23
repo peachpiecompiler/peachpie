@@ -1111,7 +1111,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // resolve actual return type
                 TypeSymbol return_type;
                 if (Access.EnsureObject) return_type = cg.CoreTypes.Object;
-                //else if (Access.EnsureArray) return_type = cg.CoreTypes.PhpArray;
+                else if (Access.EnsureArray) return_type = cg.CoreTypes.PhpArray;
                 else if (Access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
                 else return_type = Access.TargetType ?? cg.CoreTypes.PhpValue;
 

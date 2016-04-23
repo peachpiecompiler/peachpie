@@ -660,7 +660,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                         Emit_PhpAlias_GetValue();
                         method = CoreMethods.Operators.Echo_PhpValue.Symbol;
                     }
-                    // TODO: PhpArray
+                    else if (type == CoreTypes.PhpArray)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpArray.ToString_Context).Expect(SpecialType.System_String);
+                        method = CoreMethods.Operators.Echo_String.Symbol;
+                    }
                     else
                     {
                         // TODO: check expr.TypeRefMask if it is only NULL
@@ -699,8 +703,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                 default:
                     if (type.IsReferenceType)
                     {
-                        // TODO: PhpArray, PhpAlias, PhpString
-                        _il.EmitNullConstant();
+                        if (type == CoreTypes.PhpArray)
+                        {
+                            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
+                        }
+                        else if (type == CoreTypes.PhpAlias)
+                        {
+                            // new PhpAlias(void, 1);
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.CreateVoid);
+                            Emit_PhpValue_MakeAlias();
+                        }
+                        else
+                        {
+                            // TODO: PhpString
+                            _il.EmitNullConstant();
+                        }
                     }
                     else
                     {

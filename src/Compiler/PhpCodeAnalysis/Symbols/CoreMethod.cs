@@ -170,6 +170,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         public readonly PhpValueHolder PhpValue;
         public readonly PhpAliasHolder PhpAlias;
+        public readonly PhpArrayHolder PhpArray;
         public readonly PhpNumberHolder PhpNumber;
         public readonly OperatorsHolder Operators;
         public readonly PhpStringHolder PhpString;
@@ -183,6 +184,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             PhpValue = new PhpValueHolder(types);
             PhpAlias = new PhpAliasHolder(types);
+            PhpArray = new PhpArrayHolder(types);
             PhpNumber = new PhpNumberHolder(types);
             PhpString = new PhpStringHolder(types);
             Operators = new OperatorsHolder(types);
@@ -246,6 +248,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_Double = ct.PhpValue.Method("Create", ct.Double);
                 Create_String = ct.PhpValue.Method("Create", ct.String);
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
+                Create_PhpArray = ct.PhpValue.Method("Create", ct.PhpArray);
                 Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
                 CreateNull = ct.PhpValue.Method("CreateNull");
                 CreateVoid = ct.PhpValue.Method("CreateVoid");
@@ -258,7 +261,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureAlias,
                 DeepCopy,
                 get_Long, get_Double, get_Boolean, get_String, get_Object,
-                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, CreateNull, CreateVoid,
+                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, CreateNull, CreateVoid,
                 FromClr_Object, FromClass_Object;
         }
 
@@ -397,10 +400,12 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public PhpArrayHolder(CoreTypes ct)
             {
+                ToString_Context = ct.PhpArray.Method("ToString", ct.Context);
                 DeepCopy = ct.PhpArray.Method("DeepCopy");
             }
 
             public readonly CoreMethod
+                ToString_Context,
                 DeepCopy;
         }
 
@@ -410,10 +415,12 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
                 PhpString_int = ct.PhpString.Ctor(ct.Int32);
+                PhpArray = ct.PhpArray.Ctor();
             }
 
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
+                PhpArray,
                 PhpString_int;
         }
 

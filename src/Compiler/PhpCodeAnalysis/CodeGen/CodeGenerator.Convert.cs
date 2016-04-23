@@ -171,18 +171,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (from == CoreTypes.String)
                     {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_String);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_String).Expect(CoreTypes.PhpValue);
                         break;
                     }
                     else if (from == CoreTypes.PhpNumber)
                     {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpNumber);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpNumber).Expect(CoreTypes.PhpValue);
                         break;
                     }
-                    // TODO: PhpArray
+                    else if (from  == CoreTypes.PhpArray)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpArray).Expect(CoreTypes.PhpValue);
+                        break;
+                    }
                     else if (from.IsReferenceType)
                     {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
                         break;
                     }
                     else
@@ -386,6 +390,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public void EmitConvertToPhpArray(TypeSymbol from, TypeRefMask fromHint)
         {
+            if (from == CoreTypes.PhpArray)
+                return;
+
             throw new NotImplementedException();
         }
 
@@ -411,7 +418,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (from == to)
                 return;
 
-            //if (to == CoreTypes.PhpArray) Debug.Fail
+            Debug.Assert(to != CoreTypes.PhpArray && to != CoreTypes.PhpString && to != CoreTypes.PhpAlias);
 
             switch (from.SpecialType)
             {
@@ -453,6 +460,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // (T)
                         EmitCastClass(to);
                         return;
+                    }
+                    else if (from == CoreTypes.PhpArray)
+                    {
+                        throw new NotImplementedException();    // PhpArray.ToClass();
                     }
                     else if (from.IsReferenceType)
                     {
@@ -649,11 +660,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitConvertToPhpNumber(from, fromHint);
                         return;
                     }
-                    //else if (to == CoreTypes.PhpArray)
-                    //{
-                    //    EmitConvertToPhpArray(from, fromHint);
-                    //    return;
-                    //}
+                    else if (to == CoreTypes.PhpArray)
+                    {
+                        EmitConvertToPhpArray(from, fromHint);
+                        return;
+                    }
                     else if (to.IsReferenceType)
                     {
                         EmitConvertToClass(from, fromHint, to);
