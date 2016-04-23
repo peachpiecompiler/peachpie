@@ -75,12 +75,29 @@ namespace Pchp.Core.Dynamic
                     }
                     else
                     {
-                        // getter
+                        // getter // TODO: ensure it is not null
                     }
                 }
                 else if (_access.EnsureArray())
                 {
-                    throw new NotImplementedException();
+                    if (fld.FieldType == typeof(PhpAlias))
+                    {
+                        // ((PhpAlias)fld).EnsureArray()
+                        getter = Expression.Call(getter, Cache.Operators.PhpAlias_EnsureArray);
+                    }
+                    else if (fld.FieldType == typeof(PhpValue))
+                    {
+                        // ((PhpValue)fld).EnsureArray()
+                        getter = Expression.Call(getter, Cache.Operators.PhpValue_EnsureArray);
+                    }
+                    else if (fld.FieldType == typeof(PhpArray))
+                    {
+                        // (PhpArray)fld // TODO: ensure it is not null
+                    }
+                    else
+                    {
+                        // getter
+                    }
                 }
                 else if (_access.EnsureAlias())
                 {

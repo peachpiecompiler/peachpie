@@ -523,6 +523,34 @@ namespace Pchp.CodeAnalysis.CodeGen
             // Ensure Array ($x[] =)
             else if (_access.EnsureArray)
             {
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    _place.EmitLoad(cg.Builder);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray)
+                        .Expect(cg.CoreTypes.PhpArray);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    if (cg.IsArrayOnly(_thint))
+                    {
+                        // uses typehint and accesses .Object directly if possible
+                        _place.EmitLoadAddress(cg.Builder);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.get_Array)
+                            .Expect(cg.CoreTypes.PhpArray);
+                    }
+                    else
+                    {
+                        _place.EmitLoadAddress(cg.Builder);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray)
+                            .Expect(cg.CoreTypes.PhpArray);
+                    }
+                }
+                else if (type == cg.CoreTypes.PhpArray)
+                {
+                    // TODO: ensure it is not null
+                    return _place.EmitLoad(cg.Builder);
+                }
+
                 throw new NotImplementedException();
             }
             // Ensure Alias (&$x)

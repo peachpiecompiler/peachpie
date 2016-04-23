@@ -233,6 +233,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
                 ToClass_Context = ct.PhpValue.Method("ToClass", ct.Context);
                 EnsureObject_Context = ct.PhpValue.Method("EnsureObject", ct.Context);
+                EnsureArray = ct.PhpValue.Method("EnsureArray");
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
@@ -242,6 +243,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 get_Boolean = ct.PhpValue.Method("get_Boolean");   // TODO: special name, property
                 get_String = ct.PhpValue.Method("get_String");   // TODO: special name, property
                 get_Object = ct.PhpValue.Method("get_Object");   // TODO: special name, property
+                get_Array = ct.PhpValue.Method("get_Array");   // TODO: special name, property
 
                 Create_Boolean = ct.PhpValue.Method("Create", ct.Boolean);
                 Create_Long = ct.PhpValue.Method("Create", ct.Long);
@@ -258,9 +260,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureAlias,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureArray, EnsureAlias,
                 DeepCopy,
-                get_Long, get_Double, get_Boolean, get_String, get_Object,
+                get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, CreateNull, CreateVoid,
                 FromClr_Object, FromClass_Object;
         }
@@ -272,10 +274,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 _value = null;
 
                 EnsureObject_Context = ct.PhpAlias.Method("EnsureObject", ct.Context);
+                EnsureArray = ct.PhpAlias.Method("EnsureArray");
             }
 
             public readonly CoreMethod
-                EnsureObject_Context;
+                EnsureObject_Context, EnsureArray;
 
             /// <summary>
             /// Lazily gets <c>PhpAlias.Value</c> field.

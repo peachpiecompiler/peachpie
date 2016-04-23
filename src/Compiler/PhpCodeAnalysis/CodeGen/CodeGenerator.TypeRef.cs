@@ -56,5 +56,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return !tmask.IsVoid && !tmask.IsAnyType && _routine.TypeRefContext.GetTypes(tmask).All(x => x.IsObject);
         }
+
+        /// <summary>
+        /// Gets value indicating the given type represents only PHP Array.
+        /// </summary>
+        internal bool IsArrayOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && !tmask.IsAnyType && _routine.TypeRefContext.GetTypes(tmask).All(x => x.IsArray);
+        }
     }
 }

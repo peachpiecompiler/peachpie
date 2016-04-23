@@ -1184,6 +1184,25 @@ namespace Pchp.CodeAnalysis.Semantics
                 // Ensure Array (xxx->Field[] =)
                 else if (Access.EnsureArray)
                 {
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        EmitOpCode_Load(cg);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray)
+                            .Expect(cg.CoreTypes.PhpArray);
+                    }
+                    else if (type == cg.CoreTypes.PhpValue)
+                    {
+                        EmitOpCode_LoadAddress(cg);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray)
+                                .Expect(cg.CoreTypes.PhpArray);
+                    }
+                    else if (type == cg.CoreTypes.PhpArray)
+                    {
+                        // TODO: ensure it is not null
+                        EmitOpCode_Load(cg);
+                        return type;
+                    }
+
                     throw new NotImplementedException();
                 }
                 // Ensure Alias (&...->Field)
