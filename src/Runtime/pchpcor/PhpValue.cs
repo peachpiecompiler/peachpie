@@ -209,7 +209,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Object: return Object;
                 case PhpTypeCode.PhpArray: return Array;
                 case PhpTypeCode.String: return String;
-                case PhpTypeCode.WritableString: return WritableString;
+                case PhpTypeCode.WritableString: return WritableString.ToString();
+                case PhpTypeCode.Alias: return Alias.Value.ToClr();
                 default:
                     throw new ArgumentException();
             }
