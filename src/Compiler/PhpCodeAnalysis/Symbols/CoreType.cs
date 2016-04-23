@@ -95,6 +95,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context, Operators, Convert,
             CallMethodBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray,
+            IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String, RuntimeTypeHandle;
 
         public CoreTypes(PhpCompilation compilation)
@@ -103,28 +104,29 @@ namespace Pchp.CodeAnalysis.Symbols
             _compilation = compilation;
             _table = new Dictionary<string, CoreType>();
 
-            this.Void = Create(SpecialType.System_Void);
-            this.Object = Create(SpecialType.System_Object);
-            this.Int32 = Create(SpecialType.System_Int32);
-            this.Long = Create(SpecialType.System_Int64);
-            this.Double = Create(SpecialType.System_Double);
-            this.Boolean = Create(SpecialType.System_Boolean);
-            this.String = Create(SpecialType.System_String);
-            this.RuntimeTypeHandle = Create(SpecialType.System_RuntimeTypeHandle);
+            Void = Create(SpecialType.System_Void);
+            Object = Create(SpecialType.System_Object);
+            Int32 = Create(SpecialType.System_Int32);
+            Long = Create(SpecialType.System_Int64);
+            Double = Create(SpecialType.System_Double);
+            Boolean = Create(SpecialType.System_Boolean);
+            String = Create(SpecialType.System_String);
+            RuntimeTypeHandle = Create(SpecialType.System_RuntimeTypeHandle);
 
-            this.PhpNumber = Create("PhpNumber");
-            this.PhpAlias = Create("PhpAlias");
-            this.PhpValue = Create("PhpValue");
-            this.PhpString = Create("PhpString");
-            this.PhpArray = Create("PhpArray");
-            this.Context = Create("Context");
-            this.Operators = Create("Operators");
-            this.Convert = Create("Convert");
+            PhpNumber = Create("PhpNumber");
+            PhpAlias = Create("PhpAlias");
+            PhpValue = Create("PhpValue");
+            PhpString = Create("PhpString");
+            PhpArray = Create("PhpArray");
+            IntStringKey = Create("IntStringKey");
+            Context = Create("Context");
+            Operators = Create("Operators");
+            Convert = Create("Convert");
 
-            this.CallMethodBinder = Create("Dynamic.CallMethodBinder");
-            this.GetFieldBinder = Create("Dynamic.GetFieldBinder");
-            this.SetFieldBinder = Create("Dynamic.SetFieldBinder");
-            this.AccessFlags = Create("Dynamic.AccessFlags");
+            CallMethodBinder = Create("Dynamic.CallMethodBinder");
+            GetFieldBinder = Create("Dynamic.GetFieldBinder");
+            SetFieldBinder = Create("Dynamic.SetFieldBinder");
+            AccessFlags = Create("Dynamic.AccessFlags");
         }
 
         #region Table of types

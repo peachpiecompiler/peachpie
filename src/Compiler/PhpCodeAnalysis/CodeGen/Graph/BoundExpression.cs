@@ -1897,8 +1897,33 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray)
+            // new PhpArray(count)
+            cg.Builder.EmitIntConstant(_items.Length);
+            var result = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int)
                 .Expect(cg.CoreTypes.PhpArray);
+
+            foreach (var x in _items)
+            {
+                // <PhpArray>
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+
+                if (x.Key == null)
+                {
+                    // .AddValue( value )
+                    var byref = x.Value.Access.IsReadRef;
+                    cg.EmitConvert(x.Value, byref ? cg.CoreTypes.PhpAlias : cg.CoreTypes.PhpValue);
+                    if (byref) cg.Emit_PhpValue_MakeAlias();
+
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            //
+            return result;
         }
     }
 }

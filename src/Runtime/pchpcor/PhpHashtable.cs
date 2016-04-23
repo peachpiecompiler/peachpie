@@ -1108,7 +1108,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="value">Value to be added.</param>
         /// <remarks>This method is supposed to be called on newly created arrays. Several checks are not performed to enhance performance of arrays initialization.</remarks>
-        public void AddToEnd(PhpValue value)
+        protected void AddToEnd(PhpValue value)
         {
             Debug.Assert(nextNewIndex >= 0, "This method is supposed to be called on newly created arrays which have [nextNewIndex] field initialized!");
             Debug.Assert(!this.table.IsShared, "This method is supposed to be called on newly created arrays which cannot be shared!");

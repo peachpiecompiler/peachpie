@@ -404,11 +404,17 @@ namespace Pchp.CodeAnalysis.Symbols
             public PhpArrayHolder(CoreTypes ct)
             {
                 ToString_Context = ct.PhpArray.Method("ToString", ct.Context);
+
                 DeepCopy = ct.PhpArray.Method("DeepCopy");
+
+                SetItemValue_IntStringKey_PhpValue = ct.PhpArray.Method("SetItemValue", ct.IntStringKey, ct.PhpValue);
+                SetItemAlias_IntStringKey_PhpAlias = ct.PhpArray.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
+                AddValue_PhpValue = ct.PhpArray.Method("AddValue", ct.PhpValue);
             }
 
             public readonly CoreMethod
                 ToString_Context,
+                SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 DeepCopy;
         }
 
@@ -419,11 +425,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
                 PhpString_int = ct.PhpString.Ctor(ct.Int32);
                 PhpArray = ct.PhpArray.Ctor();
+                PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
             }
 
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
-                PhpArray,
+                PhpArray, PhpArray_int,
                 PhpString_int;
         }
 

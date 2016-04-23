@@ -50,7 +50,7 @@ namespace Pchp.Library
     /// <summary>
     /// Mersanne Twister random generator.
     /// </summary>
-    public sealed class MersenneTwister
+    internal sealed class MersenneTwister
     {
         // period parameters:
         private const int N = 624;

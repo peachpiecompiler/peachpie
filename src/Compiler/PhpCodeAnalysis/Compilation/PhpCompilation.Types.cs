@@ -428,7 +428,7 @@ namespace Pchp.CodeAnalysis
             }
             else if (t is ArrayTypeRef)
             {
-
+                return this.CoreTypes.PhpArray;
             }
             else if (t is LambdaTypeRef)
             {
