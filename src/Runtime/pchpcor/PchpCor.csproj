@@ -39,6 +39,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="OrderedDictionary.cs" />
+    <Compile Include="PhpArray.cs" />
+    <Compile Include="PhpHashtable.cs" />
     <Compile Include="std\stdClass.cs" />
     <Compile Include="std\__PHP_Incomplete_Class.cs" />
     <Compile Include="Console\ConsoleImports.cs" />

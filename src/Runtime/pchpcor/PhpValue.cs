@@ -59,6 +59,8 @@ namespace Pchp.Core
             [FieldOffset(0)]
             public string String;
             [FieldOffset(0)]
+            public PhpArray Array;
+            [FieldOffset(0)]
             public PhpAlias Alias;
         }
 
@@ -111,6 +113,11 @@ namespace Pchp.Core
         public bool IsObject => (TypeCode == PhpTypeCode.Object);
 
         /// <summary>
+        /// Gets value indicating the value represents PHP array.
+        /// </summary>
+        public bool IsArray => (TypeCode == PhpTypeCode.PhpArray);
+
+        /// <summary>
         /// Gets the long field of the value.
         /// Does not perform a conversion, expects the value is of type long.
         /// </summary>
@@ -145,6 +152,11 @@ namespace Pchp.Core
         /// </summary>
         public object Object { get { Debug.Assert(TypeCode == PhpTypeCode.Object); return _obj.Obj; } }
 
+        // <summary>
+        /// Gets underlaying array object.
+        /// </summary>
+        public PhpArray Array { get { Debug.Assert(TypeCode == PhpTypeCode.PhpArray); return _obj.Array; } }
+
         /// <summary>
         /// Gets underlaying alias object.
         /// </summary>
@@ -171,6 +183,35 @@ namespace Pchp.Core
         public object EnsureObject(Context ctx) => _type.EnsureObject(ref this, ctx);
 
         public PhpAlias EnsureAlias() => _type.EnsureAlias(ref this);
+
+        /// <summary>
+        /// Creates a deep copy of PHP value.
+        /// In case of scalars, the shallow copy is returned.
+        /// In case of classes or aliases, the same reference is returned.
+        /// In case of array or string, its copy is returned.
+        /// </summary>
+        public PhpValue DeepCopy() => _type.DeepCopy(ref this);
+
+        /// <summary>
+        /// Gets underlaying value or object as <see cref="System.Object"/>.
+        /// </summary>
+        /// <returns></returns>
+        public object ToClr()
+        {
+            switch (this.TypeCode)
+            {
+                case PhpTypeCode.Boolean: return Boolean;
+                case PhpTypeCode.Double: return Double;
+                case PhpTypeCode.Int32: return _value.Int;
+                case PhpTypeCode.Long: return Long;
+                case PhpTypeCode.Object: return Object;
+                case PhpTypeCode.PhpArray: return Array;
+                case PhpTypeCode.String: return String;
+                case PhpTypeCode.WritableString: return WritableString;
+                default:
+                    throw new ArgumentException();
+            }
+        }
 
         #endregion
 
@@ -235,6 +276,8 @@ namespace Pchp.Core
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 
         public static PhpValue Create(PhpString value) => new PhpValue(TypeTable.WritableStringTable, value);
+
+        public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
 

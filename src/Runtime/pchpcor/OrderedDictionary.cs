@@ -61,6 +61,11 @@ namespace Pchp.Core
         public string String => _skey;
         private string _skey;
 
+        /// <summary>
+        /// Gets array key, string or int as object.
+        /// </summary>
+        public object Object => _skey ?? (object)_ikey;
+
         public IntStringKey(int key)
         {
             _ikey = key;
@@ -73,6 +78,19 @@ namespace Pchp.Core
 
             _skey = key;
             _ikey = key.GetHashCode();
+        }
+
+        internal static IntStringKey FromObject(object key)
+        {
+            Debug.Assert(key is string || key is int);
+            if (key != null && key.GetType() == typeof(int))
+            {
+                return new IntStringKey((int)key);
+            }
+            else
+            {
+                return new IntStringKey((string)key);
+            }
         }
 
         public bool IsString => _skey != null;
@@ -210,7 +228,7 @@ namespace Pchp.Core
             this.owner = owner;
 
             //
-            this._debug_check_consistency();
+            _debug_check_consistency();
         }
 
         public OrderedDictionary(object owner, int size)
@@ -315,68 +333,68 @@ namespace Pchp.Core
             /// <summary>
             /// Enumerated table.
             /// </summary>
-            internal OrderedDictionary/*!*/table;
+            internal OrderedDictionary/*!*/_table;
 
-            ///// <summary>
-            ///// Reference to associated <see cref="PhpHashtable"/>. Used to unregister enumerator.
-            ///// </summary>
-            //internal readonly PhpHashtable hashtable;
+            /// <summary>
+            /// Reference to associated <see cref="PhpHashtable"/>. Used to unregister enumerator.
+            /// </summary>
+            internal readonly PhpHashtable _hashtable;
 
             /// <summary>
             /// Current element index.
             /// </summary>
-            private int element;
+            private int _element;
 
             /// <summary>
             /// Fetched element data.
             /// </summary>
-            private KeyValuePair<IntStringKey, PhpValue> current;
+            private KeyValuePair<IntStringKey, PhpValue> _current;
 
             /// <summary>
             /// Whether enumeration is on the start.
             /// </summary>
-            bool start;
+            bool _start;
 
             /// <summary>
             /// Whether the enumerator should return <c>KeyValuePair{K, object}</c> when used as <see cref="IEnumerator"/>.
             /// If <B>false</B> it will return <see cref="DictionaryEntry"/>.
             /// </summary>
-            private readonly bool isGeneric;
+            private readonly bool _isGeneric;
 
             /// <summary>
             /// A reference to another <see cref="Enumerator"/>, allows to link existing enumerators into a linked list.
             /// </summary>
-            internal Enumerator next;
+            internal Enumerator _next;
 
             public Enumerator(OrderedDictionary/*!*/table, bool isGeneric)
             {
                 Debug.Assert(table != null);
 
-                this.table = table;
-                this.element = -1;
-                this.current = new KeyValuePair<IntStringKey, PhpValue>();
-                this.start = true;
-                this.isGeneric = isGeneric;
+                _table = table;
+                _element = -1;
+                _current = new KeyValuePair<IntStringKey, PhpValue>();
+                _start = true;
+                _isGeneric = isGeneric;
             }
 
-            //public Enumerator(PhpHashtable/*!*/hashtable, bool isGeneric)
-            //    : this(hashtable.table, isGeneric)
-            //{
-            //    this.hashtable = hashtable;
-            //    hashtable.RegisterEnumerator(this);
-            //}
+            public Enumerator(PhpHashtable/*!*/hashtable, bool isGeneric)
+                : this(hashtable.table, isGeneric)
+            {
+                _hashtable = hashtable;
+                hashtable.RegisterEnumerator(this);
+            }
 
-            public PhpValue CurrentValue { get { return current.Value; } }
-            public IntStringKey CurrentKey { get { return current.Key; } }
+            public PhpValue CurrentValue { get { return _current.Value; } }
+            public IntStringKey CurrentKey { get { return _current.Key; } }
             private bool FetchCurrent()
             {
-                if (element >= 0)
+                if (_element >= 0)
                 {
-                    current = new KeyValuePair<IntStringKey, PhpValue>(table.entries[element]._key, table.entries[element]._value);
+                    _current = new KeyValuePair<IntStringKey, PhpValue>(_table.entries[_element]._key, _table.entries[_element]._value);
                     return true;
                 }
 
-                current = new KeyValuePair<IntStringKey, PhpValue>();
+                _current = new KeyValuePair<IntStringKey, PhpValue>();
                 return false;
             }
 
@@ -388,45 +406,45 @@ namespace Pchp.Core
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal void EntryDeleted(int entry_index, int next_entry_index)
             {
-                if (entry_index == this.element)
+                if (entry_index == _element)
                 {
-                    this.element = next_entry_index;
+                    _element = next_entry_index;
                     FetchCurrent();
                 }
             }
 
-            ///// <summary>
-            ///// Called when underlaying table has been changed (Unshare() called).
-            ///// </summary>
-            //internal void TableChanged()
-            //{
-            //    Debug.Assert(this.hashtable != null, "Enumerator was not registered!");
-            //    Debug.Assert(this.table != this.hashtable.table, "Table was not changed!");
+            /// <summary>
+            /// Called when underlaying table has been changed (Unshare() called).
+            /// </summary>
+            internal void TableChanged()
+            {
+                Debug.Assert(_hashtable != null, "Enumerator was not registered!");
+                Debug.Assert(_table != _hashtable.table, "Table was not changed!");
 
-            //    this.table = this.hashtable.table;
-            //}
+                _table = _hashtable.table;
+            }
 
             #region IEnumerator<KeyValuePair<IntStringKey, object>>
 
-            public KeyValuePair<IntStringKey, PhpValue> Current => current;
+            public KeyValuePair<IntStringKey, PhpValue> Current => _current;
 
             object System.Collections.IEnumerator.Current
             {
-                get { return isGeneric ? current : (object)((IDictionaryEnumerator)this).Entry; }
+                get { return _isGeneric ? _current : (object)((IDictionaryEnumerator)this).Entry; }
             }
 
             public bool MoveNext()
             {
-                //Debug.Assert(this.hashtable == null || this.hashtable.table == this.table, "Underlaying table has been changed without updating Enumerator!");
+                Debug.Assert(_hashtable == null || _hashtable.table == _table, "Underlaying table has been changed without updating Enumerator!");
 
-                if (element >= 0)
+                if (_element >= 0)
                 {
-                    element = table.entries[element].listNext;
+                    _element = _table.entries[_element].listNext;
                 }
-                else if (start)
+                else if (_start)
                 {
-                    element = table.listHead;
-                    start = false;
+                    _element = _table.listHead;
+                    _start = false;
                 }
 
                 return FetchCurrent();
@@ -434,8 +452,8 @@ namespace Pchp.Core
 
             public void Reset()
             {
-                element = -1;
-                start = true;
+                _element = -1;
+                _start = true;
             }
 
             #endregion
@@ -444,23 +462,23 @@ namespace Pchp.Core
 
             public void Dispose()
             {
-                element = -1;
-                current = new KeyValuePair<IntStringKey, PhpValue>();
+                _element = -1;
+                _current = new KeyValuePair<IntStringKey, PhpValue>();
 
-                //if (this.hashtable != null)
-                //{
-                //    this.hashtable.UnregisterEnumerator(this);
-                //    //this.hashtable = null;
-                //}
+                if (_hashtable != null)
+                {
+                    _hashtable.UnregisterEnumerator(this);
+                    //this.hashtable = null;
+                }
             }
 
             #endregion
 
             #region IDictionaryEnumerator Members
 
-            DictionaryEntry IDictionaryEnumerator.Entry { get { return new DictionaryEntry(current.Key, current.Value); } }
-            object IDictionaryEnumerator.Key { get { return current.Key; } }
-            object IDictionaryEnumerator.Value { get { return current.Value; } }
+            DictionaryEntry IDictionaryEnumerator.Entry { get { return new DictionaryEntry(_current.Key, _current.Value); } }
+            object IDictionaryEnumerator.Key { get { return _current.Key; } }
+            object IDictionaryEnumerator.Value { get { return _current.Value; } }
 
             #endregion
 
@@ -468,28 +486,28 @@ namespace Pchp.Core
 
             public bool MoveLast()
             {
-                start = false;
-                element = table.listTail;
+                _start = false;
+                _element = _table.listTail;
                 return FetchCurrent();
             }
 
             public bool MoveFirst()
             {
-                start = false;
-                element = table.listHead;
+                _start = false;
+                _element = _table.listHead;
                 return FetchCurrent();
             }
 
             public bool MovePrevious()
             {
-                if (element >= 0)
+                if (_element >= 0)
                 {
-                    element = table.entries[element].listLast;
+                    _element = _table.entries[_element].listLast;
                 }
-                else if (start)
+                else if (_start)
                 {
-                    element = table.listTail;
-                    start = false;
+                    _element = _table.listTail;
+                    _start = false;
                 }
 
                 return FetchCurrent();
@@ -500,9 +518,9 @@ namespace Pchp.Core
                 get
                 {
                     // if the enumerator is in starting state, it's not considered to be at the end:
-                    if (start) return false;
+                    if (_start) return false;
 
-                    return (element < 0);
+                    return (_element < 0);
                 }
             }
 
@@ -516,7 +534,7 @@ namespace Pchp.Core
         /// <summary>
         /// An enumerator representing an empty collection. Single instance can be reused.
         /// </summary>
-        internal sealed class EmptyEnumerator : IEnumerator<KeyValuePair<IntStringKey, object>>, IDictionaryEnumerator, IDisposable // , IPhpEnumerator
+        internal sealed class EmptyEnumerator : IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IDictionaryEnumerator, IDisposable // , IPhpEnumerator
         {
             /// <summary>
             /// Singleton instance of this class. Can be reused.
@@ -527,12 +545,12 @@ namespace Pchp.Core
             {
             }
 
-            public object CurrentValue { get { throw new InvalidOperationException(); } }
+            public PhpValue CurrentValue { get { throw new InvalidOperationException(); } }
             public IntStringKey CurrentKey { get { throw new InvalidOperationException(); } }
 
-            #region IEnumerator<KeyValuePair<IntStringKey, object>>
+            #region IEnumerator<KeyValuePair<IntStringKey, PhpValue>>
 
-            public KeyValuePair<IntStringKey, object> Current { get { throw new InvalidOperationException(); } }
+            public KeyValuePair<IntStringKey, PhpValue> Current { get { throw new InvalidOperationException(); } }
 
             object System.Collections.IEnumerator.Current { get { throw new InvalidOperationException(); } }
 
@@ -1112,7 +1130,7 @@ namespace Pchp.Core
         /// <param name="key">New item key.</param>
         /// <param name="value">New item value.</param>
         /// <remarks>The function does not check if the item already exists.</remarks>
-        private void _add_last(ref IntStringKey key, PhpValue value)
+        internal void _add_last(ref IntStringKey key, PhpValue value)
         {
             Debug.Assert(!_contains(ref key), "Item with given key already exists!");
 
@@ -1224,7 +1242,7 @@ namespace Pchp.Core
 #endif
 
             // update active enumerators, so they won't point to the item being deleted:
-            for (; active_enumerators != null; active_enumerators = active_enumerators.next)
+            for (; active_enumerators != null; active_enumerators = active_enumerators._next)
                 active_enumerators.EntryDeleted(entry_index, entry.listNext);
 
             // unlink entry from the bucket list:
@@ -1629,119 +1647,119 @@ namespace Pchp.Core
                 table._debug_check_consistency();
             }
 
-//            /// <summary>
-//            /// Sorts multiple lists given comparer for each hashtable.
-//            /// </summary>
-//            /// <param name="count">The number of items in each and every list.</param>
-//            /// <param name="hashtables">The lists.</param>
-//            /// <param name="comparers">Comparers to be used for lexicographical comparison.</param>
-//            internal static void _multisort(int count, PhpHashtable[]/*!!*/ hashtables, IComparer<KeyValuePair<IntStringKey, PhpValue>>[]/*!!*/ comparers)
-//            {
-//                int next;
-//                int length = hashtables.Length;
-//                int last = length - 1;
+            /// <summary>
+            /// Sorts multiple lists given comparer for each hashtable.
+            /// </summary>
+            /// <param name="count">The number of items in each and every list.</param>
+            /// <param name="hashtables">The lists.</param>
+            /// <param name="comparers">Comparers to be used for lexicographical comparison.</param>
+            internal static void _multisort(int count, PhpHashtable[]/*!!*/ hashtables, IComparer<KeyValuePair<IntStringKey, PhpValue>>[]/*!!*/ comparers)
+            {
+                int next;
+                int length = hashtables.Length;
+                int last = length - 1;
 
-//                OrderedDictionary table;
+                OrderedDictionary table;
 
-//                // nothing to do:
-//                if (count == 0 || hashtables.Length <= 1) return;
+                // nothing to do:
+                if (count == 0 || hashtables.Length <= 1) return;
 
-//                // interconnects all lists into a grid, heads are unchanged:
-//                InterconnectGrid(count, hashtables);
+                // interconnects all lists into a grid, heads are unchanged:
+                InterconnectGrid(count, hashtables);
 
-//                // lists are only single-linked cyclic and "heads" are unchanged from here on:
-//                for (int i = last; i > 0; i--)
-//                {
-//                    table = hashtables[i].table;
-//                    // sorts i-th list (doesn't modify Prev and keeps the list cyclic):
-//                    table.listHead = _merge_sort(comparers[i], table.entries, table.listHead, count, out next);
-//                    Debug.Assert(next < 0);
+                // lists are only single-linked cyclic and "heads" are unchanged from here on:
+                for (int i = last; i > 0; i--)
+                {
+                    table = hashtables[i].table;
+                    // sorts i-th list (doesn't modify Prev and keeps the list cyclic):
+                    table.listHead = _merge_sort(comparers[i], table.entries, table.listHead, count, out next);
+                    Debug.Assert(next < 0);
 
-//                    // reorders the (i-1)-the list according to the the i-th one:
-//                    ReorderList(count, hashtables[i - 1].table, hashtables[i].table);
-//                }
+                    // reorders the (i-1)-the list according to the the i-th one:
+                    ReorderList(count, hashtables[i - 1].table, hashtables[i].table);
+                }
 
-//                // sorts the 0-th list (its order will determine the order of whole grid rows):
-//                table = hashtables[0].table;
-//                table.listHead = _merge_sort(comparers[0], table.entries, table.listHead, count, out next);
-//                Debug.Assert(next < 0);
+                // sorts the 0-th list (its order will determine the order of whole grid rows):
+                table = hashtables[0].table;
+                table.listHead = _merge_sort(comparers[0], table.entries, table.listHead, count, out next);
+                Debug.Assert(next < 0);
 
-//                // reorders the last list according to the 0-th one:
-//                ReorderList(count, hashtables[last].table, hashtables[0].table);
+                // reorders the last list according to the 0-th one:
+                ReorderList(count, hashtables[last].table, hashtables[0].table);
 
-//                // reorders remaining lists (if any):
-//                for (int i = last; i >= 2; i--)
-//                    ReorderList(count, hashtables[i - 1].table, hashtables[i].table);
+                // reorders remaining lists (if any):
+                for (int i = last; i >= 2; i--)
+                    ReorderList(count, hashtables[i - 1].table, hashtables[i].table);
 
-//                // disconnects lists from each other and reconstructs their double-linked structure:
-//                DisconnectGrid(count, hashtables);
+                // disconnects lists from each other and reconstructs their double-linked structure:
+                DisconnectGrid(count, hashtables);
 
-//                //
-//#if DEBUG
-//                for (int i = 0; i < hashtables.Length; i++)
-//                    hashtables[i].table._debug_check_consistency();
-//#endif
-//            }
+                //
+#if DEBUG
+                for (int i = 0; i < hashtables.Length; i++)
+                    hashtables[i].table._debug_check_consistency();
+#endif
+            }
 
-            ///// <summary>
-            ///// Interconnects elements of given lists into a grid using their <see cref="Entry.listLast"/> fields. <see cref="OrderedDictionary.listHead"/> is preserved.
-            ///// </summary>
-            ///// <param name="count">The number of elements in each and every list.</param>
-            ///// <param name="hashtables">Lists to be interconnected.</param>
-            ///// <remarks>
-            ///// The grid: <BR/>
-            ///// <PRE>
-            /////  H H H
-            /////  | | |
-            ///// ~o~o~o~
-            /////  | | |   ~ = Prev (right to left), cyclic without a head (necessary)
-            ///// ~o~o~o~  - = Next (top to bottom), cyclic with a head (not necessary)
-            /////  | | |
-            ///// </PRE>
-            ///// </remarks>
-            //private static void InterconnectGrid(int count, PhpHashtable[]/*!!*/ hashtables)
-            //{
-            //    int last = hashtables.Length - 1;
+            /// <summary>
+            /// Interconnects elements of given lists into a grid using their <see cref="Entry.listLast"/> fields. <see cref="OrderedDictionary.listHead"/> is preserved.
+            /// </summary>
+            /// <param name="count">The number of elements in each and every list.</param>
+            /// <param name="hashtables">Lists to be interconnected.</param>
+            /// <remarks>
+            /// The grid: <BR/>
+            /// <PRE>
+            ///  H H H
+            ///  | | |
+            /// ~o~o~o~
+            ///  | | |   ~ = Prev (right to left), cyclic without a head (necessary)
+            /// ~o~o~o~  - = Next (top to bottom), cyclic with a head (not necessary)
+            ///  | | |
+            /// </PRE>
+            /// </remarks>
+            private static void InterconnectGrid(int count, PhpHashtable[]/*!!*/ hashtables)
+            {
+                int last = hashtables.Length - 1;
 
-            //    var enumerators = new FastEnumerator[hashtables.Length];
+                var enumerators = new FastEnumerator[hashtables.Length];
 
-            //    // initialize enumerators and moves them to the respective first elements:
-            //    for (int i = 0; i < enumerators.Length; i++)
-            //    {
-            //        enumerators[i] = hashtables[i].GetFastEnumerator();
-            //        enumerators[i].MoveNext();  // advance enumerator to first entry
-            //    }
+                // initialize enumerators and moves them to the respective first elements:
+                for (int i = 0; i < enumerators.Length; i++)
+                {
+                    enumerators[i] = hashtables[i].GetFastEnumerator();
+                    enumerators[i].MoveNext();  // advance enumerator to first entry
+                }
 
-            //    while (count-- > 0)
-            //    {
-            //        // sets Prev field of the first iterator:
-            //        enumerators[0].CurrentEntryListLast = enumerators[last].CurrentEntryIndex;
+                while (count-- > 0)
+                {
+                    // sets Prev field of the first iterator:
+                    enumerators[0].CurrentEntryListLast = enumerators[last].CurrentEntryIndex;
 
-            //        // all iterators except for the last one:
-            //        for (int i = 0; i < last; i++)
-            //        {
-            //            enumerators[i + 1].CurrentEntryListLast = enumerators[i].CurrentEntryIndex;
-            //            enumerators[i].MoveNext();
-            //        }
+                    // all iterators except for the last one:
+                    for (int i = 0; i < last; i++)
+                    {
+                        enumerators[i + 1].CurrentEntryListLast = enumerators[i].CurrentEntryIndex;
+                        enumerators[i].MoveNext();
+                    }
 
-            //        // advances the last iterator:
-            //        enumerators[last].MoveNext();
-            //    }
-            //}
+                    // advances the last iterator:
+                    enumerators[last].MoveNext();
+                }
+            }
 
-            ///// <summary>
-            ///// Disconnects elements of lists each from other.
-            ///// </summary>
-            ///// <param name="count">The number of elements in each and every list.</param>
-            ///// <param name="hashtables">The lists.</param>
-            //private static void DisconnectGrid(int count, PhpHashtable[]/*!!*/hashtables)
-            //{
-            //    for (int i = 0; i < hashtables.Length; i++)
-            //    {
-            //        // restores Prev references in all elements of the i-th list except for the head:
-            //        hashtables[i].table._link_prevs_by_nexts();
-            //    }
-            //}
+            /// <summary>
+            /// Disconnects elements of lists each from other.
+            /// </summary>
+            /// <param name="count">The number of elements in each and every list.</param>
+            /// <param name="hashtables">The lists.</param>
+            private static void DisconnectGrid(int count, PhpHashtable[]/*!!*/hashtables)
+            {
+                for (int i = 0; i < hashtables.Length; i++)
+                {
+                    // restores Prev references in all elements of the i-th list except for the head:
+                    hashtables[i].table._link_prevs_by_nexts();
+                }
+            }
 
             /// <summary>
             /// Reorders a minor list according to the major one. "Straightens" horizontal interconnection.
@@ -1832,49 +1850,55 @@ namespace Pchp.Core
 
         #region _deep_copy_*
 
-        ///// <summary>
-        ///// Perform inplace deep copy of all values.
-        ///// </summary>
-        //public void _deep_copy_inplace()
-        //{
-        //    var _entries = this.entries;
-        //    for (var p = this.listHead; p >= 0; p = _entries[p].listNext)
-        //        _deep_copy_entry_value(ref _entries[p]);
-        //}
+        /// <summary>
+        /// Perform inplace deep copy of all values.
+        /// </summary>
+        public void _deep_copy_inplace()
+        {
+            var _entries = this.entries;
+            for (var p = this.listHead; p >= 0; p = _entries[p].listNext)
+                _deep_copy_entry_value(ref _entries[p]);
+        }
 
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //private void _deep_copy_entry_value(ref Entry entry)
-        //{
-        //    entry._value = PhpVariable.DeepCopy(entry._value);
-        //}
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void _deep_copy_entry_value(ref Entry entry)
+        {
+            entry._value = entry._value.DeepCopy();
+        }
 
-        ///// <summary>
-        ///// Perform inplace deep copy of all values.
-        ///// This overload replaces <paramref name="oldref"/> with <paramref name="newref"/>
-        ///// within aliased values; only of <paramref name="oldref"/> os not <c>null</c>.
-        ///// </summary>
-        //public void _deep_copy_inplace(object oldref, object newref)
-        //{
-        //    if (oldref == null)
-        //    {
-        //        _deep_copy_inplace();
-        //    }
-        //    else
-        //    {
-        //        var _entries = this.entries;
-        //        for (var p = this.listHead; p >= 0; p = _entries[p].listNext)
-        //            _deep_copy_entry_value(oldref, newref, ref _entries[p]);
-        //    }
-        //}
+        /// <summary>
+        /// Perform inplace deep copy of all values.
+        /// This overload replaces <paramref name="oldref"/> with <paramref name="newref"/>
+        /// within aliased values; only if <paramref name="oldref"/> is not <c>null</c>.
+        /// </summary>
+        public void _deep_copy_inplace(PhpArray oldref, PhpArray newref)
+        {
+            if (oldref == null || oldref == newref)
+            {
+                _deep_copy_inplace();
+            }
+            else
+            {
+                var _entries = this.entries;
+                for (var p = this.listHead; p >= 0; p = _entries[p].listNext)
+                    _deep_copy_entry_value(ref _entries[p], oldref, newref);
+            }
+        }
 
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //private void _deep_copy_entry_value(object oldref, object newref, ref Entry entry)
-        //{
-        //    if (entry.Value is PhpReference && ((PhpReference)entry.Value).Value == oldref)
-        //        entry.Value = new PhpReference(newref);
-        //    else
-        //        entry.Value = PhpVariable.DeepCopy(entry.Value);
-        //}
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void _deep_copy_entry_value(ref Entry entry, PhpArray oldref, PhpArray newref)
+        {
+
+            if (entry._value.IsAlias && entry._value.Alias.Value.IsArray && entry._value.Alias.Value.Array == oldref)
+            {
+                Debug.Assert(newref != null);
+                entry._value = PhpValue.Create(new PhpAlias(PhpValue.Create(newref)));
+            }
+            else
+            {
+                _deep_copy_entry_value(ref entry);
+            }
+        }
 
         #endregion
 
@@ -2065,94 +2089,94 @@ namespace Pchp.Core
             //other_iterator.Dispose();
         }
 
-        ///// <summary>
-        ///// Retrieves the difference of this instance elemens and elements of the specified lists.
-        ///// </summary>
-        ///// <param name="op">The operation.</param>
-        ///// <param name="arrays">Array of arrays take away from this instance.</param>
-        ///// <param name="comparer">The comparer of entries.</param>
-        ///// <param name="result">The <see cref="IDictionary"/> where to add remaining items.</param>
-        //internal void _set_operation(SetOperations op, PhpHashtable[]/*!*/ arrays,
-        //    IComparer<KeyValuePair<IntStringKey, PhpValue>>/*!*/ comparer, PhpHashtable/*!*/ result)
-        //{
-        //    Debug.Assert(arrays != null && comparer != null && result != null);
+        /// <summary>
+        /// Retrieves the difference of this instance elemens and elements of the specified lists.
+        /// </summary>
+        /// <param name="op">The operation.</param>
+        /// <param name="arrays">Array of arrays take away from this instance.</param>
+        /// <param name="comparer">The comparer of entries.</param>
+        /// <param name="result">The <see cref="IDictionary"/> where to add remaining items.</param>
+        internal void _set_operation(SetOperations op, PhpHashtable[]/*!*/ arrays,
+            IComparer<KeyValuePair<IntStringKey, PhpValue>>/*!*/ comparer, PhpHashtable/*!*/ result)
+        {
+            Debug.Assert(arrays != null && comparer != null && result != null);
 
-        //    int next;
-        //    int count = this.Count;
+            int next;
+            int count = this.Count;
 
-        //    // nothing to do:
-        //    if (count == 0) return;
+            // nothing to do:
+            if (count == 0) return;
 
-        //    var _entries = this.entries;
-        //    const int deleted_dummy_next = -3;
+            var _entries = this.entries;
+            const int deleted_dummy_next = -3;
 
-        //    // sorts this instance list (doesn't modify Prevs and keeps list cyclic):
-        //    this.listHead = _merge_sort(comparer, _entries, this.listHead, count, out next);
-        //    Debug.Assert(next < 0);
+            // sorts this instance list (doesn't modify Prevs and keeps list cyclic):
+            this.listHead = _merge_sort(comparer, _entries, this.listHead, count, out next);
+            Debug.Assert(next < 0);
 
-        //    OrderedDictionary other_table;
+            OrderedDictionary other_table;
 
-        //    foreach (var other_array in arrays)
-        //    {
-        //        // total number of elements in diff list:
-        //        if (other_array != null)
-        //        {
-        //            count = other_array.Count;
-        //            other_table = other_array.table;
-        //        }
-        //        else
-        //        {
-        //            count = 0;
-        //            other_table = null;
-        //        }
+            foreach (var other_array in arrays)
+            {
+                // total number of elements in diff list:
+                if (other_array != null)
+                {
+                    count = other_array.Count;
+                    other_table = other_array.table;
+                }
+                else
+                {
+                    count = 0;
+                    other_table = null;
+                }
 
-        //        // result is empty - either the list is differentiated with itself or intersected with an empty set:
-        //        if (other_table == this && op == SetOperations.Difference || count == 0 && op == SetOperations.Intersection)
-        //        {
-        //            // reconstructs double linked list skipping elements marked as deleted:
-        //            _link_nexts_by_prevs();
+                // result is empty - either the list is differentiated with itself or intersected with an empty set:
+                if (other_table == this && op == SetOperations.Difference || count == 0 && op == SetOperations.Intersection)
+                {
+                    // reconstructs double linked list skipping elements marked as deleted:
+                    _link_nexts_by_prevs();
 
-        //            // the result is empty:
-        //            return;
-        //        }
+                    // the result is empty:
+                    return;
+                }
 
-        //        // skip operation (nothing new can be added):
-        //        if (other_table == this && op == SetOperations.Intersection || count == 0 && op == SetOperations.Difference)
-        //            continue;
+                // skip operation (nothing new can be added):
+                if (other_table == this && op == SetOperations.Intersection || count == 0 && op == SetOperations.Difference)
+                    continue;
 
-        //        Debug.Assert(other_table != null);
+                Debug.Assert(other_table != null);
 
-        //        // sorts other_head's list (doesn't modify Prevs and keeps list cyclic):
-        //        other_table.listHead = _merge_sort(comparer, other_table.entries, other_table.listHead, count, out next);
-        //        Debug.Assert(next < 0);
+                // sorts other_head's list (doesn't modify Prevs and keeps list cyclic):
+                other_table.listHead = _merge_sort(comparer, other_table.entries, other_table.listHead, count, out next);
+                Debug.Assert(next < 0);
 
-        //        // applies operation on the instance list and the other list:
-        //        _set_operation(op, other_table, comparer, deleted_dummy_next);
+                // applies operation on the instance list and the other list:
+                _set_operation(op, other_table, comparer, deleted_dummy_next);
 
-        //        // rolls mergesort back:
-        //        other_table._link_nexts_by_prevs();
+                // rolls mergesort back:
+                other_table._link_nexts_by_prevs();
 
-        //        // instance list is empty:
-        //        if (this.listHead < 0) break;
-        //    }
+                // instance list is empty:
+                if (this.listHead < 0) break;
+            }
 
-        //    _reverse_prev_links();
+            _reverse_prev_links();
 
-        //    // adds remaining elements to a dictionary:
-        //    for (var iterator = this.listTail; iterator >= 0; iterator = _entries[iterator].listLast)
-        //    {
-        //        if (_entries[iterator].listNext != deleted_dummy_next)
-        //            result.Add(_entries[iterator].Key, _entries[iterator]._value);
-        //    }
+            // adds remaining elements to a dictionary:
+            for (var iterator = this.listTail; iterator >= 0; iterator = _entries[iterator].listLast)
+            {
+                if (_entries[iterator].listNext != deleted_dummy_next)
+                    result.Add(_entries[iterator].Key, _entries[iterator]._value);
+            }
 
-        //    _reverse_prev_links();
+            _reverse_prev_links();
 
-        //    // reconstructs double linked list skipping elements marked as deleted:
-        //    _link_nexts_by_prevs();
+            // reconstructs double linked list skipping elements marked as deleted:
+            _link_nexts_by_prevs();
 
-        //    //
-        //    _debug_check_consistency();
-        //}
+            //
+            _debug_check_consistency();
+        }
 
         #endregion
 

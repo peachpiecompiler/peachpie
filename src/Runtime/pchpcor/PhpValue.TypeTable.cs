@@ -24,6 +24,7 @@ namespace Pchp.Core
             public static readonly StringTable StringTable = new StringTable();
             public static readonly TypeTable WritableStringTable = new WritableStringTable();
             public static readonly ClassTable ClassTable = new ClassTable();
+            public static readonly ArrayTable ArrayTable = new ArrayTable();
             public static readonly AliasTable AliasTable = new AliasTable();
 
             #endregion
@@ -57,6 +58,12 @@ namespace Pchp.Core
                 me = Create(alias);
                 return alias;
             }
+
+            /// <summary>
+            /// Creates a deep copy of PHP variable.
+            /// </summary>
+            /// <returns>A deep copy of the value.</returns>
+            public virtual PhpValue DeepCopy(ref PhpValue me) => me;
 
             /// <summary>
             /// Debug textual representation of the value.
@@ -206,6 +213,11 @@ namespace Pchp.Core
                 //return obj;
                 throw new NotImplementedException();
             }
+            public override PhpValue DeepCopy(ref PhpValue me)
+            {
+                //me.WritableString.DeepCopy()
+                throw new NotImplementedException();
+            }
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
         }
 
@@ -246,6 +258,40 @@ namespace Pchp.Core
             }
             public override object EnsureObject(ref PhpValue me, Context ctx) => me.Object;
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
+        }
+
+        sealed class ArrayTable : TypeTable
+        {
+            public override PhpTypeCode Type => PhpTypeCode.PhpArray;
+            public override bool IsNull => false;
+            public override object ToClass(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }
+            public override string ToString(ref PhpValue me, Context ctx)
+            {
+                throw new NotImplementedException();
+            }
+            public override string ToStringOrThrow(ref PhpValue me, Context ctx)
+            {
+                throw new NotImplementedException();
+            }
+            public override long ToLong(ref PhpValue me)
+            {
+                throw new NotImplementedException();
+            }
+            public override double ToDouble(ref PhpValue me)
+            {
+                throw new NotImplementedException();
+            }
+            public override bool ToBoolean(ref PhpValue me)
+            {
+                throw new NotImplementedException();
+            }
+            public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number)
+            {
+                throw new NotImplementedException();
+            }
+            public override object EnsureObject(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }
+            public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
+            public override string DisplayString(ref PhpValue me) => $"array[length={me.Array.Count}]";
         }
 
         sealed class AliasTable : TypeTable
