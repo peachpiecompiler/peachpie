@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly CoreType
             Context, Operators, Convert,
             CallMethodBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
-            PhpNumber, PhpValue, PhpAlias, PhpString,
+            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray,
             Void, Object, Int32, Long, Double, Boolean, String, RuntimeTypeHandle;
 
         public CoreTypes(PhpCompilation compilation)
@@ -116,6 +116,7 @@ namespace Pchp.CodeAnalysis.Symbols
             this.PhpAlias = Create("PhpAlias");
             this.PhpValue = Create("PhpValue");
             this.PhpString = Create("PhpString");
+            this.PhpArray = Create("PhpArray");
             this.Context = Create("Context");
             this.Operators = Create("Operators");
             this.Convert = Create("Convert");

@@ -41,10 +41,19 @@ namespace Pchp.Core
 
             /// <summary>
             /// Ensures the value is a class object.
-            /// In case it isn't, creates stdClass according to PHP semantics. In case current value is empty, replaces current value with newly creates stdClass.
+            /// In case it isn't, creates stdClass according to PHP semantics.
+            /// In case current value is empty, replaces current value with newly created stdClass.
             /// </summary>
             /// <returns>Non-null object.</returns>
             public abstract object EnsureObject(ref PhpValue me, Context ctx);
+
+            /// <summary>
+            /// Ensures the value is a PHP array.
+            /// In case it isn't, creates PhpArray according to PHP semantics.
+            /// In case current value is empty, replaces current value with newly created array.
+            /// </summary>
+            /// <returns>Non-null object.</returns>
+            public abstract PhpArray EnsureArray(ref PhpValue me);
 
             /// <summary>
             /// Ensures the value as an alias.
@@ -92,6 +101,12 @@ namespace Pchp.Core
                 me = PhpValue.FromClass(obj);
                 return obj;
             }
+            public override PhpArray EnsureArray(ref PhpValue me)
+            {
+                var arr = new PhpArray();
+                me = PhpValue.Create(arr);
+                return arr;
+            }
             public override string DisplayString(ref PhpValue me) => "NULL";
         }
 
@@ -117,6 +132,7 @@ namespace Pchp.Core
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
             public override object EnsureObject(ref PhpValue me, Context ctx) => PhpValue.FromClass(ToClass(ref me, ctx)); // me is not changed
+            public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
         }
 
@@ -136,6 +152,7 @@ namespace Pchp.Core
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
             }
             public override object EnsureObject(ref PhpValue me, Context ctx) => PhpValue.FromClass(ToClass(ref me, ctx)); // me is not changed
+            public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
         }
 
@@ -164,6 +181,16 @@ namespace Pchp.Core
                 
                 return obj;
             }
+            public override PhpArray EnsureArray(ref PhpValue me)
+            {
+                var arr = new PhpArray();
+
+                // me is changed if me.Boolean == FALSE
+                if (me.Boolean == false)
+                    me = PhpValue.Create(arr);
+
+                return arr;
+            }
             public override string DisplayString(ref PhpValue me) => me.Boolean ? "TRUE" : "FALSE";
         }
 
@@ -188,6 +215,16 @@ namespace Pchp.Core
 
                 return obj;
             }
+            public override PhpArray EnsureArray(ref PhpValue me)
+            {
+                var arr = new PhpArray();
+
+                // me is changed if value is empty
+                if (string.IsNullOrEmpty(me.String))
+                    me = PhpValue.Create(arr);
+
+                return arr;
+            }
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
         }
 
@@ -211,6 +248,17 @@ namespace Pchp.Core
                 //    me = obj;
                 //}
                 //return obj;
+                throw new NotImplementedException();
+            }
+            public override PhpArray EnsureArray(ref PhpValue me)
+            {
+                //var arr = new PhpArray();
+
+                //// me is changed if value is empty
+                //if (me.WritableString.IsEmpty)
+                //    me = PhpValue.Create(arr);
+
+                //return arr;
                 throw new NotImplementedException();
             }
             public override PhpValue DeepCopy(ref PhpValue me)
@@ -257,6 +305,10 @@ namespace Pchp.Core
                 throw new NotImplementedException();
             }
             public override object EnsureObject(ref PhpValue me, Context ctx) => me.Object;
+            public override PhpArray EnsureArray(ref PhpValue me)
+            {
+                throw new InvalidOperationException();  // Fatal Error: Cannot use object of type stdClass as array
+            }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
         }
 
@@ -272,6 +324,7 @@ namespace Pchp.Core
             public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Array.ToNumber(out number);
             public override object EnsureObject(ref PhpValue me, Context ctx) => ToClass(ref me, ctx);    // me is not modified
+            public override PhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
             public override string DisplayString(ref PhpValue me) => $"array(length = {me.Array.Count})";
         }
@@ -288,6 +341,7 @@ namespace Pchp.Core
             public override bool ToBoolean(ref PhpValue me) => me.Alias.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Alias.ToNumber(out number);
             public override object EnsureObject(ref PhpValue me, Context ctx) => me.Alias.Value.EnsureObject(ctx);
+            public override PhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
         }

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     [DebuggerDisplay("array(length = {Count})", Type = PhpArray.PhpTypeName)]
-    public class PhpArray : PhpHashtable, IPhpConvertible
+    public class PhpArray : PhpHashtable, IPhpConvertible, IPhpArrayOperators
     {
         /// <summary>
         /// Used in all PHP functions determining the type name. (var_dump, ...)
@@ -184,6 +184,34 @@ namespace Pchp.Core
                 // TODO: RuntimeFields
             };
         }
+
+        #endregion
+
+        #region IPhpArrayOperators
+
+        public PhpValue GetItemValue(IntStringKey key) => table._get(ref key);
+
+        public void SetItemValue(IntStringKey key, PhpValue value)
+        {
+            this.EnsureWritable();
+            table._add_or_update_preserve_ref(ref key, value);
+            this.KeyAdded(ref key);
+        }
+
+        public void SetItemAlias(IntStringKey key, PhpAlias alias)
+        {
+            this.EnsureWritable();
+            table._add_or_update(ref key, PhpValue.Create(alias));
+            this.KeyAdded(ref key);
+        }
+
+        public void AddValue(PhpValue value) => Add(value);
+
+        public PhpAlias EnsureItemAlias(IntStringKey key) => table._ensure_item_alias(ref key, this);
+
+        public object EnsureItemObject(IntStringKey key, Context ctx) => table._ensure_item_object(ref key, this, ctx);
+
+        public PhpArray EnsureItemArray(IntStringKey key) => table._ensure_item_array(ref key, this);
 
         #endregion
     }

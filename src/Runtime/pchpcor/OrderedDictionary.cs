@@ -1387,7 +1387,7 @@ namespace Pchp.Core
             return false;
         }
 
-        private PhpValue _get(ref IntStringKey key)
+        internal PhpValue _get(ref IntStringKey key)
         {
             var _entries = this.entries;
             var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
@@ -1398,7 +1398,7 @@ namespace Pchp.Core
             // not found:
             return PhpValue.CreateVoid();// throw new KeyNotFoundException();
         }
-        private bool _contains(ref IntStringKey key)
+        internal bool _contains(ref IntStringKey key)
         {
             return _findEntry(ref key) >= 0;
         }
@@ -1904,115 +1904,163 @@ namespace Pchp.Core
 
         #region _ensure_item_ref, _ensure_item_array
 
-        ///// <summary>
-        ///// Ensures item at specified key is aliased.
-        ///// If there is no such item, new one is created.
-        ///// </summary>
-        ///// <param name="key">Index of item to be checked.</param>
-        ///// <param name="array">Caller. Used to lazy copy if necessary.</param>
-        ///// <returns><see cref="PhpAlias"/> of specified item.</returns>
-        //public PhpAlias/*!*/_ensure_item_ref(ref IntStringKey key, PhpHashtable/*!*/array)
-        //{
-        //    Debug.Assert(array != null, "array == null");
-        //    Debug.Assert(array.table == this, "array.table != this");
+        /// <summary>
+        /// Ensures item at specified key is aliased.
+        /// If there is no such item, new one is created.
+        /// </summary>
+        /// <param name="key">Index of item to be checked.</param>
+        /// <param name="array">Caller. Used to lazy copy if necessary.</param>
+        /// <returns><see cref="PhpAlias"/> of specified item.</returns>
+        public PhpAlias/*!*/_ensure_item_alias(ref IntStringKey key, PhpHashtable/*!*/array)
+        {
+            Debug.Assert(array != null, "array == null");
+            Debug.Assert(array.table == this, "array.table != this");
 
-        //    PhpAlias valueref;
+            PhpAlias valueref;
 
-        //    var _entries = this.entries;
-        //    var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
-        //    for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
-        //        if (_entries[p].KeyEquals(ref key))
-        //        {
-        //            var value = _entries[p]._value;
-        //            if (value.IsAlias)
-        //            {
-        //                valueref = value.Alias;
+            var _entries = this.entries;
+            var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
+            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
+                if (_entries[p].KeyEquals(ref key))
+                {
+                    var value = _entries[p]._value;
+                    if (value.IsAlias)
+                    {
+                        valueref = value.Alias;
 
-        //                // if valueref references the array itself, array must be lazily copied:
-        //                if (this.IsShared && valueref.Value.Object == this.owner)
-        //                {
-        //                    // shared table references itself, must be deepcopied:
-        //                    array.EnsureWritable();
-        //                    // "this" is not "array.table" anymore!
-        //                    Debug.Assert(!array.table.IsShared, "array.table.IsShared");
-        //                    Debug.Assert(array.table.entries[p]._value.IsAlias, "array.table.entries[p].Value is not aliased!");
-        //                    Debug.Assert(array.table != this, "array.table == this; but it shouldn't after deep copying!");
-        //                    valueref = array.table.entries[p]._value.Alias;
-        //                }
-        //            }
-        //            else
-        //            {
-        //                // make the value aliased:
-        //                if (this.IsShared)
-        //                {
-        //                    // we have to unshare this, so we can modify the content:
-        //                    array.EnsureWritable();
-        //                    // "this" is not "array.table" anymore!
-        //                    _entries = array.table.entries;
-        //                }
+                        //// if valueref references the array itself, array must be lazily copied:
+                        //if (this.IsShared && valueref.Value.Object == this.owner)
+                        //{
+                        //    // shared table references itself, must be deepcopied:
+                        //    array.EnsureWritable();
+                        //    // "this" is not "array.table" anymore!
+                        //    Debug.Assert(!array.table.IsShared, "array.table.IsShared");
+                        //    Debug.Assert(array.table.entries[p]._value.IsAlias, "array.table.entries[p].Value is not aliased!");
+                        //    Debug.Assert(array.table != this, "array.table == this; but it shouldn't after deep copying!");
+                        //    valueref = array.table.entries[p]._value.Alias;
+                        //}
+                    }
+                    else
+                    {
+                        // make the value aliased:
+                        if (this.IsShared)
+                        {
+                            // we have to unshare this, so we can modify the content:
+                            array.EnsureWritable();
+                            // "this" is not "array.table" anymore!
+                            _entries = array.table.entries;
+                        }
 
-        //                // wrap _entries[p].Value into PhpAlias
-        //                valueref = _entries[p]._value.EnsureAlias();
-        //            }
+                        // wrap _entries[p].Value into PhpAlias
+                        valueref = _entries[p]._value.EnsureAlias();
+                    }
 
-        //            //
-        //            return valueref;
-        //        }
+                    //
+                    return valueref;
+                }
 
-        //    // not found, create new item:
-        //    valueref = new PhpAlias(PhpValue.CreateVoid());
-        //    array.Add(key, PhpValue.Create(valueref));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
-        //    return valueref;
-        //}
+            // not found, create new item:
+            valueref = new PhpAlias(PhpValue.CreateVoid());
+            array.Add(key, PhpValue.Create(valueref));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
+            return valueref;
+        }
 
-        ///// <summary>
-        ///// Ensures specified item is <see cref="PhpArray"/>.
-        ///// </summary>
-        ///// <param name="key"></param>
-        ///// <param name="array">Caler.</param>
-        ///// <returns></returns>
-        //public PhpArray/*!*/_ensure_item_array(ref IntStringKey key, PhpArray/*!*/array)
-        //{
-        //    Debug.Assert(array != null, "array == null");
-        //    Debug.Assert(array.table == this, "array.table != this");
+        /// <summary>
+        /// Ensures specified item is a class object.
+        /// </summary>
+        /// <param name="key">Index of item to be checked.</param>
+        /// <param name="array">Caller. Used to lazy copy if necessary.</param>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
+        /// <returns><see cref="object"/> ensured to be at given <paramref name="key"/>.</returns>
+        public object/*!*/_ensure_item_object(ref IntStringKey key, PhpArray/*!*/array, Context ctx)
+        {
+            Debug.Assert(array != null, "array == null");
+            Debug.Assert(array.table == this, "array.table != this");
 
-        //    PhpArray valuearray;
+            object valueobj;
 
-        //    var _entries = this.entries;
-        //    var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
-        //    for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
-        //        if (_entries[p].KeyEquals(ref key))
-        //        {
-        //            var value = _entries[p]._value;
-        //            valuearray = value as PhpArray;
+            var _entries = this.entries;
+            var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
+            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
+                if (_entries[p].KeyEquals(ref key))
+                {
+                    var value = _entries[p]._value;
 
-        //            if (valuearray == null)
-        //            {
-        //                valuearray = new PhpArray();
+                    if (value.IsObject)
+                    {
+                        valueobj = value.Object;
+                    }
+                    else
+                    {
+                        // make the value array:
+                        if (this.IsShared)
+                        {
+                            // we have to unshare this, so we can modify the content:
+                            array.EnsureWritable();
+                            // "this" is not "array.table" anymore!
+                            _entries = array.table.entries;
+                        }
 
-        //                // make the value array:
-        //                if (this.IsShared)
-        //                {
-        //                    // we have to unshare this, so we can modify the content:
-        //                    array.EnsureWritable();
-        //                    // "this" is not "array.table" anymore!
-        //                    array.table.entries[p].Value = valuearray;
-        //                }
-        //                else
-        //                {
-        //                    _entries[p]._value = valuearray;
-        //                }
-        //            }
+                        valueobj = _entries[p]._value.EnsureObject(ctx);
+                    }
 
-        //            //
-        //            return valuearray;
-        //        }
+                    //
+                    return valueobj;
+                }
 
-        //    // not found, create new item:
-        //    valuearray = new PhpArray();
-        //    array.Add(key, PhpValue.Create(valuearray));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
-        //    return valuearray;
-        //}
+            // not found, create new item:
+            valueobj = new stdClass();
+            array.Add(key, PhpValue.FromClass(valueobj));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
+            return valueobj;
+        }
+
+        /// <summary>
+        /// Ensures specified item is <see cref="PhpArray"/>.
+        /// </summary>
+        /// <param name="key">Index of item to be checked.</param>
+        /// <param name="array">Caller. Used to lazy copy if necessary.</param>
+        /// <returns><see cref="PhpArray"/> ensured to be at given <paramref name="key"/>.</returns>
+        public PhpArray/*!*/_ensure_item_array(ref IntStringKey key, PhpArray/*!*/array)
+        {
+            Debug.Assert(array != null, "array == null");
+            Debug.Assert(array.table == this, "array.table != this");
+
+            PhpArray valuearray;
+
+            var _entries = this.entries;
+            var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
+            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
+                if (_entries[p].KeyEquals(ref key))
+                {
+                    var value = _entries[p]._value;
+                    
+                    if (value.IsArray)
+                    {
+                        valuearray = value.Array;
+                    }
+                    else
+                    {
+                        // make the value array:
+                        if (this.IsShared)
+                        {
+                            // we have to unshare this, so we can modify the content:
+                            array.EnsureWritable();
+                            // "this" is not "array.table" anymore!
+                            _entries = array.table.entries;
+                        }
+
+                        valuearray = _entries[p]._value.EnsureArray();
+                    }
+
+                    //
+                    return valuearray;
+                }
+
+            // not found, create new item:
+            valuearray = new PhpArray();
+            array.Add(key, PhpValue.Create(valuearray));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
+            return valuearray;
+        }
 
         #endregion
 

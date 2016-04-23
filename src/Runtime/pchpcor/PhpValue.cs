@@ -182,6 +182,8 @@ namespace Pchp.Core
 
         public object EnsureObject(Context ctx) => _type.EnsureObject(ref this, ctx);
 
+        public PhpArray EnsureArray() => _type.EnsureArray(ref this);
+
         public PhpAlias EnsureAlias() => _type.EnsureAlias(ref this);
 
         /// <summary>
@@ -283,7 +285,7 @@ namespace Pchp.Core
 
         public static PhpValue FromClass(object value)
         {
-            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString));
+            Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString || value is PhpArray));
             return new PhpValue(TypeTable.ClassTable, value);
         }
 
@@ -302,6 +304,8 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(string)) return Create((string)value);
                 if (value.GetType() == typeof(PhpString)) return Create((PhpString)value);
                 if (value.GetType() == typeof(PhpAlias)) return Create((PhpAlias)value);
+                if (value.GetType() == typeof(PhpArray)) return Create((PhpArray)value);
+                if (value.GetType() == typeof(PhpValue)) return (PhpValue)value;
                 
                 //                
                 return FromClass(value);

@@ -1304,13 +1304,13 @@ namespace Pchp.Core
         {
             get
             {
-                return table[key];
+                return table._get(ref key);
             }
             set
             {
                 this.EnsureWritable();
 
-                table[key] = value;
+                table._add_or_update(ref key, value);
                 KeyAdded(ref key);
             }
         }

@@ -233,6 +233,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureObject_Context = ct.PhpValue.Method("EnsureObject", ct.Context);
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
 
+                DeepCopy = ct.PhpValue.Method("DeepCopy");
+
                 get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
                 get_Boolean = ct.PhpValue.Method("get_Boolean");   // TODO: special name, property
@@ -254,6 +256,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureAlias,
+                DeepCopy,
                 get_Long, get_Double, get_Boolean, get_String, get_Object,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, CreateNull, CreateVoid,
                 FromClr_Object, FromClass_Object;
@@ -388,6 +391,17 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
                 Append_String;
+        }
+
+        public struct PhpArrayHolder
+        {
+            public PhpArrayHolder(CoreTypes ct)
+            {
+                DeepCopy = ct.PhpArray.Method("DeepCopy");
+            }
+
+            public readonly CoreMethod
+                DeepCopy;
         }
 
         public struct ConstructorsHolder
