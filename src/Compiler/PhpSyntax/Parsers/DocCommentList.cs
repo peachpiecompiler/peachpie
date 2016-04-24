@@ -105,7 +105,7 @@ namespace Pchp.Syntax.Parsers
         /// <param name="stmts">List of statements to be merged with overlapping DOC comments.</param>
         public void Merge(Text.Span extent, IList<Statement>/*!*/stmts)
         {
-            if (!_span.IsValid)
+            if (!_span.IsValid || !extent.IsValid)
                 return;
 
             Debug.Assert(extent.IsValid);
