@@ -16,6 +16,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     public abstract partial class Edge : AstNode
     {
         /// <summary>
+        /// Associated syntax node.
+        /// </summary>
+        internal LangElement PhpSyntax { get; set; }
+
+        /// <summary>
         /// Target blocks.
         /// </summary>
         public abstract IEnumerable<BoundBlock>/*!!*/Targets { get; }

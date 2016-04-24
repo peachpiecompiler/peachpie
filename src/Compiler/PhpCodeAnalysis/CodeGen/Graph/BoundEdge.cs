@@ -23,6 +23,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         internal override void Generate(CodeGenerator cg)
         {
+            if (cg.IsDebug && this.PhpSyntax != null)
+            {
+                cg.EmitSequencePoint(this.PhpSyntax);
+                cg.Builder.EmitOpCode(ILOpCode.Nop);
+            }
             cg.Scope.ContinueWith(NextBlock);
         }
     }

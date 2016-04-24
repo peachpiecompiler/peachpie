@@ -28,6 +28,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public int Tag { get { return _tag; } set { _tag = value; } }
         private int _tag;
 
+        /// <summary>
+        /// Associated syntax node.
+        /// </summary>
         internal LangElement PhpSyntax { get; set; }
 
         /// <summary>

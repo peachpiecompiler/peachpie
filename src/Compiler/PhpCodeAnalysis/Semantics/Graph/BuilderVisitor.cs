@@ -506,6 +506,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 if (target != null)
                 {
                     Connect(_current, target);
+
+                    _current.NextEdge.PhpSyntax = x;
                 }
                 else
                 {
