@@ -814,6 +814,26 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundArrayEx : BoundExpression, IArrayCreationExpression
     {
+        public class BoundArrayInitializer : BoundExpression, IArrayInitializer
+        {
+            readonly BoundArrayEx _array;
+
+            public override OperationKind Kind => OperationKind.ArrayInitializer;
+
+            ImmutableArray<IExpression> IArrayInitializer.ElementValues => _array._items.Select(x => x.Value).Cast<IExpression>().AsImmutable();
+
+            public BoundArrayInitializer(BoundArrayEx array)
+            {
+                _array = array;
+            }
+
+            public override void Accept(OperationVisitor visitor)
+                => visitor.VisitArrayInitializer(this);
+
+            public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+                => visitor.VisitArrayInitializer(this, argument);
+        }
+
         public override OperationKind Kind => OperationKind.ArrayCreationExpression;
 
         ITypeSymbol IArrayCreationExpression.ElementType
@@ -827,7 +847,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ImmutableArray<IExpression> IArrayCreationExpression.DimensionSizes => ImmutableArray.Create<IExpression>(new BoundLiteral(_items.Length));
 
-        IArrayInitializer IArrayCreationExpression.Initializer => null;
+        IArrayInitializer IArrayCreationExpression.Initializer => new BoundArrayInitializer(this);
 
         /// <summary>
         /// Array items.

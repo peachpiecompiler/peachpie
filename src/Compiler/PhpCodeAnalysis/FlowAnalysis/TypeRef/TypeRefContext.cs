@@ -538,7 +538,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             //
-            result.IsRef = elementType.IsRef;
             return result;
         }
 
