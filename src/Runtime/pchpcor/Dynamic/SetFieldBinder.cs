@@ -48,18 +48,22 @@ namespace Pchp.Core.Dynamic
             var runtime_type = target_value.GetType();
             var value = args[0].Expression;
 
+            // 
+            if (target_expr.Type != runtime_type)
+            {
+                restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
+                target_expr = Expression.Convert(target_expr, runtime_type);
+            }
+
+            //
+            Expression setter;
+
+            //
             var fld = runtime_type.GetTypeInfo().GetDeclaredField(fldName);
             if (fld != null)
             {
-                if (target_expr.Type != runtime_type)
-                {
-                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
-                    target_expr = Expression.Convert(target_expr, runtime_type);
-                }
-                
                 Expression lvalue = Expression.Field(target_expr, fld);
-                Expression setter;
-
+                
                 if (_access.WriteAlias())
                 {
                     // write alias
@@ -105,14 +109,53 @@ namespace Pchp.Core.Dynamic
                         setter = Expression.Assign(lvalue, ConvertExpression.Bind(value, fld.FieldType));
                     }
                 }
-
-                //
-                return new DynamicMetaObject(setter, restrictions);
             }
             else
             {
-                throw new NotImplementedException();    // runtime field or __set
+                // TODO: __set($name, $value)
+
+                // PhpArray __peach__runtimeFields
+                var __peach__runtimeFields = BinderHelpers.LookupRuntimeFields(runtime_type);
+                if (__peach__runtimeFields != null)
+                {
+                    var __runtimeflds_field = Expression.Field(target_expr, __peach__runtimeFields);
+
+                    if (_access.WriteAlias())
+                    {
+                        // write alias
+
+                        Debug.Assert(value.Type == typeof(PhpAlias));
+                        value = ConvertExpression.Bind(value, typeof(PhpAlias));
+
+                        // <target>.RuntimeFields.SetItemAlias(name, alias);
+                        setter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_SetItemAlias,
+                            Expression.Constant(new IntStringKey(fldName)), value);
+                    }
+                    else
+                    {
+                        // write by value
+
+                        value = ConvertExpression.Bind(value, typeof(PhpValue));
+
+                        // <target>.RuntimeFields.SetItemValue(name, value);
+                        setter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_SetItemValue,
+                            Expression.Constant(new IntStringKey(fldName)), value);
+                    }
+
+                    // prepend ensure __peach__runtimeFields != null
+                    setter = Expression.Block(
+                        BinderHelpers.EnsureNotNullPhpArray(__runtimeflds_field),
+                        setter);
+                }
+                else
+                {
+                    // field cannot be set
+                    throw new NotImplementedException();
+                }
             }
+
+            //
+            return new DynamicMetaObject(setter, restrictions);
         }
     }
 }

@@ -1988,7 +1988,7 @@ namespace Pchp.Core
                 {
                     var value = _entries[p]._value;
 
-                    if (value.IsObject)
+                    if (value.IsObject && value.Object != null)
                     {
                         valueobj = value.Object;
                     }

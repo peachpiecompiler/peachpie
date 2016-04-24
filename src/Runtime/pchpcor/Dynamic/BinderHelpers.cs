@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -62,6 +63,34 @@ namespace Pchp.Core.Dynamic
                 //
                 break;
             }
+        }
+
+        public static Expression EnsureNotNullPhpArray(Expression variable)
+        {
+            return Expression.IfThen(
+                Expression.ReferenceEqual(variable, Expression.Constant(null)),
+                Expression.Assign(variable, Expression.New(typeof(PhpArray))));
+        }
+
+        /// <summary>
+        /// Find field corresponding to object's runtime fields.
+        /// </summary>
+        public static FieldInfo LookupRuntimeFields(Type target)
+        {
+            foreach (var fld in target.GetRuntimeFields())
+            {
+                // TODO: lookup custom attribute [CompilerGenerated]
+                if (fld.Name == "__peach__runtimeFields" || fld.Name == "<runtime_fields>")
+                {
+                    if (fld.FieldType == typeof(PhpArray) && !fld.IsPublic && !fld.IsStatic)
+                    {
+                        return fld;
+                    }
+                }
+            }
+
+            //
+            return null;
         }
     }
 }

@@ -46,20 +46,21 @@ namespace Pchp.Core.Dynamic
             BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
 
             var fldName = ResolveName(args, ref restrictions);
-            
             var runtime_type = target_value.GetType();
 
+            //
+            if (target_expr.Type != runtime_type)
+            {
+                restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
+                target_expr = Expression.Convert(target_expr, runtime_type);
+            }
+
+            //
             var fld = runtime_type.GetTypeInfo().GetDeclaredField(fldName);
             if (fld != null)
             {
-                if (target_expr.Type != runtime_type)
-                {
-                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
-                    target_expr = Expression.Convert(target_expr, runtime_type);
-                }
-
                 Expression getter = Expression.Field(target_expr, fld);
-                
+
                 // Ensure Object
                 if (_access.EnsureObject())
                 {
@@ -123,7 +124,59 @@ namespace Pchp.Core.Dynamic
             }
             else
             {
-                throw new NotImplementedException();    // runtime field or __get
+                // TODO: __get(name)
+
+                // PhpArray __peach__runtimeFields
+                var __peach__runtimeFields = BinderHelpers.LookupRuntimeFields(runtime_type);
+                if (__peach__runtimeFields != null)
+                {
+                    var __runtimeflds_field = Expression.Field(target_expr, __peach__runtimeFields);
+                    var key = Expression.Constant(new IntStringKey(fldName));
+
+                    Expression getter;
+
+                    if (_access.EnsureObject())
+                    {
+                        getter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_EnsureItemObject, key, Expression.Constant(null, typeof(Context)));
+
+                        // if (__runtimeflds_field == null) __runtimeflds_field = [];
+                        // return getter
+                        getter = Expression.Block(_returnType,
+                            BinderHelpers.EnsureNotNullPhpArray(__runtimeflds_field),
+                            getter);
+                    }
+                    else if (_access.EnsureArray())
+                    {
+                        getter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_EnsureItemArray, key);
+
+                        // if (__runtimeflds_field == null) __runtimeflds_field = [];
+                        // return getter
+                        getter = Expression.Block(_returnType,
+                            BinderHelpers.EnsureNotNullPhpArray(__runtimeflds_field),
+                            getter);
+                    }
+                    else if (_access.EnsureAlias())
+                    {
+                        getter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_EnsureItemAlias, key);
+
+                        // if (__runtimeflds_field == null) __runtimeflds_field = [];
+                        // return getter
+                        getter = Expression.Block(_returnType,
+                            BinderHelpers.EnsureNotNullPhpArray(__runtimeflds_field),
+                            getter);
+                    }
+                    else
+                    {
+                        getter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_GetItemValue, key);
+                        // TODO: (__runtimeflds_field != null) ? getter : ERROR;
+                    }
+
+                    //
+                    return new DynamicMetaObject(ConvertExpression.Bind(getter, _returnType), restrictions);
+                }
+
+                // field not found
+                throw new NotImplementedException();
             }
         }
     }

@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.Symbols
         MethodSymbol _lazyCtorMethod;   // .ctor
         SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
-        // TODO: FieldSymbol _lazyRuntimeFieldsField; // PhpArray __runtimeFields;
+        FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
 
         public SourceFileSymbol ContainingFile => _file;
         
@@ -78,8 +78,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // special fields
-            if (object.ReferenceEquals(ContextField.ContainingType, this))
+            if (ContextField != null && object.ReferenceEquals(ContextField.ContainingType, this))
                 yield return ContextField;
+
+            var runtimefld = EnsureRuntimeFieldsField();
+            if (runtimefld != null && object.ReferenceEquals(runtimefld.ContainingType, this))
+                yield return runtimefld;
         }
 
         /// <summary>
@@ -136,6 +140,40 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return _lazyContextField;
             }
+        }
+
+        internal FieldSymbol EnsureRuntimeFieldsField()
+        {
+            if (_lazyRuntimeFieldsField == null && !this.IsStatic)
+            {
+                const string fldname = "<runtime_fields>";
+
+                // resolve <ctx> field
+                var types = DeclaringCompilation.CoreTypes;
+                NamedTypeSymbol t = this.BaseType;
+                while (t != null && t != types.Object.Symbol)
+                {
+                    var candidates = t.GetMembers(fldname)
+                        .OfType<FieldSymbol>()
+                        .Where(f => f.DeclaredAccessibility != Accessibility.Public && !f.IsStatic && f.Type == types.PhpArray.Symbol)
+                        .ToList();
+
+                    Debug.Assert(candidates.Count <= 1);
+                    if (candidates.Count != 0)
+                    {
+                        _lazyRuntimeFieldsField = candidates[0];
+                        break;
+                    }
+
+                    t = t.BaseType;
+                }
+
+                //
+                if (_lazyRuntimeFieldsField == null)
+                    _lazyRuntimeFieldsField = new SynthesizedFieldSymbol(this, types.PhpArray.Symbol, fldname, Accessibility.Internal, false);
+            }
+
+            return _lazyRuntimeFieldsField;
         }
 
         public override NamedTypeSymbol BaseType

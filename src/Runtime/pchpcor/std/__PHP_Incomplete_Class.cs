@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,5 +10,5 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class __PHP_Incomplete_Class
 {
-    // TODO: PhpArray __runtimeFields;
+    private PhpArray __peach__runtimeFields;
 }

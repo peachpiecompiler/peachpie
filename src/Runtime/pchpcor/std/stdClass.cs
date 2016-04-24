@@ -13,5 +13,5 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class stdClass
 {
-    // TODO: PhpArray __runtimeFields;
+    private PhpArray __peach__runtimeFields;
 }
