@@ -678,6 +678,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (type == CoreTypes.PhpArray)
                     {
+                        this.EmitLoadContext();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpArray.ToString_Context).Expect(SpecialType.System_String);
                         method = CoreMethods.Operators.Echo_String.Symbol;
                     }
