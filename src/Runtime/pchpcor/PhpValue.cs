@@ -229,6 +229,11 @@ namespace Pchp.Core
 
         #region Construction
 
+        /// <summary>
+        /// Singleton of PhpValue representing <c>void</c>.
+        /// </summary>
+        public static readonly PhpValue Void = new PhpValue(new VoidTable());
+
         private PhpValue(long value) : this()
         {
             _type = TypeTable.LongTable;
@@ -273,8 +278,6 @@ namespace Pchp.Core
         public static PhpValue Create(bool value) => new PhpValue(value);
 
         public static PhpValue CreateNull() => new PhpValue(TypeTable.NullTable);
-
-        public static PhpValue CreateVoid() => new PhpValue(TypeTable.VoidTable);
 
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 

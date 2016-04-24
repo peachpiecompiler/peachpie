@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Cci = Microsoft.Cci;
@@ -37,11 +38,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void EmitInit(CodeGenerator cg)
         {
-            // TODO: in case of PhpValue, PhpAlias, PhpArray - init local with default value if it is used uninitialized later
-
-            if (_symbol is Symbols.SourceReturnSymbol)
+            if (_symbol is Symbols.SourceReturnSymbol)  // TODO: remove SourceReturnSymbol
                 return;
 
+            // declare variable in global scope
             var il = cg.Builder;
             var def = il.LocalSlotManager.DeclareLocal(
                     (Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal,
@@ -50,6 +50,27 @@ namespace Pchp.CodeAnalysis.Semantics
 
             _place = new LocalPlace(def);
             il.AddLocalToScope(def);
+
+            // Initialize local variable with void.
+            // This is mandatory since even assignments reads the target value to assign properly to PhpAlias.
+            
+            // TODO: Once analysis tells us, the target cannot be alias, this step won't be necessary.
+
+            // TODO: only if the local will be used uninitialized
+
+            if (_place.Type == cg.CoreTypes.PhpValue)
+            {
+                _place.EmitStorePrepare(cg.Builder);
+                cg.Emit_PhpValue_Void();
+                _place.EmitStore(cg.Builder);
+            }
+            else if (_place.Type == cg.CoreTypes.PhpAlias)
+            {
+                _place.EmitStorePrepare(cg.Builder);
+                cg.Emit_PhpValue_Void();
+                cg.Emit_PhpValue_MakeAlias();
+                _place.EmitStore(cg.Builder);
+            }
         }
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)

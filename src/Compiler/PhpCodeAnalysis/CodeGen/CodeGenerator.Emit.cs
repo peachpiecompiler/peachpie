@@ -387,15 +387,22 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitSequencePoint(Syntax.AST.LangElement element)
         {
-            if (_emitPdbSequencePoints && element != null && element.Span.IsValid)
+            if (element != null)
             {
-                if (_syntaxTree == null)
-                    _syntaxTree = new SyntaxTreeAdapter(_routine.ContainingFile.Syntax.SourceUnit);
-
-                _il.DefineSequencePoint(_syntaxTree, new Microsoft.CodeAnalysis.Text.TextSpan(element.Span.Start, element.Span.Length));
+                EmitSequencePoint(element.Span);
             }
         }
-        SyntaxTree _syntaxTree;
+        internal void EmitSequencePoint(Syntax.Text.Span span)
+        {
+            if (_emitPdbSequencePoints && span.IsValid)
+            {
+                if (_lazySyntaxTree == null)
+                    _lazySyntaxTree = new SyntaxTreeAdapter(_routine.ContainingFile.Syntax.SourceUnit);
+
+                _il.DefineSequencePoint(_lazySyntaxTree, new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+            }
+        }
+        SyntaxTree _lazySyntaxTree;
 
         /// <summary>
         /// Emits load of <c>PhpAlias.Value</c>,
@@ -437,6 +444,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitIntConstant(capacity);
             _il.EmitOpCode(ILOpCode.Newobj, -1 + 1);    // - 1 out, + 1 in
             _il.EmitToken(CoreMethods.Ctors.PhpString_int.Symbol, null, _diagnostics);
+        }
+
+        /// <summary>
+        /// Emits load of PhpValue representing void.
+        /// </summary>
+        public TypeSymbol Emit_PhpValue_Void()
+        {
+            _il.EmitOpCode(ILOpCode.Ldsfld);
+            EmitSymbolToken(CoreMethods.PhpValue.Void, null);
+            return CoreTypes.PhpValue;
         }
 
         /// <summary>
@@ -774,7 +791,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         else if (type == CoreTypes.PhpAlias)
                         {
                             // new PhpAlias(void, 1);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.CreateVoid);
+                            Emit_PhpValue_Void();
                             Emit_PhpValue_MakeAlias();
                         }
                         else

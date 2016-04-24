@@ -17,7 +17,6 @@ namespace Pchp.Core
             #region Singletons
 
             public static readonly NullTable NullTable = new NullTable();
-            public static readonly VoidTable VoidTable = new VoidTable();
             public static readonly LongTable LongTable = new LongTable();
             public static readonly DoubleTable DoubleTable = new DoubleTable();
             public static readonly BoolTable BoolTable = new BoolTable();

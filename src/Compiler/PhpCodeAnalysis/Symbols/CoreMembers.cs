@@ -109,13 +109,87 @@ namespace Pchp.CodeAnalysis.Symbols
         #endregion
     }
 
+    class CoreField
+    {
+        #region Fields
+
+        /// <summary>
+        /// Lazily associated symbol.
+        /// </summary>
+        FieldSymbol _lazySymbol;
+
+        /// <summary>
+        /// Declaring class. Cannot be <c>null</c>.
+        /// </summary>
+        public readonly CoreType DeclaringClass;
+
+        /// <summary>
+        /// The field name.
+        /// </summary>
+        public readonly string FieldName;
+
+        #endregion
+
+        public CoreField(CoreType declaringClass, string fldName)
+        {
+            Contract.ThrowIfNull(declaringClass);
+            Contract.ThrowIfNull(fldName);
+
+            this.DeclaringClass = declaringClass;
+            this.FieldName = fldName;
+        }
+
+        /// <summary>
+        /// Gets associated symbol.
+        /// </summary>
+        public FieldSymbol Symbol
+        {
+            get
+            {
+                var symbol = _lazySymbol;
+                if (symbol == null)
+                {
+                    symbol = ResolveSymbol();
+                    Contract.ThrowIfNull(symbol);
+
+                    Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
+                }
+                return symbol;
+            }
+        }
+
+        string DebuggerDisplay => DeclaringClass.FullName + "." + FieldName;
+
+        /// <summary>
+        /// Implicit cast to field symbol.
+        /// </summary>
+        public static implicit operator FieldSymbol(CoreField m) => m.Symbol;
+
+        #region ResolveSymbol
+
+        /// <summary>
+        /// Resolves <see cref="FieldSymbol"/> of this descriptor.
+        /// </summary>
+        protected virtual FieldSymbol ResolveSymbol()
+        {
+            var type = this.DeclaringClass.Symbol;
+            if (type == null)
+                throw new InvalidOperationException();
+
+            var fields = type.GetMembers(FieldName);
+            return fields.OfType<FieldSymbol>().First();
+        }
+
+        #endregion
+    }
+
     /// <summary>
     /// Descriptor of a well-known constructor.
     /// </summary>
     class CoreConstructor : CoreMethod
     {
         public CoreConstructor(CoreType declaringClass, params CoreType[] ptypes)
-            :base(declaringClass, ".ctor", ptypes)
+            : base(declaringClass, ".ctor", ptypes)
         {
 
         }
@@ -143,7 +217,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <param name="name">Operator name, without <c>op_</c> prefix.</param>
         /// <param name="ptypes">CLR parameters.</param>
         public CoreOperator(CoreType declaringClass, string name, params CoreType[] ptypes)
-            :base(declaringClass, name, ptypes)
+            : base(declaringClass, name, ptypes)
         {
             Debug.Assert(name.StartsWith("op_"));
         }
@@ -253,18 +327,22 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_PhpArray = ct.PhpValue.Method("Create", ct.PhpArray);
                 Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
                 CreateNull = ct.PhpValue.Method("CreateNull");
-                CreateVoid = ct.PhpValue.Method("CreateVoid");
-
+                
                 FromClr_Object = ct.PhpValue.Method("FromClr", ct.Object);
                 FromClass_Object = ct.PhpValue.Method("FromClass", ct.Object);
+
+                Void = ct.PhpValue.Field("Void");
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureArray, EnsureAlias,
                 DeepCopy,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
-                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, CreateNull, CreateVoid,
+                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, CreateNull,
                 FromClr_Object, FromClass_Object;
+
+            public readonly CoreField
+                Void;
         }
 
         public struct PhpAliasHolder

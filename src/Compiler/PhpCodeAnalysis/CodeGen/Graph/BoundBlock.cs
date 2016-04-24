@@ -26,6 +26,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         internal override void Emit(CodeGenerator cg)
         {
+            //
+            cg.Builder.DefineInitialHiddenSequencePoint();
+
+            //
             if (cg.IsDebug)
             {
                 // emit Debug.Assert(<context> != null);
