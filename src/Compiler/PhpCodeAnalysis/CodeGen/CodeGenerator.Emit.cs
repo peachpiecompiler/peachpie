@@ -113,6 +113,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                             return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_String)
                                 .Expect(SpecialType.System_String);
                         }
+                        else if (IsArrayOnly(tmask))
+                        {
+                            place.EmitLoadAddress(_il);
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Array)
+                                .Expect(CoreTypes.PhpArray);
+                        }
                         else if (IsClassOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
@@ -133,8 +139,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                             return this.CoreTypes.Object;
                         }
-
-                        // TODO: Array
                     }
                 }
             }
