@@ -326,23 +326,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
                 Create_PhpArray = ct.PhpValue.Method("Create", ct.PhpArray);
                 Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
-                CreateNull = ct.PhpValue.Method("CreateNull");
                 
                 FromClr_Object = ct.PhpValue.Method("FromClr", ct.Object);
                 FromClass_Object = ct.PhpValue.Method("FromClass", ct.Object);
 
                 Void = ct.PhpValue.Field("Void");
+                Null = ct.PhpValue.Field("Null");
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureArray, EnsureAlias,
                 DeepCopy,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
-                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, CreateNull,
+                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray,
                 FromClr_Object, FromClass_Object;
 
             public readonly CoreField
-                Void;
+                Void, Null;
         }
 
         public struct PhpAliasHolder

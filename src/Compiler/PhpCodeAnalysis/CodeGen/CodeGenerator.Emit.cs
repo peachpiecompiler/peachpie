@@ -457,6 +457,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits load of PhpValue representing null.
+        /// </summary>
+        public TypeSymbol Emit_PhpValue_Null()
+        {
+            _il.EmitOpCode(ILOpCode.Ldsfld);
+            EmitSymbolToken(CoreMethods.PhpValue.Null, null);
+            return CoreTypes.PhpValue;
+        }
+
+        /// <summary>
         /// Emits call to given method.
         /// </summary>
         /// <param name="code">Call op code, Call, Callvirt, Calli.</param>
@@ -833,17 +843,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                             }
                             else if (typectx.IsArray(typemask))
                             {
-                                throw ExceptionUtilities.UnexpectedValue(typemask);
-                            }
-                            else if (typectx.IsNullable(typemask))
-                            {
-                                //_il.EmitNullConstant();
-                                //EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Object);
-                                throw ExceptionUtilities.UnexpectedValue(typemask);
+                                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
                             }
                             else
                             {
-                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.CreateNull);
+                                Emit_PhpValue_Null();
                             }
                         }
                         else

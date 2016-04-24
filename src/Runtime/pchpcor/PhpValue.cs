@@ -234,6 +234,11 @@ namespace Pchp.Core
         /// </summary>
         public static readonly PhpValue Void = new PhpValue(new VoidTable());
 
+        /// <summary>
+        /// Singleton of PhpValue representing <c>null</c>.
+        /// </summary>
+        public static readonly PhpValue Null = new PhpValue(new NullTable());
+
         private PhpValue(long value) : this()
         {
             _type = TypeTable.LongTable;
@@ -277,8 +282,6 @@ namespace Pchp.Core
 
         public static PhpValue Create(bool value) => new PhpValue(value);
 
-        public static PhpValue CreateNull() => new PhpValue(TypeTable.NullTable);
-
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 
         public static PhpValue Create(PhpString value) => new PhpValue(TypeTable.WritableStringTable, value);
@@ -316,7 +319,7 @@ namespace Pchp.Core
             }
             else
             {
-                return CreateNull();
+                return Null;
             }
         }
 
