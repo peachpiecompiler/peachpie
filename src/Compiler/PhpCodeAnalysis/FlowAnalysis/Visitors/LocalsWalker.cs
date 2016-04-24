@@ -249,7 +249,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                         
                         _locals.Add(boundstatic);
                         break;
-                    case VariableKind.ReturnVariable:   // for analysis purposes
+                    case VariableKind.ReturnVariable:   // for analysis purposes    // TODO: remove SourceReturnSymbol
                         _locals.Add(new BoundLocal(new SourceReturnSymbol(_routine)));
                         break;
                     case VariableKind.GlobalVariable:

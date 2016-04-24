@@ -38,6 +38,18 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override void EmitInit(CodeGenerator cg)
         {
             // TODO: in case of PhpValue, PhpAlias, PhpArray - init local with default value if it is used uninitialized later
+
+            if (_symbol is Symbols.SourceReturnSymbol)
+                return;
+
+            var il = cg.Builder;
+            var def = il.LocalSlotManager.DeclareLocal(
+                    (Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal,
+                    this.Name, SynthesizedLocalKind.UserDefined,
+                    LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false);
+
+            _place = new LocalPlace(def);
+            il.AddLocalToScope(def);
         }
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
@@ -47,13 +59,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IPlace Place(ILBuilder il) => LocalPlace(il);
 
-        private LocalPlace LocalPlace(ILBuilder il)
-        {
-            if (_place == null)
-                _place = new LocalPlace(il.LocalSlotManager.DeclareLocal((Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal, this.Name, SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false));
-
-            return _place;
-        }
+        private LocalPlace LocalPlace(ILBuilder il) => _place;
     }
 
     partial class BoundParameter

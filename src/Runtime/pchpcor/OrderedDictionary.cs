@@ -1134,6 +1134,8 @@ namespace Pchp.Core
         {
             Debug.Assert(!_contains(ref key), "Item with given key already exists!");
 
+            this.EnsureInitialized();
+
             var _entries = this.entries;
             int p;
 
