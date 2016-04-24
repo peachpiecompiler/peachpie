@@ -16,6 +16,15 @@ namespace Pchp.Core.Dynamic
             if (arg.Type == target)
                 return arg;
 
+            // dereference
+            if (arg.Type == typeof(PhpAlias))
+            {
+                arg = Expression.PropertyOrField(arg, "Value");
+
+                if (target == typeof(PhpValue))
+                    return arg;
+            }
+
             //
             if (target == typeof(long)) return BindToLong(arg);
             if (target == typeof(double)) return BindToDouble(arg);
@@ -23,6 +32,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpNumber)) return BindToNumber(arg);
             if (target == typeof(PhpValue)) return BindToValue(arg);
             if (target == typeof(void)) return BindToVoid(arg);
+            if (target == typeof(object)) return BindToClass(arg);
 
             //
             throw new NotImplementedException(target.ToString());
@@ -100,7 +110,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(double)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Double), expr);
             if (source == typeof(string)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.String), expr);
             if (source == typeof(PhpString)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpString), expr);
-            if (source == typeof(PhpAlias)) return Expression.PropertyOrField(expr, "Value");
+            
 
             if (source.GetTypeInfo().IsValueType)
             {
@@ -111,6 +121,17 @@ namespace Pchp.Core.Dynamic
                 // TODO: FromClr
                 return Expression.Call(typeof(PhpValue).GetMethod("FromClass", Cache.Types.Object), expr);
             }
+        }
+
+        private static Expression BindToClass(Expression expr)
+        {
+            var source = expr.Type;
+
+            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToClass, Expression.Constant(null, typeof(Context))); // TODO: Context
+            if (source == typeof(PhpArray)) throw new NotImplementedException(source.FullName);
+            
+
+            throw new NotImplementedException(source.FullName);
         }
 
         private static Expression BindToVoid(Expression expr)

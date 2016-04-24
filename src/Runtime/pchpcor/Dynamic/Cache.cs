@@ -34,6 +34,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_EnsureObject_Context = typeof(PhpValue).GetMethod("EnsureObject", typeof(Context));
             public static MethodInfo PhpValue_EnsureArray = typeof(PhpValue).GetMethod("EnsureArray");
             public static MethodInfo PhpValue_EnsureAlias = typeof(PhpValue).GetMethod("EnsureAlias");
+            public static MethodInfo PhpValue_ToClass = typeof(PhpValue).GetMethod("ToClass", typeof(Context));
         }
 
         public static class Object
