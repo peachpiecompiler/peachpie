@@ -679,6 +679,53 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitCall(ILOpCode.Call, method);
         }
 
+        public void EmitIntStringKey(BoundExpression expr)
+        {
+            Contract.ThrowIfNull(expr);
+
+            var constant = expr.ConstantValue;
+            if (constant.HasValue)
+            {
+                if (constant.Value is string)
+                {
+                    _il.EmitStringConstant((string)constant.Value);
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
+                }
+                else if (constant.Value is long)
+                {
+                    _il.EmitIntConstant((int)(long)constant.Value);
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+                }
+                else if (constant.Value is int)
+                {
+                    _il.EmitIntConstant((int)constant.Value);
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+
+                return;
+            }
+
+            var t = Emit(expr); // TODO: ConvertToArrayKey
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Int64:
+                    _il.EmitOpCode(ILOpCode.Conv_i4);   // i8 -> i4
+                    goto case SpecialType.System_Int32;
+                case SpecialType.System_Int32:
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+                    break;
+                case SpecialType.System_String:
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
+                    break;
+            }
+            // .call Convert.ToArrayKey(<t>)
+            throw new NotImplementedException();
+        }
+
         public void EmitLoadDefaultValue(TypeSymbol type, TypeRefMask typemask)
         {
             switch (type.SpecialType)

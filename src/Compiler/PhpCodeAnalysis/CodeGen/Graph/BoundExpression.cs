@@ -1907,18 +1907,33 @@ namespace Pchp.CodeAnalysis.Semantics
                 // <PhpArray>
                 cg.Builder.EmitOpCode(ILOpCode.Dup);
 
-                if (x.Key == null)
+                // key
+                if (x.Key != null)
                 {
-                    // .AddValue( value )
-                    var byref = x.Value.Access.IsReadRef;
-                    cg.EmitConvert(x.Value, byref ? cg.CoreTypes.PhpAlias : cg.CoreTypes.PhpValue);
-                    if (byref) cg.Emit_PhpValue_MakeAlias();
+                    cg.EmitIntStringKey(x.Key);
+                }
 
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                // value | alias
+                Debug.Assert(x.Value != null);
+
+                var byref = x.Value.Access.IsReadRef;
+                var valuetype = byref ? cg.CoreTypes.PhpAlias : cg.CoreTypes.PhpValue;
+                cg.EmitConvert(x.Value, valuetype);
+
+                if (x.Key != null)
+                {
+                    if (byref)  // .SetItemAlias( key, PhpAlias )
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                    else   // .SetItemValue( key, PhpValue )
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    if (byref)  // PhpValue.Create( PhpAlias )
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
+
+                    // .AddValue( PhpValue )
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
                 }
             }
 

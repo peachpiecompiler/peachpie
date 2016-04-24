@@ -426,12 +426,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpString_int = ct.PhpString.Ctor(ct.Int32);
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
+                IntStringKey_int = ct.IntStringKey.Ctor(ct.Int32);
+                IntStringKey_string = ct.IntStringKey.Ctor(ct.String);
             }
 
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
-                PhpString_int;
+                PhpString_int,
+                IntStringKey_int, IntStringKey_string;
         }
 
         public struct ContextHolder

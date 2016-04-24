@@ -63,7 +63,7 @@ namespace Pchp.Core
 
     #endregion
 
-    #region Conversions
+    #region Convert
 
     [DebuggerNonUserCode]
     public static class Convert
