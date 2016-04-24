@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         private static Cci.DebugSourceDocument CreateDebugDocumentForFile(string normalizedPath)
         {
-            return new Cci.DebugSourceDocument(normalizedPath, Cci.DebugSourceDocument.CorSymLanguageTypeCSharp);
+            return new Cci.DebugSourceDocument(normalizedPath, Constants.CorSymLanguageTypePeachpie);
         }
 
         internal static MethodBody GenerateMethodBody(
