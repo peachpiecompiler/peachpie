@@ -1270,7 +1270,7 @@ namespace Pchp.Core
             // link entry to freeList:
             entry.next = this.freeList;
             //ignoring: entry.last, entry.listNext, entry.listLast
-            entry._value = PhpValue.CreateVoid();
+            entry._value = PhpValue.Void;
             this.freeList = entry_index;
             ++this.freeCount;
         }
@@ -1370,7 +1370,7 @@ namespace Pchp.Core
                     return true;
                 }
 
-            value = PhpValue.CreateVoid();
+            value = PhpValue.Void;
             return false;
         }
 
@@ -1385,7 +1385,7 @@ namespace Pchp.Core
                     return true;
                 }
 
-            value = PhpValue.CreateVoid();
+            value = PhpValue.Void;
             return false;
         }
 
@@ -1398,7 +1398,7 @@ namespace Pchp.Core
                     return _entries[p]._value;
 
             // not found:
-            return PhpValue.CreateVoid();// throw new KeyNotFoundException();
+            return PhpValue.Void;// throw new KeyNotFoundException();
         }
         internal bool _contains(ref IntStringKey key)
         {
@@ -1962,7 +1962,7 @@ namespace Pchp.Core
                 }
 
             // not found, create new item:
-            valueref = new PhpAlias(PhpValue.CreateVoid());
+            valueref = new PhpAlias(PhpValue.Void);
             array.Add(key, PhpValue.Create(valueref));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
             return valueref;
         }

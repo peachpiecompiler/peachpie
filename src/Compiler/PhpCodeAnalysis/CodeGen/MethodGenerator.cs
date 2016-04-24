@@ -221,9 +221,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // TODO: init static fields as well in .cctor
                 if (fld.Type == compilation.CoreTypes.PhpValue)
                 {
-                    // this.fld = PhpValue.CreateVoid()
+                    // this.fld = PhpValue.Void
                     il.EmitLoadArgumentOpcode(0);   // this
-                    il.EmitCall(moduleBuilder, diagnostics, ILOpCode.Call, compilation.CoreMethods.PhpValue.CreateVoid);    // (PhpValue)void
+                    il.EmitOpCode(ILOpCode.Ldsfld);
+                    il.EmitSymbolToken(moduleBuilder, diagnostics, compilation.CoreMethods.PhpValue.Void, null);
                     il.EmitOpCode(ILOpCode.Stfld);
                     il.EmitSymbolToken(moduleBuilder, diagnostics, fld, null);
                 }

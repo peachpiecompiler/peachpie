@@ -133,7 +133,7 @@
     <Compile Include="Symbols\Attributes\SourceAttributeData.cs" />
     <Compile Include="Symbols\Attributes\SynthesizedAttributeData.cs" />
     <Compile Include="Symbols\ConstructedNamedTypeSymbol.cs" />
-    <Compile Include="Symbols\CoreMethod.cs" />
+    <Compile Include="Symbols\CoreMembers.cs" />
     <Compile Include="Symbols\CoreType.cs" />
     <Compile Include="Symbols\ErrorTypeSymbol.cs" />
     <Compile Include="Symbols\FieldSymbol.cs" />
