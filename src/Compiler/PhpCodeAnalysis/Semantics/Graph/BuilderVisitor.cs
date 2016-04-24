@@ -484,6 +484,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             
             Connect(_current, label.TargetBlock);
 
+            _current.NextEdge.PhpSyntax = x;
+
             _current = NewDeadBlock();  // any statement inside this block would be unreachable unless it is LabelStmt
         }
 
