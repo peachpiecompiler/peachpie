@@ -202,7 +202,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private CatchBlock/*!*/NewBlock(CatchItem item)
         {
-            return WithNewOrdinal(new CatchBlock(item));
+            return WithNewOrdinal(new CatchBlock(item) { PhpSyntax = item });
         }
 
         private CaseBlock/*!*/NewBlock(SwitchItem item)
@@ -210,7 +210,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var caseitem = item as CaseItem;
             BoundExpression caseValue =  // null => DefaultItem
                 (caseitem != null) ? _binder.BindExpression(caseitem.CaseVal, BoundAccess.Read) : null;
-            return WithNewOrdinal(new CaseBlock(caseValue));
+            return WithNewOrdinal(new CaseBlock(caseValue) { PhpSyntax = item });
         }
 
         private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition, bool isloop = false)

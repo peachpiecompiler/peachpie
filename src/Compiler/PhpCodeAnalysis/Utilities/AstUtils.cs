@@ -31,6 +31,24 @@ namespace Pchp.CodeAnalysis
             return method != null && (method.Modifiers & Syntax.PhpMemberAttributes.Static) == 0;
         }
 
+        public static Syntax.Text.Span BodySpanOrInvalid(this AstNode routine)
+        {
+            if (routine is FunctionDecl)
+            {
+                var node = (FunctionDecl)routine;
+                return Syntax.Text.Span.FromBounds(node.DeclarationBodyPosition, node.EntireDeclarationSpan.End);
+            }
+            if (routine is MethodDecl)
+            {
+                var node = (MethodDecl)routine;
+                return Syntax.Text.Span.FromBounds(node.DeclarationBodyPosition, node.EntireDeclarationSpan.End);
+            }
+            else
+            {
+                return Syntax.Text.Span.Invalid;
+            }
+        }
+
         /// <summary>
         /// Gets <see cref="Microsoft.CodeAnalysis.Text.LinePosition"/> from source position.
         /// </summary>

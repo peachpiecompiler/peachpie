@@ -85,6 +85,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
+            var bound = BindExpressionCore(expr, access).WithAccess(access);
+            bound.PhpSyntax = expr;
+
+            return bound;
+        }
+
+        private BoundExpression BindExpressionCore(AST.Expression expr, BoundAccess access)
+        {
             Debug.Assert(expr != null);
 
             if (expr is AST.Literal) return BindLiteral((AST.Literal)expr).WithAccess(access);
@@ -96,7 +104,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
             if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
             if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
-            
+
             throw new NotImplementedException(expr.GetType().FullName);
         }
 

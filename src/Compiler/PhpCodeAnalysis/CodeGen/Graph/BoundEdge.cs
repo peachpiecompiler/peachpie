@@ -42,6 +42,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // }
 
                 // if (Condition)
+                cg.EmitSequencePoint(this.Condition.PhpSyntax);
                 cg.Builder.MarkLabel(this.Condition);
                 cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);
                 cg.Builder.EmitBranch(ILOpCode.Brtrue, TrueTarget);
@@ -49,6 +50,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 // if (Condition)
+                cg.EmitSequencePoint(this.Condition.PhpSyntax);
                 cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);
                 cg.Builder.EmitBranch(ILOpCode.Brfalse, FalseTarget);
 
@@ -130,6 +132,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 //else
                 {
                     // <switch_loc> = <SwitchValue>;
+                    cg.EmitSequencePoint(this.SwitchValue.PhpSyntax);
                     var switch_type = cg.Emit(this.SwitchValue);
                     var switch_loc = cg.GetTemporaryLocal(switch_type);
                     cg.Builder.EmitLocalStore(switch_loc);
@@ -144,6 +147,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                         if (!this_block.IsDefault)
                         {
                             // <CaseValue>:
+                            cg.EmitSequencePoint(this_block.CaseValue.PhpSyntax);
                             cg.Builder.MarkLabel(this_block.CaseValue);
 
                             // if (<switch_loc> == c.CaseValue)

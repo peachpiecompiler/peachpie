@@ -3,6 +3,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,8 +27,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         internal override void Emit(CodeGenerator cg)
         {
-            //
-            cg.Builder.DefineInitialHiddenSequencePoint();
+            // first brace sequence point
+            var body = cg.Routine.Syntax.BodySpanOrInvalid();
+            if (body.IsValid && cg.IsDebug)
+            {
+                cg.EmitSequencePoint(new Syntax.Text.Span(body.Start, 1));
+                cg.EmitOpCode(ILOpCode.Nop);
+            }
+            else
+            {
+                cg.Builder.DefineInitialHiddenSequencePoint();
+            }
 
             //
             if (cg.IsDebug)
