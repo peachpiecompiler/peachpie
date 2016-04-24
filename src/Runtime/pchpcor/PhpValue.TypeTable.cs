@@ -119,7 +119,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Long;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => me.Long.ToString();
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Long.ToString();
             public override long ToLong(ref PhpValue me) => me.Long;
@@ -139,7 +139,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Double;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
             public override long ToLong(ref PhpValue me) => (long)me.Double;
@@ -159,7 +159,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Boolean;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
             public override long ToLong(ref PhpValue me) => me.Boolean ? 1L : 0L;
@@ -197,7 +197,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.String;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => me.String;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.String;
             public override long ToLong(ref PhpValue me) => Convert.StringToLongInteger(me.String);
@@ -231,7 +231,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.WritableString;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) { throw new NotImplementedException(); }	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(DeepCopy(ref me));	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => me.WritableString.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.WritableString.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.WritableString.ToLong();

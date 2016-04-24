@@ -181,7 +181,7 @@ namespace Pchp.Core
         {
             return new stdClass()
             {
-                // TODO: RuntimeFields
+                __peach__runtimeFields = this.DeepCopy()
             };
         }
 
