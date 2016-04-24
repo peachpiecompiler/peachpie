@@ -199,14 +199,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 var parts = metadataName.Split(s_nestedTypeNameSeparators);
                 Debug.Assert(parts.Length > 0);
                 mdName = MetadataTypeName.FromFullName(parts[0], useCLSCompliantNameArityEncoding);
+                type = GetTypeByMetadataName(mdName.FullName, includeReferences, isWellKnownType);
                 //type = GetTopLevelTypeByMetadataName(ref mdName, assemblyOpt: null, includeReferences: includeReferences, isWellKnownType: isWellKnownType, warnings: warnings);
-                //for (int i = 1; (object)type != null && !type.IsErrorType() && i < parts.Length; i++)
-                //{
-                //    mdName = MetadataTypeName.FromTypeName(parts[i]);
-                //    NamedTypeSymbol temp = type.LookupMetadataType(ref mdName);
-                //    type = (!isWellKnownType || IsValidWellKnownType(temp)) ? temp : null;
-                //}
-                throw new NotImplementedException();
+                for (int i = 1; (object)type != null && !type.IsErrorType() && i < parts.Length; i++)
+                {
+                    mdName = MetadataTypeName.FromTypeName(parts[i]);
+                    NamedTypeSymbol temp = type.LookupMetadataType(ref mdName);
+                    type = temp;  //(!isWellKnownType || IsValidWellKnownType(temp)) ? temp : null;
+                }
+                //throw new NotImplementedException();
             }
             else
             {

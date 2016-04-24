@@ -27,6 +27,8 @@ namespace Pchp.CodeAnalysis.Emit
 
         SynthesizedScriptTypeSymbol _lazyScriptType;
 
+        Cci.ICustomAttribute _debuggableAttribute;
+
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly ConcurrentDictionary<Symbol, object> _genericInstanceMap = new ConcurrentDictionary<Symbol, object>();
         readonly StringTokenMap _stringsInILMap = new StringTokenMap();
@@ -107,6 +109,18 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
+                if (_compilation.Options.DebugPlusMode)
+                {
+                    if (_debuggableAttribute == null)
+                    {
+                        var debuggableAttrCtor = (MethodSymbol)this.Compilation.GetWellKnownTypeMember(WellKnownMember.System_Diagnostics_DebuggableAttribute__ctorDebuggingModes);
+                        _debuggableAttribute = new SynthesizedAttributeData(debuggableAttrCtor,
+                            ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)),
+                            ImmutableArray< KeyValuePair<string, TypedConstant>>.Empty);
+                    }
+
+                    yield return _debuggableAttribute;
+                }
                 //if (targetfr == null)
                 //{
                 //    var TargetFrameworkType = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Runtime.Versioning.TargetFrameworkAttribute");

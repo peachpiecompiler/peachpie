@@ -75,6 +75,12 @@ namespace Pchp.Core
         /// </summary>
         public object EnsureObject(Context ctx) => Value.EnsureObject(ctx);
 
+        /// <summary>
+        /// Ensures the underlaying value is an array and gets its instance.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray EnsureArray() => Value.EnsureArray();
+
         #endregion
 
         #region IPhpConvertible
