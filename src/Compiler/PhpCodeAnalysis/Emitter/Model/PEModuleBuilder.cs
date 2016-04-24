@@ -180,13 +180,7 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        public bool GenerateVisualBasicStylePdb
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public bool GenerateVisualBasicStylePdb => false;
 
         public int HintNumberOfMethodDefinitions => _methodBodyMap.Count;
 
@@ -373,7 +367,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         public ImmutableArray<Cci.AssemblyReferenceAlias> GetAssemblyReferenceAliases(EmitContext context)
         {
-            throw new NotImplementedException();
+            return ImmutableArray<Cci.AssemblyReferenceAlias>.Empty;
         }
 
         public IEnumerable<Cci.IAssemblyReference> GetAssemblyReferences(EmitContext context)
@@ -514,7 +508,99 @@ namespace Pchp.CodeAnalysis.Emit
 
         public MultiDictionary<Cci.DebugSourceDocument, Cci.DefinitionWithLocation> GetSymbolToLocationMap()
         {
-            throw new NotImplementedException();
+            var result = new MultiDictionary<Cci.DebugSourceDocument, Cci.DefinitionWithLocation>();
+
+            //var namespacesAndTypesToProcess = new Stack<NamespaceOrTypeSymbol>();
+            //namespacesAndTypesToProcess.Push(SourceModule.GlobalNamespace);
+
+            //Location location = null;
+
+            //while (namespacesAndTypesToProcess.Count > 0)
+            //{
+            //    NamespaceOrTypeSymbol symbol = namespacesAndTypesToProcess.Pop();
+            //    switch (symbol.Kind)
+            //    {
+            //        case SymbolKind.Namespace:
+            //            location = GetSmallestSourceLocationOrNull(symbol);
+
+            //            // filtering out synthesized symbols not having real source 
+            //            // locations such as anonymous types, etc...
+            //            if (location != null)
+            //            {
+            //                foreach (var member in symbol.GetMembers())
+            //                {
+            //                    switch (member.Kind)
+            //                    {
+            //                        case SymbolKind.Namespace:
+            //                        case SymbolKind.NamedType:
+            //                            namespacesAndTypesToProcess.Push((NamespaceOrTypeSymbol)member);
+            //                            break;
+
+            //                        default:
+            //                            throw ExceptionUtilities.UnexpectedValue(member.Kind);
+            //                    }
+            //                }
+            //            }
+            //            break;
+
+            //        case SymbolKind.NamedType:
+            //            location = GetSmallestSourceLocationOrNull(symbol);
+            //            if (location != null)
+            //            {
+            //                //  add this named type location
+            //                AddSymbolLocation(result, location, (Cci.IDefinition)symbol);
+
+            //                foreach (var member in symbol.GetMembers())
+            //                {
+            //                    switch (member.Kind)
+            //                    {
+            //                        case SymbolKind.NamedType:
+            //                            namespacesAndTypesToProcess.Push((NamespaceOrTypeSymbol)member);
+            //                            break;
+
+            //                        case SymbolKind.Method:
+            //                            // NOTE: Dev11 does not add synthesized static constructors to this map,
+            //                            //       but adds synthesized instance constructors, Roslyn adds both
+            //                            var method = (MethodSymbol)member;
+            //                            if (method.IsDefaultValueTypeConstructor() ||
+            //                                method.IsPartialMethod() && (object)method.PartialImplementationPart == null)
+            //                            {
+            //                                break;
+            //                            }
+
+            //                            AddSymbolLocation(result, member);
+            //                            break;
+
+            //                        case SymbolKind.Property:
+            //                        case SymbolKind.Field:
+            //                            // NOTE: Dev11 does not add synthesized backing fields for properties,
+            //                            //       but adds backing fields for events, Roslyn adds both
+            //                            AddSymbolLocation(result, member);
+            //                            break;
+
+            //                        case SymbolKind.Event:
+            //                            AddSymbolLocation(result, member);
+            //                            //  event backing fields do not show up in GetMembers
+            //                            FieldSymbol field = ((EventSymbol)member).AssociatedField;
+            //                            if ((object)field != null)
+            //                            {
+            //                                AddSymbolLocation(result, field);
+            //                            }
+            //                            break;
+
+            //                        default:
+            //                            throw ExceptionUtilities.UnexpectedValue(member.Kind);
+            //                    }
+            //                }
+            //            }
+            //            break;
+
+            //        default:
+            //            throw ExceptionUtilities.UnexpectedValue(symbol.Kind);
+            //    }
+            //}
+
+            return result;
         }
 
         public IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypes(EmitContext context)

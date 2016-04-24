@@ -385,6 +385,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         //    _il.EmitToken(_moduleBuilder.Translate(method, syntaxNode, _diagnostics, null), syntaxNode, _diagnostics);
         //}
 
+        internal void EmitSequencePoint(Syntax.AST.LangElement element)
+        {
+            if (_emitPdbSequencePoints && element != null && element.Span.IsValid)
+            {
+                if (_syntaxTree == null)
+                    _syntaxTree = new SyntaxTreeAdapter(_routine.ContainingFile.Syntax.SourceUnit);
+
+                _il.DefineSequencePoint(_syntaxTree, new Microsoft.CodeAnalysis.Text.TextSpan(element.Span.Start, element.Span.Length));
+            }
+        }
+        SyntaxTree _syntaxTree;
+
         /// <summary>
         /// Emits load of <c>PhpAlias.Value</c>,
         /// expecting <c>PhpAlias</c> on top of evaluation stack,

@@ -171,7 +171,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly SourceRoutineSymbol _routine;
         readonly PEModuleBuilder _moduleBuilder;
         readonly OptimizationLevel _optimizations;
-        readonly bool _emittingPdb;
+        readonly bool _emitPdbSequencePoints;
         readonly DiagnosticBag _diagnostics;
         readonly DynamicOperationFactory _factory;
 
@@ -256,13 +256,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             _moduleBuilder = moduleBuilder;
             _optimizations = optimizations;
             _diagnostics = diagnostics;
-            _emittingPdb = emittingPdb;
             _emmittedTag = routine.ControlFlowGraph.NewColor();
 
             _contextPlace = routine.GetContextPlace();
             _thisPlace = routine.GetThisPlace();
 
             _factory = new DynamicOperationFactory(this);
+
+            // Emit sequence points unless
+            // - the PDBs are not being generated
+            // - debug information for the method is not generated since the method does not contain
+            //   user code that can be stepped through, or changed during EnC.
+            // 
+            // This setting only affects generating PDB sequence points, it shall not affect generated IL in any way.
+            _emitPdbSequencePoints = emittingPdb && true; // routine.GenerateDebugInfo;
         }
 
         #endregion

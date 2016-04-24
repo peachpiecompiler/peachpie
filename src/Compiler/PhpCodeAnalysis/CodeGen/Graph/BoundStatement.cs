@@ -23,6 +23,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
+            cg.EmitSequencePoint(this.PhpSyntax);
             cg.EmitPop(this.Expression.Emit(cg));
         }
     }
@@ -31,6 +32,9 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
+            cg.EmitSequencePoint(this.PhpSyntax);
+
+            //
             if (this.Returned == null)
             {
                 if (cg.Routine.ReturnsVoid)
@@ -51,6 +55,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // <expr>;
                     // return;
                     cg.EmitPop(this.Returned.Emit(cg));
+                    cg.Builder.EmitRet(true);
                 }
                 else
                 {

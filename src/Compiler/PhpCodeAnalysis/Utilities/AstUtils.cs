@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Syntax.AST;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Pchp.CodeAnalysis
 {
@@ -28,6 +29,17 @@ namespace Pchp.CodeAnalysis
         public static bool HasThisVariable(MethodDecl method)
         {
             return method != null && (method.Modifiers & Syntax.PhpMemberAttributes.Static) == 0;
+        }
+
+        /// <summary>
+        /// Gets <see cref="Microsoft.CodeAnalysis.Text.LinePosition"/> from source position.
+        /// </summary>
+        public static LinePosition LinePosition(this Syntax.Text.ILineBreaks lines, int pos)
+        {
+            int line, col;
+            lines.GetLineColumnFromPosition(pos, out line, out col);
+
+            return new LinePosition(line, col);
         }
     }
 }

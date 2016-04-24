@@ -62,8 +62,8 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(stmt != null);
 
-            if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters)));
-            if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, BoundAccess.None));
+            if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters))) { PhpSyntax = stmt };
+            if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, BoundAccess.None)) { PhpSyntax = stmt };
             if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
 
             throw new NotImplementedException(stmt.GetType().FullName);
@@ -76,7 +76,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 return new BoundReturnStatement(
                     (stmt.Expression != null)
                         ? BindExpression(stmt.Expression, BoundAccess.Read)   // ReadRef in case routine returns an aliased value
-                        : null);
+                        : null)
+                { PhpSyntax = stmt };
             }
 
             throw ExceptionUtilities.Unreachable;
@@ -198,7 +199,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(access.IsRead && !access.IsReadRef);
 
-            return new BoundArrayEx(BindArrayItems(x.Items)).WithAccess(access);
+            return new BoundArrayEx(BindArrayItems(x.Items)) { PhpSyntax = x }.WithAccess(access);
         }
 
         IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items)

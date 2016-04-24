@@ -22,6 +22,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public SyntaxNode Syntax => null;
 
+        internal LangElement PhpSyntax { get; set; }
+
         public abstract void Accept(OperationVisitor visitor);
 
         public abstract TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument);
