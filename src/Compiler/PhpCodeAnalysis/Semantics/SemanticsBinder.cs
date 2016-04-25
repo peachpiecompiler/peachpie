@@ -184,6 +184,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
             if (expr is AST.NewEx) return BindNew((AST.NewEx)expr, access);
             if (expr is AST.ArrayEx) return BindArrayEx((AST.ArrayEx)expr, access);
+            if (expr is AST.ItemUse) return BindItemUse((AST.ItemUse)expr, access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -221,6 +222,32 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
             }
+        }
+
+        BoundExpression BindItemUse(AST.ItemUse x, BoundAccess access)
+        {
+            if (x.IsMemberOf != null)
+            {
+                Debug.Assert(x.Array.IsMemberOf == null);
+                // fix this phalanger ast weirdness:
+                x.Array.IsMemberOf = x.IsMemberOf;
+                x.IsMemberOf = null;
+            }
+
+            var arrayAccess = BoundAccess.Read;
+
+            if (access.IsWrite || access.EnsureObject || access.EnsureArray)
+                arrayAccess = arrayAccess.WithEnsureArray();
+            if (access.IsCheck)
+                arrayAccess = arrayAccess.WithCheck();
+
+            var boundArray = BindExpression(x.Array, arrayAccess);
+
+            // boundArray.Access = boundArray.Access.WithRead(typeof(PhpArray))
+
+            return new BoundArrayItemEx(
+                boundArray, (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null)
+                .WithAccess(access);
         }
 
         BoundExpression BindDirectVarUse(AST.DirectVarUse expr, BoundAccess access)

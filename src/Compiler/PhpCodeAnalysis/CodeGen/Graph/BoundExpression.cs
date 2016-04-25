@@ -1237,6 +1237,24 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (type == cg.CoreTypes.PhpAlias)
                     {
                         EmitOpCode_Load(cg);
+
+                        if (Access.TargetType != null)
+                        {
+                            // convert PhpValue to target type without loading whole value and storing to temporary variable
+                            switch (Access.TargetType.SpecialType)
+                            {
+                                default:
+                                    if (Access.TargetType == cg.CoreTypes.PhpArray)
+                                    {
+                                        // <PhpAlias>.Value.AsArray()
+                                        cg.Builder.EmitOpCode(ILOpCode.Ldflda);
+                                        cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
+                                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
+                                    }
+                                    break;
+                            }
+                        }
+
                         return cg.Emit_PhpAlias_GetValue();
                     }
                     else if (type == cg.CoreTypes.PhpValue)
@@ -1263,6 +1281,13 @@ namespace Pchp.CodeAnalysis.Semantics
                                     EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass(ctx)
                                     cg.EmitLoadContext();
                                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass_Context);
+                                default:
+                                    if (Access.TargetType == cg.CoreTypes.PhpArray)
+                                    {
+                                        EmitOpCode_LoadAddress(cg); // &PhpValue.AsArray()
+                                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
+                                    }
+                                    break;
                             }
                         }
 
@@ -1940,5 +1965,119 @@ namespace Pchp.CodeAnalysis.Semantics
             //
             return result;
         }
+    }
+
+    partial class BoundArrayItemEx : IBoundReference
+    {
+        internal override IBoundReference BindPlace(CodeGenerator cg)
+        {
+            this.Array.Access = this.Array.Access.WithRead(cg.CoreTypes.PhpArray);
+            _type = Access.IsReadRef ? cg.CoreTypes.PhpAlias : cg.CoreTypes.PhpValue;
+            return this;
+        }
+
+        internal override IPlace Place(ILBuilder il) => null;
+
+        #region IBoundReference
+
+        TypeSymbol IBoundReference.Type => _type;
+        TypeSymbol _type;
+
+        void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            // Template: array[index]
+
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, this.Array);
+
+            if (this.Index == null)
+                throw new ArgumentException();
+
+            cg.EmitIntStringKey(this.Index);    // TODO: save Index into InstanceCacheHolder
+        }
+
+        TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
+        {
+            // Template: array[index]
+
+            // array on top of stack already
+            if (this.Array.ResultType != cg.CoreTypes.PhpArray)
+                throw new NotImplementedException();    // TODO: emit convert as PhpArray
+
+            if (Access.EnsureObject)
+            {
+                // <array>.EnsureItemObject(<key>, ctx)
+                cg.EmitLoadContext();
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemObject_IntStringKey_Context);
+            }
+            else if (Access.EnsureArray)
+            {
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemArray_IntStringKey);
+            }
+            else if (Access.IsReadRef)
+            {
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey);
+            }
+            else
+            {
+                Debug.Assert(Access.IsRead);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
+            }
+        }
+
+        void IBoundReference.EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            // Template: array[index]
+
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, this.Array);
+
+            if (this.Index != null)
+            {
+                cg.EmitIntStringKey(this.Index);    // TODO: save Index into InstanceCacheHolder
+            }
+        }
+
+        void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            // Template: array[index]
+
+            if(Access.IsWriteRef)
+            {
+                // PhpAlias
+                if(valueType != cg.CoreTypes.PhpAlias)
+                {
+                    cg.EmitConvertToPhpValue(valueType, 0);
+                    cg.Emit_PhpValue_MakeAlias();
+                }
+
+                // .SetItemAlias(key, alias) or .AddValue(PhpValue.Create(alias))
+                if (this.Index != null)
+                {
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                }
+                else
+                {
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                }
+            }
+            else
+            {
+                Debug.Assert(Access.IsWrite);
+
+                cg.EmitConvertToPhpValue(valueType, 0);
+
+                // .SetItemValue(key, value) or .AddValue(value)
+                if (this.Index != null)
+                {
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                }
+                else
+                {
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                }
+            }
+        }
+
+        #endregion
     }
 }

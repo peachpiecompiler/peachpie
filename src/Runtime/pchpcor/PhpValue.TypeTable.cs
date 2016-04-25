@@ -68,6 +68,11 @@ namespace Pchp.Core
             }
 
             /// <summary>
+            /// Gets object representing array access to the value.
+            /// </summary>
+            public abstract PhpArray AsArray(ref PhpValue me);
+
+            /// <summary>
             /// Creates a deep copy of PHP variable.
             /// </summary>
             /// <returns>A deep copy of the value.</returns>
@@ -106,6 +111,7 @@ namespace Pchp.Core
                 me = PhpValue.Create(arr);
                 return arr;
             }
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
             public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
         }
 
@@ -132,6 +138,7 @@ namespace Pchp.Core
             }
             public override object EnsureObject(ref PhpValue me, Context ctx) => PhpValue.FromClass(ToClass(ref me, ctx)); // me is not changed
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
         }
 
@@ -152,6 +159,7 @@ namespace Pchp.Core
             }
             public override object EnsureObject(ref PhpValue me, Context ctx) => PhpValue.FromClass(ToClass(ref me, ctx)); // me is not changed
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
         }
 
@@ -190,6 +198,7 @@ namespace Pchp.Core
 
                 return arr;
             }
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
             public override string DisplayString(ref PhpValue me) => me.Boolean ? PhpVariable.True : PhpVariable.False;
         }
 
@@ -224,6 +233,7 @@ namespace Pchp.Core
 
                 return arr;
             }
+            public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
         }
 
@@ -265,6 +275,7 @@ namespace Pchp.Core
                 //me.WritableString.DeepCopy()
                 throw new NotImplementedException();
             }
+            public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
         }
 
@@ -308,6 +319,7 @@ namespace Pchp.Core
             {
                 throw new InvalidOperationException();  // Fatal Error: Cannot use object of type stdClass as array
             }
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
         }
 
@@ -325,6 +337,7 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me, Context ctx) => ToClass(ref me, ctx);    // me is not modified
             public override PhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
+            public override PhpArray AsArray(ref PhpValue me) => me.Array;
             public override string DisplayString(ref PhpValue me) => $"array(length = {me.Array.Count})";
         }
 
@@ -342,6 +355,7 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me, Context ctx) => me.Alias.Value.EnsureObject(ctx);
             public override PhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
+            public override PhpArray AsArray(ref PhpValue me) => me.Alias.Value.AsArray();
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
         }
     }

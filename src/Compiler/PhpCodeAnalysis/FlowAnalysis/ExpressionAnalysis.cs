@@ -1097,7 +1097,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Visit ArrayEx
+        #region Visit ArrayEx, ArrayItemEx
 
         public sealed override void VisitArrayCreationExpression(IArrayCreationExpression operation)
             => VisitArrayEx((BoundArrayEx)operation);
@@ -1120,6 +1120,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = elementType.IsVoid
                 ? TypeCtx.GetArrayTypeMask()
                 : TypeCtx.GetArrayTypeMask(elementType);
+        }
+
+        public sealed override void VisitArrayElementReferenceExpression(IArrayElementReferenceExpression operation)
+            => VisitArrayItemEx((BoundArrayItemEx)operation);
+
+        protected void VisitArrayItemEx(BoundArrayItemEx x)
+        {
+            Visit(x.Array);
+            Visit(x.Index);
+
+            //
+            x.TypeRefMask = x.Access.IsReadRef
+                ? TypeRefMask.AnyType.WithRefFlag
+                : TypeRefMask.AnyType;
         }
 
         #endregion

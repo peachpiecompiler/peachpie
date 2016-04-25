@@ -236,6 +236,11 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundAccess(_flags | AccessMask.EnsureObject, _targetType, _writeTypeMask);
         }
 
+        public BoundAccess WithEnsureArray()
+        {
+            return new BoundAccess(_flags | AccessMask.EnsureArray, _targetType, _writeTypeMask);
+        }
+
         /// <summary>
         /// Simple read access.
         /// </summary>
@@ -867,6 +872,51 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitArrayCreationExpression(this, argument);
+    }
+
+    #endregion
+
+    #region BoundArrayItemEx
+
+    /// <summary>
+    /// Array item access.
+    /// </summary>
+    public partial class BoundArrayItemEx : BoundReferenceExpression, IArrayElementReferenceExpression
+    {
+        public BoundExpression Array
+        {
+            get { return _array; }
+            set { _array = value; }
+        }
+        BoundExpression _array;
+
+        public BoundExpression Index
+        {
+            get { return _index; }
+            set { _index = value; }
+        }
+        BoundExpression _index;
+
+        public override OperationKind Kind => OperationKind.ArrayElementReferenceExpression;
+
+        IExpression IArrayElementReferenceExpression.ArrayReference => _array;
+
+        ImmutableArray<IExpression> IArrayElementReferenceExpression.Indices
+            => (_index != null) ? ImmutableArray.Create((IExpression)_index) : ImmutableArray<IExpression>.Empty;
+
+        public BoundArrayItemEx(BoundExpression array, BoundExpression index)
+        {
+            Contract.ThrowIfNull(array);
+
+            _array = array;
+            _index = index;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitArrayElementReferenceExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitArrayElementReferenceExpression(this, argument);
     }
 
     #endregion

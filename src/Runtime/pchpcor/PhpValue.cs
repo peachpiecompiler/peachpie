@@ -172,6 +172,8 @@ namespace Pchp.Core
         public string ToStringOrThrow(Context ctx) => _type.ToStringOrThrow(ref this, ctx);
 
         public object EnsureObject(Context ctx) => _type.EnsureObject(ref this, ctx);
+        
+        public PhpArray AsArray() => _type.AsArray(ref this);   // TODO: return IPhpArrayOperators
 
         public PhpArray EnsureArray() => _type.EnsureArray(ref this);
 

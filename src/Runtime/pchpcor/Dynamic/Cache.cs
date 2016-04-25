@@ -36,6 +36,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_EnsureArray = typeof(PhpValue).GetMethod("EnsureArray");
             public static MethodInfo PhpValue_EnsureAlias = typeof(PhpValue).GetMethod("EnsureAlias");
             public static MethodInfo PhpValue_ToClass = typeof(PhpValue).GetMethod("ToClass", typeof(Context));
+            public static MethodInfo PhpValue_AsArray = typeof(PhpValue).GetMethod("AsArray");
 
             public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(IntStringKey), typeof(PhpAlias));
             public static MethodInfo PhpArray_SetItemValue = typeof(PhpArray).GetMethod("SetItemValue", typeof(IntStringKey), typeof(PhpValue));

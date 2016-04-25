@@ -396,6 +396,46 @@ namespace Pchp.CodeAnalysis.CodeGen
             throw new NotImplementedException();
         }
 
+        public void EmitAsPhpArray(BoundExpression expr)
+        {
+            expr.Access = expr.Access.WithRead(CoreTypes.PhpArray);
+
+            var type = Emit(expr);
+
+            switch (type.SpecialType)
+            {
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_Double:
+                case SpecialType.System_Boolean:
+                    throw new InvalidOperationException();
+                case SpecialType.System_String:
+                    throw new NotImplementedException();    // StringArray helper
+                default:
+                    var diag = new HashSet<DiagnosticInfo>();
+                    if (type.IsEqualToOrDerivedFrom(CoreTypes.PhpArray, false, ref diag))
+                    {
+                        return;
+                    }
+                    else if (type == CoreTypes.PhpAlias)
+                    {
+                        // <PhpAlias>.Value.AsArray()
+                        _il.EmitOpCode(ILOpCode.Ldflda);
+                        EmitSymbolToken(CoreMethods.PhpAlias.Value, null);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsArray).Expect(CoreTypes.PhpArray);
+                        return;
+                    }
+                    else if (type == CoreTypes.PhpValue)
+                    {
+                        // <PhpValue>.AsArray()
+                        EmitPhpValueAddr();
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsArray).Expect(CoreTypes.PhpArray);
+                        return;
+                    }
+                    throw new NotImplementedException();
+            }
+        }
+
         /// <summary>
         /// Emits conversion to a class object.
         /// </summary>

@@ -583,10 +583,27 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (type == cg.CoreTypes.PhpAlias)
                 {
                     _place.EmitLoad(cg.Builder);
+
+                    if (_access.TargetType == cg.CoreTypes.PhpArray)
+                    {
+                        // <PhpAlias>.Value.AsArray()
+                        cg.Builder.EmitOpCode(ILOpCode.Ldflda);
+                        cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray)
+                            .Expect(cg.CoreTypes.PhpArray);
+                    }
+
                     return cg.Emit_PhpAlias_GetValue();
                 }
                 else if (type == cg.CoreTypes.PhpValue)
                 {
+                    if (_access.TargetType == cg.CoreTypes.PhpArray)
+                    {
+                        _place.EmitLoadAddress(cg.Builder);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray)
+                            .Expect(cg.CoreTypes.PhpArray);
+                    }
+
                     // TODO: dereference if applicable (=> PhpValue.Alias.Value)
                     return _place.EmitLoad(cg.Builder);
                 }

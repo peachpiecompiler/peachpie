@@ -33,6 +33,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return BindToValue(arg);
             if (target == typeof(void)) return BindToVoid(arg);
             if (target == typeof(object)) return BindToClass(arg);
+            if (target == typeof(PhpArray)) return BindAsArray(arg);
 
             //
             throw new NotImplementedException(target.ToString());
@@ -130,6 +131,15 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToClass, Expression.Constant(null, typeof(Context))); // TODO: Context
             if (source == typeof(PhpArray)) throw new NotImplementedException(source.FullName);
             
+
+            throw new NotImplementedException(source.FullName);
+        }
+
+        private static Expression BindAsArray(Expression expr)
+        {
+            var source = expr.Type;
+
+            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_AsArray);
 
             throw new NotImplementedException(source.FullName);
         }

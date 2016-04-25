@@ -311,6 +311,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
+                AsArray = ct.PhpValue.Method("AsArray");
 
                 get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
@@ -336,6 +337,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureArray, EnsureAlias,
+                AsArray,
                 DeepCopy,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray,
@@ -483,16 +485,24 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 ToString_Context = ct.PhpArray.Method("ToString", ct.Context);
 
+                GetItemValue_IntStringKey = ct.PhpArray.Method("GetItemValue", ct.IntStringKey);
+
                 DeepCopy = ct.PhpArray.Method("DeepCopy");
 
                 SetItemValue_IntStringKey_PhpValue = ct.PhpArray.Method("SetItemValue", ct.IntStringKey, ct.PhpValue);
                 SetItemAlias_IntStringKey_PhpAlias = ct.PhpArray.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
                 AddValue_PhpValue = ct.PhpArray.Method("AddValue", ct.PhpValue);
+
+                EnsureItemObject_IntStringKey_Context = ct.PhpArray.Method("EnsureItemObject", ct.IntStringKey, ct.Context);
+                EnsureItemArray_IntStringKey = ct.PhpArray.Method("EnsureItemArray", ct.IntStringKey);
+                EnsureItemAlias_IntStringKey = ct.PhpArray.Method("EnsureItemAlias", ct.IntStringKey);
             }
 
             public readonly CoreMethod
                 ToString_Context,
+                GetItemValue_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
+                EnsureItemObject_IntStringKey_Context, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy;
         }
 
