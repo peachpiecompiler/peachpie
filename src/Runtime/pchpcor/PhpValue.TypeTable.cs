@@ -106,13 +106,13 @@ namespace Pchp.Core
                 me = PhpValue.Create(arr);
                 return arr;
             }
-            public override string DisplayString(ref PhpValue me) => "NULL";
+            public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
         }
 
         sealed class VoidTable : NullTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Undefined;
-            public override string DisplayString(ref PhpValue me) => "void";
+            public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameVoid;
         }
 
         sealed class LongTable : TypeTable
@@ -190,7 +190,7 @@ namespace Pchp.Core
 
                 return arr;
             }
-            public override string DisplayString(ref PhpValue me) => me.Boolean ? "TRUE" : "FALSE";
+            public override string DisplayString(ref PhpValue me) => me.Boolean ? PhpVariable.True : PhpVariable.False;
         }
 
         sealed class StringTable : TypeTable

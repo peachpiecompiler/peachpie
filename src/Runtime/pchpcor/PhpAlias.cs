@@ -10,7 +10,7 @@ namespace Pchp.Core
     /// <summary>
     /// Represents an aliased value.
     /// </summary>
-    [DebuggerDisplay("{_value.TypeCode} ({_value.DisplayString}), Refs#{_refcount}")]
+    [DebuggerDisplay("{Value.DisplayString,nq}, Refs#{_refcount}", Type= "&{Value.DebugTypeName,nq}")]
     public class PhpAlias : IPhpConvertible
     {
         #region Fields

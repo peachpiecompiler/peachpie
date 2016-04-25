@@ -10,5 +10,8 @@ using System.Threading.Tasks;
 /// </summary>
 public sealed class __PHP_Incomplete_Class
 {
-    private PhpArray __peach__runtimeFields;
+    /// <summary>
+    /// Special field containing runtime fields, handled by runtime.
+    /// </summary>
+    internal PhpArray __peach__runtimeFields;
 }
