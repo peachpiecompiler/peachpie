@@ -971,6 +971,11 @@ namespace Pchp.CodeAnalysis.Semantics
             var value = ConstantValue.Value;
             if (value == null)
             {
+                if (this.Access.TargetType == cg.CoreTypes.PhpValue)
+                {
+                    return cg.Emit_PhpValue_Null();
+                }
+
                 cg.Builder.EmitNullConstant();
                 return cg.CoreTypes.Object;
             }
