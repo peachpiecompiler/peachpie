@@ -163,7 +163,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    :white_check_mark: Compilation  
    :white_medium_square: Global variables access  
 ###### Packages:
-   :white_medium_square: Symbol tables of a referenced assembly  
+   :white_check_mark: Symbol tables of a referenced assembly  
    :white_medium_square: Migrate Phalanger Class Library  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Strongly typed  
    :white_medium_square: Fast PCRE  
