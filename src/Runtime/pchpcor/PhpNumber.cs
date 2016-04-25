@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
-    [DebuggerDisplay("{TypeCode} ({GetDebuggerValue,nq})")]
+    [DebuggerDisplay("{GetDebuggerValue,nq}", Type= "{GetDebuggerType,nq}")]
     [StructLayout(LayoutKind.Explicit)]
     public struct PhpNumber : IComparable<PhpNumber>, IPhpConvertible
     {
@@ -71,10 +71,8 @@ namespace Pchp.Core
 
         #region Debug
 
-        string GetDebuggerValue
-        {
-            get { return IsLong ? _long.ToString() : _double.ToString(); }
-        }
+        string GetDebuggerValue => IsLong ? _long.ToString() : _double.ToString();
+        string GetDebuggerType => IsLong ? PhpVariable.TypeNameInteger : PhpVariable.TypeNameDouble;
 
         /// <summary>
         /// Checks the number type code is valid.
