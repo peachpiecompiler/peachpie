@@ -40,7 +40,9 @@
   <ItemGroup>
     <Compile Include="OrderedDictionary.cs" />
     <Compile Include="PhpArray.cs" />
+    <Compile Include="PhpArray.DebuggerTypeProxy.cs" />
     <Compile Include="PhpHashtable.cs" />
+    <Compile Include="PhpValue.DebuggerTypeProxy.cs" />
     <Compile Include="PhpVariable.cs" />
     <Compile Include="std\stdClass.cs" />
     <Compile Include="std\__PHP_Incomplete_Class.cs" />
