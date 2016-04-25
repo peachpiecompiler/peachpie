@@ -40,12 +40,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (cg.Routine.ReturnsVoid)
                 {
                     // return;
-                    cg.Builder.EmitRet(true);
+                    cg.EmitRet(true);
                 }
                 else
                 {
                     // return <default>;
-                    cg.EmitReturnDefault();
+                    cg.EmitRetDefault();
                 }
             }
             else
@@ -55,13 +55,13 @@ namespace Pchp.CodeAnalysis.Semantics
                     // <expr>;
                     // return;
                     cg.EmitPop(this.Returned.Emit(cg));
-                    cg.Builder.EmitRet(true);
+                    cg.EmitRet(true);
                 }
                 else
                 {
                     // return (T)<expr>;
                     cg.EmitConvert(this.Returned, cg.Routine.ReturnType);
-                    cg.Builder.EmitRet(false);
+                    cg.EmitRet(false);
                 }
             }
         }

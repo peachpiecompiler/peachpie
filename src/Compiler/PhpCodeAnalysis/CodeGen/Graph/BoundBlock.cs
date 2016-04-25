@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // note: ILBuider removes eventual unreachable .ret opcode
 
             // return <default>;
-            cg.EmitReturnDefault();
+            cg.EmitRetDefault();
             cg.Builder.AssertStackEmpty();
         }
     }

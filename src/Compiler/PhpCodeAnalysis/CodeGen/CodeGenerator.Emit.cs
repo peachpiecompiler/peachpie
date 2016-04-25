@@ -859,14 +859,31 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public void EmitReturnDefault()
+        public void EmitRetDefault()
         {
             // return default(RETURN_TYPE);
 
             var return_type = this.Routine.ReturnType;
 
             EmitLoadDefaultValue(return_type, this.Routine.ControlFlowGraph.ReturnTypeMask);
-            _il.EmitRet(return_type.SpecialType == SpecialType.System_Void);
+            EmitRet(return_type.SpecialType == SpecialType.System_Void);
+        }
+
+        /// <summary>
+        /// Emits .ret instruction with sequence point at closing brace.
+        /// </summary>
+        public void EmitRet(bool isVoid)
+        {
+            // sequence point
+            var body = AstUtils.BodySpanOrInvalid(Routine.Syntax);
+            if (body.IsValid)
+            {
+                EmitSequencePoint(new Syntax.Text.Span(body.End - 1, 1));
+                EmitOpCode(ILOpCode.Nop);
+            }
+
+            //
+            _il.EmitRet(isVoid);
         }
     }
 
