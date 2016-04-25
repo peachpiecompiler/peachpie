@@ -55,20 +55,20 @@ namespace Pchp.Core
 
         #region Ensure
 
-        //public static object EnsureClassObject(ref object lvalue)
-        //{
-        //    if (lvalue == null)
-        //    {
-        //        //lvalue = new stdClass();
-        //        throw new NotImplementedException();
-        //    }
-
-        //    return lvalue;
-        //}
+        /// <summary>
+        /// Ensures given variable is not <c>null</c>.
+        /// </summary>
+        public static object EnsureObject(ref object obj)
+        {
+            if (obj == null)
+                obj = new stdClass();
+            
+            return obj;
+        }
 
         //public static object EnsureObject(ref PhpValue lvalue)
         //{
-            
+
         //}
 
         #endregion

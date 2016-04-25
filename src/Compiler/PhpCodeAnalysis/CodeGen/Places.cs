@@ -500,8 +500,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (type.IsReferenceType)
                     {
-                        // TODO: ensure it is not null
-                        return _place.EmitLoad(cg.Builder);
+                        // Operators.EnsureObject(ref <place>)
+                        _place.EmitLoadAddress(cg.Builder);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureObject_ObjectRef)
+                            .Expect(SpecialType.System_Object);
                     }
                     else
                     {
