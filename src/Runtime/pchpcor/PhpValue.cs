@@ -9,10 +9,11 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     /// <summary>
-    /// Represents a non-aliased PHP value.
+    /// Represents a PHP value.
     /// </summary>
     /// <remarks>
-    /// Note, <c>default(PhpValue)</c> does not represent a valid state of the object.</remarks>
+    /// Note, <c>default(PhpValue)</c> does not represent a valid state of the object.
+    /// </remarks>
     [StructLayout(LayoutKind.Sequential)]   // {_type} has to be first for performance reasons.
     public partial struct PhpValue : IPhpConvertible, IEquatable<PhpValue> // <T>
     {

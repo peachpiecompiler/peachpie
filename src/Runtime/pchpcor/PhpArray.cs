@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
+    /// <summary>
+    /// Implements ordered keyed array of <see cref="PhpValue"/> with PHP semantics.
+    /// </summary>
     public partial class PhpArray : PhpHashtable, IPhpConvertible, IPhpArrayOperators
     {
         /// <summary>
