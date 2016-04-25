@@ -494,6 +494,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     return cg.CoreTypes.Object;
                 }
+                else if (type == cg.CoreTypes.PhpNumber)
+                {
+                    throw new NotImplementedException();
+                }
                 else
                 {
                     if (type.IsReferenceType)
@@ -535,6 +539,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(cg.CoreTypes.PhpArray);
                     }
                 }
+                else if (type == cg.CoreTypes.PhpNumber)
+                {
+                    throw new NotImplementedException();
+                }
                 else if (type == cg.CoreTypes.PhpArray)
                 {
                     // TODO: ensure it is not null
@@ -557,6 +565,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _place.EmitLoadAddress(cg.Builder);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias)
                         .Expect(cg.CoreTypes.PhpAlias);
+                }
+                else if (type == cg.CoreTypes.PhpNumber)
+                {
+                    throw new NotImplementedException();
                 }
                 else
                 {
