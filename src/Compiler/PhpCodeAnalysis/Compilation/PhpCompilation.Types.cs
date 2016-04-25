@@ -87,13 +87,17 @@ namespace Pchp.CodeAnalysis
 
             // TODO: simple array & PhpArray => PhpArray
 
-            // unify class types to the common one (lowest)
-            if (first.IsReferenceType && second.IsReferenceType)
+            if (!IsAString(first) && !IsAString(second) &&
+                first != CoreTypes.PhpArray && second != CoreTypes.PhpArray)
             {
-                if (first.IsOfType(second)) return second;
-                if (second.IsOfType(first)) return first;
-                // TODO: find common base
-                // TODO: otherwise find a common interface
+                // unify class types to the common one (lowest)
+                if (first.IsReferenceType && second.IsReferenceType)
+                {
+                    if (first.IsOfType(second)) return second;
+                    if (second.IsOfType(first)) return first;
+                    // TODO: find common base
+                    // TODO: otherwise find a common interface
+                }
             }
 
             // most common PHP value type

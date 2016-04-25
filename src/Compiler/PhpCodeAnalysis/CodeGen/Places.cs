@@ -478,33 +478,23 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (type == cg.CoreTypes.PhpValue)
                 {
-                    if (cg.IsClassOnly(_thint))
-                    {
-                        // uses typehint and accesses .Object directly if possible
-                        _place.EmitLoadAddress(cg.Builder);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.get_Object)
-                            .Expect(SpecialType.System_Object);
+                    _place.EmitLoadAddress(cg.Builder);
+                    cg.EmitLoadContext();
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject_Context)
+                        .Expect(SpecialType.System_Object);
 
-                        if (_thint.IsSingleType)
+                    if (_thint.IsSingleType && cg.IsClassOnly(_thint))
+                    {
+                        var tref = cg.Routine.TypeRefContext.GetTypes(_thint)[0];
+                        var clrtype = (TypeSymbol)cg.DeclaringCompilation.GetTypeByMetadataName(tref.QualifiedName.ClrName());
+                        if (clrtype != null && !clrtype.IsErrorType() && clrtype != cg.CoreTypes.Object)
                         {
-                            var tref = cg.Routine.TypeRefContext.GetTypes(_thint)[0];
-                            var clrtype = (TypeSymbol)cg.DeclaringCompilation.GetTypeByMetadataName(tref.QualifiedName.ClrName());
-                            if (clrtype != null && !clrtype.IsErrorType())
-                            {
-                                cg.EmitCastClass(clrtype);
-                                return clrtype;
-                            }
+                            cg.EmitCastClass(clrtype);
+                            return clrtype;
                         }
+                    }
 
-                        return cg.CoreTypes.Object;
-                    }
-                    else
-                    {
-                        _place.EmitLoadAddress(cg.Builder);
-                        cg.EmitLoadContext();
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject_Context)
-                            .Expect(SpecialType.System_Object);
-                    }
+                    return cg.CoreTypes.Object;
                 }
                 else
                 {
