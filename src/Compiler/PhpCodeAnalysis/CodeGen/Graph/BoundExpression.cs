@@ -1160,15 +1160,13 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (type == cg.CoreTypes.PhpAlias)
                     {
                         EmitOpCode_Load(cg);    // PhpAlias
-                        cg.EmitLoadContext();   // Context
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureObject_Context)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureObject)
                             .Expect(SpecialType.System_Object);
                     }
                     else if (type == cg.CoreTypes.PhpValue)
                     {
                         EmitOpCode_LoadAddress(cg); // &PhpValue
-                        cg.EmitLoadContext();       // Context
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject_Context)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject)
                             .Expect(SpecialType.System_Object);
                     }
                     else
@@ -1283,9 +1281,8 @@ namespace Pchp.CodeAnalysis.Semantics
                                     cg.EmitLoadContext();
                                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToString_Context);
                                 case SpecialType.System_Object:
-                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass(ctx)
-                                    cg.EmitLoadContext();
-                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass_Context);
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass()
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass);
                                 default:
                                     if (Access.TargetType == cg.CoreTypes.PhpArray)
                                     {
@@ -2010,9 +2007,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (Access.EnsureObject)
             {
-                // <array>.EnsureItemObject(<key>, ctx)
-                cg.EmitLoadContext();
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemObject_IntStringKey_Context);
+                // <array>.EnsureItemObject(<key>)
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemObject_IntStringKey);
             }
             else if (Access.EnsureArray)
             {

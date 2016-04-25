@@ -472,15 +472,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (type == cg.CoreTypes.PhpAlias)
                 {
                     _place.EmitLoad(cg.Builder);
-                    cg.EmitLoadContext();
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureObject_Context)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureObject)
                         .Expect(SpecialType.System_Object);
                 }
                 else if (type == cg.CoreTypes.PhpValue)
                 {
                     _place.EmitLoadAddress(cg.Builder);
-                    cg.EmitLoadContext();
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject_Context)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject)
                         .Expect(SpecialType.System_Object);
 
                     if (_thint.IsSingleType && cg.IsClassOnly(_thint))

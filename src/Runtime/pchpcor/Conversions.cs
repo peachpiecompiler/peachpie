@@ -58,7 +58,7 @@ namespace Pchp.Core
         /// <summary>
         /// In case of a non class object, boxes value to an object.
         /// </summary>
-        object ToClass(Context ctx);
+        object ToClass();
     }
 
     #endregion

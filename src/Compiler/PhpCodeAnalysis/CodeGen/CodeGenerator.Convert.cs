@@ -481,8 +481,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // Object
                         EmitPhpValueAddr();
-                        EmitLoadContext();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToClass_Context)
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToClass)
                             .Expect(SpecialType.System_Object);
 
                         // (T)
@@ -493,8 +492,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // Object
                         EmitPhpNumberAddr();
-                        EmitLoadContext();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToClass_Context)
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToClass)
                             .Expect(SpecialType.System_Object);
 
                         // (T)

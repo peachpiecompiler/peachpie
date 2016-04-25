@@ -29,18 +29,18 @@ namespace Pchp.Core.Dynamic
             /// <summary><see cref="Core.Operators.SetValue(ref PhpValue, PhpValue)"/>.</summary>
             public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", typeof(PhpValue).MakeByRefType(), typeof(PhpValue));
 
-            public static MethodInfo PhpAlias_EnsureObject_Context = typeof(PhpAlias).GetMethod("EnsureObject", typeof(Context));
+            public static MethodInfo PhpAlias_EnsureObject_Context = typeof(PhpAlias).GetMethod("EnsureObject");
             public static MethodInfo PhpAlias_EnsureArray = typeof(PhpAlias).GetMethod("EnsureArray");
 
-            public static MethodInfo PhpValue_EnsureObject_Context = typeof(PhpValue).GetMethod("EnsureObject", typeof(Context));
+            public static MethodInfo PhpValue_EnsureObject_Context = typeof(PhpValue).GetMethod("EnsureObject");
             public static MethodInfo PhpValue_EnsureArray = typeof(PhpValue).GetMethod("EnsureArray");
             public static MethodInfo PhpValue_EnsureAlias = typeof(PhpValue).GetMethod("EnsureAlias");
-            public static MethodInfo PhpValue_ToClass = typeof(PhpValue).GetMethod("ToClass", typeof(Context));
+            public static MethodInfo PhpValue_ToClass = typeof(PhpValue).GetMethod("ToClass");
             public static MethodInfo PhpValue_AsArray = typeof(PhpValue).GetMethod("AsArray");
 
             public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(IntStringKey), typeof(PhpAlias));
             public static MethodInfo PhpArray_SetItemValue = typeof(PhpArray).GetMethod("SetItemValue", typeof(IntStringKey), typeof(PhpValue));
-            public static MethodInfo PhpArray_EnsureItemObject = typeof(PhpArray).GetMethod("EnsureItemObject", typeof(IntStringKey), typeof(Context));
+            public static MethodInfo PhpArray_EnsureItemObject = typeof(PhpArray).GetMethod("EnsureItemObject", typeof(IntStringKey));
             public static MethodInfo PhpArray_EnsureItemArray = typeof(PhpArray).GetMethod("EnsureItemArray", typeof(IntStringKey));
             public static MethodInfo PhpArray_EnsureItemAlias = typeof(PhpArray).GetMethod("EnsureItemAlias", typeof(IntStringKey));
             public static MethodInfo PhpArray_GetItemValue = typeof(PhpArray).GetMethod("GetItemValue", typeof(IntStringKey));

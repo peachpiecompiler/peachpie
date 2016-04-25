@@ -306,8 +306,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = ct.PhpValue.Method("ToLong");
                 ToDouble = ct.PhpValue.Method("ToDouble");
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
-                ToClass_Context = ct.PhpValue.Method("ToClass", ct.Context);
-                EnsureObject_Context = ct.PhpValue.Method("EnsureObject", ct.Context);
+                ToClass = ct.PhpValue.Method("ToClass");
+                EnsureObject = ct.PhpValue.Method("EnsureObject");
                 EnsureArray = ct.PhpValue.Method("EnsureArray");
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
 
@@ -337,7 +337,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context, EnsureObject_Context, EnsureArray, EnsureAlias,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias,
                 AsArray,
                 DeepCopy,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
@@ -354,12 +354,12 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 _value = null;
 
-                EnsureObject_Context = ct.PhpAlias.Method("EnsureObject", ct.Context);
+                EnsureObject = ct.PhpAlias.Method("EnsureObject");
                 EnsureArray = ct.PhpAlias.Method("EnsureArray");
             }
 
             public readonly CoreMethod
-                EnsureObject_Context, EnsureArray;
+                EnsureObject, EnsureArray;
 
             /// <summary>
             /// Lazily gets <c>PhpAlias.Value</c> field.
@@ -370,8 +370,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (_value == null)
                     {
-                        Debug.Assert(EnsureObject_Context.DeclaringClass.Symbol != null);
-                        _value = (EnsureObject_Context.DeclaringClass.Symbol)
+                        Debug.Assert(EnsureObject.DeclaringClass.Symbol != null);
+                        _value = (EnsureObject.DeclaringClass.Symbol)
                             .GetMembers("Value").OfType<FieldSymbol>().First();
                         Debug.Assert(_value != null);
                     }
@@ -389,7 +389,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = ct.PhpNumber.Method("ToLong");
                 ToDouble = ct.PhpNumber.Method("ToDouble");
                 ToString_Context = ct.PhpNumber.Method("ToString", ct.Context);
-                ToClass_Context = ct.PhpNumber.Method("ToClass", ct.Context);
+                ToClass = ct.PhpNumber.Method("ToClass");
 
                 CompareTo_number = ct.PhpNumber.Method("CompareTo", ct.PhpNumber);
                 CompareTo_long = ct.PhpNumber.Method("CompareTo", ct.Long);
@@ -443,7 +443,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass_Context,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass,
                 CompareTo_number, CompareTo_long, CompareTo_double,
                 Add_long_long, Add_long_double, Add_number_double, Add_double_number, Add_value_long, Add_value_double, Add_value_number,
                 Subtract_long_long, Subtract_number_double, Subtract_long_double,
@@ -494,7 +494,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetItemAlias_IntStringKey_PhpAlias = ct.PhpArray.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
                 AddValue_PhpValue = ct.PhpArray.Method("AddValue", ct.PhpValue);
 
-                EnsureItemObject_IntStringKey_Context = ct.PhpArray.Method("EnsureItemObject", ct.IntStringKey, ct.Context);
+                EnsureItemObject_IntStringKey = ct.PhpArray.Method("EnsureItemObject", ct.IntStringKey);
                 EnsureItemArray_IntStringKey = ct.PhpArray.Method("EnsureItemArray", ct.IntStringKey);
                 EnsureItemAlias_IntStringKey = ct.PhpArray.Method("EnsureItemAlias", ct.IntStringKey);
             }
@@ -503,7 +503,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Context,
                 GetItemValue_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
-                EnsureItemObject_IntStringKey_Context, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
+                EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy;
         }
 

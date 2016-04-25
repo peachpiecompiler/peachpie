@@ -1974,7 +1974,7 @@ namespace Pchp.Core
         /// <param name="array">Caller. Used to lazy copy if necessary.</param>
         /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
         /// <returns><see cref="object"/> ensured to be at given <paramref name="key"/>.</returns>
-        public object/*!*/_ensure_item_object(ref IntStringKey key, PhpArray/*!*/array, Context ctx)
+        public object/*!*/_ensure_item_object(ref IntStringKey key, PhpArray/*!*/array)
         {
             Debug.Assert(array != null, "array == null");
             Debug.Assert(array.table == this, "array.table != this");
@@ -2003,7 +2003,7 @@ namespace Pchp.Core
                             _entries = array.table.entries;
                         }
 
-                        valueobj = _entries[p]._value.EnsureObject(ctx);
+                        valueobj = _entries[p]._value.EnsureObject();
                     }
 
                     //

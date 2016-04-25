@@ -73,7 +73,7 @@ namespace Pchp.Core
         /// Ensures the underlaying value is an object and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public object EnsureObject(Context ctx) => Value.EnsureObject(ctx);
+        public object EnsureObject() => Value.EnsureObject();
 
         /// <summary>
         /// Ensures the underlaying value is an array and gets its instance.
@@ -99,7 +99,7 @@ namespace Pchp.Core
 
         public string ToStringOrThrow(Context ctx) => Value.ToStringOrThrow(ctx);
 
-        public object ToClass(Context ctx) => Value.ToClass(ctx);
+        public object ToClass() => Value.ToClass();
 
         #endregion
     }

@@ -30,7 +30,7 @@ namespace Pchp.Core
 
             public abstract PhpTypeCode Type { get; }
             public abstract bool IsNull { get; }
-            public abstract object ToClass(ref PhpValue me, Context ctx);
+            public abstract object ToClass(ref PhpValue me);
             public abstract string ToString(ref PhpValue me, Context ctx);
             public abstract string ToStringOrThrow(ref PhpValue me, Context ctx);
             public abstract long ToLong(ref PhpValue me);
@@ -44,7 +44,7 @@ namespace Pchp.Core
             /// In case current value is empty, replaces current value with newly created stdClass.
             /// </summary>
             /// <returns>Non-null object.</returns>
-            public abstract object EnsureObject(ref PhpValue me, Context ctx);
+            public abstract object EnsureObject(ref PhpValue me);
 
             /// <summary>
             /// Ensures the value is a PHP array.
@@ -88,7 +88,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
             public override bool IsNull => true;
-            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass();
+            public override object ToClass(ref PhpValue me) => new stdClass();
             public override string ToString(ref PhpValue me, Context ctx) => string.Empty;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => string.Empty;
             public override long ToLong(ref PhpValue me) => 0;
@@ -99,9 +99,9 @@ namespace Pchp.Core
                 number = PhpNumber.Create(0L);
                 return Convert.NumberInfo.Unconvertible;
             }
-            public override object EnsureObject(ref PhpValue me, Context ctx)
+            public override object EnsureObject(ref PhpValue me)
             {
-                var obj = ToClass(ref me, ctx);
+                var obj = ToClass(ref me);
                 me = PhpValue.FromClass(obj);
                 return obj;
             }
@@ -125,7 +125,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Long;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => me.Long.ToString();
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Long.ToString();
             public override long ToLong(ref PhpValue me) => me.Long;
@@ -136,7 +136,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Long);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
-            public override object EnsureObject(ref PhpValue me, Context ctx) => PhpValue.FromClass(ToClass(ref me, ctx)); // me is not changed
+            public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
@@ -146,7 +146,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Double;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
             public override long ToLong(ref PhpValue me) => (long)me.Double;
@@ -157,7 +157,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Double);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
             }
-            public override object EnsureObject(ref PhpValue me, Context ctx) => PhpValue.FromClass(ToClass(ref me, ctx)); // me is not changed
+            public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
@@ -167,7 +167,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Boolean;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
             public override long ToLong(ref PhpValue me) => me.Boolean ? 1L : 0L;
@@ -178,9 +178,9 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Boolean ? 1L : 0L);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
-            public override object EnsureObject(ref PhpValue me, Context ctx)
+            public override object EnsureObject(ref PhpValue me)
             {
-                var obj = ToClass(ref me, ctx);
+                var obj = new stdClass();   // empty class
                 
                 // me is changed if me.Boolean == FALSE
                 if (me.Boolean == false)
@@ -206,16 +206,16 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.String;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => me.String;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.String;
             public override long ToLong(ref PhpValue me) => Convert.StringToLongInteger(me.String);
             public override double ToDouble(ref PhpValue me) => Convert.StringToDouble(me.String);
             public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.String);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => Convert.ToNumber(me.String, out number);
-            public override object EnsureObject(ref PhpValue me, Context ctx)
+            public override object EnsureObject(ref PhpValue me)
             {
-                var obj = ToClass(ref me, ctx);
+                var obj = ToClass(ref me);
 
                 // me is changed if value is empty
                 if (string.IsNullOrEmpty(me.String))
@@ -241,14 +241,14 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.WritableString;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) => new stdClass(DeepCopy(ref me));	// new stdClass(){ $scalar = VALUE }
+            public override object ToClass(ref PhpValue me) => new stdClass(DeepCopy(ref me));	// new stdClass(){ $scalar = VALUE }
             public override string ToString(ref PhpValue me, Context ctx) => me.WritableString.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.WritableString.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.WritableString.ToLong();
             public override double ToDouble(ref PhpValue me) => me.WritableString.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.WritableString.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.WritableString.ToNumber(out number);
-            public override object EnsureObject(ref PhpValue me, Context ctx)
+            public override object EnsureObject(ref PhpValue me)
             {
                 //var obj = PhpValue.Create(new stdClass(ctx));
                 //if (me.WritableString.IsEmpty)
@@ -283,7 +283,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) => me.Object;
+            public override object ToClass(ref PhpValue me) => me.Object;
             public override string ToString(ref PhpValue me, Context ctx)
             {
                 if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToString(ctx);
@@ -314,7 +314,7 @@ namespace Pchp.Core
                 if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToNumber(out number);
                 throw new NotImplementedException();
             }
-            public override object EnsureObject(ref PhpValue me, Context ctx) => me.Object;
+            public override object EnsureObject(ref PhpValue me) => me.Object;
             public override PhpArray EnsureArray(ref PhpValue me)
             {
                 throw new InvalidOperationException();  // Fatal Error: Cannot use object of type stdClass as array
@@ -327,14 +327,14 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.PhpArray;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) => me.Array.ToClass(ctx);
+            public override object ToClass(ref PhpValue me) => me.Array.ToClass();
             public override string ToString(ref PhpValue me, Context ctx) => me.Array.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.Array.ToLong();
             public override double ToDouble(ref PhpValue me) => me.Array.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Array.ToNumber(out number);
-            public override object EnsureObject(ref PhpValue me, Context ctx) => ToClass(ref me, ctx);    // me is not modified
+            public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
             public override PhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
             public override PhpArray AsArray(ref PhpValue me) => me.Array;
@@ -345,14 +345,14 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Alias;
             public override bool IsNull => false;
-            public override object ToClass(ref PhpValue me, Context ctx) => me.Alias.ToClass(ctx);
+            public override object ToClass(ref PhpValue me) => me.Alias.ToClass();
             public override string ToString(ref PhpValue me, Context ctx) => me.Alias.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Alias.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.Alias.ToLong();
             public override double ToDouble(ref PhpValue me) => me.Alias.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Alias.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Alias.ToNumber(out number);
-            public override object EnsureObject(ref PhpValue me, Context ctx) => me.Alias.Value.EnsureObject(ctx);
+            public override object EnsureObject(ref PhpValue me) => me.Alias.Value.EnsureObject();
             public override PhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override PhpArray AsArray(ref PhpValue me) => me.Alias.Value.AsArray();

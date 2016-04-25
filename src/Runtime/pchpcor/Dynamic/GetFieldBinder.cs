@@ -67,12 +67,12 @@ namespace Pchp.Core.Dynamic
                     if (fld.FieldType == typeof(PhpAlias))
                     {
                         // ((PhpAlias)fld).EnsureObject(ctx)
-                        getter = Expression.Call(getter, Cache.Operators.PhpAlias_EnsureObject_Context, Expression.Constant(null, typeof(Context)));
+                        getter = Expression.Call(getter, Cache.Operators.PhpAlias_EnsureObject_Context);
                     }
                     else if (fld.FieldType == typeof(PhpValue))
                     {
                         // ((PhpValue)fld).EnsureObject(ctx)
-                        getter = Expression.Call(getter, Cache.Operators.PhpValue_EnsureObject_Context, Expression.Constant(null, typeof(Context)));
+                        getter = Expression.Call(getter, Cache.Operators.PhpValue_EnsureObject_Context);
                     }
                     else
                     {
@@ -137,7 +137,7 @@ namespace Pchp.Core.Dynamic
 
                     if (_access.EnsureObject())
                     {
-                        getter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_EnsureItemObject, key, Expression.Constant(null, typeof(Context)));
+                        getter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_EnsureItemObject, key);
 
                         // if (__runtimeflds_field == null) __runtimeflds_field = [];
                         // return getter

@@ -109,7 +109,7 @@ namespace Pchp.Core
         /// <summary>
         /// Ensures the item at given index is class object.
         /// </summary>
-        object EnsureItemObject(IntStringKey key, Context ctx);
+        object EnsureItemObject(IntStringKey key);
 
         /// <summary>
         /// Ensures the item at given index is array.

@@ -157,7 +157,7 @@ namespace Pchp.Core
 
         #region Operators
 
-        public object ToClass(Context ctx) => _type.ToClass(ref this, ctx);
+        public object ToClass() => _type.ToClass(ref this);
 
         public long ToLong() => _type.ToLong(ref this);
 
@@ -171,7 +171,7 @@ namespace Pchp.Core
 
         public string ToStringOrThrow(Context ctx) => _type.ToStringOrThrow(ref this, ctx);
 
-        public object EnsureObject(Context ctx) => _type.EnsureObject(ref this, ctx);
+        public object EnsureObject() => _type.EnsureObject(ref this);
         
         public PhpArray AsArray() => _type.AsArray(ref this);   // TODO: return IPhpArrayOperators
 

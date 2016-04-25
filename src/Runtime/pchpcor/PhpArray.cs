@@ -179,7 +179,7 @@ namespace Pchp.Core
             return ToString(ctx);
         }
 
-        public object ToClass(Context ctx)
+        public object ToClass()
         {
             return new stdClass()
             {
@@ -211,7 +211,7 @@ namespace Pchp.Core
 
         public PhpAlias EnsureItemAlias(IntStringKey key) => table._ensure_item_alias(ref key, this);
 
-        public object EnsureItemObject(IntStringKey key, Context ctx) => table._ensure_item_object(ref key, this, ctx);
+        public object EnsureItemObject(IntStringKey key) => table._ensure_item_object(ref key, this);
 
         public PhpArray EnsureItemArray(IntStringKey key) => table._ensure_item_array(ref key, this);
 

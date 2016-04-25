@@ -83,19 +83,20 @@ namespace Pchp.Core
             return info;
         }
 
-        public string ToString(Context ctx)
-        {
-            return _builder.ToString();
-        }
+        public string ToString(Context ctx) => ToString();
 
-        public string ToStringOrThrow(Context ctx) => ToString(ctx);
+        public string ToStringOrThrow(Context ctx) => ToString();
 
-        public object ToClass(Context ctx)
+        public object ToClass()
         {
-            // TODO: new stdClass(){ $scalar = VALUE }
-            throw new NotImplementedException();
+            return new stdClass(PhpValue.Create(this.ToString()));
         }
 
         #endregion
+
+        public override string ToString()
+        {
+            return _builder.ToString();
+        }
     }
 }

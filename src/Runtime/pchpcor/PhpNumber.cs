@@ -754,10 +754,9 @@ namespace Pchp.Core
             return ToString(ctx);
         }
 
-        public object ToClass(Context ctx)
+        public object ToClass()
         {
-            // TODO: new stdClass(){ $scalar = VALUE }
-            throw new NotImplementedException();
+            return new stdClass(PhpValue.Create(this));
         }
 
         #endregion

@@ -128,7 +128,7 @@ namespace Pchp.Core.Dynamic
         {
             var source = expr.Type;
 
-            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToClass, Expression.Constant(null, typeof(Context))); // TODO: Context
+            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToClass);
             if (source == typeof(PhpArray)) throw new NotImplementedException(source.FullName);
             
 
