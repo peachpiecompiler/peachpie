@@ -66,6 +66,17 @@ namespace Pchp.Core
             return obj;
         }
 
+        /// <summary>
+        /// Ensures given variable is not <c>null</c>.
+        /// </summary>
+        public static PhpArray EnsureArray(ref PhpArray arr)
+        {
+            if (arr == null)
+                arr = new PhpArray();
+
+            return arr;
+        }
+
         //public static object EnsureObject(ref PhpValue lvalue)
         //{
 

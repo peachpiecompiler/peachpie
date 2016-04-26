@@ -33,8 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public CoreType(string fullName)
         {
-            Debug.Assert(fullName != null);
-            Debug.Assert(fullName.StartsWith("Pchp.Core.") || fullName.StartsWith("System."));
+            Debug.Assert(!string.IsNullOrEmpty(fullName));
             this.FullName = fullName;
         }
 
@@ -97,7 +96,8 @@ namespace Pchp.CodeAnalysis.Symbols
             CallMethodBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray,
             IntStringKey,
-            Void, Object, Int32, Long, Double, Boolean, String, RuntimeTypeHandle;
+            Void, Object, Int32, Long, Double, Boolean, String, RuntimeTypeHandle,
+            stdClass;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -123,6 +123,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context = Create("Context");
             Operators = Create("Operators");
             Convert = Create("Convert");
+            stdClass = CreateFromFullName("stdClass");
 
             CallMethodBinder = Create("Dynamic.CallMethodBinder");
             GetFieldBinder = Create("Dynamic.GetFieldBinder");

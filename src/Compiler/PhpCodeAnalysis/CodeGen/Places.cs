@@ -494,7 +494,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     return cg.CoreTypes.Object;
                 }
-                else if (type == cg.CoreTypes.PhpNumber)
+                else if (type == cg.CoreTypes.PhpNumber || type == cg.CoreTypes.PhpArray)
                 {
                     throw new NotImplementedException();
                 }
@@ -502,10 +502,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (type.IsReferenceType)
                     {
-                        // Operators.EnsureObject(ref <place>)
-                        _place.EmitLoadAddress(cg.Builder);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureObject_ObjectRef)
-                            .Expect(SpecialType.System_Object);
+                        if (type == cg.CoreTypes.Object || type == cg.CoreTypes.stdClass)
+                        {
+                            // Operators.EnsureObject(ref <place>)
+                            _place.EmitLoadAddress(cg.Builder);
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureObject_ObjectRef)
+                                .Expect(SpecialType.System_Object);
+                        }
+                        else
+                        {
+                            // <place>
+                            return _place.EmitLoad(cg.Builder);
+                        }
                     }
                     else
                     {
@@ -519,6 +527,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (type == cg.CoreTypes.PhpAlias)
                 {
+                    // <place>.EnsureArray()
                     _place.EmitLoad(cg.Builder);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray)
                         .Expect(cg.CoreTypes.PhpArray);
@@ -527,13 +536,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (cg.IsArrayOnly(_thint))
                     {
-                        // uses typehint and accesses .Object directly if possible
+                        // uses typehint and accesses .Array directly if possible
+                        // <place>.Array
                         _place.EmitLoadAddress(cg.Builder);
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.get_Array)
                             .Expect(cg.CoreTypes.PhpArray);
                     }
                     else
                     {
+                        // <place>.EnsureArray()
                         _place.EmitLoadAddress(cg.Builder);
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray)
                             .Expect(cg.CoreTypes.PhpArray);
@@ -545,8 +556,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (type == cg.CoreTypes.PhpArray)
                 {
-                    // TODO: ensure it is not null
-                    return _place.EmitLoad(cg.Builder);
+                    // Operators.EnsureArray(ref <place>)
+                    _place.EmitLoadAddress(cg.Builder);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpArrayRef)
+                        .Expect(cg.CoreTypes.PhpArray);
                 }
 
                 throw new NotImplementedException();
@@ -588,7 +601,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     if (_access.TargetType == cg.CoreTypes.PhpArray)
                     {
-                        // <PhpAlias>.Value.AsArray()
+                        // <place>.Value.AsArray()
                         cg.Builder.EmitOpCode(ILOpCode.Ldflda);
                         cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray)
@@ -601,6 +614,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (_access.TargetType == cg.CoreTypes.PhpArray)
                     {
+                        // <place>.AsArray()
                         _place.EmitLoadAddress(cg.Builder);
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray)
                             .Expect(cg.CoreTypes.PhpArray);
