@@ -494,7 +494,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     return cg.CoreTypes.Object;
                 }
-                else if (type == cg.CoreTypes.PhpNumber || type == cg.CoreTypes.PhpArray)
+                else if (type == cg.CoreTypes.PhpArray)
                 {
                     throw new NotImplementedException();
                 }
@@ -550,10 +550,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(cg.CoreTypes.PhpArray);
                     }
                 }
-                else if (type == cg.CoreTypes.PhpNumber)
-                {
-                    throw new NotImplementedException();
-                }
                 else if (type == cg.CoreTypes.PhpArray)
                 {
                     // Operators.EnsureArray(ref <place>)
@@ -562,7 +558,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         .Expect(cg.CoreTypes.PhpArray);
                 }
 
-                throw new NotImplementedException();
+                throw new NotImplementedException("EnsureArray(" + type.Name + ")");
             }
             // Ensure Alias (&$x)
             else if (_access.IsReadRef)
