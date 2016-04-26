@@ -76,6 +76,9 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(string))
                 return expr;
 
+            if (source == typeof(PhpValue))
+                return Expression.Call(expr, Cache.Operators.PhpValue_ToString_Context, Expression.Constant(null, typeof(Context))); // TODO: Context
+
             if (source == typeof(void))
                 return Expression.Constant(string.Empty, typeof(string));
 
