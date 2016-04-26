@@ -3,6 +3,7 @@ using Pchp.Core.Dynamic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ public sealed class stdClass
     /// <remarks>
     /// The field is recognized by runtime and is not intended for direct use.
     /// </remarks>
+    [CompilerGenerated]
     internal PhpArray __peach__runtimeFields;
 
     /// <summary>
