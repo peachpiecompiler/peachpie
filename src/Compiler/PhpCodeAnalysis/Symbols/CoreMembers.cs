@@ -398,6 +398,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Create_Long = ct.PhpNumber.Method("Create", ct.Long);
                 Create_Double = ct.PhpNumber.Method("Create", ct.Double);
+                Default = ct.PhpNumber.Field("Default");
 
                 get_Long = ct.PhpNumber.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpNumber.Method("get_Double");   // TODO: special name, property
@@ -462,6 +463,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 gt_number_number, gt_number_long, gt_number_double,
                 lt_number_number, lt_number_long, lt_number_double,
                 Negation;
+
+            public readonly CoreField
+                Default;
         }
 
         public struct PhpStringHolder

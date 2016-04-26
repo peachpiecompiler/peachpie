@@ -656,6 +656,11 @@ namespace Pchp.Core
 
         #region Construction
 
+        /// <summary>
+        /// Integer zero number.
+        /// </summary>
+        public readonly static PhpNumber Default = Create(0L);
+
         private PhpNumber(long value) : this()
         {
             _typeCode = PhpTypeCode.Long;

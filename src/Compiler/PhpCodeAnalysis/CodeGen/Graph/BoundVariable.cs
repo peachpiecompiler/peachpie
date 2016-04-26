@@ -64,6 +64,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.Emit_PhpValue_Void();
                 _place.EmitStore(cg.Builder);
             }
+            else if (_place.Type == cg.CoreTypes.PhpNumber)
+            {
+                // <place> = PhpNumber(0)
+                _place.EmitStorePrepare(cg.Builder);
+                cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
+                cg.EmitSymbolToken(cg.CoreMethods.PhpNumber.Default, null);
+                _place.EmitStore(cg.Builder);
+            }
             else if (_place.Type == cg.CoreTypes.PhpAlias)
             {
                 _place.EmitStorePrepare(cg.Builder);
