@@ -502,7 +502,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (type.IsReferenceType)
                     {
-                        if (type == cg.CoreTypes.Object || type == cg.CoreTypes.stdClass)
+                        if (type == cg.CoreTypes.Object)
                         {
                             // Operators.EnsureObject(ref <place>)
                             _place.EmitLoadAddress(cg.Builder);
