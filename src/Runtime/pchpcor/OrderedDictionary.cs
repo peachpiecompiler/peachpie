@@ -25,6 +25,9 @@ namespace Pchp.Core
 
     #region IntStringKey
 
+    /// <summary>
+    /// Represents both integer or string array key.
+    /// </summary>
     [DebuggerNonUserCode]
     public struct IntStringKey : IEquatable<IntStringKey>, IComparable<IntStringKey>
     {
@@ -99,10 +102,7 @@ namespace Pchp.Core
 
         public override int GetHashCode() => _ikey;
 
-        public bool Equals(IntStringKey other)
-        {
-            return _ikey == other._ikey && _skey == other._skey;
-        }
+        public bool Equals(IntStringKey other) => Equals(ref other);
 
         public bool Equals(ref IntStringKey other)
         {
