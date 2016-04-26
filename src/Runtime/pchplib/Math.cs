@@ -319,18 +319,29 @@ namespace Pchp.Library
         #region decbin, bindec, decoct, octdec, dechex, hexdec, base_convert
 
         /// <summary>
-        /// Converts the given number to int (if the number is whole
-        /// and fits into the int's range).
+        /// Converts the given number to int64 (if the number is whole and fits into the int64's range).
+        /// </summary>
+        /// <param name="number">The number.</param>
+        /// <returns><c>long</c> representation of number if possible, otherwise a <c>double</c> representation.</returns>
+        private static PhpNumber ConvertToLong(double number)
+        {
+            if ((Math.Round(number) == number) && (number <= long.MaxValue) && (number >= long.MinValue))
+            {
+                return PhpNumber.Create((long)number);
+            }
+            return PhpNumber.Create(number);
+        }
+
+        /// <summary>
+        /// Converts the lowest 32 bits of the given number to a binary string.
         /// </summary>
         /// <param name="number"></param>
-        /// <returns><c>int</c> representation of number if possible, otherwise a <c>double</c> representation.</returns>
-        private static object ConvertToInt(double number)
+        /// <returns></returns>
+        public static string decbin(double number)
         {
-            if ((Math.Round(number) == number) && (number <= int.MaxValue) && (number >= int.MinValue))
-            {
-                return (int)number;
-            }
-            return number;
+            // Trim the number to the lower 32 binary digits.
+            uint temp = unchecked((uint)number);
+            return DoubleToBase(temp, 2);
         }
 
         ///// <summary>
@@ -338,36 +349,26 @@ namespace Pchp.Library
         ///// </summary>
         ///// <param name="number"></param>
         ///// <returns></returns>
-        //public static PhpBytes decbin(double number)
+        //public static string decbin_unicode(double number)
         //{
         //    // Trim the number to the lower 32 binary digits.
         //    uint temp = unchecked((uint)number);
-        //    return DoubleToBase(temp, 2);
+        //    return DoubleToBaseUnicode(temp, 2);
         //}
 
         /// <summary>
-        /// Converts the lowest 32 bits of the given number to a binary string.
+        /// Returns the decimal equivalent of the binary number represented by the binary_string argument.
+        /// bindec() converts a binary number to an integer or, if needed for size reasons, double.
         /// </summary>
-        /// <param name="number"></param>
-        /// <returns></returns>
-        public static string decbin_unicode(double number)
+        /// <param name="str">The binary string to convert.</param>
+        /// <returns>The decimal value of <paramref name="str"/>.</returns>
+        public static PhpNumber bindec(string str)
         {
-            // Trim the number to the lower 32 binary digits.
-            uint temp = unchecked((uint)number);
-            return DoubleToBaseUnicode(temp, 2);
-        }
+            if (str == null)
+                return PhpNumber.Default;
 
-  //      /// <summary>
-  //      /// Returns the decimal equivalent of the binary number represented by the binary_string argument.
-  //      /// bindec() converts a binary number to an integer or, if needed for size reasons, double.
-  //      /// </summary>
-  //      /// <param name="str">The binary string to convert.</param>
-  //      /// <returns>The decimal value of <paramref name="str"/>.</returns>
-		//public static object bindec(PhpBytes str)
-  //      {
-  //          if (str == null) return 0;
-  //          return ConvertToInt(BaseToDouble(str, 2));
-  //      }
+            return ConvertToLong(BaseToDouble(str, 2));
+        }
 
 
         //[ImplementsFunction("bindec_unicode")]
@@ -377,32 +378,28 @@ namespace Pchp.Library
         //    return ConvertToInt(BaseToDoubleUnicode(str, 2));
         //}
 
-        ///// <summary>
-        ///// Returns a string containing an octal representation of the given number argument.
-        ///// </summary>
-        ///// <param name="number">Decimal value to convert.</param>
-        ///// <returns>Octal string representation of <paramref name="number"/>.</returns>
-        //public static PhpBytes decoct(int number)
-        //{
-        //    return new PhpBytes(System.Convert.ToString(number, 8));
-        //}
-
-        public static string decoct_unicode(int number)
+        /// <summary>
+        /// Returns a string containing an octal representation of the given number argument.
+        /// </summary>
+        /// <param name="number">Decimal value to convert.</param>
+        /// <returns>Octal string representation of <paramref name="number"/>.</returns>
+        public static string decoct(int number)
         {
             return System.Convert.ToString(number, 8);
         }
 
-        ///// <summary>
-        ///// Returns the decimal equivalent of the octal number represented by the <paramref name="str"/> argument.
-        ///// </summary>
-        ///// <param name="str">The octal string to convert.</param>
-        ///// <returns>The decimal representation of <paramref name="str"/>.</returns>
-        //[ImplementsFunction("octdec")]
-        //public static object octdec(PhpBytes str)
-        //{
-        //    if (str == null) return 0;
-        //    return ConvertToInt(BaseToDouble(str, 8));
-        //}
+        /// <summary>
+        /// Returns the decimal equivalent of the octal number represented by the <paramref name="str"/> argument.
+        /// </summary>
+        /// <param name="str">The octal string to convert.</param>
+        /// <returns>The decimal representation of <paramref name="str"/>.</returns>
+        public static PhpNumber octdec(string str)
+        {
+            if (str == null)
+                return PhpNumber.Default;
+
+            return ConvertToLong(BaseToDouble(str, 8));
+        }
 
         //public static object octdec_unicode(string str)
         //{
@@ -410,33 +407,35 @@ namespace Pchp.Library
         //    return ConvertToInt(BaseToDoubleUnicode(str, 8));
         //}
 
-  //      /// <summary>
-  //      /// Returns a string containing a hexadecimal representation of the given number argument.
-  //      /// </summary>
-  //      /// <param name="number">Decimal value to convert.</param>
-  //      /// <returns>Hexadecimal string representation of <paramref name="number"/>.</returns>
-		//public static PhpBytes dechex(int number)
-  //      {
-  //          return new PhpBytes(System.Convert.ToString(number, 16));
-  //      }
-
-        public static string dechex_unicode(int number)
+        /// <summary>
+        /// Returns a string containing a hexadecimal representation of the given number argument.
+        /// </summary>
+        /// <param name="number">Decimal value to convert.</param>
+        /// <returns>Hexadecimal string representation of <paramref name="number"/>.</returns>
+        public static string dechex(long number)
         {
             return System.Convert.ToString(number, 16);
         }
 
-        ///// <summary>
-        ///// Hexadecimal to decimal.
-        ///// Returns the decimal equivalent of the hexadecimal number represented by the hex_string argument. hexdec() converts a hexadecimal string to a decimal number.
-        ///// hexdec() will ignore any non-hexadecimal characters it encounters.
-        ///// </summary>
-        ///// <param name="str">The hexadecimal string to convert.</param>
-        ///// <returns>The decimal representation of <paramref name="str"/>.</returns>
-        //public static object hexdec(PhpBytes str)
+        //public static string dechex_unicode(int number)
         //{
-        //    if (str == null) return 0;
-        //    return ConvertToInt(BaseToDouble(str, 16));
+        //    return System.Convert.ToString(number, 16);
         //}
+
+        /// <summary>
+        /// Hexadecimal to decimal.
+        /// Returns the decimal equivalent of the hexadecimal number represented by the hex_string argument. hexdec() converts a hexadecimal string to a decimal number.
+        /// hexdec() will ignore any non-hexadecimal characters it encounters.
+        /// </summary>
+        /// <param name="str">The hexadecimal string to convert.</param>
+        /// <returns>The decimal representation of <paramref name="str"/>.</returns>
+        public static PhpNumber hexdec(string str)
+        {
+            if (str == null)
+                return PhpNumber.Default;
+
+            return ConvertToLong(BaseToDouble(str, 16));
+        }
 
         //public static object hexdec_unicode(string str)
         //{
@@ -444,52 +443,26 @@ namespace Pchp.Library
         //    return ConvertToInt(BaseToDoubleUnicode(str, 16));
         //}
 
-        //public static double BaseToDouble(PhpBytes number, int fromBase)
-        //{
-        //    if (number == null)
-        //    {
-        //        PhpException.ArgumentNull("number");
-        //        return 0.0;
-        //    }
-
-        //    if (fromBase < 2 || fromBase > 36)
-        //    {
-        //        PhpException.InvalidArgument("toBase", LibResources.GetString("arg:out_of_bounds"));
-        //        return 0.0;
-        //    }
-
-        //    double fnum = 0;
-        //    for (int i = 0; i < number.Length; i++)
-        //    {
-        //        int digit = Core.Parsers.Convert.AlphaNumericToDigit((char)number.ReadonlyData[i]);
-        //        if (digit < fromBase)
-        //            fnum = fnum * fromBase + digit;
-        //    }
-
-        //    return fnum;
-        //}
-
-
-        private static double BaseToDoubleUnicode(string number, int fromBase)
+        private static double BaseToDouble(string number, int fromBase)
         {
             if (number == null)
             {
-                throw new NotImplementedException();
                 //PhpException.ArgumentNull("number");
                 //return 0.0;
+                throw new ArgumentException();
             }
 
             if (fromBase < 2 || fromBase > 36)
             {
-                throw new NotImplementedException();
                 //PhpException.InvalidArgument("toBase", LibResources.GetString("arg:out_of_bounds"));
                 //return 0.0;
+                throw new ArgumentException();
             }
 
             double fnum = 0;
             for (int i = 0; i < number.Length; i++)
             {
-                int digit = Pchp.Core.Convert.AlphaNumericToDigit(number[i]);
+                int digit = Core.Convert.AlphaNumericToDigit(number[i]);
                 if (digit < fromBase)
                     fnum = fnum * fromBase + digit;
             }
@@ -497,46 +470,39 @@ namespace Pchp.Library
             return fnum;
         }
 
+        //private static double BaseToDoubleUnicode(string number, int fromBase)
+        //{
+        //    if (number == null)
+        //    {
+        //        throw new NotImplementedException();
+        //        //PhpException.ArgumentNull("number");
+        //        //return 0.0;
+        //    }
+
+        //    if (fromBase < 2 || fromBase > 36)
+        //    {
+        //        throw new NotImplementedException();
+        //        //PhpException.InvalidArgument("toBase", LibResources.GetString("arg:out_of_bounds"));
+        //        //return 0.0;
+        //    }
+
+        //    double fnum = 0;
+        //    for (int i = 0; i < number.Length; i++)
+        //    {
+        //        int digit = Pchp.Core.Convert.AlphaNumericToDigit(number[i]);
+        //        if (digit < fromBase)
+        //            fnum = fnum * fromBase + digit;
+        //    }
+
+        //    return fnum;
+        //}
+
         private const string digitsUnicode = "0123456789abcdefghijklmnopqrstuvwxyz";
         private static byte[] digits = new byte[] {(byte)'0',(byte)'1',(byte)'2',(byte)'3',(byte)'4',(byte)'5',(byte)'6',(byte)'7',(byte)'8',(byte)'9',
             (byte)'a',(byte)'b',(byte)'c',(byte)'d',(byte)'e',(byte)'f',(byte)'g',(byte)'h',(byte)'i',(byte)'j',(byte)'k',(byte)'l',(byte)'m',(byte)'n',
             (byte)'o',(byte)'p',(byte)'q',(byte)'r',(byte)'s',(byte)'t',(byte)'u',(byte)'v',(byte)'w',(byte)'x',(byte)'y',(byte)'z' };
-
-        //public static PhpBytes DoubleToBase(double number, int toBase)
-        //{
-        //    if (toBase < 2 || toBase > 36)
-        //    {
-        //        PhpException.InvalidArgument("toBase", LibResources.GetString("arg:out_of_bounds"));
-        //        return PhpBytes.Empty;
-        //    }
-
-        //    // Don't try to convert infinity or NaN:
-        //    if (Double.IsInfinity(number) || Double.IsNaN(number))
-        //    {
-        //        PhpException.InvalidArgument("number", LibResources.GetString("arg:out_of_bounds"));
-        //        return PhpBytes.Empty;
-        //    }
-
-        //    double fvalue = Math.Floor(number); /* floor it just in case */
-        //    if (Math.Abs(fvalue) < 1) return new PhpBytes(new byte[] { (byte)'0' });
-
-        //    System.Collections.Generic.List<byte> sb = new System.Collections.Generic.List<byte>();
-        //    while (Math.Abs(fvalue) >= 1)
-        //    {
-        //        double mod = Fmod(fvalue, toBase);
-        //        int i = (int)mod;
-        //        byte b = digits[i];
-        //        //sb.Append(digits[(int) fmod(fvalue, toBase)]);
-        //        sb.Add(b);
-        //        fvalue /= toBase;
-        //    }
-
-        //    sb.Reverse();
-
-        //    return new PhpBytes(sb.ToArray());
-        //}
-
-        private static string DoubleToBaseUnicode(double number, int toBase)
+        
+        private static string DoubleToBase(double number, int toBase)
         {
             if (toBase < 2 || toBase > 36)
             {
@@ -578,30 +544,30 @@ namespace Pchp.Library
         /// <param name="fromBase">The base <paramref name="number"/> is in.</param>
         /// <param name="toBase">The base to convert <paramref name="number"/> to</param>
         /// <returns><paramref name="number"/> converted to base <paramref name="toBase"/>.</returns>
-		//[return: CastToFalse]
+		//[return: CastToFalse] // TODO
         public static string base_convert(string number, int fromBase, int toBase)
         {
             double value;
             if (number == null) return "0";
             try
             {
-                value = BaseToDoubleUnicode(number, fromBase);
+                value = BaseToDouble(number, fromBase);
             }
             catch (ArgumentException)
             {
                 throw new NotImplementedException();
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:invalid_value", "fromBase", fromBase));
-                //return null;
+                //return PhpValue.False;
             }
             try
             {
-                return DoubleToBaseUnicode(value, toBase);
+                return DoubleToBase(value, toBase);
             }
             catch (ArgumentException)
             {
-                throw new NotImplementedException();
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:invalid_value", "toBase", toBase));
-                //return null;
+                //return PhpValue.False;
+                throw new NotImplementedException();
             }
         }
 
@@ -778,94 +744,77 @@ namespace Pchp.Library
             return Math.Log(x + 1.0);   // TODO: implement log(x+1) for x near to zero
         }
 
-  //      /// <summary>
-  //      /// Returns <paramref name="base"/> raised to the power of <paramref name="exp"/>.
-  //      /// </summary>
-		//public static object pow(object @base, object exp)
-  //      {
-  //          double dbase, dexp;
-  //          int ibase, iexp;
-  //          long lbase, lexp;
-  //          Core.Convert.NumberInfo info_base, info_exp;
+        /// <summary>
+        /// Returns <paramref name="base"/> raised to the power of <paramref name="exp"/>.
+        /// </summary>
+        public static object pow(PhpNumber @base, PhpNumber exp)
+        {
+            if (@base.IsLong && exp.IsLong && exp.Long >= 0)
+            {
+                // integer base, non-negative integer exp  //
 
-  //          info_base = Core.Convert.ObjectToNumber(@base, out ibase, out lbase, out dbase);
-  //          info_exp = Core.Convert.ObjectToNumber(exp, out iexp, out lexp, out dexp);
+                return pow(@base.Long, exp.Long);
+            }
 
-  //          if (((info_base | info_exp) & PHP.Core.Convert.NumberInfo.Double) == 0 && lexp >= 0)
-  //          {
-  //              // integer base, non-negative integer exp  //
+            double dexp = exp.ToDouble();
+            double dbase = @base.ToDouble();
 
-  //              long lpower;
-  //              double dpower;
+            if (@base.ToDouble() < 0)
+            {
+                // cannot rount to integer:
+                if (Math.Ceiling(dexp) > dexp)
+                    return Double.NaN;
 
-  //              if (!Power(lbase, lexp, out lpower, out dpower))
-  //                  return dpower;
+                double result = Math.Pow(-dbase, dexp);
+                return (Math.IEEERemainder(Math.Abs(dexp), 2.0) < 1.0) ? result : -result;
+            }
 
-  //              if (lpower >= Int32.MinValue && lpower <= Int32.MaxValue)
-  //                  return (Int32)lpower;
+            if (dexp < 0)
+                return 1 / Math.Pow(dbase, -dexp);
+            else
+                return Math.Pow(dbase, dexp);
+        }
 
-  //              return lpower;
-  //          }
+        private static PhpNumber pow(long lbase, long lexp)
+        {
+            Debug.Assert(lexp >= 0);
 
-  //          if (dbase < 0)
-  //          {
-  //              // cannot rount to integer:
-  //              if (Math.Ceiling(dexp) > dexp)
-  //                  return Double.NaN;
+            long l1 = 1, l2 = lbase;
 
-  //              double result = Math.Pow(-dbase, dexp);
-  //              return (Math.IEEERemainder(Math.Abs(dexp), 2.0) < 1.0) ? result : -result;
-  //          }
+            if (lexp == 0) // anything powered by 0 is 1
+            {
+                return PhpNumber.Create(1);
+            }
 
-  //          if (dexp < 0)
-  //              return 1 / Math.Pow(dbase, -dexp);
-  //          else
-  //              return Math.Pow(dbase, dexp);
-  //      }
+            if (lbase == 0) // 0^(anything except 0) is 0
+            {
+                return PhpNumber.Create(0);
+            }
 
-  //      private static bool Power(long x, long y, out long longResult, out double doubleResult)
-  //      {
-  //          long l1 = 1, l2 = x;
+            try
+            {
+                while (lexp >= 1)
+                {
+                    if ((lexp & 1) != 0)
+                    {
+                        l1 *= l2;
+                        lexp--;
+                    }
+                    else
+                    {
+                        l2 *= l2;
+                        lexp /= 2;
+                    }
+                }
+            }
+            catch (ArithmeticException)
+            {
+                return PhpNumber.Create((double)l1 * Math.Pow(l2, lexp));
+            }
 
-  //          if (y == 0) // anything powered by 0 is 1
-  //          {
-  //              doubleResult = longResult = 1;
-  //              return true;
-  //          }
-
-  //          if (x == 0) // 0^(anything except 0) is 0
-  //          {
-  //              doubleResult = longResult = 0;
-  //              return true;
-  //          }
-
-  //          try
-  //          {
-  //              while (y >= 1)
-  //              {
-  //                  if ((y & 1) != 0)
-  //                  {
-  //                      l1 *= l2;
-  //                      y--;
-  //                  }
-  //                  else
-  //                  {
-  //                      l2 *= l2;
-  //                      y /= 2;
-  //                  }
-  //              }
-  //          }
-  //          catch (ArithmeticException)
-  //          {
-  //              longResult = 0;//ignored
-  //              doubleResult = (double)l1 * Math.Pow(l2, y);
-  //              return false;
-  //          }
-
-  //          // able to do it with longs
-  //          doubleResult = longResult = l1;
-  //          return true;
-  //      }
+            // able to do it with longs
+            return PhpNumber.Create(l1);
+        }
 
         public static double sqrt(double x)
         {
@@ -1170,51 +1119,28 @@ namespace Pchp.Library
             }
         }
 
-        //      /// <summary>
-        //      /// Returns the absolute value of <paramref name="x"/>.
-        //      /// </summary>
-        //      /// <param name="x">The numeric value to process.</param>
-        //      /// <returns></returns>
-        //public static object abs(PhpValue x)
-        //      {
-        //          double dx;
-        //          int ix;
-        //          long lx;
-
-        //          switch (Core.Convert.ObjectToNumber(x, out ix, out lx, out dx) & Core.Convert.NumberInfo.TypeMask)
-        //          {
-        //              case Core.Convert.NumberInfo.Double:
-        //                  return Math.Abs(dx);
-
-        //              case Core.Convert.NumberInfo.Integer:
-        //                  if (ix == int.MinValue)
-        //                      return -lx;
-        //                  else
-        //                      return Math.Abs(ix);
-
-        //              case Core.Convert.NumberInfo.LongInteger:
-        //                  if (lx == long.MinValue)
-        //                      return -dx;
-        //                  else
-        //                      return Math.Abs(lx);
-        //          }
-
-        //          return null;
-        //      }
+        /// <summary>
+        /// Returns the absolute value of <paramref name="x"/>.
+        /// </summary>
+        /// <param name="x">The numeric value to process.</param>
+        public static PhpNumber abs(PhpNumber x)
+        {
+            return x.IsLong
+                ? abs(x.Long)
+                : PhpNumber.Create(Math.Abs(x.Double));
+        }
 
         public static double abs(double x)
         {
             return Math.Abs(x);
         }
 
-        public static PhpNumber abs(long x)
+        public static PhpNumber abs(long lx)
         {
-            throw new NotImplementedException();
-        }
-
-        public static PhpNumber abs(PhpNumber x)
-        {
-            throw new NotImplementedException();    
+            if (lx == long.MinValue)
+                return PhpNumber.Create(-(double)lx);
+            else
+                return PhpNumber.Create(Math.Abs(lx));
         }
 
         /// <summary>
