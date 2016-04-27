@@ -147,4 +147,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ITypeSymbol Type => _routine.ReturnType;
     }
+
+    internal class SynthesizedLocalSymbol : SourceLocalSymbol
+    {
+        readonly TypeSymbol _type;
+
+        public SynthesizedLocalSymbol(SourceRoutineSymbol routine, string name, TypeSymbol type)
+            :base(routine, name + "#", VariableKind.LocalVariable)
+        {
+            Contract.ThrowIfNull(type);
+            _type = type;
+        }
+
+        public override ITypeSymbol Type => _type;
+    }
 }

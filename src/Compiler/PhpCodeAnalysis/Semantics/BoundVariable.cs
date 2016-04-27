@@ -106,7 +106,6 @@ namespace Pchp.CodeAnalysis.Semantics
     public partial class BoundParameter : BoundVariable, IParameterInitializer
     {
         private ParameterSymbol _symbol;
-        // TODO: temporary BoundLocal for copy-on-pass parameters
 
         internal BoundParameter(ParameterSymbol symbol)
             :base(VariableKind.Parameter)

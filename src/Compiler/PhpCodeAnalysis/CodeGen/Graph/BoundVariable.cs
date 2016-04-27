@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -51,9 +52,13 @@ namespace Pchp.CodeAnalysis.Semantics
             _place = new LocalPlace(def);
             il.AddLocalToScope(def);
 
+            //
+            if (_symbol is SynthesizedLocalSymbol)
+                return;
+
             // Initialize local variable with void.
             // This is mandatory since even assignments reads the target value to assign properly to PhpAlias.
-            
+
             // TODO: Once analysis tells us, the target cannot be alias, this step won't be necessary.
 
             // TODO: only if the local will be used uninitialized
@@ -93,20 +98,53 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundParameter
     {
+        /// <summary>
+        /// When parameter should be copied or its CLR type does not fit into its runtime type.
+        /// E.g. foo(int $i){ $i = "Hello"; }
+        /// </summary>
+        private BoundLocal _lazyLocal;
+
         internal override void EmitInit(CodeGenerator cg)
         {
-            // TODO: copy parameter by value in case of PhpValue, Array, PhpString
-            // TODO: create local variable in case of parameter type is not enough for its use within routine
+            var srcparam = _symbol as Symbols.SourceParameterSymbol;
+            if (srcparam != null)
+            {
+                var srcplace = new ParamPlace(_symbol);
+                var routine = srcparam.Routine;
+
+                // TODO: copy parameter by value in case of PhpValue, Array, PhpString
+
+                // create local variable in case of parameter type is not enough for its use within routine
+                var tmask = routine.ControlFlowGraph.GetParamTypeMask(srcparam);
+                var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
+                if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
+                {
+                    // TODO: performance warning
+
+                    _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
+                    _lazyLocal.EmitInit(cg);
+                    var localplace = _lazyLocal.Place(cg.Builder);
+
+                    // <local> = <param>
+                    localplace.EmitStorePrepare(cg.Builder);
+                    cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
+                    localplace.EmitStore(cg.Builder);
+                }
+            }
         }
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            return new BoundLocalPlace(Place(il), access, thint);
+            return (_lazyLocal != null)
+                ? _lazyLocal.BindPlace(il, access, thint)
+                : new BoundLocalPlace(Place(il), access, thint);
         }
 
         internal override IPlace Place(ILBuilder il)
         {
-            return new ParamPlace(this.Parameter);
+            return (_lazyLocal != null)
+                ? _lazyLocal.Place(il)
+                : new ParamPlace(_symbol);
         }
     }
 

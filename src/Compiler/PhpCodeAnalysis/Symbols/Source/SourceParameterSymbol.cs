@@ -35,6 +35,11 @@ namespace Pchp.CodeAnalysis.Symbols
             _ptagOpt = ptagOpt;
         }
 
+        /// <summary>
+        /// Containing routine.
+        /// </summary>
+        internal SourceRoutineSymbol Routine => _routine;
+
         public override Symbol ContainingSymbol => _routine;
 
         internal override PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
