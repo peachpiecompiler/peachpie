@@ -59,9 +59,11 @@ namespace Pchp.Core.Dynamic
             Expression setter;
 
             //
-            var fld = runtime_type.GetTypeInfo().GetDeclaredField(fldName);
+            var fld = runtime_type.GetRuntimeField(fldName);
             if (fld != null)
             {
+                // TODO: check context and accessibility
+
                 Expression lvalue = Expression.Field(target_expr, fld);
                 
                 if (_access.WriteAlias())

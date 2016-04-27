@@ -56,9 +56,11 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            var fld = runtime_type.GetTypeInfo().GetDeclaredField(fldName);
+            var fld = runtime_type.GetRuntimeField(fldName);
             if (fld != null)
             {
+                // TODO: check context and accessibility
+
                 Expression getter = Expression.Field(target_expr, fld);
 
                 // Ensure Object
