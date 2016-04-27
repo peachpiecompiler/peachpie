@@ -109,6 +109,8 @@ namespace Pchp.CodeAnalysis.Symbols
             // 3 default:
             if (result == null)
             {
+                // TODO: use type from overriden method
+
                 result = DeclaringCompilation.CoreTypes.PhpValue;
             }
 
