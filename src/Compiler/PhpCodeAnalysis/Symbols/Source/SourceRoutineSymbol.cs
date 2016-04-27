@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.CodeGen;
+using Pchp.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -73,7 +74,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optionaly gets routines PHP doc block.
         /// </summary>
-        internal abstract Syntax.PHPDocBlock PHPDocBlock { get; }
+        internal abstract PHPDocBlock PHPDocBlock { get; }
 
         /// <summary>
         /// Reference to a containing file symbol.
@@ -86,7 +87,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Builds CLR method parameters.
         /// </summary>
         /// <remarks>(Context, arg1, arg2, ...)</remarks>
-        protected virtual IEnumerable<ParameterSymbol> BuildParameters(Signature signature)
+        protected virtual IEnumerable<ParameterSymbol> BuildParameters(Signature signature, PHPDocBlock phpdocOpt = null)
         {
             int index = 0;
 
@@ -95,10 +96,43 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
             }
 
+            int pindex = 0;
+
             foreach (var p in signature.FormalParams)
             {
-                yield return new SourceParameterSymbol(this, p, index++);
+                var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Value) : null;
+                
+                yield return new SourceParameterSymbol(this, p, index++, ptag);
+
+                pindex++;
             }
+        }
+
+        protected virtual TypeSymbol BuildReturnType(Signature signature, PHPDocBlock phpdocOpt, TypeRefMask return_tmask)
+        {
+            if (signature.AliasReturn)
+                return DeclaringCompilation.CoreTypes.PhpAlias;
+
+            // TODO: PHP7 return type
+            //signature.ReturnTypeHint
+
+            //
+            if (phpdocOpt != null)
+            {
+                var returnTag = phpdocOpt.Returns;
+                if (returnTag != null && returnTag.TypeNames.Length != 0)
+                {
+                    var typeCtx = this.TypeRefContext;
+                    var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNames);
+                    if (!tmask.IsVoid && !tmask.IsAnyType)
+                    {
+                        return DeclaringCompilation.GetTypeFromTypeRef(typeCtx, tmask);
+                    }
+                }
+            }
+
+            //
+            return DeclaringCompilation.GetTypeFromTypeRef(this.TypeRefContext, return_tmask);
         }
 
         public override bool IsExtern => false;
@@ -121,9 +155,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int ParameterCount => _params.Length;
 
-        public override bool ReturnsVoid => this.ControlFlowGraph.ReturnTypeMask.IsVoid;
+        public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 
-        public override TypeSymbol ReturnType => DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.ReturnTypeMask);
+        //public override TypeSymbol ReturnType { get; }
+        //{
+        //    get
+        //    {
+        //        throw new InvalidOperationException("To be overriden in derived class!");
+        //        //return DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.ReturnTypeMask);
+        //    }
+        //}
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 

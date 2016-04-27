@@ -164,10 +164,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public static PHPDocBlock.ParamTag GetParamTag(PHPDocBlock phpdoc, int paramIndex, string paramName)
         {
+            PHPDocBlock.ParamTag result = null;
+
             if (phpdoc != null)
             {
                 int pi = 0;
-                PHPDocBlock.ParamTag result = null;
                 var elements = phpdoc.Elements;
                 foreach (var element in elements)
                 {
@@ -189,12 +190,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         pi++;
                     }
                 }
-
-                //
-                return result;
             }
 
-            return null;
+            return result;
         }
     }
 }

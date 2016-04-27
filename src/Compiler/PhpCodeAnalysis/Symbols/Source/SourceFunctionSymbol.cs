@@ -27,7 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _file = file;
             _syntax = syntax;
-            _params = BuildParameters(syntax.Signature).AsImmutable();
+            _params = BuildParameters(syntax.Signature, syntax.PHPDoc).AsImmutable();
         }
 
         public override ParameterSymbol ThisParameter => null;
@@ -74,7 +74,15 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsStatic => true;
 
         public override bool IsVirtual => false;
-        
+
+        public override TypeSymbol ReturnType
+        {
+            get
+            {
+                return BuildReturnType(_syntax.Signature, _syntax.PHPDoc, this.ControlFlowGraph.ReturnTypeMask);
+            }
+        }
+
         public override ImmutableArray<Location> Locations
         {
             get

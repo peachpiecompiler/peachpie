@@ -131,11 +131,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             TypeRefMask result = 0;
             bool isvariadic = false;
+            bool isalias = false;
 
             // lookup actual type hint
             if (syntax != null)
             {
                 isvariadic = syntax.IsVariadic;
+                isalias = syntax.PassedByRef || syntax.IsOut;
 
                 var hint = syntax.TypeHint;
                 if (hint != null)
@@ -147,7 +149,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            if (result.IsUninitialized || result.IsAnyType)
+            if (result.IsUninitialized)
             {
                 // lookup callInfo
                 result = call.GetParamType(typeCtx, paramIndex);
@@ -169,6 +171,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (isvariadic && !typeCtx.IsArray(result))
                     result = typeCtx.GetArrayTypeMask(result);  // hint -> hint[]
             }
+
+            //
+            result.IsRef = isalias;
 
             //
             Debug.Assert(!result.IsUninitialized);

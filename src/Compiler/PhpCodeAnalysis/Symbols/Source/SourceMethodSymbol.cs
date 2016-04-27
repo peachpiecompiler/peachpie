@@ -31,8 +31,8 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = type;
             _syntax = syntax;
 
-            // TODO: lazily; when using late static binding in a static method, add special <static> parameter, where runtime passed late static bound type
-            _params = BuildParameters(syntax.Signature).AsImmutable();
+            // TODO: lazily; when using late static binding in a static method, add special <static> parameter, where runtime passes late static bound type
+            _params = BuildParameters(syntax.Signature, syntax.PHPDoc).AsImmutable();
         }
 
         public override ParameterSymbol ThisParameter
@@ -86,6 +86,21 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 throw new NotImplementedException();
+            }
+        }
+
+        public override TypeSymbol ReturnType
+        {
+            get
+            {
+                var tmask = TypeRefMask.AnyType;
+                if (this.IsStatic || this.DeclaredAccessibility == Accessibility.Private)
+                {
+                    // allow flow analysed type to be used as method return type
+                    tmask = this.ControlFlowGraph.ReturnTypeMask;
+                }
+
+                return BuildReturnType(_syntax.Signature, _syntax.PHPDoc, tmask);
             }
         }
 

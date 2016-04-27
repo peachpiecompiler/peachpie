@@ -1,4 +1,5 @@
-﻿using Pchp.Syntax;
+﻿using Pchp.CodeAnalysis.Symbols;
+using Pchp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -43,6 +44,41 @@ namespace Pchp.CodeAnalysis.Utilities
         public GenericQualifiedName GenericQualifiedName { get { return (GenericQualifiedName)_obj; } }
 
         public QualifiedName QualifiedName { get { return this.GenericQualifiedName.QualifiedName; } }
+
+        /// <summary>
+        /// Gets <see cref="TypeSymbol"/> representing this type hint.
+        /// </summary>
+        /// <returns><see cref="TypeSymbol"/> or <c>null</c> in case the type hint is empty.</returns>
+        internal TypeSymbol AsTypeSymbol(PhpCompilation compilation)
+        {
+            var ct = compilation.CoreTypes;
+            if (IsPrimitiveType)
+            {
+                var qname = new QualifiedName(PrimitiveTypeName.Name);
+                if (qname == QualifiedName.Integer || qname == QualifiedName.LongInteger)
+                    return ct.Long;
+                if (qname == QualifiedName.String)
+                    return ct.String;
+                if (qname == QualifiedName.Boolean)
+                    return ct.Boolean;
+                if (qname == QualifiedName.Array)
+                    return ct.PhpArray;
+                if (qname == QualifiedName.Callable)
+                    throw new NotImplementedException();
+                if (qname == QualifiedName.Object)
+                    return ct.Object;
+
+                throw new NotImplementedException(qname.ToString() + " AsTypeSymbol");
+            }
+            else if (IsQualifiedName)
+            {
+                return (TypeSymbol)compilation.GetTypeByMetadataName(this.QualifiedName.ClrName()) ?? ct.Object;
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         /// <summary>
         /// Gets name of the type or <c>null</c>.

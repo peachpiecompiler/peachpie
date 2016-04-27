@@ -19,8 +19,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SourceRoutineSymbol _routine;
         readonly FormalParam _syntax;
         readonly int _index;
+        readonly PHPDocBlock.ParamTag _ptagOpt;
 
-        public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int index)
+        TypeSymbol _lazyType;
+
+        public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int index, PHPDocBlock.ParamTag ptagOpt)
         {
             Contract.ThrowIfNull(routine);
             Contract.ThrowIfNull(syntax);
@@ -29,6 +32,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _routine = routine;
             _syntax = syntax;
             _index = index;
+            _ptagOpt = ptagOpt;
         }
 
         public override Symbol ContainingSymbol => _routine;
@@ -45,22 +49,81 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public FormalParam Syntax => _syntax;
 
-        internal override TypeSymbol Type
+        internal sealed override TypeSymbol Type
         {
             get
             {
-                return (TypeSymbol)((IsThis)
-                    ? ContainingType // TODO: "?? AnyType" in case of $this in global scope
-                    : DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetParamTypeMask(this)));
+                if (_lazyType == null)
+                {
+                    _lazyType = ResolveType();
+                }
+
+                return _lazyType;
             }
+        }
+
+        TypeSymbol ResolveType()
+        {
+            if (IsThis)
+            {
+                // <this> parameter
+                if (_routine is SourceGlobalMethodSymbol)
+                {
+                    // "AnyType" in case of $this in global scope
+                    return DeclaringCompilation.CoreTypes.PhpValue;
+                }
+
+                return ContainingType;
+            }
+
+            //return DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetParamTypeMask(this));
+
+            // determine parameter type from the signature:
+
+            // aliased parameter:
+            if (_syntax.IsOut || _syntax.PassedByRef)
+            {
+                return DeclaringCompilation.CoreTypes.PhpAlias;
+            }
+
+            // 1. specified type hint
+            var typehint = new Utilities.TypeHintValue(_syntax.TypeHint);
+            var result = typehint.AsTypeSymbol(DeclaringCompilation);
+
+            // 2. optionally type specified in PHPDoc
+            if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0)
+            {
+                var typectx = _routine.TypeRefContext;
+                var tmask = FlowAnalysis.PHPDoc.GetTypeMask(typectx, _ptagOpt.TypeNamesArray);
+                if (!tmask.IsVoid && !tmask.IsAnyType)
+                {
+                    result = DeclaringCompilation.GetTypeFromTypeRef(typectx, tmask);
+                }
+            }
+
+            // 3 default:
+            if (result == null)
+            {
+                result = DeclaringCompilation.CoreTypes.PhpValue;
+            }
+
+            // variadic (result[])
+            if (_syntax.IsVariadic)
+            {
+                // result = ArraySZSymbol.FromElement(result);
+                throw new NotImplementedException();
+            }
+
+            //
+            return result;
         }
 
         public override RefKind RefKind
         {
             get
             {
-                if (_syntax.IsOut)
-                    return RefKind.Out;
+                //if (_syntax.IsOut)
+                //    return RefKind.Out;
 
                 return RefKind.None;
             }

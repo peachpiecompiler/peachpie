@@ -70,6 +70,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override TypeSymbol ReturnType
+        {
+            get
+            {
+                return DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.ReturnTypeMask);
+            }
+        }
+
         internal override IList<Statement> Statements => _file.Syntax.Statements;
 
         internal override AstNode Syntax => _file.Syntax;

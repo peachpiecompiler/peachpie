@@ -844,6 +844,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             else if (typectx.IsArray(typemask))
                             {
                                 EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
+                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpArray);
                             }
                             else
                             {
