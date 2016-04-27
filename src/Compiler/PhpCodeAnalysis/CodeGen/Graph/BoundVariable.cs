@@ -115,20 +115,23 @@ namespace Pchp.CodeAnalysis.Semantics
                 // TODO: copy parameter by value in case of PhpValue, Array, PhpString
 
                 // create local variable in case of parameter type is not enough for its use within routine
-                var tmask = routine.ControlFlowGraph.GetParamTypeMask(srcparam);
-                var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
-                if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
+                if (_symbol.Type != cg.CoreTypes.PhpValue && _symbol.Type != cg.CoreTypes.PhpAlias)
                 {
-                    // TODO: performance warning
+                    var tmask = routine.ControlFlowGraph.GetParamTypeMask(srcparam);
+                    var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
+                    if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
+                    {
+                        // TODO: performance warning
 
-                    _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
-                    _lazyLocal.EmitInit(cg);
-                    var localplace = _lazyLocal.Place(cg.Builder);
+                        _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
+                        _lazyLocal.EmitInit(cg);
+                        var localplace = _lazyLocal.Place(cg.Builder);
 
-                    // <local> = <param>
-                    localplace.EmitStorePrepare(cg.Builder);
-                    cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
-                    localplace.EmitStore(cg.Builder);
+                        // <local> = <param>
+                        localplace.EmitStorePrepare(cg.Builder);
+                        cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
+                        localplace.EmitStore(cg.Builder);
+                    }
                 }
             }
         }
