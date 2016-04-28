@@ -29,6 +29,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(long)) return BindToLong(arg);
             if (target == typeof(double)) return BindToDouble(arg);
             if (target == typeof(string)) return BindToString(arg);
+            if (target == typeof(bool)) return BindToBool(arg);
             if (target == typeof(PhpNumber)) return BindToNumber(arg);
             if (target == typeof(PhpValue)) return BindToValue(arg);
             if (target == typeof(void)) return BindToVoid(arg);
@@ -46,6 +47,10 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(int)) return Expression.Convert(expr, typeof(long));
             if (source == typeof(long)) return expr;    // unreachable
             if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
+            if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
+            
+            // TODO: following conversions may fail, we should report it failed and throw an error
+            if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToLong", Cache.Types.Empty));
 
             throw new NotImplementedException(source.FullName);
         }
@@ -56,10 +61,24 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(int)) return Expression.Convert(expr, typeof(double));
             if (source == typeof(long)) return Expression.Convert(expr, typeof(double));
-            if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
+            if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(double), typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
+            if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToDouble", Cache.Types.Empty));
 
             // TODO: following conversions may fail, we should report it failed and throw an error
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToDouble", Cache.Types.Empty));
+
+            throw new NotImplementedException(source.FullName);
+        }
+
+        private static Expression BindToBool(Expression expr)
+        {
+            var source = expr.Type;
+
+            if (source == typeof(int)) return Expression.Convert(expr, typeof(bool));
+            if (source == typeof(long)) return Expression.Convert(expr, typeof(bool));
+            if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToBoolean", Cache.Types.Empty));
+            if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToBoolean", Cache.Types.Empty));
+            if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToBoolean", Cache.Types.Empty));
 
             throw new NotImplementedException(source.FullName);
         }
@@ -115,7 +134,6 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(string)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.String), expr);
             if (source == typeof(PhpString)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpString), expr);
             
-
             if (source.GetTypeInfo().IsValueType)
             {
                 throw new NotImplementedException(source.FullName);
@@ -132,8 +150,8 @@ namespace Pchp.Core.Dynamic
             var source = expr.Type;
 
             if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToClass);
-            if (source == typeof(PhpArray)) throw new NotImplementedException(source.FullName);
-            
+            if (source == typeof(PhpArray)) return Expression.Call(expr, Cache.Operators.PhpArray_ToClass);
+            if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToClass", Cache.Types.Empty));
 
             throw new NotImplementedException(source.FullName);
         }

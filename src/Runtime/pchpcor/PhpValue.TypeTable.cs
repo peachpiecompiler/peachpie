@@ -111,7 +111,7 @@ namespace Pchp.Core
                 me = PhpValue.Create(arr);
                 return arr;
             }
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
         }
 
@@ -138,7 +138,7 @@ namespace Pchp.Core
             }
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
         }
 
@@ -159,7 +159,7 @@ namespace Pchp.Core
             }
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
         }
 
@@ -198,7 +198,7 @@ namespace Pchp.Core
 
                 return arr;
             }
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
+            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Boolean ? PhpVariable.True : PhpVariable.False;
         }
 
@@ -317,9 +317,9 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override PhpArray EnsureArray(ref PhpValue me)
             {
-                throw new InvalidOperationException();  // Fatal Error: Cannot use object of type stdClass as array
+                throw new NotImplementedException();  // Fatal Error: Cannot use object of type stdClass as array
             }
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidOperationException(); }
+            public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
         }
 
