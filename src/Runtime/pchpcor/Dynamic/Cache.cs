@@ -51,7 +51,7 @@ namespace Pchp.Core.Dynamic
         public static class Object
         {
             /// <summary><see cref="System.Object"/>.</summary>
-            public static new MethodInfo ToString = typeof(object).GetMethod("ToString");
+            public static new MethodInfo ToString = typeof(object).GetMethod("ToString", Types.Empty);
         }
 
         /// <summary>
