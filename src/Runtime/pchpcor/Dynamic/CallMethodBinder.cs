@@ -55,7 +55,7 @@ namespace Pchp.Core.Dynamic
 
             var runtime_type = target_value.GetType();
 
-            var method = runtime_type.GetTypeInfo().GetDeclaredMethod(methodName);
+            var method = runtime_type.GetRuntimeMethods().Where(m => m.Name == methodName).SingleOrDefault();   // TODO: overload resolution
             if (method != null)
             {
                 if (target_expr.Type != runtime_type)

@@ -839,7 +839,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                             }
                             else if (typectx.IsAString(typemask))
                             {
-                                throw ExceptionUtilities.UnexpectedValue(typemask);
+                                // return ""
+                                _il.EmitStringConstant(string.Empty);
+                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_String);
                             }
                             else if (typectx.IsArray(typemask))
                             {

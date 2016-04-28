@@ -14,7 +14,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal virtual void Emit(CodeGenerator cg)
         {
             // emit contained statements
-            _statements.ForEach(cg.Generate);
+            if (_statements.Count != 0)
+            {
+                _statements.ForEach(cg.Generate);
+            }
 
             //
             cg.Generate(this.NextEdge);
