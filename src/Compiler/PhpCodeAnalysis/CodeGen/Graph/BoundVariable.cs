@@ -63,13 +63,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // TODO: only if the local will be used uninitialized
 
-            if (_place.Type == cg.CoreTypes.PhpValue)
+            if (_place.TypeOpt == cg.CoreTypes.PhpValue)
             {
                 _place.EmitStorePrepare(cg.Builder);
                 cg.Emit_PhpValue_Void();
                 _place.EmitStore(cg.Builder);
             }
-            else if (_place.Type == cg.CoreTypes.PhpNumber)
+            else if (_place.TypeOpt == cg.CoreTypes.PhpNumber)
             {
                 // <place> = PhpNumber(0)
                 _place.EmitStorePrepare(cg.Builder);
@@ -77,7 +77,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitSymbolToken(cg.CoreMethods.PhpNumber.Default, null);
                 _place.EmitStore(cg.Builder);
             }
-            else if (_place.Type == cg.CoreTypes.PhpAlias)
+            else if (_place.TypeOpt == cg.CoreTypes.PhpAlias)
             {
                 _place.EmitStorePrepare(cg.Builder);
                 cg.Emit_PhpValue_Void();
@@ -155,17 +155,32 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void EmitInit(CodeGenerator cg)
         {
-            // TODO: copy to local var in case we can
+            if (!_name.IsAutoGlobal)
+            {
+                // TODO: create shadow local in case we can
+            }
         }
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            throw new NotImplementedException();
+            // IBoundReference of $_GLOBALS[<name>]
+
+            if (_name.IsAutoGlobal)
+            {
+                return new BoundSuperglobalPlace(_name, access);
+            }
+            else
+            {
+                // <variables>[<name>]
+                return new BoundGlobalPlace(new BoundLiteral(_name.Value), access);
+            }
         }
 
         internal override IPlace Place(ILBuilder il)
         {
-            throw new NotImplementedException();
+            // TODO: place of superglobal variable
+
+            return null;
         }
     }
 }

@@ -253,7 +253,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                         _locals.Add(new BoundLocal(new SourceReturnSymbol(_routine)));
                         break;
                     case VariableKind.GlobalVariable:
-                        _locals.Add(new BoundGlobalVariable(e.Name.Value));
+                        _locals.Add(new BoundGlobalVariable(e.Name));
                         break;
                     default:
                         throw new NotImplementedException();

@@ -21,6 +21,12 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string ContextName = "<ctx>";
 
         /// <summary>
+        /// Name of special localss parameter.
+        /// Is of type <see cref="Pchp.Core.PhpArray"/>
+        /// </summary>
+        public const string LocalsName = "<locals>";
+
+        /// <summary>
         /// Name of special late-bound parameter.
         /// Is of type <see cref="System.RuntimeTypeHandle"/>
         /// </summary>

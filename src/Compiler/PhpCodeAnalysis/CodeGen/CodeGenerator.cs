@@ -181,6 +181,17 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly IPlace _contextPlace;
 
         /// <summary>
+        /// Place referring <c>$GLOBALS</c> array.
+        /// </summary>
+        readonly IPlace _globalsPlace;
+
+        /// <summary>
+        /// Place referring array of locals variables.
+        /// This is valid for global scope or local scope with unoptimized locals.
+        /// </summary>
+        IPlace _localsPlaceOpt;
+
+        /// <summary>
         /// Place for loading a reference to <c>this</c>.
         /// </summary>
         readonly IPlace _thisPlace;
@@ -238,6 +249,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public DynamicOperationFactory Factory => _factory;
 
+        /// <summary>
+        /// Whether the generator corresponds to a global scope.
+        /// </summary>
+        public bool IsGlobalScope => _routine is SourceGlobalMethodSymbol;
+
         #endregion
 
         #region Construction
@@ -260,6 +276,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _contextPlace = routine.GetContextPlace();
             _thisPlace = routine.GetThisPlace();
+            _globalsPlace = new PropertyPlace(_contextPlace, routine.DeclaringCompilation.Context_Globals);
+            _localsPlaceOpt = GetLocalsPlace(routine);
 
             _factory = new DynamicOperationFactory(this);
 
@@ -270,6 +288,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             // 
             // This setting only affects generating PDB sequence points, it shall not affect generated IL in any way.
             _emitPdbSequencePoints = emittingPdb && true; // routine.GenerateDebugInfo;
+        }
+
+        static IPlace GetLocalsPlace(SourceRoutineSymbol routine)
+        {
+            if (routine is SourceGlobalMethodSymbol)
+            {
+                // second parameter
+                Debug.Assert(routine.ParameterCount >= 2 && routine.Parameters[1].Name == SpecialParameterSymbol.LocalsName);
+                return new ParamPlace(routine.Parameters[1]);
+            }
+
+            //
+            return null;
         }
 
         #endregion

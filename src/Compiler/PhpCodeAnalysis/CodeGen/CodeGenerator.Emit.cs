@@ -29,6 +29,21 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits reference to <c>$GLOBALS</c>.
+        /// </summary>
+        /// <returns>Type of <c>PhpArray</c></returns>
+        public TypeSymbol EmitLoadGlobals()
+        {
+            return _globalsPlace.EmitLoad(_il);
+        }
+
+        /// <summary>
+        /// Gets place referring to array of unoptimized local variables.
+        /// Always valid in context of global scope.
+        /// </summary>
+        public IPlace LocalsPlaceOpt => _localsPlaceOpt;
+
+        /// <summary>
         /// Emits reference to <c>this</c>.
         /// </summary>
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
@@ -70,7 +85,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (place.HasAddress)
                 {
-                    if (place.Type == CoreTypes.PhpNumber)
+                    if (place.TypeOpt == CoreTypes.PhpNumber)
                     {
                         // access directly without type checking
                         if (IsDoubleOnly(tmask))
@@ -86,7 +101,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 .Expect(SpecialType.System_Int64);
                         }
                     }
-                    else if (place.Type == CoreTypes.PhpValue)
+                    else if (place.TypeOpt == CoreTypes.PhpValue)
                     {
                         // access directly without type checking
                         if (IsDoubleOnly(tmask))
@@ -291,7 +306,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (place != null && place.HasAddress)
                 {
-                    if (place.Type == CoreTypes.PhpNumber)
+                    if (place.TypeOpt == CoreTypes.PhpNumber)
                     {
                         place.EmitLoadAddress(_il);
                         return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble)

@@ -119,14 +119,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // avoiding of load of full value
                 if (place != null && place.HasAddress)
                 {
-                    if (place.Type == CoreTypes.PhpNumber)
+                    if (place.TypeOpt == CoreTypes.PhpNumber)
                     {
                         // < place >.ToBoolean()
                         place.EmitLoadAddress(_il);
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
                         return;
                     }
-                    else if (place.Type == CoreTypes.PhpValue)
+                    else if (place.TypeOpt == CoreTypes.PhpValue)
                     {
                         // < place >.ToBoolean()
                         place.EmitLoadAddress(_il);
@@ -534,7 +534,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // avoiding of load of full value
             if (place != null && place.HasAddress)
             {
-                if (place.Type == CoreTypes.PhpNumber)
+                if (place.TypeOpt == CoreTypes.PhpNumber)
                 {
                     if (to.SpecialType == SpecialType.System_Int64)
                     {
@@ -572,7 +572,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     // TODO: Object, Array
                 }
-                else if (place.Type == CoreTypes.PhpValue)
+                else if (place.TypeOpt == CoreTypes.PhpValue)
                 {
                     if (to.SpecialType == SpecialType.System_Int64)
                     {
@@ -618,7 +618,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //    return;
                     //}
                 }
-                else if (place.Type == CoreTypes.Long)
+                else if (place.TypeOpt == CoreTypes.Long)
                 {
                     if (to.SpecialType == SpecialType.System_String)
                     {

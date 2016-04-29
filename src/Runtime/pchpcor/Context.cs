@@ -24,6 +24,7 @@ namespace Pchp.Core
         private Context()
         {
             _statics = new object[_staticsCount];
+            _globals = new PhpArray();
         }
 
         /// <summary>
@@ -129,6 +130,28 @@ namespace Pchp.Core
         /// Number of static objects so far registered within context.
         /// </summary>
         static volatile int/*!*/_staticsCount;
+
+        #endregion
+
+        #region Superglobals
+
+        /// <summary>
+        /// Array of global variables. Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Globals
+        {
+            get { return _globals; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _globals = value;
+            }
+        }
+        PhpArray _globals;
 
         #endregion
 

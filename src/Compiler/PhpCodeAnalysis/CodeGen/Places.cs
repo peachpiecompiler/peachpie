@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Gets the type of place.
         /// </summary>
-        TypeSymbol Type { get; }
+        TypeSymbol TypeOpt { get; }
 
         /// <summary>
         /// Emits code that loads the value from this storage place.
@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _def = def;
         }
 
-        public TypeSymbol Type => (TypeSymbol)_def.Type;
+        public TypeSymbol TypeOpt => (TypeSymbol)_def.Type;
 
         public bool HasAddress => true;
 
@@ -100,7 +100,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _p = p;
         }
 
-        public TypeSymbol Type => _p.Type;
+        public TypeSymbol TypeOpt => _p.Type;
 
         public bool HasAddress => true;
 
@@ -146,7 +146,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             il.EmitToken(_field, null, DiagnosticBag.GetInstance());    // .{field}
         }
 
-        public TypeSymbol Type => _field.Type;
+        public TypeSymbol TypeOpt => _field.Type;
 
         public bool HasAddress => true;
 
@@ -183,7 +183,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _property = (PropertySymbol)property;
         }
 
-        public TypeSymbol Type => _property.Type;
+        public TypeSymbol TypeOpt => _property.Type;
 
         public bool HasAddress => false;
 
@@ -203,7 +203,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             il.EmitOpCode(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, stack);
-            il.EmitToken(getter, null, null);
+            il.EmitToken(getter, null, DiagnosticBag.GetInstance());
 
             //
             return getter.ReturnType;
@@ -239,7 +239,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             il.EmitOpCode(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, stack);
-            il.EmitToken(setter, null, null);
+            il.EmitToken(setter, null, DiagnosticBag.GetInstance());
 
             //
             Debug.Assert(setter.ReturnType.SpecialType == SpecialType.System_Void);
@@ -386,7 +386,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Type of place. Can be <c>null</c>.
         /// </summary>
-        TypeSymbol Type { get; }
+        TypeSymbol TypeOpt { get; }
 
         /// <summary>
         /// Emits the preamble to the load operation.
@@ -464,7 +464,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(_access.IsRead);
 
-            var type = _place.Type;
+            var type = _place.TypeOpt;
 
             // Ensure Object ($x->.. =)
             if (_access.EnsureObject)
@@ -630,7 +630,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(_access.IsWrite);
             
-            var type = _place.Type;
+            var type = _place.TypeOpt;
 
             if (_access.IsWriteRef)
             {
@@ -663,7 +663,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(_access.IsWrite);
 
-            var type = _place.Type;
+            var type = _place.TypeOpt;
 
             // Write Ref
             if (_access.IsWriteRef)
@@ -728,7 +728,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         #region IPlace
 
-        public TypeSymbol Type => _place.Type;
+        public TypeSymbol TypeOpt => _place.TypeOpt;
 
         public bool HasAddress => _place.HasAddress;
 
@@ -756,7 +756,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _property = (PropertySymbol)property;
         }
 
-        public TypeSymbol Type => _property.Type;
+        public TypeSymbol TypeOpt => _property.Type;
 
         public bool HasAddress => false;
 
@@ -809,4 +809,149 @@ namespace Pchp.CodeAnalysis.CodeGen
     }
 
     #endregion
+
+    internal class BoundSuperglobalPlace : IBoundReference
+    {
+        readonly Syntax.VariableName _name;
+        readonly BoundAccess _access;
+        
+        public BoundSuperglobalPlace(Syntax.VariableName name, BoundAccess access)
+        {
+            Debug.Assert(name.IsAutoGlobal);
+            _name = name;
+            _access = access;
+        }
+
+        #region IBoundReference
+
+        public TypeSymbol TypeOpt => null;  // PhpArray
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            // nothing
+        }
+
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            // nothing
+        }
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            if (_name == Syntax.VariableName.GlobalsName)
+            {
+                return cg.EmitLoadGlobals();
+            }
+
+            throw new NotImplementedException($"Superglobal ${_name.Value}");
+        }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            throw new NotImplementedException($"Superglobal ${_name.Value}");
+        }
+
+        #endregion
+    }
+
+    internal class BoundGlobalPlace : IBoundReference
+    {
+        readonly BoundExpression _nameExpr;
+        readonly BoundAccess _access;
+
+        public BoundGlobalPlace(BoundExpression nameExpr, BoundAccess access)
+        {
+            Contract.ThrowIfNull(nameExpr);
+            _nameExpr = nameExpr;
+            _access = access;
+        }
+
+        #region IBoundReference
+
+        public TypeSymbol TypeOpt => null;
+
+        private void EmitPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            // Template: <variables> Key
+
+            if (cg.IsGlobalScope)
+            {
+                // <locals>
+                Debug.Assert(cg.LocalsPlaceOpt != null);
+                cg.LocalsPlaceOpt.EmitLoad(cg.Builder)
+                    .Expect(cg.CoreTypes.PhpArray);
+            }
+            else
+            {
+                // $GLOBALS
+                cg.EmitLoadGlobals();
+            }
+
+            // key
+            cg.EmitIntStringKey(_nameExpr);
+        }
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            EmitPrepare(cg, instanceOpt);
+        }
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            // STACK: <PhpArray> <key>
+
+            if (_access.EnsureObject)
+            {
+                // <array>.EnsureItemObject(<key>)
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemObject_IntStringKey);
+            }
+            else if (_access.EnsureArray)
+            {
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemArray_IntStringKey);
+            }
+            else if (_access.IsReadRef)
+            {
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey);
+            }
+            else
+            {
+                Debug.Assert(_access.IsRead);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
+            }
+        }
+
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            EmitPrepare(cg, instanceOpt);
+        }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            // STACK: <PhpArray> <key>
+
+            if (_access.IsWriteRef)
+            {
+                // PhpAlias
+                if (valueType != cg.CoreTypes.PhpAlias)
+                {
+                    cg.EmitConvertToPhpValue(valueType, 0);
+                    cg.Emit_PhpValue_MakeAlias();
+                }
+
+                // .SetItemAlias(key, alias)
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+            }
+            else
+            {
+                Debug.Assert(_access.IsWrite);
+
+                cg.EmitConvertToPhpValue(valueType, 0);
+
+                // .SetItemValue(key, value)
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+            }
+        }
+
+        #endregion
+    }
 }

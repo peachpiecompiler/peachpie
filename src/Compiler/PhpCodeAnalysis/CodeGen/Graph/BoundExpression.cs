@@ -1161,7 +1161,7 @@ namespace Pchp.CodeAnalysis.Semantics
             EmitOpCode(cg, Field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
         }
 
-        TypeSymbol IBoundReference.Type => Field?.Type;
+        TypeSymbol IBoundReference.TypeOpt => Field?.Type;
 
         void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
@@ -1770,10 +1770,10 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var target_place = this.Target.BindPlace(cg);
             Debug.Assert(target_place != null);
-            Debug.Assert(target_place.Type == null || target_place.Type.SpecialType != SpecialType.System_Void);
+            Debug.Assert(target_place.TypeOpt == null || target_place.TypeOpt.SpecialType != SpecialType.System_Void);
 
             // T tmp; // in case access is Read
-            var t_value = target_place.Type;
+            var t_value = target_place.TypeOpt;
             if (t_value == cg.CoreTypes.PhpAlias || t_value == cg.CoreTypes.PhpValue)
                 t_value = null; // no inplace conversion
 
@@ -1878,12 +1878,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (IsIncrement)
             {
-                op_type = BoundBinaryEx.EmitAdd(cg, target_load_type, this.Value, target_place.Type);
+                op_type = BoundBinaryEx.EmitAdd(cg, target_load_type, this.Value, target_place.TypeOpt);
             }
             else
             {
                 Debug.Assert(IsDecrement);
-                op_type = BoundBinaryEx.EmitSub(cg, target_load_type, this.Value, target_place.Type);
+                op_type = BoundBinaryEx.EmitSub(cg, target_load_type, this.Value, target_place.TypeOpt);
             }
 
             if (read)
@@ -2057,7 +2057,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region IBoundReference
 
-        TypeSymbol IBoundReference.Type => _type;
+        TypeSymbol IBoundReference.TypeOpt => _type;
         TypeSymbol _type;
 
         void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)

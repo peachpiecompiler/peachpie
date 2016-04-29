@@ -25,7 +25,25 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(file);
 
             _file = file;
-            _params = BuildParameters(new Signature(false, new FormalParam[0])).ToImmutableArray();
+            _params = BuildParameters().ToImmutableArray();
+        }
+
+        protected override IEnumerable<ParameterSymbol> BuildParameters(Signature signature, PHPDocBlock phpdocOpt = null)
+        {
+            throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
+        }
+
+        IEnumerable<ParameterSymbol> BuildParameters()
+        {
+            int index = 0;
+
+            // Context <ctx>
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+
+            // PhpArray <locals>
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.LocalsName, index++);
+
+            // TODO: RuntimeTypeHandle <TypeContext>
         }
 
         public override ParameterSymbol ThisParameter

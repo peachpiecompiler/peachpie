@@ -547,11 +547,16 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 CreateConsole = ct.Context.Method("CreateConsole");
                 Dispose = ct.Context.Method("Dispose");
+
+                get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
             }
 
             public readonly CoreMethod
                 CreateConsole,
                 Dispose;
+
+            public readonly CoreMethod
+                get_Globals;
         }
 
         public struct DynamicHolder

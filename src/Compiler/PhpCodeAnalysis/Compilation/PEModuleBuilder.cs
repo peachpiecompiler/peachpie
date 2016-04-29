@@ -47,9 +47,17 @@ namespace Pchp.CodeAnalysis.Emit
                     // params
                     foreach (var p in method.Parameters)
                     {
-                        if (p.Type == types.Context)
+                        if (p.Type == types.Context && p.Name == SpecialParameterSymbol.ContextName)
                         {
+                            // <ctx>
                             il.EmitLocalLoad(ctx_loc);
+                        }
+                        else if (p.Type == types.PhpArray && p.Name == SpecialParameterSymbol.LocalsName)
+                        {
+                            // <ctx>.Globals
+                            il.EmitLocalLoad(ctx_loc);
+                            il.EmitCall(this, diagnostic, ILOpCode.Call, this.Compilation.Context_Globals.GetMethod)
+                                .Expect(p.Type);
                         }
                         else
                         {

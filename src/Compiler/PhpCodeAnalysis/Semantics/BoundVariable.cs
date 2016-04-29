@@ -136,15 +136,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundGlobalVariable : BoundVariable
     {
-        private string _name;
+        private Syntax.VariableName _name;
 
-        public BoundGlobalVariable(string name)
+        public BoundGlobalVariable(Syntax.VariableName name)
             :base(VariableKind.GlobalVariable)
         {
             _name = name;
         }
 
-        public override string Name => _name;
+        public override string Name => _name.Value;
 
         public override OperationKind Kind => OperationKind.None;
 
