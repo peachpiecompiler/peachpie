@@ -34,7 +34,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>Type of <c>PhpArray</c></returns>
         public TypeSymbol EmitLoadGlobals()
         {
-            return _globalsPlace.EmitLoad(_il);
+            // <ctx>.Globals
+            EmitLoadContext();
+            return EmitCall(ILOpCode.Call, DeclaringCompilation.Context_Globals.GetMethod)
+                .Expect(CoreTypes.PhpArray);
         }
 
         /// <summary>

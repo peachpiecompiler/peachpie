@@ -181,15 +181,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly IPlace _contextPlace;
 
         /// <summary>
-        /// Place referring <c>$GLOBALS</c> array.
-        /// </summary>
-        readonly IPlace _globalsPlace;
-
-        /// <summary>
         /// Place referring array of locals variables.
         /// This is valid for global scope or local scope with unoptimized locals.
         /// </summary>
-        IPlace _localsPlaceOpt;
+        readonly IPlace _localsPlaceOpt;
 
         /// <summary>
         /// Place for loading a reference to <c>this</c>.
@@ -276,7 +271,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _contextPlace = routine.GetContextPlace();
             _thisPlace = routine.GetThisPlace();
-            _globalsPlace = new PropertyPlace(_contextPlace, routine.DeclaringCompilation.Context_Globals);
             _localsPlaceOpt = GetLocalsPlace(routine);
 
             _factory = new DynamicOperationFactory(this);
