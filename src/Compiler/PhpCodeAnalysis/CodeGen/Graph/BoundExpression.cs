@@ -265,7 +265,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
-                throw new NotImplementedException();
+                throw new NotImplementedException($"Add(number, {ytype.Name})");
             }
             else if (xtype.SpecialType == SpecialType.System_Double)
             {
@@ -277,9 +277,15 @@ namespace Pchp.CodeAnalysis.Semantics
                     il.EmitOpCode(ILOpCode.Add);
                     return cg.CoreTypes.Double;
                 }
+                else if (ytype == cg.CoreTypes.PhpValue)
+                {
+                    // r8 + value : r8
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_double_value)
+                        .Expect(SpecialType.System_Double);
+                }
 
                 //
-                throw new NotImplementedException();
+                throw new NotImplementedException($"Add(double, {ytype.Name})");
             }
             else if (xtype.SpecialType == SpecialType.System_Int64)
             {
@@ -315,7 +321,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
-                throw new NotImplementedException();
+                throw new NotImplementedException($"Add(int64, {ytype.Name})");
             }
             else if (xtype == cg.CoreTypes.PhpValue)
             {
@@ -339,13 +345,19 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_number)
                         .Expect(cg.CoreTypes.PhpNumber);
                 }
+                else if (ytype == cg.CoreTypes.PhpValue)
+                {
+                    // value + value : value
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_value)
+                        .Expect(cg.CoreTypes.PhpValue);
+                }
 
                 //
-                throw new NotImplementedException();
+                throw new NotImplementedException($"Add(PhpValue, {ytype.Name})");
             }
 
             //
-            throw new NotImplementedException();
+            throw new NotImplementedException($"Add({xtype.Name}, ...)");
         }
 
         /// <summary>

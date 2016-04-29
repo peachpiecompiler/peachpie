@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
-    [DebuggerDisplay("{GetDebuggerValue,nq}", Type= "{GetDebuggerType,nq}")]
+    [DebuggerDisplay("{GetDebuggerValue,nq}", Type = "{GetDebuggerType,nq}")]
     [StructLayout(LayoutKind.Explicit)]
     public struct PhpNumber : IComparable<PhpNumber>, IPhpConvertible
     {
@@ -387,6 +387,55 @@ namespace Pchp.Core
             }
 
             return x_number + y;
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        public static double Add(double x, PhpValue y)
+        {
+            PhpNumber number;
+            if ((y.ToNumber(out number) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();  // TODO: ErrCode & return 0
+            }
+
+            //
+            return x + number.ToDouble();
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on values.
+        /// </summary>
+        public static PhpValue Add(PhpValue x, PhpValue y)
+        {
+            PhpNumber xnumber, ynumber;
+
+            // converts x and y to numbers:
+            if (((x.ToNumber(out xnumber) | y.ToNumber(out ynumber)) & (Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.Unconvertible)) != 0)
+            {
+                return AddNonNumbers(ref x, ref y);
+            }
+
+            //
+            return PhpValue.Create(xnumber + ynumber);
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator for unconvertible values or arrays.
+        /// </summary>
+        static PhpValue AddNonNumbers(ref PhpValue x, ref PhpValue y)
+        {
+            if (x.IsArray && y.IsArray)
+            {
+                return PhpValue.Create((PhpArray)x.Array.DeepCopy().Unite(y.Array));
+            }
+
+            //PhpException.UnsupportedOperandTypes();
+            //return 0;
+            throw new ArgumentException();  // TODO: ErrCode & return 0
         }
 
         #endregion

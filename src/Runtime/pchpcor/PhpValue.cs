@@ -79,11 +79,6 @@ namespace Pchp.Core
         #region Properties
 
         /// <summary>
-        /// Gets the underlaying value type.
-        /// </summary>
-        public PhpTypeCode TypeCode => _type.Type;
-
-        /// <summary>
         /// Gets value indicating whether the value is a <c>NULL</c>.
         /// </summary>
         public bool IsNull => _type.IsNull;
@@ -155,7 +150,12 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Operators
+        #region IPhpConvertible
+
+        /// <summary>
+        /// Gets the underlaying value type.
+        /// </summary>
+        public PhpTypeCode TypeCode => _type.Type;
 
         public object ToClass() => _type.ToClass(ref this);
 
@@ -171,9 +171,13 @@ namespace Pchp.Core
 
         public string ToStringOrThrow(Context ctx) => _type.ToStringOrThrow(ref this, ctx);
 
-        public object EnsureObject() => _type.EnsureObject(ref this);
-        
+        #endregion
+
+        #region Operators
+
         public PhpArray AsArray() => _type.AsArray(ref this);   // TODO: return IPhpArrayOperators
+
+        public object EnsureObject() => _type.EnsureObject(ref this);
 
         public PhpArray EnsureArray() => _type.EnsureArray(ref this);
 
