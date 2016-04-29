@@ -24,7 +24,9 @@ namespace Pchp.Core
         private Context()
         {
             _statics = new object[_staticsCount];
+
             _globals = new PhpArray();
+            // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
         }
 
         /// <summary>
