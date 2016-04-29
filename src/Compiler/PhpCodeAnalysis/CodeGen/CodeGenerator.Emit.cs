@@ -643,6 +643,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        internal void EmitCastClass(TypeSymbol from, TypeSymbol to)
+        {
+            if (!from.IsEqualToOrDerivedFrom(to))
+            {
+                EmitCastClass(to);
+            }
+        }
+
         internal void EmitCastClass(TypeSymbol type)
         {
             // (T)

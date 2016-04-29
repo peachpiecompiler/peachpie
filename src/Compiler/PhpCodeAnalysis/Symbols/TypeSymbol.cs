@@ -146,6 +146,12 @@ namespace Pchp.CodeAnalysis.Symbols
             return this.IsTypeParameter() ? ((TypeParameterSymbol)this).EffectiveBaseClass(ref useSiteDiagnostics) : this;
         }
 
+        internal bool IsEqualToOrDerivedFrom(TypeSymbol type)
+        {
+            var useSiteDiagnostics = new HashSet<DiagnosticInfo>();
+            return IsEqualToOrDerivedFrom(type, false, ref useSiteDiagnostics);
+        }
+
         /// <summary>
         /// Returns true if this type derives from a given type.
         /// </summary>

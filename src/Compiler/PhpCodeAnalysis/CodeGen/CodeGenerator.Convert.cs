@@ -393,7 +393,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (from == CoreTypes.PhpArray)
                 return;
 
-            throw new NotImplementedException();
+            throw new NotImplementedException($"(array){from.Name}");
         }
 
         public void EmitAsPhpArray(BoundExpression expr)
@@ -447,6 +447,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(from);
             Contract.ThrowIfNull(to);
             Debug.Assert(to.IsReferenceType);   // TODO: structs other than primitive types
+            Debug.Assert(to != CoreTypes.PhpAlias);
 
             // dereference
             if (from == CoreTypes.PhpAlias)
@@ -501,17 +502,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (from == CoreTypes.PhpArray)
                     {
-                        throw new NotImplementedException();    // PhpArray.ToClass();
+                        // (T)PhpArray.ToClass();
+                        EmitCastClass(EmitCall(ILOpCode.Call, CoreMethods.PhpArray.ToClass), to);
+                        return;
                     }
                     else if (from.IsReferenceType)
                     {
                         Debug.Assert(from != CoreTypes.PhpAlias);
-                        HashSet<DiagnosticInfo> useSiteDiag = null;
-                        if (!from.IsDerivedFrom(to, false, ref useSiteDiag))
-                        {
-                            // (T)obj // let .NET deal with eventual cast error for now
-                            EmitCastClass(to);
-                        }
+                        // (T)obj   // let .NET deal with eventual cast error for now
+                        EmitCastClass(from, to);
                         return;
                     }
                     throw new NotImplementedException();
@@ -604,8 +603,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToString_Context);
                         return;
                     }
-
-                    // TODO: Object, Array
+                    if (to.SpecialType == SpecialType.System_Object)
+                    {
+                        // <place>.ToClass()
+                        place.EmitLoadAddress(_il);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToClass);
+                        return;
+                    }
+                    //if (to == CoreTypes.PhpArray)
+                    //{
+                    //    // <place>.AsArray()
+                    //    place.EmitLoadAddress(_il);
+                    //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
+                    //    return;
+                    //}
                 }
                 else if (place.Type == CoreTypes.Long)
                 {

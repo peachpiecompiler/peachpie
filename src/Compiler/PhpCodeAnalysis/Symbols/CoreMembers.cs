@@ -499,6 +499,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public PhpArrayHolder(CoreTypes ct)
             {
                 ToString_Context = ct.PhpArray.Method("ToString", ct.Context);
+                ToClass = ct.PhpArray.Method("ToClass");
 
                 GetItemValue_IntStringKey = ct.PhpArray.Method("GetItemValue", ct.IntStringKey);
 
@@ -514,7 +515,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToString_Context,
+                ToClass, ToString_Context,
                 GetItemValue_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
