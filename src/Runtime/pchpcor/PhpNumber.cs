@@ -699,6 +699,125 @@ namespace Pchp.Core
             return x.ToDouble() * dy;
         }
 
+        /// <summary>
+        /// Mul operator.
+        /// </summary>
+        public static PhpNumber operator *(PhpNumber x, PhpValue y)
+        {
+            PhpNumber ynumber;
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();
+            }
+
+            //
+            return x * ynumber;
+        }
+
+        /// <summary>
+        /// Mul operator.
+        /// </summary>
+        public static PhpNumber operator *(PhpValue x, PhpNumber y)
+        {
+            PhpNumber xnumber;
+            if ((x.ToNumber(out xnumber) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();
+            }
+
+            //
+            return xnumber * y;
+        }
+
+        /// <summary>
+        /// Multiply operator.
+        /// </summary>
+        public static PhpNumber Multiply(long lx, PhpValue y)
+        {
+            PhpNumber ynumber;
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();
+            }
+
+            //
+            return lx * ynumber;
+        }
+
+        /// <summary>
+        /// Multiply operator.
+        /// </summary>
+        public static double Multiply(double dx, PhpValue y)
+        {
+            PhpNumber ynumber;
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();
+            }
+
+            //
+            return dx * ynumber.ToDouble();
+        }
+
+        /// <summary>
+        /// Multiply operator.
+        /// </summary>
+        public static PhpNumber Multiply(PhpValue x, PhpValue y)
+        {
+            PhpNumber xnumber, ynumber;
+            if (((x.ToNumber(out xnumber) | y.ToNumber(out ynumber)) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();
+            }
+
+            //
+            return xnumber * ynumber;
+        }
+
+        /// <summary>
+        /// Multiply operator.
+        /// </summary>
+        public static PhpNumber Multiply(PhpValue x, long ly)
+        {
+            PhpNumber xnumber;
+            if (((x.ToNumber(out xnumber)) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();
+            }
+
+            //
+            return xnumber * ly;
+        }
+
+        /// <summary>
+        /// Multiply operator.
+        /// </summary>
+        public static double Multiply(PhpValue x, double dy)
+        {
+            PhpNumber xnumber;
+            if (((x.ToNumber(out xnumber)) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();
+            }
+
+            //
+            return xnumber.ToDouble() * dy;
+        }
+
         #endregion
 
         #endregion
