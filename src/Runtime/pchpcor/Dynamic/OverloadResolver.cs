@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -67,34 +69,118 @@ namespace Pchp.Core.Dynamic
         }
 
         /// <summary>
+        /// Gets value indicating the parameter is a special context parameter.
+        /// </summary>
+        static bool IsContextParameter(ParameterInfo p)
+        {
+            return p.Position == 0 && p.ParameterType == typeof(Context);
+        }
+
+        /// <summary>
+        /// Gets value indicating the parameter is a special late static bound parameter.
+        /// </summary>
+        static bool IsStaticBoundParameter(ParameterInfo p)
+        {
+            return p.ParameterType == typeof(Type) && p.Name == "<static>";
+        }
+
+        /// <summary>
+        /// Gets value indicating the parameter is a special local parameters parameter.
+        /// </summary>
+        static bool IsLocalsParameter(ParameterInfo p)
+        {
+            return p.ParameterType == typeof(PhpArray) && p.Name == "<locals>";
+        }
+
+        /// <summary>
+        /// Gets value indicating the parameter for variable parameters count.
+        /// </summary>
+        static bool IsParams(ParameterInfo[] parameters, ParameterInfo p)
+        {
+            return
+                p.Position == parameters.Length - 1 &&
+                p.ParameterType.IsArray &&
+                p.GetCustomAttribute<ParamArrayAttribute>() != null;
+        }
+
+        /// <summary>
         /// Tries to bind arguments to method parameters.
         /// </summary>
-        static IList<Expression> TryBindArguments(MethodBase m, Expression[] arguments)
+        public static List<Expression> TryBindArguments(MethodBase m, DynamicMetaObject[] args, Expression ctx, Expression staticOpt = null, Expression localsOpt = null)
         {
-            //int n = 0;
-            //var ps = m.GetParameters();
+            var result = new List<Expression>();
 
-            //foreach (var p in ps)
-            //{
-            //    if (n == 0)
-            //    {
-            //        if (p.ParameterType == typeof(Context)) continue;
-            //        if (p.ParameterType == typeof(Type) && p.Name == "<locals>") continue;
-            //    }
+            var ps = m.GetParameters();
+            int arg_index = 0;
 
-            //    if (p.IsOptional)
-            //        break;
+            // TODO: restrictions
+            // TODO: 'value' of the overload
+            
+            foreach (var p in ps)
+            {
+                if (arg_index == 0)
+                {
+                    // special parameters:
 
-            //    // TODO: params
+                    if (IsContextParameter(p))
+                    {
+                        result.Add(ctx);
+                        continue;
+                    }
+                    if (IsStaticBoundParameter(p))
+                    {
+                        if (staticOpt == null) throw new ArgumentException("<static> missing.");
+                        result.Add(staticOpt);
+                        continue;
+                    }
+                    if (IsLocalsParameter(p))
+                    {
+                        if (localsOpt == null) throw new ArgumentException("<locals> missing.");
+                        result.Add(localsOpt);
+                        continue;
+                    }
+                }
 
-            //    //
-            //    n++;
-            //}
+                // params
+                if (IsParams(ps, p))
+                {
+                    Debug.Assert(p.Position == ps.Length - 1);
+                    Debug.Assert(p.ParameterType.HasElementType); // => Array
 
-            ////
-            //return n;
+                    var exprs = new List<Expression>();
+                    var ptype = p.ParameterType.GetElementType();
 
-            throw new NotImplementedException();
+                    while (arg_index < args.Length)
+                    {
+                        exprs.Add(ConvertExpression.Bind(args[arg_index++].Expression, ptype));
+                    }
+
+                    result.Add(Expression.NewArrayInit(ptype, exprs.ToArray()));
+                }
+                else
+                {
+                    // regular parameters
+                    if (arg_index < args.Length)
+                    {
+                        result.Add(ConvertExpression.Bind(args[arg_index++].Expression, p.ParameterType));
+                    }
+                    else
+                    {
+                        if (p.IsOptional)
+                        {
+                            Debug.Assert(p.HasDefaultValue);
+                            result.Add(Expression.Constant(p.DefaultValue, p.ParameterType));
+                        }
+                        else
+                        {
+                            throw new ArgumentException("mandatory parameter not provided");
+                        }
+                    }
+                }
+            }
+
+            //
+            return result;
         }
 
         public static IEnumerable<MethodBase> SelectWithArguments(this IEnumerable<MethodBase> candidates, Expression[] arguments)
