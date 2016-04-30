@@ -846,7 +846,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitConvert(ytype, Right.TypeRefMask, cg.CoreTypes.PhpValue);
                     ytype = cg.CoreTypes.PhpValue;
 
-                    // i8 ** value : number
+                    // r8 ** value : r8
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Pow_double_value);
 
                 default:

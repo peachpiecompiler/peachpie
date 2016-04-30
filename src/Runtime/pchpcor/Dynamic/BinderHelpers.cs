@@ -92,5 +92,10 @@ namespace Pchp.Core.Dynamic
             //
             return null;
         }
+
+        //public static MethodBase ResolveOverload(IEnumerable<MethodBase> candidates, string name, TypeInfo classContext, IEnumerable<Expression> arguments)
+        //{
+
+        //}
     }
 }
