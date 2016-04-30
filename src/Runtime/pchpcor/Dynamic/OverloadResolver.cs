@@ -32,34 +32,30 @@ namespace Pchp.Core.Dynamic
         /// <summary>
         /// Selects only candidates visible from the current class context.
         /// </summary>
-        public static IEnumerable<MethodBase> SelectVisible(this IEnumerable<MethodBase> candidates, Type classCtx)
+        public static bool IsVisible(this MethodBase m, Type classCtx)
         {
-            var result = new List<MethodBase>();
-            var classCtx_type = classCtx?.GetTypeInfo();
-
-            //
-            foreach (var m in candidates)
+            if (m.IsPrivate && m.DeclaringType != classCtx)
             {
-                if (m.IsPrivate && classCtx != null && m.DeclaringType != classCtx)
-                {
-                    continue;
-                }
-
-                if (m.IsFamily && classCtx_type != null)
-                {
-                    var m_type = m.DeclaringType.GetTypeInfo();
-                    if (!classCtx_type.IsAssignableFrom(m_type) && !m_type.IsAssignableFrom(classCtx_type))
-                    {
-                        continue;
-                    }
-                }
-
-                //
-                result.Add(m);
+                return false;
             }
 
-            //
-            return result;
+            if (m.IsFamily)
+            {
+                if (classCtx == null)
+                {
+                    return false;
+                }
+
+                var m_type = m.DeclaringType.GetTypeInfo();
+                var classCtx_type = classCtx.GetTypeInfo();
+
+                if (!classCtx_type.IsAssignableFrom(m_type) && !m_type.IsAssignableFrom(classCtx_type))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
