@@ -445,6 +445,17 @@ namespace Pchp.CodeAnalysis.Symbols
                 Mul_value_long = ct.PhpNumber.Method("Multiply", ct.PhpValue, ct.Long);
                 Mul_value_double = ct.PhpNumber.Method("Multiply", ct.PhpValue, ct.Double);
 
+                Pow_value_value = ct.PhpNumber.Method("Pow", ct.PhpValue, ct.PhpValue);
+                Pow_number_number = ct.PhpNumber.Method("Pow", ct.PhpNumber, ct.PhpNumber);
+                Pow_number_double = ct.PhpNumber.Method("Pow", ct.PhpNumber, ct.Double);
+                Pow_number_value = ct.PhpNumber.Method("Pow", ct.PhpNumber, ct.PhpValue);
+                Pow_double_double = ct.PhpNumber.Method("Pow", ct.Double, ct.Double);
+                Pow_double_value = ct.PhpNumber.Method("Pow", ct.Double, ct.PhpValue);
+                Pow_long_long = ct.PhpNumber.Method("Pow", ct.Long, ct.Long);
+                Pow_long_double = ct.PhpNumber.Method("Pow", ct.Long, ct.Double);
+                Pow_long_number = ct.PhpNumber.Method("Pow", ct.Long, ct.PhpNumber);
+                Pow_long_value = ct.PhpNumber.Method("Pow", ct.Long, ct.PhpValue);
+
                 gt_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.PhpNumber);
                 gt_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.Long);
                 gt_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.Double);
@@ -461,6 +472,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Negation_long,
                 get_Long, get_Double,
                 Mul_long_long, Mul_long_double, Mul_long_value, Mul_double_value, Mul_value_value, Mul_value_long, Mul_value_double,
+                Pow_long_long, Pow_long_double, Pow_long_number, Pow_long_value, Pow_double_double, Pow_double_value, Pow_number_double, Pow_number_number, Pow_number_value, Pow_value_value,
                 Create_Long, Create_Double;
 
             public readonly CoreOperator

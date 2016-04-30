@@ -820,6 +820,135 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Pow
+
+        //Pow_value_value = ct.PhpNumber.Method("Pow", ct.PhpValue, ct.PhpValue);
+        public static PhpNumber Pow(PhpValue x, PhpValue y)
+        {
+            PhpNumber xnumber, ynumber;
+            if (((x.ToNumber(out xnumber) | y.ToNumber(out ynumber)) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                throw new ArgumentException();  // TODO: ErrCode and return 0;
+            }
+
+            //
+            return Pow(ref xnumber, ref ynumber);
+        }
+
+        //Pow_number_number = ct.PhpNumber.Method("Pow", ct.PhpNumber, ct.PhpNumber);
+        public static PhpNumber Pow(PhpNumber x, PhpNumber y) => Pow(ref x, ref y);
+
+        static PhpNumber Pow(ref PhpNumber x, ref PhpNumber y)
+        {
+            if (x.IsDouble) return Create(Pow(x.Double, y.ToDouble()));
+            if (y.IsDouble) return Create(Pow(x.ToDouble(), y.Double));
+
+            // long ** long
+            return Pow(x.Long, y.Long);
+        }
+
+        //Pow_long_long = ct.PhpNumber.Method("Pow", ct.Long, ct.Long);
+        public static PhpNumber Pow(long lbase, long lexp)
+        {
+            if (lexp >= 0)
+            {
+                if (lexp == 0) // anything powered by 0 is 1
+                {
+                    return Create(1);
+                }
+
+                if (lbase == 0) // 0^(anything except 0) is 0
+                {
+                    return Create(0);
+                }
+
+                long l1 = 1;    // long result if possible
+                long l2 = lbase;
+
+                try
+                {
+                    while (lexp >= 1)
+                    {
+                        if ((lexp & 1) != 0)
+                        {
+                            l1 *= l2;
+                            lexp--;
+                        }
+                        else
+                        {
+                            l2 *= l2;
+                            lexp /= 2;
+                        }
+                    }
+                }
+                catch (ArithmeticException)
+                {
+                    return Create((double)l1 * Math.Pow(l2, lexp));
+                }
+
+                // able to do it with longs
+                return Create(l1);
+            }
+
+            //
+            return Create(Math.Pow((double)lbase, (double)lexp));
+        }
+
+        //Pow_long_number = ct.PhpNumber.Method("Pow", ct.Long, ct.PhpNumber);
+        public static PhpNumber Pow(long lx, PhpNumber y)
+        {
+            if (y.IsDouble) return Create(Pow((double)lx, y.Double));
+            return Pow(lx, y.Long);
+        }
+
+        //Pow_long_value = ct.PhpNumber.Method("Pow", ct.Long, ct.PhpValue);
+        public static PhpNumber Pow(long lx, PhpValue y)
+        {
+            PhpNumber ynumber;
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                throw new ArgumentException();  // TODO: ErrCode and return 0.0;
+            }
+
+            return Pow(lx, ynumber);
+        }
+
+        //Pow_double_double = ct.PhpNumber.Method("Pow", ct.Double, ct.Double);
+        public static double Pow(double dx, double dy) => Math.Pow(dx, dy);
+
+        //Pow_long_double = ct.PhpNumber.Method("Pow", ct.Long, ct.Double);
+        public static double Pow(long lx, double dy) => Math.Pow((double)lx, dy);
+
+        //Pow_number_double = ct.PhpNumber.Method("Pow", ct.PhpNumber, ct.Double);
+        public static double Pow(PhpNumber x, double dy) => Math.Pow(x.ToDouble(), dy);
+
+        // Pow_number_value = ct.PhpNumber.Method("Pow", ct.PhpNumber, ct.PhpValue);
+        public static PhpNumber Pow(PhpNumber x, PhpValue y)
+        {
+            PhpNumber ynumber;
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                throw new ArgumentException();  // TODO: ErrCode and return 0.0;
+            }
+
+            return Pow(ref x, ref ynumber);
+        }
+
+        //Pow_double_value = ct.PhpNumber.Method("Pow", ct.Double, ct.PhpValue);
+        public static double Pow(double dx, PhpValue y)
+        {
+            PhpNumber ynumber;
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                throw new ArgumentException();  // TODO: ErrCode and return 0.0;
+            }
+
+            //
+            return Pow(dx, ynumber.ToDouble());
+        }
+
+        #endregion
+
         #endregion
 
         #region Construction

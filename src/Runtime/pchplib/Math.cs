@@ -747,74 +747,76 @@ namespace Pchp.Library
         /// <summary>
         /// Returns <paramref name="base"/> raised to the power of <paramref name="exp"/>.
         /// </summary>
-        public static object pow(PhpNumber @base, PhpNumber exp)
-        {
-            if (@base.IsLong && exp.IsLong && exp.Long >= 0)
-            {
-                // integer base, non-negative integer exp  //
+        public static PhpNumber pow(PhpNumber @base, PhpNumber exp) => PhpNumber.Pow(@base, exp);
 
-                return pow(@base.Long, exp.Long);
-            }
+        //public static PhpNumber pow(PhpNumber @base, PhpNumber exp)
+        //{
+        //    if (@base.IsLong && exp.IsLong && exp.Long >= 0)
+        //    {
+        //        // integer base, non-negative integer exp  //
 
-            double dexp = exp.ToDouble();
-            double dbase = @base.ToDouble();
+        //        return pow(@base.Long, exp.Long);
+        //    }
 
-            if (@base.ToDouble() < 0)
-            {
-                // cannot rount to integer:
-                if (Math.Ceiling(dexp) > dexp)
-                    return Double.NaN;
+        //    double dexp = exp.ToDouble();
+        //    double dbase = @base.ToDouble();
 
-                double result = Math.Pow(-dbase, dexp);
-                return (Math.IEEERemainder(Math.Abs(dexp), 2.0) < 1.0) ? result : -result;
-            }
+        //    if (dbase < 0)
+        //    {
+        //        // cannot rount to integer:
+        //        if (Math.Ceiling(dexp) > dexp)
+        //            return Double.NaN;
 
-            if (dexp < 0)
-                return 1 / Math.Pow(dbase, -dexp);
-            else
-                return Math.Pow(dbase, dexp);
-        }
+        //        double result = Math.Pow(-dbase, dexp);
+        //        return (Math.IEEERemainder(Math.Abs(dexp), 2.0) < 1.0) ? result : -result;
+        //    }
 
-        private static PhpNumber pow(long lbase, long lexp)
-        {
-            Debug.Assert(lexp >= 0);
+        //    if (dexp < 0)
+        //        return 1 / Math.Pow(dbase, -dexp);
+        //    else
+        //        return Math.Pow(dbase, dexp);
+        //}
 
-            long l1 = 1, l2 = lbase;
+        //private static PhpNumber pow(long lbase, long lexp)
+        //{
+        //    Debug.Assert(lexp >= 0);
 
-            if (lexp == 0) // anything powered by 0 is 1
-            {
-                return PhpNumber.Create(1);
-            }
+        //    long l1 = 1, l2 = lbase;
 
-            if (lbase == 0) // 0^(anything except 0) is 0
-            {
-                return PhpNumber.Create(0);
-            }
+        //    if (lexp == 0) // anything powered by 0 is 1
+        //    {
+        //        return PhpNumber.Create(1);
+        //    }
 
-            try
-            {
-                while (lexp >= 1)
-                {
-                    if ((lexp & 1) != 0)
-                    {
-                        l1 *= l2;
-                        lexp--;
-                    }
-                    else
-                    {
-                        l2 *= l2;
-                        lexp /= 2;
-                    }
-                }
-            }
-            catch (ArithmeticException)
-            {
-                return PhpNumber.Create((double)l1 * Math.Pow(l2, lexp));
-            }
+        //    if (lbase == 0) // 0^(anything except 0) is 0
+        //    {
+        //        return PhpNumber.Create(0);
+        //    }
 
-            // able to do it with longs
-            return PhpNumber.Create(l1);
-        }
+        //    try
+        //    {
+        //        while (lexp >= 1)
+        //        {
+        //            if ((lexp & 1) != 0)
+        //            {
+        //                l1 *= l2;
+        //                lexp--;
+        //            }
+        //            else
+        //            {
+        //                l2 *= l2;
+        //                lexp /= 2;
+        //            }
+        //        }
+        //    }
+        //    catch (ArithmeticException)
+        //    {
+        //        return PhpNumber.Create((double)l1 * Math.Pow(l2, lexp));
+        //    }
+
+        //    // able to do it with longs
+        //    return PhpNumber.Create(l1);
+        //}
 
         public static double sqrt(double x)
         {

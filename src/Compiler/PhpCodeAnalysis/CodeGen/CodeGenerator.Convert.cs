@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public void EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
+        public TypeSymbol EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
         {
             Contract.ThrowIfNull(from);
 
@@ -162,7 +162,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     if (from == CoreTypes.PhpAlias)
                     {
                         Emit_PhpAlias_GetValue();
-                        return;
+                        break;
                     }
                     else if (from == CoreTypes.PhpValue)
                     {
@@ -194,6 +194,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                         throw new NotImplementedException();
                     }
             }
+
+            //
+            return CoreTypes.PhpValue;
         }
 
         public void EmitConvertToPhpNumber(TypeSymbol from, TypeRefMask fromHint)
