@@ -1159,55 +1159,93 @@ namespace Pchp.Library
             return (x >= 0) ? rem : -rem;
         }
 
-  //      /// <summary>
-  //      /// Find highest value.
-  //      /// If the first and only parameter is an array, max() returns the highest value in that array. If at least two parameters are provided, max() returns the biggest of these values.
-  //      /// </summary>
-  //      /// <param name="numbers">An array containing the values or values separately.</param>
-  //      /// <returns>max() returns the numerically highest of the parameter values. If multiple values can be considered of the same size, the one that is listed first will be returned.
-  //      /// When max() is given multiple arrays, the longest array is returned. If all the arrays have the same length, max() will use lexicographic ordering to find the return value.
-  //      /// When given a string it will be cast as an integer when comparing.</returns>
-		//public static object max(params object[] numbers)
-  //      {
-  //          return GetExtreme(numbers, true);
-  //      }
+        /// <summary>
+        /// Find highest value.
+        /// </summary>
+        public static PhpValue max(PhpArray array) => FindExtreme(array.Values, true);
 
-  //      /// <summary>
-  //      /// Find lowest value.
-  //      /// If the first and only parameter is an array, min() returns the lowest value in that array. If at least two parameters are provided, min() returns the smallest of these values.
-  //      /// </summary>
-  //      /// <param name="numbers">An array containing the values or values separately.</param>
-  //      /// <returns>min() returns the numerically lowest of the parameter values.</returns>
-		//public static object min(params object[] numbers)
-  //      {
-  //          return GetExtreme(numbers, false);
-  //      }
+        /// <summary>
+        /// Find lowest value.
+        /// </summary>
+        public static PhpValue min(PhpArray array) => FindExtreme(array.Values, false);
 
-        //internal static object GetExtreme(object[] numbers, bool maximum)
-        //{
-        //    if ((numbers.Length == 1) && (numbers[0] is PhpArray))
-        //    {
-        //        IEnumerable e = (numbers[0] as PhpArray).Values;
-        //        Debug.Assert(e != null);
-        //        return FindExtreme(e, maximum);
-        //    }
-        //    return FindExtreme(numbers, maximum);
-        //}
+        /// <summary>
+        /// Find highest value.
+        /// </summary>
+        public static long max(long a, long b) => Math.Max(a, b);
 
-        //internal static object FindExtreme(IEnumerable array, bool maximum)
-        //{
-        //    object ex = null;
-        //    int fact = maximum ? 1 : -1;
-        //    foreach (object o in array)
-        //    {
-        //        if (ex == null) ex = o;
-        //        else
-        //        {
-        //            if ((PhpComparer.Default.Compare(o, ex) * fact) > 0) ex = o;
-        //        }
-        //    }
-        //    return ex;
-        //}
+        /// <summary>
+        /// Find lowest value.
+        /// </summary>
+        public static long min(long a, long b) => Math.Min(a, b);
+
+        /// <summary>
+        /// Find highest value.
+        /// If the first and only parameter is an array, max() returns the highest value in that array. If at least two parameters are provided, max() returns the biggest of these values.
+        /// </summary>
+        /// <param name="numbers">An array containing the values or values separately.</param>
+        /// <returns>max() returns the numerically highest of the parameter values. If multiple values can be considered of the same size, the one that is listed first will be returned.
+        /// When max() is given multiple arrays, the longest array is returned. If all the arrays have the same length, max() will use lexicographic ordering to find the return value.
+        /// When given a string it will be cast as an integer when comparing.</returns>
+		public static PhpValue max(params PhpValue[] numbers)
+        {
+            return GetExtreme(numbers, true);
+        }
+
+        /// <summary>
+        /// Find lowest value.
+        /// If the first and only parameter is an array, min() returns the lowest value in that array. If at least two parameters are provided, min() returns the smallest of these values.
+        /// </summary>
+        /// <param name="numbers">An array containing the values or values separately.</param>
+        /// <returns>min() returns the numerically lowest of the parameter values.</returns>
+		public static PhpValue min(params PhpValue[] numbers)
+        {
+            return GetExtreme(numbers, false);
+        }
+
+        internal static PhpValue GetExtreme(PhpValue[] numbers, bool maximum)
+        {
+            if (numbers.Length == 1 && numbers[0].IsArray)
+            {
+                return FindExtreme(numbers[0].Array.Values, maximum);
+            }
+
+            //
+            return FindExtreme(numbers, maximum);
+        }
+
+        internal static PhpValue FindExtreme(IEnumerable<PhpValue> array, bool maximum)
+        {
+            Debug.Assert(array != null);
+
+            PhpValue ex;
+
+            var enumerator = array.GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                ex = enumerator.Current;
+
+                int fact = maximum ? 1 : -1;
+
+                while (enumerator.MoveNext())
+                {
+                    throw new NotImplementedException();    // once we implement generic value comparer
+                    //if ((PhpComparer.Default.Compare(o, ex) * fact) > 0)
+                    //{
+                    //    ex = enumerator.Current;
+                    //}
+                }
+            }
+            else
+            {
+                ex = PhpValue.Void;
+            }
+
+            enumerator.Dispose();
+
+            //
+            return ex;
+        }
 
         #endregion
     }
