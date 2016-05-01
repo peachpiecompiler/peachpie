@@ -60,6 +60,16 @@ namespace Pchp.Core.Dynamic
             return true;
         }
 
+        public static IEnumerable<MethodBase> SelectVisible(this IEnumerable<MethodBase> candidates, Type classCtx)
+        {
+            if (classCtx == null)
+            {
+                return candidates.Where(m => m.IsPublic);
+            }
+
+            return candidates.Where(m => m.IsVisible(classCtx));
+        }
+
         /// <summary>
         /// Selects only static methods.
         /// </summary>
@@ -103,18 +113,35 @@ namespace Pchp.Core.Dynamic
                 p.GetCustomAttribute<ParamArrayAttribute>() != null;
         }
 
+        public class ArgumentsBindingResult
+        {
+            public MethodBase Method;
+            public List<Expression> Arguments = new List<Expression>();
+            public BindingRestrictions Restrictions = BindingRestrictions.Empty;
+            public int Cost = 0;
+
+            // TODO: ErrCode in case of binding failure
+
+            public void Add(Expression argument)
+            {
+                this.Arguments.Add(argument);
+            }
+        }
+
         /// <summary>
         /// Tries to bind arguments to method parameters.
         /// </summary>
-        public static List<Expression> TryBindArguments(MethodBase m, DynamicMetaObject[] args, Expression ctx, Expression staticOpt = null, Expression localsOpt = null)
+        public static ArgumentsBindingResult TryBindArguments(this MethodBase m, IList<DynamicMetaObject> args, Expression ctx, Expression staticOpt = null, Expression localsOpt = null)
         {
-            var result = new List<Expression>();
+            var result = new ArgumentsBindingResult()
+            {
+                Method = m,
+            };
 
             var ps = m.GetParameters();
             int arg_index = 0;
 
             // TODO: restrictions
-            // TODO: 'value' of the overload
             
             foreach (var p in ps)
             {
@@ -150,19 +177,20 @@ namespace Pchp.Core.Dynamic
                     var exprs = new List<Expression>();
                     var ptype = p.ParameterType.GetElementType();
 
-                    while (arg_index < args.Length)
+                    while (arg_index < args.Count)
                     {
-                        exprs.Add(ConvertExpression.Bind(args[arg_index++].Expression, ptype));
+                        exprs.Add(ConvertExpression.Bind(args[arg_index++], ref result.Cost, ref result.Restrictions, ptype));
                     }
 
                     result.Add(Expression.NewArrayInit(ptype, exprs.ToArray()));
+                    result.Cost += exprs.Count + 1;
                 }
                 else
                 {
                     // regular parameters
-                    if (arg_index < args.Length)
+                    if (arg_index < args.Count)
                     {
-                        result.Add(ConvertExpression.Bind(args[arg_index++].Expression, p.ParameterType));
+                        result.Add(ConvertExpression.Bind(args[arg_index++], ref result.Cost, ref result.Restrictions, p.ParameterType));
                     }
                     else
                     {
@@ -178,15 +206,9 @@ namespace Pchp.Core.Dynamic
                     }
                 }
             }
-
+            
             //
             return result;
-        }
-
-        public static IEnumerable<MethodBase> SelectWithArguments(this IEnumerable<MethodBase> candidates, Expression[] arguments)
-        {
-            //return candidates.Where(m => CanBeCalled(m, arguments));
-            throw new NotImplementedException();
         }
     }
 }

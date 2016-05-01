@@ -11,6 +11,37 @@ namespace Pchp.Core.Dynamic
 {
     internal static class ConvertExpression
     {
+        public static Expression Bind(DynamicMetaObject arg, ref int cost, ref BindingRestrictions restrictions, Type target)
+        {
+            var result = Bind(arg.Expression, target);
+
+            if (arg.Expression != result)
+            {
+                switch (result.NodeType)
+                {
+                    case ExpressionType.Call:
+                        cost += 2;
+                        break;
+                    case ExpressionType.Convert:
+                        // TODO: conversion cost
+
+                        // int -> long is not considered as a conversion
+                        if (arg.Expression.Type == typeof(int) && target == typeof(long))
+                            break;
+
+                        //
+                        goto default;
+                    case ExpressionType.Constant:
+                        break;
+                    default:
+                        cost++;
+                        break;
+                }
+            }
+
+            return result;
+        }
+
         public static Expression Bind(Expression arg, Type target)
         {
             if (arg.Type == target)

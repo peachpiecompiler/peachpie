@@ -38,6 +38,7 @@
     <AssemblyOriginatorKeyFile>$(SolutionDir)build\StrongKeys\core.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Dynamic\OverloadResolver.cs" />
     <Compile Include="OrderedDictionary.cs" />
     <Compile Include="PhpArray.cs" />
     <Compile Include="PhpArray.DebuggerTypeProxy.cs" />
