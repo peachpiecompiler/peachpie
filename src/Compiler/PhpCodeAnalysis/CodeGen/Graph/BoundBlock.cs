@@ -49,6 +49,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // emit parameters checks
             }
 
+            // in case of script, declare functions and types
+            if (cg.Routine is Symbols.SourceGlobalMethodSymbol)
+            {
+                cg.Routine.ContainingFile.Functions.Where(f => !f.IsConditional).ForEach(cg.EmitDeclareFunction);
+            }
+
             // variables/parameters initialization
             foreach (var loc in cg.Routine.ControlFlowGraph.FlowContext.Locals)
             {

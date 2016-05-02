@@ -23,6 +23,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         FieldSymbol _lazyIndexField;    // internal static int <name>idx;
 
+        /// <summary>
+        /// Whether the function is declared conditionally.
+        /// </summary>
+        public bool IsConditional => _syntax.IsConditional;
+
         public SourceFunctionSymbol(SourceFileSymbol file, FunctionDecl syntax)
         {
             Contract.ThrowIfNull(file);
@@ -32,6 +37,10 @@ namespace Pchp.CodeAnalysis.Symbols
             _params = BuildParameters(syntax.Signature, syntax.PHPDoc).AsImmutable();
         }
 
+        /// <summary>
+        /// A field representing the function index at runtime.
+        /// Lazily associated with name by runtime.
+        /// </summary>
         public FieldSymbol IndexField
         {
             get
@@ -58,7 +67,11 @@ namespace Pchp.CodeAnalysis.Symbols
         protected override TypeRefContext CreateTypeRefContext()
             => new TypeRefContext(NameUtils.GetNamingContext(_syntax.Namespace, _syntax.SourceUnit.Ast), _syntax.SourceUnit, null);
 
-        public override string Name => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.Namespace).ClrName();
+        internal QualifiedName QualifiedName => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.Namespace);
+
+        public override string Name => this.QualifiedName.ClrName();
+
+        public string PhpName => this.QualifiedName.ToString();
 
         public override Symbol ContainingSymbol => _file.SourceModule;
 

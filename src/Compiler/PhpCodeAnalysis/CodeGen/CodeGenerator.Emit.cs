@@ -367,7 +367,17 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             return this.CoreTypes.RuntimeTypeHandle;
         }
-        
+
+        /// <summary>
+        /// Loads <see cref="RuntimeMethodHandle"/> of given method.
+        /// </summary>
+        public TypeSymbol EmitLoadToken(MethodSymbol method, SyntaxNode syntaxNodeOpt)
+        {
+            _il.EmitLoadToken(_moduleBuilder, _diagnostics, method, syntaxNodeOpt);
+
+            return this.CoreTypes.RuntimeMethodHandle;
+        }
+
         public void EmitBox(TypeSymbol valuetype)
         {
             Contract.ThrowIfNull(valuetype);
@@ -794,6 +804,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             // .call Convert.ToArrayKey(<t>)
             throw new NotImplementedException();
+        }
+
+        public void EmitDeclareFunction(SourceFunctionSymbol f)
+        {
+            Debug.Assert(f != null);
+
+            // <ctx>.DeclareFunction(ref index, name, handle)
+            EmitLoadContext();
+            new FieldPlace(null, f.IndexField).EmitLoadAddress(_il);
+            _il.EmitStringConstant(f.PhpName);
+            EmitLoadToken(f, null);
+
+            EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareFunction_intRef_string_method);
         }
 
         public void EmitLoadDefaultValue(TypeSymbol type, TypeRefMask typemask)

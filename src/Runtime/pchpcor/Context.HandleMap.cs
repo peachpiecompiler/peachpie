@@ -178,7 +178,7 @@ namespace Pchp.Core
             /// <param name="name">Associated symbol name.</param>
             public static void EnsureIndex(ref int index, string name)
             {
-                if (index < 0)
+                if (index <= 0)
                     index = GetIndex(name);
             }
 
@@ -192,7 +192,7 @@ namespace Pchp.Core
                 {
                     if (!_nameMap.TryGetValue(name, out index))
                     {
-                        _nameMap[name] = index = _nameMap.Count;
+                        _nameMap[name] = index = _nameMap.Count + 1;
                     }
                 }
 

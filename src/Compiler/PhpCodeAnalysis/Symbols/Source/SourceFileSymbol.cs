@@ -30,6 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// List of functions declared within the file.
         /// </summary>
+        public IEnumerable<SourceFunctionSymbol> Functions => _functions;
         readonly List<SourceFunctionSymbol> _functions = new List<SourceFunctionSymbol>();
 
         readonly List<SynthesizedFieldSymbol> _fields = new List<SynthesizedFieldSymbol>();
@@ -189,10 +190,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name) => ImmutableArray<NamedTypeSymbol>.Empty;
 
-        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
-        {
-            yield return GetIndexField();
-        }
+        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => GetMembers().OfType<FieldSymbol>();
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
 

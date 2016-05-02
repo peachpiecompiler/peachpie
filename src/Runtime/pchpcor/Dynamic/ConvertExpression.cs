@@ -77,6 +77,7 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(int)) return Expression.Convert(expr, typeof(long));
             if (source == typeof(long)) return expr;    // unreachable
+            if (source == typeof(double)) return Expression.Convert(expr, typeof(long));
             if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
             
