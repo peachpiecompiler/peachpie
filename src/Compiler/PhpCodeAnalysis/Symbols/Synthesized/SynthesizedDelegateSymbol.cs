@@ -221,9 +221,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 get { return _returnType; }
             }
 
-            public override ImmutableArray<ITypeSymbol> TypeArguments
+            public override ImmutableArray<TypeSymbol> TypeArguments
             {
-                get { return ImmutableArray<ITypeSymbol>.Empty; }
+                get { return ImmutableArray<TypeSymbol>.Empty; }
             }
 
             public override ImmutableArray<TypeParameterSymbol> TypeParameters

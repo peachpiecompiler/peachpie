@@ -8,9 +8,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Pchp.Core.Utilities;
+using System.Reflection;
 
 namespace Pchp.Core
 {
+    using TFunctionsMap = Context.HandleMap<RuntimeMethodHandle, Providers.RuntimeMethodHandleComparer, Providers.OrdinalIgnoreCaseStringComparer>;
+    using TTypesMap = Context.HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer>;
+
     /// <summary>
     /// Runtime context for a PHP application.
     /// </summary>
@@ -25,8 +29,8 @@ namespace Pchp.Core
 
         private Context()
         {
-            _functions = new HandleMap<RuntimeMethodHandle, Providers.RuntimeMethodHandleComparer, Providers.OrdinalIgnoreCaseStringComparer>(FunctionRedeclared);
-            _types = new HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer>(TypeRedeclared);
+            _functions = new TFunctionsMap(FunctionRedeclared);
+            _types = new TTypesMap(TypeRedeclared);
             _statics = new object[_staticsCount];
 
             _globals = new PhpArray();
@@ -48,14 +52,28 @@ namespace Pchp.Core
         /// <summary>
         /// Map of global functions.
         /// </summary>
-        HandleMap<RuntimeMethodHandle, Providers.RuntimeMethodHandleComparer, Providers.OrdinalIgnoreCaseStringComparer> _functions;
+        TFunctionsMap _functions;
 
         /// <summary>
         /// Map of global types.
         /// </summary>
-        HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer> _types;
+        TTypesMap _types;
 
         // TODO: global constants
+
+        public static void AddScriptReference<TScript>() => AddScriptReference(typeof(TScript));
+
+        private static void AddScriptReference(Type tscript)
+        {
+            Debug.Assert(tscript != null);
+            Debug.Assert(tscript.Name == "<Script>");
+
+            TFunctionsMap.LazyReferencedSymbols(() =>
+            {
+                tscript.GetTypeInfo().GetDeclaredMethod("EnumerateReferencedFunctions")
+                    .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(TFunctionsMap.AddReferencedSymbol) });
+            });
+        }
 
         /// <summary>
         /// Declare a runtime function.

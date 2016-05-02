@@ -78,7 +78,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual bool IsExtensionMethod => false;
 
-        public virtual bool IsGenericMethod => false;
+        /// <summary>
+        /// Returns whether this method is generic; i.e., does it have any type parameters?
+        /// </summary>
+        public virtual bool IsGenericMethod
+        {
+            get
+            {
+                return this.Arity != 0;
+            }
+        }
 
         public virtual bool IsVararg => false;
 
@@ -119,6 +128,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<IParameterSymbol> IMethodSymbol.Parameters => StaticCast<IParameterSymbol>.From(Parameters);
 
+        ImmutableArray<ITypeSymbol> IMethodSymbol.TypeArguments => StaticCast<ITypeSymbol>.From(TypeArguments);
+
         public abstract ImmutableArray<ParameterSymbol> Parameters { get; }
 
         public virtual int ParameterCount => this.Parameters.Length;
@@ -154,7 +165,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual ImmutableArray<CustomModifier> ReturnTypeCustomModifiers => ImmutableArray<CustomModifier>.Empty;
 
-        public virtual ImmutableArray<ITypeSymbol> TypeArguments => ImmutableArray<ITypeSymbol>.Empty;
+        public virtual ImmutableArray<TypeSymbol> TypeArguments => ImmutableArray<TypeSymbol>.Empty;
 
         public virtual ImmutableArray<TypeParameterSymbol> TypeParameters => ImmutableArray<TypeParameterSymbol>.Empty;
 
@@ -166,7 +177,61 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public IMethodSymbol Construct(params ITypeSymbol[] typeArguments)
         {
-            throw new NotImplementedException();
+            return this.Construct(typeArguments.Cast<TypeSymbol>().ToImmutableArray());
+        }
+
+        internal static readonly Func<TypeSymbol, bool> TypeSymbolIsNullFunction = type => (object)type == null;
+
+        /// <summary>
+        /// Apply type substitution to a generic method to create an method symbol with the given type parameters supplied.
+        /// </summary>
+        /// <param name="typeArguments"></param>
+        /// <returns></returns>
+        public MethodSymbol Construct(ImmutableArray<TypeSymbol> typeArguments)
+        {
+            if (!ReferenceEquals(this, ConstructedFrom) || this.Arity == 0)
+            {
+                throw new InvalidOperationException();
+            }
+
+            if (typeArguments.IsDefault)
+            {
+                throw new ArgumentNullException(nameof(typeArguments));
+            }
+
+            if (typeArguments.Any(TypeSymbolIsNullFunction))
+            {
+                throw new ArgumentException(); // (CSharpResources.TypeArgumentCannotBeNull, nameof(typeArguments));
+            }
+
+            if (typeArguments.Length != this.Arity)
+            {
+                throw new ArgumentException(); // (CSharpResources.WrongNumberOfTypeArguments, nameof(typeArguments));
+            }
+
+            if (TypeParametersMatchTypeArguments(this.TypeParameters, typeArguments))
+            {
+                return this;
+            }
+
+            return new ConstructedMethodSymbol(this, typeArguments);
+        }
+
+        internal static bool TypeParametersMatchTypeArguments(ImmutableArray<TypeParameterSymbol> typeParameters, ImmutableArray<TypeSymbol> typeArguments)
+        {
+            int n = typeParameters.Length;
+            Debug.Assert(typeArguments.Length == n);
+            Debug.Assert(typeArguments.Length > 0);
+
+            for (int i = 0; i < n; i++)
+            {
+                if (!ReferenceEquals(typeArguments[i], typeParameters[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

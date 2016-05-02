@@ -153,9 +153,9 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return ImmutableArray<CustomModifier>.Empty; }
         }
 
-        public sealed override ImmutableArray<ITypeSymbol> TypeArguments
+        public sealed override ImmutableArray<TypeSymbol> TypeArguments
         {
-            get { return ImmutableArray<ITypeSymbol>.Empty; }
+            get { return ImmutableArray<TypeSymbol>.Empty; }
         }
 
         public sealed override ISymbol AssociatedSymbol

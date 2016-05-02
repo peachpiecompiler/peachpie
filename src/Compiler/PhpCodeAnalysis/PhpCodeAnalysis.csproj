@@ -132,6 +132,7 @@
     <Compile Include="Symbols\Attributes\RetargetingAttributeData.cs" />
     <Compile Include="Symbols\Attributes\SourceAttributeData.cs" />
     <Compile Include="Symbols\Attributes\SynthesizedAttributeData.cs" />
+    <Compile Include="Symbols\ConstructedMethodSymbol.cs" />
     <Compile Include="Symbols\ConstructedNamedTypeSymbol.cs" />
     <Compile Include="Symbols\CoreMembers.cs" />
     <Compile Include="Symbols\CoreType.cs" />

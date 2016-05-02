@@ -212,11 +212,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override ImmutableArray<ITypeSymbol> TypeArguments
+        public override ImmutableArray<TypeSymbol> TypeArguments
         {
             get
             {
-                return TypeParameters.Cast<TypeParameterSymbol, ITypeSymbol>();
+                return TypeParameters.Cast<TypeParameterSymbol, TypeSymbol>();
             }
         }
 

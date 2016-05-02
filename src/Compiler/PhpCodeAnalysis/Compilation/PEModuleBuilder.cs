@@ -28,6 +28,10 @@ namespace Pchp.CodeAnalysis.Emit
                 {
                     var types = this.Compilation.CoreTypes;
 
+                    // AddScriptReference<Script>()
+                    var AddScriptReferenceMethod = (MethodSymbol)this.Compilation.CoreMethods.Context.AddScriptReference_TScript.Symbol.Construct(this.ScriptType);
+                    il.EmitCall(this, diagnostic, ILOpCode.Call, AddScriptReferenceMethod);
+
                     // create Context
                     var ctx_loc = il.LocalSlotManager.AllocateSlot(types.Context.Symbol, LocalSlotConstraints.None);
 
