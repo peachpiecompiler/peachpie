@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,7 +62,7 @@ namespace Pchp.Core
             /// <summary>
             /// Lazily loads referenced symbols.
             /// </summary>
-         internal   static void EnsureReferencedSymbols()
+            static void EnsureReferencedSymbols()
             {
                 while (_referencedSymbolsLoaders.Count != 0)
                 {
@@ -86,6 +87,7 @@ namespace Pchp.Core
 
             public static void LazyAddReferencedSymbols(Action action)
             {
+                action.GetMethodInfo().
                 _referencedSymbolsLoaders.Enqueue(action);
             }
 
@@ -96,7 +98,7 @@ namespace Pchp.Core
             public static void AddReferencedSymbol(string name, THandle handle)
             {
                 // TODO: W lock
-                
+
                 THandle[] handles;
                 if (_referencedSymbols.TryGetValue(name, out handles))
                 {
@@ -130,7 +132,7 @@ namespace Pchp.Core
             public THandle[] TryGetHandle(string name)
             {
                 Debug.Assert(!string.IsNullOrEmpty(name));
-                
+
                 EnsureReferencedSymbols();
 
                 // lookup app tables
@@ -158,7 +160,7 @@ namespace Pchp.Core
             public bool IsDeclared(ref int index, string name, THandle handle)
             {
                 EnsureIndex(ref index, name);
-                return index < _runtimeSymbols.Length && _runtimeSymbols[index] != null; // TODO: _runtimeSymbols[index] == handle;
+                return index < _runtimeSymbols.Length && _handlecomparer.Equals(_runtimeSymbols[index], handle);
             }
 
             /// <summary>
@@ -179,12 +181,12 @@ namespace Pchp.Core
             }
 
             void Declare(ref THandle placeholder, THandle handle)
-            {                
+            {
                 if (!_handlecomparer.Equals(placeholder, default(THandle)) && _redeclarationCallback != null)
                 {
                     _redeclarationCallback(handle);
                 }
-                
+
                 // declare the symbol
                 placeholder = handle;
             }
