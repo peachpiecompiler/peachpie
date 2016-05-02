@@ -17,4 +17,35 @@ namespace Pchp.Core.Utilities
         /// </summary>
         T Create();
     }
+
+    static class Providers
+    {
+        internal class OrdinalIgnoreCaseStringComparer : IProvider<IEqualityComparer<string>>
+        {
+            public IEqualityComparer<string> Create() => StringComparer.OrdinalIgnoreCase;
+        }
+
+        internal class OrdinalStringComparer : IProvider<IEqualityComparer<string>>
+        {
+            public IEqualityComparer<string> Create() => StringComparer.Ordinal;
+        }
+
+        internal class RuntimeMethodHandleComparer : IProvider<IEqualityComparer<RuntimeMethodHandle>>, IEqualityComparer<RuntimeMethodHandle>
+        {
+            public IEqualityComparer<RuntimeMethodHandle> Create() => new RuntimeMethodHandleComparer();
+
+            public bool Equals(RuntimeMethodHandle x, RuntimeMethodHandle y) => x == y;
+
+            public int GetHashCode(RuntimeMethodHandle obj) => obj.GetHashCode();
+        }
+
+        internal class TypeComparer : IProvider<IEqualityComparer<Type>>, IEqualityComparer<Type>
+        {
+            public IEqualityComparer<Type> Create() => new TypeComparer();
+
+            public bool Equals(Type x, Type y) => x == y;
+
+            public int GetHashCode(Type obj) => obj.GetHashCode();
+        }
+    }
 }

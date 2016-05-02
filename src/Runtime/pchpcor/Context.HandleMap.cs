@@ -17,23 +17,32 @@ namespace Pchp.Core
         /// Factory providing string comparison object used to map symbol names.
         /// Expecting to get OrdinalIgnoreCase or Ordinal comparer.
         /// </typeparam>
-        class HandleMap<THandle, TComparerFactory> where TComparerFactory : Utilities.IProvider<IEqualityComparer<string>>, new()
+        class HandleMap<THandle, THandleComparerFactory, TComparerFactory>
+            where TComparerFactory : Utilities.IProvider<IEqualityComparer<string>>, new()
+            where THandleComparerFactory : Utilities.IProvider<IEqualityComparer<THandle>>, new()
         {
             /// <summary>
             /// Map of referenced symbols.
             /// Initialized lazily, applies for the whole application and all the contexts.
             /// </summary>
-            static Dictionary<string, THandle[]> _referencedSymbols;
+            readonly static Dictionary<string, THandle[]> _referencedSymbols;
 
             /// <summary>
             /// Names mapped to <see cref="_runtimeSymbols"/> indexes.
             /// </summary>
-            static Dictionary<string, int> _nameMap;
+            readonly static Dictionary<string, int> _nameMap;
 
             /// <summary>
             /// Symbols declared in runtime. Indexes correspond to the <see cref="_nameMap"/>.
             /// </summary>
             THandle[] _runtimeSymbols;
+
+            /// <summary>
+            /// Handle comparer.
+            /// </summary>
+            readonly IEqualityComparer<THandle> _handlecomparer;
+
+            readonly Action<THandle> _redeclarationAction;
 
             static HandleMap()
             {
@@ -46,11 +55,24 @@ namespace Pchp.Core
             /// <summary>
             /// Initializes instance of the handle map to be used within a context.
             /// </summary>
-            public HandleMap()
+            public HandleMap(Action<THandle> redeclarationAction = null)
             {
                 _runtimeSymbols = new THandle[_nameMap.Count];
+                _handlecomparer = (new THandleComparerFactory()).Create();
+
+                _redeclarationAction = redeclarationAction;
             }
 
+            /// <summary>
+            /// Gets handles associated with given name.
+            /// </summary>
+            /// <param name="name">Symbol name.</param>
+            /// <returns>
+            /// Gets array of handles declared for given name.
+            /// - Empty array in case no handle is declared.
+            /// - Array with one or more items with referenced handle overloads.
+            /// - Array with one item with runtime declared handle.
+            /// </returns>
             public THandle[] TryGetHandle(string name)
             {
                 // lookup app tables
@@ -75,12 +97,19 @@ namespace Pchp.Core
                 return new THandle[0];
             }
 
+            public bool IsDeclared(ref int index, string name, THandle handle)
+            {
+                EnsureIndex(ref index, name);
+                return index < _runtimeSymbols.Length && _runtimeSymbols[index] != null; // TODO: _runtimeSymbols[index] == handle;
+            }
+
             /// <summary>
             /// Declare handle within the runtime symbols table.
             /// </summary>
             /// <param name="index">Index variable corresponding to the name for faster declaration.</param>
             /// <param name="name">Symbol name.</param>
             /// <param name="handle">Handle of the symbol.</param>
+            /// <remarks>Checks whether the symbol is not redeclared. In such case, throws an exception.</remarks>
             public void Declare(ref int index, string name, THandle handle)
             {
                 Debug.Assert(!string.IsNullOrEmpty(name));
@@ -92,9 +121,12 @@ namespace Pchp.Core
 
             void Declare(ref THandle placeholder, THandle handle)
             {                
-                // TODO: ErrCode when redefining
-                //if (placeholder != null) { ... }
+                if (!_handlecomparer.Equals(placeholder, default(THandle)) && _redeclarationAction != null)
+                {
+                    _redeclarationAction(handle);
+                }
                 
+                // declare the symbol
                 placeholder = handle;
             }
 

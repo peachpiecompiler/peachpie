@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -24,6 +25,8 @@ namespace Pchp.Core
 
         private Context()
         {
+            _functions = new HandleMap<RuntimeMethodHandle, Providers.RuntimeMethodHandleComparer, Providers.OrdinalIgnoreCaseStringComparer>(FunctionRedeclared);
+            _types = new HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer>(TypeRedeclared);
             _statics = new object[_staticsCount];
 
             _globals = new PhpArray();
@@ -36,6 +39,73 @@ namespace Pchp.Core
         public static Context CreateConsole()
         {
             return new Context();
+        }
+
+        #endregion
+
+        #region Symbols
+
+        /// <summary>
+        /// Map of global functions.
+        /// </summary>
+        HandleMap<RuntimeMethodHandle, Providers.RuntimeMethodHandleComparer, Providers.OrdinalIgnoreCaseStringComparer> _functions;
+
+        /// <summary>
+        /// Map of global types.
+        /// </summary>
+        HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer> _types;
+
+        // TODO: global constants
+
+        /// <summary>
+        /// Declare a runtime function.
+        /// </summary>
+        /// <param name="index">Index variable.</param>
+        /// <param name="name">Fuction name.</param>
+        /// <param name="handle">Function runtime handle.</param>
+        public void DeclareFunction(ref int index, string name, RuntimeMethodHandle handle)
+        {
+            _functions.Declare(ref index, name, handle);
+        }
+
+        public void AssertFunctionDeclared(ref int index, string name, RuntimeMethodHandle handle)
+        {
+            if (!_functions.IsDeclared(ref index, name, handle))
+            {
+                // TODO: ErrCode function is not declared
+            }
+        }
+
+        /// <summary>
+        /// Declare a runtime type.
+        /// </summary>
+        /// <typeparam name="T">Type.</typeparam>
+        /// <param name="name">Type name.</param>
+        public void DeclareType<T>(string name)
+        {
+            _types.Declare(ref IndexHolder<T>.Index, name, typeof(T));
+        }
+
+        public void AssertTypeDeclared<T>(string name)
+        {
+            if (!_types.IsDeclared(ref IndexHolder<T>.Index, name, typeof(T)))
+            {
+                // TODO: ErrCode type is not declared
+            }
+        }
+
+        void FunctionRedeclared(RuntimeMethodHandle handle)
+        {
+            // TODO: ErrCode & throw
+            throw new InvalidOperationException($"Function {System.Reflection.MethodBase.GetMethodFromHandle(handle).Name} redeclared!");
+        }
+
+        void TypeRedeclared(Type handle)
+        {
+            Debug.Assert(handle != null);
+
+            // TODO: ErrCode & throw
+            throw new InvalidOperationException($"Type {handle.FullName} redeclared!");
         }
 
         #endregion
@@ -148,7 +218,7 @@ namespace Pchp.Core
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException();
+                    throw new ArgumentNullException();  // TODO: ErrCode
                 }
 
                 _globals = value;
