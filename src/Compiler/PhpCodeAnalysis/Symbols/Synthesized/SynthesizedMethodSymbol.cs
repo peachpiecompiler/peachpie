@@ -14,15 +14,23 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly TypeSymbol _type;
         readonly bool _static;
         readonly string _name;
-        protected ImmutableArray<ParameterSymbol> _parameters;
         TypeSymbol _return;
+        readonly Accessibility _accessibility;
+        protected ImmutableArray<ParameterSymbol> _parameters;
 
-        public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, TypeSymbol returnType, params ParameterSymbol[] ps)
+        public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, params ParameterSymbol[] ps)
         {
             _type = containingType;
             _name = name;
             _static = isstatic;
             _return = returnType;
+            _accessibility = accessibility;
+
+            SetParameters(ps);
+        }
+
+        internal void SetParameters(params ParameterSymbol[] ps)
+        {
             _parameters = ps.AsImmutable();
         }
 
@@ -30,7 +38,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IModuleSymbol ContainingModule => _type.ContainingModule;
 
-        public override Accessibility DeclaredAccessibility => Accessibility.Private;
+        public override Accessibility DeclaredAccessibility => _accessibility;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {

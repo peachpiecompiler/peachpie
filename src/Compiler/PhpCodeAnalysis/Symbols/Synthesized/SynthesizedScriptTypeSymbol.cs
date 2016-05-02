@@ -21,6 +21,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal MethodSymbol EntryPointSymbol { get; set; }
 
+        /// <summary>
+        /// Method that enumerates all referenced global functions.
+        /// 
+        /// EnumerateReferencedFunctions(Action&lt;string, RuntimeMethodHandle&gt; callback)
+        /// </summary>
+        internal MethodSymbol EnumerateReferencedFunctionsSymbol => _enumerateReferencedFunctionsSymbol ?? (_enumerateReferencedFunctionsSymbol = CreateEnumerateReferencedFunctionsSymbol());
+        MethodSymbol _enumerateReferencedFunctionsSymbol;
+
         public SynthesizedScriptTypeSymbol(PhpCompilation compilation)
         {
             _compilation = compilation;
@@ -76,7 +84,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers()
         {
-            var list = new List<Symbol>();
+            var list = new List<Symbol>()
+            {
+                this.EnumerateReferencedFunctionsSymbol,
+            };
 
             //
             if (EntryPointSymbol != null)
@@ -97,5 +108,22 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => ImmutableArray<IFieldSymbol>.Empty;
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
+
+        /// <summary>
+        /// Method that enumerates all referenced global functions.
+        /// EnumerateReferencedFunctions(Action&lt;string, RuntimeMethodHandle&gt; callback)
+        /// </summary>
+        MethodSymbol CreateEnumerateReferencedFunctionsSymbol()
+        {
+            var compilation = DeclaringCompilation;
+            var action_T2 = compilation.GetWellKnownType(WellKnownType.System_Action_T2);
+            var action_string_method = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.RuntimeMethodHandle);
+
+            var method = new SynthesizedMethodSymbol(this, "EnumerateReferencedFunctions", true, compilation.CoreTypes.Void, Accessibility.Public);
+            method.SetParameters(new SynthesizedParameterSymbol(method, action_string_method, 0, RefKind.None, "callback"));
+
+            //
+            return method;
+        }
     }
 }

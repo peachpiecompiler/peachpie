@@ -61,14 +61,14 @@ namespace Pchp.Library
         /// <summary>
         /// UTC time zone.
         /// </summary>
-        public static TimeZoneInfo/*!*/UtcTimeZone { get { return TimeZoneInfo.Utc; } }
+        internal static TimeZoneInfo/*!*/UtcTimeZone { get { return TimeZoneInfo.Utc; } }
 
         /// <summary>
         /// Converts <see cref="DateTime"/> representing UTC time to UNIX timestamp.
         /// </summary>
         /// <param name="dt">Time.</param>
         /// <returns>Unix timestamp.</returns>
-        public static int UtcToUnixTimeStamp(DateTime dt)
+        internal static int UtcToUnixTimeStamp(DateTime dt)
         {
             double seconds = (dt - UtcStartOfUnixEpoch).TotalSeconds;
 
@@ -85,7 +85,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="timestamp">UNIX timestamp</param>
         /// <returns><see cref="DateTime"/> structure representing UTC time.</returns>
-        public static DateTime UnixTimeStampToUtc(int timestamp)
+        internal static DateTime UnixTimeStampToUtc(int timestamp)
         {
             return UtcStartOfUnixEpoch + TimeSpan.FromSeconds(timestamp);
         }
@@ -93,7 +93,7 @@ namespace Pchp.Library
         /// <summary>
         /// Determine maximum of three given <see cref="DateTime"/> values.
         /// </summary>
-        public static DateTime Max(DateTime d1, DateTime d2)
+        internal static DateTime Max(DateTime d1, DateTime d2)
         {
             return (d1 > d2) ? d1 : d2;
         }
@@ -101,7 +101,7 @@ namespace Pchp.Library
         /// <summary>
         /// Determine maximum of three given <see cref="DateTime"/> values.
         /// </summary>
-        public static DateTime Max(DateTime d1, DateTime d2, DateTime d3)
+        internal static DateTime Max(DateTime d1, DateTime d2, DateTime d3)
         {
             return (d1 < d2) ? ((d2 < d3) ? d3 : d2) : ((d1 < d3) ? d3 : d1);
         }

@@ -170,6 +170,11 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        void CompileReflectionEnumerators(CancellationToken cancellationToken)
+        {
+            _moduleBuilder.CreateFunctionReflection(_diagnostics);
+        }
+
         public static void CompileSources(
             PhpCompilation compilation,
             PEModuleBuilder moduleBuilder,
@@ -199,6 +204,7 @@ namespace Pchp.CodeAnalysis
 
             // 4. Emit method bodies
             compiler.EmitMethodBodies();
+            compiler.CompileReflectionEnumerators(cancellationToken);
 
             // 5. Entry Point (.exe)
             compiler.CompileEntryPoint(cancellationToken);

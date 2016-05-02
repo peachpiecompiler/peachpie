@@ -77,6 +77,11 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Gets declared function with given name. In case of more items they are considered as overloads.
+        /// </summary>
+        internal RuntimeMethodHandle[] GetDeclaredFunction(string name) => _functions.TryGetHandle(name);
+
+        /// <summary>
         /// Declare a runtime type.
         /// </summary>
         /// <typeparam name="T">Type.</typeparam>
@@ -93,6 +98,11 @@ namespace Pchp.Core
                 // TODO: ErrCode type is not declared
             }
         }
+
+        /// <summary>
+        /// Gets declared function with given name. In case of more items they are considered as overloads.
+        /// </summary>
+        internal Type[] GetDeclaredType(string name) => _types.TryGetHandle(name);
 
         void FunctionRedeclared(RuntimeMethodHandle handle)
         {

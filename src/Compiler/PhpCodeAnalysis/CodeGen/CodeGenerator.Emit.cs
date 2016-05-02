@@ -924,9 +924,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitSymbolToken(il, module, diagnostics, type, syntaxNodeOpt);
         }
 
+        public static void EmitLoadToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, MethodSymbol method, SyntaxNode syntaxNodeOpt)
+        {
+            il.EmitOpCode(ILOpCode.Ldtoken);
+            EmitSymbolToken(il, module, diagnostics, method, syntaxNodeOpt);
+        }
+
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics,  TypeSymbol symbol, SyntaxNode syntaxNode)
         {
             il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics), syntaxNode, diagnostics);
+        }
+
+        public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, MethodSymbol symbol, SyntaxNode syntaxNode)
+        {
+            il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics, true), syntaxNode, diagnostics);
         }
 
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, FieldSymbol symbol, SyntaxNode syntaxNode)

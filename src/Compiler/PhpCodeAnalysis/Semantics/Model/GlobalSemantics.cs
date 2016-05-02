@@ -26,16 +26,26 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             _compilation = compilation;
         }
 
+        internal static ImmutableArray<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
+        {
+            return compilation.GetBoundReferenceManager()
+                .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>().Where(s => s.IsExtensionLibrary)
+                .SelectMany(r => r.ExtensionContainers)
+                .ToImmutableArray();
+        }
+
+        internal static bool IsFunction(MethodSymbol method)
+        {
+            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary;
+        }
+
         ImmutableArray<NamedTypeSymbol> ExtensionContainers
         {
             get
             {
                 if (_lazyExtensionContainers.IsDefault)
                 {
-                    _lazyExtensionContainers = _compilation.GetBoundReferenceManager()
-                        .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>().Where(s => s.IsExtensionLibrary)
-                        .SelectMany(r => r.ExtensionContainers)
-                        .ToImmutableArray();
+                    _lazyExtensionContainers = ResolveExtensionContainers(_compilation);
                 }
 
                 return _lazyExtensionContainers;
@@ -69,7 +79,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         {
             var result =
                 // library functions, public static methods
-                ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName()).Where(s => s.IsStatic && s.DeclaredAccessibility == Accessibility.Public).OfType<ISemanticFunction>())
+                ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName())).OfType<MethodSymbol>().Where(IsFunction).OfType<ISemanticFunction>()
                 // source functions
                 .Concat(Next.ResolveFunction(name));
 

@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.Semantics.Model;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,9 @@ namespace Pchp.CodeAnalysis.Emit
 {
     partial class PEModuleBuilder
     {
+        /// <summary>
+        /// Create real CIL entry point, where it calls given method.
+        /// </summary>
         internal void CreateEntryPoint(MethodSymbol method, DiagnosticBag diagnostic)
         {
             // "static void Main()"
@@ -86,6 +90,42 @@ namespace Pchp.CodeAnalysis.Emit
 
             //
             this.ScriptType.EntryPointSymbol = realmethod;
+        }
+
+        /// <summary>
+        /// Emit body of enumeration of referenced functions.
+        /// </summary>
+        internal void CreateFunctionReflection(DiagnosticBag diagnostic)
+        {
+            var method = this.ScriptType.EnumerateReferencedFunctionsSymbol;
+            var functions = GlobalSemantics.ResolveExtensionContainers(this.Compilation)
+                .SelectMany(c => c.GetMembers().OfType<MethodSymbol>())
+                .Where(GlobalSemantics.IsFunction);
+
+            // void (Action<string, RuntimeMethodHandle> callback)
+            var body = MethodGenerator.GenerateMethodBody(this, method,
+                (il) =>
+                {
+                    var action_string_method = method.Parameters[0].Type;
+                    Debug.Assert(action_string_method.Name == "Action");
+                    var invoke = action_string_method.DelegateInvokeMethod();
+                    Debug.Assert(invoke != null);
+
+                    foreach (var f in functions)
+                    {
+                        // callback.Invoke(f.Name, f)
+                        il.EmitLoadArgumentOpcode(0);
+                        il.EmitStringConstant(f.Name);
+                        il.EmitLoadToken(this, diagnostic, f, null);
+                        il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
+                    }
+
+                    //
+                    il.EmitRet(true);
+                },
+                null, diagnostic, false);
+
+            SetMethodBody(method, body);
         }
     }
 }

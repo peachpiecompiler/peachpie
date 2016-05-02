@@ -22,7 +22,7 @@ namespace Pchp.Core
             where THandleComparerFactory : Utilities.IProvider<IEqualityComparer<THandle>>, new()
         {
             /// <summary>
-            /// Map of referenced symbols.
+            /// MultiMap of referenced symbols.
             /// Initialized lazily, applies for the whole application and all the contexts.
             /// </summary>
             readonly static Dictionary<string, THandle[]> _referencedSymbols;
@@ -64,6 +64,34 @@ namespace Pchp.Core
             }
 
             /// <summary>
+            /// Adds referenced symbol into the map.
+            /// In case of redeclaration, the handle is added to the list.
+            /// </summary>
+            public static void AddReferencedSymbol(string name, THandle handle)
+            {
+                // TODO W lock
+
+                THandle[] handles;
+                if (_referencedSymbols.TryGetValue(name, out handles))
+                {
+                    if (handles.Contains(handle))
+                        return;
+
+                    // note: rare case
+                    var length = handles.Length;
+                    Array.Resize(ref handles, length + 1);
+                    handles[length] = handle;
+                }
+                else
+                {
+                    handles = new THandle[] { handle };
+                }
+
+                //
+                _referencedSymbols[name] = handles;
+            }
+
+            /// <summary>
             /// Gets handles associated with given name.
             /// </summary>
             /// <param name="name">Symbol name.</param>
@@ -75,6 +103,8 @@ namespace Pchp.Core
             /// </returns>
             public THandle[] TryGetHandle(string name)
             {
+                Debug.Assert(!string.IsNullOrEmpty(name));
+
                 // lookup app tables
                 THandle[] handles;
                 if (_referencedSymbols.TryGetValue(name, out handles))  // TODO: RW lock
@@ -84,7 +114,7 @@ namespace Pchp.Core
 
                 // lookup context tables
                 int index;
-                if (_nameMap.TryGetValue(name, out index))
+                if (_nameMap.TryGetValue(name, out index))  // TODO: RW lock
                 {
                     var handle = _runtimeSymbols[index];
                     if (handle != null)
@@ -113,6 +143,7 @@ namespace Pchp.Core
             public void Declare(ref int index, string name, THandle handle)
             {
                 Debug.Assert(!string.IsNullOrEmpty(name));
+                Debug.Assert(!_referencedSymbols.ContainsKey(name));
 
                 EnsureIndex(ref index, name);
                 EnsureSize(index);
