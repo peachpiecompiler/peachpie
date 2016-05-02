@@ -38,6 +38,7 @@
     <AssemblyOriginatorKeyFile>$(SolutionDir)build\StrongKeys\core.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Context.HandleMap.cs" />
     <Compile Include="Dynamic\OverloadResolver.cs" />
     <Compile Include="OrderedDictionary.cs" />
     <Compile Include="PhpArray.cs" />
@@ -67,6 +68,7 @@
     <Compile Include="PhpTypeCode.cs" />
     <Compile Include="PhpValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities\IProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PhpValue.TypeTable.cs" />

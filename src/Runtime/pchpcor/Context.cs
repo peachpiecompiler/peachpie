@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -82,7 +83,7 @@ namespace Pchp.Core
         {
             if (_statics.Length <= idx)
             {
-                Array.Resize(ref _statics, idx * 2);
+                Array.Resize(ref _statics, (idx + 1) * 2);
             }
         }
 
