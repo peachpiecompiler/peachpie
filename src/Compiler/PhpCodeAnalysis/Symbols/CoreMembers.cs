@@ -560,11 +560,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 CreateConsole = ct.Context.Method("CreateConsole");
                 Dispose = ct.Context.Method("Dispose");
 
+                DeclareFunction_intRef_string_method = ct.Context.Method("DeclareFunction", ct.Int32, ct.String, ct.RuntimeMethodHandle);
+                DeclareType_T_string = ct.Context.Method("DeclareType", ct.String);
+
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
             }
 
             public readonly CoreMethod
                 CreateConsole,
+                DeclareFunction_intRef_string_method, DeclareType_T_string,
                 Dispose;
 
             public readonly CoreMethod
