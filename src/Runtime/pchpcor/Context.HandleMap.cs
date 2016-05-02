@@ -61,7 +61,7 @@ namespace Pchp.Core
             /// <summary>
             /// Lazily loads referenced symbols.
             /// </summary>
-            static void EnsureReferencedSymbols()
+         internal   static void EnsureReferencedSymbols()
             {
                 while (_referencedSymbolsLoaders.Count != 0)
                 {
@@ -96,7 +96,7 @@ namespace Pchp.Core
             public static void AddReferencedSymbol(string name, THandle handle)
             {
                 // TODO: W lock
-
+                
                 THandle[] handles;
                 if (_referencedSymbols.TryGetValue(name, out handles))
                 {

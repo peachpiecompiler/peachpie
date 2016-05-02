@@ -27,7 +27,7 @@ namespace Pchp.Core
     {
         #region Create
 
-        private Context()
+        protected Context()
         {
             _functions = new TFunctionsMap(FunctionRedeclared);
             _types = new TTypesMap(TypeRedeclared);
@@ -40,7 +40,7 @@ namespace Pchp.Core
         /// <summary>
         /// Create context to be used within a console application.
         /// </summary>
-        public static Context CreateConsole()
+        internal static Context CreateConsole()
         {
             return new Context();
         }
@@ -61,7 +61,11 @@ namespace Pchp.Core
 
         // TODO: global constants
 
-        public static void AddScriptReference<TScript>() => AddScriptReference(typeof(TScript));
+        /// <summary>
+        /// Internal method to be used by loader to load referenced symbols.
+        /// </summary>
+        /// <typeparam name="TScript"><c>&lt;Script&gt;</c> type in compiled assembly. The type contains static methods for enumerating referenced symbols.</typeparam>
+        internal static void AddScriptReference<TScript>() => AddScriptReference(typeof(TScript));
 
         private static void AddScriptReference(Type tscript)
         {
@@ -81,12 +85,12 @@ namespace Pchp.Core
         /// <param name="index">Index variable.</param>
         /// <param name="name">Fuction name.</param>
         /// <param name="handle">Function runtime handle.</param>
-        public void DeclareFunction(ref int index, string name, RuntimeMethodHandle handle)
+        internal void DeclareFunction(ref int index, string name, RuntimeMethodHandle handle)
         {
             _functions.Declare(ref index, name, handle);
         }
 
-        public void AssertFunctionDeclared(ref int index, string name, RuntimeMethodHandle handle)
+        internal void AssertFunctionDeclared(ref int index, string name, RuntimeMethodHandle handle)
         {
             if (!_functions.IsDeclared(ref index, name, handle))
             {
@@ -104,12 +108,12 @@ namespace Pchp.Core
         /// </summary>
         /// <typeparam name="T">Type.</typeparam>
         /// <param name="name">Type name.</param>
-        public void DeclareType<T>(string name)
+        internal void DeclareType<T>(string name)
         {
             _types.Declare(ref IndexHolder<T>.Index, name, typeof(T));
         }
 
-        public void AssertTypeDeclared<T>(string name)
+        internal void AssertTypeDeclared<T>(string name)
         {
             if (!_types.IsDeclared(ref IndexHolder<T>.Index, name, typeof(T)))
             {

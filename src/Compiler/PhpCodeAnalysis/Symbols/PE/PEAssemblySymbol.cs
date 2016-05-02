@@ -53,7 +53,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// A DocumentationProvider that provides XML documentation comments for this assembly.
         /// </summary>
         readonly DocumentationProvider _documentationProvider;
-        
+
         internal PEAssembly Assembly => _assembly;
 
         public override AssemblyIdentity Identity => _assembly.Identity;
@@ -123,7 +123,7 @@ namespace Pchp.CodeAnalysis.Symbols
             else if (assembly.Identity.Name == "pchpcor")
             {
                 _specialAssembly = SpecialAssembly.PchpCorLibrary;
-                
+
                 // initialize CoreTypes
                 this.PrimaryModule.GlobalNamespace.GetTypeMembers();
             }
@@ -134,13 +134,17 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal static bool IsPchpCor(PEAssembly ass) => ass.Identity.Name == "pchpcor";
+
         internal static PEAssemblySymbol Create(PortableExecutableReference reference)
         {
             var data = (AssemblyMetadata)reference.GetMetadata();
             //var data = AssemblyMetadata.CreateFromFile(reference.FilePath);
             var ass = data.GetAssembly();
 
-            return new PEAssemblySymbol(ass, DocumentationProvider.Default, true, MetadataImportOptions.Public);
+            return new PEAssemblySymbol(
+                ass, DocumentationProvider.Default, true,
+                IsPchpCor(ass) ? MetadataImportOptions.Internal : MetadataImportOptions.Public);
         }
 
         /// <summary>
