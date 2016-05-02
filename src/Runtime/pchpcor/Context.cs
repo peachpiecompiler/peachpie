@@ -38,9 +38,15 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Create context to be used within a console application.
+        /// Creates context to be used within a console application.
         /// </summary>
         internal static Context CreateConsole()
+        {
+            return new Context();
+            // TODO: Add console output filter
+        }
+
+        public static Context CreateEmpty()
         {
             return new Context();
         }
@@ -72,7 +78,7 @@ namespace Pchp.Core
             Debug.Assert(tscript != null);
             Debug.Assert(tscript.Name == "<Script>");
 
-            TFunctionsMap.LazyReferencedSymbols(() =>
+            TFunctionsMap.LazyAddReferencedSymbols(() =>
             {
                 tscript.GetTypeInfo().GetDeclaredMethod("EnumerateReferencedFunctions")
                     .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(TFunctionsMap.AddReferencedSymbol) });

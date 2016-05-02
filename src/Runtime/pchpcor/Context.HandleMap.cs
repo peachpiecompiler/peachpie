@@ -84,7 +84,7 @@ namespace Pchp.Core
                 _redeclarationCallback = redeclarationAction;
             }
 
-            public static void LazyReferencedSymbols(Action action)
+            public static void LazyAddReferencedSymbols(Action action)
             {
                 _referencedSymbolsLoaders.Enqueue(action);
             }
