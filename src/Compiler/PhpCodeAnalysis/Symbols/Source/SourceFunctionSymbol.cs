@@ -21,6 +21,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SourceFileSymbol _file;
         readonly FunctionDecl _syntax;
 
+        FieldSymbol _lazyIndexField;    // internal static int <name>idx;
+
         public SourceFunctionSymbol(SourceFileSymbol file, FunctionDecl syntax)
         {
             Contract.ThrowIfNull(file);
@@ -28,6 +30,17 @@ namespace Pchp.CodeAnalysis.Symbols
             _file = file;
             _syntax = syntax;
             _params = BuildParameters(syntax.Signature, syntax.PHPDoc).AsImmutable();
+        }
+
+        public FieldSymbol IndexField
+        {
+            get
+            {
+                if (_lazyIndexField == null)
+                    _lazyIndexField = ((IWithSynthesized)_file).CreateSynthesizedField(this.DeclaringCompilation.CoreTypes.Int32, $"<{this.Name}>idx", Accessibility.Internal, true);
+
+                return _lazyIndexField;
+            }
         }
 
         public override ParameterSymbol ThisParameter => null;
