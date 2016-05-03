@@ -34,42 +34,21 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly List<SourceFunctionSymbol> _functions = new List<SourceFunctionSymbol>();
 
         readonly List<SynthesizedFieldSymbol> _fields = new List<SynthesizedFieldSymbol>();
-        SynthesizedFieldSymbol _lazyIndexField;
-
+        
         SynthesizedCctorSymbol _lazyCctorSymbol;
-
-        /// <summary>
-        /// Unique ordinal of the source file.
-        /// Used in runtime in bit arrays to check whether the file was included.
-        /// </summary>
-        public int Ordinal => _index;
-        readonly int _index;
 
         public GlobalCode Syntax => _syntax;
 
         public SourceModuleSymbol SourceModule => _compilation.SourceModule;
 
-        public SourceFileSymbol(PhpCompilation compilation, GlobalCode syntax, int index)
+        public SourceFileSymbol(PhpCompilation compilation, GlobalCode syntax)
         {
             Contract.ThrowIfNull(compilation);
             Contract.ThrowIfNull(syntax);
-            Debug.Assert(index >= 0);
 
             _compilation = compilation;
             _syntax = syntax;
-            _index = index;
             _mainMethod = new SourceGlobalMethodSymbol(this);
-        }
-
-        private FieldSymbol GetIndexField()
-        {
-            if (_lazyIndexField == null)
-            {
-                _lazyIndexField = new SynthesizedFieldSymbol(this, (NamedTypeSymbol)_compilation.GetSpecialType(SpecialType.System_Int32), "<Ordinal>", Accessibility.Internal, ConstantValue.Create(_index));
-                _fields.Add(_lazyIndexField);
-            }
-
-            return _lazyIndexField;
         }
 
         /// <summary>
@@ -86,22 +65,59 @@ namespace Pchp.CodeAnalysis.Symbols
             _functions.Add(routine);
         }
 
-        public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath).Replace('.', '_');
+        internal string RelativeFilePath
+        {
+            get
+            {
+                // TODO: move to Utils
+                var path = _syntax.SourceUnit.FilePath;
+                var basedir = _compilation.Options.BaseDirectory;
+
+                int levelups = 0;
+
+                while (!path.StartsWith(basedir, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    levelups++;
+                    basedir = PathUtilities.GetDirectoryName(basedir);
+
+                    if (basedir == null)
+                    {
+                        throw new ArgumentException();  // cannot make relative path
+                    }
+                }
+
+                return
+                    string.Join(string.Empty, Enumerable.Repeat(".." + PathUtilities.DirectorySeparatorStr, levelups)) +
+                    path.Substring(basedir.Length + 1);
+            }
+        }
+
+        public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath, true);//.Replace('.', '_');
 
         public override string NamespaceName
         {
             get
             {
-                var path = _syntax.SourceUnit.FilePath;
-                return "<Files>"; // + PathUtilities.GetDirectoryName(path);   // TODO: something nice, relative directory
+                var dir = (PathUtilities.GetDirectoryName(this.RelativeFilePath) ?? string.Empty)
+                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
+
+                var parts = dir.Split(new char[] { PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+
+                return WellKnownPchpNames.ScriptsRootNamespace + string.Join(null, parts.Select(p => "." + p));
             }
+        }
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            // TODO: [ScriptAttribute(RelativeFilePath, LastWriteTime)]
+            return base.GetAttributes();
         }
 
         public override NamedTypeSymbol BaseType
         {
             get
             {
-                return DeclaringCompilation.CoreTypes.Object.Symbol;
+                return _compilation.CoreTypes.Object;
             }
         }
 
@@ -167,7 +183,6 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyCctorSymbol != null)
                 builder.Add(_lazyCctorSymbol);
 
-            GetIndexField();
             builder.AddRange(_fields);
 
             return builder.ToImmutable();

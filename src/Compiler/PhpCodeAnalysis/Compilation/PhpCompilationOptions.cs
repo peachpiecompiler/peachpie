@@ -17,14 +17,10 @@ namespace Pchp.CodeAnalysis
     public sealed class PhpCompilationOptions : CompilationOptions, IEquatable<PhpCompilationOptions>
     {
         /// <summary>
-        /// Allow unsafe regions (i.e. unsafe modifiers on members and unsafe blocks).
+        /// Compilation root directory.
+        /// All script paths will be emitted relatively to this path.
         /// </summary>
-        public bool AllowUnsafe { get; private set; }
-
-        /// <summary>
-        /// Global namespace usings.
-        /// </summary>
-        public ImmutableArray<string> Usings { get; private set; }
+        public string BaseDirectory { get; private set; }
 
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
@@ -36,14 +32,13 @@ namespace Pchp.CodeAnalysis
         // That's significant when one option depends on another's setting. SubsystemVersion depends on Platform and Target.
         public PhpCompilationOptions(
             OutputKind outputKind,
+            string baseDirectory,
             bool reportSuppressedDiagnostics = false,
             string moduleName = null,
             string mainTypeName = null,
             string scriptClassName = null,
-            IEnumerable<string> usings = null,
             OptimizationLevel optimizationLevel = OptimizationLevel.Debug,
             bool checkOverflow = false,
-            bool allowUnsafe = false,
             string cryptoKeyContainer = null,
             string cryptoKeyFile = null,
             ImmutableArray<byte> cryptoPublicKey = default(ImmutableArray<byte>),
@@ -60,8 +55,9 @@ namespace Pchp.CodeAnalysis
             AssemblyIdentityComparer assemblyIdentityComparer = null,
             StrongNameProvider strongNameProvider = null,
             bool publicSign = false)
-            : this(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
-                   usings, optimizationLevel, checkOverflow, allowUnsafe,
+            : this(outputKind, baseDirectory,
+                   reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
+                   optimizationLevel, checkOverflow,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, platform,
                    generalDiagnosticOption, warningLevel,
                    specificDiagnosticOptions, concurrentBuild, deterministic,
@@ -80,14 +76,13 @@ namespace Pchp.CodeAnalysis
         // Expects correct arguments.
         internal PhpCompilationOptions(
             OutputKind outputKind,
+            string baseDirectory,
             bool reportSuppressedDiagnostics,
             string moduleName,
             string mainTypeName,
             string scriptClassName,
-            IEnumerable<string> usings,
             OptimizationLevel optimizationLevel,
             bool checkOverflow,
-            bool allowUnsafe,
             string cryptoKeyContainer,
             string cryptoKeyFile,
             ImmutableArray<byte> cryptoPublicKey,
@@ -114,19 +109,17 @@ namespace Pchp.CodeAnalysis
                    sourceReferenceResolver, metadataReferenceResolver, assemblyIdentityComparer,
                    strongNameProvider, metadataImportOptions)
         {
-            this.Usings = usings.AsImmutableOrEmpty();
-            this.AllowUnsafe = allowUnsafe;
+            this.BaseDirectory = baseDirectory;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
             outputKind: other.OutputKind,
+            baseDirectory: other.BaseDirectory,
             moduleName: other.ModuleName,
             mainTypeName: other.MainTypeName,
             scriptClassName: other.ScriptClassName,
-            usings: other.Usings,
             optimizationLevel: other.OptimizationLevel,
             checkOverflow: other.CheckOverflow,
-            allowUnsafe: other.AllowUnsafe,
             cryptoKeyContainer: other.CryptoKeyContainer,
             cryptoKeyFile: other.CryptoKeyFile,
             cryptoPublicKey: other.CryptoPublicKey,
@@ -150,7 +143,7 @@ namespace Pchp.CodeAnalysis
         {
         }
 
-        internal override ImmutableArray<string> GetImports() => Usings;
+        internal override ImmutableArray<string> GetImports() => ImmutableArray<string>.Empty; // Usings;
 
         public new PhpCompilationOptions WithOutputKind(OutputKind kind)
         {
@@ -237,21 +230,6 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { DelaySign = value };
         }
 
-        public PhpCompilationOptions WithUsings(ImmutableArray<string> usings)
-        {
-            if (this.Usings == usings)
-            {
-                return this;
-            }
-
-            return new PhpCompilationOptions(this) { Usings = usings };
-        }
-
-        public PhpCompilationOptions WithUsings(IEnumerable<string> usings) =>
-            new PhpCompilationOptions(this) { Usings = usings.AsImmutableOrEmpty() };
-
-        public PhpCompilationOptions WithUsings(params string[] usings) => WithUsings((IEnumerable<string>)usings);
-
         public new PhpCompilationOptions WithOptimizationLevel(OptimizationLevel value)
         {
             if (value == this.OptimizationLevel)
@@ -270,16 +248,6 @@ namespace Pchp.CodeAnalysis
             }
 
             return new PhpCompilationOptions(this) { CheckOverflow = enabled };
-        }
-
-        public PhpCompilationOptions WithAllowUnsafe(bool enabled)
-        {
-            if (enabled == this.AllowUnsafe)
-            {
-                return this;
-            }
-
-            return new PhpCompilationOptions(this) { AllowUnsafe = enabled };
         }
 
         public new PhpCompilationOptions WithPlatform(Platform platform)
@@ -589,8 +557,7 @@ namespace Pchp.CodeAnalysis
                 return false;
             }
 
-            return this.AllowUnsafe == other.AllowUnsafe &&
-                   (this.Usings == null ? other.Usings == null : this.Usings.SequenceEqual(other.Usings, StringComparer.Ordinal));
+            return true;
         }
 
         public override bool Equals(object obj)
@@ -600,9 +567,7 @@ namespace Pchp.CodeAnalysis
 
         public override int GetHashCode()
         {
-            return Hash.Combine(base.GetHashCodeHelper(),
-                   Hash.Combine(this.AllowUnsafe,
-                   Hash.Combine(Hash.CombineValues(this.Usings, StringComparer.Ordinal), 0)));
+            return base.GetHashCodeHelper();
         }
 
         internal override Diagnostic FilterDiagnostic(Diagnostic diagnostic)

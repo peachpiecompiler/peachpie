@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (unit != null && unit.Ast != null)
                 {
-                    _currentFile = new SourceFileSymbol(_compilation, unit.Ast, _tables._files.Count);
+                    _currentFile = new SourceFileSymbol(_compilation, unit.Ast);
                     _tables._files.Add(unit.FilePath, _currentFile);
 
                     VisitGlobalCode(unit.Ast);

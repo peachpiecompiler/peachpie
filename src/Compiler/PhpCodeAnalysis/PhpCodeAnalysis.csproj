@@ -231,6 +231,7 @@
     <Compile Include="Symbols\TypeSymbolExtensions.cs" />
     <Compile Include="Symbols\TypeWithModifiers.cs" />
     <Compile Include="Symbols\UnboundGenericType.cs" />
+    <Compile Include="Symbols\WellKnownPchpNames.cs" />
     <Compile Include="Symbols\WrappedParameterSymbol.cs" />
     <Compile Include="Syntax\SyntaxTreeAdapter.cs" />
     <Compile Include="Utilities\AstUtils.cs" />

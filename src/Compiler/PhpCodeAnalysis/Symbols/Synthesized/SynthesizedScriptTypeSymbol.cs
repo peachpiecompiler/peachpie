@@ -29,6 +29,14 @@ namespace Pchp.CodeAnalysis.Symbols
         internal MethodSymbol EnumerateReferencedFunctionsSymbol => _enumerateReferencedFunctionsSymbol ?? (_enumerateReferencedFunctionsSymbol = CreateEnumerateReferencedFunctionsSymbol());
         MethodSymbol _enumerateReferencedFunctionsSymbol;
 
+        /// <summary>
+        /// Method that enumerates all script files.
+        /// 
+        /// EnumerateScripts(Action&lt;string, RuntimeMethodHandle&gt; callback)
+        /// </summary>
+        internal MethodSymbol EnumerateScriptsSymbol => _enumerateScripsSymbol ?? (_enumerateScripsSymbol = CreateEnumerateScriptsSymbol());
+        MethodSymbol _enumerateScripsSymbol;
+
         public SynthesizedScriptTypeSymbol(PhpCompilation compilation)
         {
             _compilation = compilation;
@@ -64,7 +72,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override string Name => $"<{WellKnownMemberNames.DefaultScriptClassName}>";
+        public override string Name => WellKnownPchpNames.DefaultScriptClassName;
+
+        public override string NamespaceName => string.Empty;
 
         public override NamedTypeSymbol BaseType => _compilation.CoreTypes.Object;
 
@@ -87,6 +97,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var list = new List<Symbol>()
             {
                 this.EnumerateReferencedFunctionsSymbol,
+                this.EnumerateScriptsSymbol,
             };
 
             //
@@ -120,6 +131,23 @@ namespace Pchp.CodeAnalysis.Symbols
             var action_string_method = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.RuntimeMethodHandle);
 
             var method = new SynthesizedMethodSymbol(this, "EnumerateReferencedFunctions", true, compilation.CoreTypes.Void, Accessibility.Public);
+            method.SetParameters(new SynthesizedParameterSymbol(method, action_string_method, 0, RefKind.None, "callback"));
+
+            //
+            return method;
+        }
+
+        /// <summary>
+        /// Method that enumerates all script Main functions.
+        /// EnumerateScripts(Action&lt;string, RuntimeMethodHandle&gt; callback)
+        /// </summary>
+        MethodSymbol CreateEnumerateScriptsSymbol()
+        {
+            var compilation = DeclaringCompilation;
+            var action_T2 = compilation.GetWellKnownType(WellKnownType.System_Action_T2);
+            var action_string_method = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.RuntimeMethodHandle);
+
+            var method = new SynthesizedMethodSymbol(this, "EnumerateScripts", true, compilation.CoreTypes.Void, Accessibility.Public);
             method.SetParameters(new SynthesizedParameterSymbol(method, action_string_method, 0, RefKind.None, "callback"));
 
             //

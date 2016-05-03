@@ -16,8 +16,6 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     sealed class SourceGlobalMethodSymbol : SourceRoutineSymbol
     {
-        public const string GlobalRoutineName = "<Main>";
-
         readonly SourceFileSymbol _file;
 
         public SourceGlobalMethodSymbol(SourceFileSymbol file)
@@ -54,7 +52,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override string Name => GlobalRoutineName;
+        public override string Name => WellKnownPchpNames.GlobalRoutineName;
 
         public override Symbol ContainingSymbol => _file;
 

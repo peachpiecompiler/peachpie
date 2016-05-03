@@ -223,13 +223,13 @@ namespace Pchp.CodeAnalysis.CommandLine
             var options = new PhpCompilationOptions
             (
                 outputKind: outputKind,
+                baseDirectory: baseDirectory,
                 moduleName: moduleName,
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 checkOverflow: false, // checkOverflow,
-                allowUnsafe: false, // allowUnsafe,
                                     //deterministic: deterministic,
                 concurrentBuild: false, //concurrentBuild,  // TODO: true in Release
                                         //cryptoKeyContainer: keyContainerSetting,
