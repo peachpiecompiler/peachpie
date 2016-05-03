@@ -87,7 +87,6 @@ namespace Pchp.Core
 
             public static void LazyAddReferencedSymbols(Action action)
             {
-                action.GetMethodInfo().
                 _referencedSymbolsLoaders.Enqueue(action);
             }
 
