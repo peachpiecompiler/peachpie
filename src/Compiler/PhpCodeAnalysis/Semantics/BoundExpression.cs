@@ -722,7 +722,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public Operations Operation { get; private set; }
 
-        protected BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Operations op)
+        public BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Operations op)
             : base(target, value)
         {
             this.Operation = op;

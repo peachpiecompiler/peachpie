@@ -634,7 +634,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         }
                         //else
                         //{
-                        //    // Opewrator.Compare(x, y) : int
+                        //    // Operator.Compare(x, y) : int
                         //}
 
                         //// lt <=> comparison < 0
@@ -835,16 +835,20 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         TypeSymbol EmitPow(CodeGenerator cg)
         {
+            return EmitPow(cg, cg.Emit(Left), Left.TypeRefMask, Right);
+        }
+
+        internal static TypeSymbol EmitPow(CodeGenerator cg, TypeSymbol xtype, FlowAnalysis.TypeRefMask xtype_hint, BoundExpression right)
+        {
             var il = cg.Builder;
 
             TypeSymbol ytype;
-            var xtype = cg.Emit(Left);
             xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> long
 
             switch (xtype.SpecialType)
             {
                 case SpecialType.System_Int64:
-                    ytype = cg.EmitConvertIntToLong(cg.Emit(Right));    // int|bool -> long
+                    ytype = cg.EmitConvertIntToLong(cg.Emit(right));    // int|bool -> long
 
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
@@ -862,14 +866,14 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Pow_long_number);
                     }
                     // y -> PhpValue
-                    cg.EmitConvert(ytype, Right.TypeRefMask, cg.CoreTypes.PhpValue);
+                    cg.EmitConvert(ytype, right.TypeRefMask, cg.CoreTypes.PhpValue);
                     ytype = cg.CoreTypes.PhpValue;
                     
                     // i8 ** value : number
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Pow_long_value);
 
                 case SpecialType.System_Double:
-                    ytype = cg.EmitConvertNumberToDouble(Right);    // int|bool|long|number -> double
+                    ytype = cg.EmitConvertNumberToDouble(right);    // int|bool|long|number -> double
 
                     if (ytype.SpecialType == SpecialType.System_Double)
                     {
@@ -877,7 +881,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Pow_double_double);
                     }
                     // y -> PhpValue
-                    cg.EmitConvert(ytype, Right.TypeRefMask, cg.CoreTypes.PhpValue);
+                    cg.EmitConvert(ytype, right.TypeRefMask, cg.CoreTypes.PhpValue);
                     ytype = cg.CoreTypes.PhpValue;
 
                     // r8 ** value : r8
@@ -886,7 +890,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(Right));    // int|bool -> long
+                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));    // int|bool -> long
                         if (ytype == cg.CoreTypes.Double)
                         {
                             // number ** r8 : r8
@@ -906,15 +910,15 @@ namespace Pchp.CodeAnalysis.Semantics
                         }
 
                         // y -> PhpValue
-                        ytype = cg.EmitConvertToPhpValue(ytype, Right.TypeRefMask);
+                        ytype = cg.EmitConvertToPhpValue(ytype, right.TypeRefMask);
 
                         // number ** value : number
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Pow_number_value);
                     }
 
                     // x -> PhpValue
-                    xtype = cg.EmitConvertToPhpValue(xtype, Left.TypeRefMask);
-                    cg.EmitConvert(Right, cg.CoreTypes.PhpValue);
+                    xtype = cg.EmitConvertToPhpValue(xtype, xtype_hint);
+                    cg.EmitConvert(right, cg.CoreTypes.PhpValue);
                     ytype = cg.CoreTypes.PhpValue;
 
                     // value ** value : number
@@ -2011,7 +2015,98 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            throw new NotSupportedException();  // TODO
+            Debug.Assert(Access.IsRead || Access.IsNone);
+
+            // target = target X value;
+
+            var target_place = this.Target.BindPlace(cg);
+            Debug.Assert(target_place != null);
+            Debug.Assert(target_place.TypeOpt == null || target_place.TypeOpt.SpecialType != SpecialType.System_Void);
+
+            // helper class maintaining reference to already evaluated instance of the eventual chain
+            var instance = new InstanceCacheHolder();
+
+            // <target> = <target> X <value>
+            target_place.EmitStorePrepare(cg, instance);
+
+            //
+            target_place.EmitLoadPrepare(cg, instance);
+            var xtype = target_place.EmitLoad(cg);
+
+            TypeSymbol result_type;
+
+            switch (this.Operation)
+            {
+                case Operations.AssignAdd:
+                    result_type = BoundBinaryEx.EmitAdd(cg, xtype, Value, target_place.TypeOpt);
+                    break;
+                //case Operations.AssignAnd:
+                //    binaryop = Operations.And;
+                //    break;
+                //case Operations.AssignAppend:
+                //    binaryop = Operations.Concat;
+                //    break;
+                //case Operations.AssignDiv:
+                //    binaryop = Operations.Div;
+                //    break;
+                //case Operations.AssignMod:
+                //    binaryop = Operations.Mod;
+                //    break;
+                //case Operations.AssignMul:
+                //    binaryop = Operations.Mul;
+                //    break;
+                //case Operations.AssignOr:
+                //    binaryop = Operations.Or;
+                //    break;
+                case Operations.AssignPow:
+                    result_type = BoundBinaryEx.EmitPow(cg, xtype, /*this.Target.TypeRefMask*/0, Value);
+                    break;
+                ////case Operations.AssignPrepend:
+                ////    break;
+                //case Operations.AssignShiftLeft:
+                //    binaryop = Operations.ShiftLeft;
+                //    break;
+                //case Operations.AssignShiftRight:
+                //    binaryop = Operations.ShiftRight;
+                //    break;
+                case Operations.AssignSub:
+                    result_type = BoundBinaryEx.EmitSub(cg, xtype, Value, target_place.TypeOpt);
+                    break;
+                //case Operations.AssignXor:
+                //    binaryop = Operations.Xor;
+                //    break;
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(this.Operation);
+            }
+
+            LocalDefinition tmp = null;
+
+            switch (this.Access.Flags)
+            {
+                case AccessMask.Read:
+                    tmp = cg.GetTemporaryLocal(result_type, false);
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.Builder.EmitLocalStore(tmp);
+                    cg.ReturnTemporaryLocal(tmp);
+                    break;
+                case AccessMask.None:
+                    break;
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(this.Access);
+            }
+
+            target_place.EmitStore(cg, result_type);
+
+            //
+            switch (this.Access.Flags)
+            {
+                case AccessMask.None:
+                    return cg.CoreTypes.Void;
+                case AccessMask.Read:
+                    return result_type;
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(this.Access);
+            }
         }
     }
 

@@ -349,7 +349,7 @@ namespace Pchp.Core
             PhpNumber x_number;
 
             var x_info = x.ToNumber(out x_number);
-            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new ArgumentException();
             }
@@ -365,7 +365,7 @@ namespace Pchp.Core
             PhpNumber x_number;
 
             var x_info = x.ToNumber(out x_number);
-            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new ArgumentException();
             }
@@ -381,7 +381,7 @@ namespace Pchp.Core
             PhpNumber x_number;
 
             var x_info = x.ToNumber(out x_number);
-            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new NotImplementedException();
             }
@@ -539,7 +539,7 @@ namespace Pchp.Core
             PhpNumber x_number;
 
             var x_info = x.ToNumber(out x_number);
-            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new ArgumentException(); // return 0
             }
@@ -556,7 +556,7 @@ namespace Pchp.Core
             PhpNumber x_number;
 
             var x_info = x.ToNumber(out x_number);
-            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new ArgumentException();  // return 0
             }
@@ -573,7 +573,7 @@ namespace Pchp.Core
             PhpNumber x_number;
 
             var x_info = x.ToNumber(out x_number);
-            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            if ((x_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new ArgumentException();  // return 0
             }

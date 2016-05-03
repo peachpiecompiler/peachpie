@@ -97,7 +97,7 @@ namespace Pchp.Core
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number)
             {
                 number = PhpNumber.Create(0L);
-                return Convert.NumberInfo.Unconvertible;
+                return Convert.NumberInfo.LongInteger;
             }
             public override object EnsureObject(ref PhpValue me)
             {

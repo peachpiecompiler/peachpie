@@ -362,26 +362,65 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region Visit Assignments
 
         public sealed override void VisitAssignmentExpression(IAssignmentExpression operation)
-        => ((BoundExpression)operation).TypeRefMask = VisitAssignmentExpression((BoundAssignEx)operation);
+            => ((BoundExpression)operation).TypeRefMask = VisitAssignmentExpression((BoundAssignEx)operation);
 
-        protected virtual TypeRefMask VisitAssignmentExpression(BoundAssignEx op)
+        protected virtual TypeRefMask VisitAssignmentExpression(BoundAssignEx x)
         {
-            Debug.Assert(op.Target.Access.IsWrite);
-            Debug.Assert(op.Value.Access.IsRead);
+            Debug.Assert(x.Target.Access.IsWrite);
+            Debug.Assert(x.Value.Access.IsRead);
 
-            Visit(op.Value);
+            Visit(x.Value);
 
-            op.Target.Access = op.Target.Access.WithWrite(op.Value.TypeRefMask);
-            Visit(op.Target);
+            x.Target.Access = x.Target.Access.WithWrite(x.Value.TypeRefMask);
+            Visit(x.Target);
 
             //
-            return op.Value.TypeRefMask;
+            return x.Value.TypeRefMask;
+        }
+
+        static Operations CompoundOpToBinaryOp(Operations op)
+        {
+            switch (op)
+            {
+                case Operations.AssignAdd: return Operations.Add;
+                case Operations.AssignAnd: return Operations.And;
+                case Operations.AssignAppend: return Operations.Concat;
+                case Operations.AssignDiv: return Operations.Div;
+                case Operations.AssignMod: return Operations.Mod;
+                case Operations.AssignMul: return Operations.Mul;
+                case Operations.AssignOr: return Operations.Or;
+                case Operations.AssignPow: return Operations.Pow;
+                case Operations.AssignPrepend: return Operations.Concat;
+                case Operations.AssignShiftLeft: return Operations.ShiftLeft;
+                case Operations.AssignShiftRight: return Operations.ShiftRight;
+                case Operations.AssignSub: return Operations.Sub;
+                case Operations.AssignXor: return Operations.Xor;
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(op);
+            }
+        }
+
+        protected virtual TypeRefMask VisitCompoundAssignmentExpression(BoundCompoundAssignEx x)
+        {
+            Debug.Assert(x.Target.Access.IsRead && x.Target.Access.IsWrite);
+            Debug.Assert(x.Value.Access.IsRead);
+
+            // Target X Value
+            var result = VisitBinaryOperatorExpression(new BoundBinaryEx(x.Target.WithAccess(BoundAccess.Read), x.Value, CompoundOpToBinaryOp(x.Operation)), ConditionBranch.AnyResult);
+
+            // Target =
+            x.Target.Access = BoundAccess.Write.WithWrite(result);
+            Visit(x.Target);
+
+            // put read access back
+            x.Target.Access = x.Target.Access.WithRead();
+
+            //
+            return result;
         }
 
         public override void VisitCompoundAssignmentExpression(ICompoundAssignmentExpression operation)
-        {
-            throw new NotImplementedException();
-        }
+            => ((BoundExpression)operation).TypeRefMask = VisitCompoundAssignmentExpression((BoundCompoundAssignEx)operation);
 
         public override void VisitLocalReferenceExpression(ILocalReferenceExpression operation)
         {
