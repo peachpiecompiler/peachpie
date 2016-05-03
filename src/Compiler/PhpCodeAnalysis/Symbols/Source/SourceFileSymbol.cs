@@ -100,11 +100,10 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var dir = (PathUtilities.GetDirectoryName(this.RelativeFilePath) ?? string.Empty)
-                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
+                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar)
+                    .Replace(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
 
-                var parts = dir.Split(new char[] { PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
-
-                return WellKnownPchpNames.ScriptsRootNamespace + string.Join(null, parts.Select(p => "." + p));
+                return WellKnownPchpNames.ScriptsRootNamespace + dir;
             }
         }
 
