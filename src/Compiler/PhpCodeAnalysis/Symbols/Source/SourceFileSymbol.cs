@@ -78,7 +78,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 while (!path.StartsWith(basedir, StringComparison.CurrentCultureIgnoreCase))
                 {
                     levelups++;
-                    basedir = PathUtilities.GetDirectoryName(basedir);
+                    basedir = PathUtilities.GetDirectoryName(basedir)
+                        .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
 
                     if (basedir == null)
                     {
