@@ -398,7 +398,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_long_number)
                             .Expect(cg.CoreTypes.PhpNumber);
                     }
-                    throw new NotImplementedException();
+                    throw new NotImplementedException($"Sub(long, {ytype.Name})");
                 case SpecialType.System_Double:
                     ytype = cg.EmitConvertNumberToDouble(Right); // bool|int|long|number -> double
                     if (ytype.SpecialType == SpecialType.System_Double)
@@ -407,20 +407,20 @@ namespace Pchp.CodeAnalysis.Semantics
                         il.EmitOpCode(ILOpCode.Sub);
                         return cg.CoreTypes.Double;
                     }
-                    throw new NotImplementedException();
+                    throw new NotImplementedException($"Sub(double, {ytype.Name})");
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
                         ytype = cg.EmitConvertIntToLong(cg.Emit(Right));
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {
-                            // number - long : number
+                            // number - i8 : number
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_number_long)
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
                         else if (ytype.SpecialType == SpecialType.System_Double)
                         {
-                            // number - double : double
+                            // number - r8 : double
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_number_double)
                                 .Expect(SpecialType.System_Double);
                         }
@@ -430,8 +430,42 @@ namespace Pchp.CodeAnalysis.Semantics
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_number_number)
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
+
+                        throw new NotImplementedException($"Sub(PhpNumber, {ytype.Name})");
                     }
-                    throw new NotImplementedException();
+                    else if (xtype == cg.CoreTypes.PhpValue)
+                    {
+                        ytype = cg.EmitConvertIntToLong(cg.Emit(Right));
+
+                        if (ytype.SpecialType == SpecialType.System_Int64)
+                        {
+                            // value - i8 : number
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_value_long)
+                                .Expect(cg.CoreTypes.PhpNumber);
+                        }
+                        else if (ytype.SpecialType == SpecialType.System_Double)
+                        {
+                            // value - r8 : r8
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_value_double)
+                                .Expect(SpecialType.System_Double);
+                        }
+                        else if (ytype == cg.CoreTypes.PhpNumber)
+                        {
+                            // value - number : number
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_value_number)
+                                .Expect(cg.CoreTypes.PhpNumber);
+                        }
+                        else if (ytype == cg.CoreTypes.PhpValue)
+                        {
+                            // value - value : number
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_value_value)
+                                .Expect(cg.CoreTypes.PhpNumber);
+                        }
+
+                        throw new NotImplementedException($"Sub(PhpValue, {ytype.Name})");
+                    }
+
+                    throw new NotImplementedException($"Sub({xtype.Name},...)");
             }
         }
 

@@ -425,6 +425,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 Subtract_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Subtract_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.Long, ct.PhpNumber);
                 Subtract_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.PhpNumber, ct.Long);
+                Subtract_value_value = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.PhpValue);
+                Subtract_value_long = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.Long);
+                Subtract_value_double = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.Double);
+                Subtract_value_number = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.PhpNumber);
+
                 Negation = ct.PhpNumber.Operator(WellKnownMemberNames.UnaryNegationOperatorName, ct.PhpNumber);
                 Negation_long = ct.PhpNumber.Method("Minus", ct.Long);
 
@@ -468,7 +473,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass,
                 CompareTo_number, CompareTo_long, CompareTo_double,
                 Add_long_long, Add_long_double, Add_number_double, Add_double_number, Add_value_long, Add_value_double, Add_value_number, Add_double_value, Add_value_value,
-                Subtract_long_long, Subtract_number_double, Subtract_long_double,
+                Subtract_long_long, Subtract_number_double, Subtract_long_double, Subtract_value_value, Subtract_value_long, Subtract_value_double, Subtract_value_number,
                 Negation_long,
                 get_Long, get_Double,
                 Mul_long_long, Mul_long_double, Mul_long_value, Mul_double_value, Mul_value_value, Mul_value_long, Mul_value_double,

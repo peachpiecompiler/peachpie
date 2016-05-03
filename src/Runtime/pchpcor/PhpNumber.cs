@@ -351,7 +351,7 @@ namespace Pchp.Core
             var x_info = x.ToNumber(out x_number);
             if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
             {
-                throw new NotImplementedException();
+                throw new ArgumentException();
             }
 
             return x_number + y;
@@ -367,7 +367,7 @@ namespace Pchp.Core
             var x_info = x.ToNumber(out x_number);
             if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
             {
-                throw new NotImplementedException();
+                throw new ArgumentException();
             }
 
             return Create(x_number.ToDouble() + y);
@@ -529,6 +529,74 @@ namespace Pchp.Core
         public static double Sub(PhpNumber x, double dy)
         {
             return x.ToDouble() - dy;
+        }
+
+        /// <summary>
+        /// Subtract operator.
+        /// </summary>
+        public static PhpNumber Sub(PhpValue x, long ly)
+        {
+            PhpNumber x_number;
+
+            var x_info = x.ToNumber(out x_number);
+            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new ArgumentException(); // return 0
+            }
+
+            //
+            return x_number - ly;
+        }
+
+        /// <summary>
+        /// Subtract operator.
+        /// </summary>
+        public static double Sub(PhpValue x, double dy)
+        {
+            PhpNumber x_number;
+
+            var x_info = x.ToNumber(out x_number);
+            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new ArgumentException();  // return 0
+            }
+
+            //
+            return x_number.ToDouble() - dy;
+        }
+
+        /// <summary>
+        /// Subtract operator.
+        /// </summary>
+        public static PhpNumber Sub(PhpValue x, PhpNumber y)
+        {
+            PhpNumber x_number;
+
+            var x_info = x.ToNumber(out x_number);
+            if ((x_info & Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new ArgumentException();  // return 0
+            }
+
+            //
+            return x_number - y;
+        }
+
+        /// <summary>
+        /// Subtract operator.
+        /// </summary>
+        public static PhpNumber Sub(PhpValue x, PhpValue y)
+        {
+            PhpNumber xnumber, ynumber;
+
+            // converts x and y to numbers:
+            if (((x.ToNumber(out xnumber) | y.ToNumber(out ynumber)) & (Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.Unconvertible)) != 0)
+            {
+                throw new ArgumentException();
+            }
+
+            //
+            return xnumber - ynumber;
         }
 
         /// <summary>
