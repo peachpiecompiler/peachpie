@@ -40,7 +40,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates context to be used within a console application.
         /// </summary>
-        internal static Context CreateConsole()
+        public static Context CreateConsole()
         {
             return new Context();
             // TODO: Add console output filter
@@ -71,7 +71,7 @@ namespace Pchp.Core
         /// Internal method to be used by loader to load referenced symbols.
         /// </summary>
         /// <typeparam name="TScript"><c>&lt;Script&gt;</c> type in compiled assembly. The type contains static methods for enumerating referenced symbols.</typeparam>
-        internal static void AddScriptReference<TScript>() => AddScriptReference(typeof(TScript));
+        public static void AddScriptReference<TScript>() => AddScriptReference(typeof(TScript));
 
         private static void AddScriptReference(Type tscript)
         {
@@ -91,12 +91,12 @@ namespace Pchp.Core
         /// <param name="index">Index variable.</param>
         /// <param name="name">Fuction name.</param>
         /// <param name="handle">Function runtime handle.</param>
-        internal void DeclareFunction(ref int index, string name, RuntimeMethodHandle handle)
+        public void DeclareFunction(ref int index, string name, RuntimeMethodHandle handle)
         {
             _functions.Declare(ref index, name, handle);
         }
 
-        internal void AssertFunctionDeclared(ref int index, string name, RuntimeMethodHandle handle)
+        public void AssertFunctionDeclared(ref int index, string name, RuntimeMethodHandle handle)
         {
             if (!_functions.IsDeclared(ref index, name, handle))
             {
@@ -114,12 +114,12 @@ namespace Pchp.Core
         /// </summary>
         /// <typeparam name="T">Type.</typeparam>
         /// <param name="name">Type name.</param>
-        internal void DeclareType<T>(string name)
+        public void DeclareType<T>(string name)
         {
             _types.Declare(ref IndexHolder<T>.Index, name, typeof(T));
         }
 
-        internal void AssertTypeDeclared<T>(string name)
+        public void AssertTypeDeclared<T>(string name)
         {
             if (!_types.IsDeclared(ref IndexHolder<T>.Index, name, typeof(T)))
             {

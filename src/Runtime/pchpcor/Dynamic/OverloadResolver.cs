@@ -206,7 +206,10 @@ namespace Pchp.Core.Dynamic
                     }
                 }
             }
-            
+
+            //
+            result.Cost += (args.Count - arg_index) * 2;    // not used arguments
+
             //
             return result;
         }

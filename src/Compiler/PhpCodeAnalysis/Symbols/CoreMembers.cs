@@ -581,15 +581,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public DynamicHolder(CoreTypes ct)
             {
-                this.CallMethodBinder_Create = ct.CallMethodBinder.Method("Create", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
-                this.GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
-                this.SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessFlags);
+                CallMethodBinder_Create = ct.CallMethodBinder.Method("Create", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
+                CallFunctionBinder_Create = ct.CallFunctionBinder.Method("Create", ct.String, ct.String, ct.RuntimeTypeHandle, ct.Int32);
+                GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
+                SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessFlags);
             }
 
             public readonly CoreConstructor
                 GetFieldBinder_ctor, SetFieldBinder_ctor;
 
             public readonly CoreMethod
+                CallFunctionBinder_Create,
                 CallMethodBinder_Create;
         }
     }

@@ -93,7 +93,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert,
-            CallMethodBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
+            CallMethodBinder, CallFunctionBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray,
             IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String,
@@ -128,6 +128,7 @@ namespace Pchp.CodeAnalysis.Symbols
             stdClass = CreateFromFullName("stdClass");
 
             CallMethodBinder = Create("Dynamic.CallMethodBinder");
+            CallFunctionBinder = Create("Dynamic.CallFunctionBinder");
             GetFieldBinder = Create("Dynamic.GetFieldBinder");
             SetFieldBinder = Create("Dynamic.SetFieldBinder");
             AccessFlags = Create("Dynamic.AccessFlags");

@@ -1627,12 +1627,71 @@ namespace Pchp.CodeAnalysis.Semantics
 
             Debug.Assert(overloads.Candidates.All(c => c.IsStatic));
 
-            // TODO: emit check the routine is declared; options:
-            // 1. disable checks in release for better performance
-            // 2. autoload script containing routine declaration
-            // 3. throw if routine is not declared
+            // TODO:
+            // - autoload script containing routine declaration
 
-            return cg.EmitCall(ILOpCode.Call, null, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
+            var arguments = _arguments.Select(a => a.Value).ToImmutableArray();
+
+            if (overloads.IsFinal && overloads.Candidates.Length == 1)
+            {
+                // TODO: emit check the routine is declared
+                // <ctx>.AssertFunctionDeclared
+
+                return cg.EmitCall(ILOpCode.Call, overloads.Candidates[0], null, arguments);
+            }
+            else
+            {
+                // callsite
+
+                var callsite = cg.Factory.StartCallSite($"call_{this.Name.ClrName()}");
+
+                var callsiteargs = new List<TypeSymbol>(arguments.Length);
+                var return_type = this.Access.IsRead
+                        ? this.Access.IsReadRef
+                            ? cg.CoreTypes.PhpAlias.Symbol
+                            : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
+                        : cg.CoreTypes.Void.Symbol;
+
+                // callsite
+                var fldPlace = callsite.Place;
+
+                // callsite.Target
+                callsite.EmitLoadTarget(cg.Builder);
+
+                // (callsite, ctx, ...)
+                fldPlace.EmitLoad(cg.Builder);
+                
+                callsiteargs.Add(cg.EmitLoadContext());     // ctx
+                
+                // TODO: indirect name
+
+                foreach (var a in arguments)
+                {
+                    callsiteargs.Add(cg.Emit(a));
+                }
+
+                // Target()
+                var functype = cg.Factory.GetCallSiteDelegateType(
+                    null, RefKind.None,
+                    callsiteargs.AsImmutable(),
+                    default(ImmutableArray<RefKind>),
+                    null,
+                    return_type);
+
+                cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
+
+                callsite.Construct(functype, cctor =>
+                {
+                    cctor.EmitStringConstant(this.Name.ToString()); // TODO: indirect call -> null
+                    cctor.EmitStringConstant(this.AlternativeName.HasValue ? this.AlternativeName.Value.ToString() : null);
+                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
+                    cctor.EmitIntConstant(0);
+                    cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallFunctionBinder_Create);
+                });
+
+                //
+                return return_type;
+            }
         }
     }
 
