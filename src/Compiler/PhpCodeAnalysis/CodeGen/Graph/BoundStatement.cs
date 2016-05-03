@@ -71,6 +71,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
+            cg.EmitSequencePoint(Pchp.Syntax.Text.Span.FromBounds(this.FunctionDecl.EntireDeclarationSpan.Start, this.FunctionDecl.HeadingEndPosition));
+
             // <ctx>.DeclareFunction ...
             cg.EmitDeclareFunction(this.Function);
         }
