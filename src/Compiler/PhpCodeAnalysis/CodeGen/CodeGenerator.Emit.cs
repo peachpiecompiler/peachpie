@@ -806,6 +806,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Emits declaring function into the context.
+        /// </summary>
         public void EmitDeclareFunction(SourceFunctionSymbol f)
         {
             Debug.Assert(f != null);

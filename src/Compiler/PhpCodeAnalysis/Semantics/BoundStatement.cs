@@ -92,4 +92,31 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitReturnStatement(this, argument);
     }
+
+    /// <summary>
+    /// Conditionally declared functions.
+    /// </summary>
+    public sealed partial class BoundFunctionDeclStatement : BoundStatement // TODO: ILocalFunctionStatement
+    {
+        public override OperationKind Kind => OperationKind.LocalFunctionStatement;
+
+        internal FunctionDecl FunctionDecl => (FunctionDecl)PhpSyntax;
+
+        internal Symbols.SourceFunctionSymbol Function => _function;
+        readonly Symbols.SourceFunctionSymbol _function;
+
+        internal BoundFunctionDeclStatement(Symbols.SourceFunctionSymbol function)
+        {
+            Contract.ThrowIfNull(function);
+
+            _function = function;
+            this.PhpSyntax = (FunctionDecl)function.Syntax;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitInvalidStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitInvalidStatement(this, argument);
+    }
 }

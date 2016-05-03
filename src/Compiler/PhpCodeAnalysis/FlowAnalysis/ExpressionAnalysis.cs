@@ -338,6 +338,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region Declaration Statements
+
+        public override void VisitInvalidStatement(IStatement operation)
+        {
+            if (operation is BoundFunctionDeclStatement)
+            {
+                return;
+            }
+
+            base.VisitInvalidStatement(operation);
+        }
+
+        #endregion
+
         #region Visit Literals
 
         public sealed override void VisitLiteralExpression(ILiteralExpression operation)

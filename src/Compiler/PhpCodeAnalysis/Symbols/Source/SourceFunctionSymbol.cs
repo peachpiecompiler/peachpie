@@ -71,6 +71,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string Name => this.QualifiedName.ClrName();
 
+        public override string MetadataName
+        {
+            get
+            {
+                var name = base.MetadataName;
+
+                if (this.IsConditional)
+                    name += "@" + _file.Functions.TakeWhile(f => f != this).Where(f => f.QualifiedName == this.QualifiedName).Count().ToString();   // index of this function within functions with the same name
+
+                return name;
+            }
+        }
+
         public string PhpName => this.QualifiedName.ToString();
 
         public override Symbol ContainingSymbol => _file.SourceModule;

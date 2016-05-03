@@ -66,4 +66,13 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
     }
+
+    partial class BoundFunctionDeclStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            // <ctx>.DeclareFunction ...
+            cg.EmitDeclareFunction(this.Function);
+        }
+    }
 }

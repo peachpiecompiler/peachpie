@@ -65,6 +65,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters))) { PhpSyntax = stmt };
             if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, BoundAccess.None)) { PhpSyntax = stmt };
             if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
+            if (stmt is AST.FunctionDecl) return BindFunctionDecl((AST.FunctionDecl)stmt);
+            if (stmt is AST.TypeDecl) return BindTypeDecl((AST.TypeDecl)stmt);
 
             throw new NotImplementedException(stmt.GetType().FullName);
         }
@@ -83,6 +85,21 @@ namespace Pchp.CodeAnalysis.Semantics
             throw ExceptionUtilities.Unreachable;
         }
 
+        BoundStatement BindFunctionDecl(AST.FunctionDecl stmt)
+        {
+            Debug.Assert(stmt.IsConditional);
+
+            return new BoundFunctionDeclStatement(stmt.GetProperty<Symbols.SourceFunctionSymbol>());
+        }
+
+        BoundStatement BindTypeDecl(AST.TypeDecl stmt)
+        {
+            Debug.Assert(stmt.IsConditional);
+
+            throw new NotImplementedException();
+            //return new BoundTypeDeclStatement(stmt.GetProperty<Symbols.SourceNamedTypeSymbol>());
+        }
+
         public BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
             var bound = BindExpressionCore(expr, access).WithAccess(access);
@@ -91,7 +108,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return bound;
         }
 
-        private BoundExpression BindExpressionCore(AST.Expression expr, BoundAccess access)
+        BoundExpression BindExpressionCore(AST.Expression expr, BoundAccess access)
         {
             Debug.Assert(expr != null);
 
