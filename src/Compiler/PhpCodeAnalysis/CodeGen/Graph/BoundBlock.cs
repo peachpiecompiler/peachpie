@@ -49,9 +49,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // emit parameters checks
             }
 
-            // in case of script, declare functions and types
+            // in case of script, declare the script, functions and types
             if (cg.Routine is Symbols.SourceGlobalMethodSymbol)
             {
+                // <ctx>.OnInclude<TScript>()
+                cg.EmitLoadContext();
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.OnInclude_TScript.Symbol.Construct(cg.Routine.ContainingType));
+
+                // <ctx>.DeclareFunction()
                 cg.Routine.ContainingFile.Functions.Where(f => !f.IsConditional).ForEach(cg.EmitDeclareFunction);
             }
 

@@ -58,14 +58,16 @@ namespace Pchp.Core
         /// <summary>
         /// Map of global functions.
         /// </summary>
-        TFunctionsMap _functions;
+        readonly TFunctionsMap _functions;
 
         /// <summary>
         /// Map of global types.
         /// </summary>
-        TTypesMap _types;
+        readonly TTypesMap _types;
 
         // TODO: global constants
+
+        readonly ScriptsMap _scripts = new ScriptsMap();
 
         /// <summary>
         /// Internal method to be used by loader to load referenced symbols.
@@ -156,9 +158,16 @@ namespace Pchp.Core
         /// </summary>
         public bool IncludeOnceAllowed<TScript>()
         {
-            // TODO: => !IsIncluded(IndexHolder<TScript>.Index)
+            return !_scripts.IsIncluded(IndexHolder<TScript>.Index);
+        }
 
-            return true;
+        /// <summary>
+        /// Called by scripts Main method at its begining.
+        /// </summary>
+        /// <typeparam name="TScript">Script type containing the Main method/</typeparam>
+        public void OnInclude<TScript>()
+        {
+            _scripts.SetIncluded(ScriptsMap.EnsureIndex(ref IndexHolder<TScript>.Index));
         }
 
         #endregion

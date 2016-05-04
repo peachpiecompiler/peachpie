@@ -39,6 +39,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Context.HandleMap.cs" />
+    <Compile Include="Context.ScriptsMap.cs" />
     <Compile Include="Dynamic\CallFunctionBinder.cs" />
     <Compile Include="Dynamic\OverloadResolver.cs" />
     <Compile Include="OrderedDictionary.cs" />
