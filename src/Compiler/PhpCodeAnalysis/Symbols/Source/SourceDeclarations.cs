@@ -66,6 +66,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     _tables._functions.Add(routine.QualifiedName, routine);
                 }
+
+                //
+                base.VisitFunctionDecl(x);
             }
 
             public override void VisitTypeDecl(TypeDecl x)
@@ -80,6 +83,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     _tables._types.Add(x.MakeQualifiedName(), type);
                 }
+
+                //
+                base.VisitTypeDecl(x);
             }
         }
 
