@@ -883,6 +883,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitNewEx((BoundNewEx)operation);
             }
+            else if (operation is BoundIncludeEx)
+            {
+                VisitIncludeEx((BoundIncludeEx)operation);
+            }
             else
             {
                 throw new NotImplementedException();
@@ -1090,6 +1094,48 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeName, false);
+        }
+
+        protected virtual void VisitIncludeEx(BoundIncludeEx x)
+        {
+            // resolve target script
+            Debug.Assert(x.ArgumentsInSourceOrder.Length == 1);
+            var targetExpr = x.ArgumentsInSourceOrder[0].Value;
+
+            //
+            x.Target = null;
+
+            if (targetExpr.ConstantValue.HasValue)
+            {
+                var value = targetExpr.ConstantValue.Value as string;
+                if (value != null)
+                {
+                    var targetFile = _model.GetFile(value);
+                    if (targetFile != null)
+                    {
+                        x.Target = targetFile.MainMethod;
+                    }
+                }
+            }
+
+            // resolve result type
+            if (x.Access.IsRead)
+            {
+                var target = x.Target;
+                if (target != null)
+                {
+                    x.ResultType = target.ReturnType;
+                    x.TypeRefMask = target.GetResultType(TypeCtx);
+                }
+                else
+                {
+                    x.TypeRefMask = TypeRefMask.AnyType;
+                }
+            }
+            else
+            {
+                x.TypeRefMask = 0;
+            }
         }
 
         public override void VisitArgument(IArgument operation)

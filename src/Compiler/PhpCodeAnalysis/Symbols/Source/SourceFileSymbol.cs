@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.Syntax.AST;
 using Roslyn.Utilities;
 using System.Diagnostics;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -65,33 +66,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _functions.Add(routine);
         }
 
-        internal string RelativeFilePath
-        {
-            get
-            {
-                // TODO: move to Utils
-                var path = _syntax.SourceUnit.FilePath;
-                var basedir = _compilation.Options.BaseDirectory;
-
-                int levelups = 0;
-
-                while (!path.StartsWith(basedir, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    levelups++;
-                    basedir = PathUtilities.GetDirectoryName(basedir)
-                        .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
-
-                    if (basedir == null)
-                    {
-                        throw new ArgumentException();  // cannot make relative path
-                    }
-                }
-
-                return
-                    string.Join(string.Empty, Enumerable.Repeat(".." + PathUtilities.DirectorySeparatorStr, levelups)) +
-                    path.Substring(basedir.Length + 1);
-            }
-        }
+        internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntax.SourceUnit.FilePath, _compilation.Options.BaseDirectory);
 
         public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath, true);//.Replace('.', '_');
 
@@ -100,7 +75,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var dir = (PathUtilities.GetDirectoryName(this.RelativeFilePath) ?? string.Empty)
-                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar)
+                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar)     // NormalizeRelativeDirectoryPath
                     .Replace(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
 
                 return WellKnownPchpNames.ScriptsRootNamespace + dir;

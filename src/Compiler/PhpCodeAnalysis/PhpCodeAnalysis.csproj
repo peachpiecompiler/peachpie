@@ -239,6 +239,7 @@
     <Compile Include="Utilities\DistinctQueue.cs" />
     <Compile Include="Utilities\EnumeratorExtension.cs" />
     <Compile Include="Utilities\NameUtils.cs" />
+    <Compile Include="Utilities\PhpFileUtilities.cs" />
     <Compile Include="Utilities\TypeHintValue.cs" />
   </ItemGroup>
   <ItemGroup>

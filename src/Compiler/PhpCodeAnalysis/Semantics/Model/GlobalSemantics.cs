@@ -70,9 +70,16 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return Next.GetType(name);
         }
 
-        public SourceFileSymbol GetFile(string relativePath)
+        public SourceFileSymbol GetFile(string path)
         {
-            throw new NotImplementedException();
+            // TODO: lookup referenced assemblies
+
+            // TODO: .\
+            // TODO: ..\
+
+            // TODO: RoutineSemantics // relative to current script
+
+            return Next.GetFile(path);
         }
 
         public IEnumerable<ISemanticFunction> ResolveFunction(QualifiedName name)

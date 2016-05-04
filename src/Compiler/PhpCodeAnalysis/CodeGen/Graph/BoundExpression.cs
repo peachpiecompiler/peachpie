@@ -1951,6 +1951,26 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundIncludeEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            var method = this.Target;
+            if (method != null) // => IsResolved
+            {
+                // TODO: emit condition for include_once/require_once
+
+                // call <Main>
+                return cg.EmitCallMain(method);
+            }
+            else
+            {
+                // Template: <ctx>.Include(string, bool once = false, bool throwOnError = false)
+                throw new NotImplementedException();
+            }
+        }
+    }
+
     partial class BoundAssignEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

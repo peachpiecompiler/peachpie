@@ -10,6 +10,8 @@ using Pchp.Syntax;
 using System.Diagnostics;
 using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Semantics;
+using Roslyn.Utilities;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -37,8 +39,9 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (unit != null && unit.Ast != null)
                 {
-                    _currentFile = new SourceFileSymbol(_compilation, unit.Ast);
-                    _tables._files.Add(unit.FilePath, _currentFile);
+                    var file = new SourceFileSymbol(_compilation, unit.Ast);
+                    _currentFile = file;
+                    _tables._files.Add(file.RelativeFilePath, _currentFile);
 
                     VisitGlobalCode(unit.Ast);
 
@@ -90,15 +93,34 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly List<SourceNamedTypeSymbol> _declaredtypes = new List<SourceNamedTypeSymbol>();
 
+        string _baseDirectory;
+
         internal SourceFileSymbol FirstScript { get; private set; }
 
         #region ISemanticModel
 
         ISemanticModel ISemanticModel.Next => null;
 
-        SourceFileSymbol ISemanticModel.GetFile(string relativePath)
+        SourceFileSymbol ISemanticModel.GetFile(string path)
         {
-            throw new NotImplementedException();
+            // normalize path
+            path = FileUtilities.NormalizeRelativePath(path, null, _baseDirectory);
+
+            // absolute path
+            if (PathUtilities.IsAbsolute(path))
+            {
+                path = PhpFileUtilities.GetRelativePath(path, _baseDirectory);
+            }
+
+            // ./ handled by context semantics
+
+            // ../ handled by context semantics
+
+            // TODO: lookup include paths
+            // TODO: calling script directory
+
+            // cwd
+            return GetFile(path);
         }
 
         INamedTypeSymbol ISemanticModel.GetType(QualifiedName name) => GetType(name);
@@ -126,6 +148,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Contract.ThrowIfNull(compilation);
             Contract.ThrowIfNull(trees);
+
+            _baseDirectory = compilation.Options.BaseDirectory;
 
             var visitor = new PopulatorVisitor(compilation, this);
             trees.ForEach(visitor.VisitSourceUnit);

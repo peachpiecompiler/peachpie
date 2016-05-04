@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets a file by its path relative to current context.
         /// </summary>
-        SourceFileSymbol GetFile(string relativePath);
+        SourceFileSymbol GetFile(string path);
 
         /// <summary>
         /// Gets type symbol by its name in current context.

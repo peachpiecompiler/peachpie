@@ -328,6 +328,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundArgument(BoundExpression value)
         {
+            Contract.ThrowIfNull(value);
+            Debug.Assert(value.Access.IsRead);  // we do not support OUT parameters in PHP I guess, just aliasing ~ IsReadRef
+
             this.Value = value;
         }
 
@@ -365,7 +368,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IExpression IInvocationExpression.Instance => Instance;
 
-        IMethodSymbol IInvocationExpression.TargetMethod => Overloads?.Candidates.SingleOrDefault();
+        IMethodSymbol IInvocationExpression.TargetMethod => (Overloads != null && Overloads.IsFinal && Overloads.Candidates.Length == 1) ? Overloads.Candidates[0] : null;
 
         /// <summary>
         /// <c>this</c> argument to be supplied to the method.
@@ -514,6 +517,50 @@ namespace Pchp.CodeAnalysis.Semantics
             : base(arguments)
         {
             _qname = qname;
+        }
+    }
+
+    /// <summary>
+    /// A script inclusion.
+    /// </summary>
+    public partial class BoundIncludeEx : BoundRoutineCall
+    {
+        public override BoundExpression Instance => null;
+
+        /// <summary>
+        /// Gets value indicating the target is resolved at compile time,
+        /// so it will be called statically.
+        /// </summary>
+        public bool IsResolved => Target != null;
+
+        /// <summary>
+        /// In case the inclusion target is resolved, gets reference to the <c>Main</c> method of the included script.
+        /// </summary>
+        internal MethodSymbol Target
+        {
+            get
+            {
+                return (MethodSymbol)((IInvocationExpression)this).TargetMethod;
+            }
+            set
+            {
+                this.Overloads = (value != null)
+                    ? new OverloadsList(WellKnownPchpNames.GlobalRoutineName, new[] { value }) { IsFinal = true }   // single final overload == TargetMethod
+                    : null;
+            }
+        }
+
+        /// <summary>
+        /// Type of inclusion, <c>include</c>, <c>require</c>, <c>include_once</c>, <c>require_once</c>.
+        /// </summary>
+        public InclusionTypes InclusionType { get; private set; }
+
+        public BoundIncludeEx(BoundExpression target, InclusionTypes type)
+            : base(ImmutableArray.Create(new BoundArgument(target)))
+        {
+            Debug.Assert(target.Access.IsRead);
+
+            this.InclusionType = type;
         }
     }
 

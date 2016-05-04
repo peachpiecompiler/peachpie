@@ -181,7 +181,9 @@ namespace Pchp.Core
 
             void Declare(ref THandle placeholder, THandle handle)
             {
-                if (!_handlecomparer.Equals(placeholder, default(THandle)) && _redeclarationCallback != null)
+                if (!_handlecomparer.Equals(placeholder, default(THandle)) &&   // there is already a declaration
+                    !_handlecomparer.Equals(placeholder, handle) &&             // the declaration is different from what we are declaring
+                    _redeclarationCallback != null)                             // there is a callback to handle that
                 {
                     _redeclarationCallback(handle);
                 }

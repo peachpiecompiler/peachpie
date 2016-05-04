@@ -822,6 +822,37 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareFunction_intRef_string_method);
         }
 
+        /// <summary>
+        /// Emits call to main method.
+        /// </summary>
+        /// <param name="mainmethod">Static Main method representing the script global code.</param>
+        /// <returns>Main method result value type.</returns>
+        public TypeSymbol EmitCallMain(MethodSymbol mainmethod)
+        {
+            Contract.ThrowIfNull(mainmethod);
+            Debug.Assert(mainmethod.IsStatic);
+            Debug.Assert(mainmethod.Name == WellKnownPchpNames.GlobalRoutineName);
+
+            foreach (var p in mainmethod.Parameters)
+            {
+                switch (p.Name)
+                {
+                    case SpecialParameterSymbol.ContextName:
+                        EmitLoadContext();
+                        break;
+                    case SpecialParameterSymbol.LocalsName:
+                        Debug.Assert(LocalsPlaceOpt != null);
+                        LocalsPlaceOpt.EmitLoad(_il);
+                        break;
+                    default:
+                        throw ExceptionUtilities.UnexpectedValue(p.Name);
+                }
+            }
+
+            //
+            return EmitCall(ILOpCode.Call, mainmethod);
+        }
+
         public void EmitLoadDefaultValue(TypeSymbol type, TypeRefMask typemask)
         {
             switch (type.SpecialType)
