@@ -175,7 +175,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<ITypeParameterSymbol> IMethodSymbol.TypeParameters => StaticCast<ITypeParameterSymbol>.From(this.TypeParameters);
 
-        public IMethodSymbol Construct(params ITypeSymbol[] typeArguments)
+        IMethodSymbol IMethodSymbol.Construct(params ITypeSymbol[] typeArguments) => Construct(typeArguments);
+
+        public MethodSymbol Construct(params ITypeSymbol[] typeArguments)
         {
             return this.Construct(typeArguments.Cast<TypeSymbol>().ToImmutableArray());
         }

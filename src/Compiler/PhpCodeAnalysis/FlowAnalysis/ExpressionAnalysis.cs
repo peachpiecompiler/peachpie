@@ -1126,6 +1126,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     x.ResultType = target.ReturnType;
                     x.TypeRefMask = target.GetResultType(TypeCtx);
+
+                    if (x.IsOnceSemantic)
+                    {
+                        // include_once, require_once returns TRUE in case the script was already included
+                        x.TypeRefMask |= TypeCtx.GetBooleanTypeMask();
+                    }
                 }
                 else
                 {

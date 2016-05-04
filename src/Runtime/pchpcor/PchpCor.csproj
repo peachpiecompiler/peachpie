@@ -62,7 +62,6 @@
     <Compile Include="Dynamic\GetFieldBinder.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="PhpAlias.cs" />
-    <Compile Include="BinaryString.cs" />
     <Compile Include="PhpAttributes.cs" />
     <Compile Include="PhpNumber.cs" />
     <Compile Include="PhpString.cs" />

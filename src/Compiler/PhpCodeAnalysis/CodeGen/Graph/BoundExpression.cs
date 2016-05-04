@@ -1953,21 +1953,77 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundIncludeEx
     {
+        public bool IsOnceSemantic => this.InclusionType == Pchp.Syntax.InclusionTypes.IncludeOnce || this.InclusionType == Pchp.Syntax.InclusionTypes.RequireOnce;
+
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            TypeSymbol result;
+            var isvoid = this.Access.IsNone;
+
             var method = this.Target;
             if (method != null) // => IsResolved
-            {
-                // TODO: emit condition for include_once/require_once
+            {                
+                // emit condition for include_once/require_once
+                if (IsOnceSemantic)
+                {
+                    var tscript = method.ContainingType;
 
-                // call <Main>
-                return cg.EmitCallMain(method);
+                    result = isvoid
+                        ? cg.CoreTypes.Void.Symbol
+                        : cg.DeclaringCompilation.GetTypeFromTypeRef(cg.Routine.TypeRefContext, this.TypeRefMask);
+
+                    // Template: (<ctx>.IncludeOnceAllowed<TScript>()) ? <Main>() : TRUE
+                    // Template<isvoid>: if (<ctx>.IncludeOnceAllowed<TScript>()) <Main>()
+                    var falseLabel = new object();
+                    var endLabel = new object();
+
+                    cg.EmitLoadContext();
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.IncludeOnceAllowed_TScript.Symbol.Construct(tscript));
+
+                    cg.Builder.EmitBranch(ILOpCode.Brfalse, falseLabel);
+
+                    // ? (PhpValue)<Main>(...)
+                    cg.EmitCallMain(method);
+                    if (isvoid)
+                    {
+                        cg.EmitPop(method.ReturnType);
+                    }
+                    else
+                    {
+                        cg.EmitConvert(method.ReturnType, 0, result);
+                    }
+                    cg.Builder.EmitBranch(ILOpCode.Br, endLabel);
+
+                    if (!isvoid)
+                    {
+                        cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+                    }
+
+                    // : PhpValue.Create(true)
+                    cg.Builder.MarkLabel(falseLabel);
+                    if (!isvoid)
+                    {
+                        cg.Builder.EmitBoolConstant(true);
+                        cg.EmitConvert(cg.CoreTypes.Boolean, 0, result);
+                    }
+
+                    //
+                    cg.Builder.MarkLabel(endLabel);
+                }
+                else
+                {
+                    // <Main>
+                    result = cg.EmitCallMain(method);
+                }
             }
             else
             {
                 // Template: <ctx>.Include(string, bool once = false, bool throwOnError = false)
                 throw new NotImplementedException();
             }
+
+            //
+            return result;
         }
     }
 

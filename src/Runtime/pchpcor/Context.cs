@@ -148,6 +148,21 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Inclusions
+
+        /// <summary>
+        /// Used by runtime.
+        /// Determines whether the <c>include_once</c>/<c>require_once</c> is allowed to proceed.
+        /// </summary>
+        public bool IncludeOnceAllowed<TScript>()
+        {
+            // TODO: => !IsIncluded(IndexHolder<TScript>.Index)
+
+            return true;
+        }
+
+        #endregion
+
         #region GetStatic
 
         /// <summary>
