@@ -69,6 +69,7 @@
     <Compile Include="PhpTypeCode.cs" />
     <Compile Include="PhpValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities\ElasticBitArray.cs" />
     <Compile Include="Utilities\IProvider.cs" />
   </ItemGroup>
   <ItemGroup>
