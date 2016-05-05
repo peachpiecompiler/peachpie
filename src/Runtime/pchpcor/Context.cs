@@ -80,11 +80,16 @@ namespace Pchp.Core
             Debug.Assert(tscript != null);
             Debug.Assert(tscript.Name == "<Script>");
 
+            var tscriptinfo = tscript.GetTypeInfo();
+
             TFunctionsMap.LazyAddReferencedSymbols(() =>
             {
-                tscript.GetTypeInfo().GetDeclaredMethod("EnumerateReferencedFunctions")
+                tscriptinfo.GetDeclaredMethod("EnumerateReferencedFunctions")
                     .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(TFunctionsMap.AddReferencedSymbol) });
             });
+
+            tscriptinfo.GetDeclaredMethod("EnumerateScripts")
+                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(ScriptsMap.DeclareScript) });
         }
 
         /// <summary>
@@ -175,7 +180,31 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string dir, string path, bool once = false, bool throwOnError = false)
         {
-            throw new NotImplementedException();
+            // TODO: resolve path
+
+            var script = _scripts.GetScript(path);
+            if (script.MainMethod != null)
+            {
+                if (once && _scripts.IsIncluded(script.Index))
+                {
+                    return PhpValue.Create(true);
+                }
+                else
+                {
+                    return script.MainMethod(this, _globals);   // TODO: locals
+                }
+            }
+            else
+            {
+                if (throwOnError)
+                {
+                    throw new ArgumentException();   // TODO: ErrCode
+                }
+                else
+                {
+                    return PhpValue.Null;   // TODO: Warning
+                }
+            }
         }
 
         #endregion

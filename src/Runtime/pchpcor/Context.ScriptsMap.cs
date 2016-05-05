@@ -26,21 +26,25 @@ namespace Pchp.Core
         /// </summary>
         public struct ScriptInfo
         {
+            readonly public int Index;
             readonly public string Path;
             readonly public MainDelegate MainMethod;
             
-            static MainDelegate CreateMain(MethodInfo mainmethod)
+            static MainDelegate CreateMain(TypeInfo script)
             {
+                var mainmethod = script.GetDeclaredMethod("<Main>");
+
                 Debug.Assert(mainmethod != null);
                 Debug.Assert(mainmethod.Name == "<Main>");
 
                 return null; // (MainDelegate)mainmethod.CreateDelegate(typeof(MainDelegate));
             }
 
-            internal ScriptInfo(TypeInfo script, ScriptAttribute attr)
+            internal ScriptInfo(int index, string path, TypeInfo script)
             {
-                Path = attr.Path;
-                MainMethod = CreateMain(script.GetDeclaredMethod("<Main>"));
+                Index = index;
+                Path = path;
+                MainMethod = CreateMain(script);
             }
         }
 
@@ -61,7 +65,7 @@ namespace Pchp.Core
             /// </summary>
             static ScriptInfo[] _scripts = new ScriptInfo[64];
 
-            static void DeclareScript(int index, TypeInfo script, ScriptAttribute attr)
+            static void DeclareScript(int index, string path, TypeInfo script)
             {
                 // TODO: RW lock
 
@@ -70,12 +74,21 @@ namespace Pchp.Core
                     Array.Resize(ref _scripts, index * 2 + 1);
                 }
 
-                _scripts[index] = new ScriptInfo(script, attr);
+                _scripts[index] = new ScriptInfo(index, path, script);
+            }
+
+            internal static void DeclareScript(string path, RuntimeMethodHandle mainmethodHandle)
+            {
+                var mainmethod = MethodBase.GetMethodFromHandle(mainmethodHandle);
+
+                GetScriptIndex(path, mainmethod.DeclaringType.GetTypeInfo());
             }
 
             public void SetIncluded<TScript>() => array.SetTrue(EnsureIndex<TScript>(ref IndexHolder<TScript>.Index) - 1);
 
-            public bool IsIncluded<TScript>() => array[EnsureIndex<TScript>(ref IndexHolder<TScript>.Index) - 1];
+            public bool IsIncluded<TScript>() => IsIncluded(EnsureIndex<TScript>(ref IndexHolder<TScript>.Index) - 1);
+
+            internal bool IsIncluded(int index) => array[index];
 
             public ScriptInfo GetScript(string path)
             {
@@ -107,6 +120,11 @@ namespace Pchp.Core
 
                 var path = (attr != null) ? attr.Path : $"?{_scriptsMap.Count}";
 
+                return GetScriptIndex(path, script);
+            }
+
+            static int GetScriptIndex(string path, TypeInfo script)
+            {
                 int index;
 
                 lock (_scriptsMap)  // TODO: RW lock
@@ -114,7 +132,7 @@ namespace Pchp.Core
                     if (!_scriptsMap.TryGetValue(path, out index))
                     {
                         index = _scriptsMap.Count;
-                        DeclareScript(index, script, attr);
+                        DeclareScript(index, path, script);
 
                         _scriptsMap[path] = index;
                     }
