@@ -25,17 +25,23 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly PhpCompilation _compilation;
         readonly GlobalCode _syntax;
+
         readonly SourceGlobalMethodSymbol _mainMethod;
+
+        /// <summary>
+        /// Wrapper of main method getting <c>PhpValue</c> as a result.
+        /// Used by runtime to create generic delegate to scripts main.
+        /// </summary>
+        SynthesizedMethodSymbol _mainMethodRegularOpt;
 
         BaseAttributeData _lazyScriptAttribute;
 
         /// <summary>
         /// List of functions declared within the file.
         /// </summary>
-        public IEnumerable<SourceFunctionSymbol> Functions => _functions;
-        readonly List<SourceFunctionSymbol> _functions = new List<SourceFunctionSymbol>();
-
-        readonly List<SynthesizedFieldSymbol> _fields = new List<SynthesizedFieldSymbol>();
+        public IEnumerable<SourceFunctionSymbol> Functions => _lazyMembers.OfType<SourceFunctionSymbol>();
+        
+        readonly List<Symbol> _lazyMembers = new List<Symbol>();
         
         SynthesizedCctorSymbol _lazyCctorSymbol;
 
@@ -59,12 +65,34 @@ namespace Pchp.CodeAnalysis.Symbols
         internal SourceGlobalMethodSymbol MainMethod => _mainMethod;
 
         /// <summary>
+        /// Main method wrapper in case it does not return PhpValue.
+        /// </summary>
+        /// <returns></returns>
+        internal SynthesizedMethodSymbol EnsureMainMethodRegular()
+        {
+            if (_mainMethodRegularOpt == null &&
+                _mainMethod.ControlFlowGraph != null && // => main routine initialized
+                _mainMethod.ReturnType != DeclaringCompilation.CoreTypes.PhpValue)
+            {
+                // PhpValue <Main>@PhpValue(parameters)
+                _mainMethodRegularOpt = new SynthesizedMethodSymbol(
+                    this, WellKnownPchpNames.GlobalRoutineName + "@PhpValue", true,
+                    DeclaringCompilation.CoreTypes.PhpValue, Accessibility.Public);
+
+                _mainMethodRegularOpt.SetParameters(_mainMethod.Parameters.Select(p =>
+                    new SpecialParameterSymbol(_mainMethodRegularOpt, p.Type, p.Name, p.Ordinal)).ToArray());
+            }
+
+            return _mainMethodRegularOpt;
+        }
+
+        /// <summary>
         /// Lazily adds a function into the list of global functions declared within this file.
         /// </summary>
         internal void AddFunction(SourceFunctionSymbol routine)
         {
             Contract.ThrowIfNull(routine);
-            _functions.Add(routine);
+            _lazyMembers.Add(routine);
         }
 
         internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntax.SourceUnit.FilePath, _compilation.Options.BaseDirectory);
@@ -172,12 +200,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
             builder.Add(_mainMethod);
 
-            builder.AddRange(_functions);
+            EnsureMainMethodRegular();
+            if (_mainMethodRegularOpt != null)
+                builder.Add(_mainMethodRegularOpt);
 
             if (_lazyCctorSymbol != null)
                 builder.Add(_lazyCctorSymbol);
 
-            builder.AddRange(_fields);
+            builder.AddRange(_lazyMembers);
 
             return builder.ToImmutable();
         }
@@ -215,7 +245,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic);
 
-            _fields.Add(field);
+            _lazyMembers.Add(field);
 
             return field;
         }

@@ -32,12 +32,14 @@ namespace Pchp.Core
             
             static MainDelegate CreateMain(TypeInfo script)
             {
-                var mainmethod = script.GetDeclaredMethod("<Main>");
+                var mainmethod =
+                    script.GetDeclaredMethod("<Main>@PhpValue") ?? 
+                    script.GetDeclaredMethod("<Main>");
 
-                Debug.Assert(mainmethod != null);
-                Debug.Assert(mainmethod.Name == "<Main>");
+                Debug.Assert(mainmethod != null);                
+                Debug.Assert(mainmethod.ReturnType == typeof(PhpValue));
 
-                return null; // (MainDelegate)mainmethod.CreateDelegate(typeof(MainDelegate));
+                return (MainDelegate)mainmethod.CreateDelegate(typeof(MainDelegate));
             }
 
             internal ScriptInfo(int index, string path, TypeInfo script)

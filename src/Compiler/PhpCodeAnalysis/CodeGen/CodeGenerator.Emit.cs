@@ -478,10 +478,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits load of PhpValue representing void.
         /// </summary>
         public TypeSymbol Emit_PhpValue_Void()
+            => Emit_PhpValue_Void(_il, _moduleBuilder, _diagnostics);
+
+        /// <summary>
+        /// Emits load of PhpValue representing void.
+        /// </summary>
+        static TypeSymbol Emit_PhpValue_Void(ILBuilder il, Emit.PEModuleBuilder module, DiagnosticBag diagnostic)
         {
-            _il.EmitOpCode(ILOpCode.Ldsfld);
-            EmitSymbolToken(CoreMethods.PhpValue.Void, null);
-            return CoreTypes.PhpValue;
+            il.EmitOpCode(ILOpCode.Ldsfld);
+            il.EmitSymbolToken(module, diagnostic, module.Compilation.CoreMethods.PhpValue.Void, null);
+            return module.Compilation.CoreTypes.PhpValue;
         }
 
         /// <summary>

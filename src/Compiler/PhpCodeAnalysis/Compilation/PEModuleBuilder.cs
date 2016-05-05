@@ -96,6 +96,42 @@ namespace Pchp.CodeAnalysis.Emit
             this.ScriptType.EntryPointSymbol = realmethod;
         }
 
+        internal void CreateMainMethodWrapper(MethodSymbol wrapper, MethodSymbol main, DiagnosticBag diagnostic)
+        {
+            if (wrapper == null)
+                return;
+
+            // generate body of <wrapper> calling <main>
+            Debug.Assert(wrapper.IsStatic);
+            Debug.Assert(main.IsStatic);
+
+            Debug.Assert(wrapper.ReturnType == _compilation.CoreTypes.PhpValue);
+            Debug.Assert(wrapper.ParameterCount == main.ParameterCount);
+
+            //
+            var body = MethodGenerator.GenerateMethodBody(this, wrapper,
+                (il) =>
+                {
+                    // TODO: CodeGenerator.EmitConvertToPhpValue(cg.EmitCall(main))
+
+                    // load arguments
+                    foreach (var p in main.Parameters)
+                    {
+                        il.EmitLoadArgumentOpcode(p.Ordinal);
+                    }
+
+                    // call <Main>
+                    var result = il.EmitCall(this, diagnostic, ILOpCode.Call, main);
+
+                    // convert result to PhpValue
+                    CodeGenerator.EmitConvertToPhpValue(result, 0, il, this, diagnostic);
+                    il.EmitRet(false);
+                },
+                null, diagnostic, false);
+
+            SetMethodBody(wrapper, body);
+        }
+
         /// <summary>
         /// Emit body of enumeration of referenced functions.
         /// </summary>

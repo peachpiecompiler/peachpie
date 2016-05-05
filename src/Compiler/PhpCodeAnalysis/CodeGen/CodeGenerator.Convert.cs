@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
@@ -142,51 +143,66 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
         {
+            return EmitConvertToPhpValue(from, fromHint, _il, _moduleBuilder, _diagnostics);
+        }
+
+        public static TypeSymbol EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint, ILBuilder il, Emit.PEModuleBuilder module, DiagnosticBag diagnostic)
+        {
             Contract.ThrowIfNull(from);
+
+            var compilation = module.Compilation;
 
             switch (from.SpecialType)
             {
                 case SpecialType.System_Boolean:
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Boolean);
                     break;
                 case SpecialType.System_Int32:
-                    _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
+                    il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
                     goto case SpecialType.System_Int64; // PhpValue.Create((long)<stack>)
                 case SpecialType.System_Int64:
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
+                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Long);
                     break;
                 case SpecialType.System_Double:
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Double);
+                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Double);
+                    break;
+                case SpecialType.System_Void:
+                    Emit_PhpValue_Void(il, module, diagnostic);
                     break;
                 default:
-                    if (from == CoreTypes.PhpAlias)
+                    if (from == compilation.CoreTypes.PhpAlias)
                     {
-                        Emit_PhpAlias_GetValue();
+                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpAlias)
+                            .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
-                    else if (from == CoreTypes.PhpValue)
+                    else if (from == compilation.CoreTypes.PhpValue)
                     {
                         // nop
                         break;
                     }
-                    else if (from == CoreTypes.String)
+                    else if (from == compilation.CoreTypes.String)
                     {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_String).Expect(CoreTypes.PhpValue);
+                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_String)
+                            .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
-                    else if (from == CoreTypes.PhpNumber)
+                    else if (from == compilation.CoreTypes.PhpNumber)
                     {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpNumber).Expect(CoreTypes.PhpValue);
+                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpNumber)
+                            .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
-                    else if (from  == CoreTypes.PhpArray)
+                    else if (from == compilation.CoreTypes.PhpArray)
                     {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpArray).Expect(CoreTypes.PhpValue);
+                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpArray)
+                            .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
                     else if (from.IsReferenceType)
                     {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object).Expect(CoreTypes.PhpValue);
+                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.FromClass_Object)
+                            .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
                     else
@@ -196,7 +212,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            return CoreTypes.PhpValue;
+            return compilation.CoreTypes.PhpValue;
         }
 
         public void EmitConvertToPhpNumber(TypeSymbol from, TypeRefMask fromHint)

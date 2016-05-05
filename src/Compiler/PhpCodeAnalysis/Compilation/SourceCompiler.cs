@@ -124,6 +124,10 @@ namespace Pchp.CodeAnalysis
             // source routines
             this.WalkMethods(this.EmitMethodBody);
 
+            // <Main>@PhpValue
+            _compilation.SourceSymbolTables.GetFiles().ForEach(f =>
+                _moduleBuilder.CreateMainMethodWrapper(f.EnsureMainMethodRegular(), f.MainMethod, _diagnostics));
+
             // default .ctors
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
                 .Select(t => (SynthesizedCtorSymbol)t.InstanceCtorMethodSymbol)
