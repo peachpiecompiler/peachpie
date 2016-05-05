@@ -124,7 +124,7 @@ namespace Pchp.CodeAnalysis
             // source routines
             this.WalkMethods(this.EmitMethodBody);
 
-            // <Main>@PhpValue
+            // <Main>`0
             _compilation.SourceSymbolTables.GetFiles().ForEach(f =>
                 _moduleBuilder.CreateMainMethodWrapper(f.EnsureMainMethodRegular(), f.MainMethod, _diagnostics));
 

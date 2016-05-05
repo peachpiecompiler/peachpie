@@ -96,6 +96,12 @@ namespace Pchp.CodeAnalysis.Emit
             this.ScriptType.EntryPointSymbol = realmethod;
         }
 
+        /// <summary>
+        /// Emits body of scripts main wrapper converting main result to <c>PhpValue</c>.
+        /// </summary>
+        /// <param name="wrapper">&lt;Main&gt;`0 method, that calls real Main.</param>
+        /// <param name="main">Real scripts main method.</param>
+        /// <param name="diagnostic">DiagnosticBag.</param>
         internal void CreateMainMethodWrapper(MethodSymbol wrapper, MethodSymbol main, DiagnosticBag diagnostic)
         {
             if (wrapper == null)
