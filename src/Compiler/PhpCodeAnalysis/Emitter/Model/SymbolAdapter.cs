@@ -49,9 +49,14 @@ namespace Pchp.CodeAnalysis
             throw new NotSupportedException();
         }
 
+        internal virtual IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            return this.GetAttributes();
+        }
+
         IEnumerable<Cci.ICustomAttribute> Cci.IReference.GetAttributes(EmitContext context)
         {
-            return ImmutableArray<Cci.ICustomAttribute>.Empty; // GetCustomAttributesToEmit(((PEModuleBuilder)context.Module).CompilationState);
+            return GetCustomAttributesToEmit(((Emit.PEModuleBuilder)context.Module).CompilationState).Cast<Cci.ICustomAttribute>();
         }
     }
 }

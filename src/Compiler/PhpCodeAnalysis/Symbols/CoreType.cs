@@ -47,7 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Implicit cast to type symbol.
         /// </summary>
-        public static implicit operator NamedTypeSymbol (CoreType t) => t.Symbol;
+        public static implicit operator NamedTypeSymbol(CoreType t) => t.Symbol;
 
         #region IEquatable
 
@@ -93,6 +93,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert,
+            ScriptAttribute,
             CallMethodBinder, CallFunctionBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray,
             IntStringKey,
@@ -114,7 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Boolean = Create(SpecialType.System_Boolean);
             String = Create(SpecialType.System_String);
             RuntimeTypeHandle = Create(SpecialType.System_RuntimeTypeHandle);
-            RuntimeMethodHandle= Create(SpecialType.System_RuntimeMethodHandle);
+            RuntimeMethodHandle = Create(SpecialType.System_RuntimeMethodHandle);
 
             PhpNumber = Create("PhpNumber");
             PhpAlias = Create("PhpAlias");
@@ -125,6 +126,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context = Create("Context");
             Operators = Create("Operators");
             Convert = Create("Convert");
+            ScriptAttribute = Create("ScriptAttribute");
             stdClass = CreateFromFullName("stdClass");
 
             CallMethodBinder = Create("Dynamic.CallMethodBinder");
@@ -139,11 +141,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Dictionary<string, CoreType> _table;
         readonly Dictionary<TypeSymbol, CoreType> _typetable = new Dictionary<TypeSymbol, CoreType>();
         readonly Dictionary<SpecialType, CoreType> _specialTypes = new Dictionary<SpecialType, CoreType>();
-        
+
         CoreType Create(string name) => CreateFromFullName("Pchp.Core." + name);
 
         CoreType Create(SpecialType type) => CreateFromFullName(SpecialTypes.GetMetadataName(type));
-        
+
         CoreType CreateFromFullName(string fullName)
         {
             var type = new CoreType(fullName);

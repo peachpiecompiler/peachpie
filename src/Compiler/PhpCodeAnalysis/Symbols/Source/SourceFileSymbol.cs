@@ -27,6 +27,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly GlobalCode _syntax;
         readonly SourceGlobalMethodSymbol _mainMethod;
 
+        BaseAttributeData _lazyScriptAttribute;
+
         /// <summary>
         /// List of functions declared within the file.
         /// </summary>
@@ -92,8 +94,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            // TODO: [ScriptAttribute(RelativeFilePath, LastWriteTime)]
-            return base.GetAttributes();
+            // [ScriptAttribute(RelativeFilePath)]  // TODO: LastWriteTime
+            if (_lazyScriptAttribute == null)
+            {
+                _lazyScriptAttribute = new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.ScriptAttribute_string,
+                    ImmutableArray.Create(new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, this.RelativeFilePath)),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            //
+            return ImmutableArray.Create<AttributeData>(_lazyScriptAttribute);
         }
 
         public override NamedTypeSymbol BaseType

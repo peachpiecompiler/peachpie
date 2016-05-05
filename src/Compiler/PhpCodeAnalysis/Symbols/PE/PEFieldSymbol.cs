@@ -458,21 +458,21 @@ namespace Pchp.CodeAnalysis.Symbols
         //           value.Discriminator == ConstantValueTypeDiscriminator.Decimal;
         //}
 
-        //internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(ModuleCompilationState compilationState)
-        //{
-        //    foreach (CSharpAttributeData attribute in GetAttributes())
-        //    {
-        //        yield return attribute;
-        //    }
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            foreach (AttributeData attribute in GetAttributes())
+            {
+                yield return attribute;
+            }
 
-        //    // Yield hidden attributes last, order might be important.
-        //    if (FilterOutDecimalConstantAttribute())
-        //    {
-        //        var containingPEModuleSymbol = _containingType.ContainingPEModule;
-        //        yield return new PEAttributeData(containingPEModuleSymbol,
-        //                                  containingPEModuleSymbol.Module.FindLastTargetAttribute(_handle, AttributeDescription.DecimalConstantAttribute).Handle);
-        //    }
-        //}
+            //// Yield hidden attributes last, order might be important.
+            //if (FilterOutDecimalConstantAttribute())
+            //{
+            //    var containingPEModuleSymbol = _containingType.ContainingPEModule;
+            //    yield return new PEAttributeData(containingPEModuleSymbol,
+            //                              containingPEModuleSymbol.Module.FindLastTargetAttribute(_handle, AttributeDescription.DecimalConstantAttribute).Handle);
+            //}
+        }
 
         //public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         //{

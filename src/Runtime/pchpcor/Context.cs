@@ -154,7 +154,7 @@ namespace Pchp.Core
 
         /// <summary>
         /// Used by runtime.
-        /// Determines whether the <c>include_once</c>/<c>require_once</c> is allowed to proceed.
+        /// Determines whether the <c>include_once</c> or <c>require_once</c> is allowed to proceed.
         /// </summary>
         public bool CheckIncludeOnce<TScript>()
         {
@@ -162,6 +162,7 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Used by runtime.
         /// Called by scripts Main method at its begining.
         /// </summary>
         /// <typeparam name="TScript">Script type containing the Main method/</typeparam>

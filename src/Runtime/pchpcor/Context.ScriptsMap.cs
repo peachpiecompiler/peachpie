@@ -41,7 +41,7 @@ namespace Pchp.Core
             /// <summary>
             /// Map of full script path to its script_id.
             /// </summary>
-            static Dictionary<string, int> _scriptsMap;
+            static Dictionary<string, int> _scriptsMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);  // TODO: Ordinal comparer on Unix
 
             /// <summary>
             /// Scripts descriptors corresponding to script_id.
