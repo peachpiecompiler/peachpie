@@ -74,7 +74,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 _mainMethod.ControlFlowGraph != null && // => main routine initialized
                 _mainMethod.ReturnType != DeclaringCompilation.CoreTypes.PhpValue)
             {
-                // PhpValue <Main>@PhpValue(parameters)
+                // PhpValue <Main>`0(parameters)
                 _mainMethodRegularOpt = new SynthesizedMethodSymbol(
                     this, WellKnownPchpNames.GlobalRoutineName + "`0", true,
                     DeclaringCompilation.CoreTypes.PhpValue, Accessibility.Public);
