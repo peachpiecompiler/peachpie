@@ -36,10 +36,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         protected void OnLocal(VisitLocalArgs args)
         {
             Debug.Assert(args != null);
-
-            var e = this.VisitLocal;
-            if (e != null)
-                e(this, args);
+            VisitLocal?.Invoke(this, args);
         }
 
         VariableKind _statementContext;
@@ -202,17 +199,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
     internal class LocalsBinder : LocalsWalker
     {
         readonly SourceRoutineSymbol _routine;
-        readonly List<BoundVariable> _locals = new List<BoundVariable>();
-        readonly HashSet<VariableName>/*!*/_visited = new HashSet<VariableName>();
+        readonly List<VisitLocalArgs> _locals = new List<VisitLocalArgs>();
         SemanticsBinder _lazyBinder;
 
         SemanticsBinder SemanticBinder { get { return _lazyBinder ?? (_lazyBinder = new SemanticsBinder()); } }
-
+        
         private LocalsBinder(SourceRoutineSymbol routine)
-            :base(routine.Syntax)
+            : base(routine.Syntax)
         {
             _routine = routine;
-            
+
             this.VisitLocal += this.HandleLocal;
         }
 
@@ -222,46 +218,56 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 
             var visitor = new LocalsBinder(routine);
             visitor.VisitRoutine();
-            return visitor._locals.ToImmutableArray();
+
+            //
+            return visitor.BindLocalsCore().ToImmutableArray();
         }
 
         void HandleLocal(object sender, VisitLocalArgs e)
         {
-            Debug.Assert(sender == this);
+            _locals.Add(e);
+        }
 
-            if (_visited.Add(e.Name))
+        IEnumerable<BoundVariable> BindLocalsCore()
+        {
+            var visited = new HashSet<VariableName>();
+
+            foreach (var e in _locals)
             {
-                switch (e.Kind)
+                if (visited.Add(e.Name))
                 {
-                    case VariableKind.ThisParameter:
-                        _locals.Add(new BoundParameter(_routine.ThisParameter) { VariableKind = VariableKind.ThisParameter });
-                        break;
-                    case VariableKind.Parameter:
-                        _locals.Add(new BoundParameter((SourceParameterSymbol)_routine.Parameters.First(p => p.Name == e.Name.Value)));
-                        break;
-                    case VariableKind.LocalVariable:
-                        _locals.Add(new BoundLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind)));
-                        break;
-                    case VariableKind.StaticVariable:
-                        var boundstatic = new BoundStaticLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind), null);
-                        if (e.Expression != null)
-                            boundstatic.Update(this.SemanticBinder.BindExpression(e.Expression, BoundAccess.Read));
-                        
-                        _locals.Add(boundstatic);
-                        break;
-                    case VariableKind.ReturnVariable:   // for analysis purposes    // TODO: remove SourceReturnSymbol
-                        _locals.Add(new BoundLocal(new SourceReturnSymbol(_routine)));
-                        break;
-                    case VariableKind.GlobalVariable:
-                        _locals.Add(new BoundGlobalVariable(e.Name));
-                        break;
-                    default:
-                        throw new NotImplementedException();
+                    switch (e.Kind)
+                    {
+                        case VariableKind.ThisParameter:
+                            yield return new BoundParameter(_routine.ThisParameter) { VariableKind = VariableKind.ThisParameter };
+                            break;
+                        case VariableKind.Parameter:
+                            yield return new BoundParameter((SourceParameterSymbol)_routine.Parameters.First(p => p.Name == e.Name.Value));
+                            break;
+                        case VariableKind.LocalVariable:
+                            yield return new BoundLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind));
+                            break;
+                        case VariableKind.StaticVariable:
+                            var boundstatic = new BoundStaticLocal(new SourceLocalSymbol(_routine, e.Name.Value, e.Kind), null);
+                            if (e.Expression != null)
+                                boundstatic.Update(this.SemanticBinder.BindExpression(e.Expression, BoundAccess.Read));
+
+                            yield return boundstatic;
+                            break;
+                        case VariableKind.ReturnVariable:   // for analysis purposes    // TODO: remove SourceReturnSymbol
+                            yield return new BoundLocal(new SourceReturnSymbol(_routine));
+                            break;
+                        case VariableKind.GlobalVariable:
+                            yield return new BoundGlobalVariable(e.Name);
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
                 }
-            }
-            else
-            {
-                // TODO: check kind matches with previous declaration
+                else
+                {
+                    // TODO: check kind matches with previous declaration
+                }
             }
         }
     }

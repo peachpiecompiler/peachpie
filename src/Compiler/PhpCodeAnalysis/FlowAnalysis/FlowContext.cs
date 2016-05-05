@@ -51,7 +51,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public int ReturnVarIndex => _returnVarIndex;
         readonly int _returnVarIndex;
-
+        
         /// <summary>
         /// Gets array of local variables. Names are indexed by their internal index.
         /// </summary>
