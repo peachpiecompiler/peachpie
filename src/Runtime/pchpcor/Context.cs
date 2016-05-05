@@ -156,20 +156,14 @@ namespace Pchp.Core
         /// Used by runtime.
         /// Determines whether the <c>include_once</c> or <c>require_once</c> is allowed to proceed.
         /// </summary>
-        public bool CheckIncludeOnce<TScript>()
-        {
-            return !_scripts.IsIncluded(IndexHolder<TScript>.Index);
-        }
+        public bool CheckIncludeOnce<TScript>() => !_scripts.IsIncluded<TScript>();
 
         /// <summary>
         /// Used by runtime.
         /// Called by scripts Main method at its begining.
         /// </summary>
         /// <typeparam name="TScript">Script type containing the Main method/</typeparam>
-        public void OnInclude<TScript>()
-        {
-            _scripts.SetIncluded(ScriptsMap.EnsureIndex(ref IndexHolder<TScript>.Index));
-        }
+        public void OnInclude<TScript>() => _scripts.SetIncluded<TScript>();
 
         /// <summary>
         /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method.

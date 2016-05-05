@@ -760,19 +760,19 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return _lazyCustomAttributes;
         //}
 
-        //internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(ModuleCompilationState compilationState)
-        //{
-        //    foreach (CSharpAttributeData attribute in GetAttributes())
-        //    {
-        //        yield return attribute;
-        //    }
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            foreach (AttributeData attribute in GetAttributes())
+            {
+                yield return attribute;
+            }
 
-        //    // Yield hidden attributes last, order might be important.
-        //    foreach (CSharpAttributeData attribute in _lazyHiddenAttributes)
-        //    {
-        //        yield return attribute;
-        //    }
-        //}
+            // Yield hidden attributes last, order might be important.
+            foreach (AttributeData attribute in _lazyHiddenAttributes)
+            {
+                yield return attribute;
+            }
+        }
 
         internal override PhpCompilation DeclaringCompilation => null;
     }

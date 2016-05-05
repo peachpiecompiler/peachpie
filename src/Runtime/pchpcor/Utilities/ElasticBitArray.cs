@@ -22,7 +22,7 @@ namespace Pchp.Core.Utilities
             if (capacity < 0)
                 throw new ArgumentException();
 
-            _bits = new int[capacity];
+            _bits = new int[capacity / IntSize + 1];
         }
 
         /// <summary>

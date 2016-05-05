@@ -470,10 +470,10 @@ namespace Pchp.CodeAnalysis.Symbols
             return ImmutableArray<AttributeData>.Empty;
         }
 
-        //internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(ModuleCompilationState compilationState)
-        //{
-        //    return GetAttributes();
-        //}
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            return GetAttributes();
+        }
 
         /// <summary>
         /// Intended behavior: this property, P, explicitly implements an interface property, IP, 
