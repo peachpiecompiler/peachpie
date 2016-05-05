@@ -2030,12 +2030,13 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                // Template: <ctx>.Include(string, bool once = false, bool throwOnError = false)
+                // Template: <ctx>.Include(dir, path, bool once = false, bool throwOnError = false)
                 cg.EmitLoadContext();
+                cg.Builder.EmitStringConstant(cg.Routine.ContainingFile.DirectoryRelativePath);
                 cg.EmitConvert(_arguments[0].Value, cg.CoreTypes.String);
                 cg.Builder.EmitBoolConstant(IsOnceSemantic);
                 cg.Builder.EmitBoolConstant(IsRequireSemantic);
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_bool_bool);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_string_bool_bool);
             }
 
             //

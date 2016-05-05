@@ -19,7 +19,6 @@ namespace Pchp.CodeAnalysis.Symbols
     /// namespace [DIR]{
     ///     class [FNAME] {
     ///         object [Main](){ ... }
-    ///         int Index{get;};
     ///     }
     /// }</remarks>
     sealed class SourceFileSymbol : NamedTypeSymbol, IWithSynthesized
@@ -68,17 +67,26 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntax.SourceUnit.FilePath, _compilation.Options.BaseDirectory);
 
+        /// <summary>
+        /// Gets relative path excluding the file name and trailing slashes.
+        /// </summary>
+        internal string DirectoryRelativePath
+        {
+            get
+            {
+                return (PathUtilities.GetDirectoryName(this.RelativeFilePath) ?? string.Empty)
+                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar)     // NormalizeRelativeDirectoryPath
+                    .Replace(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
+            }
+        }
+
         public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath, true);//.Replace('.', '_');
 
         public override string NamespaceName
         {
             get
             {
-                var dir = (PathUtilities.GetDirectoryName(this.RelativeFilePath) ?? string.Empty)
-                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar)     // NormalizeRelativeDirectoryPath
-                    .Replace(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
-
-                return WellKnownPchpNames.ScriptsRootNamespace + dir;
+                return WellKnownPchpNames.ScriptsRootNamespace + DirectoryRelativePath;
             }
         }
 
