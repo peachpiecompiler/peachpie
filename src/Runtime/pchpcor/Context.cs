@@ -171,7 +171,7 @@ namespace Pchp.Core
         public void OnInclude<TScript>() => _scripts.SetIncluded<TScript>();
 
         /// <summary>
-        /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method.
+        /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method within the global scope.
         /// </summary>
         /// <param name="dir">Current script directory. Used for relative path resolution. Can be <c>null</c> to not resolve against current directory.</param>
         /// <param name="path">The relative or absolute path to resolve and include.</param>
@@ -179,7 +179,7 @@ namespace Pchp.Core
         /// <param name="throwOnError">Whether to include according to require semantics.</param>
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string dir, string path, bool once = false, bool throwOnError = false)
-            => Include(dir, path, null, once, throwOnError);
+            => Include(dir, path, _globals, once, throwOnError);
 
         /// <summary>
         /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method.
