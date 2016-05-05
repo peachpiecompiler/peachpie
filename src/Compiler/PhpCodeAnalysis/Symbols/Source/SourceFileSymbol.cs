@@ -39,7 +39,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// List of functions declared within the file.
         /// </summary>
-        public IEnumerable<SourceFunctionSymbol> Functions => _lazyMembers.OfType<SourceFunctionSymbol>();
+        public ImmutableArray<SourceFunctionSymbol> Functions => _lazyMembers.OfType<SourceFunctionSymbol>().ToImmutableArray();
         
         readonly List<Symbol> _lazyMembers = new List<Symbol>();
         
