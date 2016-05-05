@@ -1953,12 +1953,24 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundIncludeEx
     {
+        /// <summary>
+        /// True for <c>include_once</c> or <c>require_once</c>.
+        /// </summary>
         public bool IsOnceSemantic => this.InclusionType == Pchp.Syntax.InclusionTypes.IncludeOnce || this.InclusionType == Pchp.Syntax.InclusionTypes.RequireOnce;
+
+        /// <summary>
+        /// True for <c>require</c> or <c>require_once</c>.
+        /// </summary>
+        public bool IsRequireSemantic => this.InclusionType == Pchp.Syntax.InclusionTypes.Require || this.InclusionType == Pchp.Syntax.InclusionTypes.RequireOnce;
 
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             TypeSymbol result;
             var isvoid = this.Access.IsNone;
+
+            Debug.Assert(_arguments.Length == 1);
+            Debug.Assert(_arguments[0].Value.Access.IsRead);
+            Debug.Assert(Access.IsRead || Access.IsNone);
 
             var method = this.Target;
             if (method != null) // => IsResolved
@@ -1972,13 +1984,13 @@ namespace Pchp.CodeAnalysis.Semantics
                         ? cg.CoreTypes.Void.Symbol
                         : cg.DeclaringCompilation.GetTypeFromTypeRef(cg.Routine.TypeRefContext, this.TypeRefMask);
 
-                    // Template: (<ctx>.IncludeOnceAllowed<TScript>()) ? <Main>() : TRUE
-                    // Template<isvoid>: if (<ctx>.IncludeOnceAllowed<TScript>()) <Main>()
+                    // Template: (<ctx>.CheckIncludeOnce<TScript>()) ? <Main>() : TRUE
+                    // Template<isvoid>: if (<ctx>.CheckIncludeOnce<TScript>()) <Main>()
                     var falseLabel = new object();
                     var endLabel = new object();
 
                     cg.EmitLoadContext();
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.IncludeOnceAllowed_TScript.Symbol.Construct(tscript));
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.CheckIncludeOnce_TScript.Symbol.Construct(tscript));
 
                     cg.Builder.EmitBranch(ILOpCode.Brfalse, falseLabel);
 
@@ -2019,7 +2031,11 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 // Template: <ctx>.Include(string, bool once = false, bool throwOnError = false)
-                throw new NotImplementedException();
+                cg.EmitLoadContext();
+                cg.EmitConvert(_arguments[0].Value, cg.CoreTypes.String);
+                cg.Builder.EmitBoolConstant(IsOnceSemantic);
+                cg.Builder.EmitBoolConstant(IsRequireSemantic);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_bool_bool);
             }
 
             //
@@ -2100,14 +2116,16 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(target_place.TypeOpt == null || target_place.TypeOpt.SpecialType != SpecialType.System_Void);
 
             // helper class maintaining reference to already evaluated instance of the eventual chain
-            var instance = new InstanceCacheHolder();
+            using (var instance_holder = new InstanceCacheHolder())
+            {
+                // <target> = <target> X <value>
+                target_place.EmitStorePrepare(cg, instance_holder);
 
-            // <target> = <target> X <value>
-            target_place.EmitStorePrepare(cg, instance);
+                //
+                target_place.EmitLoadPrepare(cg, instance_holder);
+            }
 
-            //
-            target_place.EmitLoadPrepare(cg, instance);
-            var xtype = target_place.EmitLoad(cg);
+            var xtype = target_place.EmitLoad(cg);  // type of left value operand
 
             TypeSymbol result_type;
 
@@ -2209,14 +2227,18 @@ namespace Pchp.CodeAnalysis.Semantics
             var read = this.Access.IsRead;
 
             var target_place = this.Target.BindPlace(cg);
-            var instance_holder = new InstanceCacheHolder();
             Debug.Assert(target_place != null);
 
-            // prepare target for store operation
-            target_place.EmitStorePrepare(cg, instance_holder);
+            using (var instance_holder = new InstanceCacheHolder())
+            {
 
-            // load target value
-            target_place.EmitLoadPrepare(cg, instance_holder);
+                // prepare target for store operation
+                target_place.EmitStorePrepare(cg, instance_holder);
+
+                // load target value
+                target_place.EmitLoadPrepare(cg, instance_holder);
+            }
+
             var target_load_type = target_place.EmitLoad(cg);
 
             TypeSymbol op_type;
@@ -2264,8 +2286,6 @@ namespace Pchp.CodeAnalysis.Semantics
             //
             target_place.EmitStore(cg, op_type);
 
-            //
-            instance_holder.Dispose();
             Debug.Assert(postfix_temp == null);
             Debug.Assert(!read || result_type.SpecialType != SpecialType.System_Void);
             

@@ -156,7 +156,7 @@ namespace Pchp.Core
         /// Used by runtime.
         /// Determines whether the <c>include_once</c>/<c>require_once</c> is allowed to proceed.
         /// </summary>
-        public bool IncludeOnceAllowed<TScript>()
+        public bool CheckIncludeOnce<TScript>()
         {
             return !_scripts.IsIncluded(IndexHolder<TScript>.Index);
         }
@@ -168,6 +168,18 @@ namespace Pchp.Core
         public void OnInclude<TScript>()
         {
             _scripts.SetIncluded(ScriptsMap.EnsureIndex(ref IndexHolder<TScript>.Index));
+        }
+
+        /// <summary>
+        /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method.
+        /// </summary>
+        /// <param name="path">The relative or absolute path to resolve and include.</param>
+        /// <param name="once">Whether to include according to include once semantics.</param>
+        /// <param name="throwOnError">Whether to include according to require semantics.</param>
+        /// <returns>Inclusion result value.</returns>
+        public PhpValue Include(string path, bool once = false, bool throwOnError = false)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

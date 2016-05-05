@@ -569,8 +569,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_intRef_string_method = ct.Context.Method("DeclareFunction", ct.Int32, ct.String, ct.RuntimeMethodHandle);
                 DeclareType_T_string = ct.Context.Method("DeclareType", ct.String);
 
-                IncludeOnceAllowed_TScript = ct.Context.Method("IncludeOnceAllowed");
+                CheckIncludeOnce_TScript = ct.Context.Method("IncludeOnceAllowed");
                 OnInclude_TScript = ct.Context.Method("OnInclude");
+                Include_string_bool_bool = ct.Context.Method("Include", ct.String, ct.Boolean, ct.Boolean);
 
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
             }
@@ -579,7 +580,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 CreateConsole,
                 AddScriptReference_TScript,
                 DeclareFunction_intRef_string_method, DeclareType_T_string,
-                IncludeOnceAllowed_TScript, OnInclude_TScript,
+                CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_bool_bool,
                 Dispose;
 
             public readonly CoreMethod
