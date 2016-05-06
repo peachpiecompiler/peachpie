@@ -2570,6 +2570,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
+                    cg.EmitPop(type);   // Operand is never an object instance
+
                     // FALSE
                     cg.Builder.EmitBoolConstant(false);
                     return cg.CoreTypes.Boolean;
