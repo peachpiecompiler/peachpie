@@ -122,8 +122,14 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
             if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
             if (expr is AST.IncludingEx) return BindIncludeEx((AST.IncludingEx)expr).WithAccess(access);
+            if (expr is AST.InstanceOfEx) return BindInstanceOfEx((AST.InstanceOfEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundExpression BindInstanceOfEx(AST.InstanceOfEx x)
+        {
+            return new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read), x.ClassNameRef);
         }
 
         BoundExpression BindIncludeEx(AST.IncludingEx x)

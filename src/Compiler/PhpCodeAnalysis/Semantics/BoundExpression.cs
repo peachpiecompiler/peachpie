@@ -967,4 +967,51 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     #endregion
+
+    #region BoundInstanceOfEx
+    
+    public partial class BoundInstanceOfEx : BoundExpression, IIsExpression
+    {
+        #region IIsExpression
+
+        IExpression IIsExpression.Operand => Operand;
+
+        ITypeSymbol IIsExpression.IsType => BoundIsType;
+
+        #endregion
+        
+        /// <summary>
+        /// The value to be checked.
+        /// </summary>
+        public BoundExpression Operand { get; private set; }
+
+        /// <summary>
+        /// The type to check operand against.
+        /// </summary>
+        public TypeRef IsType { get; private set; }
+
+        /// <summary>
+        /// <see cref="IsType"/> bound to a type symbol if possible.
+        /// </summary>
+        internal TypeSymbol BoundIsType { get; set; }
+
+        public BoundInstanceOfEx(BoundExpression operand, TypeRef isType)
+        {
+            Contract.ThrowIfNull(operand);
+            Contract.ThrowIfNull(isType);
+
+            this.Operand = operand;
+            this.IsType = isType;
+        }
+
+        public override OperationKind Kind => OperationKind.IsExpression;
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitIsExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitIsExpression(this, argument);
+    }
+
+    #endregion
 }

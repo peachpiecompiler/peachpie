@@ -2534,4 +2534,53 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
     }
+
+    partial class BoundInstanceOfEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            var type = cg.Emit(Operand);
+
+            // dereference
+            if (type == cg.CoreTypes.PhpAlias)
+            {
+                type = cg.Emit_PhpAlias_GetValue();
+            }
+
+            //
+            if (BoundIsType != null)
+            {
+                if (type == cg.CoreTypes.PhpValue)
+                {
+                    // Template: Operators.IsA<T>(value)
+                    // TODO
+                }
+                else if (type.IsReferenceType && type != cg.CoreTypes.PhpArray && type != cg.CoreTypes.PhpString)
+                {
+                    // Template: value is T : object
+                    cg.Builder.EmitOpCode(ILOpCode.Isinst);
+                    cg.EmitSymbolToken(BoundIsType, null);
+
+                    // object != null
+                    cg.Builder.EmitNullConstant(); // .ldnull
+                    cg.Builder.EmitOpCode(ILOpCode.Cgt_un); // .cgt.un
+
+                    //
+                    return cg.CoreTypes.Boolean;
+                }
+                else
+                {
+                    // FALSE
+                    cg.Builder.EmitBoolConstant(false);
+                    return cg.CoreTypes.Boolean;
+                }
+            }
+            else
+            {
+                // Template: Operators.IsA(value, type);
+            }
+
+            throw new NotImplementedException();
+        }
+    }
 }

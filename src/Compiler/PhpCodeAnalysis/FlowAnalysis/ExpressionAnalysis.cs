@@ -847,6 +847,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region Visit InstanceOf
+
+        public sealed override void VisitIsExpression(IIsExpression operation)
+            => VisitInstanceOf((BoundInstanceOfEx)operation);
+
+        protected virtual void VisitInstanceOf(BoundInstanceOfEx x)
+        {
+            Visit(x.Operand);
+
+            //
+            if (x.IsType is DirectTypeRef)
+            {
+                x.BoundIsType = (NamedTypeSymbol)_model.GetType(((DirectTypeRef)x.IsType).ClassName);
+
+                // TOOD: x.ConstantValue // in case we know and the operand is a local variable (we can ignore the expression and emit result immediatelly)
+            }
+
+            //
+            x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
+        }
+
+        #endregion
+
         #region Visit Function Call
 
         public override void VisitInvocationExpression(IInvocationExpression operation)
