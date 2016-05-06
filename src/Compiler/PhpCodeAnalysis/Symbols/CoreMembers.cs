@@ -282,6 +282,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Long_ToString = ct.Long.Method("ToString");
                 ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
 
+                AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
+
                 Echo_String = ct.Context.Method("Echo", ct.String);
                 Echo_PhpString = ct.Context.Method("Echo", ct.PhpString);
                 Echo_PhpNumber = ct.Context.Method("Echo", ct.PhpNumber);
@@ -296,6 +298,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String,
+                AsObject_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32;
         }
 
@@ -314,6 +317,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
                 AsArray = ct.PhpValue.Method("AsArray");
+                AsObject = ct.PhpValue.Method("AsObject");
 
                 get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
@@ -339,7 +343,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias,
-                AsArray,
+                AsArray, AsObject,
                 DeepCopy,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray,

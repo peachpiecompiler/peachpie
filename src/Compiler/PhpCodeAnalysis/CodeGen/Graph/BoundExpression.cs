@@ -2539,23 +2539,36 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            Debug.Assert(Access.IsRead || Access.IsNone);
+
             var type = cg.Emit(Operand);
+
+            //
+            if (Access.IsNone)
+            {
+                cg.EmitPop(type);
+                return cg.CoreTypes.Void;
+            }
 
             // dereference
             if (type == cg.CoreTypes.PhpAlias)
             {
-                type = cg.Emit_PhpAlias_GetValue();
+                // <alias>.Value.AsObject()
+                cg.Emit_PhpAlias_GetValueRef();
+                type = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsObject);                
+            }
+
+            // PhpValue -> object
+            if (type == cg.CoreTypes.PhpValue)
+            {
+                // Template: Operators.AsObject(value) is T
+                type = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.AsObject_PhpValue);
             }
 
             //
             if (BoundIsType != null)
             {
-                if (type == cg.CoreTypes.PhpValue)
-                {
-                    // Template: Operators.IsA<T>(value)
-                    // TODO
-                }
-                else if (type.IsReferenceType && type != cg.CoreTypes.PhpArray && type != cg.CoreTypes.PhpString)
+                if (type.IsReferenceType && type != cg.CoreTypes.PhpArray && type != cg.CoreTypes.PhpString)
                 {
                     // Template: value is T : object
                     cg.Builder.EmitOpCode(ILOpCode.Isinst);
@@ -2564,9 +2577,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     // object != null
                     cg.Builder.EmitNullConstant(); // .ldnull
                     cg.Builder.EmitOpCode(ILOpCode.Cgt_un); // .cgt.un
-
-                    //
-                    return cg.CoreTypes.Boolean;
                 }
                 else
                 {
@@ -2574,8 +2584,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // FALSE
                     cg.Builder.EmitBoolConstant(false);
-                    return cg.CoreTypes.Boolean;
                 }
+
+                //
+                return cg.CoreTypes.Boolean;
             }
             else
             {

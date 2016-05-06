@@ -114,6 +114,15 @@ namespace Pchp.Core
 
         #endregion
 
+        #region As*
+
+        /// <summary>
+        /// Gets underlaying class instance or <c>null</c>.
+        /// </summary>
+        public static object AsObject(PhpValue value) => value.AsObject();
+
+        #endregion
+
         #region ToNumber
 
         public static NumberInfo ToNumber(string str, out PhpNumber number)

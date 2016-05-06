@@ -175,6 +175,11 @@ namespace Pchp.Core
 
         #region Operators
 
+        /// <summary>
+        /// Gets underlaying class instance or <c>null</c>.
+        /// </summary>
+        public object AsObject() => _type.AsObject(ref this);
+
         public PhpArray AsArray() => _type.AsArray(ref this);   // TODO: return IPhpArrayOperators
 
         public object EnsureObject() => _type.EnsureObject(ref this);

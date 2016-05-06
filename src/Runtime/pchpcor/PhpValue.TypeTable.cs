@@ -73,6 +73,11 @@ namespace Pchp.Core
             public abstract PhpArray AsArray(ref PhpValue me);
 
             /// <summary>
+            /// Gets underlaying class instance or <c>null</c>.
+            /// </summary>
+            public virtual object AsObject(ref PhpValue me) => null;
+
+            /// <summary>
             /// Creates a deep copy of PHP variable.
             /// </summary>
             /// <returns>A deep copy of the value.</returns>
@@ -320,6 +325,7 @@ namespace Pchp.Core
                 throw new NotImplementedException();  // Fatal Error: Cannot use object of type stdClass as array
             }
             public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }
+            public override object AsObject(ref PhpValue me) => me.Object;
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
         }
 
@@ -356,6 +362,7 @@ namespace Pchp.Core
             public override PhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override PhpArray AsArray(ref PhpValue me) => me.Alias.Value.AsArray();
+            public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
         }
     }

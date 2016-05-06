@@ -446,6 +446,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits load of <c>PhpAlias.Value</c>,
+        /// expecting <c>PhpAlias</c> on top of evaluation stack,
+        /// pushing <c>PhpValue</c> on top of the stack.
+        /// </summary>
+        public void Emit_PhpAlias_GetValueRef()
+        {
+            // ref <stack>.Value
+            EmitOpCode(ILOpCode.Ldflda);
+            EmitSymbolToken(CoreMethods.PhpAlias.Value, null);
+        }
+
+        /// <summary>
         /// Emits store to <c>PhpAlias.Value</c>,
         /// expecting <c>PhpAlias</c> and <c>PhpValue</c> on top of evaluation stack.
         /// </summary>
