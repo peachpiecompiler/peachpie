@@ -214,7 +214,7 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    return PhpValue.Null;   // TODO: Warning
+                    return PhpValue.Create(false);   // TODO: Warning
                 }
             }
         }
