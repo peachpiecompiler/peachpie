@@ -1,7 +1,5 @@
 <?php
 
-echo TRUE;
-echo FALSE;
-echo NULL;
+echo TRUE, FALSE, NULL;
 
-// TODO: __LINE__ __FILE__ etc
+echo "Done.";

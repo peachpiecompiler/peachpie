@@ -202,7 +202,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
         readonly List<VisitLocalArgs> _locals = new List<VisitLocalArgs>();
         SemanticsBinder _lazyBinder;
 
-        SemanticsBinder SemanticBinder { get { return _lazyBinder ?? (_lazyBinder = new SemanticsBinder()); } }
+        SemanticsBinder SemanticBinder { get { return _lazyBinder ?? (_lazyBinder = new SemanticsBinder(_routine)); } }
         
         private LocalsBinder(SourceRoutineSymbol routine)
             : base(routine.Syntax)

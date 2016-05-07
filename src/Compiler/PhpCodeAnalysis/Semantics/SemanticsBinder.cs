@@ -17,10 +17,15 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     internal class SemanticsBinder
     {
+        readonly Symbols.SourceRoutineSymbol _routine;
+
         #region Construction
 
-        public SemanticsBinder(/*PhpCompilation compilation, AST.GlobalCode ast, bool ignoreAccessibility*/)
+        public SemanticsBinder(Symbols.SourceRoutineSymbol routine /*PhpCompilation compilation, AST.GlobalCode ast, bool ignoreAccessibility*/)
         {
+            Contract.ThrowIfNull(routine);
+
+            _routine = routine;
         }
 
         #endregion
@@ -123,8 +128,33 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
             if (expr is AST.IncludingEx) return BindIncludeEx((AST.IncludingEx)expr).WithAccess(access);
             if (expr is AST.InstanceOfEx) return BindInstanceOfEx((AST.InstanceOfEx)expr).WithAccess(access);
+            if (expr is AST.PseudoConstUse) return BindPseudoConst((AST.PseudoConstUse)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundExpression BindPseudoConst(AST.PseudoConstUse x)
+        {
+            var unit = _routine.ContainingFile.Syntax.SourceUnit;
+
+            switch (x.Type)
+            {
+                case AST.PseudoConstUse.Types.Line:
+                    return new BoundLiteral(unit.LineBreaks.GetLineFromPosition(x.Span.Start) + 1);
+
+                case AST.PseudoConstUse.Types.File:
+                    goto default;    // ROOT + file.Relative
+
+                case AST.PseudoConstUse.Types.Function:
+                    if (_routine is Symbols.SourceFunctionSymbol || _routine is Symbols.SourceMethodSymbol)
+                        return new BoundLiteral(_routine.Name);
+                    if (_routine is Symbols.SourceGlobalMethodSymbol)
+                        return new BoundLiteral(string.Empty);
+                    goto default;    // lambda
+
+                default:
+                    throw new NotImplementedException(x.Type.ToString());    // 
+            }
         }
 
         BoundExpression BindInstanceOfEx(AST.InstanceOfEx x)
