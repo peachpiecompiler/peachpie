@@ -1025,18 +1025,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             TypeRefMask result_type = 0;
 
-            // reanalyse candidates
-            foreach (var c in overloads.Candidates)
+            if (overloads.IsFinal)
             {
-                // analyze TargetMethod with x.Arguments
-                // require method result type if access != none
-                var enqueued = this.Worklist.EnqueueRoutine(c, _analysis.CurrentBlock, args);
-                if (enqueued)   // => target has to be reanalysed
+                // reanalyse candidates
+                foreach (var c in overloads.Candidates)
                 {
-                    // note: continuing current block may be waste of time
-                }
+                    // analyze TargetMethod with x.Arguments
+                    // require method result type if access != none
+                    var enqueued = this.Worklist.EnqueueRoutine(c, _analysis.CurrentBlock, args);
+                    if (enqueued)   // => target has to be reanalysed
+                    {
+                        // note: continuing current block may be waste of time
+                    }
 
-                result_type |= c.GetResultType(TypeCtx);
+                    result_type |= c.GetResultType(TypeCtx);
+                }
+            }
+            else
+            {
+                result_type = TypeRefMask.AnyType;
             }
 
             x.Overloads = overloads;
