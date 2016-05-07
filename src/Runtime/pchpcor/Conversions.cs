@@ -121,6 +121,11 @@ namespace Pchp.Core
         /// </summary>
         public static object AsObject(PhpValue value) => value.AsObject();
 
+        /// <summary>
+        /// Gets the array access object.
+        /// </summary>
+        public static object AsArray(PhpValue value) => value.AsArray();
+
         #endregion
 
         #region ToNumber

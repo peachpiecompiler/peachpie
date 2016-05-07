@@ -446,9 +446,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (type == CoreTypes.PhpValue)
                     {
-                        // <PhpValue>.AsArray()
-                        EmitPhpValueAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsArray).Expect(CoreTypes.PhpArray);
+                        // Convert.AsArray(value)
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue).Expect(CoreTypes.PhpArray);
                         return;
                     }
                     throw new NotImplementedException();

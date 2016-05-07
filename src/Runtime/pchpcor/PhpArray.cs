@@ -130,16 +130,6 @@ namespace Pchp.Core
             return result;
         }
 
-        /// <summary>
-        /// Cast given <paramref name="arrayobj"/> to <see cref="PhpArray"/>. Depends on current implementation of <see cref="PhpArray"/>.
-        /// </summary>
-        /// <param name="arrayobj"><see cref="Object"/> to be casted to <see cref="PhpArray"/>.</param>
-        /// <returns>Casted object or <c>null</c>.</returns>
-        public static PhpArray AsPhpArray(object arrayobj)
-        {
-            return arrayobj as PhpArray;
-        }
-
         #endregion
 
         #region Operators

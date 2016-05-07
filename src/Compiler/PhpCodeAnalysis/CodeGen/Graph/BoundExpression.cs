@@ -2438,11 +2438,30 @@ namespace Pchp.CodeAnalysis.Semantics
         TypeSymbol IBoundReference.TypeOpt => _type;
         TypeSymbol _type;
 
+        void EmitArrayPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, Array);
+
+            if (Array.ResultType == cg.CoreTypes.PhpArray)
+            {
+                // ok
+            }
+            else if (Array.ResultType == cg.CoreTypes.PhpValue)
+            {
+                // Convert.AsArray()
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.AsArray_PhpValue);
+            }
+            else
+            {
+                throw new NotImplementedException();    // TODO: emit convert as PhpArray
+            }
+        }
+
         void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             // Template: array[index]
 
-            InstanceCacheHolder.EmitInstance(instanceOpt, cg, this.Array);
+            EmitArrayPrepare(cg, instanceOpt);
 
             if (this.Index == null)
                 throw new ArgumentException();
@@ -2453,10 +2472,6 @@ namespace Pchp.CodeAnalysis.Semantics
         TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
         {
             // Template: array[index]
-
-            // array on top of stack already
-            if (this.Array.ResultType != cg.CoreTypes.PhpArray)
-                throw new NotImplementedException();    // TODO: emit convert as PhpArray
 
             if (Access.EnsureObject)
             {
@@ -2482,7 +2497,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             // Template: array[index]
 
-            InstanceCacheHolder.EmitInstance(instanceOpt, cg, this.Array);
+            EmitArrayPrepare(cg, instanceOpt);
 
             if (this.Index != null)
             {

@@ -37,19 +37,15 @@ namespace runtests
                 }
             }
 
-            // run tests
-            var results = testdirs
-                .SelectMany(dir => ExpandTestDir(dir))
-                .Select(testpath => new
-                {
-                    Test = testpath,
-                    Result = TestCore(testpath, phpexepath)
-                }).ToList();
+            // run tests lazily
+            var tests = testdirs
+                .SelectMany(dir => ExpandTestDir(dir));
 
             // output results
-            foreach (var result in results)
+            foreach (var test in tests)
             {
-                Console.WriteLine($"{result.Test} ... {result.Result}");
+                Console.Write($"{test} ... ");
+                Console.WriteLine(TestCore(test, phpexepath));
             }
         }
 

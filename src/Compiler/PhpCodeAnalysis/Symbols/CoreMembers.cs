@@ -283,6 +283,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
+                AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
 
                 Echo_String = ct.Context.Method("Echo", ct.String);
                 Echo_PhpString = ct.Context.Method("Echo", ct.PhpString);
@@ -298,7 +299,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String,
-                AsObject_PhpValue,
+                AsObject_PhpValue, AsArray_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32;
         }
 
