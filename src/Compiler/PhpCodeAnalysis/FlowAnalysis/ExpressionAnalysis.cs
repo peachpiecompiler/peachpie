@@ -210,11 +210,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //    VisitDirectFcnCall((DirectFcnCall)condition, branch);
                 //    return;
                 //}
-                //if (condition is InstanceOfEx)
-                //{
-                //    VisitInstanceOfEx((InstanceOfEx)condition, branch);
-                //    return;
-                //}
+                if (condition is BoundInstanceOfEx)
+                {
+                    VisitInstanceOf((BoundInstanceOfEx)condition, branch);
+                    return;
+                }
                 //if (condition is IssetEx)
                 //{
                 //    VisitIssetEx((IssetEx)condition, branch);
@@ -850,9 +850,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region Visit InstanceOf
 
         public sealed override void VisitIsExpression(IIsExpression operation)
-            => VisitInstanceOf((BoundInstanceOfEx)operation);
+            => VisitInstanceOf((BoundInstanceOfEx)operation, ConditionBranch.AnyResult);
 
-        protected virtual void VisitInstanceOf(BoundInstanceOfEx x)
+        protected virtual void VisitInstanceOf(BoundInstanceOfEx x, ConditionBranch branch)
         {
             Visit(x.Operand);
 
@@ -862,6 +862,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.IsTypeResolved = (NamedTypeSymbol)_model.GetType(x.IsTypeDirect);
 
                 // TOOD: x.ConstantValue // in case we know and the operand is a local variable (we can ignore the expression and emit result immediatelly)
+
+                if (branch == ConditionBranch.ToTrue && x.Operand is BoundVariableRef)
+                {
+                    // if (Variable is T) => variable is T in True branch state
+                    State.SetVar(((BoundVariableRef)x.Operand).Name, TypeCtx.GetTypeMask(x.IsTypeDirect));
+                }
             }
 
             //
