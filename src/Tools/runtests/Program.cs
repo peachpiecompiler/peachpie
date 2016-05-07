@@ -63,6 +63,8 @@ namespace runtests
             var testfname = Path.GetFileName(testpath);
             var outputexe = Path.Combine(testfname + ".exe");   // current dir so it finds pchpcor.dll etc.
 
+            File.Delete(outputexe);
+
             // php.exe 'testpath' >> OUTPUT1
             var phpoutput = RunProcess(phpexepath, testpath);
 
@@ -73,6 +75,8 @@ namespace runtests
 
             // testpath.exe >> OUTPUT2
             var output = RunProcess(outputexe, string.Empty);
+
+            File.Delete(outputexe);
 
             if (output == phpoutput)
             {
