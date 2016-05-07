@@ -83,6 +83,10 @@ namespace Pchp.Core
         [DllImport("kernel32.dll")]
         static extern bool WriteConsole(int hConsoleOutput, string lpBuffer, uint nNumberOfCharsToWrite, out uint lpNumberOfCharsWritten, IntPtr lpReserved);
 
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool WriteFile(IntPtr hFile, byte[] lpBuffer, uint nNumberOfBytesToWrite, out uint lpNumberOfBytesWritten, [In] IntPtr mustBeZero);
+
         #endregion
 
         #region Constants
@@ -116,7 +120,12 @@ namespace Pchp.Core
         public static int Write(string value)
         {
             uint written;
-            if (!WriteConsole(hConsoleOutput, value, (uint)value.Length, out written, IntPtr.Zero))
+            //if (!WriteConsole(hConsoleOutput, value, (uint)value.Length, out written, IntPtr.Zero))
+            //    return -1;
+
+            var bytes = Encoding.UTF8.GetBytes(value);
+
+            if (!WriteFile(new IntPtr(hConsoleOutput), bytes, (uint)bytes.Length, out written, IntPtr.Zero))
                 return -1;
 
             return (int)written;
