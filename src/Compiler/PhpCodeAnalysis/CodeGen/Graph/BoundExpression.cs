@@ -948,8 +948,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     //returned_typecode = node.Expr.Emit(codeGenerator);
                     //codeGenerator.EmitLoadScriptContext();
                     //il.Emit(OpCodes.Call, Methods.ScriptContext.EnableErrorReporting);
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = cg.Emit(Operand);
+                    break;  // TODO @...
+                    //throw new NotImplementedException();
 
                 case Operations.BitNegation:
                     //Template: "~x" Operators.BitNot(x)                                     
