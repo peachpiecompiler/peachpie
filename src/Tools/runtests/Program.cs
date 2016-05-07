@@ -80,7 +80,8 @@ namespace runtests
             }
 
             // TODO: log details
-
+            Console.WriteLine(output);
+            Console.WriteLine(phpoutput);
             //
             return TestResult.Failed;
         }
