@@ -857,9 +857,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Visit(x.Operand);
 
             //
-            if (x.IsType is DirectTypeRef)
+            if (!x.IsTypeDirect.IsEmpty())
             {
-                x.BoundIsType = (NamedTypeSymbol)_model.GetType(((DirectTypeRef)x.IsType).ClassName);
+                x.IsTypeResolved = (NamedTypeSymbol)_model.GetType(x.IsTypeDirect);
 
                 // TOOD: x.ConstantValue // in case we know and the operand is a local variable (we can ignore the expression and emit result immediatelly)
             }

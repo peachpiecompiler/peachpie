@@ -2566,13 +2566,13 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            if (BoundIsType != null)
+            if (IsTypeResolved != null)
             {
                 if (type.IsReferenceType && type != cg.CoreTypes.PhpArray && type != cg.CoreTypes.PhpString)
                 {
                     // Template: value is T : object
                     cg.Builder.EmitOpCode(ILOpCode.Isinst);
-                    cg.EmitSymbolToken(BoundIsType, null);
+                    cg.EmitSymbolToken(IsTypeResolved, null);
 
                     // object != null
                     cg.Builder.EmitNullConstant(); // .ldnull

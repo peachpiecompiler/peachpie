@@ -976,7 +976,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IExpression IIsExpression.Operand => Operand;
 
-        ITypeSymbol IIsExpression.IsType => BoundIsType;
+        ITypeSymbol IIsExpression.IsType => IsTypeResolved;
 
         #endregion
         
@@ -988,20 +988,23 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The type to check operand against.
         /// </summary>
-        public TypeRef IsType { get; private set; }
+        public QualifiedName IsTypeDirect { get; set; }
+
+        /// <summary>
+        /// The type to check operand against.
+        /// </summary>
+        public BoundExpression IsTypeIndirect { get; set; }
 
         /// <summary>
         /// <see cref="IsType"/> bound to a type symbol if possible.
         /// </summary>
-        internal TypeSymbol BoundIsType { get; set; }
+        internal TypeSymbol IsTypeResolved { get; set; }
 
-        public BoundInstanceOfEx(BoundExpression operand, TypeRef isType)
+        public BoundInstanceOfEx(BoundExpression operand)
         {
             Contract.ThrowIfNull(operand);
-            Contract.ThrowIfNull(isType);
-
+            
             this.Operand = operand;
-            this.IsType = isType;
         }
 
         public override OperationKind Kind => OperationKind.IsExpression;

@@ -129,7 +129,19 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindInstanceOfEx(AST.InstanceOfEx x)
         {
-            return new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read), x.ClassNameRef);
+            var result = new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read));
+
+            if (x.ClassNameRef is AST.DirectTypeRef)
+            {
+                result.IsTypeDirect = ((AST.DirectTypeRef)x.ClassNameRef).ClassName;
+            }
+            else
+            {
+                result.IsTypeIndirect = BindExpression(((AST.IndirectTypeRef)x.ClassNameRef).ClassNameVar, BoundAccess.Read);
+            }
+
+            //
+            return result;
         }
 
         BoundExpression BindIncludeEx(AST.IncludingEx x)
