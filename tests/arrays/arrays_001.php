@@ -8,4 +8,6 @@ function testarr()
 	echo $arr[0][0];
 }
 
+testarr();
+
 echo "Done.";
