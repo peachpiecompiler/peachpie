@@ -16,7 +16,7 @@ function test($x) {
 	echo $x instanceof Dog ? "1" : "0";
 }
 
-/** @param object */
+/** @param object $x */
 function test2($x) {
 	echo $x instanceof Dog ? "1" : "0";
 }
