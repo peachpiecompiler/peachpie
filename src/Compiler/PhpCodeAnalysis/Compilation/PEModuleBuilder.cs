@@ -45,10 +45,8 @@ namespace Pchp.CodeAnalysis.Emit
                     il.EmitLocalStore(ctx_loc);
 
                     // emit .call method;
-                    int stack = 0;
                     if (method.HasThis)
                     {
-                        stack--;
                         throw new NotImplementedException();    // TODO: create instance of ContainingType
                     }
 
@@ -72,10 +70,9 @@ namespace Pchp.CodeAnalysis.Emit
                             throw new NotImplementedException();    // TODO: default parameter
                         }
                     }
-                    stack -= method.ParameterCount;
 
-                    il.EmitOpCode(ILOpCode.Call, stack);
-                    il.EmitToken(method, null, diagnostic);
+                    if (il.EmitCall(this, diagnostic, ILOpCode.Call, method).SpecialType != SpecialType.System_Void)
+                        il.EmitOpCode(ILOpCode.Pop);
 
                     // ctx.Dispose
                     il.EmitLocalLoad(ctx_loc);
@@ -83,10 +80,6 @@ namespace Pchp.CodeAnalysis.Emit
                     il.EmitToken(this.Compilation.CoreMethods.Context.Dispose.Symbol, null, diagnostic);
 
                     // return
-                    if (!method.ReturnsVoid)
-                        il.EmitOpCode(ILOpCode.Pop);
-
-                    Debug.Assert(method.ReturnsVoid);
                     il.EmitRet(true);
                 },
                 null, diagnostic, false);
