@@ -39,6 +39,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Attributes.cs" />
+    <Compile Include="Comparison.cs" />
     <Compile Include="Context.HandleMap.cs" />
     <Compile Include="Context.ScriptsMap.cs" />
     <Compile Include="Dynamic\CallFunctionBinder.cs" />

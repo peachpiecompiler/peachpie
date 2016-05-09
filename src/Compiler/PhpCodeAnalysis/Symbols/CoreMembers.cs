@@ -293,6 +293,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Double = ct.Context.Method("Echo", ct.Double);
                 Echo_Long = ct.Context.Method("Echo", ct.Long);
                 Echo_Int32 = ct.Context.Method("Echo", ct.Int32);
+
+                Clt_long_double = ct.Comparison.Method("Clt", ct.Long, ct.Double);
+                Cgt_long_double = ct.Comparison.Method("Cgt", ct.Long, ct.Double);
+                Compare_value_value = ct.Comparison.Method("Compare", ct.PhpValue, ct.PhpValue);
             }
 
             public readonly CoreMethod
@@ -300,7 +304,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String,
                 AsObject_PhpValue, AsArray_PhpValue,
-                Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32;
+                Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
+
+                Clt_long_double, Cgt_long_double, Compare_value_value;
         }
 
         public struct PhpValueHolder

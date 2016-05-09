@@ -207,7 +207,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        throw new NotImplementedException();
+                        throw new NotImplementedException($"{from.Name}");
                     }
             }
 
