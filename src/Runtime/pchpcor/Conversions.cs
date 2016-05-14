@@ -112,6 +112,20 @@ namespace Pchp.Core
             return value != null && value.Length != 0 && (value.Length != 1 || value[0] != '0');
         }
 
+        /// <summary>
+        /// Converts value to boolean according to PHP.
+        /// </summary>
+        public static bool ToBoolean(PhpValue value) => value.ToBoolean();
+
+        /// <summary>
+        /// Converts class instance to boolean according to PHP.
+        /// </summary>
+        public static bool ToBoolean(object value)
+        {
+            var convertible = value as IPhpConvertible;
+            return value != null && (convertible == null || convertible.ToBoolean());
+        }
+
         #endregion
 
         #region AsObject, AsArray, ToObject

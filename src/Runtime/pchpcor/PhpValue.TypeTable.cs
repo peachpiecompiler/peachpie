@@ -309,11 +309,7 @@ namespace Pchp.Core
                 if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToDouble();
                 throw new NotImplementedException();
             }
-            public override bool ToBoolean(ref PhpValue me)
-            {
-                if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToBoolean();
-                throw new NotImplementedException();
-            }
+            public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.Object);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number)
             {
                 if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToNumber(out number);

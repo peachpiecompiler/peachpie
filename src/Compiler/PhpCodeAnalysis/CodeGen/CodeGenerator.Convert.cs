@@ -47,55 +47,79 @@ namespace Pchp.CodeAnalysis.CodeGen
             // dereference
             if (from == CoreTypes.PhpAlias)
             {
-                Emit_PhpAlias_GetValue();
-                from = CoreTypes.PhpValue;
+                // <PhpAlias>.Value.ToBoolean()
+                Emit_PhpAlias_GetValueRef();
+                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
+
+                // !
+                if (negation)
+                {
+                    EmitLogicNegation();
+                }
+
+                //
+                return;
             }
 
             //
             from = EmitSpecialize(from, fromHint);
 
             //
-            if (from.SpecialType != SpecialType.System_Boolean)
+            switch (from.SpecialType)
             {
-                switch (from.SpecialType)
-                {
-                    case SpecialType.System_Int32:
-                        break; // nop
+                case SpecialType.System_Boolean:
+                case SpecialType.System_Int32:
+                    break; // nop
 
-                    case SpecialType.System_Int64:
-                        _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
-                        _il.EmitOpCode(ILOpCode.Conv_i8, 0);
-                        _il.EmitOpCode(ILOpCode.Cgt_un);
-                        // or ?
-                        // _il.EmitOpCode(ILOpCode.Conv_i4);
+                case SpecialType.System_Int64:
+                    _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                    _il.EmitOpCode(ILOpCode.Conv_i8, 0);
+                    _il.EmitOpCode(ILOpCode.Cgt_un);
+                    // or ?
+                    // _il.EmitOpCode(ILOpCode.Conv_i4);
+                    break;
+
+                case SpecialType.System_String:
+                    // Convert.ToBoolean(string)
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_String);
+                    break;
+
+                case SpecialType.System_Object:
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_Object);
+                    break;
+
+                case SpecialType.None:
+                    if (from == CoreTypes.PhpValue)
+                    {
+                        // Convert.ToBoolean(value)
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_PhpValue);
                         break;
+                    }
+                    else if (from == CoreTypes.PhpString)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
+                        break;
+                    }
+                    else if (from == CoreTypes.PhpNumber)
+                    {
+                        EmitPhpNumberAddr();
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
+                        break;
+                    }
+                    else if (from == CoreTypes.PhpArray)
+                    {
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.PhpArray.ToBoolean);
+                        break;
+                    }
+                    else if (from.IsReferenceType)
+                    {
+                        goto case SpecialType.System_Object;
+                    }
 
-                    case SpecialType.None:
-                        if (from == CoreTypes.PhpValue)
-                        {
-                            EmitPhpValueAddr();
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
-                            break;
-                        }
-                        else if (from == CoreTypes.PhpString)
-                        {
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
-                            break;
-                        }
-                        else if (from == CoreTypes.PhpNumber)
-                        {
-                            EmitPhpNumberAddr();
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
-                            break;
-                        }
-                        else
-                        {
-                            throw new NotImplementedException();
-                        }
+                    goto default;
 
-                    default:
-                        throw new NotImplementedException();
-                }
+                default:
+                    throw new NotImplementedException($"(bool){from.Name}");
             }
 
             // !<I4>

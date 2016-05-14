@@ -281,6 +281,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Double_Context = ct.Convert.Method("ToString", ct.Double, ct.Context);
                 Long_ToString = ct.Long.Method("ToString");
                 ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
+                ToBoolean_PhpValue = ct.Convert.Method("ToBoolean", ct.PhpValue);
+                ToBoolean_Object = ct.Convert.Method("ToBoolean", ct.Object);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
                 AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
@@ -303,7 +305,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
-                ToBoolean_String,
+                ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
                 AsObject_PhpValue, AsArray_PhpValue, ToClass_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
 
@@ -529,6 +531,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 ToString_Context = ct.PhpArray.Method("ToString", ct.Context);
                 ToClass = ct.PhpArray.Method("ToClass");
+                ToBoolean = ct.PhpArray.Method("ToBoolean");
 
                 GetItemValue_IntStringKey = ct.PhpArray.Method("GetItemValue", ct.IntStringKey);
 
@@ -544,7 +547,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToClass, ToString_Context,
+                ToClass, ToString_Context, ToBoolean,
                 GetItemValue_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
