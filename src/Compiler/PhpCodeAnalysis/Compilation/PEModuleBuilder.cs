@@ -65,6 +65,11 @@ namespace Pchp.CodeAnalysis.Emit
                             il.EmitCall(this, diagnostic, ILOpCode.Call, this.Compilation.Context_Globals.GetMethod)
                                 .Expect(p.Type);
                         }
+                        else if (p.Type == types.Object && p.Name == SpecialParameterSymbol.ThisName)
+                        {
+                            // null
+                            il.EmitNullConstant();
+                        }
                         else
                         {
                             throw new NotImplementedException();    // TODO: default parameter

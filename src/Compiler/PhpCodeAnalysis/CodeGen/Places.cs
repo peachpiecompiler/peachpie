@@ -65,6 +65,8 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         readonly LocalDefinition _def;
 
+        public override string ToString() => $"${_def.Name}";
+
         public LocalPlace(LocalDefinition def)
         {
             Contract.ThrowIfNull(def);
@@ -94,6 +96,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public int Index => ((MethodSymbol)_p.ContainingSymbol).HasThis ? _p.Ordinal + 1 : _p.Ordinal;
 
+        public override string ToString() => $"${_p.Name}";
+
         public ParamPlace(ParameterSymbol p)
         {
             Contract.ThrowIfNull(p);
@@ -115,6 +119,35 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitStorePrepare(ILBuilder il) { }
 
         public void EmitStore(ILBuilder il) => il.EmitStoreArgumentOpcode(Index);
+    }
+
+    /// <summary>
+    /// Place wrapper allowing only read operation.
+    /// </summary>
+    internal class ReadOnlyPlace : IPlace
+    {
+        readonly IPlace _place;
+
+        public ReadOnlyPlace(IPlace place)
+        {
+            Contract.ThrowIfNull(place);
+            _place = place;
+        }
+
+        public bool HasAddress => _place.HasAddress;
+
+        public TypeSymbol TypeOpt => _place.TypeOpt;
+
+        public TypeSymbol EmitLoad(ILBuilder il) => _place.EmitLoad(il);
+
+        public void EmitLoadAddress(ILBuilder il) => _place.EmitLoadAddress(il);
+
+        public void EmitStore(ILBuilder il)
+        {
+            throw new InvalidOperationException($"{_place} is readonly!");
+        }
+
+        public void EmitStorePrepare(ILBuilder il) { }
     }
 
     internal class FieldPlace : IPlace
@@ -451,8 +484,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(place);
             Debug.Assert(place.HasAddress);
-            Debug.Assert(place is LocalPlace || place is ParamPlace);
-
+            
             _place = place;
             _access = access;
             _thint = thint;

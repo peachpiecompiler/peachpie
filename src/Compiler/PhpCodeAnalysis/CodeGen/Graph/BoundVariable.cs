@@ -145,9 +145,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IPlace Place(ILBuilder il)
         {
-            return (_lazyLocal != null)
-                ? _lazyLocal.Place(il)
-                : new ParamPlace(_symbol);
+            var place = (_lazyLocal != null) ? _lazyLocal.Place(il) : new ParamPlace(_symbol);
+
+            if (this.VariableKind == VariableKind.ThisParameter)
+            {
+                place = new ReadOnlyPlace(place);
+            }
+
+            return place;
         }
     }
 

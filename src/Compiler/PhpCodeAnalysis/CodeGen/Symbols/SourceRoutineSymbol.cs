@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var thisParameter = this.ThisParameter;
             return (thisParameter != null)
-                ? new ParamPlace(thisParameter)
+                ? new ReadOnlyPlace(new ParamPlace(thisParameter))
                 : null;
         }
     }

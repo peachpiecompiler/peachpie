@@ -591,7 +591,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 CheckIncludeOnce_TScript = ct.Context.Method("CheckIncludeOnce");
                 OnInclude_TScript = ct.Context.Method("OnInclude");
-                Include_string_string_PhpArray_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Boolean, ct.Boolean);
+                Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
 
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
             }
@@ -601,7 +601,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AddScriptReference_TScript,
                 DeclareFunction_intRef_string_method, DeclareType_T_string,
                 DisableErrorReporting, EnableErrorReporting,
-                CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_bool_bool,
+                CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
                 Dispose;
 
             public readonly CoreMethod

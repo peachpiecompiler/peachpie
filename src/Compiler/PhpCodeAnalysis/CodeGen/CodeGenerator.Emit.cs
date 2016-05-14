@@ -52,12 +52,21 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
         public TypeSymbol EmitThis()
         {
+            Contract.ThrowIfNull(_thisPlace);
+            return EmitThisOrNull();
+        }
+
+        public TypeSymbol EmitThisOrNull()
+        {
             if (_thisPlace == null)
             {
-                throw new InvalidOperationException();
+                _il.EmitNullConstant();
+                return CoreTypes.Object;
             }
-
-            return _thisPlace.EmitLoad(_il);
+            else
+            {
+                return _thisPlace.EmitLoad(_il);
+            }
         }
 
         /// <summary>
@@ -893,6 +902,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                         LocalsPlaceOpt.EmitLoad(_il);
                         break;
                     default:
+                        if (p.Name == SpecialParameterSymbol.ThisName)
+                        {
+                            EmitThisOrNull();
+                            break;
+                        }
                         throw ExceptionUtilities.UnexpectedValue(p.Name);
                 }
             }
