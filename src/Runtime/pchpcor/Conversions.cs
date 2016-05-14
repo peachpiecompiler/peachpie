@@ -114,7 +114,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region As*
+        #region AsObject, AsArray, ToObject
 
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
@@ -125,6 +125,11 @@ namespace Pchp.Core
         /// Gets the array access object.
         /// </summary>
         public static object AsArray(PhpValue value) => value.AsArray();
+
+        /// <summary>
+        /// Converts given value to a class object.
+        /// </summary>
+        public static object ToClass(PhpValue value) => value.ToClass();
 
         #endregion
 

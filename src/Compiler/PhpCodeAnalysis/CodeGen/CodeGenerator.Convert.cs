@@ -481,6 +481,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             switch (from.SpecialType)
             {
+                case SpecialType.System_Void:
                 case SpecialType.System_Int32:
                 case SpecialType.System_Int64:
                 case SpecialType.System_Boolean:
@@ -488,19 +489,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_String:
                     if (to == CoreTypes.Object)
                     {
-                        // TODO: new stdClass(){ $scalar = VALUE }
-                        throw new NotImplementedException();
+                        from = EmitConvertToPhpValue(from, fromHint);
+                        goto default;
                     }
                     else
                     {
-                        throw new ArgumentException();  // TODO: ErrorCode
+                        throw new ArgumentException($"{from.Name} cannot be converted to a class of type {to.Name}!");  // TODO: ErrCode
                     }
                 default:
                     if (from == CoreTypes.PhpValue)
                     {
-                        // Object
-                        EmitPhpValueAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToClass)
+                        // Convert.ToClass( value )
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToClass_PhpValue)
                             .Expect(SpecialType.System_Object);
 
                         // (T)

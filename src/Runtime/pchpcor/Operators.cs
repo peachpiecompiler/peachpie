@@ -77,11 +77,6 @@ namespace Pchp.Core
             return arr;
         }
 
-        //public static object EnsureObject(ref PhpValue lvalue)
-        //{
-
-        //}
-
         #endregion
     }
 
