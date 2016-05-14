@@ -41,7 +41,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint, bool negation = false)
         {
-            // TODO: handle {negation} within the switch to avoid unnecessary conversions
             // TODO: use {fromHint} to emit casting in compile time
 
             // dereference
@@ -67,6 +66,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             //
             switch (from.SpecialType)
             {
+                case SpecialType.System_Void:
+                    _il.EmitBoolConstant(negation ? true : false);  // (bool)void == false
+                    return;
+
                 case SpecialType.System_Boolean:
                 case SpecialType.System_Int32:
                     break; // nop
@@ -74,10 +77,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Int64:
                     _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
                     _il.EmitOpCode(ILOpCode.Conv_i8, 0);
-                    _il.EmitOpCode(ILOpCode.Cgt_un);
-                    // or ?
-                    // _il.EmitOpCode(ILOpCode.Conv_i4);
-                    break;
+                    _il.EmitOpCode(negation ? ILOpCode.Ceq : ILOpCode.Cgt_un);
+                    return;
 
                 case SpecialType.System_String:
                     // Convert.ToBoolean(string)
