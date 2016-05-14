@@ -80,6 +80,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitOpCode(negation ? ILOpCode.Ceq : ILOpCode.Cgt_un);
                     return;
 
+                case SpecialType.System_Double:
+
+                    // r8 == 0.0
+                    _il.EmitDoubleConstant(0.0);
+                    _il.EmitOpCode(ILOpCode.Ceq);
+
+                    if (!negation)
+                    {
+                        // !<i4>
+                        EmitLogicNegation();
+                    }
+
+                    return;
+
                 case SpecialType.System_String:
                     // Convert.ToBoolean(string)
                     EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_String);
@@ -123,7 +137,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     throw new NotImplementedException($"(bool){from.Name}");
             }
 
-            // !<I4>
+            // !<i4>
             if (negation)
             {
                 EmitLogicNegation();
