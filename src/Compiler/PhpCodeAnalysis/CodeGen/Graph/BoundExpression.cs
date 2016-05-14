@@ -1001,14 +1001,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     //		context.DisableErrorReporting();
                     //		s;
                     //		context.EnableErrorReporting();
-                    //codeGenerator.EmitLoadScriptContext();
-                    //il.Emit(OpCodes.Call, Methods.ScriptContext.DisableErrorReporting);
-                    //returned_typecode = node.Expr.Emit(codeGenerator);
-                    //codeGenerator.EmitLoadScriptContext();
-                    //il.Emit(OpCodes.Call, Methods.ScriptContext.EnableErrorReporting);
-                    returned_type = cg.Emit(Operand);
-                    break;  // TODO @...
-                            //throw new NotImplementedException();
+                    returned_type = cg.EmitWithDisabledErrorReporting(Operand);
+                    break;
 
                 case Operations.BitNegation:
                     //Template: "~x" Operators.BitNot(x)                                     

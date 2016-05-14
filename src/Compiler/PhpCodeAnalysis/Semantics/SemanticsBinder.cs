@@ -121,7 +121,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.VarLikeConstructUse) return BindVarLikeConstructUse((AST.VarLikeConstructUse)expr, access);
             if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
-            if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr).WithAccess(access);
+            if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr, access);
             if (expr is AST.GlobalConstUse) return BindGlobalConstUse((AST.GlobalConstUse)expr).WithAccess(access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
             if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
@@ -359,9 +359,19 @@ namespace Pchp.CodeAnalysis.Semantics
                 expr.Operation);
         }
 
-        BoundExpression BindUnaryEx(AST.UnaryEx expr)
+        BoundExpression BindUnaryEx(AST.UnaryEx expr, BoundAccess access)
         {
-            return new BoundUnaryEx(BindExpression(expr.Expr, BoundAccess.Read), expr.Operation);
+            var operandAccess = BoundAccess.Read;
+
+            switch (expr.Operation)
+            {
+                case AST.Operations.AtSign:
+                    operandAccess = access;
+                    break;
+            }
+
+            return new BoundUnaryEx(BindExpression(expr.Expr, operandAccess), expr.Operation)
+                .WithAccess(access);
         }
 
         BoundExpression BindAssignEx(AST.AssignEx expr, BoundAccess access)

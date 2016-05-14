@@ -582,6 +582,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_intRef_string_method = ct.Context.Method("DeclareFunction", ct.Int32, ct.String, ct.RuntimeMethodHandle);
                 DeclareType_T_string = ct.Context.Method("DeclareType", ct.String);
 
+                DisableErrorReporting = ct.Context.Method("DisableErrorReporting");
+                EnableErrorReporting = ct.Context.Method("EnableErrorReporting");
+
                 CheckIncludeOnce_TScript = ct.Context.Method("CheckIncludeOnce");
                 OnInclude_TScript = ct.Context.Method("OnInclude");
                 Include_string_string_PhpArray_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Boolean, ct.Boolean);
@@ -593,6 +596,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 CreateConsole,
                 AddScriptReference_TScript,
                 DeclareFunction_intRef_string_method, DeclareType_T_string,
+                DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_bool_bool,
                 Dispose;
 

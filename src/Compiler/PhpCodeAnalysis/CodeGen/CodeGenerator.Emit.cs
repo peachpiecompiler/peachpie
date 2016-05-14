@@ -172,9 +172,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
-            Debug.Assert(expr.Access.IsRead);
+            if (expr.Access.IsNone)
+            {
+                return (expr.ResultType = expr.Emit(this));
+            }
+            else
+            {
+                Debug.Assert(expr.Access.IsRead);
 
-            return expr.ResultType = (TryEmitVariableSpecialize(expr) ?? EmitSpecialize(expr.Emit(this), expr.TypeRefMask));
+                return expr.ResultType = (TryEmitVariableSpecialize(expr) ?? EmitSpecialize(expr.Emit(this), expr.TypeRefMask));
+            }
         }
 
         /// <summary>
@@ -775,6 +782,29 @@ namespace Pchp.CodeAnalysis.CodeGen
             //
             Debug.Assert(method != null);
             EmitCall(ILOpCode.Call, method);
+        }
+
+        /// <summary>
+        /// Emits the expression decorated with error reporting disabling routine.
+        /// </summary>
+        public TypeSymbol EmitWithDisabledErrorReporting(BoundExpression expr)
+        {
+            //		context.DisableErrorReporting();
+            //		<expr>
+            //		context.EnableErrorReporting();
+
+            EmitLoadContext();
+            EmitCall(ILOpCode.Callvirt, CoreMethods.Context.DisableErrorReporting)
+                .Expect(SpecialType.System_Void);
+
+            var t = Emit(expr);
+
+            EmitLoadContext();
+            EmitCall(ILOpCode.Callvirt, CoreMethods.Context.EnableErrorReporting)
+                .Expect(SpecialType.System_Void);
+
+            //
+            return t;
         }
 
         public void EmitIntStringKey(BoundExpression expr)
