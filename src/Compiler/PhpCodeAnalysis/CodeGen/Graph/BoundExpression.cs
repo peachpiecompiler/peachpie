@@ -222,10 +222,10 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>+</c> operator suitable for actual operands.
         /// </summary>
-        private static TypeSymbol EmitAdd(CodeGenerator cg, BoundExpression Left, BoundExpression Right, TypeSymbol resultTypeOpt = null)
+        private static TypeSymbol EmitAdd(CodeGenerator cg, BoundExpression left, BoundExpression right, TypeSymbol resultTypeOpt = null)
         {
             // Template: x + y
-            return EmitAdd(cg, cg.Emit(Left), Right, resultTypeOpt);
+            return EmitAdd(cg, cg.Emit(left), right, resultTypeOpt);
         }
 
         /// <summary>
@@ -360,15 +360,15 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits subtraction operator.
         /// </summary>
-        internal static TypeSymbol EmitSub(CodeGenerator cg, BoundExpression Left, BoundExpression Right, TypeSymbol resultTypeOpt = null)
+        internal static TypeSymbol EmitSub(CodeGenerator cg, BoundExpression left, BoundExpression right, TypeSymbol resultTypeOpt = null)
         {
-            return EmitSub(cg, cg.Emit(Left), Right, resultTypeOpt);
+            return EmitSub(cg, cg.Emit(left), right, resultTypeOpt);
         }
 
         /// <summary>
         /// Emits subtraction operator.
         /// </summary>
-        internal static TypeSymbol EmitSub(CodeGenerator cg, TypeSymbol xtype, BoundExpression Right, TypeSymbol resultTypeOpt = null)
+        internal static TypeSymbol EmitSub(CodeGenerator cg, TypeSymbol xtype, BoundExpression right, TypeSymbol resultTypeOpt = null)
         {
             var il = cg.Builder;
 
@@ -378,7 +378,7 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (xtype.SpecialType)
             {
                 case SpecialType.System_Int64:
-                    ytype = cg.EmitConvertIntToLong(cg.Emit(Right));
+                    ytype = cg.EmitConvertIntToLong(cg.Emit(right));
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
                         // i8 - i8 : number
@@ -399,7 +399,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     throw new NotImplementedException($"Sub(long, {ytype.Name})");
                 case SpecialType.System_Double:
-                    ytype = cg.EmitConvertNumberToDouble(Right); // bool|int|long|number -> double
+                    ytype = cg.EmitConvertNumberToDouble(right); // bool|int|long|number -> double
                     if (ytype.SpecialType == SpecialType.System_Double)
                     {
                         // r8 - r8 : r8
@@ -410,7 +410,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(Right));
+                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {
                             // number - i8 : number
@@ -434,7 +434,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (xtype == cg.CoreTypes.PhpValue)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(Right));
+                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));
 
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {
@@ -708,10 +708,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Emits <c>*</c> operation.
         /// </summary>
         TypeSymbol EmitMultiply(CodeGenerator cg)
+            => EmitMul(cg, cg.Emit(Left), Right);
+
+        internal static TypeSymbol EmitMul(CodeGenerator cg, TypeSymbol xtype, BoundExpression right, TypeSymbol resultTypeOpt = null)
         {
             var il = cg.Builder;
 
-            var xtype = cg.Emit(Left);
             xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> int64
 
             TypeSymbol ytype;
@@ -719,7 +721,7 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (xtype.SpecialType)
             {
                 case SpecialType.System_Double:
-                    ytype = cg.EmitConvertNumberToDouble(Right); // bool|int|long|number -> double
+                    ytype = cg.EmitConvertNumberToDouble(right); // bool|int|long|number -> double
                     if (ytype.SpecialType == SpecialType.System_Double)
                     {
                         // r8 * r8 : r8
@@ -735,7 +737,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     //
                     throw new NotImplementedException($"Mul(double, {ytype.Name})");
                 case SpecialType.System_Int64:
-                    ytype = cg.EmitConvertIntToLong(cg.Emit(Right));
+                    ytype = cg.EmitConvertIntToLong(cg.Emit(right));
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
                         // i8 * i8 : number
@@ -765,7 +767,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(Right));
+                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));
 
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {
@@ -780,7 +782,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         else if (ytype == cg.CoreTypes.PhpNumber)
                         {
                             // number * number : number
-                            cg.EmitConvertToPhpNumber(ytype, Right.TypeRefMask);
+                            cg.EmitConvertToPhpNumber(ytype, right.TypeRefMask);
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Mul_number_number)
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
@@ -795,7 +797,7 @@ namespace Pchp.CodeAnalysis.Semantics
                             // TODO: unconvertible
 
                             // number * number : number
-                            cg.EmitConvertToPhpNumber(ytype, Right.TypeRefMask);
+                            cg.EmitConvertToPhpNumber(ytype, right.TypeRefMask);
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Mul_number_number)
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
@@ -804,7 +806,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (xtype == cg.CoreTypes.PhpValue)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(Right));    // bool|int -> long
+                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));    // bool|int -> long
                         if (ytype == cg.CoreTypes.PhpValue)
                         {
                             // value * value : number
@@ -842,17 +844,19 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Emits <c>/</c> operator.
         /// </summary>
         TypeSymbol EmitDivision(CodeGenerator cg)
+            => EmitDiv(cg, cg.Emit(Left), Right);
+
+        internal static TypeSymbol EmitDiv(CodeGenerator cg, TypeSymbol xtype, BoundExpression right, TypeSymbol resultTypeOpt = null)
         {
             var il = cg.Builder;
 
-            var xtype = cg.Emit(Left);
             xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> int64
             TypeSymbol ytype;
 
             switch (xtype.SpecialType)
             {
                 case SpecialType.System_Double:
-                    ytype = cg.EmitConvertNumberToDouble(Right); // bool|int|long|number -> double
+                    ytype = cg.EmitConvertNumberToDouble(right); // bool|int|long|number -> double
                     if (ytype.SpecialType == SpecialType.System_Double)
                     {
                         il.EmitOpCode(ILOpCode.Div);
@@ -861,7 +865,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     throw new NotImplementedException();
                 case SpecialType.System_Int64:
-                    ytype = cg.EmitConvertIntToLong(cg.Emit(Right));  // bool|int -> long
+                    ytype = cg.EmitConvertIntToLong(cg.Emit(right));  // bool|int -> long
                     if (ytype == cg.CoreTypes.PhpNumber)
                     {
                         // long / number : number
@@ -872,7 +876,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(Right));  // bool|int -> long
+                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));  // bool|int -> long
                         if (ytype == cg.CoreTypes.PhpNumber)
                         {
                             // nmumber / number : number
@@ -2199,23 +2203,23 @@ namespace Pchp.CodeAnalysis.Semantics
                 //case Operations.AssignAppend:
                 //    binaryop = Operations.Concat;
                 //    break;
-                //case Operations.AssignDiv:
-                //    binaryop = Operations.Div;
-                //    break;
+                ////case Operations.AssignPrepend:
+                ////    break;
+                case Operations.AssignDiv:
+                    result_type = BoundBinaryEx.EmitDiv(cg, xtype, Value, target_place.TypeOpt);
+                    break;
                 //case Operations.AssignMod:
                 //    binaryop = Operations.Mod;
                 //    break;
-                //case Operations.AssignMul:
-                //    binaryop = Operations.Mul;
-                //    break;
+                case Operations.AssignMul:
+                    result_type = BoundBinaryEx.EmitMul(cg, xtype, Value, target_place.TypeOpt);
+                    break;
                 //case Operations.AssignOr:
                 //    binaryop = Operations.Or;
                 //    break;
                 case Operations.AssignPow:
                     result_type = BoundBinaryEx.EmitPow(cg, xtype, /*this.Target.TypeRefMask*/0, Value);
                     break;
-                ////case Operations.AssignPrepend:
-                ////    break;
                 //case Operations.AssignShiftLeft:
                 //    binaryop = Operations.ShiftLeft;
                 //    break;
