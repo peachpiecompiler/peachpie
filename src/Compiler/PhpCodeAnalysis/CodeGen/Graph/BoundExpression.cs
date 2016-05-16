@@ -669,7 +669,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
                         il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                        return cg.CoreTypes.Boolean;
                     }
                     else if (ytype.SpecialType == SpecialType.System_Double)
                     {
@@ -687,8 +686,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                         il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
                         il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                        return cg.CoreTypes.Boolean;
                     }
+                    return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_Double:
                     ytype = cg.EmitConvertNumberToDouble(right);    // bool|int|long|number -> double
@@ -696,7 +695,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // r8 <> r8
                         il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                        return cg.CoreTypes.Boolean;
                     }
                     else
                     {
@@ -707,8 +705,8 @@ namespace Pchp.CodeAnalysis.Semantics
                         // <> 0
                         il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
                         il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                        return cg.CoreTypes.Boolean;
                     }
+                    return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_String:
                     ytype = cg.Emit(right);
@@ -743,7 +741,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     cg.EmitConvertToBool(right);
                     ytype = cg.CoreTypes.Boolean;
-                    
+
                     // compare(bool, bool)
                     cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_bool_bool);
 
@@ -764,8 +762,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                 : cg.CoreMethods.PhpNumber.gt_number_long)
                                 .Expect(SpecialType.System_Boolean);
                         }
-
-                        if (ytype.SpecialType == SpecialType.System_Double)
+                        else if (ytype.SpecialType == SpecialType.System_Double)
                         {
                             // number <> r8
                             return cg.EmitCall(ILOpCode.Call, lt
@@ -773,8 +770,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                 : cg.CoreMethods.PhpNumber.gt_number_double)
                                 .Expect(SpecialType.System_Boolean);
                         }
-
-                        if (ytype == cg.CoreTypes.PhpNumber)
+                        else if (ytype == cg.CoreTypes.PhpNumber)
                         {
                             // number <> number
                             return cg.EmitCall(ILOpCode.Call, lt
@@ -782,36 +778,38 @@ namespace Pchp.CodeAnalysis.Semantics
                                 : cg.CoreMethods.PhpNumber.gt_number_number)
                                 .Expect(SpecialType.System_Boolean);
                         }
-                        //else
-                        //{
-                        //    // Operator.Compare(x, y) : int
-                        //}
-
-                        //// lt <=> comparison < 0
-                        //// gt <=> comparison > 0
-                        //il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);    // +1 on stack
-                        //il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                        //break;
-
-                        throw new NotImplementedException($"compare(PhpNumber, {ytype.Name})");
-                    }
-                    else if (xtype == cg.CoreTypes.PhpValue)
-                    {
-                        ytype = cg.Emit(right);
-                        switch (ytype.SpecialType)
+                        else
                         {
-                            default:
-                                ytype = cg.EmitConvertToPhpValue(ytype, right.TypeRefMask);
-                                // compare(value, value) <> 0
-                                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_value_value);
+                            ytype = cg.EmitConvertToPhpValue(ytype, 0);
 
-                                il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
-                                il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                                return cg.CoreTypes.Boolean;
+                            // compare(number, value)
+                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_number_value);
+
+                            // <> 0
+                            il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);    // +1 on stack
+                            il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                            return cg.CoreTypes.Boolean;
                         }
                     }
+                    else
+                    {
+                        xtype = cg.EmitConvertToPhpValue(xtype, 0);
+                        ytype = cg.Emit(right);
 
-                    throw new NotImplementedException($"compare({xtype.Name}, ...)");
+                        // TODO: if (ytype.SpecialType == SpecialType.System_Boolean) ...
+                        // TODO: if (ytype.SpecialType == SpecialType.System_Int64) ...
+                        // TODO: if (ytype.SpecialType == SpecialType.System_String) ...
+                        // TODO: if (ytype.SpecialType == SpecialType.System_Double) ...
+
+                        // compare(value, value)
+                        ytype = cg.EmitConvertToPhpValue(ytype, right.TypeRefMask);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_value_value);
+
+                        // <> 0
+                        il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                        il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                        return cg.CoreTypes.Boolean;
+                    }
             }
         }
 

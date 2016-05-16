@@ -302,6 +302,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Clt_long_double = ct.Comparison.Method("Clt", ct.Long, ct.Double);
                 Cgt_long_double = ct.Comparison.Method("Cgt", ct.Long, ct.Double);
                 Compare_bool_bool = ct.Comparison.Method("Compare", ct.Boolean, ct.Boolean);
+                Compare_number_value = ct.Comparison.Method("Compare", ct.PhpNumber, ct.PhpValue);
                 Compare_long_value = ct.Comparison.Method("Compare", ct.Long, ct.PhpValue);
                 Compare_double_value = ct.Comparison.Method("Compare", ct.Double, ct.PhpValue);
                 Compare_bool_value = ct.Comparison.Method("Compare", ct.Boolean, ct.PhpValue);
@@ -321,7 +322,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Ceq_long_double, Ceq_long_bool,
                 Clt_long_double, Cgt_long_double,
-                Compare_bool_bool,
+                Compare_bool_bool, Compare_number_value,
                 Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value;
         }
 

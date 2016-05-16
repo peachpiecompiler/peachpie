@@ -63,6 +63,8 @@ namespace Pchp.Core
             }
         }
 
+        public static int Compare(PhpNumber x, PhpValue y) => x.IsLong ? Compare(x.Long, y) : Compare(x.Double, y);
+
         public static int Compare(PhpValue x, PhpValue y) => x.Compare(y);
 
         /// <summary>
