@@ -666,64 +666,88 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case SpecialType.System_Int64:
                     ytype = cg.EmitConvertIntToLong(cg.Emit(right));    // bool|int -> long
-                    switch (ytype.SpecialType)
+                    if (ytype.SpecialType == SpecialType.System_Int64)
                     {
-                        case SpecialType.System_Int64:
-                            il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                            break;
-
-                        case SpecialType.System_Double:
-                            // i8 <> r8
-                            return cg.EmitCall(ILOpCode.Call, lt
-                                ? cg.CoreMethods.Operators.Clt_long_double
-                                : cg.CoreMethods.Operators.Cgt_long_double);
-
-                        default:
-
-                            // compare(i8, value) <> 0
-                            ytype = cg.EmitConvertToPhpValue(ytype, 0);
-
-                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_long_value);
-
-                            il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
-                            il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                            return cg.CoreTypes.Boolean;
+                        il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                        return cg.CoreTypes.Boolean;
                     }
-                    break;
+                    else if (ytype.SpecialType == SpecialType.System_Double)
+                    {
+                        // i8 <> r8
+                        return cg.EmitCall(ILOpCode.Call, lt
+                            ? cg.CoreMethods.Operators.Clt_long_double
+                            : cg.CoreMethods.Operators.Cgt_long_double);
+                    }
+                    else
+                    {
+                        ytype = cg.EmitConvertToPhpValue(ytype, 0);
+
+                        // compare(i8, value) <> 0
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_long_value);
+
+                        il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                        il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                        return cg.CoreTypes.Boolean;
+                    }
 
                 case SpecialType.System_Double:
                     ytype = cg.EmitConvertNumberToDouble(right);    // bool|int|long|number -> double
-                    switch (ytype.SpecialType)
+                    if (ytype.SpecialType == SpecialType.System_Double)
                     {
-                        case SpecialType.System_Double:
-                            // r8 <> r8
-                            il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                            break;
-                        default:
-
-                            // compare(r8, value) <> 0
-                            ytype = cg.EmitConvertToPhpValue(ytype, 0);
-
-                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_double_value);
-
-                            il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
-                            il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
-                            return cg.CoreTypes.Boolean;
+                        // r8 <> r8
+                        il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                        return cg.CoreTypes.Boolean;
                     }
-                    break;
+                    else
+                    {
+                        // compare(r8, value)
+                        ytype = cg.EmitConvertToPhpValue(ytype, 0);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_double_value);
+
+                        // <> 0
+                        il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                        il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                        return cg.CoreTypes.Boolean;
+                    }
 
                 case SpecialType.System_String:
-                    throw new NotImplementedException($"compare(string, ...)");
+                    ytype = cg.Emit(right);
+                    if (ytype.SpecialType == SpecialType.System_String)
+                    {
+                        // compare(string, string)
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_string_string);
+                    }
+                    else if (ytype.SpecialType == SpecialType.System_Int64)
+                    {
+                        // compare(string, long)
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_string_long);
+                    }
+                    else if (ytype.SpecialType == SpecialType.System_Double)
+                    {
+                        // compare(string, double)
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_string_double);
+                    }
+                    else
+                    {
+                        // compare(string, value)
+                        ytype = cg.EmitConvertToPhpValue(ytype, 0);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_string_value);
+                    }
+
+                    // <> 0
+                    il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                    il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                    return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_Boolean:
 
-                    ytype = cg.Emit(right);
+                    cg.EmitConvertToBool(right);
+                    ytype = cg.CoreTypes.Boolean;
+                    
+                    // compare(bool, bool)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_bool_bool);
 
-                    // compare(i1, value) <> 0
-                    ytype = cg.EmitConvertToPhpValue(ytype, 0);
-
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_bool_value);
-
+                    // <> 0
                     il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
                     il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
                     return cg.CoreTypes.Boolean;
@@ -789,9 +813,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     throw new NotImplementedException($"compare({xtype.Name}, ...)");
             }
-
-            // always bool
-            return cg.CoreTypes.Boolean;
         }
 
         /// <summary>

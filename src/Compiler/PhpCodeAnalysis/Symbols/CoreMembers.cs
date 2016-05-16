@@ -301,10 +301,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 Ceq_long_bool = ct.Comparison.Method("Ceq", ct.Long, ct.Boolean);
                 Clt_long_double = ct.Comparison.Method("Clt", ct.Long, ct.Double);
                 Cgt_long_double = ct.Comparison.Method("Cgt", ct.Long, ct.Double);
+                Compare_bool_bool = ct.Comparison.Method("Compare", ct.Boolean, ct.Boolean);
                 Compare_long_value = ct.Comparison.Method("Compare", ct.Long, ct.PhpValue);
                 Compare_double_value = ct.Comparison.Method("Compare", ct.Double, ct.PhpValue);
                 Compare_bool_value = ct.Comparison.Method("Compare", ct.Boolean, ct.PhpValue);
                 Compare_value_value = ct.Comparison.Method("Compare", ct.PhpValue, ct.PhpValue);
+                Compare_string_string = ct.Comparison.Method("Compare", ct.String, ct.String);
+                Compare_string_long = ct.Comparison.Method("Compare", ct.String, ct.Long);
+                Compare_string_double = ct.Comparison.Method("Compare", ct.String, ct.Double);
+                Compare_string_value = ct.Comparison.Method("Compare", ct.String, ct.PhpValue);
             }
 
             public readonly CoreMethod
@@ -316,7 +321,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Ceq_long_double, Ceq_long_bool,
                 Clt_long_double, Cgt_long_double,
-                Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value;
+                Compare_bool_bool,
+                Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value;
         }
 
         public struct PhpValueHolder
@@ -352,7 +358,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
                 Create_PhpArray = ct.PhpValue.Method("Create", ct.PhpArray);
                 Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
-                
+
                 FromClr_Object = ct.PhpValue.Method("FromClr", ct.Object);
                 FromClass_Object = ct.PhpValue.Method("FromClass", ct.Object);
 
