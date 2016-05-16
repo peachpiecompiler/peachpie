@@ -233,7 +233,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => Convert.StringToDouble(me.String);
             public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.String);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => Convert.ToNumber(me.String, out number);
-            public override int Compare(ref PhpValue me, PhpValue right) { throw new NotImplementedException(); }
+            public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.String, right);
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = ToClass(ref me);
