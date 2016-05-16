@@ -68,7 +68,7 @@ namespace Pchp.Core
         /// A reference type container.
         /// </summary>
         ObjectField _obj;
-        
+
         /// <summary>
         /// A value type container.
         /// </summary>
@@ -174,6 +174,24 @@ namespace Pchp.Core
         #endregion
 
         #region Operators
+
+        public static bool operator ==(PhpValue left, PhpValue right) => left.Compare(right) == 0;
+
+        public static bool operator !=(PhpValue left, PhpValue right) => left.Compare(right) != 0;
+
+        public static bool operator <(PhpValue left, PhpValue right) => left.Compare(right) < 0;
+
+        public static bool operator >(PhpValue left, PhpValue right) => left.Compare(right) > 0;
+
+        /// <summary>
+        /// Compares two value operands.
+        /// </summary>
+        /// <param name="right">The right operand.</param>
+        /// <returns>Comparison result.
+        /// Zero for equality,
+        /// negative value for <c>this</c> &lt; <paramref name="right"/>,
+        /// position value for <c>this</c> &gt; <paramref name="right"/>.</returns>
+        public int Compare(PhpValue right) => _type.Compare(ref this, right);
 
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
@@ -315,7 +333,7 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(PhpAlias)) return Create((PhpAlias)value);
                 if (value.GetType() == typeof(PhpArray)) return Create((PhpArray)value);
                 if (value.GetType() == typeof(PhpValue)) return (PhpValue)value;
-                
+
                 //                
                 return FromClass(value);
             }

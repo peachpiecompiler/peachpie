@@ -302,6 +302,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Clt_long_double = ct.Comparison.Method("Clt", ct.Long, ct.Double);
                 Cgt_long_double = ct.Comparison.Method("Cgt", ct.Long, ct.Double);
                 Compare_long_value = ct.Comparison.Method("Compare", ct.Long, ct.PhpValue);
+                Compare_double_value = ct.Comparison.Method("Compare", ct.Double, ct.PhpValue);
+                Compare_bool_value = ct.Comparison.Method("Compare", ct.Boolean, ct.PhpValue);
                 Compare_value_value = ct.Comparison.Method("Compare", ct.PhpValue, ct.PhpValue);
             }
 
@@ -314,7 +316,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Ceq_long_double, Ceq_long_bool,
                 Clt_long_double, Cgt_long_double,
-                Compare_long_value, Compare_value_value;
+                Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value;
         }
 
         public struct PhpValueHolder
@@ -329,6 +331,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureObject = ct.PhpValue.Method("EnsureObject");
                 EnsureArray = ct.PhpValue.Method("EnsureArray");
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
+
+                Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
                 AsArray = ct.PhpValue.Method("AsArray");
@@ -360,6 +364,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias,
                 AsArray, AsObject,
                 DeepCopy,
+                Eq_PhpValue_PhpValue,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray,
                 FromClr_Object, FromClass_Object;
