@@ -13,6 +13,11 @@ namespace Pchp.Core
     {
         public static bool Clt(long lx, double dy) => (double)lx < dy;
         public static bool Cgt(long lx, double dy) => (double)lx > dy;
+        public static bool Ceq(long lx, double dy) => (double)lx == dy;
+
+        public static bool Ceq(long lx, bool by) => (lx != 0) == by;
+
+        public static int Compare(long lx, PhpValue y) => Compare(PhpValue.Create(lx), y);
 
         public static int Compare(PhpValue x, PhpValue y) => Compare(x, y, false);
 
