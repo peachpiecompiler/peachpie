@@ -549,8 +549,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
             switch (xtype.SpecialType)
             {
-                //case SpecialType.System_Boolean:
-                //    goto default;
+                case SpecialType.System_Boolean:
+
+                    // bool == y.ToBoolean()
+                    cg.EmitConvert(right, cg.CoreTypes.Boolean);
+                    cg.Builder.EmitOpCode(ILOpCode.Ceq);
+
+                    return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_Int32:
                     // i4 -> i8
@@ -575,23 +580,25 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (ytype.SpecialType == SpecialType.System_Boolean)
                     {
-                        // i8 == i1
+                        // i8 == bool
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_long_bool)
                             .Expect(SpecialType.System_Boolean);
                     }
-
-                    //
-                    if (ytype == cg.CoreTypes.PhpValue)
+                    else if (ytype.SpecialType == SpecialType.System_String)
                     {
-                        // compare(i8, value) == 0
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_long_value)
-                            .Expect(SpecialType.System_Int32);
-                        cg.EmitLogicNegation();
-
-                        return cg.CoreTypes.Boolean;
+                        // i8 == string
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_long_string)
+                            .Expect(SpecialType.System_Boolean);
                     }
 
-                    throw new NotImplementedException($"Long == {ytype.Name}");
+                    // value
+                    ytype = cg.EmitConvertToPhpValue(ytype, 0);
+
+                    // compare(i8, value) == 0
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_long_value);
+                    cg.EmitLogicNegation();
+
+                    return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_Double:
 
@@ -603,11 +610,59 @@ namespace Pchp.CodeAnalysis.Semantics
                         cg.Builder.EmitOpCode(ILOpCode.Ceq);
                         return cg.CoreTypes.Boolean;
                     }
+                    else if (ytype.SpecialType == SpecialType.System_String)
+                    {
+                        // r8 == string
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_double_string)
+                            .Expect(SpecialType.System_Boolean);
+                    }
 
-                    throw new NotImplementedException($"Double == {ytype.Name}");
+                    // value
+                    ytype = cg.EmitConvertToPhpValue(ytype, 0);
 
-                //case SpecialType.System_String:
-                //    goto default;
+                    // compare(double, value) == 0
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_double_value);
+                    cg.EmitLogicNegation();
+
+                    return cg.CoreTypes.Boolean;
+
+                case SpecialType.System_String:
+
+                    ytype = cg.Emit(right);
+
+                    if (ytype.SpecialType == SpecialType.System_Int32)
+                    {
+                        // i4 -> i8
+                        cg.Builder.EmitOpCode(ILOpCode.Conv_i8);
+                        ytype = cg.CoreTypes.Long;
+                    }
+
+                    if (ytype.SpecialType == SpecialType.System_Int64)
+                    {
+                        // string == i8
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_string_long)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+                    else if (ytype.SpecialType == SpecialType.System_Boolean)
+                    {
+                        // string == bool
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_string_bool)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+                    else if (ytype.SpecialType == SpecialType.System_Double)
+                    {
+                        // string == r8
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_string_double)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+
+                    // value
+                    ytype = cg.EmitConvertToPhpValue(ytype, 0);
+
+                    // compare(string, value) == 0
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_string_value);
+                    cg.EmitLogicNegation();
+                    return cg.CoreTypes.Boolean;
 
                 //case SpecialType.System_Object:
                 //    goto default;
@@ -618,18 +673,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     xtype = cg.EmitConvertToPhpValue(xtype, 0);
 
-                    if (xtype == cg.CoreTypes.PhpValue)
-                    {
-                        // TODO: overloads for type of <right>
+                    // TODO: overloads for type of <right>
 
-                        ytype = cg.EmitConvertToPhpValue(cg.Emit(right), right.TypeRefMask);
+                    ytype = cg.EmitConvertToPhpValue(cg.Emit(right), right.TypeRefMask);
 
-                        // value == value
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_PhpValue)
-                            .Expect(SpecialType.System_Boolean);
-                    }
-
-                    throw new NotImplementedException($"{xtype.Name} == ...");
+                    // value == value
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_PhpValue)
+                        .Expect(SpecialType.System_Boolean);
             }
         }
 

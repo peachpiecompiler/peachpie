@@ -17,6 +17,11 @@ namespace Pchp.Core
         public static bool Ceq(long lx, double dy) => (double)lx == dy;
 
         public static bool Ceq(long lx, bool by) => (lx != 0) == by;
+        public static bool Ceq(long lx, string sy) => Equals(sy, lx);
+        public static bool Ceq(double dx, string sy) => Equals(sy, dx);
+        public static bool Ceq(string sx, long ly) => Equals(sx, ly);
+        public static bool Ceq(string sx, double dy) => Equals(sx, dy);
+        public static bool Ceq(string sx, bool by) => Convert.ToBoolean(sx) == by;
 
         public static int Compare(long lx, PhpValue y)
         {
@@ -143,6 +148,48 @@ namespace Pchp.Core
             {
                 case Convert.NumberInfo.Double: return Compare(dx, dy);
                 case Convert.NumberInfo.LongInteger: return Compare((double)lx, dy);
+                default: Debug.Assert(false); throw null;
+            }
+        }
+
+        /// <summary>
+		/// Compares two objects for equality in a manner of the PHP regular comparison.
+		/// </summary>
+		/// <param name="x">The first object.</param>
+		/// <param name="ly">The second object.</param>
+		/// <returns>Whether the values of operands are the same.</returns>
+        public static bool Equals(string/*!*/ x, long ly)
+        {
+            Debug.Assert(x != null);
+
+            double dx;
+            long lx;
+
+            switch (Convert.StringToNumber(x, out lx, out dx) & Convert.NumberInfo.TypeMask)
+            {
+                case Convert.NumberInfo.Double: return dx == ly;
+                case Convert.NumberInfo.LongInteger: return lx == ly;
+                default: Debug.Assert(false); throw null;
+            }
+        }
+
+        /// <summary>
+		/// Compares two objects for equality in a manner of the PHP regular comparison.
+		/// </summary>
+		/// <param name="x">The first object.</param>
+		/// <param name="dy">The second object.</param>
+		/// <returns>Whether the values of operands are the same.</returns>
+        public static bool Equals(string/*!*/ x, double dy)
+        {
+            Debug.Assert(x != null);
+
+            double dx;
+            long lx;
+
+            switch (Convert.StringToNumber(x, out lx, out dx) & Convert.NumberInfo.TypeMask)
+            {
+                case Convert.NumberInfo.Double: return dx == dy;
+                case Convert.NumberInfo.LongInteger: return lx == dy;
                 default: Debug.Assert(false); throw null;
             }
         }
