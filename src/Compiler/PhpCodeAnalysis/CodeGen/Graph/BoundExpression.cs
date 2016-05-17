@@ -564,8 +564,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case SpecialType.System_Int64:
 
-                    ytype = cg.EmitConvertIntToLong(cg.Emit(right));    // bool|int -> long
+                    ytype = cg.Emit(right);
 
+                    //
+                    if (ytype.SpecialType == SpecialType.System_Int32)
+                    {
+                        cg.Builder.EmitOpCode(ILOpCode.Conv_i8);    // i4 -> i8
+                        ytype = cg.CoreTypes.Long;
+                    }
+
+                    //
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
                         // i8 == i8

@@ -115,7 +115,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(0L);
                 return Convert.NumberInfo.LongInteger;
             }
-            public override int Compare(ref PhpValue me, PhpValue right) { throw new NotImplementedException(); }
+            public override int Compare(ref PhpValue me, PhpValue right) => Comparison.CompareNull(right);
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = ToClass(ref me);
@@ -269,7 +269,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.WritableString.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.WritableString.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.WritableString.ToNumber(out number);
-            public override int Compare(ref PhpValue me, PhpValue right) { throw new NotImplementedException(); }
+            public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.WritableString.ToString(), right);
             public override object EnsureObject(ref PhpValue me)
             {
                 //var obj = PhpValue.Create(new stdClass(ctx));

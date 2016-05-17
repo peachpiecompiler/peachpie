@@ -96,6 +96,7 @@ namespace Pchp.Core
 
         public override string ToString()
         {
+            // TODO: save the result for repetitious ToString call
             return _builder.ToString();
         }
     }

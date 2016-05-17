@@ -31,10 +31,13 @@ namespace Pchp.Core
                 case PhpTypeCode.Boolean: return Compare(lx != 0, y.Boolean);
                 case PhpTypeCode.Double: return Compare((double)lx, y.Double);
                 case PhpTypeCode.String: return -Compare(y.String, lx);
-                default:
-                    throw new NotImplementedException($"compare(Long, {y.TypeCode})");
+                case PhpTypeCode.Undefined: return (lx == 0) ? 0 : 1;
+                case PhpTypeCode.Object:
+                    if (y.Object == null) return (lx == 0) ? 0 : 1;
+                    break;
             }
-            //if (y == null) return ((long)x == 0) ? 0 : 1; // obsolete: Math.Sign((int)x); // y == 0
+
+            throw new NotImplementedException($"compare(Long, {y.TypeCode})");
         }
 
         public static int Compare(double dx, PhpValue y)
@@ -45,10 +48,13 @@ namespace Pchp.Core
                 case PhpTypeCode.Long: return Compare(dx, (double)y.Long);
                 case PhpTypeCode.Boolean: return Compare(dx != 0.0, y.Boolean);
                 case PhpTypeCode.String: return -Compare(y.String, dx);
-                default:
-                    throw new NotImplementedException($"compare(Double, {y.TypeCode})");
+                case PhpTypeCode.Undefined: return (dx == 0.0) ? 0 : 1;
+                case PhpTypeCode.Object:
+                    if (y.Object == null) return (dx == 0.0) ? 0 : 1;
+                    break;
             }
-            //if (y == null) return ((double)x == 0.0) ? 0 : 1; // obsolete: CompareDouble((double)x,0.0); // y == 0.0
+
+            throw new NotImplementedException($"compare(Double, {y.TypeCode})");
         }
 
         public static int Compare(bool bx, PhpValue y) => Compare(bx, y.ToBoolean());
@@ -63,9 +69,32 @@ namespace Pchp.Core
                 case PhpTypeCode.Long: return Compare(sx, y.Long);
                 case PhpTypeCode.Boolean: return Compare(Convert.ToBoolean(sx), y.Boolean);
                 case PhpTypeCode.String: return Compare(sx, y.String);
-                default:
-                    throw new NotImplementedException($"compare(String, {y.TypeCode})");
+                case PhpTypeCode.Undefined: return (sx.Length == 0) ? 0 : 1;
+                case PhpTypeCode.Object:
+                    if (y.Object == null) return (sx.Length == 0) ? 0 : 1;
+                    break;
             }
+
+            throw new NotImplementedException($"compare(String, {y.TypeCode})");
+        }
+
+        public static int CompareNull(PhpValue y)
+        {
+            // TODO: PhpValue.IsEmpty ? 0 : -1
+
+            switch (y.TypeCode)
+            {
+                case PhpTypeCode.Boolean: return y.Boolean ? -1 : 0;
+                case PhpTypeCode.Long: return y.Long == 0 ? 0 : -1;
+                case PhpTypeCode.Double: return y.Double == 0 ? 0 : -1;
+                case PhpTypeCode.String: return y.String.Length == 0 ? 0 : -1;
+                case PhpTypeCode.Object:
+                    if (y.Object == null) return 0;
+                    break;
+                case PhpTypeCode.Undefined: return 0;
+            }
+
+            throw new NotImplementedException($"compare(null, {y.TypeCode})");
         }
 
         public static int Compare(PhpNumber x, PhpValue y) => x.IsLong ? Compare(x.Long, y) : Compare(x.Double, y);

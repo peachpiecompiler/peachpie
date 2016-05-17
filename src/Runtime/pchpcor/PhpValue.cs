@@ -53,6 +53,8 @@ namespace Pchp.Core
             public PhpArray Array;
             [FieldOffset(0)]
             public PhpAlias Alias;
+
+            public override int GetHashCode() => (Obj != null) ? Obj.GetHashCode() : 0;
         }
 
         #endregion
@@ -183,6 +185,10 @@ namespace Pchp.Core
 
         public static bool operator >(PhpValue left, PhpValue right) => left.Compare(right) > 0;
 
+        public override bool Equals(object obj) => Equals((obj is PhpValue) ? (PhpValue)obj : FromClr(obj));
+
+        public override int GetHashCode() => _obj.GetHashCode() ^ (int)_value.Long;
+
         /// <summary>
         /// Compares two value operands.
         /// </summary>
@@ -240,10 +246,7 @@ namespace Pchp.Core
 
         #region IEquatable<PhpValue>
 
-        public bool Equals(PhpValue other)
-        {
-            return _type == other._type && _obj.Obj == other._obj.Obj && _value.Long == other._value.Long;
-        }
+        public bool Equals(PhpValue other) => this.Compare(other) == 0;
 
         #endregion
 
