@@ -2833,4 +2833,23 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException();
         }
     }
+
+    partial class BoundPseudoConst
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            switch (this.Type)
+            {
+                case PseudoConstUse.Types.File:
+
+                    // <ctx>.FilePath<TScript>()
+                    cg.EmitLoadContext();
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.FilePath_TScript.Symbol.Construct(cg.Routine.ContainingFile))
+                        .Expect(SpecialType.System_String);
+
+                default:
+                    throw new NotImplementedException(Type.ToString());
+            }
+        }
+    }
 }

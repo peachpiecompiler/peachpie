@@ -142,8 +142,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 case AST.PseudoConstUse.Types.Line:
                     return new BoundLiteral(unit.LineBreaks.GetLineFromPosition(x.Span.Start) + 1);
 
+                case AST.PseudoConstUse.Types.Dir:
                 case AST.PseudoConstUse.Types.File:
-                    goto default;    // ROOT + file.Relative
+                    return new BoundPseudoConst(x.Type);
 
                 case AST.PseudoConstUse.Types.Function:
                     if (_routine is Symbols.SourceFunctionSymbol || _routine is Symbols.SourceMethodSymbol)

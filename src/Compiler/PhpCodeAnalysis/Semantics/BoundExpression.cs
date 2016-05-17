@@ -1017,4 +1017,26 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     #endregion
+
+    #region BoundPseudoConst
+
+    public partial class BoundPseudoConst : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        public readonly PseudoConstUse.Types Type;
+
+        public BoundPseudoConst(PseudoConstUse.Types type)
+        {
+            this.Type = type;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
+
+    #endregion
 }

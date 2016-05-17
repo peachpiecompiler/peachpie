@@ -27,8 +27,10 @@ namespace Pchp.Core
     {
         #region Create
 
-        protected Context()
+        protected Context(string root = "")
         {
+            _rootPath = root;
+
             _functions = new TFunctionsMap(FunctionRedeclared);
             _types = new TTypesMap(TypeRedeclared);
             _statics = new object[_staticsCount];
@@ -219,6 +221,25 @@ namespace Pchp.Core
                 }
             }
         }
+
+        #endregion
+
+        #region Path Resolving
+
+        /// <summary>
+        /// Runtime root directory (web root).
+        /// </summary>
+        /// <remarks>
+        /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
+        /// </remarks>
+        readonly string _rootPath;
+
+        /// <summary>
+        /// Gets full script path in current context.
+        /// </summary>
+        /// <typeparam name="TScript">Script type.</typeparam>
+        /// <returns>Full script path.</returns>
+        public string FilePath<TScript>() => Path.Combine(_rootPath, _scripts.GetScript<TScript>().Path);
 
         #endregion
 

@@ -1283,7 +1283,37 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void DefaultVisit(IOperation operation)
         {
-            throw new NotImplementedException();
+            if (operation is BoundPseudoConst)
+            {
+                VisitPseudoConst((BoundPseudoConst)operation);
+            }
+            else
+            {
+                throw new NotImplementedException(operation.GetType().Name);
+            }
+        }
+
+        public void VisitPseudoConst(BoundPseudoConst x)
+        {
+            switch (x.Type)
+            {
+                case PseudoConstUse.Types.Line:
+                    x.TypeRefMask = TypeCtx.GetLongTypeMask();
+                    break;
+
+                case PseudoConstUse.Types.Class:
+                case PseudoConstUse.Types.Trait:
+                case PseudoConstUse.Types.Method:
+                case PseudoConstUse.Types.Function:
+                case PseudoConstUse.Types.Namespace:
+                case PseudoConstUse.Types.Dir:
+                case PseudoConstUse.Types.File:
+                    x.TypeRefMask = TypeCtx.GetStringTypeMask();
+                    break;
+
+                default:
+                    throw new NotImplementedException(x.Type.ToString());
+            }
         }
 
         public override void VisitConditionalChoiceExpression(IConditionalChoiceExpression operation)

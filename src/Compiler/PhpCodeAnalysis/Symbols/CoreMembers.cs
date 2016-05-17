@@ -615,6 +615,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 OnInclude_TScript = ct.Context.Method("OnInclude");
                 Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
 
+                FilePath_TScript = ct.Context.Method("FilePath");
+
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
             }
 
@@ -624,6 +626,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_intRef_string_method, DeclareType_T_string,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
+                FilePath_TScript,
                 Dispose;
 
             public readonly CoreMethod
