@@ -332,7 +332,14 @@ namespace Pchp.Core
                 if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToNumber(out number);
                 throw new NotImplementedException();
             }
-            public override int Compare(ref PhpValue me, PhpValue right) { throw new NotImplementedException(); }
+            public override int Compare(ref PhpValue me, PhpValue right)
+            {
+                if (me.Object.Equals(right._obj.Obj)) return 0;
+                if (me.Object is IPhpComparable) return ((IPhpComparable)me.Object).Compare(right);
+                if (right._obj.Obj is IPhpComparable) return - ((IPhpComparable)right._obj.Obj).Compare(me);
+
+                throw new ArgumentException("incomparable_objects_compared_exception");
+            }
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override PhpArray EnsureArray(ref PhpValue me)
             {
@@ -354,7 +361,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.Array.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Array.ToNumber(out number);
-            public override int Compare(ref PhpValue me, PhpValue right) { throw new NotImplementedException(); }
+            public override int Compare(ref PhpValue me, PhpValue right) => me.Array.Compare(right);
             public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
             public override PhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());

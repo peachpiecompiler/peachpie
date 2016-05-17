@@ -19,6 +19,8 @@ namespace Pchp.Core
 
         StringBuilder _builder;
 
+        public int Length => _builder.Length;
+
         #endregion
 
         #region Construction

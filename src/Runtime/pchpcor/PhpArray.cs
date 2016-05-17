@@ -11,7 +11,7 @@ namespace Pchp.Core
     /// <summary>
     /// Implements ordered keyed array of <see cref="PhpValue"/> with PHP semantics.
     /// </summary>
-    public partial class PhpArray : PhpHashtable, IPhpConvertible, IPhpArrayOperators
+    public partial class PhpArray : PhpHashtable, IPhpConvertible, IPhpArrayOperators, IPhpComparable
     {
         /// <summary>
         /// Used in all PHP functions determining the type name. (var_dump, ...)
@@ -175,6 +175,38 @@ namespace Pchp.Core
             {
                 __peach__runtimeFields = this.DeepCopy()
             };
+        }
+
+        #endregion
+
+        #region IPhpComparable
+
+        public int Compare(PhpValue obj)
+        {
+            switch (obj.TypeCode)
+            {
+                case PhpTypeCode.Object:
+                    if (obj.Object == null) return Count;
+                    break;
+
+                case PhpTypeCode.Boolean:
+                    return (Count > 0 ? 2 : 1) - (obj.Boolean ? 2 : 1);
+
+                case PhpTypeCode.PhpArray:
+                    // compare elements:
+                    //bool incomparable;
+                    //int result = CompareArrays(this, obj.Array, comparer, out incomparable);
+                    //if (incomparable)
+                    //{
+                    //    //PhpException.Throw(PhpError.Warning, CoreResources.GetString("incomparable_arrays_compared"));
+                    //    throw new ArgumentException("incomparable_arrays_compared");
+                    //}
+                    //return result;
+                    throw new NotImplementedException();
+            }
+
+            //
+            return 1;
         }
 
         #endregion

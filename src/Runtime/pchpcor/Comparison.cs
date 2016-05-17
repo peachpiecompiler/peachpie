@@ -8,6 +8,20 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     /// <summary>
+    /// Defines comparison methods which are used to compare PHP.NET types.
+    /// </summary>
+    public interface IPhpComparable
+    {
+        /// <summary>
+        /// Compares the current instance with another object using default comparer.
+        /// </summary>
+        /// <param name="obj">Object to compare with.</param>
+        /// <returns>Negative, Positive or Zero.</returns>
+        /// <exception cref="ArgumentException">Incomparable objects have been compared.</exception>
+		int Compare(PhpValue obj);
+    }
+
+    /// <summary>
     /// PHP comparison semantic.
     /// </summary>
     public static class Comparison
@@ -31,6 +45,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Boolean: return Compare(lx != 0, y.Boolean);
                 case PhpTypeCode.Double: return Compare((double)lx, y.Double);
                 case PhpTypeCode.String: return -Compare(y.String, lx);
+                case PhpTypeCode.WritableString: return -Compare(y.WritableString.ToString(), lx);
+                case PhpTypeCode.Alias: return Compare(lx, y.Alias.Value);
                 case PhpTypeCode.Undefined: return (lx == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) return (lx == 0) ? 0 : 1;
@@ -48,6 +64,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Long: return Compare(dx, (double)y.Long);
                 case PhpTypeCode.Boolean: return Compare(dx != 0.0, y.Boolean);
                 case PhpTypeCode.String: return -Compare(y.String, dx);
+                case PhpTypeCode.WritableString: return -Compare(y.WritableString.ToString(), dx);
+                case PhpTypeCode.Alias: return Compare(dx, y.Alias.Value);
                 case PhpTypeCode.Undefined: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) return (dx == 0.0) ? 0 : 1;
@@ -69,6 +87,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Long: return Compare(sx, y.Long);
                 case PhpTypeCode.Boolean: return Compare(Convert.ToBoolean(sx), y.Boolean);
                 case PhpTypeCode.String: return Compare(sx, y.String);
+                case PhpTypeCode.WritableString: return Compare(sx, y.WritableString.ToString());
+                case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
                 case PhpTypeCode.Undefined: return (sx.Length == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) return (sx.Length == 0) ? 0 : 1;
@@ -88,6 +108,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Long: return y.Long == 0 ? 0 : -1;
                 case PhpTypeCode.Double: return y.Double == 0 ? 0 : -1;
                 case PhpTypeCode.String: return y.String.Length == 0 ? 0 : -1;
+                case PhpTypeCode.WritableString: return y.WritableString.Length == 0 ? 0 : -1;
+                case PhpTypeCode.Alias: return CompareNull(y.Alias.Value);
                 case PhpTypeCode.Object:
                     if (y.Object == null) return 0;
                     break;
