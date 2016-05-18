@@ -92,7 +92,7 @@ namespace Pchp.Core
 
             internal bool IsIncluded(int index) => array[index];
 
-            public ScriptInfo GetScript<TScript>()
+            public static ScriptInfo GetScript<TScript>()
             {
                 var idx = EnsureIndex<TScript>(ref IndexHolder<TScript>.Index);
                 return _scripts[idx - 1];

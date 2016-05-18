@@ -239,7 +239,7 @@ namespace Pchp.Core
         /// </summary>
         /// <typeparam name="TScript">Script type.</typeparam>
         /// <returns>Full script path.</returns>
-        public string FilePath<TScript>() => Path.Combine(_rootPath, _scripts.GetScript<TScript>().Path);
+        public string FilePath<TScript>() => Path.Combine(_rootPath, ScriptsMap.GetScript<TScript>().Path);
 
         #endregion
 
