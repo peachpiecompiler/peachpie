@@ -1018,6 +1018,40 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
+    #region BoundGlobalConst
+
+    public partial class BoundGlobalConst : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        /// <summary>
+        /// Constant name.
+        /// </summary>
+        public string Name { get; private set; }
+
+        public override Optional<object> ConstantValue => _boundValue;
+
+        Optional<object> _boundValue = default(Optional<object>);
+
+        internal void SetConstantValue(object value)
+        {
+            _boundValue = new Optional<object>(value);
+        }
+
+        public BoundGlobalConst(string name)
+        {
+            this.Name = name;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
+
+    #endregion
+
     #region BoundPseudoConst
 
     public partial class BoundPseudoConst : BoundExpression

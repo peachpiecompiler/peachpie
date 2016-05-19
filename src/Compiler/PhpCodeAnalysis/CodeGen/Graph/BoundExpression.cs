@@ -1391,49 +1391,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // push value onto the evaluation stack
 
             Debug.Assert(ConstantValue.HasValue);
-            var value = ConstantValue.Value;
-            if (value == null)
-            {
-                if (this.Access.TargetType == cg.CoreTypes.PhpValue)
-                {
-                    return cg.Emit_PhpValue_Null();
-                }
-
-                cg.Builder.EmitNullConstant();
-                return cg.CoreTypes.Object;
-            }
-            else
-            {
-                if (value is int)
-                {
-                    cg.Builder.EmitIntConstant((int)value);
-                    return cg.CoreTypes.Int32;
-                }
-                else if (value is long)
-                {
-                    cg.Builder.EmitLongConstant((long)value);
-                    return cg.CoreTypes.Long;
-                }
-                else if (value is string)
-                {
-                    cg.Builder.EmitStringConstant((string)value);
-                    return cg.CoreTypes.String;
-                }
-                else if (value is bool)
-                {
-                    cg.Builder.EmitBoolConstant((bool)value);
-                    return cg.CoreTypes.Boolean;
-                }
-                else if (value is double)
-                {
-                    cg.Builder.EmitDoubleConstant((double)value);
-                    return cg.CoreTypes.Double;
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-            }
+            return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);            
         }
     }
 
@@ -2850,6 +2808,24 @@ namespace Pchp.CodeAnalysis.Semantics
                 default:
                     throw new NotImplementedException(Type.ToString());
             }
+        }
+    }
+
+    partial class BoundGlobalConst
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            if (this.ConstantValue.HasValue)
+            {
+                return cg.EmitLoadConstant(this.ConstantValue.Value, this.Access.TargetType);
+            }
+
+            // TODO: <ctx>.GetConstant(<Index of constant>)
+            // <ctx>.GetConstant(<name>)
+            cg.EmitLoadContext();
+            cg.Builder.EmitStringConstant(this.Name);
+            return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.GetConstant_string)
+                .Expect(cg.CoreTypes.PhpValue);
         }
     }
 }

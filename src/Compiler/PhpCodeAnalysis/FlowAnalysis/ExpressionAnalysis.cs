@@ -1287,6 +1287,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitPseudoConst((BoundPseudoConst)operation);
             }
+            else if (operation is BoundGlobalConst)
+            {
+                VisitGlobalConst((BoundGlobalConst)operation);
+            }
             else
             {
                 throw new NotImplementedException(operation.GetType().Name);
@@ -1314,6 +1318,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 default:
                     throw new NotImplementedException(x.Type.ToString());
             }
+        }
+
+        public void VisitGlobalConst(BoundGlobalConst x)
+        {
+            // TODO: check constant name
+
+            // TODO: bind to app-wide constant if possible
+            //x.SetConstantValue(...)
+
+            x.TypeRefMask = TypeRefMask.AnyType;    // only scalars ?
         }
 
         public override void VisitConditionalChoiceExpression(IConditionalChoiceExpression operation)

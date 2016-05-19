@@ -349,7 +349,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr.Name == QualifiedName.Null) return new BoundLiteral(null);
 
             // bind constant
-            throw new NotImplementedException();
+            return new BoundGlobalConst(expr.Name.ToString());
         }
 
         BoundExpression BindBinaryEx(AST.BinaryEx expr)

@@ -915,6 +915,52 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(ILOpCode.Call, mainmethod);
         }
 
+        public TypeSymbol EmitLoadConstant(object value, TypeSymbol targetOpt = null)
+        {
+            if (value == null)
+            {
+                if (targetOpt == CoreTypes.PhpValue)
+                {
+                    return Emit_PhpValue_Null();
+                }
+
+                Builder.EmitNullConstant();
+                return CoreTypes.Object;
+            }
+            else
+            {
+                if (value is int)
+                {
+                    Builder.EmitIntConstant((int)value);
+                    return CoreTypes.Int32;
+                }
+                else if (value is long)
+                {
+                    Builder.EmitLongConstant((long)value);
+                    return CoreTypes.Long;
+                }
+                else if (value is string)
+                {
+                    Builder.EmitStringConstant((string)value);
+                    return CoreTypes.String;
+                }
+                else if (value is bool)
+                {
+                    Builder.EmitBoolConstant((bool)value);
+                    return CoreTypes.Boolean;
+                }
+                else if (value is double)
+                {
+                    Builder.EmitDoubleConstant((double)value);
+                    return CoreTypes.Double;
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+        }
+
         public void EmitLoadDefaultValue(TypeSymbol type, TypeRefMask typemask)
         {
             switch (type.SpecialType)

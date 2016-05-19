@@ -14,12 +14,12 @@ namespace Pchp.Core
         /// <summary>
         /// Debug textual representation of the value.
         /// </summary>
-        internal string DisplayString => _type.DisplayString(ref this);
+        internal string DisplayString => IsSet ? _type.DisplayString(ref this) : "Undefined";
 
         /// <summary>
         /// Gets php type name of the value.
         /// </summary>
-        internal string DebugTypeName => PhpVariable.GetTypeName(this);
+        internal string DebugTypeName => IsSet ? PhpVariable.GetTypeName(this) : "Void";
 
         [DebuggerDisplay("{_value.DisplayString,nq}", Type = "{_value.DebugTypeName,nq}")]
         internal sealed class PhpValueDebugView
