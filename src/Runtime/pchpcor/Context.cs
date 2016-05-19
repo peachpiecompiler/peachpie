@@ -14,7 +14,7 @@ namespace Pchp.Core
 {
     using TFunctionsMap = Context.HandleMap<RuntimeMethodHandle, Providers.RuntimeMethodHandleComparer, Providers.OrdinalIgnoreCaseStringComparer>;
     using TTypesMap = Context.HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer>;
-
+    
     /// <summary>
     /// Runtime context for a PHP application.
     /// </summary>
@@ -67,7 +67,10 @@ namespace Pchp.Core
         /// </summary>
         readonly TTypesMap _types;
 
-        // TODO: global constants
+        /// <summary>
+        /// Map of global constants.
+        /// </summary>
+        readonly ConstsMap _constants = new ConstsMap();
 
         readonly ScriptsMap _scripts = new ScriptsMap();
 
@@ -92,6 +95,9 @@ namespace Pchp.Core
 
             tscriptinfo.GetDeclaredMethod("EnumerateScripts")
                 .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(ScriptsMap.DeclareScript) });
+
+            tscriptinfo.GetDeclaredMethod("EnumerateConstants")
+                .Invoke(null, new object[] { new Action<string, PhpValue, bool>(ConstsMap.DefineAppConstant) });
         }
 
         /// <summary>
@@ -358,6 +364,35 @@ namespace Pchp.Core
             }
         }
         PhpArray _globals;
+
+        #endregion
+
+        #region Constants
+
+        /// <summary>
+        /// Gets a constant value.
+        /// </summary>
+        public PhpValue GetConstant(string name)
+        {
+            return _constants.GetConstant(name);
+
+            // TODO: check the constant is valid (PhpValue.IsSet) otherwise Warning: undefined constant
+        }
+
+        /// <summary>
+        /// Defines a runtime constant.
+        /// </summary>
+        public bool DefineConstant(string name, PhpValue value, bool ignorecase = false) => _constants.DefineConstant(name, value, ignorecase);
+
+        /// <summary>
+        /// Determines whether a constant with given name is defined.
+        /// </summary>
+        public bool IsConstantDefined(string name) => _constants.IsDefined(name);
+
+        /// <summary>
+        /// Gets enumeration of all available constants and their values.
+        /// </summary>
+        public IEnumerable<KeyValuePair<string, PhpValue>> GetConstants() => _constants;
 
         #endregion
 

@@ -45,6 +45,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
     <Compile Include="DateTimeFunctions.cs" />
     <Compile Include="Math.cs" />
     <Compile Include="MersenneTwister.cs" />

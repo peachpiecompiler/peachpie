@@ -178,6 +178,7 @@ namespace Pchp.CodeAnalysis
         {
             _moduleBuilder.CreateEnumerateReferencedFunctions(_diagnostics);
             _moduleBuilder.CreateEnumerateScriptsSymbol(_diagnostics);
+            _moduleBuilder.CreateEnumerateConstantsSymbol(_diagnostics);
         }
 
         public static void CompileSources(

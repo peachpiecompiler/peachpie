@@ -286,7 +286,32 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual ImmutableArray<ControlFlowGraph> CFG => ImmutableArray<ControlFlowGraph>.Empty;
 
-        public virtual int MandatoryParamsCount => Parameters.Length;    // TODO: only mandatory
+        public virtual int MandatoryParamsCount
+        {
+            get
+            {
+                int mandatory = 0;
+
+                foreach (var p in this.Parameters)
+                {
+                    // skip wellknown parameters
+                    if (mandatory == 0)
+                    {
+                        if (p.Type is NamedTypeSymbol && ((NamedTypeSymbol)p.Type).NamespaceName == "Pchp.Core")
+                        {
+                            if (p.Type.Name == "Context") continue;
+                            // ...
+                        }
+                    }
+
+                    if (p.HasExplicitDefaultValue) break;
+
+                    mandatory++;
+                }
+
+                return mandatory;
+            }
+        }
 
         public virtual bool IsParamByRef(int index)
         {

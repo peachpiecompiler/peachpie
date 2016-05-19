@@ -41,8 +41,8 @@
     <Compile Include="Attributes.cs" />
     <Compile Include="Comparison.cs" />
     <Compile Include="Context.HandleMap.cs" />
+    <Compile Include="Context.ConstsMap.cs" />
     <Compile Include="Context.ScriptsMap.cs" />
-    <Compile Include="DualDictionary.cs" />
     <Compile Include="Dynamic\CallFunctionBinder.cs" />
     <Compile Include="Dynamic\OverloadResolver.cs" />
     <Compile Include="OrderedDictionary.cs" />

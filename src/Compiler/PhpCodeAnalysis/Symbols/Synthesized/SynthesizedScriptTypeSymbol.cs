@@ -37,6 +37,14 @@ namespace Pchp.CodeAnalysis.Symbols
         internal MethodSymbol EnumerateScriptsSymbol => _enumerateScripsSymbol ?? (_enumerateScripsSymbol = CreateEnumerateScriptsSymbol());
         MethodSymbol _enumerateScripsSymbol;
 
+        /// <summary>
+        /// Method that enumerates all app-wide global constants.
+        /// 
+        /// EnumerateScripts(Action&lt;string name, PhpValue value, bool ignorecase&gt; callback)
+        /// </summary>
+        internal MethodSymbol EnumerateConstantsSymbol => _enumerateConstantsSymbol ?? (_enumerateConstantsSymbol = CreateEnumerateConstantsSymbol());
+        MethodSymbol _enumerateConstantsSymbol;
+
         public SynthesizedScriptTypeSymbol(PhpCompilation compilation)
         {
             _compilation = compilation;
@@ -98,6 +106,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 this.EnumerateReferencedFunctionsSymbol,
                 this.EnumerateScriptsSymbol,
+                this.EnumerateConstantsSymbol,
             };
 
             //
@@ -149,6 +158,23 @@ namespace Pchp.CodeAnalysis.Symbols
 
             var method = new SynthesizedMethodSymbol(this, "EnumerateScripts", true, compilation.CoreTypes.Void, Accessibility.Public);
             method.SetParameters(new SynthesizedParameterSymbol(method, action_string_method, 0, RefKind.None, "callback"));
+
+            //
+            return method;
+        }
+
+        /// <summary>
+        /// Method that enumerates all app-wide global constants.
+        /// EnumerateConstants(Action&lt;string, PhpValue, bool&gt; callback)
+        /// </summary>
+        MethodSymbol CreateEnumerateConstantsSymbol()
+        {
+            var compilation = DeclaringCompilation;
+            var action_T3 = compilation.GetWellKnownType(WellKnownType.System_Action_T3);
+            var action_string_value_bool = action_T3.Construct(compilation.CoreTypes.String, compilation.CoreTypes.PhpValue, compilation.CoreTypes.Boolean);
+
+            var method = new SynthesizedMethodSymbol(this, "EnumerateConstants", true, compilation.CoreTypes.Void, Accessibility.Public);
+            method.SetParameters(new SynthesizedParameterSymbol(method, action_string_value_bool, 0, RefKind.None, "callback"));
 
             //
             return method;
