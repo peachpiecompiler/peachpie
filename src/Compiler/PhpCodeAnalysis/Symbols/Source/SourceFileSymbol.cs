@@ -241,11 +241,14 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyCctorSymbol;
         }
 
-        SynthesizedFieldSymbol IWithSynthesized.CreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
+        SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
         {
-            var field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic);
-
-            _lazyMembers.Add(field);
+            var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type);
+            if (field == null)
+            {
+                field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic);
+                _lazyMembers.Add(field);
+            }
 
             return field;
         }

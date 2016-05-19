@@ -414,6 +414,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitOpCode(ILOpCode.Ceq);
         }
 
+        /// <summary>
+        /// Loads field address on top of evaluation stack.
+        /// </summary>
+        public void EmitFieldAddress(FieldSymbol fld)
+        {
+            Debug.Assert(fld != null);
+            _il.EmitOpCode(fld.IsStatic ? ILOpCode.Ldsflda : ILOpCode.Ldflda);
+            EmitSymbolToken(fld, null);
+        }
+
         internal void EmitSymbolToken(TypeSymbol symbol, SyntaxNode syntaxNode)
         {
             _il.EmitSymbolToken(_moduleBuilder, _diagnostics, symbol, syntaxNode);

@@ -104,7 +104,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         int _fieldIndex;
 
         public SynthesizedFieldSymbol CreateCallSiteField(string namehint)
-            => ((IWithSynthesized)_container).CreateSynthesizedField(CallSite, "<>" + namehint + "`" + (_fieldIndex++), Accessibility.Private, true);
+            => ((IWithSynthesized)_container).GetOrCreateSynthesizedField(CallSite, "<>" + namehint + "`" + (_fieldIndex++), Accessibility.Private, true);
 
         public DynamicOperationFactory(CodeGenerator cg)
         {

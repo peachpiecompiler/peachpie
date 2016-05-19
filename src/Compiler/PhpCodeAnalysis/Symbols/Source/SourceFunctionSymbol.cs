@@ -46,7 +46,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 if (_lazyIndexField == null)
-                    _lazyIndexField = ((IWithSynthesized)_file).CreateSynthesizedField(this.DeclaringCompilation.CoreTypes.Int32, $"<{this.Name}>idx", Accessibility.Internal, true);
+                    _lazyIndexField = ((IWithSynthesized)_file).GetOrCreateSynthesizedField(this.DeclaringCompilation.CoreTypes.Int32, $"f<{this.Name}>idx", Accessibility.Internal, true);
 
                 return _lazyIndexField;
             }

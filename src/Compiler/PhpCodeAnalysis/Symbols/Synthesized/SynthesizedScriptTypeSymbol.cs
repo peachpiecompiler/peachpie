@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// internal static class &lt;Script&gt; { ... }
     /// </summary>
-    class SynthesizedScriptTypeSymbol : NamedTypeSymbol
+    class SynthesizedScriptTypeSymbol : NamedTypeSymbol, IWithSynthesized
     {
         readonly PhpCompilation _compilation;
 
@@ -44,6 +44,16 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal MethodSymbol EnumerateConstantsSymbol => _enumerateConstantsSymbol ?? (_enumerateConstantsSymbol = CreateEnumerateConstantsSymbol());
         MethodSymbol _enumerateConstantsSymbol;
+
+        /// <summary>
+        /// Optional static ctor if needed.
+        /// </summary>
+        SynthesizedCctorSymbol _lazyCctorSymbol;
+
+        /// <summary>
+        /// Additional type members.
+        /// </summary>
+        private List<Symbol> _lazyMembers = new List<Symbol>();
 
         public SynthesizedScriptTypeSymbol(PhpCompilation compilation)
         {
@@ -113,6 +123,12 @@ namespace Pchp.CodeAnalysis.Symbols
             if (EntryPointSymbol != null)
                 list.Add(EntryPointSymbol);
 
+            if (_lazyCctorSymbol != null)
+                list.Add(_lazyCctorSymbol);
+
+            //
+            list.AddRange(_lazyMembers);
+
             //
             return list.AsImmutable();
         }
@@ -125,9 +141,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved) => ImmutableArray<NamedTypeSymbol>.Empty;
 
-        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => ImmutableArray<IFieldSymbol>.Empty;
+        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => _lazyMembers.OfType<FieldSymbol>().AsImmutable();
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
+
+        public override ImmutableArray<MethodSymbol> StaticConstructors
+        {
+            get
+            {
+                if (_lazyCctorSymbol != null)
+                    return ImmutableArray.Create<MethodSymbol>(_lazyCctorSymbol);
+
+                return ImmutableArray<MethodSymbol>.Empty;
+            }
+        }
 
         /// <summary>
         /// Method that enumerates all referenced global functions.
@@ -179,5 +206,29 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             return method;
         }
+
+        #region IWithSynthesized
+
+        MethodSymbol IWithSynthesized.GetOrCreateStaticCtorSymbol()
+        {
+            if (_lazyCctorSymbol == null)
+                _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
+
+            return _lazyCctorSymbol;
+        }
+
+        SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
+        {
+            var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type);
+            if (field == null)
+            {
+                field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic);
+                _lazyMembers.Add(field);
+            }
+
+            return field;
+        }
+
+        #endregion
     }
 }

@@ -2820,11 +2820,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitLoadConstant(this.ConstantValue.Value, this.Access.TargetType);
             }
 
-            // TODO: <ctx>.GetConstant(<Index of constant>)
-            // <ctx>.GetConstant(<name>)
+            var idxfield =((IWithSynthesized)cg.Module.ScriptType)
+                .GetOrCreateSynthesizedField(cg.CoreTypes.Int32, $"c<{this.Name}>idx", Accessibility.Internal, true);
+
+            // <ctx>.GetConstant(<name>, ref <Index of constant>)
             cg.EmitLoadContext();
             cg.Builder.EmitStringConstant(this.Name);
-            return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.GetConstant_string)
+            cg.EmitFieldAddress(idxfield);
+            return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.GetConstant_string_int32)
                 .Expect(cg.CoreTypes.PhpValue);
         }
     }

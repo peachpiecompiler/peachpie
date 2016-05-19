@@ -374,7 +374,16 @@ namespace Pchp.Core
         /// </summary>
         public PhpValue GetConstant(string name)
         {
-            return _constants.GetConstant(name);
+            int idx = 0;
+            return GetConstant(name, ref idx);
+        }
+
+        /// <summary>
+        /// Gets a constant value.
+        /// </summary>
+        public PhpValue GetConstant(string name, ref int idx)
+        {
+            return _constants.GetConstant(name, ref idx);
 
             // TODO: check the constant is valid (PhpValue.IsSet) otherwise Warning: undefined constant
         }

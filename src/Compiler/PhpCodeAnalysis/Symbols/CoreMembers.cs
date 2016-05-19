@@ -617,7 +617,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 FilePath_TScript = ct.Context.Method("FilePath");
 
-                GetConstant_string = ct.Context.Method("GetConstant", ct.String);
+                GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
             }
@@ -629,7 +629,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
                 FilePath_TScript,
-                GetConstant_string,
+                GetConstant_string_int32,
                 Dispose;
 
             public readonly CoreMethod
