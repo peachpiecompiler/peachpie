@@ -201,9 +201,7 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string dir, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
         {
-            // TODO: resolve path
-
-            var script = _scripts.GetScript(path);
+            var script = _scripts.GetScript(path, null, dir, null);
             if (script.MainMethod != null)
             {
                 if (once && _scripts.IsIncluded(script.Index))

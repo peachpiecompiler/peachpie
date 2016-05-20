@@ -102,13 +102,26 @@ namespace Pchp.Core
             {
                 int index;
 
-                lock (_scriptsMap)  // TODO: RW lock
+                lock (_scriptsMap)  // TODO: R lock
                 {
                     if (!_scriptsMap.TryGetValue(path, out index))
                         return default(ScriptInfo);
                 }
 
                 return _scripts[index];
+            }
+
+            /// <summary>
+            /// Resolves the script path according to PHP semantics for first defined script.
+            /// </summary>
+            /// <param name="path">Requested script path, either absolute or relative.</param>
+            /// <param name="includePath">Array of defined include paths.</param>
+            /// <param name="cd">Current script directory, relative to root.</param>
+            /// <param name="cwd">Current working directory.</param>
+            /// <returns>First matching script descriptor.</returns>
+            public ScriptInfo GetScript(string path, string[] includePath, string cd, string cwd)
+            {
+                return GetScript(path); // TODO: resolve path
             }
 
             static int EnsureIndex<TScript>(ref int script_id)
