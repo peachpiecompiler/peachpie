@@ -6,10 +6,18 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
+    internal static class PathUtils
+    {
+        public const char DirectorySeparator = '\\';
+        public const char AltDirectorySeparator = '/';
+
+        public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
+    }
+
     /// <summary>
     /// Unix TimeStamp to DateTime conversion and vice versa
     /// </summary>
-    public static class DateTimeUtils
+    internal static class DateTimeUtils
     {
         #region Nested Class: UtcTimeZone, GmtTimeZone
 

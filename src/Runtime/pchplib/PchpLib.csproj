@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="DateTimeFunctions.cs" />
+    <Compile Include="FileSystem.Path.cs" />
     <Compile Include="Math.cs" />
     <Compile Include="MersenneTwister.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
