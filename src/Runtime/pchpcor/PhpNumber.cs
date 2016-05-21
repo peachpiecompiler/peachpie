@@ -360,7 +360,7 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>+</c> operator on numbers.
         /// </summary>
-        public static PhpNumber Add(PhpValue x, double y)
+        public static double Add(PhpValue x, double y)
         {
             PhpNumber x_number;
 
@@ -370,7 +370,7 @@ namespace Pchp.Core
                 throw new ArgumentException();
             }
 
-            return Create(x_number.ToDouble() + y);
+            return x_number.ToDouble() + y;
         }
 
         /// <summary>
