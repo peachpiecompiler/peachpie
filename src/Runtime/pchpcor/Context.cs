@@ -234,12 +234,14 @@ namespace Pchp.Core
         /// <remarks>
         /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
         /// </remarks>
+        public virtual string RootPath { get; } = "";
 
         /// <summary>
         /// Gets full script path in current context.
         /// </summary>
         /// <typeparam name="TScript">Script type.</typeparam>
         /// <returns>Full script path.</returns>
+        public string ScriptPath<TScript>() => RootPath + ScriptsMap.GetScript<TScript>().Path;
 
         #endregion
 
