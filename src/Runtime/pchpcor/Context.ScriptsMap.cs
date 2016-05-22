@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -121,71 +122,6 @@ namespace Pchp.Core
                 return _scripts[index];
             }
 
-            /// <summary>
-            /// Resolves the script path according to PHP semantics for first defined script.
-            /// </summary>
-            /// <param name="path">Requested script path, either absolute or relative.</param>
-            /// <param name="includePath">Array of defined include paths.</param>
-            /// <param name="cd">Current script directory.</param>
-            /// <param name="cwd">Current working directory.</param>
-            /// <returns>First matching script descriptor.</returns>
-            public ScriptInfo GetScript(string path, string[] includePath, string cd, string cwd)
-            {
-                ScriptInfo result;
-
-                if (!string.IsNullOrEmpty(path))
-                {
-                    if (path[0] == '.' && path.Length > 2)
-                    {
-                        if (path[1] == '/' || path[1] == '\\')
-                        {
-                            // ./
-                            result = GetScript(cd + path.Substring(1));
-                            if (result.IsValid) return result;
-                        }
-                        else if (path[1] == '.' && (path[2] == '/' || path[2] == '\\'))
-                        {
-                            // ../
-                            result = GetScript(System.IO.Path.GetDirectoryName(cd) + path.Substring(2));
-                            if (result.IsValid) return result;
-                        }
-                    }
-
-                    // TODO: file://
-
-                    if (includePath != null)
-                    {
-                        for (int i = 0; i < includePath.Length; i++)
-                        {
-                            result = GetScript(new Uri(System.IO.Path.Combine(includePath[i], path)).LocalPath);
-                            if (result.IsValid) return result;
-                        }
-                    }
-
-                    if (cd != null)
-                    {
-                        result = GetScript(System.IO.Path.Combine(cd, path));
-                        if (result.IsValid) return result;
-                    }
-
-                    if (cwd != null)
-                    {
-                        result = GetScript(System.IO.Path.Combine(cwd, path));
-                        if (result.IsValid) return result;
-                    }
-
-                    //
-                    result = GetScript(path);
-                }
-                else
-                {
-                    result = default(ScriptInfo);
-                }
-
-                //
-                return result;
-            }
-
             static int EnsureIndex<TScript>(ref int script_id)
             {
                 if (script_id == 0)
@@ -222,6 +158,102 @@ namespace Pchp.Core
                 }
 
                 return index;
+            }
+
+            /// <summary>
+            /// Searches for a file in the script library, current directory, included paths, and web application root respectively according to PHP semantic.
+            /// </summary>
+            public static ScriptInfo SearchForIncludedFile(string path, string[] includePath, string cd, Func<string, ScriptInfo> exists)
+            {
+                Debug.Assert(exists != null);
+                Debug.Assert(cd != null);
+
+                if (string.IsNullOrEmpty(path))
+                    return default(ScriptInfo);
+
+                if (Path.IsPathRooted(path))
+                {
+                    if (path[0].IsDirectorySeparator())
+                    {
+                        // incomplete absolute path //
+
+                        // the path is at least one character long - the first character is slash that should be trimmed out: 
+                        path = Path.Combine(Path.GetPathRoot(cd), path.Substring(1));
+                    }
+                }
+                else
+                {
+                    // relative path //
+
+                    if (path[0] == '.' && path.Length > 2)
+                    {
+                        if (path[1].IsDirectorySeparator()) // ./
+                            return exists(Path.Combine(cd, path.Substring(1)));
+                        
+                        if (path[1] == '.' && path[2].IsDirectorySeparator())   // ../
+                            return exists(Path.GetDirectoryName(cd) + path.Substring(2));
+                    }
+
+                    // search in search paths at first (accepts empty path list as well):
+                    var result = SearchInSearchPaths(path, includePath, cd, exists);
+
+                    // if the file is found then it exists so we can return immediately:
+                    if (result.IsValid)
+                    {
+                        return result;
+                    }
+                    else
+                    {
+                        // if an error message occurred, immediately return
+                        //if (errorMessage != null)
+                        //    return FullPath.Empty;
+                    }
+
+                    // not found => the path is combined with the directory where the script being compiled is stored:
+                    path = Path.Combine(cd, path);
+                }
+
+                // canonizes the complete absolute path:
+                //path = new Uri(path).LocalPath; // Path.GetFullPath(path);
+
+                return exists(path);
+            }
+
+            /// <summary>
+            /// Searches for an existing file among files which names are combinations of a relative path and one of the paths specified in a list.
+            /// </summary>
+            static ScriptInfo SearchInSearchPaths(string realtivePath, string[] searchPaths, string cd, Func<string, ScriptInfo>/*!*/exists)
+            {
+                Debug.Assert(exists != null);
+
+                if (searchPaths != null)
+                {
+                    for (int i = 0; i < searchPaths.Length; i++)
+                    {
+                        var path = searchPaths[i];
+                        var path_root = Path.GetPathRoot(path);
+
+                        // makes the path complete and absolute:
+                        if (path_root.Length == 1 && path_root[0] == PathUtils.DirectorySeparator)
+                        {
+                            path = Path.Combine(Path.GetPathRoot(cd), path.Substring(1));
+                        }
+                        else if (path_root.Length == 0)
+                        {
+                            path = Path.Combine(cd, path);
+                        }
+
+                        // combines the search path with the relative path:
+                        //path = new Uri(path).LocalPath; // Path.GetFullPath(Path.Combine(path, relativePath));
+
+                        var result = exists(path);
+                        if (result.IsValid)
+                            return result;
+                    }
+                }
+
+                //
+                return default(ScriptInfo);
             }
         }
     }

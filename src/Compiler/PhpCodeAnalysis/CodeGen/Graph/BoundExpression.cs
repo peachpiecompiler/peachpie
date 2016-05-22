@@ -2802,7 +2802,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // <ctx>.FilePath<TScript>()
                     cg.EmitLoadContext();
-                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.FilePath_TScript.Symbol.Construct(cg.Routine.ContainingFile))
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.ScriptPath_TScript.Symbol.Construct(cg.Routine.ContainingFile))
                         .Expect(SpecialType.System_String);
 
                 default:

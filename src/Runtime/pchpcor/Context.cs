@@ -27,10 +27,8 @@ namespace Pchp.Core
     {
         #region Create
 
-        protected Context(string root = "")
+        protected Context()
         {
-            _rootPath = root;
-
             _functions = new TFunctionsMap(FunctionRedeclared);
             _types = new TTypesMap(TypeRedeclared);
             _statics = new object[_staticsCount];
@@ -192,17 +190,17 @@ namespace Pchp.Core
         /// <summary>
         /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method.
         /// </summary>
-        /// <param name="dir">Current script directory. Used for relative path resolution. Can be <c>null</c> to not resolve against current directory.</param>
+        /// <param name="cd">Current script directory. Used for relative path resolution. Can be <c>null</c> to not resolve against current directory.</param>
         /// <param name="path">The relative or absolute path to resolve and include.</param>
         /// <param name="locals">Variables scope for the included script.</param>
         /// <param name="this">Reference to <c>this</c> variable.</param>
         /// <param name="once">Whether to include according to include once semantics.</param>
         /// <param name="throwOnError">Whether to include according to require semantics.</param>
         /// <returns>Inclusion result value.</returns>
-        public PhpValue Include(string dir, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
+        public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
         {
-            var script = _scripts.GetScript(path, null, dir);
-            if (script.MainMethod != null)
+            var script = ScriptsMap.SearchForIncludedFile(path, null, cd, _scripts.GetScript);  // TODO: _scripts.GetScript => make relative path from absolute
+            if (script.IsValid)
             {
                 if (once && _scripts.IsIncluded(script.Index))
                 {
@@ -236,14 +234,12 @@ namespace Pchp.Core
         /// <remarks>
         /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
         /// </remarks>
-        readonly string _rootPath;
 
         /// <summary>
         /// Gets full script path in current context.
         /// </summary>
         /// <typeparam name="TScript">Script type.</typeparam>
         /// <returns>Full script path.</returns>
-        public string FilePath<TScript>() => Path.Combine(_rootPath, ScriptsMap.GetScript<TScript>().Path);
 
         #endregion
 

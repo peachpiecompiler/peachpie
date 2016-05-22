@@ -615,7 +615,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 OnInclude_TScript = ct.Context.Method("OnInclude");
                 Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
 
-                FilePath_TScript = ct.Context.Method("FilePath");
+                ScriptPath_TScript = ct.Context.Method("ScriptPath");
 
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
@@ -628,7 +628,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_intRef_string_method, DeclareType_T_string,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
-                FilePath_TScript,
+                ScriptPath_TScript,
                 GetConstant_string_int32,
                 Dispose;
 

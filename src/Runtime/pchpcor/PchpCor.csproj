@@ -74,6 +74,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utilities\ElasticBitArray.cs" />
     <Compile Include="Utilities\IProvider.cs" />
+    <Compile Include="Utilities\PathUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PhpValue.TypeTable.cs" />
