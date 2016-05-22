@@ -77,6 +77,11 @@ namespace Pchp.Core
             return arr;
         }
 
+        /// <summary>
+        /// Implementation of PHP <c>isset</c> operator.
+        /// </summary>
+        public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;
+
         #endregion
     }
 

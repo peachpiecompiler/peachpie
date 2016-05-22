@@ -1073,4 +1073,29 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     #endregion
+
+    #region BoundIsSetEx
+
+    public partial class BoundIsSetEx : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        /// <summary>
+        /// Reference to be checked if it is set.
+        /// </summary>
+        public ImmutableArray<BoundReferenceExpression> VarReferences { get; set; }
+
+        public BoundIsSetEx(ImmutableArray<BoundReferenceExpression> vars)
+        {
+            this.VarReferences = vars;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
+
+    #endregion
 }

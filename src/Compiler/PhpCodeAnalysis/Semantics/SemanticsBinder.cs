@@ -129,8 +129,14 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.IncludingEx) return BindIncludeEx((AST.IncludingEx)expr).WithAccess(access);
             if (expr is AST.InstanceOfEx) return BindInstanceOfEx((AST.InstanceOfEx)expr).WithAccess(access);
             if (expr is AST.PseudoConstUse) return BindPseudoConst((AST.PseudoConstUse)expr).WithAccess(access);
+            if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundExpression BindIsSet(AST.IssetEx x)
+        {
+            return new BoundIsSetEx(x.VarList.Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Read.WithCheck())).ToImmutableArray());
         }
 
         BoundExpression BindPseudoConst(AST.PseudoConstUse x)

@@ -2831,4 +2831,55 @@ namespace Pchp.CodeAnalysis.Semantics
                 .Expect(cg.CoreTypes.PhpValue);
         }
     }
+
+    partial class BoundIsSetEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            var end_label = new object();
+
+            var vars = this.VarReferences;
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (i > 0)
+                {
+                    cg.Builder.EmitOpCode(ILOpCode.Pop);
+                }
+
+                var t = cg.Emit(vars[i]);
+
+                // t.IsSet
+                if (t == cg.CoreTypes.PhpValue)
+                {
+                    // IsSet(value)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsSet_PhpValue);
+                }
+                else if (t.IsReferenceType)
+                {
+                    // object != null
+                    cg.Builder.EmitNullConstant(); // .ldnull
+                    cg.Builder.EmitOpCode(ILOpCode.Cgt_un); // .cgt.un
+                }
+                else
+                {
+                    // value type => true
+                    cg.EmitPop(t);
+                    cg.Builder.EmitBoolConstant(true);
+                }
+
+                if (i + 1 < vars.Length)
+                {
+                    // if (result == false) goto end_label;
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.Builder.EmitBranch(ILOpCode.Brfalse, end_label);
+                }
+            }
+
+            //
+            cg.Builder.MarkLabel(end_label);
+
+            //
+            return cg.CoreTypes.Boolean;
+        }
+    }
 }

@@ -1291,10 +1291,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitGlobalConst((BoundGlobalConst)operation);
             }
+            else if (operation is BoundIsSetEx)
+            {
+                VisitsSet((BoundIsSetEx)operation);
+            }
             else
             {
                 throw new NotImplementedException(operation.GetType().Name);
             }
+        }
+
+        public virtual void VisitsSet(BoundIsSetEx x)
+        {
+            x.VarReferences.ForEach(Visit);
+            x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 
         public void VisitPseudoConst(BoundPseudoConst x)

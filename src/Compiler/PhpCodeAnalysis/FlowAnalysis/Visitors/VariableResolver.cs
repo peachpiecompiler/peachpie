@@ -22,6 +22,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             _ctx = ctx;
         }
 
+        public override void DefaultVisit(IOperation operation)
+        {
+            if (operation is BoundPseudoConst)
+            {
+                //VisitPseudoConst((BoundPseudoConst)operation);
+            }
+            else if (operation is BoundGlobalConst)
+            {
+                //VisitGlobalConst((BoundGlobalConst)operation);
+            }
+            else if (operation is BoundIsSetEx)
+            {
+                ((BoundIsSetEx)operation).VarReferences.ForEach(Visit);
+            }
+            else
+            {
+                throw new NotImplementedException(operation.GetType().Name);
+            }
+        }
+
         public override void VisitLocalReferenceExpression(ILocalReferenceExpression operation)
         {
             var vref = ((BoundVariableRef)operation);
