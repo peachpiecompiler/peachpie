@@ -26,17 +26,27 @@ namespace Pchp.Core
         /// </summary>
         public struct ScriptInfo
         {
+            /// <summary>
+            /// Undefined script.
+            /// </summary>
+            public static ScriptInfo Empty => default(ScriptInfo);
+
+            /// <summary>
+            /// Whether the script is defined.
+            /// </summary>
+            public bool IsValid => this.MainMethod != null;
+
             readonly public int Index;
             readonly public string Path;
             readonly public MainDelegate MainMethod;
-            
+
             static MainDelegate CreateMain(TypeInfo script)
             {
                 var mainmethod =
-                    script.GetDeclaredMethod("<Main>`0") ?? 
-                    script.GetDeclaredMethod("<Main>");
+                    script.GetDeclaredMethod("<Main>`0") ??     // generated wrapper that always returns PhpValue
+                    script.GetDeclaredMethod("<Main>");         // if there is no generated wrapper, Main itself returns PhpValue
 
-                Debug.Assert(mainmethod != null);                
+                Debug.Assert(mainmethod != null);
                 Debug.Assert(mainmethod.ReturnType == typeof(PhpValue));
 
                 return (MainDelegate)mainmethod.CreateDelegate(typeof(MainDelegate));
@@ -56,7 +66,7 @@ namespace Pchp.Core
         class ScriptsMap
         {
             readonly ElasticBitArray array = new ElasticBitArray(_scriptsMap.Count);
-            
+
             /// <summary>
             /// Maps script paths to their id.
             /// </summary>
@@ -116,12 +126,64 @@ namespace Pchp.Core
             /// </summary>
             /// <param name="path">Requested script path, either absolute or relative.</param>
             /// <param name="includePath">Array of defined include paths.</param>
-            /// <param name="cd">Current script directory, relative to root.</param>
+            /// <param name="cd">Current script directory.</param>
             /// <param name="cwd">Current working directory.</param>
             /// <returns>First matching script descriptor.</returns>
             public ScriptInfo GetScript(string path, string[] includePath, string cd, string cwd)
             {
-                return GetScript(path); // TODO: resolve path
+                ScriptInfo result;
+
+                if (!string.IsNullOrEmpty(path))
+                {
+                    if (path[0] == '.' && path.Length > 2)
+                    {
+                        if (path[1] == '/' || path[1] == '\\')
+                        {
+                            // ./
+                            result = GetScript(cd + path.Substring(1));
+                            if (result.IsValid) return result;
+                        }
+                        else if (path[1] == '.' && (path[2] == '/' || path[2] == '\\'))
+                        {
+                            // ../
+                            result = GetScript(System.IO.Path.GetDirectoryName(cd) + path.Substring(2));
+                            if (result.IsValid) return result;
+                        }
+                    }
+
+                    // TODO: file://
+
+                    if (includePath != null)
+                    {
+                        for (int i = 0; i < includePath.Length; i++)
+                        {
+                            result = GetScript(new Uri(System.IO.Path.Combine(includePath[i], path)).LocalPath);
+                            if (result.IsValid) return result;
+                        }
+                    }
+
+                    if (cd != null)
+                    {
+                        result = GetScript(System.IO.Path.Combine(cd, path));
+                        if (result.IsValid) return result;
+                    }
+
+                    if (cwd != null)
+                    {
+                        result = GetScript(System.IO.Path.Combine(cwd, path));
+                        if (result.IsValid) return result;
+                    }
+
+                    //
+                    result = GetScript(path);
+                }
+                else
+                {
+                    result = default(ScriptInfo);
+                }
+
+                //
+                return result;
             }
 
             static int EnsureIndex<TScript>(ref int script_id)

@@ -251,6 +251,18 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Returns directory name component of path.
+        /// </summary>
+        /// <param name="path">The full path.</param>
+        /// <param name="levels">The number of parent directories to go up. Must be greater than zero.</param>
+        /// <returns>The directory portion of the given path.</returns>
+        public static string dirname(string path, int levels = 1)
+        {
+            // added in php 7.0
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Extracts parts from a specified path.
         /// </summary>
         /// <param name="path">The path to be parsed.</param>

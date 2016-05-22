@@ -201,7 +201,7 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string dir, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
         {
-            var script = _scripts.GetScript(path, null, dir, null);
+            var script = _scripts.GetScript(path, null, dir);
             if (script.MainMethod != null)
             {
                 if (once && _scripts.IsIncluded(script.Index))
@@ -231,7 +231,7 @@ namespace Pchp.Core
         #region Path Resolving
 
         /// <summary>
-        /// Runtime root directory (web root).
+        /// Root directory (web root or console app root) where loaded scripts are relative to.
         /// </summary>
         /// <remarks>
         /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
