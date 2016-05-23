@@ -2031,8 +2031,6 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var phpstring = cg.CoreTypes.PhpString;
-
             // new PhpString(capacity)
             cg.Emit_New_PhpString(CapacityHint());
 
@@ -2053,7 +2051,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            return phpstring;
+            return cg.CoreTypes.PhpString;
         }
 
         bool IsEmpty(BoundExpression x)
@@ -2292,7 +2290,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(Access.IsRead || Access.IsNone);
 
-            // target = target X value;
+            // target X= value;
 
             var target_place = this.Target.BindPlace(cg);
             Debug.Assert(target_place != null);
@@ -2364,7 +2362,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     tmp = cg.GetTemporaryLocal(result_type, false);
                     cg.Builder.EmitOpCode(ILOpCode.Dup);
                     cg.Builder.EmitLocalStore(tmp);
-                    cg.ReturnTemporaryLocal(tmp);
                     break;
                 case AccessMask.None:
                     break;
@@ -2380,6 +2377,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 case AccessMask.None:
                     return cg.CoreTypes.Void;
                 case AccessMask.Read:
+                    Debug.Assert(tmp != null);
+                    cg.Builder.EmitLoad(tmp);
+                    cg.ReturnTemporaryLocal(tmp);
                     return result_type;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(this.Access);
