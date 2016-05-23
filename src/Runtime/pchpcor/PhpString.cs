@@ -34,6 +34,12 @@ namespace Pchp.Core
             _builder = new StringBuilder(capacity);
         }
 
+        public PhpString(string x, string y)
+        {
+            _builder = new StringBuilder(x);
+            _builder.Append(y);
+        }
+
         // from builder, binary, unicode, concatenation
 
         #endregion

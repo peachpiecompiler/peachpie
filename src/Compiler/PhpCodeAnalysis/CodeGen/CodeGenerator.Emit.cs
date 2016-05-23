@@ -941,11 +941,37 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (value is int)
                 {
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_Boolean:
+                                _il.EmitBoolConstant((int)value != 0);
+                                return targetOpt;
+                            case SpecialType.System_String:
+                                _il.EmitStringConstant(value.ToString());
+                                return targetOpt;
+                        }
+                    }
+
                     Builder.EmitIntConstant((int)value);
                     return CoreTypes.Int32;
                 }
                 else if (value is long)
                 {
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_Boolean:
+                                _il.EmitBoolConstant((long)value != 0);
+                                return targetOpt;
+                            case SpecialType.System_String:
+                                _il.EmitStringConstant(value.ToString());
+                                return targetOpt;
+                        }
+                    }
+
                     Builder.EmitLongConstant((long)value);
                     return CoreTypes.Long;
                 }
@@ -956,11 +982,34 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (value is bool)
                 {
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_String:
+                                _il.EmitStringConstant((bool)value ? "1" : "");
+                                return targetOpt;
+                        }
+                    }
+
                     Builder.EmitBoolConstant((bool)value);
                     return CoreTypes.Boolean;
                 }
                 else if (value is double)
                 {
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_Boolean:
+                                _il.EmitBoolConstant((double)value != 0.0);
+                                return targetOpt;
+                            case SpecialType.System_Int64:
+                                _il.EmitLongConstant((long)(double)value);
+                                return targetOpt;
+                        }
+                    }
+
                     Builder.EmitDoubleConstant((double)value);
                     return CoreTypes.Double;
                 }

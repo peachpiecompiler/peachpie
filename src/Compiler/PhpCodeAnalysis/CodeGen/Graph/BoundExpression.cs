@@ -2318,9 +2318,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 //case Operations.AssignAnd:
                 //    binaryop = Operations.And;
                 //    break;
-                //case Operations.AssignAppend:
-                //    binaryop = Operations.Concat;
-                //    break;
+                case Operations.AssignAppend:
+                    result_type = EmitAppend(cg, xtype, Value);
+                    break;
                 ////case Operations.AssignPrepend:
                 ////    break;
                 case Operations.AssignDiv:
@@ -2383,6 +2383,29 @@ namespace Pchp.CodeAnalysis.Semantics
                     return result_type;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(this.Access);
+            }
+        }
+
+        static TypeSymbol EmitAppend(CodeGenerator cg, TypeSymbol xtype, BoundExpression y)
+        {
+            if (xtype == cg.CoreTypes.PhpString)
+            {
+                // x.Append(y); return x;
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+
+                cg.EmitConvert(y, cg.CoreTypes.String);
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
+
+                //
+                return xtype;
+            }
+            else
+            {
+                // concat(x, y)
+                cg.EmitConvert(xtype, 0, cg.CoreTypes.String);
+                cg.EmitConvert(y, cg.CoreTypes.String);
+
+                return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_string_string);
             }
         }
     }

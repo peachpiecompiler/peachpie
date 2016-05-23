@@ -363,6 +363,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_Long = ct.PhpValue.Method("Create", ct.Long);
                 Create_Double = ct.PhpValue.Method("Create", ct.Double);
                 Create_String = ct.PhpValue.Method("Create", ct.String);
+                Create_PhpString = ct.PhpValue.Method("Create", ct.PhpString);
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
                 Create_PhpArray = ct.PhpValue.Method("Create", ct.PhpArray);
                 Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
@@ -380,7 +381,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeepCopy,
                 Eq_PhpValue_PhpValue,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
-                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpNumber, Create_PhpAlias, Create_PhpArray,
+                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray,
                 FromClr_Object, FromClass_Object;
 
             public readonly CoreField
@@ -584,6 +585,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
                 PhpString_int = ct.PhpString.Ctor(ct.Int32);
+                PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
                 IntStringKey_int = ct.IntStringKey.Ctor(ct.Int32);
@@ -594,7 +596,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
-                PhpString_int,
+                PhpString_int, PhpString_string_string,
                 IntStringKey_int, IntStringKey_string,
                 ScriptAttribute_string;
         }

@@ -226,6 +226,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
+                    else if (from == compilation.CoreTypes.PhpString)
+                    {
+                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpString)
+                            .Expect(compilation.CoreTypes.PhpValue);
+                        break;
+                    }
                     else if (from == compilation.CoreTypes.PhpNumber)
                     {
                         il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpNumber)
@@ -690,7 +696,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             // literals
             if (expr.ConstantValue.HasValue && to != null)    // <= (expr is BoundLiteral)
             {
-                //EmitLiteral(expr.ConstantValue.Value, to);
+                EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to), 0, to);
+                return;
             }
 
             //
