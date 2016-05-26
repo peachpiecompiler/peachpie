@@ -50,6 +50,14 @@ namespace Pchp.Core
             public abstract int Compare(ref PhpValue me, PhpValue right);
 
             /// <summary>
+            /// Performs strict comparison.
+            /// </summary>
+            /// <param name="me">Reference to self, representing the left operand.</param>
+            /// <param name="right">The right operand.</param>
+            /// <returns>The value determining operands are strictly equal.</returns>
+            public abstract bool StrictEquals(ref PhpValue me, PhpValue right);
+
+            /// <summary>
             /// Ensures the value is a class object.
             /// In case it isn't, creates stdClass according to PHP semantics.
             /// In case current value is empty, replaces current value with newly created stdClass.
@@ -116,6 +124,7 @@ namespace Pchp.Core
                 return Convert.NumberInfo.LongInteger;
             }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.CompareNull(right);
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsNull;
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = ToClass(ref me);
@@ -154,6 +163,7 @@ namespace Pchp.Core
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Long, right);
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Long && right.Long == me.Long;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
@@ -176,6 +186,7 @@ namespace Pchp.Core
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
             }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Double, right);
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Double && right.Double == me.Double;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
@@ -198,6 +209,7 @@ namespace Pchp.Core
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Boolean, right);
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Boolean && right.Boolean == me.Boolean;
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = new stdClass();   // empty class
@@ -234,6 +246,16 @@ namespace Pchp.Core
             public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.String);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => Convert.ToNumber(me.String, out number);
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.String, right);
+            public override bool StrictEquals(ref PhpValue me, PhpValue right)
+            {
+                if (right.TypeCode == PhpTypeCode.String)
+                    return right.String == me.String;
+
+                if (right.TypeCode == PhpTypeCode.WritableString)
+                    return right.WritableString.ToString() == me.String;
+
+                return false;
+            }
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = ToClass(ref me);
@@ -270,6 +292,16 @@ namespace Pchp.Core
             public override bool ToBoolean(ref PhpValue me) => me.WritableString.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.WritableString.ToNumber(out number);
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.WritableString.ToString(), right);
+            public override bool StrictEquals(ref PhpValue me, PhpValue right)
+            {
+                if (right.TypeCode == PhpTypeCode.String)
+                    return right.String == me.WritableString.ToString();
+
+                if (right.TypeCode == PhpTypeCode.WritableString)
+                    return right.WritableString.ToString() == me.WritableString.ToString();
+
+                return false;
+            }
             public override object EnsureObject(ref PhpValue me)
             {
                 //var obj = PhpValue.Create(new stdClass(ctx));
@@ -340,6 +372,7 @@ namespace Pchp.Core
 
                 throw new ArgumentException("incomparable_objects_compared_exception");
             }
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Object && right.Object == me.Object;
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override PhpArray EnsureArray(ref PhpValue me)
             {
@@ -362,6 +395,10 @@ namespace Pchp.Core
             public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Array.ToNumber(out number);
             public override int Compare(ref PhpValue me, PhpValue right) => me.Array.Compare(right);
+            public override bool StrictEquals(ref PhpValue me, PhpValue right)
+            {
+                throw new NotImplementedException();
+            }
             public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
             public override PhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
@@ -381,6 +418,7 @@ namespace Pchp.Core
             public override bool ToBoolean(ref PhpValue me) => me.Alias.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Alias.ToNumber(out number);
             public override int Compare(ref PhpValue me, PhpValue right) => me.Alias.Value.Compare(right);
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Alias.Value.StrictEquals(right);
             public override object EnsureObject(ref PhpValue me) => me.Alias.Value.EnsureObject();
             public override PhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;

@@ -317,6 +317,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 Compare_string_long = ct.Comparison.Method("Compare", ct.String, ct.Long);
                 Compare_string_double = ct.Comparison.Method("Compare", ct.String, ct.Double);
                 Compare_string_value = ct.Comparison.Method("Compare", ct.String, ct.PhpValue);
+
+                StrictCeq_bool_PhpValue = ct.StrictComparison.Method("Ceq", ct.Boolean, ct.PhpValue);
+                StrictCeq_long_PhpValue = ct.StrictComparison.Method("Ceq", ct.Long, ct.PhpValue);
+                StrictCeq_double_PhpValue = ct.StrictComparison.Method("Ceq", ct.Double, ct.PhpValue);
+                StrictCeq_PhpValue_PhpValue = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.PhpValue);
+                StrictCeq_PhpValue_bool = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.Boolean);
             }
 
             public readonly CoreMethod
@@ -330,7 +336,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool,
                 Clt_long_double, Cgt_long_double,
                 Compare_bool_bool, Compare_number_value,
-                Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value;
+                Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value,
+                
+                StrictCeq_bool_PhpValue, StrictCeq_long_PhpValue, StrictCeq_double_PhpValue, StrictCeq_PhpValue_PhpValue,
+                StrictCeq_PhpValue_bool;
         }
 
         public struct PhpValueHolder

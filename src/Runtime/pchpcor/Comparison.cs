@@ -245,4 +245,18 @@ namespace Pchp.Core
             }
         }
     }
+
+    /// <summary>
+    /// PHP strict comparison semantic.
+    /// </summary>
+    public static class StrictComparison
+    {
+        public static bool Ceq(bool bx, PhpValue y) => y.TypeCode == PhpTypeCode.Boolean && bx == y.Boolean;
+        public static bool Ceq(long lx, PhpValue y) => y.TypeCode == PhpTypeCode.Long && lx == y.Long;
+        public static bool Ceq(double dx, PhpValue y) => y.TypeCode == PhpTypeCode.Double && dx == y.Double;
+
+        public static bool Ceq(PhpValue x, bool by) => x.TypeCode == PhpTypeCode.Boolean && by == x.Boolean;
+
+        public static bool Ceq(PhpValue x, PhpValue y) => x.StrictEquals(y);
+    }
 }

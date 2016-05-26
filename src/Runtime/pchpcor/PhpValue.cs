@@ -200,6 +200,13 @@ namespace Pchp.Core
         public int Compare(PhpValue right) => _type.Compare(ref this, right);
 
         /// <summary>
+        /// Performs strict comparison.
+        /// </summary>
+        /// <param name="right">The right operand.</param>
+        /// <returns>The value determining operands are strictly equal.</returns>
+        public bool StrictEquals(PhpValue right) => _type.StrictEquals(ref this, right);
+
+        /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
         /// </summary>
         public object AsObject() => _type.AsObject(ref this);
