@@ -6,6 +6,7 @@ using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -39,8 +40,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void EmitInit(CodeGenerator cg)
         {
-            if (_symbol is Symbols.SourceReturnSymbol)  // TODO: remove SourceReturnSymbol
+            if (_symbol is SourceReturnSymbol)  // TODO: remove SourceReturnSymbol
+            {
                 return;
+            }
+
+            if (cg.HasUnoptimizedLocals)
+            {
+                return;
+            }
 
             // declare variable in global scope
             var il = cg.Builder;
@@ -88,7 +96,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            return new BoundLocalPlace(Place(il), access, thint);
+            if (_place == null)
+            {
+                // unoptimized locals
+                return new BoundIndirectVariablePlace(new BoundLiteral(this.Name), access);
+            }
+            else
+            {
+                return new BoundLocalPlace(_place, access, thint);
+            }
         }
 
         internal override IPlace Place(ILBuilder il) => LocalPlace(il);
@@ -99,38 +115,63 @@ namespace Pchp.CodeAnalysis.Semantics
     partial class BoundParameter
     {
         /// <summary>
+        /// In case routine uses array of locals (unoptimized locals).
+        /// </summary>
+        bool _isUnoptimized;
+
+        /// <summary>
         /// When parameter should be copied or its CLR type does not fit into its runtime type.
         /// E.g. foo(int $i){ $i = "Hello"; }
         /// </summary>
-        private BoundLocal _lazyLocal;
+        BoundLocal _lazyLocal;
 
         internal override void EmitInit(CodeGenerator cg)
         {
-            var srcparam = _symbol as Symbols.SourceParameterSymbol;
+            // TODO: ? if (cg.HasUnoptimizedLocals && $this) <locals>["this"] = ...
+
+            var srcparam = _symbol as SourceParameterSymbol;
             if (srcparam != null)
             {
                 var srcplace = new ParamPlace(_symbol);
                 var routine = srcparam.Routine;
 
-                // TODO: copy parameter by value in case of PhpValue, Array, PhpString
-
-                // create local variable in case of parameter type is not enough for its use within routine
-                if (_symbol.Type != cg.CoreTypes.PhpValue && _symbol.Type != cg.CoreTypes.PhpAlias)
+                if (cg.HasUnoptimizedLocals)
                 {
-                    var tmask = routine.ControlFlowGraph.GetParamTypeMask(srcparam);
-                    var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
-                    if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
+                    Debug.Assert(cg.LocalsPlaceOpt != null);
+
+                    // copy parameter to <locals>[Name]
+
+                    // <locals>[name] = value
+                    cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // <locals>
+                    cg.EmitIntStringKey(new BoundLiteral(this.Name));   // [key]
+                    cg.EmitConvertToPhpValue(srcplace.EmitLoad(cg.Builder), 0); // value
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+
+                    //
+                    _isUnoptimized = true;
+                }
+                else
+                {
+                    // TODO: copy parameter by value in case of PhpValue, Array, PhpString
+
+                    // create local variable in case of parameter type is not enough for its use within routine
+                    if (_symbol.Type != cg.CoreTypes.PhpValue && _symbol.Type != cg.CoreTypes.PhpAlias)
                     {
-                        // TODO: performance warning
+                        var tmask = routine.ControlFlowGraph.GetParamTypeMask(srcparam);
+                        var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
+                        if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
+                        {
+                            // TODO: performance warning
 
-                        _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
-                        _lazyLocal.EmitInit(cg);
-                        var localplace = _lazyLocal.Place(cg.Builder);
+                            _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
+                            _lazyLocal.EmitInit(cg);
+                            var localplace = _lazyLocal.Place(cg.Builder);
 
-                        // <local> = <param>
-                        localplace.EmitStorePrepare(cg.Builder);
-                        cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
-                        localplace.EmitStore(cg.Builder);
+                            // <local> = <param>
+                            localplace.EmitStorePrepare(cg.Builder);
+                            cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
+                            localplace.EmitStore(cg.Builder);
+                        }
                     }
                 }
             }
@@ -138,13 +179,24 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            return (_lazyLocal != null)
-                ? _lazyLocal.BindPlace(il, access, thint)
-                : new BoundLocalPlace(Place(il), access, thint);
+            if (_isUnoptimized)
+            {
+                return new BoundIndirectVariablePlace(new BoundLiteral(this.Name), access);
+            }
+            else
+            {
+                //
+                return (_lazyLocal != null)
+                    ? _lazyLocal.BindPlace(il, access, thint)
+                    : new BoundLocalPlace(Place(il), access, thint);
+            }
         }
 
         internal override IPlace Place(ILBuilder il)
         {
+            if (_isUnoptimized)
+                return null;
+
             var place = (_lazyLocal != null) ? _lazyLocal.Place(il) : new ParamPlace(_symbol);
 
             if (this.VariableKind == VariableKind.ThisParameter)

@@ -457,7 +457,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (from == CoreTypes.PhpArray)
                 return;
 
-            throw new NotImplementedException($"(array){from.Name}");
+            if (from == CoreTypes.PhpValue)
+            {
+                EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue);
+            }
+            else
+            {
+                throw new NotImplementedException($"(array){from.Name}");
+            }
         }
 
         public void EmitAsPhpArray(BoundExpression expr)

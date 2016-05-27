@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var flowCtx = new FlowContext(typeCtx, locals, returnIdx);
 
             // create FlowState
-            var state = new FlowState(flowCtx);
+            var state = new FlowState(flowCtx, routine);
 
             // handle parameters passed by reference
             var parameters = routine.Parameters.OfType<SourceParameterSymbol>().ToImmutableArray();

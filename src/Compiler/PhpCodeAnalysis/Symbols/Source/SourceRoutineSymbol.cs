@@ -21,6 +21,27 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal abstract partial class SourceRoutineSymbol : MethodSymbol
     {
+        [Flags]
+        public enum RoutineFlags
+        {
+            None = 0,
+
+            HasEval = 1,
+            HasInclude = 2,
+            HasIndirectVar = 4,
+            UsesLocals = 8,
+
+            /// <summary>
+            /// The routine uses <c>static::</c> construct to access late static bound type.
+            /// </summary>
+            UsesLateStatic = 16,
+
+            /// <summary>
+            /// Whether the routine has to define local variables as an array instead of native local variables.
+            /// </summary>
+            RequiresLocalsArray = HasEval | HasInclude | HasInclude | UsesLocals,
+        }
+
         ControlFlowGraph _cfg;
         TypeRefContext _typeCtx;
 
@@ -58,19 +79,24 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
+        /// <summary>
+        /// Routine flags lazily initialized during code analysis.
+        /// </summary>
+        internal RoutineFlags Flags { get; set; }
+
         internal abstract IList<Statement> Statements { get; }
 
         internal TypeRefContext TypeRefContext => _typeCtx ?? (_typeCtx = CreateTypeRefContext());
 
         protected abstract TypeRefContext CreateTypeRefContext();
 
-        public abstract ParameterSymbol ThisParameter { get;}
+        public abstract ParameterSymbol ThisParameter { get; }
 
         /// <summary>
         /// Gets routine declaration syntax.
         /// </summary>
         internal abstract AstNode Syntax { get; }
-        
+
         /// <summary>
         /// Optionaly gets routines PHP doc block.
         /// </summary>
@@ -101,7 +127,7 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var p in signature.FormalParams)
             {
                 var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Value) : null;
-                
+
                 yield return new SourceParameterSymbol(this, p, index++, ptag);
 
                 pindex++;

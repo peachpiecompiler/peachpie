@@ -12,6 +12,8 @@ using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using System.Reflection.Metadata;
 using System.Diagnostics;
+using System.Collections.Immutable;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -284,13 +286,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             _emitPdbSequencePoints = emittingPdb && true; // routine.GenerateDebugInfo;
         }
 
-        static IPlace GetLocalsPlace(SourceRoutineSymbol routine)
+        IPlace GetLocalsPlace(SourceRoutineSymbol routine)
         {
             if (routine is SourceGlobalMethodSymbol)
             {
                 // second parameter
                 Debug.Assert(routine.ParameterCount >= 2 && routine.Parameters[1].Name == SpecialParameterSymbol.LocalsName);
                 return new ParamPlace(routine.Parameters[1]);
+            }
+            else if ((routine.Flags & SourceRoutineSymbol.RoutineFlags.RequiresLocalsArray) != 0)
+            {
+                // declare PhpArray <locals>
+                var localsDef = this.GetTemporaryLocal(CoreTypes.PhpArray, false);
+                return new LocalPlace(localsDef);
             }
 
             //

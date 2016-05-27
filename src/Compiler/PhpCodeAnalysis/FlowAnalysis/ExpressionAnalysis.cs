@@ -43,6 +43,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Reference to corresponding source routine.
+        /// </summary>
+        protected SourceRoutineSymbol Routine => State.Common.Routine;
+
+        /// <summary>
         /// The worklist to be used to enqueue next blocks.
         /// </summary>
         protected Worklist<BoundBlock> Worklist => _analysis.Worklist;
@@ -1134,6 +1139,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitIncludeEx(BoundIncludeEx x)
         {
+            this.Routine.Flags |= SourceRoutineSymbol.RoutineFlags.HasInclude;
+
             // resolve target script
             Debug.Assert(x.ArgumentsInSourceOrder.Length == 1);
             var targetExpr = x.ArgumentsInSourceOrder[0].Value;

@@ -47,6 +47,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         public IPlace LocalsPlaceOpt => _localsPlaceOpt;
 
         /// <summary>
+        /// Gets value indicating the routine uses unoptimized locals access.
+        /// This means, all the local variables are stored within an associative array instead of local slots.
+        /// This value implicates, <see cref="LocalsPlaceOpt"/> is not <c>null</c>.
+        /// </summary>
+        public bool HasUnoptimizedLocals => LocalsPlaceOpt != null;
+
+        /// <summary>
         /// Emits reference to <c>this</c>.
         /// </summary>
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
@@ -93,7 +100,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal TypeSymbol TryEmitVariableSpecialize(IPlace place, TypeRefMask tmask)
         {
-            if (place != null && tmask.IsSingleType)
+            if (place != null && tmask.IsSingleType && !tmask.IsRef)
             {
                 if (place.HasAddress)
                 {
@@ -202,7 +209,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol EmitSpecialize(TypeSymbol stack, TypeRefMask tmask)
         {
             // specialize type if possible
-            if (tmask.IsSingleType)
+            if (tmask.IsSingleType && !tmask.IsRef)
             {
                 if (stack == this.CoreTypes.PhpNumber)
                 {

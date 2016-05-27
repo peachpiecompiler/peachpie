@@ -840,8 +840,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
-    #endregion
-
     internal class BoundSuperglobalPlace : IBoundReference
     {
         readonly Syntax.VariableName _name;
@@ -886,16 +884,29 @@ namespace Pchp.CodeAnalysis.CodeGen
         #endregion
     }
 
-    internal class BoundGlobalPlace : IBoundReference
+    internal class BoundIndirectVariablePlace : IBoundReference
     {
         readonly BoundExpression _nameExpr;
         readonly BoundAccess _access;
 
-        public BoundGlobalPlace(BoundExpression nameExpr, BoundAccess access)
+        public BoundIndirectVariablePlace(BoundExpression nameExpr, BoundAccess access)
         {
             Contract.ThrowIfNull(nameExpr);
             _nameExpr = nameExpr;
             _access = access;
+        }
+
+        /// <summary>
+        /// Loads reference to <c>PhpArray</c> containing variables.
+        /// </summary>
+        /// <returns><c>PhpArray</c> type symbol.</returns>
+        protected virtual TypeSymbol LoadVariablesArray(CodeGenerator cg)
+        {
+            Debug.Assert(cg.LocalsPlaceOpt != null);
+            
+            // <locals>
+            return cg.LocalsPlaceOpt.EmitLoad(cg.Builder)
+                .Expect(cg.CoreTypes.PhpArray);
         }
 
         #region IBoundReference
@@ -906,18 +917,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // Template: <variables> Key
 
-            if (cg.IsGlobalScope)
-            {
-                // <locals>
-                Debug.Assert(cg.LocalsPlaceOpt != null);
-                cg.LocalsPlaceOpt.EmitLoad(cg.Builder)
-                    .Expect(cg.CoreTypes.PhpArray);
-            }
-            else
-            {
-                // $GLOBALS
-                cg.EmitLoadGlobals();
-            }
+            LoadVariablesArray(cg);
 
             // key
             cg.EmitIntStringKey(_nameExpr);
@@ -986,4 +986,30 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         #endregion
     }
+
+    internal class BoundGlobalPlace : BoundIndirectVariablePlace
+    {
+        public BoundGlobalPlace(BoundExpression nameExpr, BoundAccess access)
+            :base(nameExpr, access)
+        {
+        }
+
+        protected override TypeSymbol LoadVariablesArray(CodeGenerator cg)
+        {
+            if (cg.IsGlobalScope)
+            {
+                // <locals>
+                Debug.Assert(cg.LocalsPlaceOpt != null);
+                return cg.LocalsPlaceOpt.EmitLoad(cg.Builder)
+                    .Expect(cg.CoreTypes.PhpArray);
+            }
+            else
+            {
+                // $GLOBALS
+                return cg.EmitLoadGlobals();
+            }
+        }
+    }
+
+    #endregion
 }

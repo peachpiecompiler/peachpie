@@ -49,6 +49,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // emit parameters checks
             }
 
+            //
+            var locals = cg.Routine.ControlFlowGraph.FlowContext.Locals;
+
             // in case of script, declare the script, functions and types
             if (cg.Routine is Symbols.SourceGlobalMethodSymbol)
             {
@@ -59,9 +62,20 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // <ctx>.DeclareFunction()
                 cg.Routine.ContainingFile.Functions.Where(f => !f.IsConditional).ForEach(cg.EmitDeclareFunction);
             }
+            else
+            {
+                if (cg.HasUnoptimizedLocals)
+                {
+                    // <locals> = new PhpArray(HINTCOUNT)
+                    cg.LocalsPlaceOpt.EmitStorePrepare(cg.Builder);
+                    cg.Builder.EmitIntConstant(locals.Length);    // HINTCOUNT
+                    cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
+                    cg.LocalsPlaceOpt.EmitStore(cg.Builder);
+                }
+            }
 
             // variables/parameters initialization
-            foreach (var loc in cg.Routine.ControlFlowGraph.FlowContext.Locals)
+            foreach (var loc in locals)
             {
                 loc.EmitInit(cg);
             }

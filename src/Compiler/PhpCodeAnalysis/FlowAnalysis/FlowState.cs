@@ -31,9 +31,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             /// <summary>
             /// Locals table reference.
             /// </summary>
-            public FlowContext/*!*/FlowContext { get { return _flowcontext; } }
+            public FlowContext/*!*/FlowContext => _flowcontext;
 
             readonly FlowContext/*!*/_flowcontext;
+
+            /// <summary>
+            /// Reference to corresponding routine symbol. Cannot be null.
+            /// </summary>
+            public Symbols.SourceRoutineSymbol/*!*/Routine => _routine;
+
+            readonly Symbols.SourceRoutineSymbol/*!*/_routine;
 
             /// <summary>
             /// Map of variables name and their index.
@@ -45,9 +52,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             /// </summary>
             ulong _usedMask;
 
-            public CommonState(FlowContext/*!*/flowcontext)
+            public CommonState(FlowContext/*!*/flowcontext, Symbols.SourceRoutineSymbol/*!*/routine)
             {
                 _flowcontext = flowcontext;
+                _routine = routine;
 
                 var locals = flowcontext.Locals;
                 var dict = new Dictionary<string, int>(locals.Length, StringComparer.OrdinalIgnoreCase);
@@ -164,8 +172,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Initial locals state for the Start block.
         /// </summary>
-        public FlowState(FlowContext/*!*/context)
-            : this(context, new CommonState(context))
+        public FlowState(FlowContext/*!*/context, Symbols.SourceRoutineSymbol/*!*/routine)
+            : this(context, new CommonState(context, routine))
         {
         }
 
