@@ -572,7 +572,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         Optional<object> _value;
 
-        public string Spelling => this.ConstantValue.Value.ToString();
+        public string Spelling => this.ConstantValue.Value != null ? this.ConstantValue.Value.ToString() : "NULL";
 
         public override Optional<object> ConstantValue => _value;
 

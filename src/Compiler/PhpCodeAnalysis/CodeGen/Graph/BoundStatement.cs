@@ -19,6 +19,14 @@ namespace Pchp.CodeAnalysis.Semantics
         void IGenerator.Generate(CodeGenerator cg) => Emit(cg);
     }
 
+    partial class BoundEmptyStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            // nop
+        }
+    }
+
     partial class BoundExpressionStatement
     {
         internal override void Emit(CodeGenerator cg)

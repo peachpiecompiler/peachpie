@@ -72,6 +72,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
             if (stmt is AST.FunctionDecl) return BindFunctionDecl((AST.FunctionDecl)stmt);
             if (stmt is AST.TypeDecl) return BindTypeDecl((AST.TypeDecl)stmt);
+            if (stmt is AST.GlobalStmt) return new BoundEmptyStatement();
 
             throw new NotImplementedException(stmt.GetType().FullName);
         }

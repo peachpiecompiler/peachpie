@@ -1302,6 +1302,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitsSet((BoundIsSetEx)operation);
             }
+            else if (operation is BoundEmptyStatement)
+            {
+                // nop
+            }
             else
             {
                 throw new NotImplementedException(operation.GetType().Name);
