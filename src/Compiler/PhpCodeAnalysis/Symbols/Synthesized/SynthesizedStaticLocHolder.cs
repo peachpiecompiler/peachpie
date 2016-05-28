@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         SynthesizedFieldSymbol _valueField;
 
-        public void EmitCtor(Emit.PEModuleBuilder module)
+        public void EmitCtor(Emit.PEModuleBuilder module, Action<Microsoft.CodeAnalysis.CodeGen.ILBuilder> builder)
         {
             Debug.Assert(_ctor == null);
 
@@ -72,10 +72,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _ctor = new SynthesizedCtorSymbol(this);
             _ctor.SetParameters();// empty params (default ctor)
             
-            var body = CodeGen.MethodGenerator.GenerateMethodBody(module, _ctor, (il) =>
-            {
-                il.EmitRet(true);
-            }, null, DiagnosticBag.GetInstance(), false);
+            var body = CodeGen.MethodGenerator.GenerateMethodBody(module, _ctor, builder, null, DiagnosticBag.GetInstance(), false);
             module.SetMethodBody(_ctor, body);
         }
         SynthesizedCtorSymbol _ctor;

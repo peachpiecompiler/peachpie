@@ -115,8 +115,12 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var loctype = holder.ValueField.Type;
 
-            if (initializer != null || loctype.SpecialType == SpecialType.None)
+            var constant = initializer.ConstantValue;
+
+            if (initializer != null && !constant.HasValue)
             {
+                // emit Init only if it needs Context
+
                 holder.EmitInit(module, (il) =>
                 {
                     var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false,
@@ -127,16 +131,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // Template: this.value = <initilizer>;
 
                     valuePlace.EmitStorePrepare(il);
-
-                    if (initializer != null)
-                    {
-                        cg.EmitConvert(initializer, valuePlace.TypeOpt);
-                    }
-                    else
-                    {
-                        cg.EmitLoadDefaultValue(valuePlace.TypeOpt, 0);
-                    }
-
+                    cg.EmitConvert(initializer, valuePlace.TypeOpt);                    
                     valuePlace.EmitStore(il);
 
                     //
@@ -145,7 +140,34 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             // default .ctor
-            holder.EmitCtor(module);
+            holder.EmitCtor(module, (il) =>
+            {
+                if (initializer == null || constant.HasValue)
+                {
+                    // emit default value only if it won't be initialized by Init above
+
+                    var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false,
+                        holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0));
+
+                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
+
+                    // Template: this.value = default(T);
+
+                    valuePlace.EmitStorePrepare(il);
+                    if (constant.HasValue)
+                    {
+                        cg.EmitConvert(cg.EmitLoadConstant(constant.Value, valuePlace.TypeOpt), 0, valuePlace.TypeOpt);
+                    }
+                    else
+                    {
+                        cg.EmitLoadDefaultValue(valuePlace.TypeOpt, 0);
+                    }
+                    valuePlace.EmitStore(il);
+                }
+
+                //
+                il.EmitRet(true);
+            });
         }
     }
 }
