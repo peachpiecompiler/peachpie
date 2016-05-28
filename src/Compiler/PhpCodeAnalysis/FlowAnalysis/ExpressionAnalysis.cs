@@ -373,6 +373,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 var name = v.Variable.Name;
 
+                var oldtype = State.GetVarType(name);
+
                 // set var
                 if (v.InitialValue != null)
                 {
@@ -381,7 +383,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     State.SetVarInitialized(name);
                     State.LTInt64Max(name, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
-                    State.SetVar(name, ((BoundExpression)v.InitialValue).TypeRefMask);
+                    State.SetVar(name, ((BoundExpression)v.InitialValue).TypeRefMask | oldtype);
                 }
                 else
                 {
