@@ -149,7 +149,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // emit default value only if it won't be initialized by Init above
 
                     var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false,
-                        holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0));
+                        holder.ContainingType, null, new ArgPlace(holder, 0));
 
                     var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
 

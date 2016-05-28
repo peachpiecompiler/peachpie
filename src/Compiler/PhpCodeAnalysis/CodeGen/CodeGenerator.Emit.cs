@@ -25,6 +25,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol EmitLoadContext()
         {
+            if (_contextPlace == null)
+                throw new InvalidOperationException("Context is not available.");
+
             return _contextPlace.EmitLoad(_il);
         }
 

@@ -261,8 +261,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
-            Contract.ThrowIfNull(contextPlace);
-
+            
             _il = il;
             _moduleBuilder = moduleBuilder;
             _optimizations = optimizations;
