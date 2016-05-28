@@ -117,7 +117,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var loctype = holder.ValueField.Type;
 
-            var constant = initializer.ConstantValue;
+            var constant = (initializer != null) ? initializer.ConstantValue : default(Optional<object>);
 
             if (initializer != null && !constant.HasValue)
             {
