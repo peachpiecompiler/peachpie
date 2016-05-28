@@ -79,7 +79,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.StaticStmt) return new BoundStaticVariableStatement(
                 ((AST.StaticStmt)stmt).StVarList
                     .Select(s => (BoundStaticLocal)_flowCtx.GetVar(s.Variable.VarName.Value))
-                    .ToImmutableArray());
+                    .ToImmutableArray())
+            { PhpSyntax = stmt };
 
             throw new NotImplementedException(stmt.GetType().FullName);
         }
@@ -259,7 +260,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 kind = (expr.Post) ? UnaryOperationKind.OperatorPostfixIncrement : UnaryOperationKind.OperatorPrefixIncrement;
             else
                 kind = (expr.Post) ? UnaryOperationKind.OperatorPostfixDecrement : UnaryOperationKind.OperatorPrefixDecrement;
-            
+
             //
             return new BoundIncDecEx(varref, kind);
         }

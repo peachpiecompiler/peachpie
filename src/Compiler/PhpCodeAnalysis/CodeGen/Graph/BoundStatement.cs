@@ -92,6 +92,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
+            cg.EmitSequencePoint(this.PhpSyntax);
+
             foreach (var v in _variables)
             {
                 var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(v._holder);
