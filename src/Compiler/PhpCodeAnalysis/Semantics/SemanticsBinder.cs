@@ -19,13 +19,16 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         readonly Symbols.SourceRoutineSymbol _routine;
 
+        readonly FlowAnalysis.FlowContext _flowCtx;
+
         #region Construction
 
-        public SemanticsBinder(Symbols.SourceRoutineSymbol routine /*PhpCompilation compilation, AST.GlobalCode ast, bool ignoreAccessibility*/)
+        public SemanticsBinder(Symbols.SourceRoutineSymbol routine, FlowAnalysis.FlowContext flowCtx = null /*PhpCompilation compilation, AST.GlobalCode ast, bool ignoreAccessibility*/)
         {
             Contract.ThrowIfNull(routine);
 
             _routine = routine;
+            _flowCtx = flowCtx;
         }
 
         #endregion
@@ -73,6 +76,10 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.FunctionDecl) return BindFunctionDecl((AST.FunctionDecl)stmt);
             if (stmt is AST.TypeDecl) return BindTypeDecl((AST.TypeDecl)stmt);
             if (stmt is AST.GlobalStmt) return new BoundEmptyStatement();
+            if (stmt is AST.StaticStmt) return new BoundStaticVariableStatement(
+                ((AST.StaticStmt)stmt).StVarList
+                    .Select(s => (BoundStaticLocal)_flowCtx.GetVar(s.Variable.VarName.Value))
+                    .ToImmutableArray());
 
             throw new NotImplementedException(stmt.GetType().FullName);
         }

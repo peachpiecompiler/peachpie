@@ -355,6 +355,41 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitInvalidStatement(operation);
         }
 
+        public sealed override void VisitVariableDeclarationStatement(IVariableDeclarationStatement operation)
+        {
+            if (operation is BoundStaticVariableStatement)
+            {
+                VisitStaticVariableStatement((BoundStaticVariableStatement)operation);
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(operation);
+            }
+        }
+
+        protected virtual void VisitStaticVariableStatement(BoundStaticVariableStatement x)
+        {
+            foreach (var v in x.Variables)
+            {
+                var name = v.Variable.Name;
+
+                // set var
+                if (v.InitialValue != null)
+                {
+                    // analyse initializer
+                    Visit(v.InitialValue);
+
+                    State.SetVarInitialized(name);
+                    State.LTInt64Max(name, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
+                    State.SetVar(name, ((BoundExpression)v.InitialValue).TypeRefMask);
+                }
+                else
+                {
+                    State.LTInt64Max(name, false);
+                }
+            }
+        }
+
         #endregion
 
         #region Visit Literals
@@ -483,6 +518,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     State.SetVarRef(x.Name);
                     x.TypeRefMask = x.TypeRefMask.WithRefFlag;
+                }
+
+                //
+                if (x.Variable is BoundStaticLocal)
+                {
+                    // analysis has to be started over // TODO: start from the block which declares the static local variable
+                    this.Worklist.Enqueue(Routine.ControlFlowGraph.Start);
                 }
             }
         }

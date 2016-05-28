@@ -73,7 +73,7 @@ namespace Pchp.CodeAnalysis
             {
                 // create initial flow state
                 var state = StateBinder.CreateInitialState(routine);
-                var binder = new SemanticsBinder(routine);
+                var binder = new SemanticsBinder(routine, state.FlowContext);
 
                 // create control flow
                 routine.ControlFlowGraph = cfg = new ControlFlowGraph(routine.Statements, binder);

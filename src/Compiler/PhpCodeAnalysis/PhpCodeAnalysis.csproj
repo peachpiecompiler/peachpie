@@ -222,6 +222,7 @@
     <Compile Include="Symbols\Synthesized\SynthesizedParameterSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedPropertySymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedScriptTypeSymbol.cs" />
+    <Compile Include="Symbols\Synthesized\SynthesizedStaticLocHolder.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedSubstitutedTypeParameterSymbol.cs" />
     <Compile Include="Symbols\TypedConstantExtensions.cs" />
     <Compile Include="Symbols\TypeMap.cs" />

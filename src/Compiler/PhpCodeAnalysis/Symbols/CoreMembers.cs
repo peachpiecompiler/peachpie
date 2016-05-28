@@ -632,6 +632,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
+                GetStatic_T = ct.Context.Method("GetStatic");
+
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
             }
 
@@ -643,6 +645,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
                 ScriptPath_TScript,
                 GetConstant_string_int32,
+                GetStatic_T,
                 Dispose;
 
             public readonly CoreMethod

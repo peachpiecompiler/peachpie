@@ -281,7 +281,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
     #endregion
 
-    #region IBoundPlace
+    #region IBoundReference
 
     /// <summary>
     /// Helper object emitting value of a member instance.

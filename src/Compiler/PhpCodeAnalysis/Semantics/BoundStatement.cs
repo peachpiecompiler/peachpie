@@ -119,4 +119,24 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitInvalidStatement(this, argument);
     }
+
+    public sealed partial class BoundStaticVariableStatement : BoundStatement, IVariableDeclarationStatement
+    {
+        public override OperationKind Kind => OperationKind.VariableDeclarationStatement;
+
+        public ImmutableArray<IVariable> Variables => StaticCast<IVariable>.From(_variables);
+
+        readonly ImmutableArray<BoundStaticLocal> _variables;
+
+        public BoundStaticVariableStatement(ImmutableArray<BoundStaticLocal> variables)
+        {
+            _variables = variables;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitVariableDeclarationStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitVariableDeclarationStatement(this, argument);
+    }
 }

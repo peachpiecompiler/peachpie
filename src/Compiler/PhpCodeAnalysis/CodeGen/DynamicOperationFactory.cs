@@ -222,5 +222,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             return result;
         }
+
+        internal SynthesizedStaticLocHolder DeclareStaticLocalHolder(string locName, TypeSymbol locType)
+        {
+            var holder = new SynthesizedStaticLocHolder(_cg.Routine, locName, locType);
+
+            ((IWithSynthesized)_container).AddTypeMember(holder);
+
+            return holder;
+        }
     }
 }

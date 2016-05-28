@@ -275,15 +275,9 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<Symbol> GetMembers(string name)
             => Members().Where(s => s.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable();
 
-        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
-        {
-            return ImmutableArray<NamedTypeSymbol>.Empty;
-        }
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => _lazyMembers.OfType<NamedTypeSymbol>().AsImmutable();
 
-        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
-        {
-            return ImmutableArray<NamedTypeSymbol>.Empty;
-        }
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name) => _lazyMembers.OfType<NamedTypeSymbol>().Where(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).AsImmutable();
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
@@ -338,6 +332,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return field;
+        }
+
+        void IWithSynthesized.AddTypeMember(NamedTypeSymbol nestedType)
+        {
+            Contract.ThrowIfNull(nestedType);
+
+            _lazyMembers = _lazyMembers.Add(nestedType);
         }
     }
 }

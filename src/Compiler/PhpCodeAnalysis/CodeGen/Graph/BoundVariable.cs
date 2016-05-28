@@ -36,7 +36,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundLocal
     {
-        LocalPlace _place;
+        internal IPlace _place;
 
         internal override void EmitInit(CodeGenerator cg)
         {
@@ -109,7 +109,42 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IPlace Place(ILBuilder il) => LocalPlace(il);
 
-        private LocalPlace LocalPlace(ILBuilder il) => _place;
+        private IPlace LocalPlace(ILBuilder il) => _place;
+    }
+
+    partial class BoundStaticLocal
+    {
+        /// <summary>
+        /// Place of the local variable containing the holder instance.
+        /// </summary>
+        internal IPlace _holderPlace;
+
+        internal override void EmitInit(CodeGenerator cg)
+        {
+            // variable holder class
+            var holder = cg.Factory.DeclareStaticLocalHolder(this.Name, (TypeSymbol)this.Variable.Type);
+
+            // local with its instance
+            var symbol = new SynthesizedLocalSymbol(cg.Routine, this.Name, holder);
+            var loc = cg.Builder.LocalSlotManager.DeclareLocal(holder, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false);
+
+            _holderPlace = new LocalPlace(loc);
+
+            // place = holder.value
+            _place = new FieldPlace(_holderPlace, holder.ValueField);
+
+            if (cg.HasUnoptimizedLocals)
+            {
+                // TODO reference to <locals>
+            }
+        }
+
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override IPlace Place(ILBuilder il) => _place;
     }
 
     partial class BoundParameter

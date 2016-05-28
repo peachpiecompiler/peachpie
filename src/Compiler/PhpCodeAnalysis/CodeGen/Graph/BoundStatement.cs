@@ -2,6 +2,7 @@
 using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -83,6 +84,29 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // <ctx>.DeclareFunction ...
             cg.EmitDeclareFunction(this.Function);
+        }
+    }
+
+    partial class BoundStaticVariableStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            foreach (var v in _variables)
+            {
+                Debug.Assert(v._holderPlace.TypeOpt != null);
+
+                var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(v._holderPlace.TypeOpt);
+                var place = v.Place(cg.Builder);
+
+                // Template: x = ctx.GetStatic<holder_x>()
+                place.EmitStorePrepare(cg.Builder);
+
+                cg.EmitLoadContext();
+                cg.EmitCall(ILOpCode.Callvirt, getmethod);
+
+                place.EmitStore(cg.Builder);
+
+            }
         }
     }
 }

@@ -297,7 +297,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if ((routine.Flags & SourceRoutineSymbol.RoutineFlags.RequiresLocalsArray) != 0)
             {
                 // declare PhpArray <locals>
-                var localsDef = this.GetTemporaryLocal(CoreTypes.PhpArray, false);
+                var symbol = new SynthesizedLocalSymbol(Routine, "<locals>", CoreTypes.PhpArray);
+                var localsDef = this.Builder.LocalSlotManager.DeclareLocal((Cci.ITypeReference)symbol.Type, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false);
                 return new LocalPlace(localsDef);
             }
 
