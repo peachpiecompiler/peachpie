@@ -43,6 +43,7 @@
     <Compile Include="Context.HandleMap.cs" />
     <Compile Include="Context.ConstsMap.cs" />
     <Compile Include="Context.ScriptsMap.cs" />
+    <Compile Include="Context.Statics.cs" />
     <Compile Include="Dynamic\CallFunctionBinder.cs" />
     <Compile Include="Dynamic\OverloadResolver.cs" />
     <Compile Include="OrderedDictionary.cs" />
@@ -66,7 +67,6 @@
     <Compile Include="Dynamic\GetFieldBinder.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="PhpAlias.cs" />
-    <Compile Include="PhpAttributes.cs" />
     <Compile Include="PhpNumber.cs" />
     <Compile Include="PhpString.cs" />
     <Compile Include="PhpTypeCode.cs" />

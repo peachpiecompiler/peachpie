@@ -300,7 +300,11 @@ namespace Pchp.Core
             if (obj == null)
             {
                 obj = new T();
-                //if (obj is IStaticInit) ((IStaticInit)obj).Init(this);
+
+                if (obj is IStaticInit)
+                {
+                    ((IStaticInit)obj).Init(this);
+                }
             }
 
             Debug.Assert(obj is T);

@@ -143,7 +143,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            return ImmutableArray<NamedTypeSymbol>.Empty;
+            return ImmutableArray<NamedTypeSymbol>.Empty; // TODO: IStaticInit if there is Initializer
         }
 
         public override ImmutableArray<NamedTypeSymbol> AllInterfaces => GetInterfacesToEmit();

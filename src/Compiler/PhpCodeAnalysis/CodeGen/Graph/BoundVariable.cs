@@ -141,7 +141,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            throw new NotImplementedException();
+            return new BoundLocalPlace(_place, access, thint);
         }
 
         internal override IPlace Place(ILBuilder il) => _place;

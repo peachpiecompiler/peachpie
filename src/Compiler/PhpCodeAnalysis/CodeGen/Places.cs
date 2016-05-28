@@ -667,6 +667,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_access.IsWriteRef)
             {
                 // no need for preparation
+                _place.EmitStorePrepare(cg.Builder);
             }
             else
             {
@@ -687,6 +688,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else
                 {
                     // no need for preparation
+                    _place.EmitStorePrepare(cg.Builder);
                 }
             }
         }
