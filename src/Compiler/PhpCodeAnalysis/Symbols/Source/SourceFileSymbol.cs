@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // PhpValue <Main>`0(parameters)
                 _mainMethodRegularOpt = new SynthesizedMethodSymbol(
-                    this, WellKnownPchpNames.GlobalRoutineName + "`0", true,
+                    this, WellKnownPchpNames.GlobalRoutineName + "`0", true, false,
                     DeclaringCompilation.CoreTypes.PhpValue, Accessibility.Public);
 
                 _mainMethodRegularOpt.SetParameters(_mainMethod.Parameters.Select(p =>

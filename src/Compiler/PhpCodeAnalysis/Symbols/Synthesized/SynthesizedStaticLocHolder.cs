@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -61,6 +62,41 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
         SynthesizedFieldSymbol _valueField;
+
+        public void EmitCtor(Emit.PEModuleBuilder module)
+        {
+            Debug.Assert(_ctor == null);
+
+            // emity defaulkt .ctor
+
+            _ctor = new SynthesizedCtorSymbol(this);
+            _ctor.SetParameters();// empty params (default ctor)
+            
+            var body = CodeGen.MethodGenerator.GenerateMethodBody(module, _ctor, (il) =>
+            {
+                il.EmitRet(true);
+            }, null, DiagnosticBag.GetInstance(), false);
+            module.SetMethodBody(_ctor, body);
+        }
+        SynthesizedCtorSymbol _ctor;
+
+        public void EmitInit(Emit.PEModuleBuilder module, Action<Microsoft.CodeAnalysis.CodeGen.ILBuilder> builder)
+        {
+            Debug.Assert(_initMethod == null);
+
+            var tt = DeclaringCompilation.CoreTypes;
+
+            // override IStaticInit.Init(Context)
+
+            _initMethod = new SynthesizedMethodSymbol(this, "Init", false, true, tt.Void, Accessibility.Public);
+            _initMethod.SetParameters(new SynthesizedParameterSymbol(_initMethod, tt.Context, 0, RefKind.None, "ctx"));
+
+            var body = CodeGen.MethodGenerator.GenerateMethodBody(module, _initMethod, builder, null, DiagnosticBag.GetInstance(), false);
+            module.SetMethodBody(_initMethod, body);
+        }
+        SynthesizedMethodSymbol _initMethod;
+
+
 
         public SynthesizedStaticLocHolder(SourceRoutineSymbol routine, string locName, TypeSymbol locType)
         {
@@ -122,13 +158,30 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers()
         {
-            return ImmutableArray.Create<Symbol>(ValueField);
+            Debug.Assert(_ctor != null);
+
+            var list = new List<Symbol>()
+            {
+                ValueField,
+                _ctor
+            };
+
+            if (_initMethod != null)
+            {
+                list.Add(_initMethod);
+            }
+
+            return list.AsImmutable();
         }
 
         public override ImmutableArray<Symbol> GetMembers(string name)
         {
             return GetMembers().Where(s => s.Name == name).AsImmutable();
         }
+
+        public override ImmutableArray<MethodSymbol> Constructors => ImmutableArray.Create((MethodSymbol)_ctor);
+
+        public override ImmutableArray<MethodSymbol> InstanceConstructors => Constructors.Where(s => !s.IsStatic).AsImmutable();
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => ImmutableArray<NamedTypeSymbol>.Empty;
 
@@ -143,7 +196,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            return ImmutableArray<NamedTypeSymbol>.Empty; // TODO: IStaticInit if there is Initializer
+            if (_initMethod != null)
+            {
+                return ImmutableArray.Create(DeclaringCompilation.CoreTypes.IStaticInit.Symbol);
+            }
+            else
+            {
+                return ImmutableArray<NamedTypeSymbol>.Empty; 
+            }
         }
 
         public override ImmutableArray<NamedTypeSymbol> AllInterfaces => GetInterfacesToEmit();

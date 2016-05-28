@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
     internal sealed partial class SynthesizedCctorSymbol : SynthesizedMethodSymbol
     {
         public SynthesizedCctorSymbol(TypeSymbol container)
-            :base(container, WellKnownMemberNames.StaticConstructorName, true, container.DeclaringCompilation.CoreTypes.Void)
+            :base(container, WellKnownMemberNames.StaticConstructorName, true, false, container.DeclaringCompilation.CoreTypes.Void)
         {
             
         }

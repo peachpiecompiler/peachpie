@@ -106,11 +106,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         public SynthesizedFieldSymbol CreateCallSiteField(string namehint)
             => ((IWithSynthesized)_container).GetOrCreateSynthesizedField(CallSite, "<>" + namehint + "`" + (_fieldIndex++), Accessibility.Private, true);
 
-        public DynamicOperationFactory(CodeGenerator cg)
+        public DynamicOperationFactory(CodeGenerator cg, NamedTypeSymbol container)
         {
             Contract.ThrowIfNull(cg);
-
-            var container = cg.Routine.ContainingType;
 
             Debug.Assert(container is IWithSynthesized);
 

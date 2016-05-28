@@ -166,7 +166,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var action_T2 = compilation.GetWellKnownType(WellKnownType.System_Action_T2);
             var action_string_method = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.RuntimeMethodHandle);
 
-            var method = new SynthesizedMethodSymbol(this, "EnumerateReferencedFunctions", true, compilation.CoreTypes.Void, Accessibility.Public);
+            var method = new SynthesizedMethodSymbol(this, "EnumerateReferencedFunctions", true, false, compilation.CoreTypes.Void, Accessibility.Public);
             method.SetParameters(new SynthesizedParameterSymbol(method, action_string_method, 0, RefKind.None, "callback"));
 
             //
@@ -183,7 +183,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var action_T2 = compilation.GetWellKnownType(WellKnownType.System_Action_T2);
             var action_string_method = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.RuntimeMethodHandle);
 
-            var method = new SynthesizedMethodSymbol(this, "EnumerateScripts", true, compilation.CoreTypes.Void, Accessibility.Public);
+            var method = new SynthesizedMethodSymbol(this, "EnumerateScripts", true, false, compilation.CoreTypes.Void, Accessibility.Public);
             method.SetParameters(new SynthesizedParameterSymbol(method, action_string_method, 0, RefKind.None, "callback"));
 
             //
@@ -200,7 +200,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var action_T3 = compilation.GetWellKnownType(WellKnownType.System_Action_T3);
             var action_string_value_bool = action_T3.Construct(compilation.CoreTypes.String, compilation.CoreTypes.PhpValue, compilation.CoreTypes.Boolean);
 
-            var method = new SynthesizedMethodSymbol(this, "EnumerateConstants", true, compilation.CoreTypes.Void, Accessibility.Public);
+            var method = new SynthesizedMethodSymbol(this, "EnumerateConstants", true, false, compilation.CoreTypes.Void, Accessibility.Public);
             method.SetParameters(new SynthesizedParameterSymbol(method, action_string_value_bool, 0, RefKind.None, "callback"));
 
             //

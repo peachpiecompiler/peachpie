@@ -119,19 +119,21 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal IPlace _holderPlace;
 
+        internal SynthesizedStaticLocHolder _holder;
+
         internal override void EmitInit(CodeGenerator cg)
         {
             // variable holder class
-            var holder = cg.Factory.DeclareStaticLocalHolder(this.Name, (TypeSymbol)this.Variable.Type);
+            _holder = cg.Factory.DeclareStaticLocalHolder(this.Name, (TypeSymbol)this.Variable.Type);
 
             // local with its instance
-            var symbol = new SynthesizedLocalSymbol(cg.Routine, this.Name, holder);
-            var loc = cg.Builder.LocalSlotManager.DeclareLocal(holder, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false);
+            var symbol = new SynthesizedLocalSymbol(cg.Routine, this.Name, _holder);
+            var loc = cg.Builder.LocalSlotManager.DeclareLocal(_holder, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false);
 
             _holderPlace = new LocalPlace(loc);
 
             // place = holder.value
-            _place = new FieldPlace(_holderPlace, holder.ValueField);
+            _place = new FieldPlace(_holderPlace, _holder.ValueField);
 
             if (cg.HasUnoptimizedLocals)
             {

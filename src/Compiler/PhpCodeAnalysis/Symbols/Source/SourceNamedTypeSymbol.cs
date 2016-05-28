@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <c>.ctor</c> synthesized method.
         /// Only if type is not static.
         /// </summary>
-        internal MethodSymbol InstanceCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedCtorSymbol(this)));
+        internal MethodSymbol InstanceCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedCtorWrapperSymbol(this)));
 
         public override ImmutableArray<MethodSymbol> StaticConstructors
         {

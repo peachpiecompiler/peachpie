@@ -12,14 +12,12 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal class SynthesizedCtorSymbol : SynthesizedMethodSymbol
     {
-        MethodSymbol _lazyRealCtorMethod;
-
-        public SynthesizedCtorSymbol(SourceNamedTypeSymbol/*!*/container)
-            :base(container, WellKnownMemberNames.InstanceConstructorName, false, container.DeclaringCompilation.CoreTypes.Void)
+        public SynthesizedCtorSymbol(NamedTypeSymbol/*!*/container)
+            :base(container, WellKnownMemberNames.InstanceConstructorName, false, false, container.DeclaringCompilation.CoreTypes.Void)
         {
             Debug.Assert(!container.IsStatic);
         }
-
+        
         public override bool HidesBaseMethodsByName => false;
 
         internal override bool HasSpecialName => true;
@@ -62,6 +60,22 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override ImmutableArray<ParameterSymbol> Parameters => _parameters;
+    }
+
+    /// <summary>
+    /// CLR .ctor symbol wrapping a PHP constructor.
+    /// </summary>
+    internal class SynthesizedCtorWrapperSymbol : SynthesizedCtorSymbol
+    {
+        MethodSymbol _lazyRealCtorMethod;
+
+        public SynthesizedCtorWrapperSymbol(SourceNamedTypeSymbol/*!*/container)
+            :base(container)
+        {
+
+        }
+
         /// <summary>
         /// Real constructor method or base .ctor to be called by this CLR .ctor.
         /// </summary>
@@ -85,7 +99,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (ctor.IsStatic) { }  // TODO: ErrorCode
                 return ctor;
             }
-            
+
             // lookup base .ctor
             var btype = this.ContainingType.BaseType;
             if (btype != null)

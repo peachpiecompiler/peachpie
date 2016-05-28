@@ -130,7 +130,7 @@ namespace Pchp.CodeAnalysis
 
             // default .ctors
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
-                .Select(t => (SynthesizedCtorSymbol)t.InstanceCtorMethodSymbol)
+                .Select(t => (SynthesizedCtorWrapperSymbol)t.InstanceCtorMethodSymbol)
                 .WhereNotNull()
                 .ForEach(this.EmitCtorBody);
 
@@ -151,7 +151,7 @@ namespace Pchp.CodeAnalysis
             _moduleBuilder.SetMethodBody(routine, body);
         }
 
-        void EmitCtorBody(SynthesizedCtorSymbol ctorsymbol)
+        void EmitCtorBody(SynthesizedCtorWrapperSymbol ctorsymbol)
         {
             Contract.ThrowIfNull(ctorsymbol);
             MethodGenerator.EmitCtorBody(_moduleBuilder, ctorsymbol, _diagnostics, _emittingPdb);

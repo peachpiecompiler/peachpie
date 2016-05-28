@@ -191,6 +191,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Place for loading a reference to <c>this</c>.
         /// </summary>
+        public IPlace ThisPlaceOpt => _thisPlace;
         readonly IPlace _thisPlace;
 
         /// <summary>
@@ -229,7 +230,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Gets a reference to compilation object.
         /// </summary>
-        public PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
+        public PhpCompilation DeclaringCompilation => _moduleBuilder.Compilation;
 
         /// <summary>
         /// Well known types.
@@ -255,27 +256,40 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         #region Construction
 
-        public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
+        public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace)
         {
-            Contract.ThrowIfNull(routine);
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
+            Contract.ThrowIfNull(contextPlace);
+
+            _il = il;
+            _moduleBuilder = moduleBuilder;
+            _optimizations = optimizations;
+            _diagnostics = diagnostics;
+
+            _emmittedTag = 0;
+
+            _contextPlace = contextPlace;
+            _thisPlace = thisPlace;
+
+            _factory = new DynamicOperationFactory(this, container);
+
+            _emitPdbSequencePoints = emittingPdb;
+        }
+
+        public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
+            :this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(), routine.GetThisPlace())
+        {
+            Contract.ThrowIfNull(routine);
 
             if (routine.ControlFlowGraph == null)
                 throw new ArgumentException();
 
             _routine = routine;
-            _il = il;
-            _moduleBuilder = moduleBuilder;
-            _optimizations = optimizations;
-            _diagnostics = diagnostics;
+            
             _emmittedTag = routine.ControlFlowGraph.NewColor();
-
-            _contextPlace = routine.GetContextPlace();
-            _thisPlace = routine.GetThisPlace();
             _localsPlaceOpt = GetLocalsPlace(routine);
-
-            _factory = new DynamicOperationFactory(this);
 
             // Emit sequence points unless
             // - the PDBs are not being generated

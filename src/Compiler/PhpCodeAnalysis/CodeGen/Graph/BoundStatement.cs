@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -93,10 +94,8 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             foreach (var v in _variables)
             {
-                Debug.Assert(v._holderPlace.TypeOpt != null);
-
-                var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(v._holderPlace.TypeOpt);
-                var place = v.Place(cg.Builder);
+                var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(v._holder);
+                var place = v._holderPlace;
 
                 // Template: x = ctx.GetStatic<holder_x>()
                 place.EmitStorePrepare(cg.Builder);
@@ -106,7 +105,47 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 place.EmitStore(cg.Builder);
 
+                // holder initialization routine
+                EmitInit(cg.Module, cg.Diagnostics, cg.DeclaringCompilation, v._holder, (BoundExpression)v.InitialValue);
+
             }
+        }
+
+        void EmitInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostic, PhpCompilation compilation, SynthesizedStaticLocHolder holder, BoundExpression initializer)
+        {
+            var loctype = holder.ValueField.Type;
+
+            if (initializer != null || loctype.SpecialType == SpecialType.None)
+            {
+                holder.EmitInit(module, (il) =>
+                {
+                    var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false,
+                        holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0));
+
+                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
+                    
+                    // Template: this.value = <initilizer>;
+
+                    valuePlace.EmitStorePrepare(il);
+
+                    if (initializer != null)
+                    {
+                        cg.EmitConvert(initializer, valuePlace.TypeOpt);
+                    }
+                    else
+                    {
+                        cg.EmitLoadDefaultValue(valuePlace.TypeOpt, 0);
+                    }
+
+                    valuePlace.EmitStore(il);
+
+                    //
+                    il.EmitRet(true);
+                });
+            }
+
+            // default .ctor
+            holder.EmitCtor(module);
         }
     }
 }

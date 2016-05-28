@@ -524,7 +524,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (x.Variable is BoundStaticLocal)
                 {
                     // analysis has to be started over // TODO: start from the block which declares the static local variable
-                    this.Worklist.Enqueue(Routine.ControlFlowGraph.Start);
+                    var startBlock = Routine.ControlFlowGraph.Start;
+                    var startState = startBlock.FlowState;
+
+                    var oldVar = startState.GetVarType(x.Name);
+                    if (oldVar != x.TypeRefMask)
+                    {
+                        startState.SetVar(x.Name, x.TypeRefMask);
+                        this.Worklist.Enqueue(startBlock);
+                    }
                 }
             }
         }

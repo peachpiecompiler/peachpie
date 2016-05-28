@@ -177,7 +177,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal static void EmitCtorBody(
             PEModuleBuilder moduleBuilder,
-            SynthesizedCtorSymbol routine,
+            SynthesizedCtorWrapperSymbol routine,
             DiagnosticBag diagnostics,
             bool emittingPdb)
         {

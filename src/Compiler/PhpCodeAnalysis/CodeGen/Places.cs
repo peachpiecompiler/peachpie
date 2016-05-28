@@ -121,6 +121,39 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitStore(ILBuilder il) => il.EmitStoreArgumentOpcode(Index);
     }
 
+    internal class ArgPlace : IPlace
+    {
+        readonly int _index;
+        readonly TypeSymbol _type;
+
+        public int Index => _index;
+
+        public override string ToString() => $"${_index}";
+
+        public ArgPlace(TypeSymbol t, int index)
+        {
+            Contract.ThrowIfNull(t);
+            _type = t;
+            _index = index;
+        }
+
+        public TypeSymbol TypeOpt => _type;
+
+        public bool HasAddress => true;
+
+        public TypeSymbol EmitLoad(ILBuilder il)
+        {
+            il.EmitLoadArgumentOpcode(Index);
+            return _type;
+        }
+
+        public void EmitLoadAddress(ILBuilder il) => il.EmitLoadArgumentAddrOpcode(Index);
+
+        public void EmitStorePrepare(ILBuilder il) { }
+
+        public void EmitStore(ILBuilder il) => il.EmitStoreArgumentOpcode(Index);
+    }
+
     /// <summary>
     /// Place wrapper allowing only read operation.
     /// </summary>
