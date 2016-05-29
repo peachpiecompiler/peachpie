@@ -56,9 +56,11 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Routines declaration  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Function signature from phpdoc & typehints, returning PhpAlias  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Shadow copy the parameter into local if needed  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Static locals    
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Static locals    
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Static method with use of "static::" gets late bound type as parameter  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Locals table in case of local include or indirect variable use  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Locals table in case of local include or indirect variable use  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Indirect variable access  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Check redeclaration, insert into runtime tables  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Types declaration   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Constructor (.ctor)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Call to __construct   
@@ -85,8 +87,10 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Instanceof  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Pow  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Compound assignment (+=, *=, …)  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Comparison, equality, strict equality for all operand types  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Comparison, equality, strict equality for all operand types  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: List  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Unset  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Isset  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Overload resolution   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Object instantiation   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Field setter/getter   
@@ -104,12 +108,14 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Application runtime tables  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Inclusion   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Dynamic target  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Resolve target in runtime properly    
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mar: Resolve target in runtime properly    
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Inclusion in a local scope  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Propagate $this variable  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Function with variable arguments count (params)   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Traits (AST transformation: merge trait with a class declaration)     
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Closures     
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Closures    
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Lambda functions  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Use of .NET Generics  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Generators     
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Generics      
    :white_check_mark: Publically usable: pchp.exe + modified Roslyn in sources    
@@ -125,7 +131,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: PhpAlias (aliasing, ref counting, destructors)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Specific type (known at compile time)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Lazy copy-on-write (array, string)  
-   :white_medium_square: Operators  
+   :white_check_mark: Operators  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Conversions    
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Numbers  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Arrays  
@@ -136,7 +142,8 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    :white_check_mark: Context (actual state of program, global variables, scripts, visible functions and types)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Fast/direct global variables access  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Delegates to actual functions  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Global constants  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Static locals  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_global_constants: Global constants  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Included scripts, declared types, declared functions  
    :white_medium_square: Output (echo, buffering)  
    :white_medium_square: Runtime Tables (PhpTypeInfo, PhpRoutineInfo, Scripts: bit vector everything indexed)  
@@ -161,10 +168,16 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    :white_medium_square: Static fields  
    :white_medium_square: Static variables  
    :white_medium_square: Reflection API  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Reflect PHPDoc from metadata  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Runtime Tables  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Constants  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Scripts: bite vector everything indexed  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Late bound static calls  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Class constants  
    :white_medium_square: Exceptions, Exception handling  
    :white_medium_square: Destructors / Disposable  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Reference counting for locals  
-   :white_medium_square: Inclusion in a local scope  
+   :white_check_mark: Inclusion in a local scope  
    :white_medium_square: PHP stream  
    :white_medium_square: Eval, create_function()  
 
