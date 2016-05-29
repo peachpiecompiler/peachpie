@@ -58,24 +58,12 @@ namespace Pchp.Core
         /// <summary>
         /// Ensures given variable is not <c>null</c>.
         /// </summary>
-        public static object EnsureObject(ref object obj)
-        {
-            if (obj == null)
-                obj = new stdClass();
-            
-            return obj;
-        }
+        public static object EnsureObject(ref object obj) => obj ?? (obj = new stdClass());
 
         /// <summary>
         /// Ensures given variable is not <c>null</c>.
         /// </summary>
-        public static PhpArray EnsureArray(ref PhpArray arr)
-        {
-            if (arr == null)
-                arr = new PhpArray();
-
-            return arr;
-        }
+        public static PhpArray EnsureArray(ref PhpArray arr) => arr ?? (arr = new PhpArray());
 
         /// <summary>
         /// Implementation of PHP <c>isset</c> operator.
