@@ -1436,8 +1436,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitReturnStatement(BoundReturnStatement x)
         {
-            Visit(x.Returned);
-            State.FlowThroughReturn(x.Returned.TypeRefMask);
+            if (x.Returned != null)
+            {
+                Visit(x.Returned);
+                State.FlowThroughReturn(x.Returned.TypeRefMask);
+            }
         }
 
         #endregion
