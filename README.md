@@ -108,7 +108,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Application runtime tables  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Inclusion   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Dynamic target  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mar: Resolve target in runtime properly    
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Resolve target in runtime properly    
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Inclusion in a local scope  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Propagate $this variable  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Function with variable arguments count (params)   
