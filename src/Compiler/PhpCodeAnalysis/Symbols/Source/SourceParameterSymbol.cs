@@ -164,6 +164,44 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override ConstantValue ExplicitDefaultConstantValue => null;   // TODO
+        internal override ConstantValue ExplicitDefaultConstantValue
+        {
+            get
+            {
+                if (_syntax.InitValue != null)
+                {
+                    // TODO: Bind _syntax.InitValue to Expression
+
+                    if (_syntax.InitValue is Literal) return CreateConstant((Literal)_syntax.InitValue);
+                    if (_syntax.InitValue is GlobalConstUse) return CreateConstant((GlobalConstUse)_syntax.InitValue);
+
+                    throw new NotImplementedException($"ConstantValue of {_syntax.InitValue.GetType().Name}");
+                }
+
+                return null;
+            }
+        }
+
+        static ConstantValue CreateConstant(Literal expr)
+        {
+            if (expr is IntLiteral) return ConstantValue.Create(((IntLiteral)expr).Value);
+            if (expr is LongIntLiteral) return ConstantValue.Create(((LongIntLiteral)expr).Value);
+            if (expr is StringLiteral) return ConstantValue.Create(((StringLiteral)expr).Value);
+            if (expr is DoubleLiteral) return ConstantValue.Create(((DoubleLiteral)expr).Value);
+            if (expr is BoolLiteral) return ConstantValue.Create(((BoolLiteral)expr).Value);
+            if (expr is NullLiteral) return ConstantValue.Create(null);
+            //if (expr is BinaryStringLiteral) return ConstantValue.Create(((BinaryStringLiteral)expr).Value);
+
+            throw new NotImplementedException($"ConstantValue of {expr.GetType().Name}");
+        }
+
+        static ConstantValue CreateConstant(GlobalConstUse expr)
+        {
+            if (expr.Name == QualifiedName.Null) return ConstantValue.Null;
+            if (expr.Name == QualifiedName.True) return ConstantValue.True;
+            if (expr.Name == QualifiedName.False) return ConstantValue.False;
+
+            throw new NotImplementedException($"ConstantValue of global constant {expr.Name}");
+        }
     }
 }
