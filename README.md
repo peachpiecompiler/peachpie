@@ -202,7 +202,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
 This project is a work in progress. Please be aware that Peachpie is not meant to be downloaded and executed at this point. Currently, this is a concept, which you can use for your inspiration, but it is not intended to be launched quite yet. You can, however, execute Peachpie via the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler.
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=GVWVInYiYLY
-" target="_blank"><img src="http://img.youtube.com/vi/YOUTUBE_VIDEO_ID_HERE/0.jpg" 
+" target="_blank"><img src="http://img.youtube.com/vi/GVWVInYiYLY/0.jpg" 
 alt="Peachpie Introduction" width="240" height="180" border="10" /></a>
 
 ## How to contribute?
