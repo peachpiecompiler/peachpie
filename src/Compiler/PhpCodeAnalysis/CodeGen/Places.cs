@@ -199,9 +199,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         void EmitHolder(ILBuilder il)
         {
+            Debug.Assert(_field.IsStatic == (_holder == null));
+
             if (_holder != null)
             {
-                Debug.Assert(!_field.IsStatic);
                 _holder.EmitLoad(il);
             }
         }
@@ -233,7 +234,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitOpCode(il, _field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
         }
 
-        public void EmitLoadAddress(ILBuilder il) => EmitOpCode(il, _field.IsStatic ? ILOpCode.Ldsflda : ILOpCode.Ldflda);
+        public void EmitLoadAddress(ILBuilder il)
+        {
+            EmitHolder(il);
+            EmitOpCode(il, _field.IsStatic ? ILOpCode.Ldsflda : ILOpCode.Ldflda);
+        }
     }
 
     internal class PropertyPlace : IPlace
@@ -716,6 +721,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // Operators.SetValue(ref <place>, (PhpValue)<value>);
                         _place.EmitLoadAddress(cg.Builder);
+                    }
+                    else
+                    {
+                        _place.EmitStorePrepare(cg.Builder);
                     }
                 }
                 else

@@ -598,11 +598,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 var p = parameters[param_index];
 
-                // <ctx>
-                if (p.Type == CoreTypes.Context)
+                // special synthesized parameters
+                if (param_index == 0)
                 {
-                    EmitLoadContext();
-                    continue;
+                    // <ctx>
+                    if (p.Type == CoreTypes.Context)
+                    {
+                        EmitLoadContext();
+                        continue;
+                    }
+                    // TypeCtx, Locals, ...
                 }
 
                 // all arguments loaded
@@ -612,11 +617,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    EmitLoadDefaultValue(p.Type, 0);
+                    if (p.HasExplicitDefaultValue)
+                    {
+                        EmitConvert(EmitLoadConstant(p.ExplicitDefaultValue, p.Type), 0, p.Type);
+                    }
+                    else
+                    {
+                        EmitLoadDefaultValue(p.Type, 0);
+                    }
                 }
             }
 
             // emit remaining not used arguments
+            // TODO: params
             for (; arg_index < arguments.Length; arg_index++)
             {
                 EmitPop(Emit(arguments[arg_index]));
