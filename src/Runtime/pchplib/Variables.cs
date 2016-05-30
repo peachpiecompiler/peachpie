@@ -9,6 +9,119 @@ namespace Pchp.Library
 {
     public static class Variables
     {
+        #region doubleval, floatval, intval, strval, settype, gettype, boolval
+
+        /// <summary>
+        /// Converts to double.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>The converted value.</returns>
+        public static double doubleval(PhpValue variable) => variable.ToDouble();
+
+        /// <summary>
+        /// Converts to double.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>The converted value.</returns>
+        public static double floatval(PhpValue variable) => variable.ToDouble();
+
+        /// <summary>
+        /// Converts to integer.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>The converted value.</returns>
+        public static long intval(PhpValue variable) => variable.ToLong();
+
+        /// <summary>
+        /// Converts to integer using a specified base.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="base">The base.</param>
+        /// <returns>The converted value.</returns>
+        public static long intval(PhpValue variable, int @base)
+        {
+            // TODO: base
+            // The integer value of var on success, or 0 on failure. Empty arrays and objects return 0, non-empty arrays and objects return 1. 
+            // The maximum value depends on the system. 32 bit systems have a maximum signed integer range of -2147483648 to 2147483647. So for example on such a system, intval('1000000000000') will return 2147483647. The maximum signed integer value for 64 bit systems is 9223372036854775807. 
+            return variable.ToLong();
+        }
+
+        /// <summary>
+        /// Converts to string.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>The converted value.</returns>
+        public static string strval(Context ctx, PhpValue variable) => variable.ToString(ctx);
+
+        /// <summary>
+        /// Converts to boolean.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>The converted value.</returns>
+        public static bool boolval(PhpValue variable) => variable.ToBoolean();
+
+        /// <summary>
+        /// Sets variable's type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="type">The string identifying a new type. See PHP manual for details.</param>
+        /// <returns>Whether <paramref name="type"/> is valid type identifier.</returns>
+        /// <exception cref="PhpException"><paramref name="type"/> has invalid value.</exception>
+        public static bool settype(ref PhpValue variable, string type)
+        {
+            //switch (System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToLower(type)) // we don't need Unicode characters to be lowercased properly // CurrentCulture is slow
+            //{
+            //    case "bool":
+            //    case "boolean":
+            //        variable = PHP.Core.Convert.ObjectToBoolean(variable);
+            //        return true;
+
+            //    case "int":
+            //    case "integer":
+            //        variable = PHP.Core.Convert.ObjectToInteger(variable);
+            //        return true;
+
+            //    case "float":
+            //    case "double":
+            //        variable = PHP.Core.Convert.ObjectToDouble(variable);
+            //        return true;
+
+            //    case "string":
+            //        variable = PHP.Core.Convert.ObjectToString(variable);
+            //        return true;
+
+            //    case "array":
+            //        variable = PHP.Core.Convert.ObjectToPhpArray(variable);
+            //        return true;
+
+            //    case "object":
+            //        variable = PHP.Core.Convert.ObjectToDObject(variable, ScriptContext.CurrentContext);
+            //        return true;
+
+            //    case "null":
+            //        variable = null;
+            //        return true;
+
+            //    default:
+            //        PhpException.InvalidArgument("type", LibResources.GetString("invalid_type_name"));
+            //        return false;
+            //}
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Retrieves name of a variable type.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>The string type identifier. See PHP manual for details.</returns>
+        public static string gettype(PhpValue variable)
+        {
+            // works well on references:
+            return PhpVariable.GetTypeName(variable);
+        }
+
+        #endregion
+
         #region is_<type>
 
         /// <summary>
