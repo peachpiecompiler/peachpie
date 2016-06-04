@@ -13,6 +13,13 @@ Besides granting PHP programmers access to cross-platform development, Peachpie 
 
 Peachpie makes use of Microsoft's Roslyn compiler and years worth of developing Phalanger, where the design for this compiler was established and valuable experience was obtained in the process. This, together with an extensive type analysis, allows us to set the objective of Peachpie to be a significant performance increase of PHP applications and components. 
 
+## How to build or execute?
+This project is a work in progress. Please be aware that Peachpie is not meant to be downloaded and executed at this point. Currently, this is a concept, which you can use for your inspiration, but it is not intended to be launched quite yet. You can, however, execute Peachpie via the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler.
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=GVWVInYiYLY
+" target="_blank"><img src="http://img.youtube.com/vi/GVWVInYiYLY/0.jpg" 
+alt="Peachpie Introduction" width="480" height="360" border="10" /></a>
+
 ## Status
 Please note that the status is dynamic; Peachpie is a work in progress, which means that this list frequently changes and is updated on a regular basis. 
 
@@ -197,13 +204,6 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    :white_medium_square: Fast PCRE  
    :white_medium_square: SPL  
    :white_medium_square: Reflection  
-
-## How to build or execute?
-This project is a work in progress. Please be aware that Peachpie is not meant to be downloaded and executed at this point. Currently, this is a concept, which you can use for your inspiration, but it is not intended to be launched quite yet. You can, however, execute Peachpie via the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler.
-
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=GVWVInYiYLY
-" target="_blank"><img src="http://img.youtube.com/vi/GVWVInYiYLY/0.jpg" 
-alt="Peachpie Introduction" width="240" height="180" border="10" /></a>
 
 ## How to contribute?
 We can use all the help we can get. You can contribute to our repository, spread the word about this project, or give us a small donation to help fund the development. If you believe you have valuable knowledge and experience to add to this project, please do not hesitate to contribute to our repo – your help is much appreciated.
