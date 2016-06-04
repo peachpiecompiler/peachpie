@@ -111,6 +111,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Debug.Assert(_enumeratorLoc != null);
 
+            var enumeratorPlace = new LocalPlace(_enumeratorLoc);
+
             if (valueVar is BoundListEx)
             {
                 throw new NotImplementedException();    // TODO: list(vars) = enumerator.GetCurrent()
@@ -119,8 +121,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (_currentValue != null && _currentKey != null)
             {
                 // special PhpArray enumerator
-                var enumeratorPlace = new LocalPlace(_enumeratorLoc);
-
+                
                 if (keyVar != null)
                 {
                     //cg.EmitSequencePoint(keyVar.PhpSyntax);
@@ -143,6 +144,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 Debug.Assert(_current != null);
 
+                var t = cg.EmitGetProperty(enumeratorPlace, _current);
+                
+                //if (keyVar != null)
+                //{
+                //    throw new InvalidOperationException();
+                //}
+                
                 throw new NotImplementedException();
             }
         }
@@ -174,7 +182,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             cg.EmitSequencePoint(this.Enumeree.PhpSyntax);
 
             var enumereeType = cg.Emit(this.Enumeree);
-            var getEnumeratorMethod = enumereeType.GetMembers(WellKnownMemberNames.GetEnumeratorMethodName).OfType<MethodSymbol>().FirstOrDefault();    // TODO: lookup member
+            var getEnumeratorMethod = enumereeType.LookupMember<MethodSymbol>(WellKnownMemberNames.GetEnumeratorMethodName);
 
             TypeSymbol enumeratorType;
 
@@ -182,30 +190,34 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 // PhpArray.GetEnumerator()
                 enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetEnumerator);
-                
-                _currentValue =  enumeratorType.GetMembers("CurrentValue").OfType<PropertySymbol>().First();
-                _currentKey = enumeratorType.GetMembers("CurrentKey").OfType<PropertySymbol>().First();
             }
-            else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0)
+            // TODO: IPhpEnumerable
+            // TODO: Iterator
+            else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
             {
                 // enumeree.GetEnumerator()
-                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, getEnumeratorMethod);
+                enumeratorType = cg.EmitCall(getEnumeratorMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getEnumeratorMethod);
             }
             else
             {
+                cg.EmitConvertToPhpValue(enumereeType, 0);
+                cg.EmitLoadContext();
+
                 // Operators.GetEnumerator(PhpValue)
-                throw new NotImplementedException();
+                enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_PhpValue_Context);
             }
 
             //
-            _current = enumeratorType.GetMembers("Current").OfType<PropertySymbol>().First();   // TODO: lookup member // TODO: Err if no Current
+            _current = enumeratorType.LookupMember<PropertySymbol>(WellKnownMemberNames.CurrentPropertyName);   // TODO: Err if no Current
+            _currentValue = enumeratorType.LookupMember<PropertySymbol>("CurrentValue");
+            _currentKey = enumeratorType.LookupMember<PropertySymbol>("CurrentKey");
 
             //
             _enumeratorLoc = cg.GetTemporaryLocal(enumeratorType);
             cg.Builder.EmitLocalStore(_enumeratorLoc);
 
             // bind methods
-            _moveNextMethod = enumeratorType.GetMembers(WellKnownMemberNames.MoveNextMethodName).OfType<MethodSymbol>().First();    // TODO: Err if there is no MoveNext()
+            _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName);    // TODO: Err if there is no MoveNext()
             Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
             Debug.Assert(_moveNextMethod.IsStatic == false);
             // ...

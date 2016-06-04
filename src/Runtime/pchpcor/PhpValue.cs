@@ -190,6 +190,11 @@ namespace Pchp.Core
         public override int GetHashCode() => _obj.GetHashCode() ^ (int)_value.Long;
 
         /// <summary>
+        /// Gets enumerator object used within foreach statement.
+        /// </summary>
+        public IPhpEnumerator GetForeachEnumerator(Context ctx) => _type.GetForeachEnumerator(ref this, ctx);
+
+        /// <summary>
         /// Compares two value operands.
         /// </summary>
         /// <param name="right">The right operand.</param>

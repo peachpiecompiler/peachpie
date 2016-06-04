@@ -6,6 +6,69 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
+    /// <summary>
+	/// Represents enumerator which 
+	/// </summary>
+	public interface IPhpEnumerator : IEnumerator<KeyValuePair<PhpValue, PhpValue>>
+    {
+        /// <summary>
+        /// Moves the enumerator to the last entry of the dictionary.
+        /// </summary>
+        /// <returns>Whether the enumerator has been sucessfully moved to the last entry.</returns>
+        bool MoveLast();
+
+        /// <summary>
+        /// Moves the enumerator to the first entry of the dictionary.
+        /// </summary>
+        /// <returns>Whether the enumerator has been sucessfully moved to the first entry.</returns>
+        bool MoveFirst();
+
+        /// <summary>
+        /// Moves the enumerator to the previous entry of the dictionary.
+        /// </summary>
+        /// <returns>Whether the enumerator has been sucessfully moved to the previous entry.</returns>
+        bool MovePrevious();
+
+        /// <summary>
+        /// Gets whether the enumeration has ended and the enumerator points behind the last element.
+        /// </summary>
+        bool AtEnd { get; }
+
+        /// <summary>
+        /// Gets current value.
+        /// </summary>
+        PhpValue CurrentValue { get; }
+
+        /// <summary>
+        /// Gets current key.
+        /// </summary>
+        PhpValue CurrentKey { get; }
+    }
+
+    /// <summary>
+    /// Provides methods which allows implementor to be used in PHP foreach statement as a source of enumeration.
+    /// </summary>
+    public interface IPhpEnumerable
+    {
+        /// <summary>
+        /// Implementor's intrinsic enumerator which will be advanced during enumeration.
+        /// </summary>
+        IPhpEnumerator IntrinsicEnumerator { get; }
+
+        /// <summary>
+        /// Creates an enumerator used in foreach statement.
+        /// </summary>
+        /// <param name="keyed">Whether the foreach statement uses keys.</param>
+        /// <param name="aliasedValues">Whether the values returned by enumerator are assigned by reference.</param>
+        /// <param name="caller">Type <see cref="Reflection.DTypeDesc"/> of the class in whose context the caller operates.</param>
+        /// <returns>The dictionary enumerator.</returns>
+        /// <remarks>
+        /// <see cref="IDictionaryEnumerator.Value"/> should return <see cref="PhpReference"/> 
+        /// iff <paramref name="aliasedValues"/>.
+        /// </remarks>
+        IPhpEnumerator GetForeachEnumerator(bool keyed, bool aliasedValues, Type caller);
+    }
+
     public class PhpVariable
     {
         #region Types

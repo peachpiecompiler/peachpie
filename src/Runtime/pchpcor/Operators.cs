@@ -75,10 +75,10 @@ namespace Pchp.Core
 
         #region Enumerator
 
-        //public static IPhpEnumerable GetEnumerator(PhpValue value)
-        //{
-
-        //}
+        /// <summary>
+        /// Gets enumerator object for given value.
+        /// </summary>
+        public static IPhpEnumerator GetForeachEnumerator(PhpValue value, Context ctx) => value.GetForeachEnumerator(ctx);
 
         #endregion
     }

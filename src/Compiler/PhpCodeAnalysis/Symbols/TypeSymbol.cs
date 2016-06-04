@@ -225,5 +225,36 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             throw new NotImplementedException();
         }
+
+        T GetSingleMember<T>(string name, Func<T, bool> predicate = null) where T : class
+        {
+            var candidates = this.GetMembers(name).OfType<T>();
+            if (predicate != null)
+                candidates = candidates.Where(predicate);
+
+            return candidates.SingleOrDefault();
+        }
+
+        /// <summary>
+        /// Lookup member of given name and type through base types and interfaces.
+        /// </summary>
+        public T LookupMember<T>(string name, Func<T, bool> predicate = null) where T : class
+        {
+            for (var t = this; t != null; t = t.BaseType)
+            {
+                var result = t.GetSingleMember<T>(name, predicate);
+                if (result != null)
+                    return result;
+            }
+
+            foreach (var t in this.AllInterfaces)
+            {
+                var result = t.GetSingleMember<T>(name, predicate);
+                if (result != null)
+                    return result;
+            }
+
+            return null;
+        }
     }
 }

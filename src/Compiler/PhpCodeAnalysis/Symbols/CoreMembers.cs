@@ -298,6 +298,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Long = ct.Context.Method("Echo", ct.Long);
                 Echo_Int32 = ct.Context.Method("Echo", ct.Int32);
 
+                GetForeachEnumerator_PhpValue_Context = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Context);
+
                 Ceq_long_double = ct.Comparison.Method("Ceq", ct.Long, ct.Double);
                 Ceq_long_bool = ct.Comparison.Method("Ceq", ct.Long, ct.Boolean);
                 Ceq_long_string = ct.Comparison.Method("Ceq", ct.Long, ct.String);
@@ -332,6 +334,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
                 AsObject_PhpValue, AsArray_PhpValue, ToClass_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
+
+                GetForeachEnumerator_PhpValue_Context,
 
                 Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool,
                 Clt_long_double, Cgt_long_double,

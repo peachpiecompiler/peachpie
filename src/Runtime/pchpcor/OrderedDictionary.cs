@@ -328,7 +328,7 @@ namespace Pchp.Core
 
         #region Inner class: Enumerator
 
-        public sealed class Enumerator : IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IDictionaryEnumerator, IDisposable // , IPhpEnumerator
+        public sealed class Enumerator : IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IDictionaryEnumerator, IPhpEnumerator, IDisposable
         {
             /// <summary>
             /// Enumerated table.
@@ -384,8 +384,6 @@ namespace Pchp.Core
                 hashtable.RegisterEnumerator(this);
             }
 
-            public PhpValue CurrentValue { get { return _current.Value; } }
-            public IntStringKey CurrentKey { get { return _current.Key; } }
             private bool FetchCurrent()
             {
                 if (_element >= 0)
@@ -483,6 +481,13 @@ namespace Pchp.Core
             #endregion
 
             #region IPhpEnumerator
+
+            public PhpValue CurrentValue => _current.Value;
+
+            public PhpValue CurrentKey => PhpValue.Create(_current.Key);
+
+            KeyValuePair<PhpValue, PhpValue> IEnumerator<KeyValuePair<PhpValue, PhpValue>>.Current
+                => new KeyValuePair<PhpValue, PhpValue>(PhpValue.Create(_current.Key), _current.Value);
 
             public bool MoveLast()
             {
@@ -2035,7 +2040,7 @@ namespace Pchp.Core
                 if (_entries[p].KeyEquals(ref key))
                 {
                     var value = _entries[p]._value;
-                    
+
                     if (value.IsArray)
                     {
                         valuearray = value.Array;

@@ -11,7 +11,7 @@ namespace Pchp.Core
     /// <summary>
     /// Implements ordered keyed array of <see cref="PhpValue"/> with PHP semantics.
     /// </summary>
-    public partial class PhpArray : PhpHashtable, IPhpConvertible, IPhpArrayOperators, IPhpComparable
+    public partial class PhpArray : PhpHashtable, IPhpConvertible, IPhpArrayOperators, IPhpComparable, IPhpEnumerable
     {
         /// <summary>
         /// Used in all PHP functions determining the type name. (var_dump, ...)
@@ -22,6 +22,16 @@ namespace Pchp.Core
         /// Used in print_r function.
         /// </summary>
         public const string PrintablePhpTypeName = "Array";
+
+        ///// <summary>
+		///// If this flag is <B>true</B> the array will be copied inplace by the immediate <see cref="Copy"/> call.
+		///// </summary>
+        //public bool InplaceCopyOnReturn { get { return this.table.InplaceCopyOnReturn; } set { this.table.InplaceCopyOnReturn = value; } }
+
+        /// <summary>
+        /// Intrinsic enumerator associated with the array. Initialized lazily.
+        /// </summary>
+        protected OrderedDictionary.Enumerator _intrinsicEnumerator;
 
         #region Constructors
 
@@ -212,6 +222,59 @@ namespace Pchp.Core
 
             //
             return 1;
+        }
+
+        #endregion
+
+        #region IPhpEnumerable Members
+
+        /// <summary>
+        /// Intrinsic enumerator associated with the array. Initialized lazily when read for the first time.
+        /// The enumerator points to the first item of the array immediately after the initialization if exists,
+        /// otherwise it points to an invalid item and <see cref="IPhpEnumerator.AtEnd"/> is <B>true</B>.
+        /// </summary>
+        public IPhpEnumerator/*!*/ IntrinsicEnumerator
+        {
+            get
+            {
+                // initializes enumerator:
+                if (_intrinsicEnumerator == null)
+                {
+                    _intrinsicEnumerator = this.GetPhpEnumerator();
+                    _intrinsicEnumerator.MoveNext();
+                }
+                return _intrinsicEnumerator;
+            }
+        }
+
+        /// <summary>
+        /// Restarts intrinsic enumerator - moves it to the first item.
+        /// </summary>
+        /// <remarks>
+        /// If the intrinsic enumerator has never been used on this instance nothing happens.
+        /// </remarks>
+        public void RestartIntrinsicEnumerator()
+        {
+            if (_intrinsicEnumerator != null)
+                _intrinsicEnumerator.MoveFirst();
+        }
+
+        /// <summary>
+        /// Creates an enumerator used in foreach statement.
+        /// </summary>
+        /// <param name="keyed">Whether the foreach statement uses keys.</param>
+        /// <param name="aliasedValues">Whether the values returned by enumerator are assigned by reference.</param>
+        /// <param name="caller">Type of the caller (ignored).</param>
+        /// <returns>The dictionary enumerator.</returns>
+        /// <remarks>Used for internal purposes only!</remarks>
+        public virtual IPhpEnumerator GetForeachEnumerator(bool keyed, bool aliasedValues, Type caller)
+        {
+            return new OrderedDictionary.Enumerator(this, true);
+
+            //if (aliasedValues)
+            //    return new ForeachEnumeratorAliased(this, keyed);
+            //else
+            //    return new ForeachEnumeratorValues(this/*, keyed*/);
         }
 
         #endregion
