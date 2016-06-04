@@ -1,4 +1,8 @@
-﻿using Pchp.CodeAnalysis.CodeGen;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.Symbols;
+using Pchp.Syntax.AST;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -78,9 +82,138 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ForeachEnumereeEdge
     {
+        LocalDefinition _enumeratorLoc;
+        MethodSymbol _moveNextMethod;
+        PropertySymbol _currentValue, _currentKey, _current;
+
+        internal void EmitMoveNext(CodeGenerator cg)
+        {
+            Debug.Assert(_enumeratorLoc != null);
+            Debug.Assert(_moveNextMethod != null);
+            Debug.Assert(_moveNextMethod.IsStatic == false);
+
+            if (_enumeratorLoc.Type.IsValueType)
+            {
+                // <locaddr>.MoveNext()
+                cg.Builder.EmitLocalAddress(_enumeratorLoc);
+            }
+            else
+            {
+                // <loc>.MoveNext()
+                cg.Builder.EmitLocalLoad(_enumeratorLoc);
+            }
+
+            cg.EmitCall(_enumeratorLoc.Type.IsValueType ? ILOpCode.Call : ILOpCode.Callvirt, _moveNextMethod)
+                .Expect(SpecialType.System_Boolean);
+        }
+
+        internal void EmitGetCurrent(CodeGenerator cg, BoundReferenceExpression valueVar, BoundReferenceExpression keyVar)
+        {
+            Debug.Assert(_enumeratorLoc != null);
+
+            if (valueVar is BoundListEx)
+            {
+                throw new NotImplementedException();    // TODO: list(vars) = enumerator.GetCurrent()
+            }
+
+            if (_currentValue != null && _currentKey != null)
+            {
+                // special PhpArray enumerator
+                var enumeratorPlace = new LocalPlace(_enumeratorLoc);
+
+                if (keyVar != null)
+                {
+                    //cg.EmitSequencePoint(keyVar.PhpSyntax);
+
+                    var keyTarget = keyVar.BindPlace(cg);
+                    keyTarget.EmitStorePrepare(cg);
+                    keyTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentKey));
+                }
+
+                if (valueVar != null)
+                {
+                    //cg.EmitSequencePoint(valueVar.PhpSyntax);
+
+                    var valueTarget = valueVar.BindPlace(cg);
+                    valueTarget.EmitStorePrepare(cg);
+                    valueTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentValue));
+                }
+            }
+            else
+            {
+                Debug.Assert(_current != null);
+
+                throw new NotImplementedException();
+            }
+        }
+
+        internal void Close(CodeGenerator cg)
+        {
+            cg.ReturnTemporaryLocal(_enumeratorLoc);
+            _enumeratorLoc = null;
+
+            // unbind
+            _moveNextMethod = null;
+            _currentValue = null;
+            _currentKey = null;
+            _current = null;
+        }
+
         internal override void Generate(CodeGenerator cg)
         {
-            throw new NotImplementedException();
+            Debug.Assert(this.Enumeree != null);
+
+            // get the enumerator,
+            // bind actual MoveNext() and CurrentValue and CurrentKey
+
+            // Template: using(
+            // a) enumerator = enumeree.GetEnumerator()
+            // b) enumerator = Operators.GetEnumerator(enumeree)
+            // ) ...
+
+            cg.EmitSequencePoint(this.Enumeree.PhpSyntax);
+
+            var enumereeType = cg.Emit(this.Enumeree);
+            var getEnumeratorMethod = enumereeType.GetMembers(WellKnownMemberNames.GetEnumeratorMethodName).OfType<MethodSymbol>().FirstOrDefault();    // TODO: lookup member
+
+            TypeSymbol enumeratorType;
+
+            if (enumereeType == cg.CoreTypes.PhpArray)
+            {
+                // PhpArray.GetEnumerator()
+                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetEnumerator);
+                
+                _currentValue =  enumeratorType.GetMembers("CurrentValue").OfType<PropertySymbol>().First();
+                _currentKey = enumeratorType.GetMembers("CurrentKey").OfType<PropertySymbol>().First();
+            }
+            else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0)
+            {
+                // enumeree.GetEnumerator()
+                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, getEnumeratorMethod);
+            }
+            else
+            {
+                // Operators.GetEnumerator(PhpValue)
+                throw new NotImplementedException();
+            }
+
+            //
+            _current = enumeratorType.GetMembers("Current").OfType<PropertySymbol>().First();   // TODO: lookup member // TODO: Err if no Current
+
+            //
+            _enumeratorLoc = cg.GetTemporaryLocal(enumeratorType);
+            cg.Builder.EmitLocalStore(_enumeratorLoc);
+
+            // bind methods
+            _moveNextMethod = enumeratorType.GetMembers(WellKnownMemberNames.MoveNextMethodName).OfType<MethodSymbol>().First();    // TODO: Err if there is no MoveNext()
+            Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
+            Debug.Assert(_moveNextMethod.IsStatic == false);
+            // ...
+
+            // TODO: try { NextBlock } finally { enumerator.Dispose }
+
+            //
+            cg.Scope.ContinueWith(NextBlock);
         }
     }
 
@@ -88,7 +221,38 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         internal override void Generate(CodeGenerator cg)
         {
-            throw new NotImplementedException();
+            /* Template:
+             *  for (;MoveNext(enumerator);)
+             *      $value = CurrentValue(enumerator);
+             *      $key = CurrentKey(enumerator);
+             *      {body}
+             *  }
+             */
+
+            var lblMoveNext = new object();
+            var lblBody = new object();
+
+            cg.Builder.EmitBranch(ILOpCode.Br, lblMoveNext);
+            cg.Builder.MarkLabel(lblBody);
+
+            // $value, $key
+            this.EnumereeEdge.EmitGetCurrent(cg, this.ValueVariable, this.KeyVariable);
+
+            // {
+            cg.GenerateScope(this.BodyBlock, NextBlock.Ordinal);
+            // }
+
+            // if (enumerator.MoveNext())
+            //cg.EmitSequencePoint(this.Condition.PhpSyntax);
+            cg.Builder.MarkLabel(lblMoveNext);
+            this.EnumereeEdge.EmitMoveNext(cg); // bool
+            cg.Builder.EmitBranch(ILOpCode.Brtrue, lblBody);
+
+            //
+            this.EnumereeEdge.Close(cg);
+
+            //
+            cg.Scope.ContinueWith(NextBlock);
         }
     }
 

@@ -401,7 +401,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             OpenBreakScope(end, move);
 
             // ForeachMoveNextEdge : ConditionalEdge
-            var moveEdge = new ForeachMoveNextEdge(move, body, end, enumereeEdge, x.KeyVariable, x.ValueVariable);
+            var moveEdge = new ForeachMoveNextEdge(move, body, end, enumereeEdge,
+                (x.KeyVariable != null) ? (BoundReferenceExpression)_binder.BindExpression(x.KeyVariable.Variable, BoundAccess.Write) : null,
+                (BoundReferenceExpression)_binder.BindExpression(
+                    (Expression)x.ValueVariable.Variable ?? x.ValueVariable.List,
+                    x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write));
             // while (enumerator.MoveNext()) {
             //   var key = enumerator.Current.Key
             //   var value = enumerator.Current.Value

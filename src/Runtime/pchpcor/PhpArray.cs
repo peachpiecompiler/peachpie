@@ -139,6 +139,11 @@ namespace Pchp.Core
         /// </summary>
         public PhpArray DeepCopy() => new PhpArray(this);
 
+        /// <summary>
+        /// Gets PHP enumerator for this array.
+        /// </summary>
+        public new OrderedDictionary.Enumerator GetEnumerator() => new OrderedDictionary.Enumerator(this, true);
+
         #endregion
 
         #region IPhpConvertible

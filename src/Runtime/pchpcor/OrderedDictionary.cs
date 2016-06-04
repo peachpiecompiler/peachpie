@@ -390,7 +390,7 @@ namespace Pchp.Core
             {
                 if (_element >= 0)
                 {
-                    _current = new KeyValuePair<IntStringKey, PhpValue>(_table.entries[_element]._key, _table.entries[_element]._value);
+                    _current = _table.entries[_element].KeyValuePair;
                     return true;
                 }
 
@@ -428,7 +428,7 @@ namespace Pchp.Core
 
             public KeyValuePair<IntStringKey, PhpValue> Current => _current;
 
-            object System.Collections.IEnumerator.Current
+            object IEnumerator.Current
             {
                 get { return _isGeneric ? _current : (object)((IDictionaryEnumerator)this).Entry; }
             }

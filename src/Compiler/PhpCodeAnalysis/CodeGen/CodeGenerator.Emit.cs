@@ -738,6 +738,29 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        internal TypeSymbol EmitGetProperty(IPlace holder, PropertySymbol prop)
+        {
+            Debug.Assert(prop.IsStatic || holder != null);
+            Debug.Assert(prop.GetMethod != null);
+            Debug.Assert(prop.GetMethod.ParameterCount == 0);
+
+            if (holder != null)
+            {
+                Debug.Assert(holder.TypeOpt != null);
+                if (holder.TypeOpt.IsValueType)
+                {
+                    holder.EmitLoadAddress(_il);
+                }
+                else
+                {
+                    holder.EmitLoad(_il);
+                }
+            }
+            var getter = prop.GetMethod;
+
+            return EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
+        }
+        
         internal void EmitCastClass(TypeSymbol from, TypeSymbol to)
         {
             if (!from.IsEqualToOrDerivedFrom(to))

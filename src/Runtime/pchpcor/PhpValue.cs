@@ -320,6 +320,8 @@ namespace Pchp.Core
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
 
+        public static PhpValue Create(IntStringKey value) => value.IsInteger ? Create(value.Integer) : Create(value.String);
+
         public static PhpValue FromClass(object value)
         {
             Debug.Assert(!(value is int || value is long || value is bool || value is string || value is double || value is PhpAlias || value is PhpString || value is PhpArray));

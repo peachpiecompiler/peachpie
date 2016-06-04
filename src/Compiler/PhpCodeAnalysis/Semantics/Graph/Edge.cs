@@ -300,16 +300,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Variable to store key in (can be null).
         /// </summary>
-        public ForeachVar KeyVariable { get { return _keyVariable; } }
-        readonly ForeachVar _keyVariable;
+        public BoundReferenceExpression KeyVariable { get { return _keyVariable; } }
+        readonly BoundReferenceExpression _keyVariable;
 
         /// <summary>
         /// Variable to store value in
         /// </summary>
-        public ForeachVar ValueVariable { get { return _valueVariable; } }
-        readonly ForeachVar _valueVariable;
+        public BoundReferenceExpression ValueVariable { get { return _valueVariable; } }
+        readonly BoundReferenceExpression _valueVariable;
 
-        internal ForeachMoveNextEdge(BoundBlock/*!*/source, BoundBlock/*!*/body, BoundBlock/*!*/end, ForeachEnumereeEdge/*!*/enumereeEdge, ForeachVar keyVar, ForeachVar/*!*/valueVar)
+        internal ForeachMoveNextEdge(BoundBlock/*!*/source, BoundBlock/*!*/body, BoundBlock/*!*/end, ForeachEnumereeEdge/*!*/enumereeEdge, BoundReferenceExpression keyVar, BoundReferenceExpression/*!*/valueVar)
             : base(source)
         {
             Contract.ThrowIfNull(body);

@@ -376,6 +376,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_PhpNumber = ct.PhpValue.Method("Create", ct.PhpNumber);
                 Create_PhpArray = ct.PhpValue.Method("Create", ct.PhpArray);
                 Create_PhpAlias = ct.PhpValue.Method("Create", ct.PhpAlias);
+                Create_IntStringKey = ct.PhpValue.Method("Create", ct.IntStringKey);
 
                 FromClr_Object = ct.PhpValue.Method("FromClr", ct.Object);
                 FromClass_Object = ct.PhpValue.Method("FromClass", ct.Object);
@@ -390,7 +391,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeepCopy,
                 Eq_PhpValue_PhpValue,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
-                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray,
+                Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
                 FromClr_Object, FromClass_Object;
 
             public readonly CoreField
@@ -570,6 +571,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_IntStringKey = ct.PhpArray.Method("GetItemValue", ct.IntStringKey);
 
                 DeepCopy = ct.PhpArray.Method("DeepCopy");
+                GetEnumerator = ct.PhpArray.Method("GetEnumerator");
 
                 SetItemValue_IntStringKey_PhpValue = ct.PhpArray.Method("SetItemValue", ct.IntStringKey, ct.PhpValue);
                 SetItemAlias_IntStringKey_PhpAlias = ct.PhpArray.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
@@ -585,7 +587,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
-                DeepCopy;
+                DeepCopy, GetEnumerator;
         }
 
         public struct ConstructorsHolder

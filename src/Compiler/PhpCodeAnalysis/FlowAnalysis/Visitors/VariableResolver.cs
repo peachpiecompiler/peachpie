@@ -36,6 +36,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             {
                 ((BoundIsSetEx)operation).VarReferences.ForEach(Visit);
             }
+            else if (operation is BoundListEx)
+            {
+                throw new NotImplementedException("list");  // TODO: visit vars
+            }
             else
             {
                 throw new NotImplementedException(operation.GetType().Name);

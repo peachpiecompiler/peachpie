@@ -1560,6 +1560,16 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
     }
 
+    partial class BoundListEx
+    {
+        internal override IBoundReference BindPlace(CodeGenerator cg)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override IPlace Place(ILBuilder il) => null;
+    }
+
     partial class BoundFieldRef : IBoundReference
     {
         internal override IBoundReference BindPlace(CodeGenerator cg) => this;

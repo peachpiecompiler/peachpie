@@ -12,6 +12,7 @@ using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax;
 using Pchp.CodeAnalysis.CodeGen;
+using Microsoft.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -827,6 +828,29 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             this.Name = name;
         }
+    }
+
+    #endregion
+
+    #region BoundListEx
+
+    /// <summary>
+    /// PHP <c>list</c> expression that can be written to.
+    /// </summary>
+    public partial class BoundListEx : BoundReferenceExpression
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        public BoundListEx()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
     }
 
     #endregion

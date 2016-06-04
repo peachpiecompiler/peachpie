@@ -226,29 +226,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // Body branch
             _state = state.Clone();
             // set key variable and value variable at current state
-            var valueVar = x.ValueVariable;
-            if (valueVar.List == null)
-            {
-                var keyVar = x.KeyVariable;
-                var dvar = x.ValueVariable.Variable as Syntax.AST.DirectVarUse;
-                if (dvar != null)
-                {
-                    this.SetVar(dvar.VarName.Value, elementType);
-                    if (x.KeyVariable != null)
-                        _state.SetVarUsed(dvar.VarName.Value);    // do not report value variable as unused if there is also key variable. In PHP we can't enumerate keys without enumerating value var
-                }
 
-                if (x.KeyVariable != null)
-                {
-                    dvar = x.KeyVariable.Variable as Syntax.AST.DirectVarUse;
-                    if (dvar != null)
-                        this.SetVar(dvar.VarName.Value, TypeRefMask.AnyType);
-                }
-            }
-            else
+            var valueVar = x.ValueVariable;
+            if (valueVar is BoundListEx)
             {
                 throw new NotImplementedException();
                 //VisitListEx(valueVar.List, elementType);
+            }
+            else
+            {
+                valueVar.Access = valueVar.Access.WithWrite(elementType);
+                OpAnalysis.Visit(valueVar);
+
+                //
+                var keyVar = x.KeyVariable;
+                if (keyVar != null)
+                {
+                    keyVar.Access = valueVar.Access.WithWrite(TypeRefMask.AnyType);
+                    OpAnalysis.Visit(keyVar);
+                }
             }
             TraverseToBlock(_state, x.BodyBlock);
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -69,6 +70,15 @@ namespace Pchp.Core
         /// Implementation of PHP <c>isset</c> operator.
         /// </summary>
         public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;
+
+        #endregion
+
+        #region Enumerator
+
+        //public static IPhpEnumerable GetEnumerator(PhpValue value)
+        //{
+
+        //}
 
         #endregion
     }

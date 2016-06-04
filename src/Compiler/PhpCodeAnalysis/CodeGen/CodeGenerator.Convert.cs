@@ -244,6 +244,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
+                    else if (from == compilation.CoreTypes.IntStringKey)
+                    {
+                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_IntStringKey)
+                            .Expect(compilation.CoreTypes.PhpValue);
+                        break;
+                    }
                     else if (from.IsReferenceType)
                     {
                         il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.FromClass_Object)
