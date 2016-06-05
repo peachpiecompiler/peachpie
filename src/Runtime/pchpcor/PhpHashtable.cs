@@ -289,34 +289,34 @@ namespace Pchp.Core
             /// <summary>
             /// A stack for visited arrays. The currently enumerated array is not there.
             /// </summary>
-            private Stack<PhpHashtable>/*!*/ stack;
+            private Stack<PhpHashtable>/*!*/ _stack;
 
             /// <summary>
             /// The currently enumerated array.
             /// </summary>
-            public PhpHashtable/*!*/ CurrentTable { get { return currentTable; } }
-            private PhpHashtable/*!*/ currentTable;
+            public PhpHashtable/*!*/ CurrentTable { get { return _currentTable; } }
+            private PhpHashtable/*!*/ _currentTable;
 
             /// <summary>
             /// The current level hashtable enumerator.
             /// </summary>
-            private OrderedDictionary.Enumerator/*!*/ current;
+            private OrderedDictionary.Enumerator/*!*/ _current;
 
             /// <summary>
             /// The level of recursion starting from zero (the top level).
             /// </summary>
-            public int Level { get { return stack.Count; } }
+            public int Level { get { return _stack.Count; } }
 
             /// <summary>
             /// Whether to follow <see cref="PhpReference"/>s when resolving next level of recursion.
             /// </summary>
-            public bool FollowReferences { get { return followReferences; } set { followReferences = value; } }
-            private bool followReferences = false;
+            public bool FollowReferences { get { return _followReferences; } set { _followReferences = value; } }
+            private bool _followReferences = false;
 
             /// <summary>
             /// Wheter the enumerator is used to read the array items only.
             /// </summary>
-            private readonly bool readsOnly;
+            private readonly bool _readsOnly;
 
             /// <summary>
             /// Whether the current value causes infinite recursion.
@@ -326,10 +326,10 @@ namespace Pchp.Core
             {
                 get
                 {
-                    var val = current.Current.Value;
+                    var val = _current.CurrentValue;
 
                     // dereferences PHP reference if required:
-                    if (followReferences && val.IsAlias)
+                    if (_followReferences && val.IsAlias)
                         val = val.Alias.Value;
 
                     // checks whether the value is visited array: 
@@ -348,17 +348,17 @@ namespace Pchp.Core
             {
                 Debug.Assert(array != null);
 
-                this.stack = new Stack<PhpHashtable>();
-                this.followReferences = followReferences;
-                this.readsOnly = readsOnly;
+                this._stack = new Stack<PhpHashtable>();
+                this._followReferences = followReferences;
+                this._readsOnly = readsOnly;
 
                 // the array may be accessed for writing, ensure its child items/arrays are ready:
                 if (!readsOnly)
                     array.EnsureWritable();
 
                 // store the current array and the current enumerator:
-                this.currentTable = array;
-                this.current = currentTable.GetPhpEnumerator();
+                this._currentTable = array;
+                this._current = _currentTable.GetPhpEnumerator();
             }
 
             #endregion
@@ -374,15 +374,15 @@ namespace Pchp.Core
             {
                 Debug.Assert(targetLevel >= 0);
 
-                while (stack.Count > targetLevel)
+                while (_stack.Count > targetLevel)
                 {
                     // leave and Dispose the current array (visited = false):
-                    current.Dispose();
-                    currentTable.recursiveEnumerator = null;
+                    _current.Dispose();
+                    _currentTable.recursiveEnumerator = null;
 
                     // returns back:
-                    currentTable = stack.Pop();
-                    current = currentTable.recursiveEnumerator;
+                    _currentTable = _stack.Pop();
+                    _current = _currentTable.recursiveEnumerator;
                 }
             }
 
@@ -392,18 +392,18 @@ namespace Pchp.Core
             /// <returns>Whether we are not at the definite end of enumeration.</returns>
             private bool ReturnFromRecursionAtEnd()
             {
-                while (current.AtEnd)
+                while (_current.AtEnd)
                 {
                     // leave and Dispose the current array (visited = false):
-                    current.Dispose();
-                    currentTable.recursiveEnumerator = null;
+                    _current.Dispose();
+                    _currentTable.recursiveEnumerator = null;
 
                     // the top list (real end):
-                    if (stack.Count == 0) return false;
+                    if (_stack.Count == 0) return false;
 
                     // returns back:
-                    currentTable = stack.Pop();
-                    current = currentTable.recursiveEnumerator;
+                    _currentTable = _stack.Pop();
+                    _current = _currentTable.recursiveEnumerator;
                 }
                 return true;
             }
@@ -422,7 +422,7 @@ namespace Pchp.Core
                 {
                     // skips deleted items (if any) with possible return from recursion:
                     ReturnFromRecursionAtEnd();
-                    return current.Current.Key.Object;
+                    return _current.CurrentKey.Object;
                 }
             }
 
@@ -436,7 +436,7 @@ namespace Pchp.Core
                 {
                     // skips deleted items (if any) with possible return from recursion:
                     ReturnFromRecursionAtEnd();
-                    return current.Current.Value;
+                    return _current.CurrentValue.ToClr();
                 }
             }
 
@@ -450,7 +450,7 @@ namespace Pchp.Core
                 {
                     // skips deleted items (if any) with possible return from recursion:
                     ReturnFromRecursionAtEnd();
-                    return new DictionaryEntry(current.Current.Key, current.Current.Value);
+                    return ((IDictionaryEnumerator)_current).Entry;
                 }
             }
 
@@ -477,7 +477,7 @@ namespace Pchp.Core
             public void Reset()
             {
                 ReturnFromRecursion(0);
-                current.Reset();
+                _current.Reset();
             }
 
             /// <summary>
@@ -487,13 +487,13 @@ namespace Pchp.Core
             /// <exception cref="NullReferenceException">If enumerator has been disposed.</exception>
             public bool MoveNext()
             {
-                var value = current.Current.Value;
+                var value = _current.CurrentValue;
 
                 // moves to the next item in the current level:
-                current.MoveNext();
+                _current.MoveNext();
 
                 // dereferences the value if following references:
-                if (followReferences && value.IsAlias)
+                if (_followReferences && value.IsAlias)
                     value = value.Alias.Value;
 
                 if (value.IsArray)
@@ -501,27 +501,27 @@ namespace Pchp.Core
                     var array = value.Array;
 
                     // the array may be accessed for writing, ensure its child items/arrays are ready:
-                    if (!readsOnly)
+                    if (!_readsOnly)
                         array.EnsureWritable();
 
                     // mark the current table as visited and store there the current enumerator:
-                    currentTable.recursiveEnumerator = current;
+                    _currentTable.recursiveEnumerator = _current;
 
                     // skips arrays which are already on the stack (prevents infinite recursion)  
                     // and those which doesn't contain any item (optimization):
                     if (array.recursiveEnumerator == null && array.Count > 0)
                     {
                         // stores the current level:
-                        stack.Push(currentTable);
+                        _stack.Push(_currentTable);
 
                         // next level of recursion:
-                        currentTable = array;
+                        _currentTable = array;
 
                         // creates a new enumerator (visited = true):
-                        current = currentTable.GetPhpEnumerator();
+                        _current = _currentTable.GetPhpEnumerator();
 
                         // starts enumerating next level:
-                        current.MoveNext();
+                        _current.MoveNext();
                     }
                 }
 
@@ -539,18 +539,18 @@ namespace Pchp.Core
             public void Dispose()
             {
                 // if not disposed yet:
-                if (stack != null)
+                if (_stack != null)
                 {
                     ReturnFromRecursion(0);
 
                     // cleanup the last enumerator:
-                    if (currentTable != null) currentTable.recursiveEnumerator = null;
-                    currentTable = null;
+                    if (_currentTable != null) _currentTable.recursiveEnumerator = null;
+                    _currentTable = null;
 
-                    if (current != null) current.Dispose();
-                    current = null;
+                    if (_current != null) _current.Dispose();
+                    _current = null;
 
-                    stack = null;
+                    _stack = null;
                 }
             }
 
@@ -564,7 +564,7 @@ namespace Pchp.Core
                 {
                     // skips deleted items (if any) with possible return from recursion:
                     ReturnFromRecursionAtEnd();
-                    return current.Current;
+                    return ((IEnumerator<KeyValuePair<IntStringKey, PhpValue>>)_current).Current;
                 }
             }
 
@@ -613,13 +613,7 @@ namespace Pchp.Core
         public OrderedDictionary.Enumerator/*!*/ GetPhpEnumerator()
         {
             ThrowIfNotPhpArrayHelper();
-            return new OrderedDictionary.Enumerator(this, true); //(IPhpEnumerator)table.GetEnumerator();
-        }
-
-        public OrderedDictionary.Enumerator/*!*/ GetBaseEnumerator()
-        {
-            ThrowIfNotPhpArrayHelper();
-            return new OrderedDictionary.Enumerator(this, true); //table.GetEnumerator();
+            return new OrderedDictionary.Enumerator(this); //(IPhpEnumerator)table.GetEnumerator();
         }
 
         /// <summary>
@@ -641,7 +635,7 @@ namespace Pchp.Core
             if (this.Count == 0)
                 return OrderedDictionary.EmptyEnumerator.SingletonInstance;
 
-            return new OrderedDictionary.Enumerator(this, true); //table.GetEnumerator();
+            return new OrderedDictionary.Enumerator(this); //table.GetEnumerator();
         }
 
         #endregion
@@ -653,7 +647,7 @@ namespace Pchp.Core
             if (this.Count == 0)
                 return OrderedDictionary.EmptyEnumerator.SingletonInstance;
 
-            return new OrderedDictionary.Enumerator(this, true); //(IEnumerator)table.GetEnumerator();
+            return new OrderedDictionary.Enumerator(this); //(IEnumerator)table.GetEnumerator();
         }
 
         #endregion
@@ -726,7 +720,7 @@ namespace Pchp.Core
             {
                 get
                 {
-                    return this.enumerator.CurrentValue;
+                    return this.enumerator.CurrentValue.ToClr();
                 }
             }
 

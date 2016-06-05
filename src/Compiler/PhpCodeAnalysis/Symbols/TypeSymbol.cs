@@ -54,7 +54,23 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return ImmutableArray<NamedTypeSymbol>.Empty;
+                if (Interfaces.Length == 0)
+                {
+                    return ImmutableArray<NamedTypeSymbol>.Empty;
+                }
+
+                var result = new HashSet<NamedTypeSymbol>();
+                var todo = new Queue<NamedTypeSymbol>(Interfaces);
+                while (todo.Count != 0)
+                {
+                    var t = todo.Dequeue();
+                    if (result.Add(t))
+                    {
+                        t.Interfaces.ForEach(todo.Enqueue);
+                    }
+                }
+
+                return result.AsImmutable();
             }
         }
 

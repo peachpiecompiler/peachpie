@@ -252,6 +252,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public bool IsGlobalScope => _routine is SourceGlobalMethodSymbol;
 
+        /// <summary>
+        /// Type of the caller context (the class declaring current method) or null.
+        /// </summary>
+        public TypeSymbol CallerType => (_routine is SourceMethodSymbol) ? _routine.ContainingType : null;
+
         #endregion
 
         #region Construction

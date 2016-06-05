@@ -207,6 +207,7 @@
     <Compile Include="Symbols\SubstitutedMethodSymbol.cs" />
     <Compile Include="Symbols\SubstitutedNamedTypeSymbol.cs" />
     <Compile Include="Symbols\SubstitutedParameterSymbol.cs" />
+    <Compile Include="Symbols\SubstitutedPropertySymbol.cs" />
     <Compile Include="Symbols\SubstitutedTypeParameterSymbol.cs" />
     <Compile Include="Symbols\Symbol.cs" />
     <Compile Include="Semantics\ISemanticModel.cs" />

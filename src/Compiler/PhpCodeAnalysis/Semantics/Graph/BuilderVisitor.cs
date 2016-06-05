@@ -395,7 +395,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // ForeachEnumereeEdge : SimpleEdge
             // x.Enumeree.GetEnumerator();
-            var enumereeEdge = new ForeachEnumereeEdge(_current, move, _binder.BindExpression(x.Enumeree, BoundAccess.Read));
+            var enumereeEdge = new ForeachEnumereeEdge(_current, move, _binder.BindExpression(x.Enumeree, BoundAccess.Read), x.ValueVariable.Alias);
 
             // ContinueTarget:
             OpenBreakScope(end, move);

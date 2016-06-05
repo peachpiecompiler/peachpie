@@ -35,9 +35,14 @@ namespace Pchp.Core
         bool AtEnd { get; }
 
         /// <summary>
-        /// Gets current value.
+        /// Gets current unaliased value.
         /// </summary>
         PhpValue CurrentValue { get; }
+
+        /// <summary>
+        /// Aliases current entry value.
+        /// </summary>
+        PhpAlias CurrentValueAliased { get; }
 
         /// <summary>
         /// Gets current key.
@@ -58,15 +63,10 @@ namespace Pchp.Core
         /// <summary>
         /// Creates an enumerator used in foreach statement.
         /// </summary>
-        /// <param name="keyed">Whether the foreach statement uses keys.</param>
         /// <param name="aliasedValues">Whether the values returned by enumerator are assigned by reference.</param>
-        /// <param name="caller">Type <see cref="Reflection.DTypeDesc"/> of the class in whose context the caller operates.</param>
+        /// <param name="caller">Type of the class in whose context the caller operates.</param>
         /// <returns>The dictionary enumerator.</returns>
-        /// <remarks>
-        /// <see cref="IDictionaryEnumerator.Value"/> should return <see cref="PhpReference"/> 
-        /// iff <paramref name="aliasedValues"/>.
-        /// </remarks>
-        IPhpEnumerator GetForeachEnumerator(bool keyed, bool aliasedValues, Type caller);
+        IPhpEnumerator GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller);
     }
 
     public class PhpVariable

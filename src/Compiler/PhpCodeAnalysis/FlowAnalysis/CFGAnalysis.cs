@@ -242,7 +242,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var keyVar = x.KeyVariable;
                 if (keyVar != null)
                 {
-                    keyVar.Access = valueVar.Access.WithWrite(TypeRefMask.AnyType);
+                    keyVar.Access = keyVar.Access.WithWrite(TypeRefMask.AnyType);
                     OpAnalysis.Visit(keyVar);
                 }
             }

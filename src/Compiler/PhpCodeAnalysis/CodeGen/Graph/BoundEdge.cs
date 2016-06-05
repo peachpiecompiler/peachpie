@@ -121,37 +121,33 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (_currentValue != null && _currentKey != null)
             {
                 // special PhpArray enumerator
-                
+
                 if (keyVar != null)
                 {
                     //cg.EmitSequencePoint(keyVar.PhpSyntax);
-
                     var keyTarget = keyVar.BindPlace(cg);
                     keyTarget.EmitStorePrepare(cg);
                     keyTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentKey));
                 }
 
-                if (valueVar != null)
-                {
-                    //cg.EmitSequencePoint(valueVar.PhpSyntax);
-
-                    var valueTarget = valueVar.BindPlace(cg);
-                    valueTarget.EmitStorePrepare(cg);
-                    valueTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentValue));
-                }
+                //cg.EmitSequencePoint(valueVar.PhpSyntax);
+                var valueTarget = valueVar.BindPlace(cg);
+                valueTarget.EmitStorePrepare(cg);
+                valueTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentValue));
             }
             else
             {
                 Debug.Assert(_current != null);
 
-                var t = cg.EmitGetProperty(enumeratorPlace, _current);
-                
-                //if (keyVar != null)
-                //{
-                //    throw new InvalidOperationException();
-                //}
-                
-                throw new NotImplementedException();
+                if (keyVar != null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                var valueTarget = valueVar.BindPlace(cg);
+                valueTarget.EmitStorePrepare(cg);
+                var t = cg.EmitGetProperty(enumeratorPlace, _current);  // TOOD: PhpValue.FromClr
+                valueTarget.EmitStore(cg, t);
             }
         }
 
@@ -186,10 +182,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             TypeSymbol enumeratorType;
 
-            if (enumereeType == cg.CoreTypes.PhpArray)
+            if (enumereeType.IsEqualToOrDerivedFrom(cg.CoreTypes.PhpArray))
             {
-                // PhpArray.GetEnumerator()
-                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetEnumerator);
+                cg.Builder.EmitBoolConstant(_aliasedValues);
+                cg.EmitCallerRuntimeTypeHandle();
+
+                // PhpArray.GetForeachtEnumerator(bool, RuntimeTypeHandle)
+                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator);
             }
             // TODO: IPhpEnumerable
             // TODO: Iterator
@@ -201,15 +200,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 cg.EmitConvertToPhpValue(enumereeType, 0);
-                cg.EmitLoadContext();
+                cg.Builder.EmitBoolConstant(_aliasedValues);
+                cg.EmitCallerRuntimeTypeHandle();
 
-                // Operators.GetEnumerator(PhpValue)
-                enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_PhpValue_Context);
+                // Operators.GetForeachtEnumerator(PhpValue, bool, RuntimeTypeHandle)
+                enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle);
             }
 
             //
             _current = enumeratorType.LookupMember<PropertySymbol>(WellKnownMemberNames.CurrentPropertyName);   // TODO: Err if no Current
-            _currentValue = enumeratorType.LookupMember<PropertySymbol>("CurrentValue");
+            _currentValue = enumeratorType.LookupMember<PropertySymbol>(_aliasedValues ? "CurrentValueAliased" : "CurrentValue");
             _currentKey = enumeratorType.LookupMember<PropertySymbol>("CurrentKey");
 
             //
@@ -301,7 +301,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 //bool allconsts = this.CaseBlocks.All(c => c.IsDefault || c.CaseValue.ConstantValue.HasValue);
                 //bool allconstints = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsInt32(c.CaseValue.ConstantValue.Value));
                 //bool allconststrings = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsString(c.CaseValue.ConstantValue.Value));
-                
+
                 //if (allconstints)
                 //{
 
@@ -324,7 +324,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                         var this_block = this.CaseBlocks[i];
                         var next_case = (i + 1 < this.CaseBlocks.Length) ? this.CaseBlocks[i + 1] : null;
                         object next_mark = (object)next_case?.CaseValue ?? next_case ?? NextBlock;
-                        
+
                         if (!this_block.IsDefault)
                         {
                             // <CaseValue>:

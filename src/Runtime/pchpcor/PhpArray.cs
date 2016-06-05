@@ -152,7 +152,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets PHP enumerator for this array.
         /// </summary>
-        public new OrderedDictionary.Enumerator GetEnumerator() => new OrderedDictionary.Enumerator(this, true);
+        public new OrderedDictionary.Enumerator GetEnumerator() => new OrderedDictionary.Enumerator(this);
 
         #endregion
 
@@ -262,19 +262,15 @@ namespace Pchp.Core
         /// <summary>
         /// Creates an enumerator used in foreach statement.
         /// </summary>
-        /// <param name="keyed">Whether the foreach statement uses keys.</param>
         /// <param name="aliasedValues">Whether the values returned by enumerator are assigned by reference.</param>
         /// <param name="caller">Type of the caller (ignored).</param>
         /// <returns>The dictionary enumerator.</returns>
         /// <remarks>Used for internal purposes only!</remarks>
-        public virtual IPhpEnumerator GetForeachEnumerator(bool keyed, bool aliasedValues, Type caller)
+        public virtual IPhpEnumerator GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller)
         {
-            return new OrderedDictionary.Enumerator(this, true);
-
-            //if (aliasedValues)
-            //    return new ForeachEnumeratorAliased(this, keyed);
-            //else
-            //    return new ForeachEnumeratorValues(this/*, keyed*/);
+            return aliasedValues
+                ? new OrderedDictionary.Enumerator(this)            // when enumerating aliases, changes are reflected to the enumerator
+                : new OrderedDictionary.ReadonlyEnumerator(this);   // when enumerating values, any upcoming changes to the array do not take effect to the enumerator
         }
 
         #endregion

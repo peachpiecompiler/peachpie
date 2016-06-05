@@ -289,12 +289,12 @@ namespace Pchp.CodeAnalysis.Symbols
             return false;
         }
 
-        //internal virtual PropertySymbol AsMember(NamedTypeSymbol newOwner)
-        //{
-        //    Debug.Assert(this.IsDefinition);
-        //    Debug.Assert(ReferenceEquals(newOwner.OriginalDefinition, this.ContainingSymbol.OriginalDefinition));
-        //    return (newOwner == this.ContainingSymbol) ? this : new SubstitutedPropertySymbol(newOwner as SubstitutedNamedTypeSymbol, this);
-        //}
+        internal virtual PropertySymbol AsMember(NamedTypeSymbol newOwner)
+        {
+            Debug.Assert(this.IsDefinition);
+            Debug.Assert(ReferenceEquals(newOwner.OriginalDefinition, this.ContainingSymbol.OriginalDefinition));
+            return (newOwner == this.ContainingSymbol) ? this : new SubstitutedPropertySymbol(newOwner as SubstitutedNamedTypeSymbol, this);
+        }
 
         #region IPropertySymbol Members
 

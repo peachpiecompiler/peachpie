@@ -328,7 +328,10 @@ namespace Pchp.Core
 
         #region Inner class: Enumerator
 
-        public sealed class Enumerator : IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IDictionaryEnumerator, IPhpEnumerator, IDisposable
+        /// <summary>
+        /// The dictionary enumerator according to PHP semantic, allowing to change underlaying collection during the enumeration.
+        /// </summary>
+        public class Enumerator : IDictionaryEnumerator, IPhpEnumerator, IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IDisposable
         {
             /// <summary>
             /// Enumerated table.
@@ -346,55 +349,47 @@ namespace Pchp.Core
             private int _element;
 
             /// <summary>
-            /// Fetched element data.
-            /// </summary>
-            private KeyValuePair<IntStringKey, PhpValue> _current;
-
-            /// <summary>
             /// Whether enumeration is on the start.
             /// </summary>
             bool _start;
-
-            /// <summary>
-            /// Whether the enumerator should return <c>KeyValuePair{K, object}</c> when used as <see cref="IEnumerator"/>.
-            /// If <B>false</B> it will return <see cref="DictionaryEntry"/>.
-            /// </summary>
-            private readonly bool _isGeneric;
 
             /// <summary>
             /// A reference to another <see cref="Enumerator"/>, allows to link existing enumerators into a linked list.
             /// </summary>
             internal Enumerator _next;
 
-            public Enumerator(OrderedDictionary/*!*/table, bool isGeneric)
+            public Enumerator(OrderedDictionary/*!*/table)
             {
                 Debug.Assert(table != null);
 
                 _table = table;
                 _element = -1;
-                _current = new KeyValuePair<IntStringKey, PhpValue>();
                 _start = true;
-                _isGeneric = isGeneric;
             }
 
-            public Enumerator(PhpHashtable/*!*/hashtable, bool isGeneric)
-                : this(hashtable.table, isGeneric)
+            public Enumerator(PhpHashtable/*!*/hashtable)
+                : this(hashtable.table)
             {
                 _hashtable = hashtable;
                 hashtable.RegisterEnumerator(this);
             }
 
-            private bool FetchCurrent()
-            {
-                if (_element >= 0)
-                {
-                    _current = _table.entries[_element].KeyValuePair;
-                    return true;
-                }
+            /// <summary>
+            /// Gets value indicating the enumerator has current value.
+            /// </summary>
+            bool HasEntry => _element >= 0;
 
-                _current = new KeyValuePair<IntStringKey, PhpValue>();
-                return false;
-            }
+            private bool FetchCurrent() => HasEntry;
+            //{
+            //    if (_element >= 0)
+            //    {
+            //        _current = _table.entries[_element].KeyValuePair;
+            //        return true;
+            //    }
+
+            //    _current = new KeyValuePair<IntStringKey, PhpValue>();
+            //    return false;
+            //}
 
             /// <summary>
             /// Callback method caled by <see cref="_del_key_or_index"/> when an entry has been deleted.
@@ -422,14 +417,9 @@ namespace Pchp.Core
                 _table = _hashtable.table;
             }
 
-            #region IEnumerator<KeyValuePair<IntStringKey, object>>
+            #region IEnumerator
 
-            public KeyValuePair<IntStringKey, PhpValue> Current => _current;
-
-            object IEnumerator.Current
-            {
-                get { return _isGeneric ? _current : (object)((IDictionaryEnumerator)this).Entry; }
-            }
+            public virtual object Current => CurrentValue.ToClr();
 
             public bool MoveNext()
             {
@@ -441,8 +431,8 @@ namespace Pchp.Core
                 }
                 else if (_start)
                 {
-                    _element = _table.listHead;
                     _start = false;
+                    _element = _table.listHead;
                 }
 
                 return FetchCurrent();
@@ -458,10 +448,9 @@ namespace Pchp.Core
 
             #region IDisposable
 
-            public void Dispose()
+            public virtual void Dispose()
             {
                 _element = -1;
-                _current = new KeyValuePair<IntStringKey, PhpValue>();
 
                 if (_hashtable != null)
                 {
@@ -474,20 +463,30 @@ namespace Pchp.Core
 
             #region IDictionaryEnumerator Members
 
-            DictionaryEntry IDictionaryEnumerator.Entry { get { return new DictionaryEntry(_current.Key, _current.Value); } }
-            object IDictionaryEnumerator.Key { get { return _current.Key; } }
-            object IDictionaryEnumerator.Value { get { return _current.Value; } }
+            DictionaryEntry IDictionaryEnumerator.Entry => new DictionaryEntry(((IDictionaryEnumerator)this).Key, ((IDictionaryEnumerator)this).Value);
+
+            object IDictionaryEnumerator.Key => CurrentKey.Object;
+
+            object IDictionaryEnumerator.Value => CurrentValue.ToClr();
+
+            #endregion
+
+            #region IEnumerator<KeyValuePair<IntStringKey, PhpValue>>
+
+            KeyValuePair<IntStringKey, PhpValue> IEnumerator<KeyValuePair<IntStringKey, PhpValue>>.Current =>
+                new KeyValuePair<IntStringKey, PhpValue>(_table.entries[_element]._key, CurrentValue);
 
             #endregion
 
             #region IPhpEnumerator
 
-            public PhpValue CurrentValue => _current.Value;
+            public PhpValue CurrentValue => (_element >= 0) ? _table.entries[_element]._value.GetValue() : PhpValue.Void;
 
-            public PhpValue CurrentKey => PhpValue.Create(_current.Key);
+            public PhpValue CurrentKey => (_element >= 0) ? PhpValue.Create(_table.entries[_element]._key) : PhpValue.Void;
 
-            KeyValuePair<PhpValue, PhpValue> IEnumerator<KeyValuePair<PhpValue, PhpValue>>.Current
-                => new KeyValuePair<PhpValue, PhpValue>(PhpValue.Create(_current.Key), _current.Value);
+            public PhpAlias CurrentValueAliased => (_element >= 0) ? _table.entries[_element]._value.EnsureAlias() : new PhpAlias(PhpValue.Void);
+
+            KeyValuePair<PhpValue, PhpValue> IEnumerator<KeyValuePair<PhpValue, PhpValue>>.Current => new KeyValuePair<PhpValue, PhpValue>(CurrentKey, CurrentValue);
 
             public bool MoveLast()
             {
@@ -530,6 +529,38 @@ namespace Pchp.Core
             }
 
             #endregion
+        }
+
+        /// <summary>
+        /// Performs enumeration on the current state of the array.
+        /// Array can be changed during the enumeration with no effect to this enumerator.
+        /// </summary>
+        internal class ReadonlyEnumerator : Enumerator
+        {
+            public ReadonlyEnumerator(PhpHashtable/*!*/hashtable)
+                : base(hashtable.table.Share()) // enumerates over readonly copy of givcen array
+            {
+                
+            }
+
+            public override void Dispose()
+            {
+                _hashtable.table.Unshare(); // return the shared copy
+                base.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// <see cref="Enumerator"/> behaving as <see cref="IDictionaryEnumerator"/>.
+        /// </summary>
+        internal class DictionaryEnumerator : Enumerator
+        {
+            public DictionaryEnumerator(OrderedDictionary/*!*/table)
+                :base(table)
+            {
+            }
+
+            public override object Current => ((IDictionaryEnumerator)this).Entry;
         }
 
         #endregion
@@ -2575,15 +2606,9 @@ namespace Pchp.Core
             return _del_key_or_index(ref key, null);
         }
 
-        public IEnumerator<KeyValuePair<IntStringKey, PhpValue>>/*!*/GetEnumerator()
-        {
-            return new Enumerator(this, true);
-        }
+        public IEnumerator<KeyValuePair<IntStringKey, PhpValue>>/*!*/GetEnumerator() => new Enumerator(this);
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this, true);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
         #endregion
 
@@ -2683,7 +2708,7 @@ namespace Pchp.Core
 
         public void Add(object key, object value) { this.Add((IntStringKey)key, value); }
         public bool Contains(object key) { return this.Contains((IntStringKey)key); }
-        IDictionaryEnumerator IDictionary.GetEnumerator() { return new Enumerator(this, false); }
+        IDictionaryEnumerator IDictionary.GetEnumerator() => new DictionaryEnumerator(this);
         public bool IsFixedSize { get { return false; } }
         ICollection IDictionary.Keys { get { return (ICollection)this.Keys; } }
         public void Remove(object key) { this.Remove((IntStringKey)key); }

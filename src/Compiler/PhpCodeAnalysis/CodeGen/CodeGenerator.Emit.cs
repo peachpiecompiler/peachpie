@@ -31,6 +31,21 @@ namespace Pchp.CodeAnalysis.CodeGen
             return _contextPlace.EmitLoad(_il);
         }
 
+        public void EmitCallerRuntimeTypeHandle()
+        {
+            var caller = this.CallerType;
+            if (caller != null)
+            {
+                // RuntimeTypeHandle
+                EmitLoadToken(caller, null);
+            }
+            else
+            {
+                // default(RuntimeTypeHandle)
+                EmitLoadDefaultOfValueType(this.CoreTypes.RuntimeTypeHandle);
+            }
+        }
+
         /// <summary>
         /// Emits reference to <c>$GLOBALS</c>.
         /// </summary>
@@ -1151,11 +1166,29 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                         else
                         {
-                            throw new NotImplementedException();    // default(T)
+                            EmitLoadDefaultOfValueType(type);
                         }
                     }
                     break;
             }
+        }
+
+        /// <summary>
+        /// Emits <c>default(valuetype)</c>.
+        /// </summary>
+        public void EmitLoadDefaultOfValueType(TypeSymbol valuetype)
+        {
+            Debug.Assert(valuetype != null && valuetype.IsValueType);
+
+            var loc = this.GetTemporaryLocal(valuetype, true);
+
+            // ldloca <loc>
+            // .initobj <type>
+            Builder.EmitLocalAddress(loc);
+            Builder.EmitOpCode(ILOpCode.Initobj);
+            EmitSymbolToken(valuetype, null);
+            // ldloc <loc>
+            Builder.EmitLocalLoad(loc);
         }
 
         public void EmitRetDefault()

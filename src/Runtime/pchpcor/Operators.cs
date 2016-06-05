@@ -78,7 +78,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets enumerator object for given value.
         /// </summary>
-        public static IPhpEnumerator GetForeachEnumerator(PhpValue value, Context ctx) => value.GetForeachEnumerator(ctx);
+        public static IPhpEnumerator GetForeachEnumerator(PhpValue value, bool aliasedValues, RuntimeTypeHandle caller) => value.GetForeachEnumerator(aliasedValues, caller);
 
         #endregion
     }

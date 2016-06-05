@@ -259,12 +259,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         public BoundExpression Enumeree => _enumeree;
         private readonly BoundExpression _enumeree;
+        readonly bool _aliasedValues;
 
-        internal ForeachEnumereeEdge(BoundBlock/*!*/source, BoundBlock/*!*/target, BoundExpression/*!*/enumeree)
+        internal ForeachEnumereeEdge(BoundBlock/*!*/source, BoundBlock/*!*/target, BoundExpression/*!*/enumeree, bool aliasedValues)
             : base(source, target)
         {
             Contract.ThrowIfNull(enumeree);
             _enumeree = enumeree;
+            _aliasedValues = aliasedValues;
         }
 
         /// <summary>

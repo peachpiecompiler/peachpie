@@ -192,7 +192,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets enumerator object used within foreach statement.
         /// </summary>
-        public IPhpEnumerator GetForeachEnumerator(Context ctx) => _type.GetForeachEnumerator(ref this, ctx);
+        public IPhpEnumerator GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller) => _type.GetForeachEnumerator(ref this, aliasedValues, caller);
 
         /// <summary>
         /// Compares two value operands.
@@ -223,6 +223,12 @@ namespace Pchp.Core
         public PhpArray EnsureArray() => _type.EnsureArray(ref this);
 
         public PhpAlias EnsureAlias() => _type.EnsureAlias(ref this);
+
+        /// <summary>
+        /// Dereferences in case of an alias.
+        /// </summary>
+        /// <returns>Not aliased value.</returns>
+        public PhpValue GetValue() => IsAlias ? Alias.Value : this;
 
         /// <summary>
         /// Creates a deep copy of PHP value.
