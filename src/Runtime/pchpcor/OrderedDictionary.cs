@@ -451,12 +451,8 @@ namespace Pchp.Core
             public virtual void Dispose()
             {
                 _element = -1;
-
-                if (_hashtable != null)
-                {
-                    _hashtable.UnregisterEnumerator(this);
-                    //this.hashtable = null;
-                }
+                _hashtable?.UnregisterEnumerator(this);
+                //_hashtable = null;
             }
 
             #endregion
