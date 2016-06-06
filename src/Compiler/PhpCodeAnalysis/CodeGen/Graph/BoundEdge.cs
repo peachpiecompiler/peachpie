@@ -83,7 +83,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     partial class ForeachEnumereeEdge
     {
         LocalDefinition _enumeratorLoc;
-        MethodSymbol _moveNextMethod;
+        MethodSymbol _moveNextMethod, _disposeMethod;
         PropertySymbol _currentValue, _currentKey, _current;
 
         internal void EmitMoveNext(CodeGenerator cg)
@@ -151,13 +151,29 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
         }
 
-        internal void Close(CodeGenerator cg)
+        void EmitDisposeAndClean(CodeGenerator cg)
         {
+            // enumerator.Dispose()
+            if (_disposeMethod != null)
+            {
+                // TODO: if (enumerator != null)
+
+                if (_enumeratorLoc.Type.IsValueType)
+                    cg.Builder.EmitLocalAddress(_enumeratorLoc);
+                else
+                    cg.Builder.EmitLocalLoad(_enumeratorLoc);
+
+                cg.EmitCall(_disposeMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, _disposeMethod)
+                    .Expect(SpecialType.System_Void);
+            }
+
+            //
             cg.ReturnTemporaryLocal(_enumeratorLoc);
             _enumeratorLoc = null;
 
             // unbind
             _moveNextMethod = null;
+            _disposeMethod = null;
             _currentValue = null;
             _currentKey = null;
             _current = null;
@@ -185,10 +201,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (enumereeType.IsEqualToOrDerivedFrom(cg.CoreTypes.PhpArray))
             {
                 cg.Builder.EmitBoolConstant(_aliasedValues);
-                cg.EmitCallerRuntimeTypeHandle();
-
-                // PhpArray.GetForeachtEnumerator(bool, RuntimeTypeHandle)
-                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator);
+                
+                // PhpArray.GetForeachtEnumerator(bool)
+                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);
             }
             // TODO: IPhpEnumerable
             // TODO: Iterator
@@ -211,6 +226,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current = enumeratorType.LookupMember<PropertySymbol>(WellKnownMemberNames.CurrentPropertyName);   // TODO: Err if no Current
             _currentValue = enumeratorType.LookupMember<PropertySymbol>(_aliasedValues ? "CurrentValueAliased" : "CurrentValue");
             _currentKey = enumeratorType.LookupMember<PropertySymbol>("CurrentKey");
+            _disposeMethod = enumeratorType.LookupMember<MethodSymbol>("Dispose", m => m.ParameterCount == 0 && !m.IsStatic);
 
             //
             _enumeratorLoc = cg.GetTemporaryLocal(enumeratorType);
@@ -220,12 +236,44 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName);    // TODO: Err if there is no MoveNext()
             Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
             Debug.Assert(_moveNextMethod.IsStatic == false);
-            // ...
 
-            // TODO: try { NextBlock } finally { enumerator.Dispose }
+            if (_disposeMethod != null)
+            {
+                /* Template: try { body } finally { enumerator.Dispose }
+                 */
 
-            //
-            cg.Scope.ContinueWith(NextBlock);
+                // try {
+                cg.Builder.AssertStackEmpty();
+                cg.Builder.OpenLocalScope(ScopeType.TryCatchFinally);
+                cg.Builder.OpenLocalScope(ScopeType.Try);
+
+                //
+                EmitBody(cg);
+
+                // }
+                cg.Builder.CloseLocalScope();   // /Try
+
+                // finally {
+                cg.Builder.OpenLocalScope(ScopeType.Finally);
+
+                // enumerator.Dispose() & cleanup
+                EmitDisposeAndClean(cg);
+
+                // }
+                cg.Builder.CloseLocalScope();   // /Finally
+                cg.Builder.CloseLocalScope();   // /TryCatchFinally
+            }
+            else
+            {
+                EmitBody(cg);
+                EmitDisposeAndClean(cg);
+            }
+        }
+
+        void EmitBody(CodeGenerator cg)
+        {
+            Debug.Assert(NextBlock.NextEdge is ForeachMoveNextEdge);
+            cg.GenerateScope(NextBlock, NextBlock.NextEdge.NextBlock.Ordinal);
         }
     }
 
@@ -243,7 +291,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             var lblMoveNext = new object();
             var lblBody = new object();
-
+            
+            //
             cg.Builder.EmitBranch(ILOpCode.Br, lblMoveNext);
             cg.Builder.MarkLabel(lblBody);
 
@@ -259,9 +308,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             cg.Builder.MarkLabel(lblMoveNext);
             this.EnumereeEdge.EmitMoveNext(cg); // bool
             cg.Builder.EmitBranch(ILOpCode.Brtrue, lblBody);
-
-            //
-            this.EnumereeEdge.Close(cg);
 
             //
             cg.Scope.ContinueWith(NextBlock);

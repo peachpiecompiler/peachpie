@@ -545,7 +545,7 @@ namespace Pchp.Core
 
             public override void Dispose()
             {
-                _hashtable.table.Unshare(); // return the shared copy
+                _table.Unshare(); // return the shared copy
                 base.Dispose();
             }
         }

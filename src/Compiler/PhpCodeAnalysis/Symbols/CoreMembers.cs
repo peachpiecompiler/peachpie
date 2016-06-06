@@ -575,7 +575,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_IntStringKey = ct.PhpArray.Method("GetItemValue", ct.IntStringKey);
 
                 DeepCopy = ct.PhpArray.Method("DeepCopy");
-                GetForeachEnumerator = ct.PhpArray.Method("GetForeachEnumerator", ct.Boolean, ct.RuntimeTypeHandle);
+                GetForeachEnumerator_Boolean = ct.PhpArray.Method("GetForeachEnumerator", ct.Boolean);
 
                 SetItemValue_IntStringKey_PhpValue = ct.PhpArray.Method("SetItemValue", ct.IntStringKey, ct.PhpValue);
                 SetItemAlias_IntStringKey_PhpAlias = ct.PhpArray.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
@@ -591,7 +591,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
-                DeepCopy, GetForeachEnumerator;
+                DeepCopy, GetForeachEnumerator_Boolean;
         }
 
         public struct ConstructorsHolder

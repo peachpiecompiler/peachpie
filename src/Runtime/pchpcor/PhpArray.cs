@@ -263,15 +263,19 @@ namespace Pchp.Core
         /// Creates an enumerator used in foreach statement.
         /// </summary>
         /// <param name="aliasedValues">Whether the values returned by enumerator are assigned by reference.</param>
+        /// <returns>The dictionary enumerator.</returns>
+        public IPhpEnumerator GetForeachEnumerator(bool aliasedValues) => aliasedValues
+                ? new OrderedDictionary.Enumerator(this)            // when enumerating aliases, changes are reflected to the enumerator
+                : new OrderedDictionary.ReadonlyEnumerator(this);   // when enumerating values, any upcoming changes to the array do not take effect to the enumerator
+
+        /// <summary>
+        /// Creates an enumerator used in foreach statement.
+        /// </summary>
+        /// <param name="aliasedValues">Whether the values returned by enumerator are assigned by reference.</param>
         /// <param name="caller">Type of the caller (ignored).</param>
         /// <returns>The dictionary enumerator.</returns>
         /// <remarks>Used for internal purposes only!</remarks>
-        public virtual IPhpEnumerator GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller)
-        {
-            return aliasedValues
-                ? new OrderedDictionary.Enumerator(this)            // when enumerating aliases, changes are reflected to the enumerator
-                : new OrderedDictionary.ReadonlyEnumerator(this);   // when enumerating values, any upcoming changes to the array do not take effect to the enumerator
-        }
+        public IPhpEnumerator GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller) => GetForeachEnumerator(aliasedValues);
 
         #endregion
 
