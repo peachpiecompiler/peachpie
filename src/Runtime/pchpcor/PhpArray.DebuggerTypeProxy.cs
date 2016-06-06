@@ -29,11 +29,12 @@ namespace Pchp.Core
                     var result = new PhpHashEntryDebugView[_array.Count];
 
                     int i = 0;
-                    foreach (KeyValuePair<IntStringKey, PhpValue> entry in _array)
+                    var enumerator = _array.GetFastEnumerator();
+                    while (enumerator.MoveNext())
                     {
-                        result[i++] = new PhpHashEntryDebugView(entry.Key, entry.Value);
+                        result[i++] = new PhpHashEntryDebugView(enumerator.CurrentKey, enumerator.CurrentValue);
                     }
-
+                    
                     return result;
                 }
             }
