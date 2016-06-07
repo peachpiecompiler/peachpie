@@ -36,6 +36,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
     }
 
+    partial class LeaveEdge
+    {
+        internal override void Generate(CodeGenerator cg)
+        {
+            // nop
+        }
+    }
+
     partial class ConditionalEdge
     {
         internal override void Generate(CodeGenerator cg)
@@ -76,6 +84,75 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         internal override void Generate(CodeGenerator cg)
         {
+            EmitTryStatement(cg);
+        }
+
+        void EmitTryStatement(CodeGenerator cg, bool emitCatchesOnly = false)
+        {
+            // Stack must be empty at beginning of try block.
+            cg.Builder.AssertStackEmpty();
+
+            // IL requires catches and finally block to be distinct try
+            // blocks so if the source contained both a catch and
+            // a finally, nested scopes are emitted.
+            bool emitNestedScopes = (!emitCatchesOnly &&
+                (_catchBlocks.Length != 0) &&
+                (_finallyBlock != null));
+
+            cg.Builder.OpenLocalScope(ScopeType.TryCatchFinally);
+
+            cg.Builder.OpenLocalScope(ScopeType.Try);
+            // IL requires catches and finally block to be distinct try
+            // blocks so if the source contained both a catch and
+            // a finally, nested scopes are emitted.
+
+            //_tryNestingLevel++;
+            if (emitNestedScopes)
+            {
+                EmitTryStatement(cg, emitCatchesOnly: true);
+            }
+            else
+            {
+                cg.GenerateScope(_body, (_finallyBlock ?? NextBlock).Ordinal);
+            }
+
+            //_tryNestingLevel--;
+            // Close the Try scope
+            cg.Builder.CloseLocalScope();
+
+            if (!emitNestedScopes)
+            {
+                foreach (var catchBlock in _catchBlocks)
+                {
+                    EmitCatchBlock(cg, catchBlock);
+                }
+            }
+
+            if (!emitCatchesOnly && _finallyBlock != null)
+            {
+                cg.Builder.OpenLocalScope(ScopeType.Finally);
+                cg.GenerateScope(_finallyBlock, NextBlock.Ordinal);
+
+                // close Finally scope
+                cg.Builder.CloseLocalScope();
+
+                // close the whole try statement scope
+                cg.Builder.CloseLocalScope();
+            }
+            else
+            {
+                // close the whole try statement scope
+                cg.Builder.CloseLocalScope();
+            }
+
+            //
+            cg.Scope.ContinueWith(NextBlock);
+        }
+
+        void EmitCatchBlock(CodeGenerator cg, CatchBlock catchBlock)
+        {
+            cg.Builder.AdjustStack(1); // Account for exception on the stack.
+
             throw new NotImplementedException();
         }
     }
@@ -166,6 +243,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.EmitCall(_disposeMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, _disposeMethod)
                     .Expect(SpecialType.System_Void);
             }
+
+            //// enumerator = null;
+            //if (!_enumeratorLoc.Type.IsValueType)
+            //{
+            //    cg.Builder.EmitNullConstant();
+            //    cg.Builder.EmitLocalStore(_enumeratorLoc);
+            //}
 
             //
             cg.ReturnTemporaryLocal(_enumeratorLoc);

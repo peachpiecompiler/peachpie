@@ -114,6 +114,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     }
 
     /// <summary>
+    /// Represents an edge leaving try/catch block.
+    /// The edge is not emitted.
+    /// </summary>
+    public partial class LeaveEdge : SimpleEdge
+    {
+        internal LeaveEdge(BoundBlock source, BoundBlock target)
+            :base(source, target)
+        {
+        }
+    }
+
+    /// <summary>
     /// Conditional edge.
     /// </summary>
     [DebuggerDisplay("ConditionalEdge")]

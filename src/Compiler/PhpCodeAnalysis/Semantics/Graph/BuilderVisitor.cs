@@ -237,6 +237,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return target;
         }
 
+        private BoundBlock/*!*/Leave(BoundBlock/*!*/source, BoundBlock/*!*/target)
+        {
+            new LeaveEdge(source, target);
+            return target;
+        }
+
         private ControlFlowGraph.LabelBlockState/*!*/GetLabelBlock(string label)
         {
             if (_labels == null)
@@ -686,7 +692,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             x.Statements.ForEach(VisitElement);
             CloseScope();
             CloeTryScope();
-            _current = Connect(_current, finallyBlock ?? end);
+            _current = Leave(_current, finallyBlock ?? end);
 
             // built catches
             for (int i = 0; i < catchBlocks.Length; i++)
@@ -694,7 +700,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _current = WithOpenScope(WithNewOrdinal(catchBlocks[i]));
                 x.Catches[i].Statements.ForEach(VisitElement);
                 CloseScope();
-                _current = Connect(_current, finallyBlock ?? end);
+                _current = Leave(_current, finallyBlock ?? end);
             }
 
             // build finally
@@ -703,7 +709,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _current = WithOpenScope(WithNewOrdinal(finallyBlock));
                 x.FinallyItem.Statements.ForEach(VisitElement);
                 CloseScope();
-                _current = Connect(_current, end);
+                _current = Leave(_current, end);
             }
 
             // _current == end
