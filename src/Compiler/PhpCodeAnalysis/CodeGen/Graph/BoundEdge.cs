@@ -189,6 +189,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             varplace.EmitStore(cg, (TypeSymbol)tmploc.Type);
 
             //
+            cg.ReturnTemporaryLocal(tmploc);
+            tmploc = null;
+
+            //
             cg.GenerateScope(catchBlock, NextBlock.Ordinal);
 
             //
