@@ -2367,6 +2367,39 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundExitEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            // LOAD <ctx>
+            cg.EmitLoadContext();
+
+            if (_arguments.Length == 0)
+            {
+                // <ctx>.Exit();
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Exit);
+            }
+
+            // LOAD <status>
+            var t = cg.Emit(_arguments[0].Value);
+
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Int32:
+                    cg.Builder.EmitOpCode(ILOpCode.Conv_i8);    // i4 -> i8
+                    goto case SpecialType.System_Int64;
+
+                case SpecialType.System_Int64:
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Exit_Long);
+
+                default:
+
+                    cg.EmitConvertToPhpValue(t, 0);
+                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Exit_PhpValue);
+            }
+        }
+    }
+
     partial class BoundAssignEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

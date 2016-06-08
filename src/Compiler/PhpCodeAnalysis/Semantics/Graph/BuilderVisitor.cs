@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public BoundBlock/*!*/Start { get; private set; }
         public BoundBlock/*!*/Exit { get; private set; }
-        public BoundBlock Exception { get; private set; }
+        //public BoundBlock Exception { get; private set; }
 
         /// <summary>
         /// Gets labels defined within the routine.
@@ -173,9 +173,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private BoundBlock/*!*/GetExceptionBlock()
         {
-            if (this.Exception == null)
-                this.Exception = new ExitBlock();
-            return this.Exception;
+            //if (this.Exception == null)
+            //    this.Exception = new ExitBlock();
+            //return this.Exception;
+            return this.Exit;
         }
 
         private void Add(Statement stmt)
@@ -523,7 +524,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
                 else
                 {
-                    Connect(_current, this.GetExceptionBlock());    // unreachable  // fatal error in PHP
+                    throw new InvalidOperationException();   // TODO: ErrCode
+                    //Connect(_current, this.GetExceptionBlock());    // unreachable  // fatal error in PHP
                 }
             }
             else

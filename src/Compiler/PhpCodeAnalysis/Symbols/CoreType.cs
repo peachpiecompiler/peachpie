@@ -93,7 +93,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison,
-            ScriptAttribute,
+            ScriptAttribute, ScriptDiedException,
             IStaticInit,
             CallMethodBinder, CallFunctionBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray,
@@ -124,6 +124,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpString = Create("PhpString");
             PhpArray = Create("PhpArray");
             IntStringKey = Create("IntStringKey");
+            ScriptDiedException = Create("ScriptDiedException");
             Context = Create("Context");
             Operators = Create("Operators");
             Comparison = Create("Comparison");

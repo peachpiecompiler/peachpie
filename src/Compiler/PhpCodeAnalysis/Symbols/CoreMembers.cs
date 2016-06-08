@@ -640,6 +640,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetStatic_T = ct.Context.Method("GetStatic");
 
+                Exit_PhpValue = ct.Context.Method("Exit", ct.PhpValue);
+                Exit_Long = ct.Context.Method("Exit", ct.Long);
+                Exit = ct.Context.Method("Exit");
+
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
             }
 
@@ -652,6 +656,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptPath_TScript,
                 GetConstant_string_int32,
                 GetStatic_T,
+                Exit_PhpValue, Exit_Long, Exit,
                 Dispose;
 
             public readonly CoreMethod

@@ -565,6 +565,20 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    /// <summary>
+    /// <c>exit</c> construct.
+    /// </summary>
+    public sealed partial class BoundExitEx : BoundRoutineCall
+    {
+        public override BoundExpression Instance => null;
+
+        public BoundExitEx(BoundExpression value = null)
+            : base(value != null ? ImmutableArray.Create(new BoundArgument(value)) : ImmutableArray<BoundArgument>.Empty)
+        {
+            Debug.Assert(value.Access.IsRead);
+        }
+    }
+
     #endregion
 
     #region BoundLiteral

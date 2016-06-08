@@ -436,6 +436,40 @@ namespace Pchp.Core
                 _errorReportingDisabled--;
         }
 
+        /// <summary>
+        /// Terminates execution of the current script by throwing an exception.
+        /// </summary>
+        /// <param name="status">Exit status.</param>
+        public virtual void Exit(PhpValue status)
+        {
+            if (IsExitStatusPrintable(ref status))
+            {
+                Echo(status);
+            }
+
+            throw new ScriptDiedException(status);
+        }
+
+        static bool IsExitStatusPrintable(ref PhpValue status)
+        {
+            switch (status.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                    return false;
+
+                case PhpTypeCode.Alias:
+                    return IsExitStatusPrintable(ref status.Alias.Value);
+
+                default:
+                    return true;
+            }
+        }
+
+        public void Exit(long status) => Exit(PhpValue.Create(status));
+
+        public void Exit() => Exit(255);
+
         #endregion
 
         #region IDisposable

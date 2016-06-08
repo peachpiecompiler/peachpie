@@ -84,13 +84,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public BoundBlock/*!*/Exit { get { return _exit; } }
         readonly BoundBlock/*!*/_exit;
 
-        /// <summary>
-        /// Exception block. Can be <c>null</c>.
-        /// If set, code can throw an exception or be terminated by call to <c>exit</c>, before reaching exit block.
-        /// This block is connected with blocks ending with <c>throw</c> statement.
-        /// </summary>
-        public BoundBlock Throws { get { return _exception; } }
-        readonly BoundBlock _exception;
+        ///// <summary>
+        ///// Exception block. Can be <c>null</c>.
+        ///// If set, code can throw an exception or be terminated by call to <c>exit</c>, before reaching exit block.
+        ///// This block is connected with blocks ending with <c>throw</c> statement.
+        ///// </summary>
+        //public BoundBlock Throws { get { return _exception; } }
+        //readonly BoundBlock _exception;
 
         /// <summary>
         /// Array of labels within routine. Can be <c>null</c>.
@@ -119,7 +119,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         private ControlFlowGraph(BuilderVisitor/*!*/builder)
-            : this(builder.Start, builder.Exit, builder.Exception, builder.Labels, builder.DeadBlocks)
+            : this(builder.Start, builder.Exit, /*builder.Exception*/null, builder.Labels, builder.DeadBlocks)
         {
         }
 
@@ -130,7 +130,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             _start = start;
             _exit = exit;
-            _exception = exception;
+            //_exception = exception;
             _labels = labels;
             _unrecachable = unreachable ?? new List<BoundBlock>();
         }

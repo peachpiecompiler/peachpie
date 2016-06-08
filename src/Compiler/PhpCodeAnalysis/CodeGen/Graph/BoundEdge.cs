@@ -122,6 +122,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             if (!emitNestedScopes)
             {
+                // TODO: catch (ScriptDiedException) { rethrow; }
+
+                //
                 foreach (var catchBlock in _catchBlocks)
                 {
                     EmitCatchBlock(cg, catchBlock);

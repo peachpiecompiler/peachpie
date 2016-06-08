@@ -485,6 +485,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 State.SetVarUsed(x.Name);
                 var vartype = State.GetVarType(x.Name);
 
+                if (vartype.IsVoid)
+                    vartype = TypeRefMask.AnyType;
+
                 if (x.Access.IsEnsure)
                 {
                     if (x.Access.IsReadRef)
@@ -973,10 +976,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitIncludeEx((BoundIncludeEx)operation);
             }
+            else if (operation is BoundExitEx)
+            {
+                VisitExit((BoundExitEx)operation);
+            }
             else
             {
                 throw new NotImplementedException();
             }
+        }
+
+        protected virtual void VisitExit(BoundExitEx x)
+        {
+            //
         }
 
         protected virtual void VisitEcho(BoundEcho x)
