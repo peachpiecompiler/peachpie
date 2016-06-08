@@ -96,7 +96,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // blocks so if the source contained both a catch and
             // a finally, nested scopes are emitted.
             bool emitNestedScopes = (!emitCatchesOnly &&
-                (_catchBlocks.Length != 0) &&
+                //(_catchBlocks.Length != 0) &&
                 (_finallyBlock != null));
 
             cg.Builder.OpenLocalScope(ScopeType.TryCatchFinally);
@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             if (!emitNestedScopes)
             {
-                // TODO: catch (ScriptDiedException) { rethrow; }
+                EmitScriptDiedBlock(cg);
 
                 //
                 foreach (var catchBlock in _catchBlocks)
@@ -153,6 +153,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 //
                 cg.Scope.ContinueWith(NextBlock);
             }
+        }
+
+        void EmitScriptDiedBlock(CodeGenerator cg)
+        {
+            // handle ScriptDiedException (caused by die or exit) separately and rethrow the exception
+
+            // Template: catch (ScriptDiedException) { rethrow; }
+
+            cg.Builder.OpenLocalScope(ScopeType.Catch, cg.CoreTypes.ScriptDiedException.Symbol);
+            cg.Builder.EmitThrow(true);
+            cg.Builder.CloseLocalScope();
         }
 
         void EmitCatchBlock(CodeGenerator cg, CatchBlock catchBlock)
