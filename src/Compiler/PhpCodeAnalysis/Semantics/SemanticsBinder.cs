@@ -114,6 +114,14 @@ namespace Pchp.CodeAnalysis.Semantics
             //return new BoundTypeDeclStatement(stmt.GetProperty<Symbols.SourceNamedTypeSymbol>());
         }
 
+        public BoundVariableRef BindCatchVariable(AST.CatchItem x)
+        {
+            var tmask = _flowCtx.TypeRefContext.GetTypeMask(x.TypeRef, true);
+
+            return new BoundVariableRef(x.Variable.VarName.Value)
+                .WithAccess(BoundAccess.Write.WithWrite(tmask));
+        }
+
         public BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
             var bound = BindExpressionCore(expr, access).WithAccess(access);

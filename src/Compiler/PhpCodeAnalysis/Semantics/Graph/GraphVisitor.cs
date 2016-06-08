@@ -74,6 +74,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public virtual void VisitCFGCatchBlock(CatchBlock x)
         {
+            Accept(x.Variable);
             VisitCFGBlockInternal(x);
         }
 

@@ -148,15 +148,45 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.Builder.CloseLocalScope();
             }
 
-            //
-            cg.Scope.ContinueWith(NextBlock);
+            if (!emitCatchesOnly)
+            {
+                //
+                cg.Scope.ContinueWith(NextBlock);
+            }
         }
 
         void EmitCatchBlock(CodeGenerator cg, CatchBlock catchBlock)
         {
+            Debug.Assert(catchBlock.Variable.Variable != null);
+
+            if (catchBlock.ResolvedType == null)
+            {
+                throw new NotImplementedException("handle exception type dynamically"); // TODO: if (ex is ctx.ResolveType(ExceptionTypeName)) { ... }
+            }
+
+            var extype = catchBlock.ResolvedType;
+
             cg.Builder.AdjustStack(1); // Account for exception on the stack.
 
-            throw new NotImplementedException();
+            cg.Builder.OpenLocalScope(ScopeType.Catch, (Microsoft.Cci.ITypeReference)extype);
+
+            // <tmp> = <ex>
+            var tmploc = cg.GetTemporaryLocal(extype);
+            cg.Builder.EmitLocalStore(tmploc);
+
+            var varplace = catchBlock.Variable.BindPlace(cg);
+            Debug.Assert(varplace != null);
+
+            // $x = <tmp>
+            varplace.EmitStorePrepare(cg);
+            cg.Builder.EmitLocalLoad(tmploc);
+            varplace.EmitStore(cg, (TypeSymbol)tmploc.Type);
+
+            //
+            cg.GenerateScope(catchBlock, NextBlock.Ordinal);
+
+            //
+            cg.Builder.CloseLocalScope();
         }
     }
 

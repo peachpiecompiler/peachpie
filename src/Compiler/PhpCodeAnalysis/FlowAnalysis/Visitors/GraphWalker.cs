@@ -25,6 +25,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             walker.VisitCFG(cfg);
         }
 
+        public override void VisitCFGCatchBlock(CatchBlock x)
+        {
+
+
+            base.VisitCFGCatchBlock(x);
+        }
+
         public override void VisitCFGBlock(BoundBlock x)
         {
             if (x.Tag != _color)

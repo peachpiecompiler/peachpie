@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -153,7 +154,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents control flow block of catch item.
     /// </summary>
     [DebuggerDisplay("CatchBlock({ClassName.QualifiedName})")]
-    public partial class CatchBlock : BoundBlock
+    public partial class CatchBlock : BoundBlock //, ICatch
     {
         /// <summary>
         /// Catch variable type.
@@ -162,18 +163,36 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private readonly DirectTypeRef _typeRef;
 
         /// <summary>
+        /// Resolved <see cref="TypeRef"/>.
+        /// </summary>
+        internal TypeSymbol ResolvedType { get; set; }
+
+        /// <summary>
         /// A variable where an exception is assigned in.
         /// </summary>
-        public VariableName VariableName { get { return _variableName; } }
-        private readonly VariableName _variableName;
+        public BoundVariableRef Variable => _variable;
 
-        public CatchBlock(CatchItem item)
+        readonly BoundVariableRef _variable;
+
+        public CatchBlock(DirectTypeRef typeRef, BoundVariableRef variable)
         {
-            _typeRef = item.TypeRef;
-            _variableName = item.Variable.VarName;
+            _typeRef = typeRef;
+            _variable = variable;
         }
 
         public override void Accept(GraphVisitor visitor) => visitor.VisitCFGCatchBlock(this);
+
+        //#region ICatch
+
+        //IBlockStatement ICatch.Handler => this.NextEdge.Targets.Single();
+
+        //ITypeSymbol ICatch.CaughtType => this.ResolvedType;
+
+        //IExpression ICatch.Filter => null;
+
+        //ILocalSymbol ICatch.ExceptionLocal => _variable.Variable?.Symbol as ILocalSymbol;
+
+        //#endregion
     }
 
     /// <summary>

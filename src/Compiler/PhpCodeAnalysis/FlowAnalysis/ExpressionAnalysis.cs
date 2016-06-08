@@ -180,6 +180,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Visit(x);
         }
 
+        internal TypeSymbol ResolveType(DirectTypeRef dtype)
+        {
+            return (TypeSymbol)_model.GetType(dtype.ClassName);
+        }
+
         #endregion
 
         #region Short-Circuit Evaluation

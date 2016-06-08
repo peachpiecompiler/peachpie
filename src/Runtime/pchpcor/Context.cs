@@ -446,6 +446,11 @@ namespace Pchp.Core
             {
                 Echo(status);
             }
+            else
+            {
+                //this.ExitCode = status.ToLong();
+                // TODO: in Main() return ctx.ExitCode;
+            }
 
             throw new ScriptDiedException(status);
         }

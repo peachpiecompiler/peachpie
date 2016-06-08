@@ -184,8 +184,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             VisitCFGBlockInit(x);
 
             // add catch control variable to the state
-            _state.SetVar(x.VariableName.Value, this.TypeRefContext.GetTypeMask(x.TypeRef, true));
-            _state.SetVarUsed(x.VariableName.Value);  // marks variable as Used since in PHP you can't have catch block without specifying the variable we won't report unused catch variable
+            Accept(x.Variable);
+
+            //
+            x.ResolvedType = OpAnalysis.ResolveType(x.TypeRef);// TODO: accept TypeRef and resolve, TODO: resolved type should be of type Exception
+            x.Variable.ResultType = x.ResolvedType;
+
+            //
             VisitCFGBlockInternal(x);
         }
 

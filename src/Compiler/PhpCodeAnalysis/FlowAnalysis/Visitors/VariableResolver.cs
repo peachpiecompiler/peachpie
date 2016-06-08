@@ -46,6 +46,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             }
         }
 
+        public override void VisitCatch(ICatch operation)
+        {
+            base.VisitCatch(operation);
+        }
+
         public override void VisitLocalReferenceExpression(ILocalReferenceExpression operation)
         {
             var vref = ((BoundVariableRef)operation);
