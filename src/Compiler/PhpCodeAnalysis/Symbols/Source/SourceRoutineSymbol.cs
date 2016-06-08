@@ -149,7 +149,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (returnTag != null && returnTag.TypeNames.Length != 0)
                 {
                     var typeCtx = this.TypeRefContext;
-                    var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNames);
+                    var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNamesArray);
                     if (!tmask.IsVoid && !tmask.IsAnyType)
                     {
                         return DeclaringCompilation.GetTypeFromTypeRef(typeCtx, tmask);

@@ -288,6 +288,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
                 AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
                 ToClass_PhpValue = ct.Convert.Method("ToClass", ct.PhpValue);
+                ToIntStringKey_PhpValue = ct.Convert.Method("ToIntStringKey", ct.PhpValue);
 
                 Echo_String = ct.Context.Method("Echo", ct.String);
                 Echo_PhpString = ct.Context.Method("Echo", ct.PhpString);
@@ -333,6 +334,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
                 AsObject_PhpValue, AsArray_PhpValue, ToClass_PhpValue,
+                ToIntStringKey_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,

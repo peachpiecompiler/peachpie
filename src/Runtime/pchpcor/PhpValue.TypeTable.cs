@@ -38,6 +38,8 @@ namespace Pchp.Core
             public abstract bool ToBoolean(ref PhpValue me);
             public abstract Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number);
 
+            public abstract IntStringKey ToIntStringKey(ref PhpValue me);
+
             /// <summary>
             /// Gets enumerator object used within foreach statement.
             /// </summary>
@@ -128,6 +130,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(0L);
                 return Convert.NumberInfo.LongInteger;
             }
+            public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new InvalidOperationException(); }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.CompareNull(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsNull;
@@ -168,6 +171,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Long);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
+            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey((int)me.Long);
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new InvalidOperationException(); }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Long, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Long && right.Long == me.Long;
@@ -192,6 +196,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Double);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
             }
+            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey((int)me.Double);
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new InvalidOperationException(); }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Double, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Double && right.Double == me.Double;
@@ -216,6 +221,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Boolean ? 1L : 0L);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
+            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey(me.Boolean ? 1 : 0);
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new InvalidOperationException(); }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Boolean, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Boolean && right.Boolean == me.Boolean;
@@ -254,6 +260,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => Convert.StringToDouble(me.String);
             public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.String);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => Convert.ToNumber(me.String, out number);
+            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey(me.String);
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new NotImplementedException(); }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.String, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right)
@@ -301,6 +308,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.WritableString.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.WritableString.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.WritableString.ToNumber(out number);
+            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey(me.WritableString.ToString());
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new NotImplementedException(); }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.WritableString.ToString(), right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right)
@@ -375,6 +383,7 @@ namespace Pchp.Core
                 if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToNumber(out number);
                 throw new NotImplementedException();
             }
+            public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new NotImplementedException(); }
             public override int Compare(ref PhpValue me, PhpValue right)
             {
@@ -406,6 +415,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.Array.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Array.ToNumber(out number);
+            public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => me.Array.GetForeachEnumerator(aliasedValues);
             public override int Compare(ref PhpValue me, PhpValue right) => me.Array.Compare(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right)
@@ -430,6 +440,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.Alias.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Alias.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Alias.ToNumber(out number);
+            public override IntStringKey ToIntStringKey(ref PhpValue me) => me.Alias.Value.ToIntStringKey();
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => me.Alias.Value.GetForeachEnumerator(aliasedValues, caller);
             public override int Compare(ref PhpValue me, PhpValue right) => me.Alias.Value.Compare(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Alias.Value.StrictEquals(right);

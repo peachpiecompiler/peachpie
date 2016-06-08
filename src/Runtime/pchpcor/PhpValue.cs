@@ -189,6 +189,8 @@ namespace Pchp.Core
 
         public override int GetHashCode() => _obj.GetHashCode() ^ (int)_value.Long;
 
+        public IntStringKey ToIntStringKey() => _type.ToIntStringKey(ref this);
+
         /// <summary>
         /// Gets enumerator object used within foreach statement.
         /// </summary>

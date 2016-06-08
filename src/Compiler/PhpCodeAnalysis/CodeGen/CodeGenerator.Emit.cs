@@ -929,9 +929,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_String:
                     EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
                     break;
+                default:
+                    EmitConvertToPhpValue(t, 0);
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToIntStringKey_PhpValue);
+                    break;
             }
-            // .call Convert.ToArrayKey(<t>)
-            throw new NotImplementedException();
         }
 
         /// <summary>

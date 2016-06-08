@@ -945,6 +945,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitInvocationExpression(IInvocationExpression operation)
         {
+            var x = (BoundRoutineCall)operation;
+
             // TODO: write arguments Access
             // TODO: visit invocation member of
             // TODO: 2 pass, analyze arguments -> resolve method -> assign argument to parameter -> write arguments access -> analyze arguments again
@@ -988,6 +990,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 throw new NotImplementedException();
+            }
+
+            if (x.Access.IsReadRef)
+            {
+                x.TypeRefMask = x.TypeRefMask.WithRefFlag;
             }
         }
 
@@ -1045,6 +1052,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 result_type |= c.GetResultType(TypeCtx);
+            }
+
+            if (overloads.Candidates.Length == 0)
+            {
+                result_type = TypeRefMask.AnyType;
             }
 
             x.Overloads = overloads;

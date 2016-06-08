@@ -160,6 +160,15 @@ namespace Pchp.Core
 
         #endregion
 
+        #region ToIntStringKey
+
+        /// <summary>
+        /// Converts given value to an array key.
+        /// </summary>
+        public static IntStringKey ToIntStringKey(PhpValue value) => value.ToIntStringKey();
+
+        #endregion
+
         #region String To Number
 
         /// <summary>
