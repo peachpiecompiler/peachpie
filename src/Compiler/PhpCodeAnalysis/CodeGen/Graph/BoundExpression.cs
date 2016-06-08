@@ -477,11 +477,11 @@ namespace Pchp.CodeAnalysis.Semantics
             var end_label = new object();
 
             // IF [!]<(bool) Left> THEN GOTO partial_eval;
-            cg.EmitConvertToBool(Left);
+            cg.EmitConvert(Left, cg.CoreTypes.Boolean);
             il.EmitBranch(isAnd ? ILOpCode.Brfalse : ILOpCode.Brtrue, partial_eval_label);
 
             // <RESULT> = <(bool) Right>;
-            cg.EmitConvertToBool(Right);
+            cg.EmitConvert(Right, cg.CoreTypes.Boolean);
 
             // GOTO end;
             il.EmitBranch(ILOpCode.Br, end_label);
@@ -504,8 +504,8 @@ namespace Pchp.CodeAnalysis.Semantics
         TypeSymbol EmitBinaryXor(CodeGenerator cg)
         {
             // LOAD <(bool) leftSon> == <(bool) rightSon>;
-            cg.EmitConvertToBool(Left);
-            cg.EmitConvertToBool(Right);
+            cg.EmitConvert(Left, cg.CoreTypes.Boolean);
+            cg.EmitConvert(Right, cg.CoreTypes.Boolean);
             cg.EmitOpCode(ILOpCode.Ceq);
 
             cg.EmitOpCode(ILOpCode.Ldc_i4_0);
@@ -930,7 +930,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case SpecialType.System_Boolean:
 
-                    cg.EmitConvertToBool(right);
+                    cg.EmitConvert(right, cg.CoreTypes.Boolean);
                     ytype = cg.CoreTypes.Boolean;
 
                     // compare(bool, bool)
@@ -1524,7 +1524,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // push value onto the evaluation stack
 
             Debug.Assert(ConstantValue.HasValue);
-            return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);            
+            return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);
         }
     }
 
@@ -2002,7 +2002,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // callsite
 
-                var callsite = cg.Factory.StartCallSite($"call_{this.Name.ClrName()}");
+                var callsite = cg.Factory.StartCallSite("call_" + this.Name.ClrName());
 
                 var callsiteargs = new List<TypeSymbol>(arguments.Length);
                 var return_type = this.Access.IsRead
@@ -2189,7 +2189,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 // TODO: Add overloads for specific types, not System.String only
                 cg.EmitConvert(expr, cg.CoreTypes.String);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.Append_String);
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
                 cg.Builder.EmitOpCode(ILOpCode.Nop);
             }
 
@@ -2692,7 +2692,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 object endLbl = new object();
 
                 // Cond ? True : False
-                cg.EmitConvertToBool(this.Condition);   // i4
+                cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);   // i4
                 cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
 
                 // false:
@@ -3019,7 +3019,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitLoadConstant(this.ConstantValue.Value, this.Access.TargetType);
             }
 
-            var idxfield =((IWithSynthesized)cg.Module.ScriptType)
+            var idxfield = ((IWithSynthesized)cg.Module.ScriptType)
                 .GetOrCreateSynthesizedField(cg.CoreTypes.Int32, $"c<{this.Name}>idx", Accessibility.Internal, true);
 
             // <ctx>.GetConstant(<name>, ref <Index of constant>)

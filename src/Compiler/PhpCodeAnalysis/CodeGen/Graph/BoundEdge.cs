@@ -138,16 +138,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // close Finally scope
                 cg.Builder.CloseLocalScope();
-
-                // close the whole try statement scope
-                cg.Builder.CloseLocalScope();
             }
-            else
-            {
-                // close the whole try statement scope
-                cg.Builder.CloseLocalScope();
-            }
-
+            
+            // close the whole try statement scope
+            cg.Builder.CloseLocalScope();
+            
             if (!emitCatchesOnly)
             {
                 //
@@ -322,6 +317,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             cg.EmitSequencePoint(this.Enumeree.PhpSyntax);
 
             var enumereeType = cg.Emit(this.Enumeree);
+            Debug.Assert(enumereeType.SpecialType != SpecialType.System_Void);
+
             var getEnumeratorMethod = enumereeType.LookupMember<MethodSymbol>(WellKnownMemberNames.GetEnumeratorMethodName);
 
             TypeSymbol enumeratorType;
