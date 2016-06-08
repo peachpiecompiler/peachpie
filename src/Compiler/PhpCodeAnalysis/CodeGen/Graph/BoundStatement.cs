@@ -172,4 +172,17 @@ namespace Pchp.CodeAnalysis.Semantics
             });
         }
     }
+
+    partial class BoundUnset
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            cg.EmitSequencePoint(this.PhpSyntax);
+
+            foreach (var v in this.VarReferences)
+            {
+                v.BindPlace(cg).EmitUnset(cg);
+            }
+        }
+    }
 }

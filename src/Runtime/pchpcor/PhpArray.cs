@@ -305,6 +305,8 @@ namespace Pchp.Core
 
         public PhpArray EnsureItemArray(IntStringKey key) => table._ensure_item_array(ref key, this);
 
+        public void RemoveKey(IntStringKey key) => this.Remove(key);
+
         #endregion
     }
 }

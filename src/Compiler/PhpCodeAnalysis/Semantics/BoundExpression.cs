@@ -1112,7 +1112,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundIsSetEx
+    #region BoundIsSetEx, BoundUnsetEx
 
     public partial class BoundIsSetEx : BoundExpression
     {
@@ -1124,6 +1124,27 @@ namespace Pchp.CodeAnalysis.Semantics
         public ImmutableArray<BoundReferenceExpression> VarReferences { get; set; }
 
         public BoundIsSetEx(ImmutableArray<BoundReferenceExpression> vars)
+        {
+            this.VarReferences = vars;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
+
+    public partial class BoundUnset : BoundStatement
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        /// <summary>
+        /// Reference to be unset.
+        /// </summary>
+        public ImmutableArray<BoundReferenceExpression> VarReferences { get; set; }
+
+        public BoundUnset(ImmutableArray<BoundReferenceExpression> vars)
         {
             this.VarReferences = vars;
         }

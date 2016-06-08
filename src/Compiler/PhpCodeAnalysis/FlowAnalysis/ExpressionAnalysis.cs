@@ -1383,6 +1383,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitsSet((BoundIsSetEx)operation);
             }
+            else if (operation is BoundUnset)
+            {
+                VisitUnset((BoundUnset)operation);
+            }
             else if (operation is BoundEmptyStatement)
             {
                 // nop
@@ -1397,6 +1401,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             x.VarReferences.ForEach(Visit);
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
+        }
+
+        public virtual void VisitUnset(BoundUnset x)
+        {
+            x.VarReferences.ForEach(Visit);
         }
 
         public void VisitPseudoConst(BoundPseudoConst x)

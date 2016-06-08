@@ -496,6 +496,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         void EmitStore(CodeGenerator cg, TypeSymbol valueType);
 
+        /// <summary>
+        /// Emits code that unsets the variable.
+        /// </summary>
+        /// <param name="cg"></param>
+        void EmitUnset(CodeGenerator cg);
+
         ///// <summary>
         ///// Emits code that loads address of this storage place.
         ///// Expects <see cref="EmitPrepare(CodeGenerator)"/> to be called first. 
@@ -802,6 +808,26 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        public void EmitUnset(CodeGenerator cg)
+        {
+            var bound = (IBoundReference)this;
+            bound.EmitStorePrepare(cg);
+
+            if (_place.TypeOpt != null)
+            {
+                if (_place.TypeOpt.IsReferenceType)
+                {
+
+                    cg.Builder.EmitNullConstant();
+                    _place.EmitStore(cg.Builder);
+                    return;
+                }
+            }
+
+            //
+            bound.EmitStore(cg, cg.Emit_PhpValue_Void());
+        }
+
         #region IPlace
 
         public TypeSymbol TypeOpt => _place.TypeOpt;
@@ -882,6 +908,13 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
         }
+
+        public void EmitUnset(CodeGenerator cg)
+        {
+            var bound = (IBoundReference)this;
+            bound.EmitStorePrepare(cg);
+            bound.EmitStore(cg, cg.Emit_PhpValue_Void());
+        }
     }
 
     internal class BoundSuperglobalPlace : IBoundReference
@@ -923,6 +956,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
             throw new NotImplementedException($"Superglobal ${_name.Value}");
+        }
+
+        public void EmitUnset(CodeGenerator cg)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -1026,6 +1064,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // .SetItemValue(key, value)
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
             }
+        }
+
+        public void EmitUnset(CodeGenerator cg)
+        {
+            EmitPrepare(cg);
+            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
         }
 
         #endregion

@@ -1419,10 +1419,18 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.UnsetCast:
                     // Template: "(unset)x"  null
-                    //il.Emit(OpCodes.Ldnull);
-                    //returned_typecode = PhpTypeCode.Object;
-                    //break;
-                    throw new NotImplementedException();
+                    Debug.Assert(this.Operand is BoundReferenceExpression);
+                    ((BoundReferenceExpression)this.Operand).BindPlace(cg).EmitUnset(cg);
+                    if (this.Access.IsRead)
+                    {
+                        cg.Emit_PhpValue_Void();
+                        returned_type = cg.CoreTypes.PhpValue;
+                    }
+                    else
+                    {
+                        returned_type = cg.CoreTypes.Void;
+                    }
+                    break;
 
                 default:
                     throw ExceptionUtilities.Unreachable;
@@ -1966,6 +1974,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (Field.IsStatic && Instance != null)
                     cg.EmitPop(Instance.ResultType);
             }
+        }
+
+        void IBoundReference.EmitUnset(CodeGenerator cg)
+        {
+            var bound = (IBoundReference)this;
+            bound.EmitStorePrepare(cg);
+            bound.EmitStore(cg, cg.Emit_PhpValue_Void());
         }
 
         #endregion
@@ -2923,6 +2938,18 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.AddValue_PhpValue);
                 }
             }
+        }
+
+        void IBoundReference.EmitUnset(CodeGenerator cg)
+        {
+            EmitArrayPrepare(cg, null);
+
+            if (this.Index == null)
+                throw new ArgumentException();
+
+            cg.EmitIntStringKey(this.Index);    // TODO: save Index into InstanceCacheHolder
+
+            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
         }
 
         #endregion

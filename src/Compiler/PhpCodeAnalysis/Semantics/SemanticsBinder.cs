@@ -80,7 +80,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 ((AST.StaticStmt)stmt).StVarList
                     .Select(s => (BoundStaticLocal)_flowCtx.GetVar(s.Variable.VarName.Value))
                     .ToImmutableArray())
-            { PhpSyntax = stmt };
+                { PhpSyntax = stmt };
+            if (stmt is AST.UnsetStmt) return new BoundUnset(
+                ((AST.UnsetStmt)stmt).VarList
+                    .Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Write))
+                    .ToImmutableArray())
+                { PhpSyntax = stmt };
 
             throw new NotImplementedException(stmt.GetType().FullName);
         }

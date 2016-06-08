@@ -574,6 +574,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToClass = ct.PhpArray.Method("ToClass");
                 ToBoolean = ct.PhpArray.Method("ToBoolean");
 
+                RemoveKey_IntStringKey = ct.PhpArray.Method("RemoveKey", ct.IntStringKey);
+
                 GetItemValue_IntStringKey = ct.PhpArray.Method("GetItemValue", ct.IntStringKey);
 
                 DeepCopy = ct.PhpArray.Method("DeepCopy");
@@ -590,6 +592,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToClass, ToString_Context, ToBoolean,
+                RemoveKey_IntStringKey,
                 GetItemValue_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
