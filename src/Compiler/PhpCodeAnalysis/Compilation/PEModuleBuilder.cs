@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.Emit
         internal void CreateEntryPoint(MethodSymbol method, DiagnosticBag diagnostic)
         {
             // "static void Main()"
-            var realmethod = new SynthesizedMethodSymbol(this.ScriptType, "Main", true, false, _compilation.CoreTypes.Void);
+            var realmethod = new SynthesizedMethodSymbol(this.ScriptType, "Main", true, false, _compilation.CoreTypes.Int32);
 
             //
             var body = MethodGenerator.GenerateMethodBody(this, realmethod,
@@ -84,8 +84,10 @@ namespace Pchp.CodeAnalysis.Emit
                     il.EmitOpCode(ILOpCode.Call, -1);
                     il.EmitToken(this.Compilation.CoreMethods.Context.Dispose.Symbol, null, diagnostic);
 
-                    // return
-                    il.EmitRet(true);
+                    // return ctx.ExitCode
+                    il.EmitLocalLoad(ctx_loc);
+                    il.EmitCall(this, diagnostic, ILOpCode.Callvirt, this.Compilation.CoreMethods.Context.get_ExitCode);
+                    il.EmitRet(false);
                 },
                 null, diagnostic, false);
             SetMethodBody(realmethod, body);

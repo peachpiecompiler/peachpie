@@ -1531,7 +1531,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
-
             // push value onto the evaluation stack
 
             Debug.Assert(ConstantValue.HasValue);
@@ -2197,10 +2196,9 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(Access.IsNone);
 
-            foreach (var arg in _arguments)
-            {
-                cg.EmitEcho(arg.Value);
-            }
+            _arguments
+                .Select(a => a.Value)
+                .ForEach(cg.EmitEcho);
 
             return cg.CoreTypes.Void;
         }

@@ -775,7 +775,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(prop.GetMethod != null);
             Debug.Assert(prop.GetMethod.ParameterCount == 0);
 
-            if (holder != null)
+            var getter = prop.GetMethod;
+
+            if (holder != null && !getter.IsStatic)
             {
                 Debug.Assert(holder.TypeOpt != null);
                 if (holder.TypeOpt.IsValueType)
@@ -787,8 +789,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     holder.EmitLoad(_il);
                 }
             }
-            var getter = prop.GetMethod;
-
+            
             return EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
         }
         

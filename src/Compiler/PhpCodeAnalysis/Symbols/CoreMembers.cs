@@ -650,6 +650,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Exit = ct.Context.Method("Exit");
 
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
+                get_ExitCode = ct.Context.Method("get_ExitCode");   // TODO: special name, property
             }
 
             public readonly CoreMethod
@@ -665,7 +666,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Dispose;
 
             public readonly CoreMethod
-                get_Globals;
+                get_Globals, get_ExitCode;
         }
 
         public struct DynamicHolder

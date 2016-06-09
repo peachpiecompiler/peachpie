@@ -25,6 +25,11 @@ namespace Pchp.Core
     /// </remarks>
     public partial class Context : IDisposable
     {
+        /// <summary>
+        /// Gets the program exit code passed from <c>exit</c> or <c>die</c> functions.
+        /// </summary>
+        public int ExitCode { get; protected set; } = 0;
+
         #region Create
 
         protected Context()
@@ -448,8 +453,7 @@ namespace Pchp.Core
             }
             else
             {
-                //this.ExitCode = status.ToLong();
-                // TODO: in Main() return ctx.ExitCode;
+                this.ExitCode = (int)status.ToLong();   // used later by CLR Main() method as a return value
             }
 
             throw new ScriptDiedException(status);
