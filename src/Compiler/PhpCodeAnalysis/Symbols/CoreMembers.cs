@@ -611,6 +611,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 IntStringKey_int = ct.IntStringKey.Ctor(ct.Int32);
                 IntStringKey_string = ct.IntStringKey.Ctor(ct.String);
                 ScriptAttribute_string = ct.ScriptAttribute.Ctor(ct.String);
+
+                ScriptDiedException = ct.ScriptDiedException.Ctor();
+                ScriptDiedException_Long = ct.ScriptDiedException.Ctor(ct.Long);
+                ScriptDiedException_PhpValue = ct.ScriptDiedException.Ctor(ct.PhpValue);
             }
 
             public readonly CoreConstructor
@@ -618,7 +622,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpArray, PhpArray_int,
                 PhpString_int, PhpString_string_string,
                 IntStringKey_int, IntStringKey_string,
-                ScriptAttribute_string;
+                ScriptAttribute_string,
+                ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;
         }
 
         public struct ContextHolder
@@ -645,12 +650,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetStatic_T = ct.Context.Method("GetStatic");
 
-                Exit_PhpValue = ct.Context.Method("Exit", ct.PhpValue);
-                Exit_Long = ct.Context.Method("Exit", ct.Long);
-                Exit = ct.Context.Method("Exit");
-
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
-                get_ExitCode = ct.Context.Method("get_ExitCode");   // TODO: special name, property
             }
 
             public readonly CoreMethod
@@ -662,11 +662,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptPath_TScript,
                 GetConstant_string_int32,
                 GetStatic_T,
-                Exit_PhpValue, Exit_Long, Exit,
                 Dispose;
 
             public readonly CoreMethod
-                get_Globals, get_ExitCode;
+                get_Globals;
         }
 
         public struct DynamicHolder

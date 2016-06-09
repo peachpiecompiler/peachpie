@@ -13,6 +13,17 @@ namespace Pchp.Core
     [DebuggerDisplay("died(reason={_status,nq})")]
     public class ScriptDiedException : Exception
     {
+        /// <summary>
+        /// The exist status.
+        /// </summary>
+        public PhpValue Status => _status;
+        PhpValue _status;
+
+        /// <summary>
+        /// Gets exit code from the status code.
+        /// </summary>
+        public int ExitCode => ProcessStatus(null);
+
         public ScriptDiedException(PhpValue status)
         {
             _status = status;
@@ -34,9 +45,29 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// The exist status.
+        /// Status of a different type than integer is printed,
+        /// exit code according to PHP semantic is returned.
         /// </summary>
-        public PhpValue Status => _status;
-        PhpValue _status;
+        public int ProcessStatus(Context ctx) => ProcessStatus(ctx, ref _status);
+
+        int ProcessStatus(Context ctx, ref PhpValue status)
+        {
+            switch (status.TypeCode)
+            {
+                case PhpTypeCode.Alias:
+                    return ProcessStatus(ctx, ref status.Alias.Value);
+
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Int32:
+                    return (int)status.ToLong();
+
+                default:
+                    if (ctx != null)
+                    {
+                        ctx.Echo(status);
+                    }
+                    return 0;
+            }
+        }
     }
 }

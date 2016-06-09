@@ -25,11 +25,6 @@ namespace Pchp.Core
     /// </remarks>
     public partial class Context : IDisposable
     {
-        /// <summary>
-        /// Gets the program exit code passed from <c>exit</c> or <c>die</c> functions.
-        /// </summary>
-        public int ExitCode { get; protected set; } = 0;
-
         #region Create
 
         protected Context()
@@ -440,44 +435,6 @@ namespace Pchp.Core
             if (_errorReportingDisabled > 0)
                 _errorReportingDisabled--;
         }
-
-        /// <summary>
-        /// Terminates execution of the current script by throwing an exception.
-        /// </summary>
-        /// <param name="status">Exit status.</param>
-        public virtual void Exit(PhpValue status)
-        {
-            if (IsExitStatusPrintable(ref status))
-            {
-                Echo(status);
-            }
-            else
-            {
-                this.ExitCode = (int)status.ToLong();   // used later by CLR Main() method as a return value
-            }
-
-            throw new ScriptDiedException(status);
-        }
-
-        static bool IsExitStatusPrintable(ref PhpValue status)
-        {
-            switch (status.TypeCode)
-            {
-                case PhpTypeCode.Int32:
-                case PhpTypeCode.Long:
-                    return false;
-
-                case PhpTypeCode.Alias:
-                    return IsExitStatusPrintable(ref status.Alias.Value);
-
-                default:
-                    return true;
-            }
-        }
-
-        public void Exit(long status) => Exit(PhpValue.Create(status));
-
-        public void Exit() => Exit(255);
 
         #endregion
 

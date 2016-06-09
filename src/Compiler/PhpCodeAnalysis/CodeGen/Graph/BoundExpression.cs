@@ -2405,32 +2405,41 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            // LOAD <ctx>
-            cg.EmitLoadContext();
-
+            MethodSymbol ctorsymbol;
+             
             if (_arguments.Length == 0)
             {
                 // <ctx>.Exit();
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Exit);
+                ctorsymbol = cg.CoreMethods.Ctors.ScriptDiedException;
             }
-
-            // LOAD <status>
-            var t = cg.Emit(_arguments[0].Value);
-
-            switch (t.SpecialType)
+            else
             {
-                case SpecialType.System_Int32:
-                    cg.Builder.EmitOpCode(ILOpCode.Conv_i8);    // i4 -> i8
-                    goto case SpecialType.System_Int64;
+                // LOAD <status>
+                var t = cg.Emit(_arguments[0].Value);
 
-                case SpecialType.System_Int64:
-                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Exit_Long);
+                switch (t.SpecialType)
+                {
+                    case SpecialType.System_Int32:
+                        cg.Builder.EmitOpCode(ILOpCode.Conv_i8);    // i4 -> i8
+                        goto case SpecialType.System_Int64;
 
-                default:
+                    case SpecialType.System_Int64:
+                        ctorsymbol = cg.CoreMethods.Ctors.ScriptDiedException_Long;
+                        break;
 
-                    cg.EmitConvertToPhpValue(t, 0);
-                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Exit_PhpValue);
+                    default:
+                        cg.EmitConvertToPhpValue(t, 0);
+                        ctorsymbol = cg.CoreMethods.Ctors.ScriptDiedException_PhpValue;
+                        break;
+                }
             }
+
+            //
+            cg.EmitCall(ILOpCode.Newobj, ctorsymbol);
+            cg.Builder.EmitThrow(false);
+
+            //
+            return cg.CoreTypes.Void;
         }
     }
 
