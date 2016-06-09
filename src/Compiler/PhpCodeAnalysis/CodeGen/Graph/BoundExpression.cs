@@ -1420,8 +1420,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.UnsetCast:
                     // Template: "(unset)x"  null
 
-                    Debug.Assert(this.Operand is BoundReferenceExpression);
-                    cg.EmitUnset((BoundReferenceExpression)this.Operand);
+                    cg.EmitPop(cg.Emit(this.Operand));
 
                     if (this.Access.IsRead)
                     {

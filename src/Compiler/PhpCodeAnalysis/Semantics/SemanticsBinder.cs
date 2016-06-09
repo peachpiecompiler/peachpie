@@ -406,7 +406,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     operandAccess = access;
                     break;
                 case AST.Operations.UnsetCast:
-                    operandAccess = BoundAccess.Unset;
+                    operandAccess = BoundAccess.None;
                     break;
             }
 

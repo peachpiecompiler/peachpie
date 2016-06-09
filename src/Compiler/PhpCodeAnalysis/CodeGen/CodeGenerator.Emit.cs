@@ -108,7 +108,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                // we has to call expr.Emit() to generate ensureness correctly (Ensure Object, Ensure Array, Read Alias)
+                // we have to call expr.Emit() to generate ensureness correctly (Ensure Object, Ensure Array, Read Alias)
                 return null;
             }
         }
@@ -206,7 +206,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
-            if (expr.Access.IsNone)
+            bool IsGlobalVariable = expr is BoundVariableRef && ((BoundVariableRef)expr).Variable is BoundGlobalVariable;
+
+            if (expr.Access.IsNone || IsGlobalVariable)
             {
                 return (expr.ResultType = expr.Emit(this));
             }
