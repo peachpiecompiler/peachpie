@@ -1457,6 +1457,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         TypeSymbol EmitMinus(CodeGenerator cg)
         {
+            // Template: 0L - Operand
+
             var il = cg.Builder;
             var t = cg.Emit(this.Operand);
 
@@ -1476,18 +1478,20 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Negation_long)
                             .Expect(cg.CoreTypes.PhpNumber);
                 default:
-                    if (t == cg.CoreTypes.PhpNumber)
+                    if (t != cg.CoreTypes.PhpNumber)
                     {
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Negation)
-                            .Expect(t);
+                        cg.EmitConvertToPhpNumber(t, 0);
                     }
 
-                    throw new NotImplementedException();
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Negation)
+                        .Expect(t);
             }
         }
 
         TypeSymbol EmitPlus(CodeGenerator cg)
         {
+            // Template: 0L + Operand
+
             // convert value to a number
 
             var il = cg.Builder;
@@ -1505,14 +1509,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     il.EmitOpCode(ILOpCode.Conv_i8);
                     return cg.CoreTypes.Long;
                 default:
-                    if (t == cg.CoreTypes.PhpNumber)
+                    if (t != cg.CoreTypes.PhpNumber)
                     {
-                        return t;
+                        cg.EmitConvertToPhpNumber(t, 0);
                     }
 
-                    // TODO: IPhpConvertible.ToNumber otherwise 0L
-
-                    throw new NotImplementedException();
+                    return cg.CoreTypes.PhpNumber;
             }
         }
     }

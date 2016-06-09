@@ -811,7 +811,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(expr);
 
-            // <ctx>.Echo(expr);
+            // Template: <ctx>.Echo(expr);
 
             this.EmitLoadContext();
             var type = EmitSpecialize(expr);
