@@ -563,6 +563,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             return CoreTypes.PhpValue;
         }
 
+        public void EmitUnset(BoundReferenceExpression expr)
+        {
+            Debug.Assert(expr != null);
+
+            if (!expr.Access.IsUnset)
+                throw new ArgumentException();
+
+            var place = expr.BindPlace(this);
+            Debug.Assert(place != null);
+
+            place.EmitStorePrepare(this);
+            place.EmitStore(this, null);
+        }
+
         /// <summary>
         /// Emits call to given method.
         /// </summary>
@@ -1125,13 +1139,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        if (type == CoreTypes.PhpNumber)
-                        {
-                            // PhpNumber.Create(0L)
-                            _il.EmitLongConstant(0L);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Long);
-                        }
-                        else if (type == CoreTypes.PhpValue)
+                        if (type == CoreTypes.PhpValue)
                         {
                             var typectx = this.Routine.ControlFlowGraph.FlowContext.TypeRefContext;
 
@@ -1182,15 +1190,31 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(valuetype != null && valuetype.IsValueType);
 
-            var loc = this.GetTemporaryLocal(valuetype, true);
+            if (valuetype == CoreTypes.PhpNumber)
+            {
+                // PhpNumber.Create(0L)
+                _il.EmitLongConstant(0L);
+                EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Long);
+            }
+            else if (valuetype == CoreTypes.PhpValue)
+            {
+                // PhpValue.Void
+                Emit_PhpValue_Void();
+            }
+            else
+            {
+                // default(T)
 
-            // ldloca <loc>
-            // .initobj <type>
-            Builder.EmitLocalAddress(loc);
-            Builder.EmitOpCode(ILOpCode.Initobj);
-            EmitSymbolToken(valuetype, null);
-            // ldloc <loc>
-            Builder.EmitLocalLoad(loc);
+                var loc = this.GetTemporaryLocal(valuetype, true);
+
+                // ldloca <loc>
+                // .initobj <type>
+                Builder.EmitLocalAddress(loc);
+                Builder.EmitOpCode(ILOpCode.Initobj);
+                EmitSymbolToken(valuetype, null);
+                // ldloc <loc>
+                Builder.EmitLocalLoad(loc);
+            }
         }
 
         public void EmitRetDefault()

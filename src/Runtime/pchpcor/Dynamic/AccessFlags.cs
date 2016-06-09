@@ -38,6 +38,11 @@ namespace Pchp.Core.Dynamic
         /// Alias will be written, RValue is expected to be <see cref="PhpAlias"/>.
         /// </summary>
         WriteAlias = 16,
+
+        /// <summary>
+        /// The variable has to be unset. Valid for fields and runtime fields.
+        /// </summary>
+        Unset = 32,
     }
 
     internal static class AccessFlagsExtensions
@@ -45,7 +50,8 @@ namespace Pchp.Core.Dynamic
         public static bool EnsureObject(this AccessFlags flags) => (flags & AccessFlags.EnsureObject) == AccessFlags.EnsureObject;
         public static bool EnsureArray(this AccessFlags flags) => (flags & AccessFlags.EnsureArray) == AccessFlags.EnsureArray;
         public static bool EnsureAlias(this AccessFlags flags) => (flags & AccessFlags.EnsureAlias) == AccessFlags.EnsureAlias;
-        public static bool CheckOnly(this AccessFlags flags) => (flags & AccessFlags.CheckOnly) == AccessFlags.CheckOnly;
+        public static bool Quiet(this AccessFlags flags) => (flags & AccessFlags.CheckOnly) == AccessFlags.CheckOnly;
         public static bool WriteAlias(this AccessFlags flags) => (flags & AccessFlags.WriteAlias) == AccessFlags.WriteAlias;
+        public static bool Unset(this AccessFlags flags) => (flags & AccessFlags.Unset) == AccessFlags.Unset;
     }
 }

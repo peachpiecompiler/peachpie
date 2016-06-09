@@ -1419,12 +1419,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.UnsetCast:
                     // Template: "(unset)x"  null
+
                     Debug.Assert(this.Operand is BoundReferenceExpression);
-                    ((BoundReferenceExpression)this.Operand).BindPlace(cg).EmitUnset(cg);
+                    cg.EmitUnset((BoundReferenceExpression)this.Operand);
+
                     if (this.Access.IsRead)
                     {
-                        cg.Emit_PhpValue_Void();
-                        returned_type = cg.CoreTypes.PhpValue;
+                        cg.Builder.EmitNullConstant();
+                        returned_type = cg.CoreTypes.Object;
                     }
                     else
                     {
@@ -1898,7 +1900,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // Target()
                 var functype = cg.Factory.GetCallSiteDelegateType(
                     this.Instance.ResultType, RefKind.None,
-                    ImmutableArray.Create(valueType),
+                    (valueType != null) ? ImmutableArray.Create(valueType) : ImmutableArray<TypeSymbol>.Empty,
                     default(ImmutableArray<RefKind>),
                     null,
                     cg.CoreTypes.Void);
@@ -1948,6 +1950,31 @@ namespace Pchp.CodeAnalysis.Semantics
                         EmitOpCode_Store(cg);
                     }
                 }
+                else if (Access.IsUnset)
+                {
+                    Debug.Assert(valueType == null);
+
+                    // <place> =
+
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        // new PhpAlias(void)
+                        cg.Emit_PhpValue_Void();
+                        cg.Emit_PhpValue_MakeAlias();
+                    }
+                    else if (type.IsReferenceType)
+                    {
+                        // null
+                        cg.Builder.EmitNullConstant();
+                    }
+                    else
+                    {
+                        // default(T)
+                        cg.EmitLoadDefaultOfValueType(type);
+                    }
+
+                    EmitOpCode_Store(cg);
+                }
                 else
                 {
                     //
@@ -1974,13 +2001,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (Field.IsStatic && Instance != null)
                     cg.EmitPop(Instance.ResultType);
             }
-        }
-
-        void IBoundReference.EmitUnset(CodeGenerator cg)
-        {
-            var bound = (IBoundReference)this;
-            bound.EmitStorePrepare(cg);
-            bound.EmitStore(cg, cg.Emit_PhpValue_Void());
         }
 
         #endregion
@@ -2922,6 +2942,14 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.AddValue_PhpValue);
                 }
             }
+            else if (Access.IsUnset)
+            {
+                if (this.Index == null)
+                    throw new InvalidOperationException();
+
+                // .RemoveKey(key)
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
+            }
             else
             {
                 Debug.Assert(Access.IsWrite);
@@ -2938,18 +2966,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.AddValue_PhpValue);
                 }
             }
-        }
-
-        void IBoundReference.EmitUnset(CodeGenerator cg)
-        {
-            EmitArrayPrepare(cg, null);
-
-            if (this.Index == null)
-                throw new ArgumentException();
-
-            cg.EmitIntStringKey(this.Index);    // TODO: save Index into InstanceCacheHolder
-
-            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
         }
 
         #endregion

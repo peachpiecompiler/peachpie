@@ -179,10 +179,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             cg.EmitSequencePoint(this.PhpSyntax);
 
-            foreach (var v in this.VarReferences)
-            {
-                v.BindPlace(cg).EmitUnset(cg);
-            }
+            this.VarReferences.ForEach(cg.EmitUnset);
         }
     }
 }

@@ -83,7 +83,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 { PhpSyntax = stmt };
             if (stmt is AST.UnsetStmt) return new BoundUnset(
                 ((AST.UnsetStmt)stmt).VarList
-                    .Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Write))
+                    .Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Unset))
                     .ToImmutableArray())
                 { PhpSyntax = stmt };
 
@@ -166,7 +166,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindIsSet(AST.IssetEx x)
         {
-            return new BoundIsSetEx(x.VarList.Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Read.WithCheck())).ToImmutableArray());
+            return new BoundIsSetEx(x.VarList.Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Read.WithQuiet())).ToImmutableArray());
         }
 
         BoundExpression BindPseudoConst(AST.PseudoConstUse x)
@@ -223,7 +223,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundRoutineCall BindFunctionCall(AST.FunctionCall x, BoundAccess access)
         {
-            if (access.IsWrite)
+            if (!access.IsRead && !access.IsNone)
             {
                 throw new NotSupportedException();
             }
@@ -346,8 +346,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (access.IsWrite || access.EnsureObject || access.EnsureArray)
                 arrayAccess = arrayAccess.WithEnsureArray();
-            if (access.IsCheck)
-                arrayAccess = arrayAccess.WithCheck();
+            if (access.IsQuiet)
+                arrayAccess = arrayAccess.WithQuiet();
 
             var boundArray = BindExpression(x.Array, arrayAccess);
 
@@ -370,8 +370,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (access.IsWrite || access.EnsureObject || access.EnsureArray)
                     instanceAccess = instanceAccess.WithEnsureObject();
-                if (access.IsCheck)
-                    instanceAccess = instanceAccess.WithCheck();
+                if (access.IsQuiet)
+                    instanceAccess = instanceAccess.WithQuiet();
 
                 return new BoundFieldRef(expr.VarName, BindExpression(expr.IsMemberOf, instanceAccess)).WithAccess(access);
             }
@@ -404,6 +404,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 case AST.Operations.AtSign:
                     operandAccess = access;
+                    break;
+                case AST.Operations.UnsetCast:
+                    operandAccess = BoundAccess.Unset;
                     break;
             }
 

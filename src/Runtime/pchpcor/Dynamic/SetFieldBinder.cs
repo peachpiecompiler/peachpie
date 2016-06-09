@@ -46,7 +46,7 @@ namespace Pchp.Core.Dynamic
             var fldName = ResolveName(args, ref restrictions);
 
             var runtime_type = target_value.GetType();
-            var value = args[0].Expression;
+            var value = (args.Length == 1) ? args[0].Expression : null;
 
             // 
             if (target_expr.Type != runtime_type)
@@ -89,6 +89,12 @@ namespace Pchp.Core.Dynamic
                         Debug.Assert(false, "Cannot assign aliased value to field " + fld.FieldType.ToString() + " " + fld.Name);
                         setter = Expression.Assign(lvalue, ConvertExpression.Bind(value, fld.FieldType));
                     }
+                }
+                else if (_access.Unset())
+                {
+                    Debug.Assert(value == null);
+
+                    throw new NotImplementedException();    // <fld> = default(T)
                 }
                 else
                 {
@@ -133,6 +139,15 @@ namespace Pchp.Core.Dynamic
                         setter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_SetItemAlias,
                             Expression.Constant(new IntStringKey(fldName)), value);
                     }
+                    else if (_access.Unset())
+                    {
+                        Debug.Assert(value == null);
+
+                        // remove key
+
+                        // <target>.RuntimeFields.RemoveKey(name)
+                        setter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_RemoveKey, Expression.Constant(new IntStringKey(fldName)));
+                    }
                     else
                     {
                         // write by value
@@ -144,10 +159,15 @@ namespace Pchp.Core.Dynamic
                             Expression.Constant(new IntStringKey(fldName)), value);
                     }
 
-                    // prepend ensure __peach__runtimeFields != null
-                    setter = Expression.Block(
-                        BinderHelpers.EnsureNotNullPhpArray(__runtimeflds_field),
-                        setter);
+                    //
+
+                    if (!_access.Unset())
+                    {
+                        // prepend ensure __peach__runtimeFields != null
+                        setter = Expression.Block(
+                            BinderHelpers.EnsureNotNullPhpArray(__runtimeflds_field),
+                            setter);
+                    }
                 }
                 else
                 {

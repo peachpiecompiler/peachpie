@@ -68,6 +68,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         ReadQuiet = 64,
 
+        /// <summary>
+        /// The variable will be unset. Combined with <c>quiet</c> flag, valid for variables, array entries and fields.
+        /// </summary>
+        Unset = 128,
+
         // NOTE: WriteAndReadRef has to be constructed by semantic binder as bound expression with Write and another bound expression with ReadRef
         // NOTE: ReadAndWriteAndReadRef has to be constructed by semantic binder as bound expression with Read|Write and another bound expression with ReadRef
     }
@@ -113,6 +118,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool IsWrite => (_flags & AccessMask.Write) != 0;
 
         /// <summary>
+        /// In case a variable will be unset.
+        /// </summary>
+        public bool IsUnset => (_flags & AccessMask.Unset) != 0;
+
+        /// <summary>
         /// Gets type of value to be written.
         /// </summary>
         public TypeRefMask WriteMask => _writeTypeMask;
@@ -145,7 +155,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The read is for check purposes only and won't result in a warning in case the variable does not exist.
         /// </summary>
-        public bool IsCheck => (_flags & AccessMask.ReadQuiet) != 0;
+        public bool IsQuiet => (_flags & AccessMask.ReadQuiet) != 0;
 
         /// <summary>
         /// In case we might change the variable content to array, object or an alias (we may need write access).
@@ -182,7 +192,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (EnsureObject) result |= Core.Dynamic.AccessFlags.EnsureObject;
                 if (EnsureArray) result |= Core.Dynamic.AccessFlags.EnsureArray;
                 if (IsReadRef) result |= Core.Dynamic.AccessFlags.EnsureAlias;
-                if (IsCheck) result |= Core.Dynamic.AccessFlags.CheckOnly;
+                if (IsQuiet) result |= Core.Dynamic.AccessFlags.CheckOnly;
+                if (IsUnset) result |= Core.Dynamic.AccessFlags.Unset;
 
                 return result;
             }
@@ -227,7 +238,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundAccess(_flags | AccessMask.Read, target, _writeTypeMask);
         }
 
-        public BoundAccess WithCheck()
+        public BoundAccess WithQuiet()
         {
             return new BoundAccess(_flags | AccessMask.ReadQuiet, _targetType, _writeTypeMask);
         }
@@ -256,6 +267,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Simple write access without bound write type mask.
         /// </summary>
         public static BoundAccess Write => new BoundAccess(AccessMask.Write, null, 0);
+
+        /// <summary>
+        /// Unset variable.
+        /// </summary>
+        public static BoundAccess Unset => new BoundAccess(AccessMask.Unset | AccessMask.ReadQuiet, null, 0);
 
         /// <summary>
         /// Expression won't be read or written to.

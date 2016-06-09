@@ -545,6 +545,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                 }
             }
+
+            if (x.Access.IsUnset)
+            {
+                State.SetVar(x.Name, 0);
+                State.LTInt64Max(x.Name, false);
+                x.TypeRefMask = 0;
+            }
         }
 
         public sealed override void VisitIncrementExpression(IIncrementExpression operation)

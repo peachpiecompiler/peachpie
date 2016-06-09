@@ -177,7 +177,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStore(ILBuilder il)
         {
-            throw new InvalidOperationException($"{_place} is readonly!");
+            throw new InvalidOperationException($"{_place} is readonly!");  // TODO: ErrCode
         }
 
         public void EmitStorePrepare(ILBuilder il) { }
@@ -491,16 +491,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         TypeSymbol EmitLoad(CodeGenerator cg);
 
         /// <summary>
-        /// Emits code to storee a value to this place.
-        /// Expects <see cref="EmitPreamble(CodeGenerator)"/> and actual value to be loaded on stack.
+        /// Emits code to stores a value to this place.
+        /// Expects <see cref="EmitStorePrepare(CodeGenerator,InstanceCacheHolder)"/> and actual value to be loaded on stack.
         /// </summary>
+        /// <param name="cg">Code generator.</param>
+        /// <param name="valueType">Type of value on the stack to be stored. Can be <c>null</c> in case of <c>Unset</c> semantic.</param>
         void EmitStore(CodeGenerator cg, TypeSymbol valueType);
-
-        /// <summary>
-        /// Emits code that unsets the variable.
-        /// </summary>
-        /// <param name="cg"></param>
-        void EmitUnset(CodeGenerator cg);
 
         ///// <summary>
         ///// Emits code that loads address of this storage place.
@@ -704,8 +700,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
-            Debug.Assert(_access.IsWrite);
-            
             var type = _place.TypeOpt;
 
             if (_access.IsWriteRef)
@@ -715,6 +709,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
+                Debug.Assert(_access.IsWrite || _access.IsUnset);
+
                 //
                 if (type == cg.CoreTypes.PhpAlias)
                 {
@@ -743,8 +739,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            Debug.Assert(_access.IsWrite);
-
             var type = _place.TypeOpt;
 
             // Write Ref
@@ -776,8 +770,35 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _place.EmitStore(cg.Builder);
                 }
             }
+            else if (_access.IsUnset)
+            {
+                Debug.Assert(valueType == null);
+
+                // <place> =
+
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // new PhpAlias(void)
+                    cg.Emit_PhpValue_Void();
+                    cg.Emit_PhpValue_MakeAlias();
+                }
+                else if (type.IsReferenceType)
+                {
+                    // null
+                    cg.Builder.EmitNullConstant();
+                }
+                else
+                {
+                    // default(T)
+                    cg.EmitLoadDefaultOfValueType(type);
+                }
+
+                _place.EmitStore(cg.Builder);
+            }
             else
             {
+                Debug.Assert(_access.IsWrite);
+
                 //
                 if (type == cg.CoreTypes.PhpAlias)
                 {
@@ -806,26 +827,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _place.EmitStore(cg.Builder);
                 }
             }
-        }
-
-        public void EmitUnset(CodeGenerator cg)
-        {
-            var bound = (IBoundReference)this;
-            bound.EmitStorePrepare(cg);
-
-            if (_place.TypeOpt != null)
-            {
-                if (_place.TypeOpt.IsReferenceType)
-                {
-
-                    cg.Builder.EmitNullConstant();
-                    _place.EmitStore(cg.Builder);
-                    return;
-                }
-            }
-
-            //
-            bound.EmitStore(cg, cg.Emit_PhpValue_Void());
         }
 
         #region IPlace
@@ -885,6 +886,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             cg.EmitConvert(valueType, 0, setter.Parameters[0].Type);
             cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
+
+            // TODO: unset
         }
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
@@ -956,11 +959,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
             throw new NotImplementedException($"Superglobal ${_name.Value}");
-        }
-
-        public void EmitUnset(CodeGenerator cg)
-        {
-            throw new NotImplementedException();
         }
 
         #endregion
@@ -1039,7 +1037,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitPrepare(cg, instanceOpt);
         }
 
-        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        public virtual void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
             // STACK: <PhpArray> <key>
 
@@ -1055,6 +1053,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // .SetItemAlias(key, alias)
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
             }
+            else if (_access.IsUnset)
+            {
+                Debug.Assert(valueType == null);
+
+                // .RemoveKey(key)
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
+            }
             else
             {
                 Debug.Assert(_access.IsWrite);
@@ -1064,12 +1069,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // .SetItemValue(key, value)
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
             }
-        }
-
-        public void EmitUnset(CodeGenerator cg)
-        {
-            EmitPrepare(cg);
-            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
         }
 
         #endregion

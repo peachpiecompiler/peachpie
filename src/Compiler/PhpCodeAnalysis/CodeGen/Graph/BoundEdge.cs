@@ -347,7 +347,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.Builder.EmitBoolConstant(_aliasedValues);
                 cg.EmitCallerRuntimeTypeHandle();
 
-                // Operators.GetForeachtEnumerator(PhpValue, bool, RuntimeTypeHandle)
+                // Operators.GetForeachEnumerator(PhpValue, bool, RuntimeTypeHandle)
                 enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle);
             }
 
