@@ -29,6 +29,7 @@ namespace Pchp.CodeAnalysis.Emit
                 (il) =>
                 {
                     var types = this.Compilation.CoreTypes;
+                    var args_place = new ParamPlace(realmethod.Parameters[0]);
 
                     // AddScriptReference<Script>()
                     var AddScriptReferenceMethod = (MethodSymbol)this.Compilation.CoreMethods.Context.AddScriptReference_TScript.Symbol.Construct(this.ScriptType);
@@ -42,9 +43,10 @@ namespace Pchp.CodeAnalysis.Emit
                     // create Context
                     var ctx_loc = il.LocalSlotManager.AllocateSlot(types.Context.Symbol, LocalSlotConstraints.None);
 
-                    // ctx_loc = Context.Create***()
+                    // ctx_loc = Context.Create***(args)
+                    args_place.EmitLoad(il);
                     MethodSymbol create_method = (_compilation.Options.OutputKind == OutputKind.ConsoleApplication)
-                        ? _compilation.CoreMethods.Context.CreateConsole.Symbol // Context.CreateConsole()
+                        ? _compilation.CoreTypes.Context.Symbol.LookupMember<MethodSymbol>("CreateConsole")
                         : null;
                     Debug.Assert(create_method != null);
                     il.EmitOpCode(ILOpCode.Call, +1);

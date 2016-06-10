@@ -22,8 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return elementType;
             }
 
-            throw new NotImplementedException();
-            //return ArrayTypeSymbol.CreateMDArray(moduleSymbol.ContainingAssembly, elementType, rank, sizes, lowerBounds, CSharpCustomModifier.Convert(customModifiers));
+            return ArrayTypeSymbol.CreateMDArray(moduleSymbol.ContainingAssembly, elementType, rank, sizes, lowerBounds, CSharpCustomModifier.Convert(customModifiers));
         }
 
         internal override TypeSymbol GetByRefReturnTypeSymbol(PEModuleSymbol moduleSymbol, TypeSymbol referencedType, ushort countOfCustomModifiersPrecedingByRef)
@@ -77,8 +76,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return elementType;
             }
 
-            throw new NotImplementedException();
-            //return ArrayTypeSymbol.CreateSZArray(moduleSymbol.ContainingAssembly, elementType, CSharpCustomModifier.Convert(customModifiers));
+            return ArrayTypeSymbol.CreateSZArray(moduleSymbol.ContainingAssembly, elementType, CSharpCustomModifier.Convert(customModifiers));
         }
 
         internal override TypeSymbol GetUnsupportedMetadataTypeSymbol(PEModuleSymbol moduleSymbol, BadImageFormatException exception)
@@ -156,7 +154,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return new UnsupportedMetadataTypeSymbol();
             }
 
-            TypeMap substitution = new TypeMap(typeParameters, arguments.SelectAsArray(arg => new TypeWithModifiers(arg.Key/*, CSharpCustomModifier.Convert(arg.Value)*/)));
+            TypeMap substitution = new TypeMap(typeParameters, arguments.SelectAsArray(arg => new TypeWithModifiers(arg.Key, CSharpCustomModifier.Convert(arg.Value))));
 
             NamedTypeSymbol constructedType = substitution.SubstituteNamedType(genericType);
 
@@ -170,9 +168,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol MakeUnboundIfGeneric(PEModuleSymbol moduleSymbol, TypeSymbol type)
         {
-            throw new NotImplementedException();
-            //var namedType = type as NamedTypeSymbol;
-            //return ((object)namedType != null && namedType.IsGenericType) ? namedType.AsUnboundGenericType() : type;
+            var namedType = type as NamedTypeSymbol;
+            return ((object)namedType != null && namedType.IsGenericType) ? namedType.AsUnboundGenericType() : type;
         }
     }
 }

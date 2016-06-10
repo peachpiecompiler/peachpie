@@ -269,7 +269,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 out bool isBad) :
                     base(moduleSymbol, containingSymbol, ordinal, isByRef, type, handle, customModifiers.Length, out isBad)
             {
-                _customModifiers = ImmutableArray<CustomModifier>.Empty; // CSharpCustomModifier.Convert(customModifiers);
+                _customModifiers = CSharpCustomModifier.Convert(customModifiers);
                 _countOfCustomModifiersPrecedingByRef = countOfCustomModifiersPrecedingByRef;
 
                 Debug.Assert(_countOfCustomModifiersPrecedingByRef == 0 || isByRef);

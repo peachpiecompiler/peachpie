@@ -40,7 +40,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates context to be used within a console application.
         /// </summary>
-        public static Context CreateConsole()
+        public static Context CreateConsole(string[] args)
         {
             return new Context();
             // TODO: Add console output filter

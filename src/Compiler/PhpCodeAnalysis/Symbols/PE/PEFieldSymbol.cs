@@ -28,8 +28,8 @@ namespace Pchp.CodeAnalysis.Symbols
         private readonly FieldAttributes _flags;
         private readonly PENamedTypeSymbol _containingType;
         private bool _lazyIsVolatile;
-        //private ImmutableArray<AttributeData> _lazyCustomAttributes;
-        //private ImmutableArray<CustomModifier> _lazyCustomModifiers;
+        private ImmutableArray<AttributeData> _lazyCustomAttributes;
+        private ImmutableArray<CustomModifier> _lazyCustomModifiers;
         private ConstantValue _lazyConstantValue = Microsoft.CodeAnalysis.ConstantValue.Unset; // Indicates an uninitialized ConstantValue
         //private Tuple<CultureInfo, string> _lazyDocComment;
         //private DiagnosticInfo _lazyUseSiteDiagnostic = CSDiagnosticInfo.EmptyErrorInfo; // Indicates unknown state. 
@@ -201,20 +201,21 @@ namespace Pchp.CodeAnalysis.Symbols
                 bool isVolatile;
                 ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers;
                 TypeSymbol type = (new MetadataDecoder(moduleSymbol, _containingType)).DecodeFieldSignature(_handle, out isVolatile, out customModifiers);
-                //ImmutableArray<CustomModifier> customModifiersArray = CSharpCustomModifier.Convert(customModifiers);
+                ImmutableArray<CustomModifier> customModifiersArray = CSharpCustomModifier.Convert(customModifiers);
                 //type = DynamicTypeDecoder.TransformType(type, customModifiersArray.Length, _handle, moduleSymbol);
                 _lazyIsVolatile = isVolatile;
 
-                //TypeSymbol fixedElementType;
-                //int fixedSize;
-                //if (customModifiersArray.IsEmpty && IsFixedBuffer(out fixedSize, out fixedElementType))
-                //{
-                //    _lazyFixedSize = fixedSize;
-                //    _lazyFixedImplementationType = type as NamedTypeSymbol;
-                //    type = new PointerTypeSymbol(fixedElementType);
-                //}
+                TypeSymbol fixedElementType;
+                int fixedSize;
+                if (customModifiersArray.IsEmpty && IsFixedBuffer(out fixedSize, out fixedElementType))
+                {
+                    _lazyFixedSize = fixedSize;
+                    _lazyFixedImplementationType = type as NamedTypeSymbol;
+                    //type = new PointerTypeSymbol(fixedElementType);
+                    throw new NotImplementedException();
+                }
 
-                //ImmutableInterlocked.InterlockedCompareExchange(ref _lazyCustomModifiers, customModifiers, default(ImmutableArray<CustomModifier>));
+                ImmutableInterlocked.InterlockedCompareExchange(ref _lazyCustomModifiers, customModifiersArray, default(ImmutableArray<CustomModifier>));
                 Interlocked.CompareExchange(ref _lazyType, type, null);
             }
         }
@@ -285,8 +286,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 EnsureSignatureIsLoaded();
-                //return _lazyCustomModifiers;
-                return ImmutableArray<CustomModifier>.Empty;
+                return _lazyCustomModifiers;
             }
         }
 
@@ -423,40 +423,39 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            //if (_lazyCustomAttributes.IsDefault)
-            //{
-            //    var containingPEModuleSymbol = (PEModuleSymbol)this.ContainingModule;
+            if (_lazyCustomAttributes.IsDefault)
+            {
+                var containingPEModuleSymbol = (PEModuleSymbol)this.ContainingModule;
 
-            //    if (FilterOutDecimalConstantAttribute())
-            //    {
-            //        // filter out DecimalConstantAttribute
-            //        CustomAttributeHandle ignore1;
-            //        CustomAttributeHandle ignore2;
-            //        var attributes = containingPEModuleSymbol.GetCustomAttributesForToken(
-            //            _handle,
-            //            out ignore1,
-            //            AttributeDescription.DecimalConstantAttribute,
-            //            out ignore2,
-            //            default(AttributeDescription));
+                if (FilterOutDecimalConstantAttribute())
+                {
+                    // filter out DecimalConstantAttribute
+                    CustomAttributeHandle ignore1;
+                    CustomAttributeHandle ignore2;
+                    var attributes = containingPEModuleSymbol.GetCustomAttributesForToken(
+                        _handle,
+                        out ignore1,
+                        AttributeDescription.DecimalConstantAttribute,
+                        out ignore2,
+                        default(AttributeDescription));
 
-            //        ImmutableInterlocked.InterlockedInitialize(ref _lazyCustomAttributes, attributes);
-            //    }
-            //    else
-            //    {
-            //        containingPEModuleSymbol.LoadCustomAttributes(_handle, ref _lazyCustomAttributes);
-            //    }
-            //}
-            //return _lazyCustomAttributes;
-            return ImmutableArray<AttributeData>.Empty;
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyCustomAttributes, attributes);
+                }
+                else
+                {
+                    containingPEModuleSymbol.LoadCustomAttributes(_handle, ref _lazyCustomAttributes);
+                }
+            }
+            return _lazyCustomAttributes;
         }
 
-        //private bool FilterOutDecimalConstantAttribute()
-        //{
-        //    ConstantValue value;
-        //    return this.Type.SpecialType == SpecialType.System_Decimal &&
-        //           (object)(value = GetConstantValue(ConstantFieldsInProgress.Empty, earlyDecodingWellKnownAttributes: false)) != null &&
-        //           value.Discriminator == ConstantValueTypeDiscriminator.Decimal;
-        //}
+        private bool FilterOutDecimalConstantAttribute()
+        {
+            ConstantValue value;
+            return this.Type.SpecialType == SpecialType.System_Decimal &&
+                   (object)(value = GetConstantValue(/*ConstantFieldsInProgress.Empty, */earlyDecodingWellKnownAttributes: false)) != null &&
+                   value.Discriminator == ConstantValueTypeDiscriminator.Decimal;
+        }
 
         internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
         {

@@ -630,7 +630,6 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public ContextHolder(CoreTypes ct)
             {
-                CreateConsole = ct.Context.Method("CreateConsole");
                 AddScriptReference_TScript = ct.Context.Method("AddScriptReference");
                 Dispose = ct.Context.Method("Dispose");
 
@@ -654,7 +653,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                CreateConsole,
                 AddScriptReference_TScript,
                 DeclareFunction_intRef_string_method, DeclareType_T_string,
                 DisableErrorReporting, EnableErrorReporting,

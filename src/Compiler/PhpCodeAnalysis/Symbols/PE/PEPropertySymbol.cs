@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private readonly TypeSymbol _propertyType;
         private readonly PEMethodSymbol _getMethod;
         private readonly PEMethodSymbol _setMethod;
-        //private readonly ImmutableArray<CustomModifier> _typeCustomModifiers;
+        private readonly ImmutableArray<CustomModifier> _typeCustomModifiers;
         //private ImmutableArray<AttributeData> _lazyCustomAttributes;
         //private Tuple<CultureInfo, string> _lazyDocComment;
         
@@ -102,7 +102,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //    _lazyUseSiteDiagnostic = new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, this);
             //}
 
-            //_typeCustomModifiers = CSharpCustomModifier.Convert(propertyParams[0].CustomModifiers);
+            _typeCustomModifiers = CSharpCustomModifier.Convert(propertyParams[0].CustomModifiers);
 
             // CONSIDER: Can we make parameter type computation lazy?
             TypeSymbol originalPropertyType = propertyParams[0].Type;
@@ -420,8 +420,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<CustomModifier> TypeCustomModifiers
         {
-            get { return ImmutableArray<CustomModifier>.Empty; }
-            //get { return _typeCustomModifiers; }
+            get { return _typeCustomModifiers; }
         }
 
         public override MethodSymbol GetMethod
