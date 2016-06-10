@@ -87,8 +87,8 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" Condition="'$(ProjectLanguage)' == 'C++'" />
 
   <!-- On Mono on *nix the NuGet targets aren't imported by default, so we do that here -->
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\NuGet\Microsoft.NuGet.targets"
-          Condition="'$(OS)' != 'Windows_NT'" />
+  <!-- Import Project="$(MSBuildExtensionsPath)\Microsoft\NuGet\Microsoft.NuGet.targets"
+          Condition="'$(OS)' != 'Windows_NT'" / -->
 
   <PropertyGroup Condition="
       '$(TargetFrameworkIdentifier)' == '.NETPortable' AND
