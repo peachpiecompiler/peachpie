@@ -68,6 +68,7 @@
     <Compile Include="Compilation\AssemblyIdentityReferenceResolver.cs" />
     <Compile Include="Compilation\PEModuleBuilder.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
+    <Compile Include="Emitter\Model\ArrayTypeSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\AttributeDataAdapter.cs" />
     <Compile Include="Emitter\Model\FieldSymbolAdapter.cs" />
     <Compile Include="Emitter\Model\GenericMethodInstanceReference.cs" />
@@ -127,6 +128,7 @@
     <Compile Include="Symbols\AbstractTypeMap.cs" />
     <Compile Include="Symbols\AbstractTypeParameterMap.cs" />
     <Compile Include="Symbols\Anonymous\AnonymousTypeManager.cs" />
+    <Compile Include="Symbols\ArrayTypeSymbol.cs" />
     <Compile Include="Symbols\Attributes\BaseAttributeData.cs" />
     <Compile Include="Symbols\Attributes\PEAttributeData.cs" />
     <Compile Include="Symbols\Attributes\RetargetingAttributeData.cs" />

@@ -304,11 +304,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.TypeKind == TypeKind.Array;
         }
 
-        //public static bool IsSZArray(this TypeSymbol type)
-        //{
-        //    Debug.Assert((object)type != null);
-        //    return type.TypeKind == TypeKind.Array && ((ArrayTypeSymbol)type).IsSZArray;
-        //}
+        public static bool IsSZArray(this TypeSymbol type)
+        {
+            Debug.Assert((object)type != null);
+            return type.TypeKind == TypeKind.Array && ((ArrayTypeSymbol)type).IsSZArray;
+        }
 
         // If the type is a delegate type, it returns it. If the type is an
         // expression tree type associated with a delegate type, it returns
@@ -561,9 +561,8 @@ namespace Pchp.CodeAnalysis.Symbols
                         throw new NotImplementedException();
 
                     case TypeKind.Array:
-                        throw new NotImplementedException();
-                        //current = ((ArrayTypeSymbol)current).ElementType;
-                        //continue;
+                        current = ((ArrayTypeSymbol)current).ElementType;
+                        continue;
 
                     case TypeKind.Pointer:
                         throw new NotImplementedException();

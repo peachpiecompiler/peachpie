@@ -20,8 +20,9 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         internal void CreateEntryPoint(MethodSymbol method, DiagnosticBag diagnostic)
         {
-            // "static void Main()"
-            var realmethod = new SynthesizedMethodSymbol(this.ScriptType, "Main", true, false, _compilation.CoreTypes.Int32);
+            // "static int Main(string[] args)"
+            var realmethod = new SynthesizedMethodSymbol(this.ScriptType, "Main", true, false, _compilation.CoreTypes.Int32, Accessibility.Private);
+            realmethod.SetParameters(new SynthesizedParameterSymbol(realmethod, ArrayTypeSymbol.CreateSZArray(this.Compilation.SourceAssembly, this.Compilation.CoreTypes.String), 0, RefKind.None, "args"));
 
             //
             var body = MethodGenerator.GenerateMethodBody(this, realmethod,

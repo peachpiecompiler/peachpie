@@ -104,9 +104,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 case SymbolKind.TypeParameter:
                     return SubstituteTypeParameter((TypeParameterSymbol)previous);
                 case SymbolKind.ArrayType:
-                    //result = SubstituteArrayType((ArrayTypeSymbol)previous);
-                    //break;
-                    throw new NotImplementedException();
+                    result = SubstituteArrayType((ArrayTypeSymbol)previous);
+                    break;
                 case SymbolKind.PointerType:
                     //result = SubstitutePointerType((PointerTypeSymbol)previous);
                     //break;
@@ -207,50 +206,50 @@ namespace Pchp.CodeAnalysis.Symbols
             return new TypeWithModifiers(typeParameter);
         }
 
-        //private ArrayTypeSymbol SubstituteArrayType(ArrayTypeSymbol t)
-        //{
-        //    var oldElement = new TypeWithModifiers(t.ElementType, t.CustomModifiers);
-        //    TypeWithModifiers element = oldElement.SubstituteType(this);
-        //    if (element == oldElement)
-        //    {
-        //        return t;
-        //    }
+        private ArrayTypeSymbol SubstituteArrayType(ArrayTypeSymbol t)
+        {
+            var oldElement = new TypeWithModifiers(t.ElementType, t.CustomModifiers);
+            TypeWithModifiers element = oldElement.SubstituteType(this);
+            if (element == oldElement)
+            {
+                return t;
+            }
 
-        //    if (t.IsSZArray)
-        //    {
-        //        ImmutableArray<NamedTypeSymbol> interfaces = t.InterfacesNoUseSiteDiagnostics();
-        //        Debug.Assert(0 <= interfaces.Length && interfaces.Length <= 2);
+            if (t.IsSZArray)
+            {
+                ImmutableArray<NamedTypeSymbol> interfaces = t.Interfaces; //.InterfacesNoUseSiteDiagnostics();
+                Debug.Assert(0 <= interfaces.Length && interfaces.Length <= 2);
 
-        //        if (interfaces.Length == 1)
-        //        {
-        //            Debug.Assert(interfaces[0] is NamedTypeSymbol); // IList<T>
-        //            interfaces = ImmutableArray.Create<NamedTypeSymbol>((NamedTypeSymbol)SubstituteType(interfaces[0]).AsTypeSymbolOnly());
-        //        }
-        //        else if (interfaces.Length == 2)
-        //        {
-        //            Debug.Assert(interfaces[0] is NamedTypeSymbol); // IList<T>
-        //            interfaces = ImmutableArray.Create<NamedTypeSymbol>((NamedTypeSymbol)SubstituteType(interfaces[0]).AsTypeSymbolOnly(), (NamedTypeSymbol)SubstituteType(interfaces[1]).AsTypeSymbolOnly());
-        //        }
-        //        else if (interfaces.Length != 0)
-        //        {
-        //            throw ExceptionUtilities.Unreachable;
-        //        }
+                if (interfaces.Length == 1)
+                {
+                    Debug.Assert(interfaces[0] is NamedTypeSymbol); // IList<T>
+                    interfaces = ImmutableArray.Create<NamedTypeSymbol>((NamedTypeSymbol)SubstituteType(interfaces[0]).AsTypeSymbolOnly());
+                }
+                else if (interfaces.Length == 2)
+                {
+                    Debug.Assert(interfaces[0] is NamedTypeSymbol); // IList<T>
+                    interfaces = ImmutableArray.Create<NamedTypeSymbol>((NamedTypeSymbol)SubstituteType(interfaces[0]).AsTypeSymbolOnly(), (NamedTypeSymbol)SubstituteType(interfaces[1]).AsTypeSymbolOnly());
+                }
+                else if (interfaces.Length != 0)
+                {
+                    throw ExceptionUtilities.Unreachable;
+                }
 
-        //        return ArrayTypeSymbol.CreateSZArray(
-        //            element.Type,
-        //            t.BaseTypeNoUseSiteDiagnostics,
-        //            interfaces,
-        //            element.CustomModifiers);
-        //    }
+                return ArrayTypeSymbol.CreateSZArray(
+                    element.Type,
+                    t.BaseType, //.BaseTypeNoUseSiteDiagnostics,
+                    interfaces,
+                    element.CustomModifiers);
+            }
 
-        //    return ArrayTypeSymbol.CreateMDArray(
-        //        element.Type,
-        //        t.Rank,
-        //        t.Sizes,
-        //        t.LowerBounds,
-        //        t.BaseTypeNoUseSiteDiagnostics,
-        //        element.CustomModifiers);
-        //}
+            return ArrayTypeSymbol.CreateMDArray(
+                element.Type,
+                t.Rank,
+                t.Sizes,
+                t.LowerBounds,
+                t.BaseType, //.BaseTypeNoUseSiteDiagnostics,
+                element.CustomModifiers);
+        }
 
         //private PointerTypeSymbol SubstitutePointerType(PointerTypeSymbol t)
         //{

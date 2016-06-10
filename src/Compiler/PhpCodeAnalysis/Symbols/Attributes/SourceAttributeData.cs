@@ -265,8 +265,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     else if (parameterType.IsArray())
                     {
-                        throw new System.NotImplementedException();
-                        //specType = ((ArrayTypeSymbol)parameterType).ElementType.SpecialType;
+                        specType = ((ArrayTypeSymbol)parameterType).ElementType.SpecialType;
                     }
 
                     switch (targetType)

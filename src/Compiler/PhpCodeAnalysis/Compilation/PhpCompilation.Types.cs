@@ -527,10 +527,9 @@ namespace Pchp.CodeAnalysis
                         break;
 
                     case TypeKind.Array:
-                        //HandleCustomModifiers(((ArrayTypeSymbol)type).CustomModifiers.Length, transformFlagsBuilder);
-                        //transformFlagsBuilder.Add(false);
-                        //break;
-                        throw new NotImplementedException();
+                        HandleCustomModifiers(((ArrayTypeSymbol)type).CustomModifiers.Length, transformFlagsBuilder);
+                        transformFlagsBuilder.Add(false);
+                        break;
 
                     case TypeKind.Pointer:
                         //HandleCustomModifiers(((PointerTypeSymbol)type).CustomModifiers.Length, transformFlagsBuilder);
@@ -585,13 +584,12 @@ namespace Pchp.CodeAnalysis
                 {
                     return null;
                 }
-                //ArrayTypeSymbol array = (ArrayTypeSymbol)type;
-                //if (array.IsSZArray)
-                //{
-                //    return null;
-                //}
-                //return array.ElementType;
-                throw new NotImplementedException();
+                ArrayTypeSymbol array = (ArrayTypeSymbol)type;
+                if (array.IsSZArray)
+                {
+                    return null;
+                }
+                return array.ElementType;
             }
 
             protected override TypeSymbol GetFieldType(FieldSymbol field)
@@ -674,13 +672,12 @@ namespace Pchp.CodeAnalysis
                 {
                     return null;
                 }
-                //ArrayTypeSymbol array = (ArrayTypeSymbol)type;
-                //if (!array.IsSZArray)
-                //{
-                //    return null;
-                //}
-                //return array.ElementType;
-                throw new NotImplementedException();
+                ArrayTypeSymbol array = (ArrayTypeSymbol)type;
+                if (!array.IsSZArray)
+                {
+                    return null;
+                }
+                return array.ElementType;
             }
 
             protected override bool IsByRefParam(ParameterSymbol parameter)
@@ -723,9 +720,8 @@ namespace Pchp.CodeAnalysis
                     return false;
                 }
 
-                //ArrayTypeSymbol array = (ArrayTypeSymbol)type;
-                //return (array.Rank == countOfDimensions);
-                throw new NotImplementedException();
+                ArrayTypeSymbol array = (ArrayTypeSymbol)type;
+                return (array.Rank == countOfDimensions);
             }
 
             protected override bool MatchTypeToTypeId(TypeSymbol type, int typeId)

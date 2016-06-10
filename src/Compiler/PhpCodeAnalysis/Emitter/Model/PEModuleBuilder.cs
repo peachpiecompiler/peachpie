@@ -1147,8 +1147,8 @@ namespace Pchp.CodeAnalysis.Emit
                 //case SymbolKind.DynamicType:
                 //    return Translate((DynamicTypeSymbol)typeSymbol, syntaxNodeOpt, diagnostics);
 
-                //case SymbolKind.ArrayType:
-                //    return Translate((ArrayTypeSymbol)typeSymbol);
+                case SymbolKind.ArrayType:
+                    return Translate((ArrayTypeSymbol)typeSymbol);
 
                 case SymbolKind.ErrorType:
                 case SymbolKind.NamedType:
@@ -1279,10 +1279,10 @@ namespace Pchp.CodeAnalysis.Emit
             return (Cci.ITypeReference)namedTypeSymbol;
         }
 
-        //internal static Cci.IArrayTypeReference Translate(ArrayTypeSymbol symbol)
-        //{
-        //    return symbol;
-        //}
+        internal static Cci.IArrayTypeReference Translate(ArrayTypeSymbol symbol)
+        {
+            return symbol;
+        }
 
         //internal static Cci.IPointerTypeReference Translate(PointerTypeSymbol symbol)
         //{

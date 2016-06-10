@@ -27,7 +27,7 @@ namespace Pchp.CodeAnalysis
         /// Gets the name of this symbol. Symbols without a name return the empty string; null is
         /// never returned.
         /// </summary>
-        public abstract string Name { get; }
+        public virtual string Name => string.Empty;
 
         /// <summary>
         /// Gets the name of a symbol as it appears in metadata. Most of the time, this
