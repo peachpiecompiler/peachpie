@@ -1,6 +1,9 @@
 # Peachpie Compiler
 ### The open-source PHP compiler to .NET
- http://blog.peachpie.io | http://www.peachpie.io | https://twitter.com/pchpcompiler
+ ![Blog](https://raw.githubusercontent.com/paulrobertlloyd/socialmediaicons/master/website-16x16.png) http://blog.peachpie.io   
+ ![Web] (https://raw.githubusercontent.com/paulrobertlloyd/socialmediaicons/master/website-16x16.png) http://www.peachpie.io  
+ ![Twitter](https://raw.githubusercontent.com/paulrobertlloyd/socialmediaicons/master/twitter-16x16.png) https://twitter.com/pchpcompiler  
+ ![Facebook](https://raw.githubusercontent.com/paulrobertlloyd/socialmediaicons/master/facebook-16x16.png) https://www.facebook.com/pchpcompiler/
 
 _If you would like to reward us for our hard work on this project, we will be very happy to accept donations of all amounts._ [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E)
 
