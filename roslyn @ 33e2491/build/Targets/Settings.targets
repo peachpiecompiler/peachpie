@@ -45,8 +45,8 @@
           Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props') AND '$(MSBuildProjectExtension)' != '.vcxproj'" />
 
   <!-- NuGet props aren't imported by default on *nix so we do that here -->
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\NuGet\Microsoft.NuGet.props"
-          Condition="'$(OS)' != 'Windows_NT'" />
+  <!-- Import Project="$(MSBuildExtensionsPath)\Microsoft\NuGet\Microsoft.NuGet.props"
+          Condition="'$(OS)' != 'Windows_NT'" / -->
 
   <!-- The /publicsign argument is required for the compiler, but the current MSBuild
        build task can't be redirected and even if it could the new build task is not
