@@ -34,12 +34,12 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating the number is a floating point number.
         /// </summary>
-        public bool IsDouble => _typeCode == PhpTypeCode.Double;
+        public bool IsDouble { get { return _typeCode == PhpTypeCode.Double; } }
 
         /// <summary>
         /// Gets value indicating the number is an integer.
         /// </summary>
-        public bool IsLong => _typeCode == PhpTypeCode.Long;
+        public bool IsLong { get { return _typeCode == PhpTypeCode.Long; } }
 
         /// <summary>
         /// Gets the long field of the number.
@@ -71,8 +71,8 @@ namespace Pchp.Core
 
         #region Debug
 
-        string GetDebuggerValue => IsLong ? _long.ToString() : _double.ToString();
-        string GetDebuggerType => IsLong ? PhpVariable.TypeNameInteger : PhpVariable.TypeNameDouble;
+        string GetDebuggerValue { get { return IsLong ? _long.ToString() : _double.ToString(); } }
+        string GetDebuggerType { get { return IsLong ? PhpVariable.TypeNameInteger : PhpVariable.TypeNameDouble; } }
 
         /// <summary>
         /// Checks the number type code is valid.
