@@ -9,13 +9,14 @@ using Pchp.Syntax;
 using Pchp.Syntax.AST;
 using Roslyn.Utilities;
 using System.Diagnostics;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal sealed class SourceNamedTypeSymbol : NamedTypeSymbol, IWithSynthesized
+    internal sealed partial class SourceNamedTypeSymbol : NamedTypeSymbol, IWithSynthesized
     {
         readonly TypeDecl _syntax;
         readonly SourceFileSymbol _file;
@@ -27,6 +28,7 @@ namespace Pchp.CodeAnalysis.Symbols
         SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
+        SynthesizedStaticFieldsHolder _lazyStaticsContainer; // class __statics { ... }
 
         public SourceFileSymbol ContainingFile => _file;
         
@@ -42,9 +44,21 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (_lazyMembers.IsDefault)
             {
-                _lazyMembers = LoadMethods()
-                    .Concat<Symbol>(LoadFields())
-                    .ToImmutableArray();
+                var members = new List<Symbol>();
+
+                //
+                var statics = EnsureStaticsContainer();
+                if (!statics.IsEmpty)
+                {
+                    members.Add(statics);
+                }
+
+                //
+                members.AddRange(LoadMethods());
+                members.AddRange(LoadFields());
+
+                //
+                _lazyMembers = members.AsImmutable();
             }
 
             return _lazyMembers;
@@ -68,12 +82,28 @@ namespace Pchp.CodeAnalysis.Symbols
 
         IEnumerable<FieldSymbol> LoadFields()
         {
+            Semantics.SemanticsBinder binder = new Semantics.SemanticsBinder(null, null);
+
+            var runtimestatics = EnsureStaticsContainer();
+
             // source fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
             {
                 foreach (var f in flist.Fields)
                 {
-                    yield return new SourceFieldSymbol(this, f, flist.Modifiers, flist.PHPDoc);
+                    if (runtimestatics.GetMembers(f.Name.Value).IsEmpty)
+                        yield return new SourceFieldSymbol(this, f.Name.Value, flist.Modifiers, flist.PHPDoc,
+                            f.HasInitVal ? binder.BindExpression(f.Initializer, BoundAccess.Read) : null);
+                }
+            }
+
+            // source constants
+            foreach (var clist in _syntax.Members.OfType<ConstDeclList>())
+            {
+                foreach (var c in clist.Constants)
+                {
+                    if (runtimestatics.GetMembers(c.Name.Value).IsEmpty)
+                        yield return new SourceConstSymbol(this, c.Name.Value, clist.PHPDoc, c.Initializer);
                 }
             }
 
@@ -174,6 +204,16 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return _lazyRuntimeFieldsField;
+        }
+
+        internal SynthesizedStaticFieldsHolder EnsureStaticsContainer()
+        {
+            if (_lazyStaticsContainer == null)
+            {
+                _lazyStaticsContainer = new SynthesizedStaticFieldsHolder(this);
+            }
+
+            return _lazyStaticsContainer;
         }
 
         public override NamedTypeSymbol BaseType

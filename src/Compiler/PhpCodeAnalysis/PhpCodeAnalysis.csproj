@@ -64,7 +64,10 @@
     <Compile Include="CodeGen\CodeGenerator.Emit.cs" />
     <Compile Include="CodeGen\Places.cs" />
     <Compile Include="CodeGen\Graph\BoundStatement.cs" />
+    <Compile Include="CodeGen\Symbols\SourceFieldSymbol.cs" />
+    <Compile Include="CodeGen\Symbols\SourceNamedTypeSymbol.cs" />
     <Compile Include="CodeGen\Symbols\SourceRoutineSymbol.cs" />
+    <Compile Include="CodeGen\Symbols\SynthesizedStaticFieldsHolder.cs" />
     <Compile Include="Compilation\AssemblyIdentityReferenceResolver.cs" />
     <Compile Include="Compilation\PEModuleBuilder.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
@@ -204,6 +207,7 @@
     <Compile Include="Symbols\Source\SourceNamespaceSymbol.cs" />
     <Compile Include="Symbols\Source\SourceParameterSymbol.cs" />
     <Compile Include="Symbols\Source\SourceDeclarations.cs" />
+    <Compile Include="Symbols\Synthesized\SynthesizedStaticFieldsHolder.cs" />
     <Compile Include="Symbols\SpecialAssembly.cs" />
     <Compile Include="Symbols\SpecialParameterSymbol.cs" />
     <Compile Include="Symbols\SpecialTypeExtensions.cs" />

@@ -9,28 +9,33 @@ using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 using Pchp.Syntax;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal class SourceFieldSymbol : FieldSymbol//, IAttributeTargetSymbol
+    internal partial class SourceFieldSymbol : FieldSymbol//, IAttributeTargetSymbol
     {
         readonly SourceNamedTypeSymbol _type;
-        readonly Syntax.AST.FieldDecl _syntax;
+        readonly string _name;
         readonly PhpMemberAttributes _modifiers;
         readonly PHPDocBlock _phpdoc;
+        readonly BoundExpression _initializerOpt;
 
-        public SourceFieldSymbol(SourceNamedTypeSymbol type, Syntax.AST.FieldDecl syntax, PhpMemberAttributes modifiers, PHPDocBlock phpdoc)
+        public BoundExpression Initializer => _initializerOpt;
+
+        public SourceFieldSymbol(SourceNamedTypeSymbol type, string name, PhpMemberAttributes modifiers, PHPDocBlock phpdoc, BoundExpression initializer = null)
         {
             Contract.ThrowIfNull(type);
-            Contract.ThrowIfNull(syntax);
+            Contract.ThrowIfNull(name);
 
             _type = type;
-            _syntax = syntax;
+            _name = name;
             _modifiers = modifiers;
             _phpdoc = phpdoc;
+            _initializerOpt = initializer;
         }
 
-        public override string Name => _syntax.Name.Value;
+        public override string Name => _name;
 
         public override Symbol AssociatedSymbol => null;
 
@@ -103,5 +108,46 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return base.GetResultType(ctx); // convert typemask from CLR type
         }
+    }
+
+    internal class SourceConstSymbol : SourceFieldSymbol
+    {
+        readonly Syntax.AST.Expression _value;
+        ConstantValue _resolvedValue;
+
+        public SourceConstSymbol(SourceNamedTypeSymbol type, string name, PHPDocBlock phpdoc, Syntax.AST.Expression value)
+            : base(type, name, PhpMemberAttributes.Public | PhpMemberAttributes.Static, phpdoc)
+        {
+            _value = value;
+        }
+
+        public override bool IsConst => true;
+
+        public override bool IsReadOnly => true;
+
+        internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
+        {
+            var cvalue = GetConstantValue(false);
+            if (cvalue.IsNull)
+                return this.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
+
+            return this.DeclaringCompilation.GetSpecialType(cvalue.SpecialType);
+        }
+
+        internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
+        {
+            return _resolvedValue ?? (_resolvedValue = SemanticsBinder.GetConstantValue(this.DeclaringCompilation, _value));
+        }
+    }
+
+    internal class SourceRuntimeConstantSymbol : SourceFieldSymbol
+    {
+        public SourceRuntimeConstantSymbol(SourceNamedTypeSymbol type, string name, PHPDocBlock phpdoc, BoundExpression initializer = null)
+            : base(type, name, PhpMemberAttributes.Public, phpdoc, initializer)
+        {
+
+        }
+
+        public override bool IsReadOnly => true;
     }
 }

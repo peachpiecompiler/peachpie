@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Semantics;
 using Pchp.Syntax;
 using Roslyn.Utilities;
 using System;
@@ -25,8 +26,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public SemanticsBinder(Symbols.SourceRoutineSymbol routine, FlowAnalysis.FlowContext flowCtx = null /*PhpCompilation compilation, AST.GlobalCode ast, bool ignoreAccessibility*/)
         {
-            Contract.ThrowIfNull(routine);
-
             _routine = routine;
             _flowCtx = flowCtx;
         }
@@ -456,6 +455,36 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.BinaryStringLiteral) return new BoundLiteral(((AST.BinaryStringLiteral)expr).Value);
 
             throw new NotImplementedException();
+        }
+
+        public static ConstantValue GetConstantValue(PhpCompilation compilation, AST.Expression value)
+        {
+            if (value is AST.Literal) return CreateConstant((AST.Literal)value);
+            if (value is AST.GlobalConstUse) return CreateConstant((AST.GlobalConstUse)value);
+
+            return null;
+        }
+
+        static ConstantValue CreateConstant(AST.Literal expr)
+        {
+            if (expr is AST.IntLiteral) return ConstantValue.Create(((AST.IntLiteral)expr).Value);
+            if (expr is AST.LongIntLiteral) return ConstantValue.Create(((AST.LongIntLiteral)expr).Value);
+            if (expr is AST.StringLiteral) return ConstantValue.Create(((AST.StringLiteral)expr).Value);
+            if (expr is AST.DoubleLiteral) return ConstantValue.Create(((AST.DoubleLiteral)expr).Value);
+            if (expr is AST.BoolLiteral) return ConstantValue.Create(((AST.BoolLiteral)expr).Value);
+            if (expr is AST.NullLiteral) return ConstantValue.Create(null);
+            //if (expr is BinaryStringLiteral) return ConstantValue.Create(((BinaryStringLiteral)expr).Value);
+
+            return null;
+        }
+
+        static ConstantValue CreateConstant(AST.GlobalConstUse expr)
+        {
+            if (expr.Name == QualifiedName.Null) return ConstantValue.Null;
+            if (expr.Name == QualifiedName.True) return ConstantValue.True;
+            if (expr.Name == QualifiedName.False) return ConstantValue.False;
+
+            return null;
         }
     }
 }

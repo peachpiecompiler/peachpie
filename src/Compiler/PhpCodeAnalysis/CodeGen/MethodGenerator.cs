@@ -186,15 +186,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             var compilation = moduleBuilder.Compilation;
             var parameters = routine.Parameters;
 
-            var il = new ILBuilder(moduleBuilder, new LocalSlotManager(null), compilation.Options.OptimizationLevel);
-
             Debug.Assert(parameters[0].Type == compilation.CoreTypes.Context);    // first parameter always <ctx>
 
             var type = (SourceNamedTypeSymbol)routine.ContainingType;
-            var realctor = routine.RealCtorMethod;  // .ctor or __construct to be called
             var ctxField = type.ContextField;       // .<ctx>
+            var realctor = routine.RealCtorMethod;  // .ctor or __construct to be called
 
             Debug.Assert(!type.IsStatic);
+
+            var il = new ILBuilder(moduleBuilder, new LocalSlotManager(null), compilation.Options.OptimizationLevel);
+            var cg = new CodeGenerator(il, moduleBuilder, diagnostics, OptimizationLevel.Release, emittingPdb, type, new ParamPlace(parameters[0]), new ArgPlace(type, 0));
 
             // initialize <ctx> field
             if (ctxField != null)
@@ -206,8 +207,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // TODO: emit debug.assert(<ctx> != null)
 
                     // <this>.<ctx> = <ctx>
-                    il.EmitLoadArgumentOpcode(0);   // this
-                    il.EmitLoadArgumentOpcode(1);   // <ctx>
+                    cg.EmitThis();
+                    cg.EmitLoadContext();
+
                     il.EmitOpCode(ILOpCode.Stfld);
                     il.EmitToken(ctxField, null, diagnostics);
                 }
@@ -215,19 +217,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // initialize class fields,
             // default(PhpValue) is not a valid value, its TypeTable must not be null
-            foreach (var fld in type.GetFieldsToEmit().OfType<SourceFieldSymbol>().Where(fld => !fld.IsStatic))
+            foreach (var fld in type.GetFieldsToEmit().OfType<SourceFieldSymbol>().Where(fld => !fld.IsStatic && !fld.IsConst))
             {
-                // TODO: extract following code as a field initializer
-                // TODO: init static fields as well in .cctor
-                if (fld.Type == compilation.CoreTypes.PhpValue)
-                {
-                    // this.fld = PhpValue.Void
-                    il.EmitLoadArgumentOpcode(0);   // this
-                    il.EmitOpCode(ILOpCode.Ldsfld);
-                    il.EmitSymbolToken(moduleBuilder, diagnostics, compilation.CoreMethods.PhpValue.Void, null);
-                    il.EmitOpCode(ILOpCode.Stfld);
-                    il.EmitSymbolToken(moduleBuilder, diagnostics, fld, null);
-                }
+                fld.EmitInit(cg);
             }
 
             // call __construct method
@@ -235,10 +227,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Debug.Assert(!realctor.IsStatic);
                 var ps = realctor.Parameters;
-                bool returnsValue = !realctor.ReturnsVoid;
-
+                
                 // call realctor
-                il.EmitLoadArgumentOpcode(0);    // this
+                cg.EmitThis();
 
                 // TODO: bind arguments using overload resolution, following is temporary:
 
@@ -252,7 +243,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         if (ps[i].Type == compilation.CoreTypes.Context)
                         {
                             // load <ctx>
-                            il.EmitLoadArgumentOpcode(1);
+                            cg.EmitLoadContext();
                             continue;
                         }
                     }
@@ -269,11 +260,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                 }
 
-                il.EmitOpCode(ILOpCode.Call, -1 - ps.Length + (returnsValue ? 1 : 0));   // - this - ps
-                il.EmitToken(realctor, null, diagnostics);
-
-                if (returnsValue)
-                    il.EmitOpCode(ILOpCode.Pop);
+                cg.EmitPop(cg.EmitCall(ILOpCode.Call, realctor));
 
                 //
                 il.EmitRet(true);

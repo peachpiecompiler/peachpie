@@ -67,7 +67,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Debug.Assert(_ctor == null);
 
-            // emity defaulkt .ctor
+            // emit default .ctor
 
             _ctor = new SynthesizedCtorSymbol(this);
             _ctor.SetParameters();// empty params (default ctor)
@@ -92,8 +92,6 @@ namespace Pchp.CodeAnalysis.Symbols
             module.SetMethodBody(_initMethod, body);
         }
         SynthesizedMethodSymbol _initMethod;
-
-
 
         public SynthesizedStaticLocHolder(SourceRoutineSymbol routine, string locName, TypeSymbol locType)
         {

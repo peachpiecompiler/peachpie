@@ -128,6 +128,14 @@ namespace Pchp.CodeAnalysis
             _compilation.SourceSymbolTables.GetFiles().ForEach(f =>
                 _moduleBuilder.CreateMainMethodWrapper(f.EnsureMainMethodRegular(), f.MainMethod, _diagnostics));
 
+            // TODO: synthesized manager
+
+            // __statics.Init
+            _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
+                .Select(t => t.EnsureStaticsContainer())
+                .Where(t => !t.IsEmpty)
+                .ForEach(t => t.EmitCtors(_moduleBuilder));
+
             // default .ctors
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
                 .Select(t => (SynthesizedCtorWrapperSymbol)t.InstanceCtorMethodSymbol)
