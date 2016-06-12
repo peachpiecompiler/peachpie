@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
         {
-            return _resolvedValue ?? (_resolvedValue = SemanticsBinder.GetConstantValue(this.DeclaringCompilation, _value));
+            return _resolvedValue ?? (_resolvedValue = SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _value));
         }
     }
 

@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     foreach (var c in cdecl.Constants)
                     {
-                        var cvalue = Semantics.SemanticsBinder.GetConstantValue(this.DeclaringCompilation, c.Initializer);
+                        var cvalue = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, c.Initializer);
                         if (cvalue == null) // constant has to be resolved in runtime
                         {
                             members.Add(new SourceRuntimeConstantSymbol(_class, c.Name.Value, cdecl.PHPDoc,
@@ -165,6 +165,7 @@ namespace Pchp.CodeAnalysis.Symbols
         MethodSymbol IWithSynthesized.GetOrCreateStaticCtorSymbol()
         {
             EnsureMembers();
+
             if (_lazyCctorSymbol == null)
             {
                 _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
@@ -176,7 +177,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
         {
-            GetMembers();
+            EnsureMembers();
 
             var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type);
             if (field == null)

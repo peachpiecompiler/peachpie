@@ -172,7 +172,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     // TODO: Bind _syntax.InitValue to Expression
 
-                    var value = Semantics.SemanticsBinder.GetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
+                    var value = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
                     if (value == null)
                         throw new InvalidOperationException();
 

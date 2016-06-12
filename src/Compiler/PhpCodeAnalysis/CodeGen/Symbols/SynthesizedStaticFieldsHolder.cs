@@ -14,6 +14,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             EnsureMembers();
 
+            bool requiresInit = false;
+
             // .ctor()
 
             var tt = DeclaringCompilation.CoreTypes;
@@ -26,7 +28,17 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false, this, null, new ArgPlace(this, 0));
 
-                GetMembers().OfType<SourceFieldSymbol>().Where(f => !f.InitializerRequiresContext).ForEach(f => f.EmitInit(cg));
+                foreach (var fld in GetMembers().OfType<SourceFieldSymbol>())
+                {
+                    if (fld.InitializerRequiresContext)
+                    {
+                        requiresInit = true;
+                    }
+                    else
+                    {
+                        fld.EmitInit(cg);
+                    }
+                }
 
                 //
                 il.EmitRet(true);
@@ -36,9 +48,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             _lazyMembers = _lazyMembers.Add(ctor);
+
+            //
+            if (requiresInit)
+            {
+                EmitInit(module);
+            }
         }
 
-        internal void EmitInit(Emit.PEModuleBuilder module)
+        void EmitInit(Emit.PEModuleBuilder module)
         {
             EnsureMembers();
 

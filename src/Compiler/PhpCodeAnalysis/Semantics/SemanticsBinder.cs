@@ -457,7 +457,7 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException();
         }
 
-        public static ConstantValue GetConstantValue(PhpCompilation compilation, AST.Expression value)
+        public static ConstantValue TryGetConstantValue(PhpCompilation compilation, AST.Expression value)
         {
             if (value is AST.Literal) return CreateConstant((AST.Literal)value);
             if (value is AST.GlobalConstUse) return CreateConstant((AST.GlobalConstUse)value);
