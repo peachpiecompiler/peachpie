@@ -5,6 +5,7 @@ using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -512,8 +513,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
     #endregion
 
-    #region Bound Places
-    
+    #region BoundLocalPlace
+
     internal class BoundLocalPlace : IBoundReference, IPlace
     {
         readonly IPlace _place;
@@ -846,80 +847,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         #endregion
     }
 
-    internal class BoundPropertyPlace : IBoundReference
-    {
-        readonly BoundExpression _instance;
-        readonly PropertySymbol _property;
-
-        public BoundPropertyPlace(BoundExpression instance, Cci.IPropertyDefinition property)
-        {
-            Contract.ThrowIfNull(property);
-
-            _instance = instance;
-            _property = (PropertySymbol)property;
-        }
-
-        public TypeSymbol TypeOpt => _property.Type;
-
-        public bool HasAddress => false;
-
-        public TypeSymbol EmitLoad(CodeGenerator cg)
-        {
-            //if (_property.Getter == null)
-            //    throw new InvalidOperationException();
-
-            var getter = _property.GetMethod;
-            return cg.EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
-        }
-
-        public void EmitLoadAddress(CodeGenerator cg)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
-        {
-            //if (_property.Setter == null)
-            //    throw new InvalidOperationException();
-
-            var setter = _property.SetMethod;
-
-            cg.EmitConvert(valueType, 0, setter.Parameters[0].Type);
-            cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
-
-            // TODO: unset
-        }
-
-        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
-        {
-            if (_property == null)
-            {
-                // TODO: callsite.Target callsite
-                throw new NotImplementedException();
-            }
-
-            InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
-        }
-
-        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
-        {
-            if (_property == null)
-            {
-                // TODO: callsite.Target callsite
-                throw new NotImplementedException();
-            }
-
-            InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
-        }
-
-        public void EmitUnset(CodeGenerator cg)
-        {
-            var bound = (IBoundReference)this;
-            bound.EmitStorePrepare(cg);
-            bound.EmitStore(cg, cg.Emit_PhpValue_Void());
-        }
-    }
-
     internal class BoundSuperglobalPlace : IBoundReference
     {
         readonly Syntax.VariableName _name;
@@ -1096,6 +1023,582 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return cg.EmitLoadGlobals();
             }
         }
+    }
+
+    #endregion
+
+    #region BoundFieldPlace, BoundIndirectFieldPlace, BoundPropertyPlace
+
+    internal class BoundPropertyPlace : IBoundReference
+    {
+        readonly BoundExpression _instance;
+        readonly PropertySymbol _property;
+
+        public BoundPropertyPlace(BoundExpression instance, Cci.IPropertyDefinition property)
+        {
+            Contract.ThrowIfNull(property);
+
+            _instance = instance;
+            _property = (PropertySymbol)property;
+        }
+
+        public TypeSymbol TypeOpt => _property.Type;
+
+        public bool HasAddress => false;
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            //if (_property.Getter == null)
+            //    throw new InvalidOperationException();
+
+            var getter = _property.GetMethod;
+            return cg.EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
+        }
+
+        public void EmitLoadAddress(CodeGenerator cg)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            //if (_property.Setter == null)
+            //    throw new InvalidOperationException();
+
+            var setter = _property.SetMethod;
+
+            cg.EmitConvert(valueType, 0, setter.Parameters[0].Type);
+            cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
+
+            // TODO: unset
+        }
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            if (_property == null)
+            {
+                // TODO: callsite.Target callsite
+                throw new NotImplementedException();
+            }
+
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
+        }
+
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            if (_property == null)
+            {
+                // TODO: callsite.Target callsite
+                throw new NotImplementedException();
+            }
+
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
+        }
+
+        public void EmitUnset(CodeGenerator cg)
+        {
+            var bound = (IBoundReference)this;
+            bound.EmitStorePrepare(cg);
+            bound.EmitStore(cg, cg.Emit_PhpValue_Void());
+        }
+    }
+
+    /// <summary>
+    /// A direct field access.
+    /// </summary>
+    internal class BoundFieldPlace : IBoundReference
+    {
+        public FieldSymbol Field => _field;
+        readonly FieldSymbol _field;
+
+        public BoundExpression Instance => _instance;
+        readonly BoundExpression _instance;
+
+        readonly BoundAccess _access;
+
+        public BoundFieldPlace(BoundExpression instance, FieldSymbol field, BoundAccess access)
+        {
+            Contract.ThrowIfNull(field);
+            Debug.Assert(instance != null || field.IsStatic);
+
+            _instance = instance;
+            _field = field;
+            _access = access;
+        }
+
+        #region IBoundReference
+
+        /// <summary>
+        /// Emits ldfld, stfld, ldflda, ldsfld, stsfld.
+        /// </summary>
+        /// <param name="cg"></param>
+        /// <param name="code">ld* or st* OP code.</param>
+        void EmitOpCode(CodeGenerator cg, ILOpCode code)
+        {
+            Debug.Assert(Field != null);
+            cg.Builder.EmitOpCode(code);
+            cg.EmitSymbolToken(Field, null);
+        }
+
+        public bool HasAddress => true;
+
+        public TypeSymbol TypeOpt => _field.Type;
+
+        void EmitOpCode_Load(CodeGenerator cg)
+        {
+            EmitOpCode(cg, Field.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
+        }
+
+        void EmitOpCode_LoadAddress(CodeGenerator cg)
+        {
+            EmitOpCode(cg, Field.IsStatic ? ILOpCode.Ldsflda : ILOpCode.Ldflda);
+        }
+
+        void EmitOpCode_Store(CodeGenerator cg)
+        {
+            EmitOpCode(cg, Field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
+        }
+
+        /// <summary>
+        /// Emits instance of the field containing class.
+        /// </summary>
+        protected virtual void EmitLoadFieldInstance(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            // instance
+            var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+
+            //
+            if (Field.IsStatic && Instance != null)
+                cg.EmitPop(instancetype);
+            else if (!Field.IsStatic && Instance == null)
+                throw new NotImplementedException();
+        }
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            EmitLoadFieldInstance(cg, instanceOpt);
+        }
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            Debug.Assert(_access.IsRead);
+
+            var type = Field.Type;
+
+            // Ensure Object (..->Field->.. =)
+            if (_access.EnsureObject)
+            {
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    EmitOpCode_Load(cg);    // PhpAlias
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureObject)
+                        .Expect(SpecialType.System_Object);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    EmitOpCode_LoadAddress(cg); // &PhpValue
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject)
+                        .Expect(SpecialType.System_Object);
+                }
+                else
+                {
+                    if (type.IsReferenceType)
+                    {
+                        // TODO: ensure it is not null
+                        EmitOpCode_Load(cg);
+                        return type;
+                    }
+                    else
+                    {
+                        // return new stdClass(ctx)
+                        throw new NotImplementedException();
+                    }
+                }
+            }
+            // Ensure Array (xxx->Field[] =)
+            else if (_access.EnsureArray)
+            {
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    EmitOpCode_Load(cg);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray)
+                        .Expect(cg.CoreTypes.PhpArray);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    EmitOpCode_LoadAddress(cg);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray)
+                            .Expect(cg.CoreTypes.PhpArray);
+                }
+                else if (type == cg.CoreTypes.PhpArray)
+                {
+                    // TODO: ensure it is not null
+                    EmitOpCode_Load(cg);
+                    return type;
+                }
+
+                throw new NotImplementedException();
+            }
+            // Ensure Alias (&...->Field)
+            else if (_access.IsReadRef)
+            {
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // TODO: <place>.AddRef()
+                    EmitOpCode_Load(cg);
+                    return type;
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    // return <place>.EnsureAlias()
+                    EmitOpCode_LoadAddress(cg); // &PhpValue
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias)
+                        .Expect(cg.CoreTypes.PhpAlias);
+                }
+                else
+                {
+                    Debug.Assert(false, "value cannot be aliased");
+
+                    // new PhpAlias((PhpValue)<place>, 1)
+                    EmitOpCode_Load(cg);
+                    cg.EmitConvertToPhpValue(type, 0);
+                    return cg.Emit_PhpValue_MakeAlias();
+                }
+            }
+            // Read (...->Field) & Dereference eventually
+            else
+            {
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    EmitOpCode_Load(cg);
+
+                    if (_access.TargetType != null)
+                    {
+                        // convert PhpValue to target type without loading whole value and storing to temporary variable
+                        switch (_access.TargetType.SpecialType)
+                        {
+                            default:
+                                if (_access.TargetType == cg.CoreTypes.PhpArray)
+                                {
+                                    // <PhpAlias>.Value.AsArray()
+                                    cg.Builder.EmitOpCode(ILOpCode.Ldflda);
+                                    cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
+                                }
+                                break;
+                        }
+                    }
+
+                    return cg.Emit_PhpAlias_GetValue();
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    if (_access.TargetType != null)
+                    {
+                        // convert PhpValue to target type without loading whole value and storing to temporary variable
+                        switch (_access.TargetType.SpecialType)
+                        {
+                            case SpecialType.System_Double:
+                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToDouble()
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToDouble);
+                            case SpecialType.System_Int64:
+                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToLong()
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToLong);
+                            case SpecialType.System_Boolean:
+                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToBoolean()
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToBoolean);
+                            case SpecialType.System_String:
+                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToString(ctx)
+                                cg.EmitLoadContext();
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToString_Context);
+                            case SpecialType.System_Object:
+                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass()
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass);
+                            default:
+                                if (_access.TargetType == cg.CoreTypes.PhpArray)
+                                {
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.AsArray()
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
+                                }
+                                break;
+                        }
+                    }
+
+                    // TODO: dereference if applicable (=> PhpValue.Alias.Value)
+                    EmitOpCode_Load(cg);
+                    return type;
+                }
+                else
+                {
+                    EmitOpCode_Load(cg);
+                    return type;
+                }
+            }
+        }
+
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            Debug.Assert(_access.IsWrite);
+
+            EmitLoadFieldInstance(cg, instanceOpt);
+
+            //
+            var type = Field.Type;
+
+            if (_access.IsWriteRef)
+            {
+                // no need for preparation
+            }
+            else
+            {
+                //
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // (PhpAlias)<place>
+                    EmitOpCode_Load(cg);    // PhpAlias
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    EmitOpCode_LoadAddress(cg); // &PhpValue
+                }
+                else
+                {
+                    // no need for preparation
+                }
+            }
+        }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            Debug.Assert(_access.IsWrite);
+
+            var type = Field.Type;
+
+            if (_access.IsWriteRef)
+            {
+                if (valueType != cg.CoreTypes.PhpAlias)
+                {
+                    Debug.Assert(false, "caller should get aliased value");
+                    cg.EmitConvertToPhpValue(valueType, 0);
+                    valueType = cg.Emit_PhpValue_MakeAlias();
+                }
+
+                //
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // <place> = <alias>
+                    EmitOpCode_Store(cg);
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    // <place> = PhpValue.Create(<alias>)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
+                    EmitOpCode_Store(cg);
+                }
+                else
+                {
+                    Debug.Assert(false, "Assigning alias to non-aliasable field.");
+                    cg.EmitConvert(valueType, 0, type);
+                    EmitOpCode_Store(cg);
+                }
+            }
+            else if (_access.IsUnset)
+            {
+                Debug.Assert(valueType == null);
+
+                // <place> =
+
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // new PhpAlias(void)
+                    cg.Emit_PhpValue_Void();
+                    cg.Emit_PhpValue_MakeAlias();
+                }
+                else if (type.IsReferenceType)
+                {
+                    // null
+                    cg.Builder.EmitNullConstant();
+                }
+                else
+                {
+                    // default(T)
+                    cg.EmitLoadDefaultOfValueType(type);
+                }
+
+                EmitOpCode_Store(cg);
+            }
+            else
+            {
+                //
+                if (type == cg.CoreTypes.PhpAlias)
+                {
+                    // <Field>.Value = <value>
+                    cg.EmitConvertToPhpValue(valueType, 0);
+                    cg.Emit_PhpAlias_SetValue();
+                }
+                else if (type == cg.CoreTypes.PhpValue)
+                {
+                    // Operators.SetValue(ref <Field>, (PhpValue)<value>);
+                    cg.EmitConvertToPhpValue(valueType, 0);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetValue_PhpValueRef_PhpValue);
+                }
+                else
+                {
+                    cg.EmitConvert(valueType, 0, type);
+                    EmitOpCode_Store(cg);
+                }
+            }
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// Bound PHP static field declared in special container <c>class _statics{ ... }</c>, <see cref="SynthesizedStaticFieldsHolder"/>.
+    /// </summary>
+    internal class BoundPhpStaticFieldPlace : BoundFieldPlace
+    {
+        public BoundPhpStaticFieldPlace(FieldSymbol field, BoundAccess access)
+            :base(null, field, access)
+        {
+
+        }
+
+        protected override void EmitLoadFieldInstance(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            // Template: <ctx>.GetStatics<_statics>().Field
+            var statics = this.Field.ContainingType.EmitLoadStatics(cg);
+            if (statics == null)
+                throw new InvalidOperationException();
+        }
+    }
+
+    /// <summary>
+    /// Indirect field access using callsites.
+    /// </summary>
+    internal class BoundIndirectFieldPlace : IBoundReference
+    {
+        public BoundExpression Name => _name;
+        readonly BoundExpression _name;
+
+        public BoundExpression Instance => _instance;
+        readonly BoundExpression _instance;
+
+        public string NameString => _name.ConstantValue.HasValue ? _name.ConstantValue.Value.ToString() : string.Empty;
+
+        readonly BoundAccess _access;
+
+        public BoundIndirectFieldPlace(BoundExpression instance, string name, BoundAccess access)
+            :this(instance, new BoundLiteral(name), access)
+        {
+
+        }
+
+        public BoundIndirectFieldPlace(BoundExpression instance, BoundExpression name, BoundAccess access)
+        {
+            Contract.ThrowIfNull(name);
+            
+            _instance = instance;
+            _name = name;
+            _access = access;
+        }
+
+        #region IBoundReference
+
+        DynamicOperationFactory.CallSiteData _lazyLoadCallSite = null;
+        DynamicOperationFactory.CallSiteData _lazyStoreCallSite = null;
+
+        public TypeSymbol TypeOpt => null;
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            if (_lazyLoadCallSite == null)
+                _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameString);
+
+            // callsite.Target callsite
+                _lazyLoadCallSite.EmitLoadTarget(cg.Builder);
+            _lazyLoadCallSite.Place.EmitLoad(cg.Builder);
+
+            // instance
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+        }
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            Debug.Assert(_lazyLoadCallSite != null);
+            Debug.Assert(this.Instance.ResultType != null);
+
+            // resolve actual return type
+            TypeSymbol return_type;
+            if (_access.EnsureObject) return_type = cg.CoreTypes.Object;
+            else if (_access.EnsureArray) return_type = cg.CoreTypes.PhpArray;
+            else if (_access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
+            else return_type = _access.TargetType ?? cg.CoreTypes.PhpValue;
+
+            // Target()
+            var functype = cg.Factory.GetCallSiteDelegateType(
+                this.Instance.ResultType, RefKind.None,
+                ImmutableArray<TypeSymbol>.Empty,
+                default(ImmutableArray<RefKind>),
+                null,
+                return_type);
+
+
+            cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
+
+            //
+            _lazyLoadCallSite.Construct(functype, cctor =>
+            {
+                // new GetFieldBinder(field_name, context, return, flags)
+                cctor.EmitStringConstant(this.NameString); Debug.Assert(this.Name is BoundLiteral);   // TODO: in case of expression, postpone this to runtime
+                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
+                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
+                cctor.EmitIntConstant((int)_access.AccessFlags);
+                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
+            });
+
+            //
+            return return_type;
+        }
+
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            if (_lazyStoreCallSite == null)
+                _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameString);
+
+            // callsite.Target callsite
+            _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
+            _lazyStoreCallSite.Place.EmitLoad(cg.Builder);
+
+            // instance
+            InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+        }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            Debug.Assert(_lazyStoreCallSite != null);
+            Debug.Assert(this.Instance.ResultType != null);
+
+            // Target()
+            var functype = cg.Factory.GetCallSiteDelegateType(
+                this.Instance.ResultType, RefKind.None,
+                (valueType != null) ? ImmutableArray.Create(valueType) : ImmutableArray<TypeSymbol>.Empty,
+                default(ImmutableArray<RefKind>),
+                null,
+                cg.CoreTypes.Void);
+
+            cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
+
+            _lazyStoreCallSite.Construct(functype, cctor =>
+            {
+                cctor.EmitStringConstant(this.NameString);   // TODO: expression potpone to runtime
+                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
+                cctor.EmitIntConstant((int)_access.AccessFlags);   // flags
+                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
+            });
+        }
+
+        #endregion
     }
 
     #endregion

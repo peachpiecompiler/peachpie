@@ -83,7 +83,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #region NamedTypeSymbol
 
-        public override string Name => "__statics";
+        public override string Name => WellKnownPchpNames.StaticsHolderClassName;
 
         public override int Arity => 0;
 

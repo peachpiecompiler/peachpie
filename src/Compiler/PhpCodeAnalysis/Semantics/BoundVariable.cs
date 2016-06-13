@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -55,9 +57,9 @@ namespace Pchp.CodeAnalysis.Semantics
     public partial class BoundLocal : BoundVariable, IVariable
     {
         private SourceLocalSymbol _symbol;
-        
+
         internal BoundLocal(SourceLocalSymbol symbol)
-            :base(symbol.LocalKind)
+            : base(symbol.LocalKind)
         {
             _symbol = symbol;
         }
@@ -86,7 +88,7 @@ namespace Pchp.CodeAnalysis.Semantics
         protected BoundExpression _initialier;
 
         internal BoundStaticLocal(SourceLocalSymbol symbol, BoundExpression initializer)
-            :base(symbol)
+            : base(symbol)
         {
             _initialier = initializer;
         }
@@ -108,7 +110,7 @@ namespace Pchp.CodeAnalysis.Semantics
         private ParameterSymbol _symbol;
 
         internal BoundParameter(ParameterSymbol symbol)
-            :base(VariableKind.Parameter)
+            : base(VariableKind.Parameter)
         {
             _symbol = symbol;
         }
@@ -139,7 +141,7 @@ namespace Pchp.CodeAnalysis.Semantics
         private Syntax.VariableName _name;
 
         public BoundGlobalVariable(Syntax.VariableName name)
-            :base(VariableKind.GlobalVariable)
+            : base(VariableKind.GlobalVariable)
         {
             _name = name;
         }

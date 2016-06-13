@@ -23,5 +23,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Namespace containing all script types.
         /// </summary>
         public const string ScriptsRootNamespace = "<Root>";
+
+        /// <summary>
+        /// Name of special nested class containing context bound static fields and constants.
+        /// </summary>
+        public const string StaticsHolderClassName = "_statics";
     }
 }

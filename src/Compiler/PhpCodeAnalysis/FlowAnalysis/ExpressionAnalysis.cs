@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
@@ -1307,8 +1308,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             Visit(x.Instance);
 
+            // dynamic behavior by default
             x.TypeRefMask = TypeRefMask.AnyType;
+            x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.Name.Value, x.Access);
 
+            //
             var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
             if (typerefs.Count == 1 && typerefs[0].IsObject)
             {
@@ -1317,11 +1321,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (t != null)
                 {
                     // TODO: visibility and resolution (model)
-                    x.Field = t.GetMembers(x.Name.Value).OfType<FieldSymbol>().SingleOrDefault();
+                    var field = t.GetMembers(x.Name.Value).OfType<FieldSymbol>().SingleOrDefault();
 
-                    if (x.Field != null)
+                    if (field != null)
                     {
-                        x.TypeRefMask = x.Field.GetResultType(TypeCtx);
+                        x.BoundReference = new BoundFieldPlace(x.Instance, field, x.Access);
+                        x.TypeRefMask = field.GetResultType(TypeCtx);
                     }
                 }
             }

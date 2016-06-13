@@ -889,15 +889,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundFieldRef : BoundReferenceExpression, IFieldReferenceExpression
     {
-        ISymbol IMemberReferenceExpression.Member => Field;
+        ISymbol IMemberReferenceExpression.Member => FieldSymbolOpt;
 
-        IFieldSymbol IFieldReferenceExpression.Field => Field;
+        IFieldSymbol IFieldReferenceExpression.Field => FieldSymbolOpt;
 
         IExpression IMemberReferenceExpression.Instance => Instance;
 
         public BoundExpression Instance { get; set; }
-
-        internal FieldSymbol Field { get; set; }
 
         public VariableName Name { get; private set; }
 

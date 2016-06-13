@@ -1144,38 +1144,45 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         if (type == CoreTypes.PhpValue)
                         {
-                            var typectx = this.Routine.ControlFlowGraph.FlowContext.TypeRefContext;
+                            if (this.Routine != null && typemask.IsSingleType)
+                            {
+                                var typectx = this.Routine.ControlFlowGraph.FlowContext.TypeRefContext;
 
-                            if (typectx.IsBoolean(typemask))
-                            {
-                                _il.EmitBoolConstant(false);
-                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+                                if (typectx.IsBoolean(typemask))
+                                {
+                                    _il.EmitBoolConstant(false);
+                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+                                    break;
+                                }
+                                else if (typectx.IsLong(typemask))
+                                {
+                                    _il.EmitLongConstant(0);
+                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
+                                    break;
+                                }
+                                else if (typectx.IsDouble(typemask))
+                                {
+                                    _il.EmitDoubleConstant(0.0);
+                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Double);
+                                    break;
+                                }
+                                else if (typectx.IsAString(typemask))
+                                {
+                                    // return ""
+                                    _il.EmitStringConstant(string.Empty);
+                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_String);
+                                    break;
+                                }
+                                else if (typectx.IsArray(typemask))
+                                {
+                                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
+                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpArray);
+                                    break;
+                                }
+                                // default:
                             }
-                            else if (typectx.IsLong(typemask))
-                            {
-                                _il.EmitLongConstant(0);
-                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Long);
-                            }
-                            else if (typectx.IsDouble(typemask))
-                            {
-                                _il.EmitDoubleConstant(0.0);
-                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Double);
-                            }
-                            else if (typectx.IsAString(typemask))
-                            {
-                                // return ""
-                                _il.EmitStringConstant(string.Empty);
-                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_String);
-                            }
-                            else if (typectx.IsArray(typemask))
-                            {
-                                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
-                                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpArray);
-                            }
-                            else
-                            {
-                                Emit_PhpValue_Null();
-                            }
+
+                            Emit_PhpValue_Null();   // TODO: or void ?
                         }
                         else
                         {
