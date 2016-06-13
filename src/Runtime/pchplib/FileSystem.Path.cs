@@ -406,10 +406,10 @@ namespace Pchp.Library
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// A counter used to generate unique filenames for <see cref="tempnam(string, string)"/>.
-        /// </summary>
-        static int _tempCounter = 0;
+        ///// <summary>
+        ///// A counter used to generate unique filenames for <see cref="tempnam(string, string)"/>.
+        ///// </summary>
+        //static int _tempCounter = 0;
 
         /// <summary>
         /// Returns canonicalized absolute path name.
