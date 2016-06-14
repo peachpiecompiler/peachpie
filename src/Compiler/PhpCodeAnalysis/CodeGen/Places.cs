@@ -449,7 +449,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     /// </summary>
     /// <remarks>
     /// Provides methods for load and store to the place.
-    /// 1. EmitPreamble. Optionally emits first argument of load/store operation. Can be stored to a temporary variable to both load and store.
+    /// 1. EmitLoadPrepare, EmitStorePrepare. Emits first argument of load/store operation. Can be stored to a temporary variable to both load and store.
     /// 2. EmitLoad. Loads value to the top of stack. Expect 1. to be on stack first.
     /// 3. EmitStore. Stores value from top of stack to the place. Expects 1. to be on stack before.
     /// </remarks>
@@ -1454,14 +1454,15 @@ namespace Pchp.CodeAnalysis.CodeGen
     }
 
     /// <summary>
-    /// Bound PHP static field declared in special container <c>class _statics{ ... }</c>, <see cref="SynthesizedStaticFieldsHolder"/>.
+    /// Bound PHP static field declared in special container, <see cref="SynthesizedStaticFieldsHolder"/>.
     /// </summary>
     internal class BoundPhpStaticFieldPlace : BoundFieldPlace
     {
         public BoundPhpStaticFieldPlace(FieldSymbol field, BoundAccess access)
             :base(null, field, access)
         {
-
+            Debug.Assert(!field.IsStatic);
+            Debug.Assert(field.ContainingType.TryGetStatics() != null);
         }
 
         protected override void EmitLoadFieldInstance(CodeGenerator cg, InstanceCacheHolder instanceOpt)

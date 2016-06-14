@@ -895,17 +895,63 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IExpression IMemberReferenceExpression.Instance => Instance;
 
-        public BoundExpression Instance { get; set; }
+        enum FieldType
+        {
+            InstanceField,
+            StaticField,
+            ClassConstant,
+        }
 
-        public VariableName Name { get; private set; }
+        FieldType _type;
+
+        public bool IsInstanceField => _type == FieldType.InstanceField;
+        public bool IsStaticField => _type == FieldType.StaticField;
+        public bool IsClassConstant => _type == FieldType.ClassConstant;
+
+        BoundExpression _parentExpr;
+        QualifiedName _parentName;
+
+        VariableName _fieldName;
+        BoundExpression _fieldNameExpr;
+
+        /// <summary>
+        /// In case of a non static field, gets its instance expression.
+        /// </summary>
+        public BoundExpression Instance => IsInstanceField ? _parentExpr : null;
+
+        public BoundExpression ParentExpression => _parentExpr;
+
+        public QualifiedName ParentName => _parentName;
+
+        /// <summary>
+        /// Direct field name.
+        /// </summary>
+        public VariableName FieldName => _fieldName;
+
+        /// <summary>
+        /// In case of indirect field access.
+        /// </summary>
+        public BoundExpression FieldNameExpression => _fieldNameExpr;
 
         public override OperationKind Kind => OperationKind.FieldReferenceExpression;
 
-        public BoundFieldRef(VariableName name, BoundExpression instance)
-        {
-            this.Name = name;
-            this.Instance = instance;
+        private BoundFieldRef()
+        {   
         }
+
+        public static BoundFieldRef CreateInstanceField(BoundExpression instance, VariableName name) => new BoundFieldRef() { _parentExpr = instance, _fieldName = name, _type = FieldType.InstanceField };
+        public static BoundFieldRef CreateInstanceField(BoundExpression instance, BoundExpression nameExpr) => new BoundFieldRef() { _parentExpr = instance, _fieldNameExpr = nameExpr, _type = FieldType.InstanceField };
+
+        public static BoundFieldRef CreateStaticField(QualifiedName parent, VariableName name) => new BoundFieldRef() { _parentName = parent, _fieldName = name, _type = FieldType.StaticField };
+        public static BoundFieldRef CreateStaticField(BoundExpression parent, VariableName name) => new BoundFieldRef() { _parentExpr = parent, _fieldName = name, _type = FieldType.StaticField };
+        public static BoundFieldRef CreateStaticField(QualifiedName parent, BoundExpression nameExpr) => new BoundFieldRef() { _parentName = parent, _fieldNameExpr = nameExpr, _type = FieldType.StaticField };
+        public static BoundFieldRef CreateStaticField(BoundExpression parent, BoundExpression nameExpr) => new BoundFieldRef() { _parentExpr = parent, _fieldNameExpr = nameExpr, _type = FieldType.StaticField };
+
+        public static BoundFieldRef CreateClassConst(QualifiedName parent, VariableName name) => new BoundFieldRef() { _parentName = parent, _fieldName = name, _type = FieldType.ClassConstant };
+        public static BoundFieldRef CreateClassConst(BoundExpression parent, VariableName name) => new BoundFieldRef() { _parentExpr = parent, _fieldName = name, _type = FieldType.ClassConstant };
+        public static BoundFieldRef CreateClassConst(QualifiedName parent, BoundExpression name) => new BoundFieldRef() { _parentName = parent, _fieldNameExpr = name, _type = FieldType.ClassConstant };
+        public static BoundFieldRef CreateClassConst(BoundExpression parent, BoundExpression name) => new BoundFieldRef() { _parentExpr = parent, _fieldNameExpr = name, _type = FieldType.ClassConstant };
+
 
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitFieldReferenceExpression(this);

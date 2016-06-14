@@ -1310,7 +1310,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // dynamic behavior by default
             x.TypeRefMask = TypeRefMask.AnyType;
-            x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.Name.Value, x.Access);
+            x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName.Value, x.Access);
 
             //
             var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
@@ -1321,7 +1321,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (t != null)
                 {
                     // TODO: visibility and resolution (model)
-                    var field = t.GetMembers(x.Name.Value).OfType<FieldSymbol>().SingleOrDefault();
+                    var field = t.GetMembers(x.FieldName.Value).OfType<FieldSymbol>().SingleOrDefault();
 
                     if (field != null)
                     {

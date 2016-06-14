@@ -369,10 +369,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (access.IsWrite || access.EnsureObject || access.EnsureArray)
                     instanceAccess = instanceAccess.WithEnsureObject();
+
                 if (access.IsQuiet)
                     instanceAccess = instanceAccess.WithQuiet();
 
-                return new BoundFieldRef(expr.VarName, BindExpression(expr.IsMemberOf, instanceAccess)).WithAccess(access);
+                return BoundFieldRef.CreateInstanceField(BindExpression(expr.IsMemberOf, instanceAccess), expr.VarName).WithAccess(access);
             }
         }
 
