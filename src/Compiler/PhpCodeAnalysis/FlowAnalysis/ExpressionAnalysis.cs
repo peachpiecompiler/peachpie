@@ -1303,37 +1303,88 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected void VisitFieldRef(BoundFieldRef x)
         {
-            Debug.Assert(x.Instance != null);
-            Debug.Assert(x.Instance.Access.IsRead);
-
-            Visit(x.Instance);
-
-            // dynamic behavior by default
-            x.TypeRefMask = TypeRefMask.AnyType;
-            x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName.Value, x.Access);
+            Visit(x.ParentExpression);  // aka Instance
+            Visit(x.FieldNameExpression);
 
             //
-            var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
-            if (typerefs.Count == 1 && typerefs[0].IsObject)
+            if (x.IsInstanceField)
             {
-                // TODO: x.Instance.ResultType instead of following
-                var t = _model.GetType(typerefs[0].QualifiedName);
-                if (t != null)
-                {
-                    // TODO: visibility and resolution (model)
-                    var field = t.GetMembers(x.FieldName.Value).OfType<FieldSymbol>().SingleOrDefault();
+                Debug.Assert(x.Instance != null);
+                Debug.Assert(x.Instance.Access.IsRead);
 
-                    if (field != null)
+                // dynamic behavior by default
+                x.TypeRefMask = TypeRefMask.AnyType;
+                x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName.Value, x.Access);
+
+                // resolve field if possible
+                var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
+                if (typerefs.Count == 1 && typerefs[0].IsObject)
+                {
+                    // TODO: x.Instance.ResultType instead of following
+                    var t = _model.GetType(typerefs[0].QualifiedName);
+                    if (t != null)
                     {
-                        x.BoundReference = new BoundFieldPlace(x.Instance, field, x.Access);
-                        x.TypeRefMask = field.GetResultType(TypeCtx);
+                        // TODO: visibility and resolution (model)
+                        var field = t.GetMembers(x.FieldName.Value).OfType<FieldSymbol>().SingleOrDefault();
+                        if (field != null)
+                        {
+                            x.BoundReference = new BoundFieldPlace(x.Instance, field, x.Access);
+                            x.TypeRefMask = field.GetResultType(TypeCtx);
+                            return;
+                        }
                     }
                 }
+                else
+                {
+                    // TODO: Warning
+                }
+
+                return;
             }
-            else
+            
+            //
+            if (x.IsStaticField)
             {
-                // TODO: ErrCode
+                if (!x.ParentName.IsEmpty())
+                {
+                    if (!x.FieldName.IsEmpty())
+                    {
+                        var t = (NamedTypeSymbol)_model.GetType(x.ParentName);
+                        if (t != null)
+                        {
+                            var field = t.ResolveStaticField(x.FieldName.Value);
+                            if (field != null)
+                            {
+                                // TODO: visibility -> ErrCode
+
+                                Debug.Assert(
+                                    field.IsStatic ||   // .NET static
+                                    field.ContainingType.TryGetStatics().LookupMember<FieldSymbol>(x.FieldName.Value) != null); // or PHP context static
+
+                                x.BoundReference = field.IsStatic
+                                    ? new BoundFieldPlace(null, field, x.Access)        // the field is real .NET static member
+                                    : new BoundPhpStaticFieldPlace(field, x.Access);    // the field is contained in special __statics container
+
+                                x.TypeRefMask = field.GetResultType(TypeCtx);
+                                return;
+                            }
+                        }
+                    }
+
+                    // indirect field access with known class name
+                    // ...
+                }
+
+                // indirect field access
             }
+
+            //
+            if (x.IsClassConstant)
+            {
+                throw new NotImplementedException();
+            }
+
+            throw new ArgumentException();
         }
 
         #endregion

@@ -134,8 +134,13 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public static bool IsEmpty(this QualifiedName qname)
         {
-            return qname.IsSimpleName && string.IsNullOrEmpty(qname.Name.Value);
+            return (qname.Namespaces == null || qname.Namespaces.Length == 0) && string.IsNullOrEmpty(qname.Name.Value);
         }
+
+        /// <summary>
+        /// Gets value indicating whether given name was not set.
+        /// </summary>
+        public static bool IsEmpty(this VariableName name) => string.IsNullOrEmpty(name.Value);
 
         /// <summary>
         /// Gets variable name without leading <c>$</c>.

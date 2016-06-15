@@ -60,6 +60,7 @@ namespace Pchp.CodeAnalysis
                         if (t.Name == "PhpAlias") return TypeRefMask.AnyType.WithRefFlag;
                         if (t.Name == "PhpNumber") return ctx.GetNumberTypeMask();
                         if (t.Name == "PhpString") return ctx.GetWritableStringTypeMask();
+                        if (t.Name == "PhpArray") return ctx.GetArrayTypeMask();
                     }
 
                     break;

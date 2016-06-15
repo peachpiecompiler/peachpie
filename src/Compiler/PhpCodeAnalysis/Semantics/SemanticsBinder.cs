@@ -143,7 +143,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
             if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr, access);
-            if (expr is AST.GlobalConstUse) return BindGlobalConstUse((AST.GlobalConstUse)expr).WithAccess(access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
             if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
             if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
@@ -152,8 +151,30 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.PseudoConstUse) return BindPseudoConst((AST.PseudoConstUse)expr).WithAccess(access);
             if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
+            if (expr is AST.ConstantUse) return BindConstUse((AST.ConstantUse)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundExpression BindConstUse(AST.ConstantUse x)
+        {
+            if (x is AST.GlobalConstUse)
+            {
+                return BindGlobalConstUse((AST.GlobalConstUse)x);
+            }
+
+            if (x is AST.ClassConstUse)
+            {
+                var cx = (AST.ClassConstUse)x;
+                var dtype = cx.TypeRef as AST.DirectTypeRef;
+                var itype = cx.TypeRef as AST.IndirectTypeRef;
+
+                return (dtype != null)
+                    ? BoundFieldRef.CreateClassConst(dtype.ClassName, cx.Name)
+                    : BoundFieldRef.CreateClassConst(BindExpression(itype.ClassNameVar, BoundAccess.Read), cx.Name);
+            }
+
+            throw ExceptionUtilities.UnexpectedValue(x);
         }
 
         BoundExpression BindExitEx(AST.ExitEx x)
@@ -292,7 +313,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.NewEx) return BindNew((AST.NewEx)expr, access);
             if (expr is AST.ArrayEx) return BindArrayEx((AST.ArrayEx)expr, access);
             if (expr is AST.ItemUse) return BindItemUse((AST.ItemUse)expr, access);
-
+            if (expr is AST.StaticFieldUse) return BindFieldUse((AST.StaticFieldUse)expr, access);
+            
             throw new NotImplementedException(expr.GetType().FullName);
         }
 
@@ -375,6 +397,32 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 return BoundFieldRef.CreateInstanceField(BindExpression(expr.IsMemberOf, instanceAccess), expr.VarName).WithAccess(access);
             }
+        }
+
+        BoundExpression BindFieldUse(AST.StaticFieldUse x, BoundAccess access)
+        {
+            var dtype = x.TypeRef as AST.DirectTypeRef;
+            var itype = x.TypeRef as AST.IndirectTypeRef;
+
+            if (x is AST.DirectStFldUse)
+            {
+                var dx = (AST.DirectStFldUse)x;
+
+                return (dtype != null)
+                    ? BoundFieldRef.CreateStaticField(dtype.ClassName, dx.PropertyName)
+                    : BoundFieldRef.CreateStaticField(BindExpression(itype.ClassNameVar, BoundAccess.Read), dx.PropertyName);
+            }
+            else if (x is AST.IndirectStFldUse)
+            {
+                var ix = (AST.IndirectStFldUse)x;
+                var fieldNameExpr = BindExpression(ix.FieldNameExpr, BoundAccess.Read);
+
+                return (dtype != null)
+                    ? BoundFieldRef.CreateStaticField(dtype.ClassName, fieldNameExpr)
+                    : BoundFieldRef.CreateStaticField(BindExpression(itype.ClassNameVar, BoundAccess.Read), fieldNameExpr);
+            }
+
+            throw ExceptionUtilities.UnexpectedValue(x);
         }
 
         BoundExpression BindGlobalConstUse(AST.GlobalConstUse expr)

@@ -1119,8 +1119,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public BoundFieldPlace(BoundExpression instance, FieldSymbol field, BoundAccess access)
         {
             Contract.ThrowIfNull(field);
-            Debug.Assert(instance != null || field.IsStatic);
-
+            
             _instance = instance;
             _field = field;
             _access = access;
@@ -1232,9 +1231,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (type == cg.CoreTypes.PhpArray)
                 {
-                    // TODO: ensure it is not null
-                    EmitOpCode_Load(cg);
-                    return type;
+                    EmitOpCode_LoadAddress(cg); // ensure value is not null
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpArrayRef)
+                        .Expect(cg.CoreTypes.PhpArray);
                 }
 
                 throw new NotImplementedException();

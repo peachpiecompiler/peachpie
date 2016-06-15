@@ -17,8 +17,33 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <returns></returns>
         internal TypeSymbol TryGetStatics()
             => GetTypeMembers(WellKnownPchpNames.StaticsHolderClassName)
-                .Where(t => t.Arity == 0 && t.DeclaredAccessibility == Microsoft.CodeAnalysis.Accessibility.Public && !t.IsStatic)
+                .Where(t => t.Arity == 0 && t.DeclaredAccessibility == Accessibility.Public && !t.IsStatic)
                 .SingleOrDefault();
+
+        /// <summary>
+        /// Tries to find field with given name that can be used as a static field.
+        /// Lookups through the class inheritance.
+        /// Does not handle member visibility.
+        /// </summary>
+        internal FieldSymbol ResolveStaticField(string name)
+        {
+            FieldSymbol field = null;
+
+            for (var t = this; t != null && field == null; t = t.BaseType)
+            {
+                field = t.GetMembers(name).OfType<FieldSymbol>().SingleOrDefault();
+                if (field == null)
+                {
+                    var statics = t.TryGetStatics();
+                    if (statics != null)
+                    {
+                        field = statics.GetMembers(name).OfType<FieldSymbol>().SingleOrDefault();
+                    }
+                }
+            }
+
+            return field;
+        }
 
         /// <summary>
         /// Emits load of statics holder.
