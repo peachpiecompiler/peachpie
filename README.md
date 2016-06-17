@@ -41,7 +41,8 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Fields     
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Properties   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Interfaces   
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Constants  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Constants  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: SZ/MD Arrays  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Extension Assembly (for global functions, constants, types)  
    :white_check_mark: Control Flow Graph (CFG)  
    :white_check_mark: Binder (Roslyn IOperation)     
@@ -83,9 +84,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Interfaces  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Runtime Fields holder  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Method Overloads  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Static fields (in a separate class initialized in Context)  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Constants  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Constants that can't be initialized with CLI literal initialized lazily  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Static and Constant fields  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Methods overriding   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Places (locals, context)   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Blocks compiler   
@@ -99,7 +98,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Compound assignment (+=, *=, …)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Comparison, equality, strict equality for all operand types  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: List  
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Unset  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Unset  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Isset  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Overload resolution   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Object instantiation   
@@ -115,7 +114,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: convert expression before [] to PhpArray  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Indirects (var, func, const)     
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Routine generalization    
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Application runtime tables  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Application runtime tables  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Inclusion   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Dynamic target  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Resolve target in runtime properly    
