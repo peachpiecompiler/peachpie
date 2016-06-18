@@ -354,20 +354,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public static TypeSymbol EmitInstance(InstanceCacheHolder holderOrNull, CodeGenerator cg, BoundExpression instance)
         {
-            if (instance != null)
+            return (instance != null) ? EmitInstance(holderOrNull, cg, () => cg.Emit(instance)) : null;
+        }
+
+        public static TypeSymbol EmitInstance(InstanceCacheHolder holderOrNull, CodeGenerator cg, Func<TypeSymbol> emitter)
+        {
+            if (holderOrNull != null)
             {
-                if (holderOrNull != null)
-                {
-                    return holderOrNull.EmitInstance(cg, instance);
-                }
-                else
-                {
-                    return cg.Emit(instance);
-                }
+                return holderOrNull.EmitInstance(cg, emitter);
             }
             else
             {
-                return null;
+                return emitter();
             }
         }
 
@@ -392,15 +390,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits <paramref name="instance"/>, uses cached value if initialized already.
         /// </summary>
-        TypeSymbol EmitInstance(CodeGenerator cg, BoundExpression instance)
+        TypeSymbol EmitInstance(CodeGenerator cg, Func<TypeSymbol> emitter)
         {
             Debug.Assert(cg != null);
 
-            if (instance != null)
-            {
                 if (_instance_loc != null)
                 {
-                    Debug.Assert(instance.ResultType == (TypeSymbol)_instance_loc.Type);
                     cg.Builder.EmitLocalLoad(_instance_loc);
                 }
                 else
@@ -408,15 +403,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _cg = cg;
 
                     // return (<loc> = <instance>);
-                    _instance_loc = cg.GetTemporaryLocal(cg.Emit(instance));
+                    _instance_loc = cg.GetTemporaryLocal(emitter());
                     cg.EmitOpCode(ILOpCode.Dup);
                     cg.Builder.EmitLocalStore(_instance_loc);
                 }
 
                 return (TypeSymbol)_instance_loc.Type;
-            }
-
-            return null;
         }
 
         /// <summary>
@@ -1467,7 +1459,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         protected override void EmitLoadFieldInstance(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             // Template: <ctx>.GetStatics<_statics>().Field
-            var statics = this.Field.ContainingType.EmitLoadStatics(cg);
+            var statics = InstanceCacheHolder.EmitInstance(instanceOpt, cg,
+                () => this.Field.ContainingType.EmitLoadStatics(cg));
+
             if (statics == null)
                 throw new InvalidOperationException();
         }

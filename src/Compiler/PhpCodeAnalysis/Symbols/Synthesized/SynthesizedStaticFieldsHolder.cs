@@ -157,7 +157,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            return ImmutableArray.Create(DeclaringCompilation.CoreTypes.IStaticInit.Symbol);
+            if (GetMembers().OfType<SourceFieldSymbol>().Any(f => f.InitializerRequiresContext))
+                return ImmutableArray.Create(DeclaringCompilation.CoreTypes.IStaticInit.Symbol);    // we need Init() method
+            else
+                return ImmutableArray<NamedTypeSymbol>.Empty;
         }
 
         #endregion
