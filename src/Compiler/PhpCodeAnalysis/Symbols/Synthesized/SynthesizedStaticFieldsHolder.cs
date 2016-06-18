@@ -87,6 +87,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int Arity => 0;
 
+        public override NamedTypeSymbol BaseType => DeclaringCompilation.CoreTypes.Object;
+
         public override Symbol ContainingSymbol => _class;
 
         public override NamedTypeSymbol ContainingType => _class;

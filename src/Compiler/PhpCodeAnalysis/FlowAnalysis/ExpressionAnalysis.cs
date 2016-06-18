@@ -1384,7 +1384,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 throw new NotImplementedException();
             }
 
-            throw new ArgumentException();
+            throw new NotImplementedException();
         }
 
         #endregion

@@ -14,7 +14,7 @@ namespace Pchp.Core
 {
     using TFunctionsMap = Context.HandleMap<RuntimeMethodHandle, Providers.RuntimeMethodHandleComparer, Providers.OrdinalIgnoreCaseStringComparer>;
     using TTypesMap = Context.HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer>;
-    
+
     /// <summary>
     /// Runtime context for a PHP application.
     /// </summary>
@@ -31,7 +31,7 @@ namespace Pchp.Core
         {
             _functions = new TFunctionsMap(FunctionRedeclared);
             _types = new TTypesMap(TypeRedeclared);
-            _statics = new object[_staticsCount];
+            _statics = new object[StaticIndexes.StaticsCount];
 
             _globals = new PhpArray();
             // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
@@ -259,16 +259,13 @@ namespace Pchp.Core
             public static int Index;
         }
 
-        /// <summary>
-        /// Gets static object instance within the context with given index.
-        /// Initializes the index with new unique value if necessary.
-        /// </summary>
-        T GetStatic<T>(ref int idx) where T : new()
+        static class StaticIndexes
         {
-            if (idx <= 0)
-                idx = NewIdx();
+            public static int StaticsCount = 0;
 
-            return GetStatic<T>(idx);
+            public static int StaticsIndex<T>() => Statics<T>.Index;
+
+            static class Statics<T> { public static readonly int Index = StaticsCount++; }
         }
 
         /// <summary>
@@ -315,33 +312,13 @@ namespace Pchp.Core
         /// Gets context static object of type <typeparamref name="T"/>.
         /// </summary>
         /// <typeparam name="T">Type of the object to be stored within context.</typeparam>
-        public T GetStatic<T>() where T : new() => GetStatic<T>(ref IndexHolder<T>.Index);
-
-        /// <summary>
-        /// Gets new index to be used within <see cref="_statics"/> array.
-        /// </summary>
-        int NewIdx()
-        {
-            int idx;
-
-            lock (_statics)
-            {
-                idx = Interlocked.Increment(ref _staticsCount);
-            }
-
-            return idx;
-        }
+        public T GetStatic<T>() where T : new() => GetStatic<T>(StaticIndexes.StaticsIndex<T>());
 
         /// <summary>
         /// Static objects within the context.
         /// Cannot be <c>null</c>.
         /// </summary>
         object[] _statics;
-
-        /// <summary>
-        /// Number of static objects so far registered within context.
-        /// </summary>
-        static volatile int/*!*/_staticsCount;
 
         #endregion
 

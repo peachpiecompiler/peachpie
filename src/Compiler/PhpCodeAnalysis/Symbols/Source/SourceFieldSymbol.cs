@@ -123,7 +123,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsConst => true;
 
-        public override bool IsReadOnly => true;
+        public override bool IsReadOnly => false;
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
         {
