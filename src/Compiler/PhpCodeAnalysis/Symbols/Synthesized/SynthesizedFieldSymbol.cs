@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.Symbols
         TypeSymbol _type;
         readonly string _name;
         readonly Accessibility _accessibility;
-        readonly bool _isStatic;
+        readonly bool _isStatic, _isReadOnly;
         readonly ConstantValue _const;
 
         public SynthesizedFieldSymbol(
@@ -23,13 +23,15 @@ namespace Pchp.CodeAnalysis.Symbols
             TypeSymbol type,
             string name,
             Accessibility accessibility,
-            bool isStatic)
+            bool isStatic = false,
+            bool isReadOnly = false)
         {
             _containing = containing;
             _name = name;
             _type = type;
             _accessibility = accessibility;
             _isStatic = isStatic;
+            _isReadOnly = isReadOnly;
         }
 
         public SynthesizedFieldSymbol(
@@ -55,7 +57,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsConst => _const != null;
 
-        public override bool IsReadOnly => false; // IsConst;
+        public override bool IsReadOnly => _isReadOnly;   // .initonly
 
         public override bool IsStatic => _isStatic;
 

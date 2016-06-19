@@ -165,7 +165,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     //
                     if (_lazyContextField == null)
-                        _lazyContextField = new SynthesizedFieldSymbol(this, types.Context.Symbol, SpecialParameterSymbol.ContextName, Accessibility.Protected, false);
+                        _lazyContextField = new SynthesizedFieldSymbol(this, types.Context.Symbol, SpecialParameterSymbol.ContextName, Accessibility.Protected, false, true);
                 }
 
                 return _lazyContextField;
