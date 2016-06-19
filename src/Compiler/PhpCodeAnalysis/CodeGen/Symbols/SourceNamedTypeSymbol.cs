@@ -63,4 +63,36 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
     }
+
+    partial class SourceNamedTypeSymbol
+    {
+        internal void EmitInit(Emit.PEModuleBuilder module)
+        {
+            // .cctor
+            EmitFieldsCctor(module);
+
+            // __statics.Init
+            var statics = this.EnsureStaticsContainer();
+            if (statics != null && !statics.IsEmpty)
+                statics.EmitCtors(module);
+        }
+
+        void EmitFieldsCctor(Emit.PEModuleBuilder module)
+        {
+            var sflds = GetMembers().OfType<SourceFieldSymbol>().Where(f => f.IsStatic).ToArray();
+            if (sflds.Length != 0)
+            {
+                // emit initialization of app static fields
+                // note, their initializers do not have Context available, since they are not bound to a Context
+
+                var cctor = module.GetStaticCtorBuilder(this);
+                var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, null, null);
+
+                foreach (var f in sflds)
+                {
+                    f.EmitInit(cg);
+                }
+            }
+        }
+    }
 }

@@ -132,9 +132,7 @@ namespace Pchp.CodeAnalysis
 
             // __statics.Init
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
-                .Select(t => t.EnsureStaticsContainer())
-                .Where(t => !t.IsEmpty)
-                .ForEach(t => t.EmitCtors(_moduleBuilder));
+                .ForEach(t => t.EmitInit(_moduleBuilder));
 
             // default .ctors
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()

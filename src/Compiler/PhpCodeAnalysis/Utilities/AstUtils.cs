@@ -59,5 +59,31 @@ namespace Pchp.CodeAnalysis
 
             return new LinePosition(line, col);
         }
+
+        /// <summary>
+        /// Attribute name determining the field below is app-static instead of context-static.
+        /// </summary>
+        public const string AppStaticTagName = "@appstatic";
+
+        /// <summary>
+        /// Lookups notation determining given field as app-static instead of context-static.
+        /// </summary>
+        /// <param name="field"></param>
+        /// <returns></returns>
+        public static bool IsAppStatic(this FieldDeclList field)
+        {
+            if (field != null && field.Modifiers.IsStatic())
+            {
+                var phpdoc = field.PHPDoc;
+                if (phpdoc != null)
+                {
+                    return phpdoc.Elements
+                        .OfType<Syntax.PHPDocBlock.UnknownTextTag>()
+                        .Any(t => t.TagName.Equals(AppStaticTagName, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            return false;
+        }
     }
 }

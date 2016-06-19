@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 var fdecl = srcmember as Syntax.AST.FieldDeclList;
-                if (fdecl != null && fdecl.Modifiers.IsStatic())    // static fields has to be contained in the holder
+                if (fdecl != null && fdecl.Modifiers.IsStatic() && !fdecl.IsAppStatic())    // context-static fields has to be contained in the holder
                 {
                     foreach (var f in fdecl.Fields)
                     {
