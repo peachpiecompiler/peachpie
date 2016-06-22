@@ -199,7 +199,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return Construct(modifiedArguments, unbound);
         }
 
-
         internal NamedTypeSymbol Construct(ImmutableArray<TypeWithModifiers> arguments, bool unbound)
         {
             if (!ReferenceEquals(this, ConstructedFrom) || this.Arity == 0)
@@ -279,6 +278,17 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(this.IsDefinition);
             Debug.Assert(ReferenceEquals(newOwner.OriginalDefinition, this.ContainingSymbol.OriginalDefinition));
             return newOwner.IsDefinition ? this : new SubstitutedNestedTypeSymbol((SubstitutedNamedTypeSymbol)newOwner, this);
+        }
+
+        /// <summary>
+        /// PHP constructor method in this class.
+        /// Can be <c>null</c>.
+        /// </summary>
+        internal MethodSymbol ResolvePhpCtor()
+        {
+            return
+                this.GetMembers(Syntax.Name.SpecialMethodNames.Construct.Value).OfType<MethodSymbol>().FirstOrDefault() ??
+                this.GetMembers(this.Name).OfType<MethodSymbol>().FirstOrDefault();
         }
 
         #region INamedTypeSymbol

@@ -138,7 +138,7 @@ namespace Pchp.CodeAnalysis
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
                 .Select(t => (SynthesizedCtorWrapperSymbol)t.InstanceCtorMethodSymbol)
                 .WhereNotNull()
-                .ForEach(this.EmitCtorBody);
+                .ForEach(ctor => MethodGenerator.EmitCtorBody(_moduleBuilder, ctor, _diagnostics, _emittingPdb));
 
             // realize .cctor if any
             _moduleBuilder.GetTopLevelTypes(default(Microsoft.CodeAnalysis.Emit.EmitContext)).OfType<NamedTypeSymbol>()
@@ -155,12 +155,6 @@ namespace Pchp.CodeAnalysis
 
             var body = MethodGenerator.GenerateMethodBody(_moduleBuilder, routine, 0, null, _diagnostics, _emittingPdb);
             _moduleBuilder.SetMethodBody(routine, body);
-        }
-
-        void EmitCtorBody(SynthesizedCtorWrapperSymbol ctorsymbol)
-        {
-            Contract.ThrowIfNull(ctorsymbol);
-            MethodGenerator.EmitCtorBody(_moduleBuilder, ctorsymbol, _diagnostics, _emittingPdb);
         }
 
         void CompileEntryPoint(CancellationToken cancellationToken)

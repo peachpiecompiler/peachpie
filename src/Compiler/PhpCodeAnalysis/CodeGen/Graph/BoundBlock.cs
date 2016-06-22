@@ -45,8 +45,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             //
             if (cg.IsDebug)
             {
-                // emit Debug.Assert(<context> != null);
-                // emit parameters checks
+                if (cg.Routine.IsStatic)
+                {
+                    // Debug.Assert(<context> != null);
+                    cg.EmitDebugAssertNotNull(cg.ContextPlaceOpt, "Context cannot be null.");
+                }
+
+                // TODO: emit parameters checks
             }
 
             //

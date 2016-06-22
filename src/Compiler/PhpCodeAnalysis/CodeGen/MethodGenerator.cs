@@ -175,6 +175,49 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        static TypeSymbol EmitForwardMethodCall(ILBuilder il, CodeGenerator cg, ImmutableArray<ParameterSymbol> parameters, MethodSymbol forwardedmethod)
+        {
+            // TODO: move to CodeGenerator
+
+            if (forwardedmethod == null)
+                return cg.CoreTypes.Void;
+
+            if (forwardedmethod.HasThis)
+            {
+                cg.EmitThis();
+            }
+
+            var source = 1;
+            var calledparams = forwardedmethod.Parameters;
+            for (int i = 0; i < calledparams.Length; i++)
+            {
+                var calledp = calledparams[i];
+                if (SpecialParameterSymbol.IsContextParameter(calledp))
+                {
+                    cg.EmitLoadContext();
+                }
+                else if (source < parameters.Length)
+                {
+                    var srcp = parameters[source++];
+                    if (srcp.CanBePassedTo(calledp))
+                    {
+                        new ParamPlace(srcp).EmitLoad(il);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Signature does not match.");
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("Signature does not match.");
+                }
+            }
+
+            //
+            return cg.EmitCall(ILOpCode.Call, forwardedmethod);
+        }
+
         internal static void EmitCtorBody(
             PEModuleBuilder moduleBuilder,
             SynthesizedCtorWrapperSymbol routine,
@@ -186,11 +229,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             var compilation = moduleBuilder.Compilation;
             var parameters = routine.Parameters;
 
-            Debug.Assert(parameters[0].Type == compilation.CoreTypes.Context);    // first parameter always <ctx>
+            Debug.Assert(SpecialParameterSymbol.IsContextParameter(parameters[0]));    // first parameter always <ctx>
+            Debug.Assert(routine.ReturnsVoid);
 
             var type = (SourceNamedTypeSymbol)routine.ContainingType;
             var ctxField = type.ContextField;       // .<ctx>
-            var realctor = routine.RealCtorMethod;  // .ctor or __construct to be called
+            var basector = routine.BaseCtor;  // base..ctor to be called
+
+            // __construct to be called
+            var phpctor = routine.PhpCtor;
+
+            for (var t = type.BaseType; phpctor == null && t != null; t = t.BaseType)
+            {
+                phpctor = t.ResolvePhpCtor();   // lookups PHP constructor in base class if not implemented in this one
+            }
 
             Debug.Assert(!type.IsStatic);
 
@@ -200,20 +252,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             // initialize <ctx> field
             if (ctxField != null)
             {
-                // if field is declared within this type or
-                // realctor is __construct
-                if (object.ReferenceEquals(ctxField.ContainingType, type) || object.ReferenceEquals(realctor?.ContainingType, type))
+                // if field is declared within this type
+                if (object.ReferenceEquals(ctxField.ContainingType, type) || basector == null)
                 {
-                    // TODO: emit debug.assert(<ctx> != null)
+                    var ctxFieldPlace = new FieldPlace(cg.ThisPlaceOpt, ctxField);
+
+                    // Debug.Assert(<ctx> != null)
+                    cg.EmitDebugAssertNotNull(cg.ContextPlaceOpt, "Context cannot be null.");
 
                     // <this>.<ctx> = <ctx>
-                    cg.EmitThis();
+                    ctxFieldPlace.EmitStorePrepare(il);
                     cg.EmitLoadContext();
-
-                    il.EmitOpCode(ILOpCode.Stfld);
-                    il.EmitToken(ctxField, null, diagnostics);
+                    ctxFieldPlace.EmitStore(il);
                 }
             }
+
+            // call base .ctor
+            cg.EmitPop(EmitForwardMethodCall(il, cg, parameters, basector));
 
             // initialize class fields,
             // default(PhpValue) is not a valid value, its TypeTable must not be null
@@ -222,53 +277,29 @@ namespace Pchp.CodeAnalysis.CodeGen
                 fld.EmitInit(cg);
             }
 
-            // call __construct method
-            if (realctor != null)
+            // if (this.GetType() == typeof(type)) call phpctor
+            if (phpctor != null)
             {
-                Debug.Assert(!realctor.IsStatic);
-                var ps = realctor.Parameters;
-                
-                // call realctor
+                object ifendLbl = new object();
                 cg.EmitThis();
-
-                // TODO: bind arguments using overload resolution, following is temporary:
-
-                int source = 2; // skip <ctx>
-
-                for (int i = 0; i < ps.Length; i++)
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.Object.Method("GetType"));
+                cg.EmitLoadToken(type, null);
+                cg.EmitCall(ILOpCode.Call, (MethodSymbol)cg.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Type__GetTypeFromHandle));
+                il.EmitBranch(ILOpCode.Bne_un, ifendLbl);  // value1 != value2
+                if (true)
                 {
-                    var targetp = ps[i];
-                    if (targetp.IsImplicitlyDeclared)
-                    {
-                        if (ps[i].Type == compilation.CoreTypes.Context)
-                        {
-                            // load <ctx>
-                            cg.EmitLoadContext();
-                            continue;
-                        }
-                    }
-
-                    var srcp = parameters[source - 1];
-                    if (targetp.Type == srcp.Type)
-                    {
-                        il.EmitLoadArgumentOpcode(source);
-                        source++;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("Signature does not match.");
-                    }
+                    cg.EmitPop(EmitForwardMethodCall(il, cg, parameters, phpctor));
                 }
 
-                cg.EmitPop(cg.EmitCall(ILOpCode.Call, realctor));
-
-                //
-                il.EmitRet(true);
-
-                //
-                var body = CreateSynthesizedBody(moduleBuilder, routine, il);
-                moduleBuilder.SetMethodBody(routine, body);
+                il.MarkLabel(ifendLbl);
             }
+
+            //
+            il.EmitRet(true);
+
+            //
+            var body = CreateSynthesizedBody(moduleBuilder, routine, il);
+            moduleBuilder.SetMethodBody(routine, body);
         }
 
         internal static MethodBody CreateSynthesizedBody(PEModuleBuilder moduleBuilder, IMethodSymbol routine, ILBuilder il)

@@ -24,6 +24,16 @@ namespace Pchp.CodeAnalysis.Symbols
         ParameterSymbol _lazyThisSymbol;
         MethodSymbol _lazyOverridenMethod;
 
+        internal bool IsPhpConstructorMethod
+        {
+            get
+            {
+                return !this.IsStatic && (
+                    this.Name == Pchp.Syntax.Name.SpecialMethodNames.Construct.Value ||
+                    this.Name == this.ContainingType.Name);
+            }
+        }
+
         public SourceMethodSymbol(SourceNamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
         {
             Contract.ThrowIfNull(type);
@@ -150,7 +160,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsStatic => _syntax.Modifiers.IsStatic();
 
         public override bool IsVirtual => !IsSealed && !_type.IsSealed && !IsStatic
-            && Pchp.Syntax.Name.SpecialMethodNames.Construct != _syntax.Name;   // __construct is not overridable
+            && !IsPhpConstructorMethod;   // __construct is not overridable
 
         public override ImmutableArray<Location> Locations
         {
@@ -165,7 +175,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var tmask = TypeRefMask.AnyType;
-                if (this.IsStatic || this.DeclaredAccessibility == Accessibility.Private)
+                if (this.IsStatic || this.DeclaredAccessibility == Accessibility.Private || this.IsPhpConstructorMethod)
                 {
                     // allow flow analysed type to be used as method return type
                     tmask = this.ControlFlowGraph.ReturnTypeMask;

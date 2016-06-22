@@ -54,6 +54,13 @@ namespace Pchp.CodeAnalysis.Symbols
             _index = index;
         }
 
+        /// <summary>
+        /// Determines whether given parameter is treated as a special Context parameter
+        /// which is always first and of type <c>Pchp.Core.Context</c>.
+        /// </summary>
+        public static bool IsContextParameter(ParameterSymbol p)
+            => p != null && p.Ordinal == 0 && p.Type != null && p.Type.MetadataName == "Context"; // TODO: && namespace == Pchp.Core.
+
         public override bool IsImplicitlyDeclared => true;
 
         public override Symbol ContainingSymbol => _symbol;

@@ -86,5 +86,13 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get { return null; }
         }
+
+        /// <summary>
+        /// Helper method that checks whether this parameter can be passed to anothers method parameter.
+        /// </summary>
+        internal bool CanBePassedTo(ParameterSymbol another)
+        {
+            return another != null && this.Type.IsEqualToOrDerivedFrom(another.Type);
+        }
     }
 }

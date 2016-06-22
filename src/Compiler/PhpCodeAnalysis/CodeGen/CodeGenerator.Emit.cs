@@ -31,6 +31,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             return _contextPlace.EmitLoad(_il);
         }
 
+        /// <summary>
+        /// Gets <see cref="IPlace"/> of current <c>Context</c>.
+        /// </summary>
+        public IPlace ContextPlaceOpt => _contextPlace;
+
         public void EmitCallerRuntimeTypeHandle()
         {
             var caller = this.CallerType;
@@ -1252,6 +1257,44 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             _il.EmitRet(isVoid);
+        }
+
+        /// <summary>
+        /// Emits <c>place != null</c> expression.
+        /// </summary>
+        public void EmitNotNull(IPlace place)
+        {
+            Debug.Assert(place != null);
+            Debug.Assert(place.TypeOpt.IsReferenceType);
+
+            // {place} != null : boolean
+            place.EmitLoad(_il);
+            _il.EmitNullConstant();
+            _il.EmitOpCode(ILOpCode.Cgt_un);
+        }
+
+        /// <summary>
+        /// Emits <c>Debug.Assert([stack]) in debug compile mode.</c>
+        /// </summary>
+        /// <param name="messageOpt">Optional second argument for assert.</param>
+        public void EmitDebugAssertNotNull(IPlace place, string messageOpt = null)
+        {
+            if (IsDebug)
+            {
+                //EmitNotNull(place);
+                //EmitDebugAssert(messageOpt);
+            }
+        }
+
+        /// <summary>
+        /// Emits <c>Debug.Assert([stack]).</c>
+        /// </summary>
+        /// <param name="messageOpt">Optional second argument for assert.</param>
+        public void EmitDebugAssert(string messageOpt = null)
+        {
+            //var dt = this.DeclaringCompilation.GetTypeByMetadataName("System.Diagnostics.Debug"); // System.dll
+            //dt.GetMember("Assert")
+            throw new NotImplementedException();
         }
     }
 
