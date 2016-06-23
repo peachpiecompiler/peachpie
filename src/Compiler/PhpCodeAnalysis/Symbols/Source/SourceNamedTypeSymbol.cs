@@ -183,7 +183,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 NamedTypeSymbol t = this.BaseType;
                 while (t != null && t != types.Object.Symbol)
                 {
-                    var candidates = t.GetMembers(fldname)
+                    var candidates = t.GetMembers(fldname).Concat(t.GetMembers("__peach__runtimeFields"))
                         .OfType<FieldSymbol>()
                         .Where(f => f.DeclaredAccessibility != Accessibility.Public && !f.IsStatic && f.Type == types.PhpArray.Symbol)
                         .ToList();
