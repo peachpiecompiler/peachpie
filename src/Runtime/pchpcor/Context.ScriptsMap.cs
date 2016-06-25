@@ -33,6 +33,11 @@ namespace Pchp.Core
             public static ScriptInfo Empty => default(ScriptInfo);
 
             /// <summary>
+            /// Compiler generated type containing reflection and entry information.
+            /// </summary>
+            public const string ScriptTypeName = "<Script>";
+
+            /// <summary>
             /// Whether the script is defined.
             /// </summary>
             public bool IsValid => this.MainMethod != null;
