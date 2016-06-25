@@ -58,7 +58,10 @@ namespace Pchp.Core
 
         #endregion
 
-        public override string RootPath => HttpRuntime.BinDirectory;
+        /// <summary>
+        /// Application physical root directory including trailing slash.
+        /// </summary>
+        public override string RootPath => HttpRuntime.AppDomainAppPath;
 
         /// <summary>
         /// Includes requested script file.
