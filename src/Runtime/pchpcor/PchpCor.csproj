@@ -48,10 +48,16 @@
     <Compile Include="Dynamic\OverloadResolver.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="OrderedDictionary.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="PhpArray.cs" />
     <Compile Include="PhpArray.DebuggerTypeProxy.cs" />
     <Compile Include="PhpHashtable.cs" />
     <Compile Include="PhpValue.DebuggerTypeProxy.cs" />
+    <Compile Include="Resources\ErrResources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ErrResources.resx</DependentUpon>
+    </Compile>
     <Compile Include="Variables.cs" />
     <Compile Include="std\stdClass.cs" />
     <Compile Include="std\__PHP_Incomplete_Class.cs" />
@@ -79,6 +85,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PhpValue.TypeTable.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\ErrResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ErrResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
