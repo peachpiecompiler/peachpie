@@ -61,7 +61,6 @@
     <Compile Include="Variables.cs" />
     <Compile Include="std\stdClass.cs" />
     <Compile Include="std\__PHP_Incomplete_Class.cs" />
-    <Compile Include="Console\ConsoleImports.cs" />
     <Compile Include="Context.Output.cs" />
     <Compile Include="Context.cs" />
     <Compile Include="Conversions.cs" />

@@ -132,7 +132,7 @@ namespace Pchp.Core
         public void Echo(string value)
         {
             if (value != null)
-                ConsoleImports.Write(value);
+                Output.Write(value);
         }
 
         public void Echo(PhpString value)
@@ -142,7 +142,7 @@ namespace Pchp.Core
 
         public void Echo(PhpValue value)
         {
-            ConsoleImports.Write(value.ToString(this));
+            Output.Write(value.ToString(this)); // TODO: echo byte[] properly
         }
 
         public void Echo(PhpNumber value)
@@ -155,17 +155,17 @@ namespace Pchp.Core
 
         public void Echo(double value)
         {
-            ConsoleImports.Write(Convert.ToString(value, this));
+            Output.Write(Convert.ToString(value, this));
         }
 
         public void Echo(long value)
         {
-            ConsoleImports.Write(value.ToString());
+            Output.Write(value);
         }
 
         public void Echo(int value)
         {
-            ConsoleImports.Write(value.ToString());
+            Output.Write(value);
         }
 
         #endregion

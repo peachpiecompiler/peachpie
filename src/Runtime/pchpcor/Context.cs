@@ -28,10 +28,8 @@ namespace Pchp.Core
     {
         #region Create
 
-        protected Context(Stream output)
+        protected Context()
         {
-            InitOutput(output);
-
             _functions = new TFunctionsMap(FunctionRedeclared);
             _types = new TTypesMap(TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
@@ -45,7 +43,17 @@ namespace Pchp.Core
         /// </summary>
         public static Context CreateConsole(string[] args)
         {
-            return new Context(null);   // TODO: console output stream
+            var ctx = new Context();
+
+            var tconsole = Type.GetType("System.Console", true).GetTypeInfo();
+
+            // initializes output redirecting fields:
+            ctx._textSink = (TextWriter)tconsole.GetDeclaredProperty("Out").GetMethod.Invoke(null, new object[0]);
+            ctx._streamSink = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").First(m => m.GetParameters().Length == 0).Invoke(null, new object[0]);
+            ctx.IsOutputBuffered = false;
+
+            //
+            return ctx;
         }
 
         /// <summary>
@@ -53,7 +61,10 @@ namespace Pchp.Core
         /// </summary>
         public static Context CreateEmpty()
         {
-            return new Context(null);
+            var ctx = new Context();
+            ctx.InitOutput(null);
+
+            return ctx;
         }
 
         #endregion

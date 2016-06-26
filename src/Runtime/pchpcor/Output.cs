@@ -34,12 +34,12 @@ namespace Pchp.Core
             /// <summary>
             /// The number of valid bytes/chars of the data array.
             /// </summary>
-            internal int size;
+            public int size;
 
             /// <summary>
             /// Array containing buffered data.
             /// </summary>
-            internal Array data;
+            public Array data;
         }
 
         /// <summary>
@@ -47,9 +47,9 @@ namespace Pchp.Core
         /// </summary>
         private class LevelElement
         {
-            internal LevelElement(int index)
+            public LevelElement(int index)
             {
-                this.index = index;
+                this.Index = index;
                 this.buffers = new List<BufferElement>();
             }
 
@@ -57,15 +57,19 @@ namespace Pchp.Core
             /// Copies index, name and filter from the element.
             /// </summary>
             /// <param name="element"></param>
-            internal LevelElement(LevelElement/*!*/element)
-                : this(element.index)
+            public LevelElement(LevelElement/*!*/element)
+                : this(element.Index)
             {
                 filter = element.filter;
                 levelName = element.levelName;
                 userData = element.userData;
             }
 
-            public readonly int index;         // the index of the level in levels array list
+            /// <summary>
+            /// The index of the level in levels array list.
+            /// </summary>
+            public readonly int Index;
+
             public int size;                   // the size (chars + bytes) of all data stored in the buffers list
             public int[] freeSpace = { 0, 0 };    // the number of free bytes/chars in the last byte/char buffer of buffers
             public List<BufferElement> buffers;          // the list of buffers where data are stored   // TODO: PhpString
@@ -83,50 +87,50 @@ namespace Pchp.Core
         /// <summary>
         /// The list of LevelElements.
         /// </summary>
-        private List<LevelElement> levels;
+        private List<LevelElement> _levels;
 
         // the current level of buffering (usually the last one); null iff the buffering is disabled
-        private LevelElement level;
+        private LevelElement _level;
 
         /// <summary>
         /// Minimal sizes of buffers. 
         /// </summary>
-        internal readonly int[] minBufferSize = { 2 * 1024, 20 * 1024 };
+        internal readonly int[] _minBufferSize = { 2 * 1024, 20 * 1024 };
 
         /// <summary>
         /// The writer through which character data will be written.
         /// </summary>
-        public TextWriter CharSink { get { return charSink; } set { charSink = value; } }
-        private TextWriter charSink;
+        public TextWriter CharSink { get { return _charSink; } set { _charSink = value; } }
+        private TextWriter _charSink;
 
         /// <summary>
         /// The stream through which binary data will be written.
         /// </summary>
-        public Stream ByteSink { get { return byteSink; } set { byteSink = value; } }
-        private Stream byteSink;
+        public Stream ByteSink { get { return _byteSink; } set { _byteSink = value; } }
+        private Stream _byteSink;
 
         /// <summary>
         /// Encoding used by <see cref="GetContentAsString"/> converting binary data to a string.
         /// </summary>
-        public override Encoding Encoding { get { return encoding; } }
-        private Encoding encoding;
+        public override Encoding Encoding { get { return _encoding; } }
+        private Encoding _encoding;
 
         /// <summary>
         /// The buffered binary stream used as for loading binary data to buffers.
         /// </summary>
-        public BufferedOutputStream Stream { get { return stream; } }
-        private BufferedOutputStream stream;
+        public BufferedOutputStream Stream { get { return _stream; } }
+        private BufferedOutputStream _stream;
 
         /// <summary>
         /// Current buffer level starting from 1. Zero if buffering is disabled.
         /// </summary>
-        public int Level { get { return (level != null) ? level.index + 1 : 0; } }
+        public int Level { get { return (_level != null) ? _level.Index + 1 : 0; } }
 
         /// <summary>
         /// The total length of data written to the current level of buffering.
         /// Returns -1 if buffering is disabled.
         /// </summary>
-        public int Length { get { return (level != null) ? level.size : -1; } }
+        public int Length { get { return (_level != null) ? _level.size : -1; } }
 
         #endregion
 
@@ -141,11 +145,11 @@ namespace Pchp.Core
         /// <param name="encoding">A encoding used to transform binary data to strings.</param>
         public BufferedOutput(bool enableBuffering, TextWriter charSink, Stream byteSink, Encoding encoding)
         {
-            this.charSink = charSink;
-            this.byteSink = byteSink;
-            this.encoding = encoding;
-            stream = new BufferedOutputStream(this);
-            levels = new List<LevelElement>();
+            _charSink = charSink;
+            _byteSink = byteSink;
+            _encoding = encoding;
+            _stream = new BufferedOutputStream(this);
+            _levels = new List<LevelElement>();
 
             if (enableBuffering)
                 IncreaseLevel();
@@ -177,37 +181,37 @@ namespace Pchp.Core
         /// </remarks>
         private int AllocateBuffer(int sizeNeeded, bool binary, out System.Array buffer, out int position)
         {
-            Debug.Assert(level != null);
+            Debug.Assert(_level != null);
 
             BufferElement element;
             int chunk;
             int kind = binary ? 1 : 0;
 
             // close binary buffer:
-            level.freeSpace[1 - kind] = 0;
+            _level.freeSpace[1 - kind] = 0;
 
-            if (binary) level.containsByteData = true; else level.containsCharData = true;
+            if (binary) _level.containsByteData = true; else _level.containsCharData = true;
 
             // no free space for characters found (no buffer exists, the top buffer isn't a character buffer
             // or the top buffer is full character buffer):
-            if (level.freeSpace[kind] == 0)
+            if (_level.freeSpace[kind] == 0)
             {
                 // computes the size of buffer to be allocated as min{sizeNeeded,dafaultBufferSize}:
                 int size = sizeNeeded;
-                if (size < minBufferSize[kind])
+                if (size < _minBufferSize[kind])
                 {
-                    size = minBufferSize[kind];
-                    level.freeSpace[kind] = size - sizeNeeded;
+                    size = _minBufferSize[kind];
+                    _level.freeSpace[kind] = size - sizeNeeded;
                 }
                 else
-                    level.freeSpace[kind] = 0; // all space in allocated buffer will be occupied
+                    _level.freeSpace[kind] = 0; // all space in allocated buffer will be occupied
 
                 // allocates a new buffer element for data:
                 element = new BufferElement();
                 if (binary) buffer = new byte[size]; else buffer = new char[size];
                 element.data = buffer;
                 element.size = sizeNeeded;   //sizeNeeded <= (buffer size)
-                level.buffers.Add(element);
+                _level.buffers.Add(element);
 
                 position = 0;
                 chunk = sizeNeeded;
@@ -216,18 +220,18 @@ namespace Pchp.Core
             else
             // some free space found:
             {
-                Debug.Assert(level.buffers.Count > 0);
+                Debug.Assert(_level.buffers.Count > 0);
 
                 // available space:
-                chunk = (level.freeSpace[kind] < sizeNeeded) ? level.freeSpace[kind] : sizeNeeded;
+                chunk = (_level.freeSpace[kind] < sizeNeeded) ? _level.freeSpace[kind] : sizeNeeded;
 
-                element = (BufferElement)level.buffers[level.buffers.Count - 1];
+                element = _level.buffers[_level.buffers.Count - 1];
                 buffer = element.data;
-                position = element.data.Length - level.freeSpace[kind];
+                position = element.data.Length - _level.freeSpace[kind];
                 element.size += chunk;
-                level.freeSpace[kind] -= chunk;
+                _level.freeSpace[kind] -= chunk;
             }
-            level.size += chunk;
+            _level.size += chunk;
             return chunk;
         }
 
@@ -238,17 +242,17 @@ namespace Pchp.Core
         /// <remarks>Returns the new level index.</remarks>
         public int IncreaseLevel()
         {
-            levels.Add(level = new LevelElement(levels.Count));
-            return level.index;
+            _levels.Add(_level = new LevelElement(_levels.Count));
+            return _level.Index;
         }
 
         /// <summary>
         /// Checks output buffer is not disabled.
         /// </summary>
-        /// <exception cref="InvalidOperationException">When buffering is disabled (<see cref="level"/> is <c>null</c>).</exception>
+        /// <exception cref="InvalidOperationException">When buffering is disabled (<see cref="_level"/> is <c>null</c>).</exception>
         void ThrowIfDisabled()
         {
-            if (level == null)
+            if (_level == null)
                 throw new InvalidOperationException(ErrResources.output_buffering_disabled);
         }
 
@@ -263,17 +267,17 @@ namespace Pchp.Core
 
             if (flush) InternalFlush();
 
-            int top = levels.Count - 1;
-            levels.RemoveAt(top);
+            int top = _levels.Count - 1;
+            _levels.RemoveAt(top);
 
             if (top != 0)
             {
-                level = (LevelElement)levels[top - 1];
+                _level = (LevelElement)_levels[top - 1];
                 return top - 1;
             }
             else
             {
-                level = null;
+                _level = null;
                 return -1;
             }
         }
@@ -290,9 +294,9 @@ namespace Pchp.Core
         /// <remarks>Data are filtered when flushed.</remarks>
         public void SetUserData(object data, int levelIndex)
         {
-            if (levelIndex < 0 || levelIndex >= levels.Count) throw new ArgumentOutOfRangeException("levelIndex");
+            if (levelIndex < 0 || levelIndex >= _levels.Count) throw new ArgumentOutOfRangeException("levelIndex");
 
-            ((LevelElement)levels[levelIndex]).userData = data;
+            _levels[levelIndex].userData = data;
         }
 
 
@@ -305,7 +309,7 @@ namespace Pchp.Core
         {
             ThrowIfDisabled();
 
-            level.userData = data;
+            _level.userData = data;
         }
 
 
@@ -318,10 +322,10 @@ namespace Pchp.Core
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="levelIndex"/> is out of range.</exception>
         public void SetFilter(Delegate filter, int levelIndex)
         {
-            if (levelIndex < 0 || levelIndex >= levels.Count)
+            if (levelIndex < 0 || levelIndex >= _levels.Count)
                 throw new ArgumentOutOfRangeException("levelIndex");
 
-            levels[levelIndex].filter = filter;
+            _levels[levelIndex].filter = filter;
         }
 
 
@@ -335,7 +339,7 @@ namespace Pchp.Core
         {
             ThrowIfDisabled();
 
-            level.filter = filter;
+            _level.filter = filter;
         }
 
         /// <summary>
@@ -344,7 +348,7 @@ namespace Pchp.Core
         /// <param name="levelIndex">The level of buffering which the filter to associate with.</param>
         /// <returns>The callback or <B>null</B> if no filter has been defined.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="levelIndex"/> is out of range.</exception>
-        public Delegate GetFilter(int levelIndex) => levels[levelIndex].filter;
+        public Delegate GetFilter(int levelIndex) => _levels[levelIndex].filter;
 
         /// <summary>
         /// Gets the filtering callback defined on the current level of buffering.
@@ -355,7 +359,7 @@ namespace Pchp.Core
         {
             ThrowIfDisabled();
 
-            return level.filter;
+            return _level.filter;
         }
 
         /// <summary>
@@ -368,7 +372,7 @@ namespace Pchp.Core
             if (levelIndex < 0 || levelIndex >= Level)
                 throw new ArgumentOutOfRangeException("levelIndex");
 
-            levels[levelIndex].levelName = levelName;
+            _levels[levelIndex].levelName = levelName;
         }
 
         /// <summary>
@@ -381,7 +385,7 @@ namespace Pchp.Core
             if (levelIndex < 0 || levelIndex >= Level)
                 throw new ArgumentOutOfRangeException("levelIndex");
 
-            var element = levels[levelIndex];
+            var element = _levels[levelIndex];
 
             string levelName = element.levelName;
 
@@ -402,10 +406,10 @@ namespace Pchp.Core
         /// </summary>
         public void Clean()
         {
-            if (level == null)
+            if (_level == null)
                 return;
 
-            levels[level.index] = level = new LevelElement(level);
+            _levels[_level.Index] = _level = new LevelElement(_level);
         }
 
 
@@ -415,14 +419,14 @@ namespace Pchp.Core
         /// </summary>
         public void FlushAll()
         {
-            for (int i = levels.Count - 1; i >= 0; i--)
+            for (int i = _levels.Count - 1; i >= 0; i--)
             {
-                level = levels[i];
+                _level = _levels[i];
                 InternalFlush();
             }
 
-            levels.Clear();
-            level = null;
+            _levels.Clear();
+            _level = null;
         }
 
 
@@ -431,7 +435,7 @@ namespace Pchp.Core
         /// </summary>
         public override void Flush()
         {
-            if (level == null)
+            if (_level == null)
                 return;
 
             InternalFlush();
@@ -445,74 +449,74 @@ namespace Pchp.Core
         /// </summary>
         internal void InternalFlush()
         {
-            Debug.Assert(level != null);
+            Debug.Assert(_level != null);
 
-            if (level.filter == null)
+            if (_level.filter == null)
             {
-                if (level.index == 0)
+                if (_level.Index == 0)
                 {
                     // TODO: PhpString buffers
 
                     // writes top-level data to sinks:
-                    for (int i = 0; i < level.buffers.Count; i++)
+                    for (int i = 0; i < _level.buffers.Count; i++)
                     {
-                        BufferElement element = level.buffers[i];
+                        BufferElement element = _level.buffers[i];
 
                         byte[] bytes = element.data as byte[];
                         if (bytes != null)
-                            byteSink.Write(bytes, 0, element.size);
+                            _byteSink.Write(bytes, 0, element.size);
                         else
-                            charSink.Write((char[])element.data, 0, element.size);
+                            _charSink.Write((char[])element.data, 0, element.size);
                     }
                 }
                 else
                 {
                     // joins levels (data are not copied => the current level MUST be cleaned up after the return from this method):
-                    if (level.size > 0)
+                    if (_level.size > 0)
                     {
-                        var lower_level = levels[level.index - 1];
+                        var lower_level = _levels[_level.Index - 1];
 
-                        lower_level.buffers.AddRange(level.buffers);
-                        lower_level.size += level.size;
-                        lower_level.freeSpace = level.freeSpace;      // free space in the last buffer of the level
-                        lower_level.containsByteData |= level.containsByteData;
-                        lower_level.containsCharData |= level.containsCharData;
+                        lower_level.buffers.AddRange(_level.buffers);
+                        lower_level.size += _level.size;
+                        lower_level.freeSpace = _level.freeSpace;      // free space in the last buffer of the level
+                        lower_level.containsByteData |= _level.containsByteData;
+                        lower_level.containsCharData |= _level.containsCharData;
                     }
                 }
             }
             else
             {
                 // gets data from user's callback:
-                var data = level.filter.DynamicInvoke(GetContent(), ChunkPosition.First | ChunkPosition.Middle | ChunkPosition.Last);
+                var data = _level.filter.DynamicInvoke(GetContent(), ChunkPosition.First | ChunkPosition.Middle | ChunkPosition.Last);
                 if (data != null)
                 {
                     var bindata = data as byte[];
 
                     // writes data to the current level of buffering or to sinks depending on the level count:
-                    if (level.index == 0)
+                    if (_level.Index == 0)
                     {
                         // checks whether the filtered data are binary at first; if not so, converts them to a string:
                         
                         if (bindata != null)
                         {
-                            byteSink.Write(bindata, 0, bindata.Length);
+                            _byteSink.Write(bindata, 0, bindata.Length);
                         }
                         else
                         {
                             // TODO: PhpString containing both string and byte[]
-                            charSink.Write(data.ToString());
+                            _charSink.Write(data.ToString());
                         }
                     }
                     else
                     {
                         // temporarily decreases the level of buffering toredirect writes to the lower level:
-                        var old_level = level;
-                        level = levels[level.index - 1];
+                        var old_level = _level;
+                        _level = _levels[_level.Index - 1];
 
                         // checks whether the filtered data are binary at first; if not so, converts them to a string:
                         if (bindata != null)
                         {
-                            stream.Write(bindata, 0, bindata.Length);
+                            _stream.Write(bindata, 0, bindata.Length);
                         }
                         else
                         {
@@ -521,7 +525,7 @@ namespace Pchp.Core
                         }
 
                         // restore the level of buffering:
-                        level = old_level;
+                        _level = old_level;
                     }
                 }
             }
@@ -539,17 +543,17 @@ namespace Pchp.Core
         /// </returns>
         public string GetContentAsString()
         {
-            if (level == null) return null;
+            if (_level == null) return null;
 
-            var result = new StringBuilder(level.size, level.size);
+            var result = new StringBuilder(_level.size, _level.size);
 
-            for (int i = 0; i < level.buffers.Count; i++)
+            for (int i = 0; i < _level.buffers.Count; i++)
             {
-                var element = level.buffers[i];
+                var element = _level.buffers[i];
 
                 byte[] bytes = element.data as byte[];
                 if (bytes != null)
-                    result.Append(encoding.GetString(bytes, 0, element.size));
+                    result.Append(_encoding.GetString(bytes, 0, element.size));
                 else
                     result.Append((char[])element.data, 0, element.size);
             }
@@ -567,35 +571,35 @@ namespace Pchp.Core
         /// </remarks>
         public object GetContent()
         {
-            if (level == null)
+            if (_level == null)
                 return null;
 
-            if (level.size == 0)
+            if (_level.size == 0)
                 return string.Empty;
 
              // TODO: return level.buffers directly once it is implemented as PhpString
 
             // contains characters only:
-            if (!level.containsByteData)
+            if (!_level.containsByteData)
             {
-                StringBuilder result = new StringBuilder(level.size, level.size);
+                StringBuilder result = new StringBuilder(_level.size, _level.size);
 
-                for (int i = 0; i < level.buffers.Count; i++)
+                for (int i = 0; i < _level.buffers.Count; i++)
                 {
-                    BufferElement element = (BufferElement)level.buffers[i];
+                    var element = _level.buffers[i];
                     result.Append((char[])element.data, 0, element.size);
                 }
                 return result.ToString();
             }
             else
                 // contains bytes only:
-                if (!level.containsCharData)
+                if (!_level.containsCharData)
             {
-                var result = new byte[level.size];
+                var result = new byte[_level.size];
 
-                for (int i = 0, k = 0; i < level.buffers.Count; i++)
+                for (int i = 0, k = 0; i < _level.buffers.Count; i++)
                 {
-                    var element = level.buffers[i];
+                    var element = _level.buffers[i];
                     Array.Copy(element.data, 0, result, k, element.size);
                     k += element.size;
                 }
@@ -770,7 +774,7 @@ namespace Pchp.Core
             if (levelIndex < 1 || levelIndex > Level)
                 throw new ArgumentOutOfRangeException("levelIndex");
 
-            var element = levels[levelIndex - 1];
+            var element = _levels[levelIndex - 1];
             filter = element.filter;
             size = element.size;
         }
@@ -782,9 +786,9 @@ namespace Pchp.Core
         /// <returns></returns>
         public int FindLevelByFilter(Delegate filter)
         {
-            if (levels != null && filter != null)
+            if (_levels != null && filter != null)
                 for (int i = 0; i < Level; i++)
-                    if (levels[i].filter == filter)
+                    if (_levels[i].filter == filter)
                         return i;
 
             return -1;
