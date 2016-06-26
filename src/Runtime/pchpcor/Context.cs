@@ -28,8 +28,10 @@ namespace Pchp.Core
     {
         #region Create
 
-        protected Context()
+        protected Context(Stream output)
         {
+            InitOutput(output);
+
             _functions = new TFunctionsMap(FunctionRedeclared);
             _types = new TTypesMap(TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
@@ -43,13 +45,15 @@ namespace Pchp.Core
         /// </summary>
         public static Context CreateConsole(string[] args)
         {
-            return new Context();
-            // TODO: Add console output filter
+            return new Context(null);   // TODO: console output stream
         }
 
+        /// <summary>
+        /// Create default context with no output.
+        /// </summary>
         public static Context CreateEmpty()
         {
-            return new Context();
+            return new Context(null);
         }
 
         #endregion

@@ -46,13 +46,11 @@ namespace Pchp.Core
         #region Construction
 
         public RequestContext(HttpContext context)
-            :base()
+            :base(context.Response.OutputStream)
         {
             Debug.Assert(HttpRuntime.UsingIntegratedPipeline);
-            Debug.Assert(context != null);
-
+            
             // TODO: set superglobal variables as expected within a web server
-            // TODO: set output to ResponseStream
             // TODO: start session if AutoStart is On
         }
 
