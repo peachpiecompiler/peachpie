@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 /// Generic empty class.
 /// Used for casting values to an <c>object</c>.
 /// </summary>
-public sealed class stdClass
+public class stdClass
 {
     /// <summary>
     /// Special field containing runtime fields.

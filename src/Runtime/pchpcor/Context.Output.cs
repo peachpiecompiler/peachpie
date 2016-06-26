@@ -19,7 +19,8 @@ namespace Pchp.Core
         protected void InitOutput(Stream output)
         {
             // setups Output and OutputStream
-            this.Output = new StreamWriter(this.OutputStream = output ?? Stream.Null);
+            _textSink = new StreamWriter(_streamSink = output ?? Stream.Null);
+            IsOutputBuffered = false;
         }
 
         /// <summary>
@@ -115,6 +116,20 @@ namespace Pchp.Core
         /// Encoding used internally for byte array to string conversion.
         /// </summary>
         protected virtual Encoding OutputEncoding => Encoding.UTF8;
+
+        /// <summary>
+        /// Flushes all remaining data from output buffers.
+        /// </summary>
+        internal void FinalizeBufferedOutput()
+        {
+            // flushes output, applies user defined output filter, and disables buffering:
+            if (_bufferedOutput != null)
+                _bufferedOutput.FlushAll();
+
+            // redirects sinks:
+            IsOutputBuffered = false;
+            Output.Flush();
+        }
 
         #endregion
 

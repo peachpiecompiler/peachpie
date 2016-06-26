@@ -440,7 +440,28 @@ namespace Pchp.Core
 
         public void Dispose()
         {
+            //if (!disposed)
+            {
+                try
+                {
+                    //this.GuardedCall<object, object>(this.ProcessShutdownCallbacks, null, false);
+                    //this.GuardedCall<object, object>(this.FinalizePhpObjects, null, false);
+                    FinalizeBufferedOutput();
 
+                    //// additional disposal action
+                    //if (this.TryDispose != null)
+                    //    this.TryDispose();
+                }
+                finally
+                {
+                    //// additional disposal action
+                    //if (this.FinallyDispose != null)
+                    //    this.FinallyDispose();
+
+                    ////
+                    //this.disposed = true;
+                }
+            }
         }
 
         #endregion
