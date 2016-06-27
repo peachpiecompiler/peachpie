@@ -569,13 +569,13 @@ namespace Pchp.Core
         /// Character data are returned unchanged, binary data are converted to string by 
         /// the <see cref="System.Text.Encoding.GetString"/> method of the current encoding.
         /// </remarks>
-        public object GetContent()
+        public PhpValue GetContent()
         {
             if (_level == null)
-                return null;
+                return PhpValue.False;
 
             if (_level.size == 0)
-                return string.Empty;
+                return PhpValue.Create(string.Empty);
 
              // TODO: return level.buffers directly once it is implemented as PhpString
 
@@ -589,7 +589,7 @@ namespace Pchp.Core
                     var element = _level.buffers[i];
                     result.Append((char[])element.data, 0, element.size);
                 }
-                return result.ToString();
+                return PhpValue.Create(result.ToString());
             }
             else
                 // contains bytes only:
@@ -603,13 +603,14 @@ namespace Pchp.Core
                     Array.Copy(element.data, 0, result, k, element.size);
                     k += element.size;
                 }
-                return result;
+                //return PhpValue.Create(result);
+                throw new NotImplementedException();
 
             }
             else
             // contains both bytes and characters:
             {
-                return GetContentAsString();
+                return PhpValue.Create(GetContentAsString());
             }
         }
 

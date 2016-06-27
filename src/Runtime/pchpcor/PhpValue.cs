@@ -282,6 +282,16 @@ namespace Pchp.Core
         /// </summary>
         public static readonly PhpValue Null = new PhpValue(new NullTable());
 
+        /// <summary>
+        /// PhpValue representing <c>false</c>.
+        /// </summary>
+        public static PhpValue False => PhpValue.Create(false);
+
+        /// <summary>
+        /// PhpValue representing <c>true</c>.
+        /// </summary>
+        public static PhpValue True => PhpValue.Create(true);
+
         private PhpValue(long value) : this()
         {
             _type = TypeTable.LongTable;

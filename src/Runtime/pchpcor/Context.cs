@@ -299,6 +299,26 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Tries to get a static property stored within context.
+        /// </summary>
+        public T TryGetProperty<T>() where T:class
+        {
+            var idx = StaticIndexes.StaticsIndex<T>();
+            EnsureStaticsSize(idx);
+            return _statics[idx] as T;
+        }
+
+        /// <summary>
+        /// Sets a static property to be stored within context.
+        /// </summary>
+        public void SetProperty<T>(T value)
+        {
+            var idx = StaticIndexes.StaticsIndex<T>();
+            EnsureStaticsSize(idx);
+            _statics[idx] = value;
+        }
+
+        /// <summary>
         /// Ensures the <see cref="_statics"/> array has sufficient size to hold <paramref name="idx"/>;
         /// </summary>
         /// <param name="idx">Index of an object to be stored within statics.</param>

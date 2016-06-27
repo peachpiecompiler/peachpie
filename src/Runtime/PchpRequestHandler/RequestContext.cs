@@ -50,6 +50,7 @@ namespace Pchp.Core
         {
             Debug.Assert(HttpRuntime.UsingIntegratedPipeline);
 
+            this.SetProperty(context);
             this.InitOutput(context.Response.OutputStream);
             
             // TODO: set superglobal variables as expected within a web server

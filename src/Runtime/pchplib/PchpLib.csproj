@@ -50,6 +50,7 @@
     <Compile Include="FileSystem.Path.cs" />
     <Compile Include="Math.cs" />
     <Compile Include="MersenneTwister.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Strings.cs" />
     <Compile Include="Utils.cs" />
