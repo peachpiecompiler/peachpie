@@ -77,6 +77,34 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundThrowStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            var t = cg.Emit(Thrown);
+
+            if (t.IsReferenceType)
+            {
+                if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
+                {
+                    throw new NotImplementedException();    // Wrap to System.Exception
+                }
+            }
+            else
+            {
+                //if (t == cg.CoreTypes.PhpValue)
+                //{
+
+                //}
+
+                throw new NotImplementedException();    // Wrap to System.Exception
+            }
+
+            // throw <stack>;
+            cg.Builder.EmitThrow(false);
+        }
+    }
+
     partial class BoundFunctionDeclStatement
     {
         internal override void Emit(CodeGenerator cg)

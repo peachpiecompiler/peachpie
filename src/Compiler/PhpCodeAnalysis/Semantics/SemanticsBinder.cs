@@ -85,6 +85,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     .Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Unset))
                     .ToImmutableArray())
                 { PhpSyntax = stmt };
+            if (stmt is AST.ThrowStmt) return new BoundThrowStatement(BindExpression(((AST.ThrowStmt)stmt).Expression, BoundAccess.Read)) { PhpSyntax = stmt };
 
             throw new NotImplementedException(stmt.GetType().FullName);
         }

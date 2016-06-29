@@ -94,6 +94,31 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     /// <summary>
+    /// throw <c>Thrown</c>;
+    /// </summary>
+    public sealed partial class BoundThrowStatement : BoundStatement, IThrowStatement
+    {
+        public override OperationKind Kind => OperationKind.ThrowStatement;
+
+        internal BoundExpression Thrown { get; set; }
+
+        IExpression IThrowStatement.Thrown => this.Thrown;
+
+        public BoundThrowStatement(BoundExpression thrown)
+            :base()
+        {
+            Debug.Assert(thrown != null);
+            this.Thrown = thrown;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitThrowStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitThrowStatement(this, argument);
+    }
+
+    /// <summary>
     /// Conditionally declared functions.
     /// </summary>
     public sealed partial class BoundFunctionDeclStatement : BoundStatement // TODO: ILocalFunctionStatement

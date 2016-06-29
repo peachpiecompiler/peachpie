@@ -98,7 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
             CallMethodBinder, CallFunctionBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray,
             IntStringKey,
-            Void, Object, Int32, Long, Double, Boolean, String,
+            Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
             stdClass;
 
@@ -115,6 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Double = Create(SpecialType.System_Double);
             Boolean = Create(SpecialType.System_Boolean);
             String = Create(SpecialType.System_String);
+            Exception = CreateFromFullName(WellKnownTypes.GetMetadataName(WellKnownType.System_Exception));
             RuntimeTypeHandle = Create(SpecialType.System_RuntimeTypeHandle);
             RuntimeMethodHandle = Create(SpecialType.System_RuntimeMethodHandle);
 

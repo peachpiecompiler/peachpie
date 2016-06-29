@@ -1544,6 +1544,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        public sealed override void VisitThrowStatement(IThrowStatement operation)
+            => VisitThrowStatement((BoundThrowStatement)operation);
+
+        protected virtual void VisitThrowStatement(BoundThrowStatement x)
+        {
+            Visit(x.Thrown);
+        }
+
         #endregion
     }
 }
