@@ -81,6 +81,9 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
+            cg.EmitSequencePoint(this.PhpSyntax);
+
+            //
             var t = cg.Emit(Thrown);
 
             if (t.IsReferenceType)
