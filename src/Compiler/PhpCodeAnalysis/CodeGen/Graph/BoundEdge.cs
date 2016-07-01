@@ -458,6 +458,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             if (this.CaseBlocks.Length == 0 || this.CaseBlocks[0].IsDefault)
             {
+                Debug.Assert(this.CaseBlocks.Length <= 1);
+
                 // no SWITCH or IF needed
 
                 cg.EmitPop(this.SwitchValue.WithAccess(BoundAccess.None).Emit(cg)); // None Access, also using BoundExpression.Emit directly to avoid CodeGenerator type specialization which is not needed
@@ -465,64 +467,110 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 {
                     cg.GenerateScope(this.CaseBlocks[0], NextBlock.Ordinal);
                 }
-                else
-                {
-                    throw new InvalidOperationException();  // default case should be the last one
-                }
             }
             else
             {
-                // TODO: CIL Switch:
-                //bool allconsts = this.CaseBlocks.All(c => c.IsDefault || c.CaseValue.ConstantValue.HasValue);
-                //bool allconstints = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsInt32(c.CaseValue.ConstantValue.Value));
+                // CIL Switch:
+                bool allconsts = this.CaseBlocks.All(c => c.IsDefault || c.CaseValue.ConstantValue.HasValue);
+                bool allconstints = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsInt32(c.CaseValue.ConstantValue.Value));
                 //bool allconststrings = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsString(c.CaseValue.ConstantValue.Value));
 
-                //if (allconstints)
-                //{
+                var default_block = this.DefaultBlock;
 
-                //}
+                // <switch_loc> = <SwitchValue>;
+                TypeSymbol switch_type;
+                LocalDefinition switch_loc;
+
+                // switch header
+                if (allconstints)
+                {
+                    switch_type = cg.CoreTypes.Int32;
+                    cg.EmitSequencePoint(this.SwitchValue.PhpSyntax);
+                    cg.EmitConvert(this.SwitchValue, switch_type);
+                    switch_loc = cg.GetTemporaryLocal(switch_type);
+                    cg.Builder.EmitLocalStore(switch_loc);
+
+                    // switch (labels)
+                    cg.Builder.EmitIntegerSwitchJumpTable(GetSwitchCaseLabels(CaseBlocks), default_block ?? NextBlock, switch_loc, switch_type.PrimitiveTypeCode);
+                }
                 //else if (allconststrings)
                 //{
 
                 //}
-                //else
+                else
                 {
-                    // <switch_loc> = <SwitchValue>;
+                    // legacy jump table
+                    // IF (case) GOTO label;
+
                     cg.EmitSequencePoint(this.SwitchValue.PhpSyntax);
-                    var switch_type = cg.Emit(this.SwitchValue);
-                    var switch_loc = cg.GetTemporaryLocal(switch_type);
+                    switch_type = cg.Emit(this.SwitchValue);
+                    switch_loc = cg.GetTemporaryLocal(switch_type);
                     cg.Builder.EmitLocalStore(switch_loc);
 
                     //
                     for (int i = 0; i < this.CaseBlocks.Length; i++)
                     {
                         var this_block = this.CaseBlocks[i];
-                        var next_case = (i + 1 < this.CaseBlocks.Length) ? this.CaseBlocks[i + 1] : null;
-                        object next_mark = (object)next_case?.CaseValue ?? next_case ?? NextBlock;
-
-                        if (!this_block.IsDefault)
+                        if (this_block.CaseValue != null)
                         {
                             // <CaseValue>:
                             cg.EmitSequencePoint(this_block.CaseValue.PhpSyntax);
-                            cg.Builder.MarkLabel(this_block.CaseValue);
-
-                            // if (<switch_loc> == c.CaseValue)
+                            
+                            // if (<switch_loc> == c.CaseValue) goto this_block;
                             cg.Builder.EmitLocalLoad(switch_loc);
                             BoundBinaryEx.EmitEquality(cg, switch_type, this_block.CaseValue);
-                            cg.Builder.EmitBranch(ILOpCode.Brfalse, next_mark);
+                            cg.Builder.EmitBranch(ILOpCode.Brtrue, this_block);
                         }
-
-                        // {
-                        cg.GenerateScope(this_block, (next_case ?? NextBlock).Ordinal);
-                        // }
                     }
 
-                    cg.ReturnTemporaryLocal(switch_loc);
+                    // default:
+                    cg.Builder.EmitBranch(ILOpCode.Br, default_block ?? NextBlock);
+                }
+
+                // FREE <switch_loc>
+                cg.ReturnTemporaryLocal(switch_loc);
+
+                // Switch Body
+                for (int i = 0; i < this.CaseBlocks.Length; i++)
+                {
+                    var this_block = this.CaseBlocks[i];
+                    var next_case = (i + 1 < this.CaseBlocks.Length) ? this.CaseBlocks[i + 1] : null;
+
+                    // {
+                    cg.GenerateScope(this_block, (next_case ?? NextBlock).Ordinal);
+                    // }
                 }
             }
 
             //
             cg.Scope.ContinueWith(NextBlock);
+        }
+
+        static KeyValuePair<ConstantValue, object>[] GetSwitchCaseLabels(IEnumerable<CaseBlock> sections)
+        {
+            var labelsBuilder = ArrayBuilder<KeyValuePair<ConstantValue, object>>.GetInstance();
+            foreach (var section in sections)
+            {
+                if (section.IsDefault)
+                {
+                    // fallThroughLabel = section
+                }
+                else
+                {
+                    labelsBuilder.Add(new KeyValuePair<ConstantValue, object>(Int32Constant(section.CaseValue.ConstantValue.Value), section));
+                }
+            }
+
+            return labelsBuilder.ToArrayAndFree();
+        }
+
+        static ConstantValue Int32Constant(object value)
+        {
+            if (value is int) return ConstantValue.Create((int)value);
+            if (value is long) return ConstantValue.Create((int)(long)value);
+            if (value is double) return ConstantValue.Create((int)(double)value);
+
+            throw new ArgumentException();
         }
     }
 }

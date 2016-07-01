@@ -299,6 +299,32 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        public void EmitConvertToInt(TypeSymbol from, TypeRefMask fromHint)
+        {
+            Contract.ThrowIfNull(from);
+
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            //
+            from = EmitSpecialize(from, fromHint);
+
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_Int32:
+                    return;
+
+                default:
+                    EmitConvertToLong(from, 0);
+                    _il.EmitOpCode(ILOpCode.Conv_i4);   // Int64 -> Int32
+                    return;
+            }
+        }
+
         public void EmitConvertToLong(TypeSymbol from, TypeRefMask fromHint)
         {
             Contract.ThrowIfNull(from);
@@ -758,6 +784,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 case SpecialType.System_Boolean:
                     EmitConvertToBool(from, fromHint);
+                    return;
+                case SpecialType.System_Int32:
+                    EmitConvertToInt(from, fromHint);
                     return;
                 case SpecialType.System_Int64:
                     EmitConvertToLong(from, fromHint);
