@@ -75,6 +75,7 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Types declaration   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Constructor (.ctor)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Call to __construct   
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: PHP 5 style constructors  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Report warning if __construct does not call parent::__construct (.ctor)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Call to parent::__construct translated to base..ctor  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: call to parent::.ctor as a first statement  
@@ -130,10 +131,14 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    :white_check_mark: Publically usable: pchp.exe + modified Roslyn in sources    
    :white_check_mark: Portable class library   
    :white_check_mark: Console App: entry script invocation   
-   :white_medium_square: Web App: request handler => Script invocation 
-
+   :white_check_mark: Web App: request handler => Script invocation  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: List referenced assemblies in Bin folder     
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Their <Script> with referenced symboles and containing files  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: RequestOutput stream  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Superglobals (POST, GET, SESSION, SERVER)  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Compile on change (same as Eval)
 ###### Runtime:
-   :white_medium_square: Type system  
+   :white_check_mark: Type system  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Bool, Number (Long, Double), String, Object, Array, Resource, Null   
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Extended: UnicodeString, SimpleArray (not keyed, same type value)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: PhpValue (Any Type runtime value)  
@@ -154,7 +159,8 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Static locals  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_global_constants: Global constants  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Included scripts, declared types, declared functions  
-   :white_medium_square: Output (echo, buffering)  
+   :white_check_mark: Output (echo, buffering)  
+   :white_check_mark: Foreach Enumerator - operator GetEnumerator (PhpValue)
    :white_medium_square: Runtime Tables (PhpTypeInfo, PhpRoutineInfo, Scripts: bit vector everything indexed)  
    :white_medium_square: Dynamic invocation/read/write  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Functions  
