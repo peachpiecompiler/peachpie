@@ -106,7 +106,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.None:
                     if (from == CoreTypes.PhpValue)
                     {
-                        // Convert.ToBoolean(value)
+                        // (bool)value
                         EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_PhpValue);
                         break;
                     }
@@ -362,8 +362,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (from == CoreTypes.PhpValue)
                     {
-                        EmitPhpValueAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToLong);
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToLong_PhpValue);
                         return;
                     }
                     else
@@ -373,7 +372,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public NamedTypeSymbol EmitConvertToDouble(TypeSymbol from, TypeRefMask fromHint)
+        public TypeSymbol EmitConvertToDouble(TypeSymbol from, TypeRefMask fromHint)
         {
             Contract.ThrowIfNull(from);
 
@@ -407,9 +406,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (from == CoreTypes.PhpValue)
                     {
-                        EmitPhpValueAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToDouble);
-                        return dtype;
+                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToDouble_PhpValue);
                     }
                     else
                     {

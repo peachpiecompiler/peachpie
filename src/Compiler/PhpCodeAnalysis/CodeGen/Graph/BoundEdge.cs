@@ -481,7 +481,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 TypeSymbol switch_type;
                 LocalDefinition switch_loc;
 
-                // switch header
+                // Switch Header
                 if (allconstints)
                 {
                     switch_type = cg.CoreTypes.Int32;
@@ -500,7 +500,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 else
                 {
                     // legacy jump table
-                    // IF (case) GOTO label;
+                    // IF (case_i) GOTO label_i;
 
                     cg.EmitSequencePoint(this.SwitchValue.PhpSyntax);
                     switch_type = cg.Emit(this.SwitchValue);
@@ -531,21 +531,23 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.ReturnTemporaryLocal(switch_loc);
 
                 // Switch Body
-                for (int i = 0; i < this.CaseBlocks.Length; i++)
+                this.CaseBlocks.ForEach((i, this_block) =>
                 {
-                    var this_block = this.CaseBlocks[i];
                     var next_case = (i + 1 < this.CaseBlocks.Length) ? this.CaseBlocks[i + 1] : null;
 
                     // {
                     cg.GenerateScope(this_block, (next_case ?? NextBlock).Ordinal);
                     // }
-                }
+                });
             }
 
             //
             cg.Scope.ContinueWith(NextBlock);
         }
 
+        /// <summary>
+        /// Gets case labels.
+        /// </summary>
         static KeyValuePair<ConstantValue, object>[] GetSwitchCaseLabels(IEnumerable<CaseBlock> sections)
         {
             var labelsBuilder = ArrayBuilder<KeyValuePair<ConstantValue, object>>.GetInstance();
@@ -564,6 +566,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return labelsBuilder.ToArrayAndFree();
         }
 
+        // TODO: move to helpers
         static ConstantValue Int32Constant(object value)
         {
             if (value is int) return ConstantValue.Create((int)value);

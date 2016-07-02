@@ -185,6 +185,14 @@ namespace Pchp.Core
 
         public static bool operator >(PhpValue left, PhpValue right) => left.Compare(right) > 0;
 
+        public static explicit operator bool(PhpValue value) => value.ToBoolean();
+
+        public static explicit operator long(PhpValue value) => value.ToLong();
+
+        public static explicit operator double(PhpValue value) => value.ToDouble();
+
+        public static explicit operator PhpArray(PhpValue value) => value.AsArray();
+
         public override bool Equals(object obj) => Equals((obj is PhpValue) ? (PhpValue)obj : FromClr(obj));
 
         public override int GetHashCode() => _obj.GetHashCode() ^ (int)_value.Long;

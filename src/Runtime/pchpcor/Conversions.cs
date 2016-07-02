@@ -113,11 +113,6 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Converts value to boolean according to PHP.
-        /// </summary>
-        public static bool ToBoolean(PhpValue value) => value.ToBoolean();
-
-        /// <summary>
         /// Converts class instance to boolean according to PHP.
         /// </summary>
         public static bool ToBoolean(object value)

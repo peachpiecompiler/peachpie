@@ -235,6 +235,29 @@ namespace Pchp.CodeAnalysis.Symbols
         }
     }
 
+    class CoreExplicitCast : CoreMethod
+    {
+        readonly CoreType _castTo;
+
+        public CoreExplicitCast(CoreType declaringClass, CoreType castTo)
+            :base(declaringClass, WellKnownMemberNames.ExplicitConversionName, declaringClass)
+        {
+            _castTo = castTo;
+        }
+
+        protected override MethodSymbol ResolveSymbol()
+        {
+            var type = this.DeclaringClass.Symbol;
+            if (type == null)
+                throw new InvalidOperationException();
+
+            var methods = type.GetMembers(this.MethodName);
+            return methods.OfType<MethodSymbol>()
+                .Where(m => m.HasSpecialName && m.IsStatic && m.ParameterCount == 1 && m.Parameters[0].Type == type && m.ReturnType == _castTo)
+                .First();
+        }
+    }
+
     #endregion
 
     /// <summary>
@@ -282,8 +305,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Double_Context = ct.Convert.Method("ToString", ct.Double, ct.Context);
                 Long_ToString = ct.Long.Method("ToString");
                 ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
-                ToBoolean_PhpValue = ct.Convert.Method("ToBoolean", ct.PhpValue);
+                ToBoolean_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Boolean);
                 ToBoolean_Object = ct.Convert.Method("ToBoolean", ct.Object);
+                ToLong_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Long);
+                ToDouble_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Double);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
                 AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
@@ -333,6 +358,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsSet_PhpValue,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
+                ToLong_PhpValue, ToDouble_PhpValue,
                 AsObject_PhpValue, AsArray_PhpValue, ToClass_PhpValue,
                 ToIntStringKey_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,

@@ -64,6 +64,34 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Calls given action for each element in given array.
+        /// </summary>
+        public static void ForEach<T>(this T[]/*!*/array, Action<T>/*!*/func)
+        {
+            Contract.ThrowIfNull(array);
+            Contract.ThrowIfNull(func);
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                func(array[i]);
+            }
+        }
+
+        /// <summary>
+        /// Calls given action for each element in given array.
+        /// </summary>
+        public static void ForEach<T>(this T[]/*!*/array, Action<int, T>/*!*/func)
+        {
+            Contract.ThrowIfNull(array);
+            Contract.ThrowIfNull(func);
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                func(i, array[i]);
+            }
+        }
+
+        /// <summary>
         /// Mixes two array of the same length into new one, using <paramref name="mixer"/> function applied on each pair of elements from first and second arrays.
         /// </summary>
         /// <typeparam name="T">Elements type.</typeparam>
