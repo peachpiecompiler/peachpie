@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{0E870B29-09DB-43B4-A1DE-B0754EBED941}"
 EndProject
@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpCodeAnalysis", "src\Comp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{664C373F-DAA4-4E03-B250-C64CDCA3C71E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pchp", "src\Compiler\pchp\pchp.csproj", "{5CDE7685-F997-4515-86D2-CAE834FF3ED3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "peach", "src\Compiler\peach\peach.csproj", "{5CDE7685-F997-4515-86D2-CAE834FF3ED3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PchpCor", "src\Runtime\pchpcor\PchpCor.csproj", "{9C5F04EF-13BE-47C0-B416-45FAD5722EEF}"
 EndProject
