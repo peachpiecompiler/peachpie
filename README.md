@@ -133,7 +133,6 @@ Please note that the status is dynamic; Peachpie is a work in progress, which me
    :white_check_mark: Console App: entry script invocation   
    :white_check_mark: Web App: request handler => Script invocation  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: List referenced assemblies in Bin folder     
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: Their <Script> with referenced symboles and containing files  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_check_mark: RequestOutput stream  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Superglobals (POST, GET, SESSION, SERVER)  
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:white_medium_square: Compile on change (same as Eval)
