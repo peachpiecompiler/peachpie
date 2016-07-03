@@ -113,6 +113,28 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Converts string to boolean according to PHP.
+        /// </summary>
+        public static bool ToBoolean(byte[] value)
+        {
+            // not null
+            // not empty
+            // not "0"
+            return value != null && value.Length != 0 && (value.Length != 1 || value[0] != '0');
+        }
+
+        /// <summary>
+        /// Converts string to boolean according to PHP.
+        /// </summary>
+        public static bool ToBoolean(char[] value)
+        {
+            // not null
+            // not empty
+            // not "0"
+            return value != null && value.Length != 0 && (value.Length != 1 || value[0] != '0');
+        }
+
+        /// <summary>
         /// Converts class instance to boolean according to PHP.
         /// </summary>
         public static bool ToBoolean(object value)

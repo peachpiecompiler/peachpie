@@ -147,10 +147,7 @@ namespace Pchp.Core
                 Output.Write(value);
         }
 
-        public void Echo(PhpString value)
-        {
-            Echo(value.ToString(this));    // TODO: echo string builder chunks to avoid concatenation
-        }
+        public void Echo(PhpString value) => value.Output(this);
 
         public void Echo(PhpValue value)
         {

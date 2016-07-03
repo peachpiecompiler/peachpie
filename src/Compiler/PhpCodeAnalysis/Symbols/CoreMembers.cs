@@ -630,7 +630,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public ConstructorsHolder(CoreTypes ct)
             {
                 PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
-                PhpString_int = ct.PhpString.Ctor(ct.Int32);
+                PhpString = ct.PhpString.Ctor();
                 PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
@@ -646,7 +646,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
-                PhpString_int, PhpString_string_string,
+                PhpString, PhpString_string_string,
                 IntStringKey_int, IntStringKey_string,
                 ScriptAttribute_string,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;

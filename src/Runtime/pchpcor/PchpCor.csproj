@@ -58,6 +58,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>ErrResources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\ArrayUtils.cs" />
     <Compile Include="Variables.cs" />
     <Compile Include="std\stdClass.cs" />
     <Compile Include="std\__PHP_Incomplete_Class.cs" />

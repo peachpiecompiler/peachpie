@@ -535,15 +535,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitIntConstant(1);
             return EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpAlias_PhpValue_int);
         }
-
-        public void Emit_New_PhpString(int capacity)
-        {
-            // new PhpString(capacity)
-            _il.EmitIntConstant(capacity);
-            _il.EmitOpCode(ILOpCode.Newobj, -1 + 1);    // - 1 out, + 1 in
-            _il.EmitToken(CoreMethods.Ctors.PhpString_int.Symbol, null, _diagnostics);
-        }
-
+        
         /// <summary>
         /// Emits load of PhpValue representing void.
         /// </summary>

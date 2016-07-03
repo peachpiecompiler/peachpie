@@ -1810,10 +1810,12 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            // new PhpString(capacity)
-            cg.Emit_New_PhpString(CapacityHint());
+            // new PhpString()
+            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString);
 
-            // <STACK>.Add(<expr>)
+            // TODO: overload for 2, 3, 4 parameters directly
+
+            // <PhpString>.Add(<expr>)
             foreach (var x in this.ArgumentsInSourceOrder)
             {
                 var expr = x.Value;
@@ -1849,34 +1851,6 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Guesses initial string builder capacity.
-        /// </summary>
-        int CapacityHint()
-        {
-            int capacity = 0;
-            foreach (var x in this.ArgumentsInSourceOrder)
-            {
-                var expr = x.Value;
-                if (IsEmpty(expr))
-                    continue;
-
-                if (expr is BoundLiteral)
-                {
-                    var value = expr.ConstantValue.Value;
-                    if (value != null)
-                    {
-                        capacity += value.ToString().Length;
-                    }
-                }
-                else
-                {
-                    capacity += 4;
-                }
-            }
-            return capacity;
         }
     }
 
