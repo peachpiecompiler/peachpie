@@ -42,7 +42,7 @@ namespace Pchp.Core
         BufferedOutput _bufferedOutput;
 
         BufferedOutput EnsureBufferedOutput(bool enableBuffering)
-            => _bufferedOutput ?? (_bufferedOutput = new BufferedOutput(enableBuffering, _textSink, _streamSink, this.OutputEncoding));
+            => _bufferedOutput ?? (_bufferedOutput = new BufferedOutput(enableBuffering, _textSink, _streamSink, this.StringEncoding));
 
         /// <summary>
         /// Stream where text output will be sent.
@@ -113,9 +113,9 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Encoding used internally for byte array to string conversion.
+        /// Encoding used to convert between unicode strings and binary strings.
         /// </summary>
-        protected virtual Encoding OutputEncoding => Encoding.UTF8;
+        public virtual Encoding StringEncoding => Encoding.UTF8;
 
         /// <summary>
         /// Flushes all remaining data from output buffers.
@@ -132,9 +132,6 @@ namespace Pchp.Core
         }
 
         #endregion
-
-        // TOOD: CreateConsoleOutputFilter
-        // TODO: echo using current output filter
 
         #region Echo
 
