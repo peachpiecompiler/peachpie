@@ -12,19 +12,47 @@ namespace Pchp.Core
     /// String builder providing fast concatenation and character replacements for both unicode and binary strings.
     /// </summary>
     /// <remarks>Optimized for concatenation and output.</remarks>
-    public class PhpString : IPhpConvertible
+    [DebuggerDisplay("{ToString()}", Type = PhpVariable.TypeNameString)]
+    public partial class PhpString : IPhpConvertible
     {
+        [Flags]
+        enum Flags : byte
+        {
+            None = 0,
+
+            ContainsBinary = 1,
+
+            IsNonEmpty = 2,
+
+            IsArrayOfChunks = 4,
+        }
+
         #region Fields
 
         /// <summary>
         /// One string or concatenated string chunks of either <see cref="string"/>, <see cref="byte[]"/>, <see cref="char[]"/> or <see cref="PhpString"/>.
         /// </summary>
-        object _chunks; // TODO: chunk as a struct { typetable, object }
+        object _chunks;
 
         /// <summary>
         /// Count of objects in <see cref="_chunks"/>.
         /// </summary>
         int _chunksCount;
+
+        /// <summary>
+        /// String information.
+        /// </summary>
+        Flags _flags;
+
+        /// <summary>
+        /// Cached length of the concatenated string.
+        /// </summary>
+        int _length = -1;
+
+        /// <summary>
+        /// Cached concatenated string.
+        /// </summary>
+        string _string;
 
         ///// <summary>
         ///// Version of the chunks.
@@ -37,28 +65,70 @@ namespace Pchp.Core
 
         #endregion
 
+        /// <summary>
+        /// Gets value indicating the string contains <see cref="byte[]"/> instead of unicode <see cref="string"/>.
+        /// </summary>
+        public bool ContainsBinaryData => (_flags & Flags.ContainsBinary) != 0;
+
+        /// <summary>
+        /// Gets value indicating the string is empty.
+        /// </summary>
+        public bool IsEmpty => (_flags & Flags.IsNonEmpty) == 0;
+
+        /// <summary>
+        /// The string is represented internally as array of chunks.
+        /// </summary>
+        private bool IsArrayOfChunks => (_flags & Flags.IsArrayOfChunks) != 0;
+
+        /// <summary>
+        /// Gets the count of characters and binary characters.
+        /// </summary>
+        public int Length
+        {
+            get
+            {
+                if (_length < 0)
+                    _length = GetLength();
+
+                return _length;
+            }
+        }
+
         #region Construction
 
         private PhpString()
         {
             _chunks = null;
             _chunksCount = 0;
+            _flags = Flags.None;
         }
 
         public PhpString(string x, string y)
         {
-            _chunks = new object[2] { x, y };
-            _chunksCount = 2;
+            if (string.IsNullOrEmpty(y))
+            {
+                Append(x);
+            }
+            else if (string.IsNullOrEmpty(x))
+            {
+                Append(y);
+            }
+            else
+            {
+                _chunks = new object[2] { x, y };
+                _chunksCount = 2;
+                _flags = Flags.IsArrayOfChunks | Flags.IsNonEmpty;
+            }
         }
 
         public PhpString(string value)
         {
-            _chunks = value;
+            Append(value);
         }
 
         public PhpString(byte[] value)
         {
-            _chunks = value;
+            Append(value);
         }
 
         #endregion
@@ -75,11 +145,14 @@ namespace Pchp.Core
             var chunks = _chunks;
             if (chunks != null)
             {
+                Debug.Assert(!this.IsEmpty);
+
                 // TODO: Compact byte[] chunks together
                 // TODO: adding after PhpString adds to PhpString
-                
-                if (chunks.GetType() == typeof(object[]))
+
+                if (IsArrayOfChunks)
                 {
+                    Debug.Assert(chunks.GetType() == typeof(object[]));
                     AddChunkToArray((object[])chunks, newchunk);
                 }
                 else
@@ -87,18 +160,24 @@ namespace Pchp.Core
                     AssertChunkObject(chunks);
                     _chunks = new object[2] { chunks, newchunk };
                     _chunksCount = 2;
+                    _flags |= Flags.IsArrayOfChunks;
                 }
             }
             else
             {
                 _chunks = newchunk;
+                _flags |= Flags.IsNonEmpty;
             }
+
+            //
+            _string = null;
+            _length = -1;
         }
 
         void AddChunkToArray(object[] chunks, object newchunk)
         {
             Debug.Assert(chunks != null);
-            
+
             if (_chunksCount >= chunks.Length)
             {
                 Debug.Assert(chunks.Length != 0);
@@ -113,26 +192,25 @@ namespace Pchp.Core
             chunks[_chunksCount++] = newchunk;
         }
 
-        public int Length
+        int GetLength()
         {
-            get
+            var chunks = _chunks;
+            if (chunks != null)
             {
-                var chunks = _chunks;
-                if (chunks != null)
+                if (chunks.GetType() == typeof(object[]))
                 {
-                    if (chunks is object[])
-                    {
-                        // TODO: cache length for current chunks version
-                        return ChunkLength((object[])chunks, _chunksCount);
-                    }
-                    else
-                    {
-                        return ChunkLength(chunks);
-                    }
-                }
+                    Debug.Assert(IsArrayOfChunks);
 
-                return 0;
+                    // TODO: cache length for current chunks version
+                    return ChunkLength((object[])chunks, _chunksCount);
+                }
+                else
+                {
+                    return ChunkLength(chunks);
+                }
             }
+
+            return 0;
         }
 
         static int ChunkLength(object chunk)
@@ -173,7 +251,7 @@ namespace Pchp.Core
                 }
             }
         }
-        
+
         static void OutputChunk(Context ctx, object chunk)
         {
             AssertChunkObject(chunk);
@@ -205,10 +283,20 @@ namespace Pchp.Core
 
         public void Append(PhpString value)
         {
-            if (value != null && value._chunks != null)
+            if (value != null && !value.IsEmpty)
             {
-                // TODO: if containing only one chunk, add it directly
-                AddChunk(value);
+                Debug.Assert(value._chunks != null);
+
+                if (value.IsArrayOfChunks)
+                {
+                    AddChunk(value);
+                }
+                else
+                {
+                    AddChunk(value._chunks);    // if containing only one chunk, add it directly
+                }
+
+                _flags |= (value._flags & Flags.ContainsBinary);    // maintain the binary data flag
             }
         }
 
@@ -217,6 +305,7 @@ namespace Pchp.Core
             if (value != null && value.Length != 0)
             {
                 AddChunk(value);
+                _flags |= Flags.ContainsBinary;
             }
         }
 
@@ -291,7 +380,7 @@ namespace Pchp.Core
 
         #endregion
 
-        public override string ToString() => ToString(Encoding.UTF8);
+        public override string ToString() => _string ?? (_string = ToString(Encoding.UTF8));
 
         string ToString(Encoding encoding)
         {

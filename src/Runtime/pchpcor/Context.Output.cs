@@ -113,11 +113,6 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Encoding used to convert between unicode strings and binary strings.
-        /// </summary>
-        public virtual Encoding StringEncoding => Encoding.UTF8;
-
-        /// <summary>
         /// Flushes all remaining data from output buffers.
         /// </summary>
         internal void FinalizeBufferedOutput()
