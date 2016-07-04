@@ -19,7 +19,7 @@ namespace Pchp.Core
         /// <summary>
         /// One string or concatenated string chunks of either <see cref="string"/>, <see cref="byte[]"/>, <see cref="char[]"/> or <see cref="PhpString"/>.
         /// </summary>
-        object _chunks;
+        object _chunks; // TODO: chunk as a struct { typetable, object }
 
         /// <summary>
         /// Count of objects in <see cref="_chunks"/>.
@@ -75,6 +75,9 @@ namespace Pchp.Core
             var chunks = _chunks;
             if (chunks != null)
             {
+                // TODO: Compact byte[] chunks together
+                // TODO: adding after PhpString adds to PhpString
+                
                 if (chunks.GetType() == typeof(object[]))
                 {
                     AddChunkToArray((object[])chunks, newchunk);
@@ -102,6 +105,8 @@ namespace Pchp.Core
                 var newarr = new object[chunks.Length * 2];
                 Array.Copy(chunks, newarr, chunks.Length);
                 _chunks = chunks = newarr;
+
+                // TODO: when chunks.Length ~ N => compact
             }
 
             //
@@ -281,7 +286,7 @@ namespace Pchp.Core
 
         public object ToClass()
         {
-            return new stdClass(PhpValue.Create(this.ToString()));
+            return new stdClass(PhpValue.Create(ToString()));
         }
 
         #endregion
@@ -317,7 +322,6 @@ namespace Pchp.Core
 
                 for (int i = 0; i < count; i++)
                 {
-                    // TODO: Compact byte[] chunks together
                     builder.Append(ChunkToString(encoding, chunks[i]));
                 }
 
