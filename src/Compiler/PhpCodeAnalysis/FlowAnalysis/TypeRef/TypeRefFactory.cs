@@ -33,6 +33,24 @@ namespace Pchp.CodeAnalysis
             switch (t.SpecialType)
             {
                 case SpecialType.System_Void: throw new ArgumentException();
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64: return LongTypeRef;
+                case SpecialType.System_String: return StringTypeRef;
+                case SpecialType.System_Double: return DoubleTypeRef;
+                case SpecialType.System_Boolean: return BoolTypeRef;
+                case SpecialType.System_Object: return new ClassTypeRef(Syntax.QualifiedName.SystemObject);
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        public static ITypeRef Create(ConstantValue c)
+        {
+            Contract.ThrowIfNull(c);
+
+            switch (c.SpecialType)
+            {
+                case SpecialType.System_Int32:
                 case SpecialType.System_Int64: return LongTypeRef;
                 case SpecialType.System_String: return StringTypeRef;
                 case SpecialType.System_Double: return DoubleTypeRef;
@@ -95,5 +113,7 @@ namespace Pchp.CodeAnalysis
             var typeDecl = containingType.Syntax;
             return new TypeRefContext(NameUtils.GetNamingContext(typeDecl), typeDecl.SourceUnit, containingType);
         }
+
+
     }
 }

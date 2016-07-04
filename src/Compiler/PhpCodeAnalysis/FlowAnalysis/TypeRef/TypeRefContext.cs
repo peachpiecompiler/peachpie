@@ -292,7 +292,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var index = AddToContext(typeref);
             var mask = TypeRefMask.CreateFromTypeIndex(index);
 
-            if (includesSubclasses)
+            if (includesSubclasses && typeref.IsObject)
                 mask.SetIncludesSubclasses();
 
             return mask;

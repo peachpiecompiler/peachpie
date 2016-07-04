@@ -42,6 +42,7 @@
     <Compile Include="Comparison.cs" />
     <Compile Include="Context.HandleMap.cs" />
     <Compile Include="Context.ConstsMap.cs" />
+    <Compile Include="Context.Properties.cs" />
     <Compile Include="Context.ScriptsMap.cs" />
     <Compile Include="Context.Statics.cs" />
     <Compile Include="Dynamic\CallFunctionBinder.cs" />

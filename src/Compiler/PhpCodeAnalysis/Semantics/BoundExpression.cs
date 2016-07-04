@@ -296,7 +296,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundAccess Access { get; internal set; }
 
-        public virtual Optional<object> ConstantValue => default(Optional<object>);
+        public Optional<object> ConstantValue { get; set; } // => default(Optional<object>);
 
         public virtual bool IsInvalid => false;
 
@@ -601,17 +601,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundLiteral : BoundExpression, ILiteralExpression
     {
-        Optional<object> _value;
-
         public string Spelling => this.ConstantValue.Value != null ? this.ConstantValue.Value.ToString() : "NULL";
-
-        public override Optional<object> ConstantValue => _value;
 
         public override OperationKind Kind => OperationKind.LiteralExpression;
 
         public BoundLiteral(object value)
         {
-            _value = new Optional<object>(value);
+            this.ConstantValue = new Optional<object>(value);
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -1126,15 +1122,6 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Constant name.
         /// </summary>
         public string Name { get; private set; }
-
-        public override Optional<object> ConstantValue => _boundValue;
-
-        Optional<object> _boundValue = default(Optional<object>);
-
-        internal void SetConstantValue(object value)
-        {
-            _boundValue = new Optional<object>(value);
-        }
 
         public BoundGlobalConst(string name)
         {

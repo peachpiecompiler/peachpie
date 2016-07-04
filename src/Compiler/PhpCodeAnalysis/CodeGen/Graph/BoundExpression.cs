@@ -1557,6 +1557,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
+            if (ConstantValue.HasValue)
+            {
+                return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);
+            }
+
             var place = this.BindPlace(cg);
             place.EmitLoadPrepare(cg);
             return place.EmitLoad(cg);
@@ -1588,6 +1593,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IBoundReference BindPlace(CodeGenerator cg)
         {
+            // TODO: constant bound reference
             Debug.Assert(BoundReference != null, "BoundReference was not set!");
             return BoundReference;
         }

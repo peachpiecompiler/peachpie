@@ -171,6 +171,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 var dtype = cx.TypeRef as AST.DirectTypeRef;
                 var itype = cx.TypeRef as AST.IndirectTypeRef;
 
+                if (dtype != null && cx.Name.Equals("class"))   // Type::class ~ "Type"
+                {
+                    return new BoundLiteral(dtype.ClassName.ToString());
+                }
+
                 return (dtype != null)
                     ? BoundFieldRef.CreateClassConst(dtype.ClassName, cx.Name)
                     : BoundFieldRef.CreateClassConst(BindExpression(itype.ClassNameVar, BoundAccess.Read), cx.Name);

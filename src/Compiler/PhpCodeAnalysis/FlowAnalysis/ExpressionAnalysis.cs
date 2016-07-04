@@ -1306,15 +1306,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Visit(x.ParentExpression);  // aka Instance
             Visit(x.FieldNameExpression);
 
-            //
-            if (x.IsInstanceField)
+            if (x.IsInstanceField)  // {Instance}->FieldName
             {
                 Debug.Assert(x.Instance != null);
                 Debug.Assert(x.Instance.Access.IsRead);
-
-                // dynamic behavior by default
-                x.TypeRefMask = TypeRefMask.AnyType;
-                x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName.Value, x.Access);
 
                 // resolve field if possible
                 var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
@@ -1324,64 +1319,82 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var t = _model.GetType(typerefs[0].QualifiedName);
                     if (t != null)
                     {
-                        // TODO: visibility and resolution (model)
-                        var field = t.GetMembers(x.FieldName.Value).OfType<FieldSymbol>().SingleOrDefault();
-                        if (field != null)
+                        if (!x.FieldName.IsEmpty())
                         {
-                            x.BoundReference = new BoundFieldPlace(x.Instance, field, x.Access);
-                            x.TypeRefMask = field.GetResultType(TypeCtx);
-                            return;
-                        }
-                    }
-                }
-                else
-                {
-                    // TODO: Warning
-                }
-
-                return;
-            }
-            
-            //
-            if (x.IsStaticField)
-            {
-                if (!x.ParentName.IsEmpty())
-                {
-                    if (!x.FieldName.IsEmpty())
-                    {
-                        var t = (NamedTypeSymbol)_model.GetType(x.ParentName);
-                        if (t != null)
-                        {
-                            var field = t.ResolveStaticField(x.FieldName.Value);
+                            // TODO: visibility and resolution (model)
+                            var field = t.GetMembers(x.FieldName.Value).OfType<FieldSymbol>().SingleOrDefault();
                             if (field != null)
                             {
-                                // TODO: visibility -> ErrCode
-
-                                Debug.Assert(
-                                    field.IsStatic ||   // .NET static
-                                    field.ContainingType.TryGetStatics().LookupMember<FieldSymbol>(x.FieldName.Value) != null); // or PHP context static
-
-                                x.BoundReference = field.IsStatic
-                                    ? new BoundFieldPlace(null, field, x.Access)        // the field is real .NET static member
-                                    : new BoundPhpStaticFieldPlace(field, x.Access);    // the field is contained in special __statics container
-
+                                x.BoundReference = new BoundFieldPlace(x.Instance, field, x.Access);
                                 x.TypeRefMask = field.GetResultType(TypeCtx);
                                 return;
                             }
                         }
                     }
-
-                    // indirect field access with known class name
-                    // ...
                 }
 
-                // indirect field access
+                // dynamic behavior
+                x.TypeRefMask = TypeRefMask.AnyType;
+
+                if (!x.FieldName.IsEmpty())
+                {
+                    x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName.Value, x.Access);
+                    return;
+                }
+
+                // indirect field access ...
             }
 
+            // static fields or constants
+            NamedTypeSymbol ParentType = x.ParentName.IsEmpty()
+                ? null
+                : (NamedTypeSymbol)_model.GetType(x.ParentName);
+
             //
-            if (x.IsClassConstant)
+            if (x.IsStaticField || x.IsClassConstant)    // {ClassName}::${StaticFieldName}, {ClassName}::{ConstantName}
             {
-                throw new NotImplementedException();
+                if (x.IsClassConstant)
+                {
+                    Debug.Assert(x.Access.IsRead);
+                    Debug.Assert(!x.Access.IsEnsure && !x.Access.IsWrite && !x.Access.IsReadRef);
+                }
+
+                if (!x.FieldName.IsEmpty() && ParentType != null)
+                {
+                    var field = ParentType.ResolveStaticField(x.FieldName.Value);
+                    if (field != null)
+                    {
+                        // TODO: visibility -> ErrCode
+
+                        Debug.Assert(
+                            field.IsConst ||    // .NET constant
+                            field.IsStatic ||   // .NET static
+                            field.ContainingType.TryGetStatics().LookupMember<FieldSymbol>(x.FieldName.Value) != null); // or PHP context static
+
+                        if (field.IsConst)
+                        {
+                            Debug.Assert(x.Access.IsRead && !x.Access.IsWrite && !x.Access.IsEnsure);
+
+                            // constant
+                            var constant = field.GetConstantValue(false);
+                            x.ConstantValue = new Optional<object>(constant.Value);
+                            x.BoundReference = null; // not reachable
+                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, field.Type);
+                        }
+                        else
+                        {
+                            x.BoundReference = field.IsStatic
+                                ? new BoundFieldPlace(null, field, x.Access)        // the field is real .NET static member (CLR static fields)
+                                : new BoundPhpStaticFieldPlace(field, x.Access);    // the field is contained in special __statics container (fields & constants)
+                        }
+
+                        x.TypeRefMask = field.GetResultType(TypeCtx);
+                        return;
+                    }
+                }
+
+                // indirect field access with known class name ...
+                // indirect field access ...
             }
 
             throw new NotImplementedException();

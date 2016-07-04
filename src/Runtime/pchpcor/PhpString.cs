@@ -96,7 +96,7 @@ namespace Pchp.Core
 
         #region Construction
 
-        private PhpString()
+        public PhpString()
         {
             _chunks = null;
             _chunksCount = 0;
@@ -148,8 +148,7 @@ namespace Pchp.Core
                 Debug.Assert(!this.IsEmpty);
 
                 // TODO: Compact byte[] chunks together
-                // TODO: adding after PhpString adds to PhpString
-
+                
                 if (IsArrayOfChunks)
                 {
                     Debug.Assert(chunks.GetType() == typeof(object[]));
@@ -177,6 +176,7 @@ namespace Pchp.Core
         void AddChunkToArray(object[] chunks, object newchunk)
         {
             Debug.Assert(chunks != null);
+            Debug.Assert(_chunksCount > 0);
 
             if (_chunksCount >= chunks.Length)
             {
