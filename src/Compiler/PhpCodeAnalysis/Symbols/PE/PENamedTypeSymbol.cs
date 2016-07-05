@@ -815,9 +815,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     catch (BadImageFormatException)
                     { }
 
-                    //var syntheticCtor = new SynthesizedInstanceConstructor(this);
-                    //members.Add(syntheticCtor);
-                    throw new NotImplementedException();
+                    var syntheticCtor = new SynthesizedInstanceConstructor(this);
+                    members.Add(syntheticCtor);
                 }
                 else
                 {

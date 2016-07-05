@@ -93,6 +93,39 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return result;
         }
 
+        public ISemanticValue ResolveConstant(string name)
+        {
+            var candidates = new List<FieldSymbol>();
+
+            foreach (var container in ExtensionContainers)
+            {
+                // container.Constant
+                var candidate = container
+                    .GetMembers(name).OfType<FieldSymbol>()
+                    .Where(f => f.IsConst && f.DeclaredAccessibility == Accessibility.Public)
+                    .SingleOrDefault();
+                if (candidate != null)
+                    candidates.Add(candidate);
+
+                //// container.SomeEnum.Constant
+                //candidate = container.GetTypeMembers()
+                //    .OfType<NamedTypeSymbol>().Where(TypeSymbolExtensions.IsEnumType)
+                //        .SelectMany(t => t.GetMembers(name).OfType<FieldSymbol>())
+                //        .SingleOrDefault();
+
+                //if (candidate != null)
+                //    candidates.Add(candidate);
+            }
+
+            if (candidates.Count == 1)
+                return candidates[0];
+
+            if (candidates.Count > 1)
+                return null;    // TODO: ErrCode ambiguity
+
+            return Next.ResolveConstant(name);
+        }
+
         public bool IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from)
         {
             throw new NotImplementedException();

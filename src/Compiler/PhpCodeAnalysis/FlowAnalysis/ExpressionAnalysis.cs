@@ -170,6 +170,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
+        bool BindConstantValue(BoundExpression target, FieldSymbol symbol)
+        {
+            if (symbol != null && symbol.IsConst)
+            {
+                var constant = symbol.GetConstantValue(false);
+                target.ConstantValue = new Optional<object>(constant.Value);
+                target.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, symbol.Type);
+
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Updates the expression access and visits it.
         /// </summary>
@@ -1371,15 +1385,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             field.IsStatic ||   // .NET static
                             field.ContainingType.TryGetStatics().LookupMember<FieldSymbol>(x.FieldName.Value) != null); // or PHP context static
 
-                        if (field.IsConst)
+                        if (BindConstantValue(x, field))
                         {
                             Debug.Assert(x.Access.IsRead && !x.Access.IsWrite && !x.Access.IsEnsure);
-
-                            // constant
-                            var constant = field.GetConstantValue(false);
-                            x.ConstantValue = new Optional<object>(constant.Value);
                             x.BoundReference = null; // not reachable
-                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, field.Type);
                         }
                         else
                         {
@@ -1511,10 +1520,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             // TODO: check constant name
 
-            // TODO: bind to app-wide constant if possible
-            //x.SetConstantValue(...)
-
-            x.TypeRefMask = TypeRefMask.AnyType;    // only scalars ?
+            // bind to app-wide constant if possible
+            var constant = (Symbol)_model.ResolveConstant(x.Name);
+            if (!BindConstantValue(x, constant))
+            {
+                x.TypeRefMask = TypeRefMask.AnyType;    // only scalars ?
+            }
         }
 
         public override void VisitConditionalChoiceExpression(IConditionalChoiceExpression operation)

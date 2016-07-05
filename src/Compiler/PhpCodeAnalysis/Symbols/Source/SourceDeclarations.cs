@@ -138,6 +138,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return routine;
         }
 
+        ISemanticValue ISemanticModel.ResolveConstant(string name)
+        {
+            return null;
+        }
+
         bool ISemanticModel.IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from)
         {
             throw new NotImplementedException();

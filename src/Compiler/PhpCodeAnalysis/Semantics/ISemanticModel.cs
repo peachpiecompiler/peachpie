@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         ISemanticModel Next { get; }
 
-        // TODO: constant, variable
+        // TODO: variable
 
         /// <summary>
         /// Gets a file by its path relative to current context.
@@ -39,6 +39,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Can be <c>null</c> if function could not be found.
         /// </summary>
         IEnumerable<ISemanticFunction> ResolveFunction(QualifiedName name);
+
+        /// <summary>
+        /// Resolves single global constant valid in current context.
+        /// </summary>
+        ISemanticValue ResolveConstant(string name);
 
         /// <summary>
         /// Gets value determining whether <paramref name="qname"/> type can be assigned from <paramref name="from"/>.
