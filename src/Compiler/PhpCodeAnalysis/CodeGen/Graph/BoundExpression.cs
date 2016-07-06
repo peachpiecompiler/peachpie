@@ -1575,14 +1575,64 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
     }
 
-    partial class BoundListEx
+    partial class BoundListEx : IBoundReference
     {
-        internal override IBoundReference BindPlace(CodeGenerator cg)
-        {
-            throw new NotImplementedException();
-        }
+        internal override IBoundReference BindPlace(CodeGenerator cg) => this;
 
         internal override IPlace Place(ILBuilder il) => null;
+
+        #region IBoundReference
+
+        TypeSymbol IBoundReference.TypeOpt => null;
+
+        void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            throw new InvalidOperationException();
+        }
+
+        TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
+        {
+            throw new InvalidOperationException();
+        }
+
+        void IBoundReference.EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            // nop
+        }
+
+        void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            var rtype = cg.CoreTypes.PhpArray;
+            cg.EmitConvert(valueType, 0, rtype);    // TODO: to IPhpArrayOperators
+
+            var tmp = cg.GetTemporaryLocal(rtype);
+            cg.Builder.EmitLocalStore(tmp);
+
+            // NOTE: since PHP7, variables are assigned from left to right
+            var vars = this.Variables;
+            for (int i = 0; i < vars.Length; i++)
+            {
+                var target = vars[i];
+                if (target == null)
+                    continue;
+
+                var boundtarget = target.BindPlace(cg);
+                boundtarget.EmitStorePrepare(cg);
+
+                // LOAD Array.GetItemValue(IntStringKey{i})
+                cg.Builder.EmitLocalLoad(tmp);
+                cg.EmitIntStringKey(i);
+                var itemtype = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
+
+                // STORE vars[i]
+                boundtarget.EmitStore(cg, itemtype);
+            }
+
+            //
+            cg.ReturnTemporaryLocal(tmp);
+        }
+
+        #endregion
     }
 
     partial class BoundFieldRef
@@ -1988,7 +2038,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             MethodSymbol ctorsymbol;
-             
+
             if (_arguments.Length == 0)
             {
                 // <ctx>.Exit();

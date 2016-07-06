@@ -154,6 +154,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
             if (expr is AST.ConstantUse) return BindConstUse((AST.ConstantUse)expr).WithAccess(access);
+            if (expr is AST.ListEx) return BindListEx((AST.ListEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -498,6 +499,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 return new BoundCompoundAssignEx(target, value, expr.Operation);
             }
+        }
+
+        BoundExpression BindListEx(AST.ListEx expr)
+        {
+            var vars = expr.LValues
+                .Select(lval => (lval != null) ? (BoundReferenceExpression)BindExpression(lval, BoundAccess.Write) : null)
+                .ToArray();
+
+            return new BoundAssignEx(new BoundListEx(vars).WithAccess(BoundAccess.Write), BindExpression(expr.RValue, BoundAccess.Read));
         }
 
         static BoundExpression BindLiteral(AST.Literal expr)

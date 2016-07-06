@@ -901,6 +901,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             return t;
         }
 
+        public void EmitIntStringKey(int key)
+        {
+            _il.EmitIntConstant(key);
+            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+        }
+
         public void EmitIntStringKey(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
@@ -915,13 +921,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (constant.Value is long)
                 {
-                    _il.EmitIntConstant((int)(long)constant.Value);
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+                    EmitIntStringKey((int)(long)constant.Value);
                 }
                 else if (constant.Value is int)
                 {
-                    _il.EmitIntConstant((int)constant.Value);
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+                    EmitIntStringKey((int)constant.Value);
                 }
                 else
                 {
