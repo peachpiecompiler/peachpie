@@ -1521,7 +1521,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // TODO: check constant name
 
             // bind to app-wide constant if possible
-            var constant = (Symbol)_model.ResolveConstant(x.Name);
+            var constant = (FieldSymbol)_model.ResolveConstant(x.Name);
             if (!BindConstantValue(x, constant))
             {
                 x.TypeRefMask = TypeRefMask.AnyType;    // only scalars ?
