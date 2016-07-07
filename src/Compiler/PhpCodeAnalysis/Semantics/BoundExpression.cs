@@ -867,9 +867,17 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
-        public BoundListEx()
+        /// <summary>
+        /// Bound target variables.
+        /// </summary>
+        public BoundReferenceExpression[] Variables => _vars;
+        readonly BoundReferenceExpression[] _vars;
+
+        public BoundListEx(BoundReferenceExpression[] vars)
         {
-            throw new NotImplementedException();
+            Debug.Assert(vars != null);
+            Debug.Assert(vars.Length != 0);
+            _vars = vars;
         }
 
         public override void Accept(OperationVisitor visitor)

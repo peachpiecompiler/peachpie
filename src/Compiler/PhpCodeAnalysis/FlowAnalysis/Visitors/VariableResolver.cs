@@ -42,7 +42,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             }
             else if (operation is BoundListEx)
             {
-                throw new NotImplementedException("list");  // TODO: visit vars
+                ((BoundListEx)operation).Variables.ForEach(Visit);
             }
             else
             {

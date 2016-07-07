@@ -1472,6 +1472,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitUnset((BoundUnset)operation);
             }
+            else if (operation is BoundListEx)
+            {
+                VisitList((BoundListEx)operation);
+            }
             else if (operation is BoundEmptyStatement)
             {
                 // nop
@@ -1491,6 +1495,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public virtual void VisitUnset(BoundUnset x)
         {
             x.VarReferences.ForEach(Visit);
+        }
+
+        public virtual void VisitList(BoundListEx x)
+        {
+            var elementtype = this.TypeCtx.GetElementType(x.Access.WriteMask);
+            Debug.Assert(!elementtype.IsVoid);
+
+            foreach (var v in x.Variables)
+            {
+                v.Access = v.Access.WithWrite(elementtype);
+                Visit(v);
+            }
         }
 
         public void VisitPseudoConst(BoundPseudoConst x)
