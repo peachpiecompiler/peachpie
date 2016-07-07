@@ -146,11 +146,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.SpecialType.IsIntegralType();
         }
 
-        //public static NamedTypeSymbol GetEnumUnderlyingType(this TypeSymbol type)
-        //{
-        //    var namedType = type as NamedTypeSymbol;
-        //    return ((object)namedType != null) ? namedType.EnumUnderlyingType : null;
-        //}
+        public static NamedTypeSymbol GetEnumUnderlyingType(this TypeSymbol type)
+        {
+            var namedType = type as NamedTypeSymbol;
+            return ((object)namedType != null) ? namedType.EnumUnderlyingType : null;
+        }
 
         public static bool IsEnumType(this TypeSymbol type)
         {

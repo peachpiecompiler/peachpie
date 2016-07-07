@@ -754,6 +754,29 @@ namespace Pchp.CodeAnalysis.CodeGen
         //    }
         //}
 
+        void EmitConvertToEnum(TypeSymbol from, NamedTypeSymbol to)
+        {
+            Debug.Assert(to.IsEnumType());
+            
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_Int16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_Byte:
+                case SpecialType.System_SByte:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_UInt64:
+                    break;
+                default:
+                    EmitConvert(from, 0, from = CoreTypes.Long);
+                    break;
+            }
+
+            _il.EmitNumericConversion(from.PrimitiveTypeCode, to.EnumUnderlyingType.PrimitiveTypeCode, false);
+        }
+
         /// <summary>
         /// Emits conversion from one CLR type to another using PHP conventions.
         /// </summary>
@@ -820,6 +843,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (to.IsReferenceType)
                     {
                         EmitConvertToClass(from, fromHint, to);
+                        return;
+                    }
+                    else if (to.IsEnumType())
+                    {
+                        EmitConvertToEnum(from, (NamedTypeSymbol)to);
                         return;
                     }
                     else

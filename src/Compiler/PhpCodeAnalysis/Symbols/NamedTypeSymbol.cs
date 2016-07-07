@@ -104,7 +104,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual INamedTypeSymbol EnumUnderlyingType => null;
+        INamedTypeSymbol INamedTypeSymbol.EnumUnderlyingType => EnumUnderlyingType;
+
+        /// <summary>
+        /// For enum types, gets the underlying type. Returns null on all other
+        /// kinds of types.
+        /// </summary>
+        public virtual NamedTypeSymbol EnumUnderlyingType => null;
 
         public virtual bool IsGenericType => false;
 

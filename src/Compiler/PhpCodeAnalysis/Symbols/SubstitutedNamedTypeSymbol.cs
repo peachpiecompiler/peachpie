@@ -415,7 +415,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return builder.ToImmutableAndFree();
         //}
 
-        public sealed override INamedTypeSymbol EnumUnderlyingType
+        public sealed override NamedTypeSymbol EnumUnderlyingType
         {
             get
             {

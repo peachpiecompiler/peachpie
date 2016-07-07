@@ -377,6 +377,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         TypeKind _lazyKind;
 
+        NamedTypeSymbol _lazyUnderlayingType;
+
         private NamedTypeSymbol _lazyDeclaredBaseType = ErrorTypeSymbol.UnknownResultType;
         private ImmutableArray<NamedTypeSymbol> _lazyDeclaredInterfaces = default(ImmutableArray<NamedTypeSymbol>);
 
@@ -594,6 +596,97 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return access;
             }
+        }
+
+        public override NamedTypeSymbol EnumUnderlyingType
+        {
+            get
+            {
+                if (this.IsEnumType())
+                {
+                    if (_lazyUnderlayingType == null)
+                        _lazyUnderlayingType = ResolveEnumUnderlyingType();
+
+                    Debug.Assert(_lazyUnderlayingType != null);
+                    return _lazyUnderlayingType;
+                }
+
+                return null;
+            }
+        }
+
+        private NamedTypeSymbol ResolveEnumUnderlyingType()
+        {
+            if (this.TypeKind == TypeKind.Enum)
+            {
+                // From §8.5.2
+                // An enum is considerably more restricted than a true type, as
+                // follows:
+                // - It shall have exactly one instance field, and the type of that field defines the underlying type of
+                // the enumeration.
+                // - It shall not have any static fields unless they are literal. (see §8.6.1.2)
+
+                // The underlying type shall be a built-in integer type. Enums shall derive from System.Enum, hence they are
+                // value types. Like all value types, they shall be sealed (see §8.9.9).
+
+                var moduleSymbol = this.ContainingPEModule;
+                var module = moduleSymbol.Module;
+                var decoder = new MetadataDecoder(moduleSymbol, this);
+                NamedTypeSymbol underlyingType = null;
+
+                try
+                {
+                    foreach (var fieldDef in module.GetFieldsOfTypeOrThrow(_handle))
+                    {
+                        FieldAttributes fieldFlags;
+
+                        try
+                        {
+                            fieldFlags = module.GetFieldDefFlagsOrThrow(fieldDef);
+                        }
+                        catch (BadImageFormatException)
+                        {
+                            continue;
+                        }
+
+                        if ((fieldFlags & FieldAttributes.Static) == 0)
+                        {
+                            // Instance field used to determine underlying type.
+                            bool isVolatile;
+                            ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers;
+                            TypeSymbol type = decoder.DecodeFieldSignature(fieldDef, out isVolatile, out customModifiers);
+
+                            if (type.SpecialType.IsValidEnumUnderlyingType())
+                            {
+                                if ((object)underlyingType == null)
+                                {
+                                    underlyingType = (NamedTypeSymbol)type;
+                                }
+                                else
+                                {
+                                    underlyingType = new UnsupportedMetadataTypeSymbol(); // ambiguous underlying type
+                                }
+                            }
+                        }
+                    }
+
+                    if ((object)underlyingType == null)
+                    {
+                        underlyingType = new UnsupportedMetadataTypeSymbol(); // undefined underlying type
+                    }
+                }
+                catch (BadImageFormatException mrEx)
+                {
+                    if ((object)underlyingType == null)
+                    {
+                        underlyingType = new UnsupportedMetadataTypeSymbol(mrEx);
+                    }
+                }
+
+                return underlyingType;
+            }
+
+            return null;
         }
 
         public abstract override int Arity
