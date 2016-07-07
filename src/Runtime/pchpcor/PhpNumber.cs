@@ -392,6 +392,23 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>+</c> operator on numbers.
         /// </summary>
+        public static PhpNumber Add(long x, PhpValue y)
+        {
+            PhpNumber number;
+            if ((y.ToNumber(out number) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();  // TODO: ErrCode & return 0
+            }
+
+            //
+            return x + number;
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
         public static double Add(double x, PhpValue y)
         {
             PhpNumber number;
