@@ -196,6 +196,30 @@ namespace Pchp.Core
             return !(a == b);
         }
 
+        /// <summary>
+        /// Non strict equality operator.
+        /// </summary>
+        public static bool operator ==(PhpNumber x, long y)
+            => x.IsLong ? x.Long == y : x.Double == y;
+
+        /// <summary>
+        /// Non strict equality operator.
+        /// </summary>
+        public static bool operator !=(PhpNumber x, long y)
+            => !(x == y);
+
+        /// <summary>
+        /// Non strict equality operator.
+        /// </summary>
+        public static bool operator ==(PhpNumber x, double y)
+            => x.ToDouble() == y;
+
+        /// <summary>
+        /// Non strict equality operator.
+        /// </summary>
+        public static bool operator !=(PhpNumber x, double y)
+            => !(x == y);
+
         #endregion
 
         #region Add
