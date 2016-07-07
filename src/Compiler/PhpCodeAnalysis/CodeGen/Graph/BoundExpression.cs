@@ -310,6 +310,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_long_number)
                         .Expect(cg.CoreTypes.PhpNumber);
                 }
+                else if (ytype == cg.CoreTypes.PhpValue)
+                {
+                    // i8 + value : number
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_long_value)
+                        .Expect(cg.CoreTypes.PhpNumber);
+                }
 
                 //
                 throw new NotImplementedException($"Add(int64, {ytype.Name})");

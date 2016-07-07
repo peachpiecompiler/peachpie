@@ -240,7 +240,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly CoreType _castTo;
 
         public CoreExplicitCast(CoreType declaringClass, CoreType castTo)
-            :base(declaringClass, WellKnownMemberNames.ExplicitConversionName, declaringClass)
+            : base(declaringClass, WellKnownMemberNames.ExplicitConversionName, declaringClass)
         {
             _castTo = castTo;
         }
@@ -369,7 +369,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Clt_long_double, Cgt_long_double,
                 Compare_bool_bool, Compare_number_value,
                 Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value,
-                
+
                 StrictCeq_bool_PhpValue, StrictCeq_long_PhpValue, StrictCeq_double_PhpValue, StrictCeq_PhpValue_PhpValue,
                 StrictCeq_PhpValue_bool;
         }
@@ -497,6 +497,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_value_long = ct.PhpNumber.Method("Add", ct.PhpValue, ct.Long);
                 Add_value_double = ct.PhpNumber.Method("Add", ct.PhpValue, ct.Double);
                 Add_value_number = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpNumber);
+                Add_long_value = ct.PhpNumber.Method("Add", ct.Long, ct.PhpValue);
                 Add_double_value = ct.PhpNumber.Method("Add", ct.Double, ct.PhpValue);
                 Add_value_value = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpValue);
 
@@ -553,7 +554,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass,
                 CompareTo_number, CompareTo_long, CompareTo_double,
-                Add_long_long, Add_long_double, Add_number_double, Add_double_number, Add_value_long, Add_value_double, Add_value_number, Add_double_value, Add_value_value,
+                Add_long_long, Add_long_double, Add_number_double, Add_double_number, Add_value_long, Add_value_double, Add_value_number, Add_long_value, Add_double_value, Add_value_value,
                 Subtract_long_long, Subtract_number_double, Subtract_long_double, Subtract_value_value, Subtract_value_long, Subtract_value_double, Subtract_value_number,
                 Negation_long,
                 get_Long, get_Double,
