@@ -23,5 +23,13 @@ namespace Pchp.Library
         //_constants.Add("PHP_SAPI", (System.Web.HttpContext.Current == null) ? "cli" : "isapi", false);
         //_constants.Add("DIRECTORY_SEPARATOR", FullPath.DirectorySeparatorString, false);
         //_constants.Add("PATH_SEPARATOR", Path.PathSeparator.ToString(), false);
+
+        public const long PHP_INT_SIZE = sizeof(long);
+        public const long PHP_INT_MIN = long.MinValue;
+        public const long PHP_INT_MAX = long.MaxValue;
+
+        public const object NULL = null;
+        public const bool TRUE = true;
+        public const bool FALSE = false;
     }
 }
