@@ -67,29 +67,6 @@ namespace Pchp.CodeAnalysis
         public SourceDeclarations SourceSymbolTables => _tables;
 
         /// <summary>
-        /// <c>Context.Globals</c> property.
-        /// </summary>
-        public PropertySymbol Context_Globals
-        {
-            get
-            {
-                var result = _context_globals;
-                if (result == null)
-                {
-                    result = _context_globals = CoreTypes.Context.Symbol.GetMembers("Globals").OfType<PropertySymbol>().FirstOrDefault();
-                }
-
-                return result;
-            }
-        }
-        PropertySymbol _context_globals;
-
-        ///// <summary>
-        ///// Contains the main method of this assembly, if there is one.
-        ///// </summary>
-        //private EntryPoint _lazyEntryPoint;
-
-        /// <summary>
         /// The AssemblySymbol that represents the assembly being created.
         /// </summary>
         internal SourceAssemblySymbol SourceAssembly

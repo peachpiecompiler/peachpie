@@ -1540,7 +1540,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var constant = (FieldSymbol)_model.ResolveConstant(x.Name);
             if (!BindConstantValue(x, constant))
             {
-                x.TypeRefMask = TypeRefMask.AnyType;    // only scalars ?
+                if (constant != null && constant.IsStatic && constant.IsReadOnly)
+                {
+                    x._boundExpressionOpt = new BoundFieldPlace(null, constant, x);
+                    x.TypeRefMask = constant.GetResultType(TypeCtx);
+                }
+                else
+                {
+                    x.TypeRefMask = TypeRefMask.AnyType;    // only scalars ?
+                }
             }
         }
 

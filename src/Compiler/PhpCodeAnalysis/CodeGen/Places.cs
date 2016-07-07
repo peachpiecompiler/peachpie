@@ -872,6 +872,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return cg.EmitLoadGlobals();
             }
 
+            if (_name == Syntax.VariableName.ServerName)
+            {
+                return cg.EmitLoadServer();
+            }
+
             throw new NotImplementedException($"Superglobal ${_name.Value}");
         }
 
@@ -1106,11 +1111,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public BoundExpression Instance => _instance;
         readonly BoundExpression _instance;
 
-        readonly BoundReferenceExpression _boundref;
+        readonly BoundExpression _boundref;
 
         BoundAccess Access => _boundref.Access;
 
-        public BoundFieldPlace(BoundExpression instance, FieldSymbol field, BoundReferenceExpression boundref)
+        public BoundFieldPlace(BoundExpression instance, FieldSymbol field, BoundExpression boundref)
         {
             Contract.ThrowIfNull(field);
             
@@ -1451,7 +1456,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     /// </summary>
     internal class BoundPhpStaticFieldPlace : BoundFieldPlace
     {
-        public BoundPhpStaticFieldPlace(FieldSymbol field, BoundReferenceExpression boundref)
+        public BoundPhpStaticFieldPlace(FieldSymbol field, BoundExpression boundref)
             :base(null, field, boundref)
         {
             Debug.Assert(!field.IsStatic);

@@ -59,7 +59,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // <ctx>.Globals
             EmitLoadContext();
-            return EmitCall(ILOpCode.Call, DeclaringCompilation.Context_Globals.GetMethod)
+            return EmitCall(ILOpCode.Call, CoreMethods.Context.get_Globals)
+                .Expect(CoreTypes.PhpArray);
+        }
+
+        /// <summary>
+        /// Emits reference to <c>$_SERVER</c>.
+        /// </summary>
+        /// <returns>Type of <c>PhpArray</c></returns>
+        public TypeSymbol EmitLoadServer()
+        {
+            // <ctx>.Server
+            EmitLoadContext();
+            return EmitCall(ILOpCode.Call, CoreMethods.Context.get_Server)
                 .Expect(CoreTypes.PhpArray);
         }
 

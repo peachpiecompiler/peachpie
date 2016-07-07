@@ -82,7 +82,7 @@ namespace Pchp.CodeAnalysis.Emit
                                 {
                                     // <ctx>.Globals
                                     il.EmitLocalLoad(ctx_loc);
-                                    il.EmitCall(this, diagnostic, ILOpCode.Call, this.Compilation.Context_Globals.GetMethod)
+                                    il.EmitCall(this, diagnostic, ILOpCode.Call, this.Compilation.CoreMethods.Context.get_Globals)
                                         .Expect(p.Type);
                                 }
                                 else if (p.Type == types.Object && p.Name == SpecialParameterSymbol.ThisName)

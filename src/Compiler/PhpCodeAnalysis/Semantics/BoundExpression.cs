@@ -1136,6 +1136,11 @@ namespace Pchp.CodeAnalysis.Semantics
             this.Name = name;
         }
 
+        /// <summary>
+        /// In case the constant is resolved to a place.
+        /// </summary>
+        internal IBoundReference _boundExpressionOpt;
+
         public override void Accept(OperationVisitor visitor)
             => visitor.DefaultVisit(this);
 

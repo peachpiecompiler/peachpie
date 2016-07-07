@@ -2732,9 +2732,22 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            Debug.Assert(!Access.IsWrite);
+
+            if (this.Access.IsNone)
+            {
+                return cg.CoreTypes.Void;
+            }
+
             if (this.ConstantValue.HasValue)
             {
                 return cg.EmitLoadConstant(this.ConstantValue.Value, this.Access.TargetType);
+            }
+
+            if (_boundExpressionOpt != null)
+            {
+                _boundExpressionOpt.EmitLoadPrepare(cg);
+                return _boundExpressionOpt.EmitLoad(cg);
             }
 
             var idxfield = ((IWithSynthesized)cg.Module.ScriptType)

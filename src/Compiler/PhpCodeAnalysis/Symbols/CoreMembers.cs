@@ -683,6 +683,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetStatic_T = ct.Context.Method("GetStatic");
 
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
+                get_Server = ct.Context.Method("get_Server");   // TODO: special name, property
             }
 
             public readonly CoreMethod
@@ -696,7 +697,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Dispose;
 
             public readonly CoreMethod
-                get_Globals;
+                get_Globals, get_Server;
         }
 
         public struct DynamicHolder

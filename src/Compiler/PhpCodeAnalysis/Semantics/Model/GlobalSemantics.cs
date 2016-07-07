@@ -39,6 +39,11 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary;
         }
 
+        internal static bool IsConstantField(FieldSymbol field)
+        {
+            return (field.IsConst || (field.IsReadOnly && field.IsStatic)) && field.DeclaredAccessibility == Accessibility.Public;
+        }
+
         ImmutableArray<NamedTypeSymbol> ExtensionContainers
         {
             get
@@ -95,26 +100,14 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public ISemanticValue ResolveConstant(string name)
         {
-            var candidates = new List<FieldSymbol>();
+            var candidates = new List<ISemanticValue>();
 
             foreach (var container in ExtensionContainers)
             {
                 // container.Constant
-                var candidate = container
-                    .GetMembers(name).OfType<FieldSymbol>()
-                    .Where(f => f.IsConst && f.DeclaredAccessibility == Accessibility.Public)
-                    .SingleOrDefault();
+                var candidate = container.GetMembers(name).OfType<FieldSymbol>().Where(IsConstantField).SingleOrDefault();
                 if (candidate != null)
                     candidates.Add(candidate);
-
-                //// container.SomeEnum.Constant
-                //candidate = container.GetTypeMembers()
-                //    .OfType<NamedTypeSymbol>().Where(TypeSymbolExtensions.IsEnumType)
-                //        .SelectMany(t => t.GetMembers(name).OfType<FieldSymbol>())
-                //        .SingleOrDefault();
-
-                //if (candidate != null)
-                //    candidates.Add(candidate);
             }
 
             if (candidates.Count == 1)

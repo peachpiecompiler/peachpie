@@ -35,6 +35,7 @@ namespace Pchp.Core
             _statics = new object[StaticIndexes.StaticsCount];
 
             _globals = new PhpArray();
+            _server = new PhpArray();   // TODO: virtual initialization method, reuse server static information with request context
             // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
         }
 
@@ -366,7 +367,8 @@ namespace Pchp.Core
         #region Superglobals
 
         /// <summary>
-        /// Array of global variables. Cannot be <c>null</c>.
+        /// Array of global variables.
+        /// Cannot be <c>null</c>.
         /// </summary>
         public PhpArray Globals
         {
@@ -382,6 +384,25 @@ namespace Pchp.Core
             }
         }
         PhpArray _globals;
+
+        /// <summary>
+        /// Array of server and execution environment information.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Server
+        {
+            get { return _server; }
+            //set
+            //{
+            //    if (value == null)
+            //    {
+            //        throw new ArgumentNullException();
+            //    }
+
+            //    _server = value;
+            //}
+        }
+        PhpArray _server;
 
         #endregion
 
