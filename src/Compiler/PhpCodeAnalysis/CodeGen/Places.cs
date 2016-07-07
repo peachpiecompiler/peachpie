@@ -1106,15 +1106,17 @@ namespace Pchp.CodeAnalysis.CodeGen
         public BoundExpression Instance => _instance;
         readonly BoundExpression _instance;
 
-        readonly BoundAccess _access;
+        readonly BoundReferenceExpression _boundref;
 
-        public BoundFieldPlace(BoundExpression instance, FieldSymbol field, BoundAccess access)
+        BoundAccess Access => _boundref.Access;
+
+        public BoundFieldPlace(BoundExpression instance, FieldSymbol field, BoundReferenceExpression boundref)
         {
             Contract.ThrowIfNull(field);
             
             _instance = instance;
             _field = field;
-            _access = access;
+            _boundref = boundref;
         }
 
         #region IBoundReference
@@ -1172,12 +1174,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
-            Debug.Assert(_access.IsRead);
+            Debug.Assert(Access.IsRead);
 
             var type = Field.Type;
 
             // Ensure Object (..->Field->.. =)
-            if (_access.EnsureObject)
+            if (Access.EnsureObject)
             {
                 if (type == cg.CoreTypes.PhpAlias)
                 {
@@ -1207,7 +1209,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
             // Ensure Array (xxx->Field[] =)
-            else if (_access.EnsureArray)
+            else if (Access.EnsureArray)
             {
                 if (type == cg.CoreTypes.PhpAlias)
                 {
@@ -1231,7 +1233,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 throw new NotImplementedException();
             }
             // Ensure Alias (&...->Field)
-            else if (_access.IsReadRef)
+            else if (Access.IsReadRef)
             {
                 if (type == cg.CoreTypes.PhpAlias)
                 {
@@ -1263,13 +1265,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     EmitOpCode_Load(cg);
 
-                    if (_access.TargetType != null)
+                    if (Access.TargetType != null)
                     {
                         // convert PhpValue to target type without loading whole value and storing to temporary variable
-                        switch (_access.TargetType.SpecialType)
+                        switch (Access.TargetType.SpecialType)
                         {
                             default:
-                                if (_access.TargetType == cg.CoreTypes.PhpArray)
+                                if (Access.TargetType == cg.CoreTypes.PhpArray)
                                 {
                                     // <PhpAlias>.Value.AsArray()
                                     cg.Builder.EmitOpCode(ILOpCode.Ldflda);
@@ -1284,10 +1286,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (type == cg.CoreTypes.PhpValue)
                 {
-                    if (_access.TargetType != null)
+                    if (Access.TargetType != null)
                     {
                         // convert PhpValue to target type without loading whole value and storing to temporary variable
-                        switch (_access.TargetType.SpecialType)
+                        switch (Access.TargetType.SpecialType)
                         {
                             case SpecialType.System_Double:
                                 EmitOpCode_LoadAddress(cg); // &PhpValue.ToDouble()
@@ -1306,7 +1308,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass()
                                 return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass);
                             default:
-                                if (_access.TargetType == cg.CoreTypes.PhpArray)
+                                if (Access.TargetType == cg.CoreTypes.PhpArray)
                                 {
                                     EmitOpCode_LoadAddress(cg); // &PhpValue.AsArray()
                                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
@@ -1329,14 +1331,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
-            Debug.Assert(_access.IsWrite);
+            Debug.Assert(Access.IsWrite);
 
             EmitLoadFieldInstance(cg, instanceOpt);
 
             //
             var type = Field.Type;
 
-            if (_access.IsWriteRef)
+            if (Access.IsWriteRef)
             {
                 // no need for preparation
             }
@@ -1361,11 +1363,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            Debug.Assert(_access.IsWrite);
+            Debug.Assert(Access.IsWrite);
 
             var type = Field.Type;
 
-            if (_access.IsWriteRef)
+            if (Access.IsWriteRef)
             {
                 if (valueType != cg.CoreTypes.PhpAlias)
                 {
@@ -1393,7 +1395,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitOpCode_Store(cg);
                 }
             }
-            else if (_access.IsUnset)
+            else if (Access.IsUnset)
             {
                 Debug.Assert(valueType == null);
 
@@ -1449,8 +1451,8 @@ namespace Pchp.CodeAnalysis.CodeGen
     /// </summary>
     internal class BoundPhpStaticFieldPlace : BoundFieldPlace
     {
-        public BoundPhpStaticFieldPlace(FieldSymbol field, BoundAccess access)
-            :base(null, field, access)
+        public BoundPhpStaticFieldPlace(FieldSymbol field, BoundReferenceExpression boundref)
+            :base(null, field, boundref)
         {
             Debug.Assert(!field.IsStatic);
             Debug.Assert(field.ContainingType.TryGetStatics() != null);

@@ -1339,7 +1339,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             var field = t.GetMembers(x.FieldName.Value).OfType<FieldSymbol>().SingleOrDefault();
                             if (field != null)
                             {
-                                x.BoundReference = new BoundFieldPlace(x.Instance, field, x.Access);
+                                x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
                                 x.TypeRefMask = field.GetResultType(TypeCtx);
                                 return;
                             }
@@ -1393,8 +1393,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         else
                         {
                             x.BoundReference = field.IsStatic
-                                ? new BoundFieldPlace(null, field, x.Access)        // the field is real .NET static member (CLR static fields)
-                                : new BoundPhpStaticFieldPlace(field, x.Access);    // the field is contained in special __statics container (fields & constants)
+                                ? new BoundFieldPlace(null, field, x)        // the field is real .NET static member (CLR static fields)
+                                : new BoundPhpStaticFieldPlace(field, x);    // the field is contained in special __statics container (fields & constants)
                         }
 
                         x.TypeRefMask = field.GetResultType(TypeCtx);

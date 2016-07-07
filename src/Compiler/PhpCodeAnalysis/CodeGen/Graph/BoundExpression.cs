@@ -677,17 +677,46 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 default:
 
-                    // TODO: xtype: PhpNumber, PhpArray, ...
+                    if (xtype == cg.CoreTypes.PhpNumber)
+                    {
+                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));
+                        if (ytype.SpecialType == SpecialType.System_Int64)
+                        {
+                            // number == i8
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_number_long)
+                                .Expect(SpecialType.System_Boolean);
+                        }
+                        else if (ytype.SpecialType == SpecialType.System_Double)
+                        {
+                            // number == r8
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_number_double)
+                                .Expect(SpecialType.System_Boolean);
+                        }
+                        else if (ytype == cg.CoreTypes.PhpNumber)
+                        {
+                            // number == number
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_number_number)
+                                .Expect(SpecialType.System_Boolean);
+                        }
+                        else
+                        {
+                            throw new NotImplementedException($"PhpNumber == {ytype}");
+                        }
+                    }
+                    else
+                    {
+                        // TODO: xtype: PhpArray, ...
 
-                    xtype = cg.EmitConvertToPhpValue(xtype, 0);
+                        xtype = cg.EmitConvertToPhpValue(xtype, 0);
 
-                    // TODO: overloads for type of <right>
+                        // TODO: overloads for type of <right>
 
-                    ytype = cg.EmitConvertToPhpValue(cg.Emit(right), right.TypeRefMask);
+                        ytype = cg.EmitConvertToPhpValue(cg.Emit(right), right.TypeRefMask);
 
-                    // value == value
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_PhpValue)
-                        .Expect(SpecialType.System_Boolean);
+                        // value == value
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_PhpValue)
+                            .Expect(SpecialType.System_Boolean);
+                    }
             }
         }
 

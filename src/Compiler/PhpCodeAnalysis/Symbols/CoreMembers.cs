@@ -486,6 +486,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Eq_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Ineq_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpNumber, ct.PhpNumber);
+                Eq_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpNumber, ct.Long);
+                Ineq_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpNumber, ct.Long);
+                Eq_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpNumber, ct.Double);
+                Ineq_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpNumber, ct.Double);
 
                 Add_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Add_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.Long);
@@ -564,6 +568,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreOperator
                 Eq_number_number, Ineq_number_number,
+                Eq_number_long, Ineq_number_long,
+                Eq_number_double, Ineq_number_double,
                 Add_number_number, Add_number_long, Add_long_number,
                 Subtract_number_number, Subtract_long_number, Subtract_number_long,
                 Division_number_number, Division_long_number,
