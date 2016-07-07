@@ -257,10 +257,10 @@ namespace Pchp.Core
             AssertChunkObject(chunk);
 
             if (chunk.GetType() == typeof(string)) ctx.Output.Write((string)chunk);
-            if (chunk.GetType() == typeof(byte[])) ctx.OutputStream.Write((byte[])chunk);
-            if (chunk.GetType() == typeof(PhpString)) ((PhpString)chunk).Output(ctx);
-            if (chunk.GetType() == typeof(char[])) ctx.Output.Write((char[])chunk);
-            throw new ArgumentException();
+            else if (chunk.GetType() == typeof(byte[])) ctx.OutputStream.Write((byte[])chunk);
+            else if (chunk.GetType() == typeof(PhpString)) ((PhpString)chunk).Output(ctx);
+            else if (chunk.GetType() == typeof(char[])) ctx.Output.Write((char[])chunk);
+            else throw new ArgumentException();
         }
 
         static void OutputChunks(Context ctx, object[] chunks, int count)

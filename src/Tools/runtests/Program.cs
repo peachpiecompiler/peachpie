@@ -64,8 +64,8 @@ namespace runtests
             // php.exe 'testpath' >> OUTPUT1
             var phpoutput = RunProcess(phpexepath, testpath);
 
-            // pchp.exe /target:exe '/out:testpath.exe' 'testpath'
-            var compileroutput = RunProcess("pchp.exe", $"/target:exe \"/out:{outputexe}\" \"{testpath}\"");
+            // peach.exe /target:exe '/out:testpath.exe' 'testpath'
+            var compileroutput = RunProcess("peach.exe", $"/target:exe \"/out:{outputexe}\" \"{testpath}\"");
 
             // TODO: check compiler crashed
 
