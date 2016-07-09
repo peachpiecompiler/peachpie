@@ -393,6 +393,167 @@ namespace Pchp.Library
 
         #endregion
 
+        #region strtr, str_rot13
+
+        /// <summary>
+        /// Replaces specified characters in a string with another ones.
+        /// </summary>
+        /// <param name="str">A string where to do the replacement.</param>
+        /// <param name="from">Characters to be replaced.</param>
+        /// <param name="to">Characters to replace those in <paramref name="from"/> with.</param>
+        /// <returns>
+        /// A copy of <paramref name="str"/> with all occurrences of each character in <paramref name="from"/> 
+        /// replaced by the corresponding character in <paramref name="to"/>.
+        /// </returns>
+        /// <remarks>
+        /// <para>If <paramref name="from"/> and <paramref name="to"/> are different lengths, the extra characters 
+        /// in the longer of the two are ignored.</para>
+        /// </remarks>
+        public static string strtr(string str, string from, string to)
+        {
+            if (String.IsNullOrEmpty(str) || from == null || to == null) return String.Empty;
+
+            int min_length = Math.Min(from.Length, to.Length);
+            Dictionary<char, char> ht = new Dictionary<char, char>(min_length);
+
+            // adds chars to the hashtable:
+            for (int i = 0; i < min_length; i++)
+                ht[from[i]] = to[i];
+
+            // creates result builder:
+            StringBuilder result = new StringBuilder(str.Length, str.Length);
+            result.Length = str.Length;
+
+            // translates:
+            for (int i = 0; i < str.Length; i++)
+            {
+                char c = str[i];
+                char h;
+                result[i] = ht.TryGetValue(c, out h) ? h : c;
+
+                // obsolete:
+                // object h = ht[c];
+                // result[i] = (h==null) ? c : h;
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Compares objects according to the length of their string representation
+        /// as the primary criteria and the alphabetical order as the secondary one.
+        /// </summary>
+        private sealed class KeyLengthComparer : IComparer<KeyValuePair<string, string>>
+        {
+            /// <summary>
+            /// Performs length and alphabetical comparability backwards (longer first).
+            /// </summary>
+            /// <param name="x"></param>
+            /// <param name="y"></param>
+            /// <returns></returns>
+            public int Compare(KeyValuePair<string, string> x, KeyValuePair<string, string> y)
+            {
+                int rv = x.Key.Length - y.Key.Length;
+                if (rv == 0) return -string.CompareOrdinal(x.Key, y.Key);
+                else return -rv;
+            }
+        }
+
+        /// <summary>
+        /// Replaces substrings according to a dictionary.
+        /// </summary>
+        /// <param name="str">Input string.</param>
+        /// <param name="replacePairs">
+        /// An dictionary that contains <see cref="string"/> to <see cref="string"/> replacement mapping.
+        /// </param>
+        /// <returns>A copy of str, replacing all substrings (looking for the longest possible match).</returns>
+        /// <remarks>This function will not try to replace stuff that it has already worked on.</remarks>
+        /// <exception cref="PhpException">Thrown if the <paramref name="replacePairs"/> argument is null.</exception>
+        //[return: CastToFalse]
+        public static string strtr(string str, PhpArray replacePairs)
+        {
+            if (replacePairs == null)
+            {
+                //PhpException.ArgumentNull("replacePairs");
+                //return null;
+                throw new ArgumentException();
+            }
+
+            if (string.IsNullOrEmpty(str))
+                return String.Empty;
+
+            // sort replacePairs according to the key length, longer first
+            var count = replacePairs.Count;
+            var sorted = new KeyValuePair<string, string>[count];
+            
+            int i = 0;
+            var replacePairsEnum = replacePairs.GetFastEnumerator();
+            while (replacePairsEnum.MoveNext())
+            {
+                var key = replacePairsEnum.CurrentKey.ToString();
+                var value = replacePairsEnum.CurrentValue.ToString();
+
+                if (key.Length == 0)
+                {
+                    //// TODO: an exception ?
+                    //return null;
+                    throw new ArgumentException();
+                }
+
+                sorted[i++] = new KeyValuePair<string, string>(key, value);
+            }
+
+            Array.Sort<KeyValuePair<string, string>>(sorted, new KeyLengthComparer());
+
+            // perform replacement
+            StringBuilder result = new StringBuilder(str);
+            StringBuilder temp = new StringBuilder(str);
+            int length = str.Length;
+            int[] offset = new int[length];
+
+            for (i = 0; i < sorted.Length; i++)
+            {
+                var key = sorted[i].Key;
+                int index = 0;
+
+                while ((index = temp.ToString().IndexOf(key, index, StringComparison.Ordinal)) >= 0)   // ordinal search, because of exotic Unicode characters are find always at the beginning of the temp
+                {
+                    var value = sorted[i].Value;
+                    var keyLength = key.Length;
+                    int replaceAtIndex = index + offset[index];
+
+                    // replace occurrence in result
+                    result.Remove(replaceAtIndex, keyLength);
+                    result.Insert(replaceAtIndex, value);
+
+                    // Pack the offset array (drop the items removed from temp)
+                    for (int j = index + keyLength; j < offset.Length; j++)
+                        offset[j - keyLength] = offset[j];
+
+                    // Ensure that we don't replace stuff that we already have worked on by
+                    // removing the replaced substring from temp.
+                    temp.Remove(index, keyLength);
+                    for (int j = index; j < length; j++) offset[j] += value.Length;
+                }
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// GetUserEntryPoint encode a string by shifting every letter (a-z, A-Z) by 13 places in the alphabet.
+        /// </summary>
+        /// <param name="str">The string to be encoded.</param>
+        /// <returns>The string with characters rotated by 13 places.</returns>
+        public static string str_rot13(string str)
+        {
+            return strtr(str,
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                "nopqrstuvwxyzabcdefghijklmNOPQRSTUVWXYZABCDEFGHIJKLM");
+        }
+
+        #endregion
+
         #region substr_count internals
 
         private static bool SubstringCountInternalCheck(string needle)

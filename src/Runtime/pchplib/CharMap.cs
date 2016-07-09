@@ -257,14 +257,14 @@ namespace Pchp.Library
 
                         if (first > last)  //eg: "a..b" or "b..a" 
                         {
-                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("char_range_not_incrementing", ".."));
-                            throw new NotImplementedException();
-
                             // the first character will be added and the last char read may be init char of an interval:
                             Add(first);
                             Add(dot);
                             first = last;
                             state = char_read;
+
+                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("char_range_not_incrementing", ".."));
+                            throw new NotImplementedException();
                         }
                         else
                         {
