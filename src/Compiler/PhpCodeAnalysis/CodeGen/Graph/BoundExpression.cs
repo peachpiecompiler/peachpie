@@ -1916,9 +1916,18 @@ namespace Pchp.CodeAnalysis.Semantics
                 //
                 cg.Builder.EmitOpCode(ILOpCode.Dup);    // PhpString
 
-                // TODO: Add overloads for specific types, not System.String only
-                cg.EmitConvert(expr, cg.CoreTypes.String);
-                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
+                var t = cg.Emit(expr);
+                if (t == cg.CoreTypes.PhpString)
+                {
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
+                }
+                else
+                {
+                    cg.EmitConvert(t, 0, cg.CoreTypes.String);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
+                }
+                
+                //
                 cg.Builder.EmitOpCode(ILOpCode.Nop);
             }
 

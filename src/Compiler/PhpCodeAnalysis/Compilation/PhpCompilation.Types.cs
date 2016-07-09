@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis
         /// <param name="first">First type.</param>
         /// <param name="second">Second type.</param>
         /// <returns>One type convering both <paramref name="first"/> and <paramref name="second"/> types.</returns>
-        public NamedTypeSymbol Merge(NamedTypeSymbol first, NamedTypeSymbol second)
+        public TypeSymbol Merge(TypeSymbol first, TypeSymbol second)
         {
             Contract.ThrowIfNull(first);
             Contract.ThrowIfNull(second);
@@ -409,7 +409,7 @@ namespace Pchp.CodeAnalysis
                 for (int i = 1; i < types.Count; i++)
                 {
                     var tdesc = GetTypeFromTypeRef(types[i]);
-                    result = Merge(result, GetTypeFromTypeRef(types[i]));
+                    result = (NamedTypeSymbol)Merge(result, GetTypeFromTypeRef(types[i]));
                 }
 
                 //
