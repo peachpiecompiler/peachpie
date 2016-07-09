@@ -743,6 +743,67 @@ namespace Pchp.Library
 
         #endregion
 
+        #region chunk_split
+
+        /// <summary>
+        /// Splits a string into chunks 76 characters long separated by "\r\n".
+        /// </summary>
+        /// <param name="str">The string to split.</param>
+        /// <returns>The splitted string.</returns>
+        /// <remarks>"\r\n" is also appended after the last chunk.</remarks>
+        //[return: CastToFalse]
+        public static string chunk_split(string str)
+        {
+            return chunk_split(str, 76, "\r\n");
+        }
+
+        /// <summary>
+        /// Splits a string into chunks of a specified length separated by "\r\n".
+        /// </summary>
+        /// <param name="str">The string to split.</param>
+        /// <param name="chunkLength">The chunk length.</param>
+        /// <returns>The splitted string.</returns>
+        /// <remarks>"\r\n" is also appended after the last chunk.</remarks>
+        //[return: CastToFalse]
+        public static string chunk_split(string str, int chunkLength)
+        {
+            return chunk_split(str, chunkLength, "\r\n");
+        }
+
+        /// <summary>
+        /// Splits a string into chunks of a specified length separated by a specified string.
+        /// </summary>
+        /// <param name="str">The string to split.</param>
+        /// <param name="chunkLength">The chunk length.</param>
+        /// <param name="endOfChunk">The chunk separator.</param>
+        /// <returns><paramref name="endOfChunk"/> is also appended after the last chunk.</returns>
+        //[return: CastToFalse]
+        public static string chunk_split(string str, int chunkLength, string endOfChunk)
+        {
+            if (str == null) return string.Empty;
+
+            if (chunkLength <= 0)
+            {
+                //PhpException.InvalidArgument("chunkLength", LibResources.GetString("arg:negative_or_zero"));
+                //return null;
+                throw new ArgumentException();
+            }
+
+            int length = str.Length;
+            StringBuilder result = new StringBuilder(length + (length / chunkLength + 1) * endOfChunk.Length);
+
+            // append the chunks one by one to the result
+            for (int i = 0, j = length - chunkLength; i < length; i += chunkLength)
+            {
+                if (i > j) result.Append(str, i, length - i); else result.Append(str, i, chunkLength);
+                result.Append(endOfChunk);
+            }
+
+            return result.ToString();
+        }
+
+        #endregion
+
         #region soundex, metaphone, levenshtein, similar_text
 
         /// <summary>
