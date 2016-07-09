@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -739,6 +740,331 @@ namespace Pchp.Library
                 }
             }
             return result;
+        }
+
+        #endregion
+
+        #region strip_tags, nl2br
+
+        /// <summary>
+        /// Strips HTML and PHP tags from a string.
+        /// </summary>
+        /// <param name="str">The string to strip tags from.</param>
+        /// <returns>The result.</returns>
+        public static string strip_tags(string str) => strip_tags(str, null);
+
+        /// <summary>
+        /// Strips HTML and PHP tags from a string.
+        /// </summary>
+        /// <param name="str">The string to strip tags from.</param>
+        /// <param name="allowableTags">Tags which should not be stripped in the following format:
+        /// &lt;tag1&gt;&lt;tag2&gt;&lt;tag3&gt;.</param>
+        /// <returns>The result.</returns>
+        /// <remarks>This is a slightly modified php_strip_tags which can be found in PHP sources.</remarks>
+        public static string strip_tags(string str, string allowableTags)
+        {
+            int state = 0;
+            return StripTags(str, allowableTags, ref state);
+        }
+
+        /// <summary>
+        /// Strips tags allowing to set automaton start state and read its accepting state.
+        /// </summary>
+        internal static string StripTags(string str, string allowableTags, ref int state)
+        {
+            if (string.IsNullOrEmpty(str))
+                return string.Empty;
+
+            int br = 0, i = 0, depth = 0, length = str.Length;
+            char lc = '\0';
+
+            // Simple state machine. State 0 is the output state, State 1 means we are inside a
+            // normal html tag and state 2 means we are inside a php tag.
+            //
+            // lc holds the last significant character read and br is a bracket counter.
+            // When an allowableTags string is passed in we keep track of the string in
+            // state 1 and when the tag is closed check it against the allowableTags string
+            // to see if we should allow it.
+
+            StringBuilder result = new StringBuilder(), tagBuf = new StringBuilder();
+            if (allowableTags != null) allowableTags = allowableTags.ToLower();
+
+            while (i < length)
+            {
+                char c = str[i];
+
+                switch (c)
+                {
+                    case '<':
+                        if (i + 1 < length && Char.IsWhiteSpace(str[i + 1])) goto default;
+                        if (state == 0)
+                        {
+                            lc = '<';
+                            state = 1;
+                            if (allowableTags != null)
+                            {
+                                tagBuf.Length = 0;
+                                tagBuf.Append(c);
+                            }
+                        }
+                        else if (state == 1) depth++;
+                        break;
+
+                    case '(':
+                        if (state == 2)
+                        {
+                            if (lc != '"' && lc != '\'')
+                            {
+                                lc = '(';
+                                br++;
+                            }
+                        }
+                        else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        else if (state == 0) result.Append(c);
+                        break;
+
+                    case ')':
+                        if (state == 2)
+                        {
+                            if (lc != '"' && lc != '\'')
+                            {
+                                lc = ')';
+                                br--;
+                            }
+                        }
+                        else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        else if (state == 0) result.Append(c);
+                        break;
+
+                    case '>':
+                        if (depth > 0)
+                        {
+                            depth--;
+                            break;
+                        }
+
+                        switch (state)
+                        {
+                            case 1: /* HTML/XML */
+                                lc = '>';
+                                state = 0;
+                                if (allowableTags != null)
+                                {
+                                    // find out whether this tag is allowable or not
+                                    tagBuf.Append(c);
+
+                                    StringBuilder normalized = new StringBuilder();
+
+                                    bool done = false;
+                                    int tagBufLen = tagBuf.Length, substate = 0;
+
+                                    // normalize the tagBuf by removing leading and trailing whitespace and turn
+                                    // any <a whatever...> into just <a> and any </tag> into <tag>
+                                    for (int j = 0; j < tagBufLen; j++)
+                                    {
+                                        char d = Char.ToLower(tagBuf[j]);
+                                        switch (d)
+                                        {
+                                            case '<':
+                                                normalized.Append(d);
+                                                break;
+
+                                            case '>':
+                                                done = true;
+                                                break;
+
+                                            default:
+                                                if (!Char.IsWhiteSpace(d))
+                                                {
+                                                    if (substate == 0)
+                                                    {
+                                                        substate = 1;
+                                                        if (d != '/') normalized.Append(d);
+                                                    }
+                                                    else normalized.Append(d);
+                                                }
+                                                else if (substate == 1) done = true;
+                                                break;
+                                        }
+                                        if (done) break;
+                                    }
+
+                                    normalized.Append('>');
+                                    if (allowableTags.IndexOf(normalized.ToString()) >= 0) result.Append(tagBuf);
+
+                                    tagBuf.Length = 0;
+                                }
+                                break;
+
+                            case 2: /* PHP */
+                                if (br == 0 && lc != '\"' && i > 0 && str[i] == '?') state = 0;
+                                {
+                                    state = 0;
+                                    tagBuf.Length = 0;
+                                }
+                                break;
+
+                            case 3:
+                                state = 0;
+                                tagBuf.Length = 0;
+                                break;
+
+                            case 4: /* JavaScript/CSS/etc... */
+                                if (i >= 2 && str[i - 1] == '-' && str[i - 2] == '-')
+                                {
+                                    state = 0;
+                                    tagBuf.Length = 0;
+                                }
+                                break;
+
+                            default:
+                                result.Append(c);
+                                break;
+                        }
+                        break;
+
+                    case '"':
+                        goto case '\'';
+
+                    case '\'':
+                        if (state == 2 && i > 0 && str[i - 1] != '\\')
+                        {
+                            if (lc == c) lc = '\0';
+                            else if (lc != '\\') lc = c;
+                        }
+                        else if (state == 0) result.Append(c);
+                        else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        break;
+
+                    case '!':
+                        /* JavaScript & Other HTML scripting languages */
+                        if (state == 1 && i > 0 && str[i - 1] == '<')
+                        {
+                            state = 3;
+                            lc = c;
+                        }
+                        else
+                        {
+                            if (state == 0) result.Append(c);
+                            else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        }
+                        break;
+
+                    case '-':
+                        if (state == 3 && i >= 2 && str[i - 1] == '-' && str[i - 2] == '!') state = 4;
+                        else goto default;
+                        break;
+
+                    case '?':
+                        if (state == 1 && i > 0 && str[i - 1] == '<')
+                        {
+                            br = 0;
+                            state = 2;
+                            break;
+                        }
+                        goto case 'e';
+
+                    case 'E':
+                        goto case 'e';
+
+                    case 'e':
+                        /* !DOCTYPE exception */
+                        if (state == 3 && i > 6
+                            && Char.ToLower(str[i - 1]) == 'p' && Char.ToLower(str[i - 2]) == 'y'
+                            && Char.ToLower(str[i - 3]) == 't' && Char.ToLower(str[i - 4]) == 'c'
+                            && Char.ToLower(str[i - 5]) == 'o' && Char.ToLower(str[i - 6]) == 'd')
+                        {
+                            state = 1;
+                            break;
+                        }
+                        goto case 'l';
+
+                    case 'l':
+
+                        /*
+                          If we encounter '<?xml' then we shouldn't be in
+                          state == 2 (PHP). Switch back to HTML.
+                        */
+
+                        if (state == 2 && i > 2 && str[i - 1] == 'm' && str[i - 2] == 'x')
+                        {
+                            state = 1;
+                            break;
+                        }
+                        goto default;
+
+                    /* fall-through */
+                    default:
+                        if (state == 0) result.Append(c);
+                        else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        break;
+                }
+                i++;
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Inserts HTML line breaks before all newlines in a string.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <returns>The output string.</returns>
+        /// <remarks>Inserts "&lt;br/&gt;" before each "\n", "\n\r", "\r", "\r\n".</remarks>
+        public static string nl2br(string str) => nl2br(str, true);
+
+        /// <summary>
+        /// Inserts HTML line breaks before all newlines in a string.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <param name="isXHTML">Whenever to use XHTML compatible line breaks or not. </param>
+        /// <returns>The output string.</returns>
+        /// <remarks>Inserts "&lt;br/&gt;" before each "\n", "\n\r", "\r", "\r\n".</remarks>
+        public static string nl2br(string str, bool isXHTML/*=true*/ )
+        {
+            if (string.IsNullOrEmpty(str))
+                return String.Empty;
+
+            StringReader reader = new StringReader(str);
+            StringWriter writer = new StringWriter(new StringBuilder(str.Length));
+
+            NewLinesToBreaks(reader, writer, isXHTML ? "<br />" : "<br>");
+
+            return writer.ToString();
+        }
+
+        internal static void NewLinesToBreaks(TextReader/*!*/ input, TextWriter/*!*/ output, string lineBreakString)
+        {
+            if (input == null)
+                throw new ArgumentNullException("input");
+            if (output == null)
+                throw new ArgumentNullException("output");
+
+            for (;;)
+            {
+                int d = input.Read();
+                if (d == -1) break;
+
+                char c = (char)d;
+                if (c == '\r' || c == '\n')
+                {
+                    output.Write(lineBreakString);
+
+                    d = input.Peek();
+                    if (d != -1)
+                    {
+                        char c1 = (char)d;
+                        if ((c == '\r' && c1 == '\n') || (c == '\n' && c1 == '\r'))
+                        {
+                            output.Write(c);
+                            c = c1;
+                            input.Read();
+                        }
+                    }
+                }
+
+                output.Write(c);
+            }
         }
 
         #endregion
