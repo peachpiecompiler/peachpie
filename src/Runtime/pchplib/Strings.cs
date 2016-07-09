@@ -743,6 +743,402 @@ namespace Pchp.Library
 
         #endregion
 
+        #region soundex, metaphone, levenshtein, similar_text
+
+        /// <summary>
+        /// A map of following characters: {'A', 'E', 'I', 'Y', 'O', 'U', 'a', 'e', 'i', 'y', 'o', 'u'}.
+        /// </summary>
+        internal static readonly CharMap vowelsMap = new CharMap(new uint[] { 0, 0, 0x44410440, 0x44410440 });
+
+        /// <summary>
+        /// Indicates whether a character is recognized as an English vowel.
+        /// </summary>
+        /// <param name="c">The character.</param>
+        /// <returns>True iff recognized as an English vowel.</returns>
+        internal static bool IsVowel(char c)
+        {
+            return vowelsMap.Contains(c);
+        }
+
+        /// <summary>
+        /// Calculates the soundex key of a string.
+        /// </summary>
+        /// <param name="str">The string to calculate soundex key of.</param>
+        /// <returns>The soundex key of <paramref name="str"/>.</returns>
+        public static string soundex(string str)
+        {
+            if (str == null || str == String.Empty) return String.Empty;
+
+            int length = str.Length;
+            const string sound = "01230120022455012623010202";
+
+            char[] result = new char[4];
+            int resPos = 0;
+            char lastIdx = '0';
+
+            for (int i = 0; i < length; i++)
+            {
+                char c = Char.ToUpper(str[i]);
+                if (c >= 'A' && c <= 'Z')
+                {
+                    char idx = sound[(int)(c - 'A')];
+                    if (resPos == 0)
+                    {
+                        result[resPos++] = c;
+                        lastIdx = idx;
+                    }
+                    else
+                    {
+                        if (idx != '0' && idx != lastIdx)
+                        {
+                            result[resPos] = idx;
+                            if (++resPos >= 4) return new string(result);
+                        }
+
+                        // Some soundex algorithm descriptions say that the following condition should
+                        // be in effect...
+                        /*if (c != 'W' && c != 'H')*/
+                        lastIdx = idx;
+                    }
+                }
+            }
+
+            // pad with '0'
+            do
+            {
+                result[resPos] = '0';
+            }
+            while (++resPos < 4);
+
+            return new string(result);
+        }
+
+        /// <summary>
+        /// Calculates the metaphone key of a string.
+        /// </summary>
+        /// <param name="str">The string to calculate metaphone key of.</param>
+        /// <returns>The metaphone key of <paramref name="str"/>.</returns>
+        public static string metaphone(string str)
+        {
+            if (str == null) return String.Empty;
+
+            int length = str.Length;
+            const int padL = 4, padR = 3;
+
+            StringBuilder sb = new StringBuilder(str.Length + padL + padR);
+            StringBuilder result = new StringBuilder();
+
+            // avoid index out of bounds problem when looking at previous and following characters
+            // by padding the string at both sides
+            sb.Append('\0', padL);
+            sb.Append(str.ToUpper());
+            sb.Append('\0', padR);
+
+            int i = padL;
+            char c = sb[i];
+
+            // transformations at the beginning of the string
+            if ((c == 'A' && sb[i + 1] == 'E') ||
+                (sb[i + 1] == 'N' && (c == 'G' || c == 'K' || c == 'P')) ||
+                (c == 'W' && sb[i + 1] == 'R')) i++;
+
+            if (c == 'X') sb[i] = 'S';
+
+            if (c == 'W' && sb[i + 1] == 'H') sb[++i] = 'W';
+
+            // if the string starts with a vowel it is copied to output
+            if (IsVowel(sb[i])) result.Append(sb[i++]);
+
+            int end = length + padL;
+            while (i < end)
+            {
+                c = sb[i];
+
+                if (c == sb[i - 1] && c != 'C')
+                {
+                    i++;
+                    continue;
+                }
+
+                // transformations of consonants (vowels as well as other characters are ignored)
+                switch (c)
+                {
+                    case 'B':
+                        if (sb[i - 1] != 'M') result.Append('B');
+                        break;
+
+                    case 'C':
+                        if (sb[i + 1] == 'I' || sb[i + 1] == 'E' || sb[i + 1] == 'Y')
+                        {
+                            if (sb[i + 2] == 'A' && sb[i + 1] == 'I') result.Append('X');
+                            else if (sb[i - 1] == 'S') break;
+                            else result.Append('S');
+                        }
+                        else if (sb[i + 1] == 'H')
+                        {
+                            result.Append('X');
+                            i++;
+                        }
+                        else result.Append('K');
+                        break;
+
+                    case 'D':
+                        if (sb[i + 1] == 'G' && (sb[i + 2] == 'E' || sb[i + 2] == 'Y' ||
+                            sb[i + 2] == 'I'))
+                        {
+                            result.Append('J');
+                            i++;
+                        }
+                        else result.Append('T');
+                        break;
+
+                    case 'F':
+                        result.Append('F');
+                        break;
+
+                    case 'G':
+                        if (sb[i + 1] == 'H')
+                        {
+                            if (sb[i - 4] == 'H' || (sb[i - 3] != 'B' && sb[i - 3] != 'D' && sb[i - 3] != 'H'))
+                            {
+                                result.Append('F');
+                                i++;
+                            }
+                            else break;
+                        }
+                        else if (sb[i + 1] == 'N')
+                        {
+                            if (sb[i + 2] < 'A' || sb[i + 2] > 'Z' ||
+                                (sb[i + 2] == 'E' && sb[i + 3] == 'D')) break;
+                            else result.Append('K');
+                        }
+                        else if ((sb[i + 1] == 'E' || sb[i + 1] == 'I' || sb[i + 1] == 'Y') && sb[i - 1] != 'G')
+                        {
+                            result.Append('J');
+                        }
+                        else result.Append('K');
+                        break;
+
+                    case 'H':
+                        if (IsVowel(sb[i + 1]) && sb[i - 1] != 'C' && sb[i - 1] != 'G' &&
+                            sb[i - 1] != 'P' && sb[i - 1] != 'S' && sb[i - 1] != 'T') result.Append('H');
+                        break;
+
+                    case 'J':
+                        result.Append('J');
+                        break;
+
+                    case 'K':
+                        if (sb[i - 1] != 'C') result.Append('K');
+                        break;
+
+                    case 'L':
+                        result.Append('L');
+                        break;
+
+                    case 'M':
+                        result.Append('M');
+                        break;
+
+                    case 'N':
+                        result.Append('N');
+                        break;
+
+                    case 'P':
+                        if (sb[i + 1] == 'H') result.Append('F');
+                        else result.Append('P');
+                        break;
+
+                    case 'Q':
+                        result.Append('K');
+                        break;
+
+                    case 'R':
+                        result.Append('R');
+                        break;
+
+                    case 'S':
+                        if (sb[i + 1] == 'I' && (sb[i + 2] == 'O' || sb[i + 2] == 'A')) result.Append('X');
+                        else if (sb[i + 1] == 'H')
+                        {
+                            result.Append('X');
+                            i++;
+                        }
+                        else result.Append('S');
+                        break;
+
+                    case 'T':
+                        if (sb[i + 1] == 'I' && (sb[i + 2] == 'O' || sb[i + 2] == 'A')) result.Append('X');
+                        else if (sb[i + 1] == 'H')
+                        {
+                            result.Append('0');
+                            i++;
+                        }
+                        else result.Append('T');
+                        break;
+
+                    case 'V':
+                        result.Append('F');
+                        break;
+
+                    case 'W':
+                        if (IsVowel(sb[i + 1])) result.Append('W');
+                        break;
+
+                    case 'X':
+                        result.Append("KS");
+                        break;
+
+                    case 'Y':
+                        if (IsVowel(sb[i + 1])) result.Append('Y');
+                        break;
+
+                    case 'Z':
+                        result.Append('S');
+                        break;
+                }
+
+                i++;
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Calculates the Levenshtein distance between two strings.
+        /// </summary>
+        /// <param name="src">The first string.</param>
+        /// <param name="dst">The second string.</param>
+        /// <returns>The Levenshtein distance between <paramref name="src"/> and <paramref name="dst"/> or -1 if any of the
+        /// strings is longer than 255 characters.</returns>
+        public static int levenshtein(string src, string dst) => levenshtein(src, dst, 1, 1, 1);
+
+        /// <summary>
+        /// Calculates the Levenshtein distance between two strings given the cost of insert, replace
+        /// and delete operations.
+        /// </summary>
+        /// <param name="src">The first string.</param>
+        /// <param name="dst">The second string.</param>
+        /// <param name="insertCost">Cost of the insert operation.</param>
+        /// <param name="replaceCost">Cost of the replace operation.</param>
+        /// <param name="deleteCost">Cost of the delete operation.</param>
+        /// <returns>The Levenshtein distance between <paramref name="src"/> and <paramref name="dst"/> or -1 if any of the
+        /// strings is longer than 255 characters.</returns>
+        /// <remarks>See <A href="http://www.merriampark.com/ld.htm">http://www.merriampark.com/ld.htm</A> for description of the algorithm.</remarks>
+        public static int levenshtein(string src, string dst, int insertCost, int replaceCost, int deleteCost)
+        {
+            if (src == null) src = String.Empty;
+            if (dst == null) dst = String.Empty;
+
+            int n = src.Length;
+            int m = dst.Length;
+
+            if (n > 255 || m > 255) return -1;
+
+            if (n == 0) return m * insertCost;
+            if (m == 0) return n * deleteCost;
+
+            int[,] matrix = new int[n + 1, m + 1];
+
+            for (int i = 0; i <= n; i++) matrix[i, 0] = i * deleteCost;
+            for (int j = 0; j <= m; j++) matrix[0, j] = j * insertCost;
+
+            for (int i = 1; i <= n; i++)
+            {
+                char cs = src[i - 1];
+
+                for (int j = 1; j <= m; j++)
+                {
+                    char cd = dst[j - 1];
+
+                    matrix[i, j] = System.Math.Min(System.Math.Min(
+                        matrix[i - 1, j] + deleteCost,
+                        matrix[i, j - 1] + insertCost),
+                        matrix[i - 1, j - 1] + (cs == cd ? 0 : replaceCost));
+                }
+            }
+
+            return matrix[n, m];
+        }
+
+        /// <summary>
+        /// Calculates the similarity between two strings. Internal recursive function.
+        /// </summary>
+        /// <param name="first">The first string.</param>
+        /// <param name="second">The second string.</param>
+        /// <returns>The number of matching characters in both strings.</returns>
+        /// <remarks>Algorithm description is supposed to be found 
+        /// <A href="http://citeseer.nj.nec.com/oliver93decision.html">here</A>.</remarks>
+        internal static int SimilarTextInternal(string first, string second)
+        {
+            Debug.Assert(first != null && second != null);
+
+            int posF = 0, lengthF = first.Length;
+            int posS = 0, lengthS = second.Length;
+            int maxK = 0;
+
+            for (int i = 0; i < lengthF; i++)
+            {
+                for (int j = 0; j < lengthS; j++)
+                {
+                    int k;
+                    for (k = 0; i + k < lengthF && j + k < lengthS && first[i + k] == second[j + k]; k++) ;
+                    if (k > maxK)
+                    {
+                        maxK = k;
+                        posF = i;
+                        posS = j;
+                    }
+                }
+            }
+
+            int sum = maxK;
+            if (sum > 0)
+            {
+                if (posF > 0 && posS > 0)
+                {
+                    sum += SimilarTextInternal(first.Substring(0, posF), second.Substring(0, posS));
+                }
+                if (posF + maxK < lengthF && posS + maxK < lengthS)
+                {
+                    sum += SimilarTextInternal(first.Substring(posF + maxK), second.Substring(posS + maxK));
+                }
+            }
+
+            return sum;
+        }
+
+        /// <summary>
+        /// Calculates the similarity between two strings.
+        /// </summary>
+        /// <param name="first">The first string.</param>
+        /// <param name="second">The second string.</param>
+        /// <returns>The number of matching characters in both strings.</returns>
+        public static int similar_text(string first, string second)
+        {
+            if (first == null || second == null) return 0;
+            return SimilarTextInternal(first, second);
+        }
+
+        /// <summary>
+        /// Calculates the similarity between two strings.
+        /// </summary>
+        /// <param name="first">The first string.</param>
+        /// <param name="second">The second string.</param>
+        /// <param name="percent">Will become the similarity in percent.</param>
+        /// <returns>The number of matching characters in both strings.</returns>
+        public static int similar_text(string first, string second, out double percent)
+        {
+            if (first == null || second == null) { percent = 0; return 0; }
+
+            int sum = SimilarTextInternal(first, second);
+            percent = (200.0 * sum) / (first.Length + second.Length);
+
+            return sum;
+        }
+
+        #endregion
+
         #region strtok
 
         /// <summary>
