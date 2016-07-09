@@ -478,7 +478,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region number_format, NS: money_format
+        #region number_format, money_format
 
         /// <summary>
         /// Formats a number with grouped thousands.

@@ -45,6 +45,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CharMap.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="DateTime\DateTimeFunctions.cs" />
     <Compile Include="Environment.cs" />
