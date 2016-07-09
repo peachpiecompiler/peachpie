@@ -174,14 +174,21 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var tmask = TypeRefMask.AnyType;
-                if (this.IsStatic || this.DeclaredAccessibility == Accessibility.Private || this.IsPhpConstructorMethod)
-                {
-                    // allow flow analysed type to be used as method return type
-                    tmask = this.ControlFlowGraph.ReturnTypeMask;
-                }
+                var t = BuildReturnType(_syntax.Signature, _syntax.PHPDoc, this.ControlFlowGraph.ReturnTypeMask);
 
-                return BuildReturnType(_syntax.Signature, _syntax.PHPDoc, tmask);
+                //if ((this.IsVirtual || this.IsOverride) && this.DeclaredAccessibility != Accessibility.Private && !this.IsPhpConstructorMethod)
+                //{
+                //    // merge the return type with the one of base override,
+                //    // ghost stub will be generated if the signatures won't match
+
+                //    var overriden = (MethodSymbol)this.OverriddenMethod;
+                //    if (overriden != null)
+                //    {
+                //        t = this.DeclaringCompilation.Merge(t, overriden.ReturnType);
+                //    }
+                //}
+
+                return t;
             }
         }
 
