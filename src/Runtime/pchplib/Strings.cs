@@ -2851,5 +2851,146 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region str_word_count
+
+        /// <summary>
+        /// Format of a return value of <see cref="PhpStrings.CountWords"/> method. Constants are not named in PHP.
+        /// </summary>                   
+        public enum WordCountResult
+        {
+            /// <summary>
+            /// Return number of words in string.
+            /// </summary>
+            WordCount = 0,
+
+            /// <summary>
+            /// Return array of words.
+            /// </summary>
+            WordsArray = 1,
+
+            /// <summary>
+            /// Return positions to words mapping.
+            /// </summary>
+            PositionsToWordsMapping = 2
+        }
+
+        /// <summary>
+        /// Counts the number of words inside a string.
+        /// </summary>
+        /// <param name="str">The string containing words to count.</param>
+        /// <returns>Then number of words inside <paramref name="str"/>. </returns>
+        public static int str_word_count(string str)
+        {
+            return CountWords(str, WordCountResult.WordCount, null, null);
+        }
+
+        /// <summary>
+        /// Splits a string into words.
+        /// </summary>
+        /// <param name="str">The string to split.</param>
+        /// <param name="format">If <see cref="WordCountResult.WordsArray"/>, the method returns an array containing all
+        /// the words found inside the string. If <see cref="WordCountResult.PositionsToWordsMapping"/>, the method returns 
+        /// an array, where the key is the numeric position of the word inside the string and the value is the 
+        /// actual word itself.</param>
+        /// <returns>Array of words. Keys are just numbers starting with 0 (when <paramref name="format"/> is 
+        /// WordCountResult.WordsArray) or positions of the words inside <paramref name="str"/> (when
+        /// <paramref name="format"/> is <see cref="WordCountResult.PositionsToWordsMapping"/>).</returns>
+        /// <exception cref="PhpException">Thrown if <paramref name="format"/> is invalid.</exception>
+        public static object str_word_count(string str, WordCountResult format)
+        {
+            return str_word_count(str, format, null);
+        }
+
+        public static object str_word_count(string str, WordCountResult format, string addWordChars)
+        {
+            PhpArray words = (format != WordCountResult.WordCount) ? new PhpArray() : null;
+
+            int count = CountWords(str, format, addWordChars, words);
+
+            if (count == -1)
+                return false;
+
+            if (format == WordCountResult.WordCount)
+                return count;
+            else
+            {
+                if (words != null)
+                    return words;
+                else
+                    return false;
+            }
+        }
+
+        private static bool IsWordChar(char c, CharMap map)
+        {
+            return char.IsLetter(c) || map != null && map.Contains(c);
+        }
+
+        internal static int CountWords(string str, WordCountResult format, string addWordChars, IDictionary words)
+        {
+            if (str == null)
+                return 0;
+            if (format != WordCountResult.WordCount && words == null)
+                throw new ArgumentNullException("words");
+
+            CharMap charmap = null;
+
+            if (!String.IsNullOrEmpty(addWordChars))
+            {
+                charmap = InitializeCharMap();
+                charmap.Add(addWordChars);
+            }
+
+            // find the end
+            int last = str.Length - 1;
+            if (last > 0 && str[last] == '-' && !IsWordChar(str[last], charmap)) last--;
+
+            // find the beginning
+            int pos = 0;
+            if (last >= 0 && (str[0] == '-' || str[0] == '\'') && !IsWordChar(str[0], charmap)) pos++;
+
+            int word_count = 0;
+
+            while (pos <= last)
+            {
+                if (IsWordChar(str[pos], charmap) || str[pos] == '\'' || str[pos] == '-')
+                {
+                    // word started - read it whole:
+                    int word_start = pos++;
+                    while (pos <= last &&
+                        (IsWordChar(str[pos], charmap) ||
+                         str[pos] == '\'' || str[pos] == '-'))
+                    {
+                        pos++;
+                    }
+
+                    switch (format)
+                    {
+                        case WordCountResult.WordCount:
+                            break;
+
+                        case WordCountResult.WordsArray:
+                            words.Add(word_count, str.Substring(word_start, pos - word_start));
+                            break;
+
+                        case WordCountResult.PositionsToWordsMapping:
+                            words.Add(word_start, str.Substring(word_start, pos - word_start));
+                            break;
+
+                        default:
+                            //PhpException.InvalidArgument("format");
+                            //return -1;
+                            throw new ArgumentException();
+                    }
+
+                    word_count++;
+                }
+                else pos++;
+            }
+            return word_count;
+        }
+
+        #endregion
     }
 }
