@@ -10,6 +10,28 @@ namespace Pchp.Library
 {
     public static class Strings
     {
+        #region Character map
+
+        [ThreadStatic]
+        private static CharMap _charmap;
+
+        /// <summary>
+        /// Get clear <see cref="CharMap"/> to be used by current thread. <see cref="_charmap"/>.
+        /// </summary>
+        internal static CharMap InitializeCharMap()
+        {
+            CharMap result = _charmap;
+
+            if (result == null)
+                _charmap = result = new CharMap(0x0800);
+            else
+                result.ClearAll();
+
+            return result;
+        }
+
+        #endregion
+
         #region strrev, strspn, strcspn
 
         /// <summary>
@@ -159,7 +181,7 @@ namespace Pchp.Library
         #region strtok
 
         /// <summary>
-        /// Holds a context of <see cref="Tokenize"/> method.
+        /// Holds a context of <see cref="strtok(Context, string)"/> method.
         /// </summary>
         private sealed class TokenizerContext
         {
@@ -259,6 +281,179 @@ namespace Pchp.Library
             var tctx = ctx.GetStatic<TokenizerContext>();
             tctx.Initialize(str);
             return tctx.Tokenize(delimiters);
+        }
+
+        #endregion
+
+        #region trim, rtrim, ltrim, chop
+
+        /// <summary>
+        /// Strips whitespace characters from the beginning and end of a string.
+        /// </summary>
+        /// <param name="str">The string to trim.</param>
+        /// <returns>The trimmed string.</returns>
+        /// <remarks>This one-parameter version trims '\0', '\t', '\n', '\r', '\x0b' and ' ' (space).</remarks>
+        public static string trim(string str) => trim(str, "\0\t\n\r\x0b\x20");
+
+        /// <summary>
+        /// Strips given characters from the beginning and end of a string.
+        /// </summary>
+        /// <param name="str">The string to trim.</param>
+        /// <param name="whiteSpaceCharacters">The characters to strip from <paramref name="str"/>. Can contain ranges
+        /// of characters, e.g. "\0x00..\0x1F".</param>
+        /// <returns>The trimmed string.</returns>
+        /// <exception cref="PhpException"><paramref name="whiteSpaceCharacters"/> is invalid char mask. Multiple errors may be printed out.</exception>
+        /// <exception cref="PhpException"><paramref name="str"/> contains Unicode characters greater than '\u0800'.</exception>
+        public static string trim(string str, string whiteSpaceCharacters)
+        {
+            if (str == null) return String.Empty;
+
+            // As whiteSpaceCharacters may contain intervals, I see two possible implementations:
+            // 1) Call CharMap.AddUsingMask and do the trimming "by hand".
+            // 2) Write another version of CharMap.AddUsingMask that would return char[] of characters
+            // that fit the mask, and do the trimming with String.Trim(char[]).
+            // I have chosen 1).
+
+            CharMap charmap = InitializeCharMap();
+
+            // may throw an exception:
+            try
+            {
+                charmap.AddUsingMask(whiteSpaceCharacters);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("unicode_characters"));
+                //return null;
+                throw;
+            }
+
+            int length = str.Length, i = 0, j = length - 1;
+
+            // finds the new beginning:
+            while (i < length && charmap.Contains(str[i])) i++;
+
+            // finds the new end:
+            while (j >= 0 && charmap.Contains(str[j])) j--;
+
+            return (i <= j) ? str.Substring(i, j - i + 1) : String.Empty;
+        }
+
+        /// <summary>Characters treated as blanks by the PHP.</summary>
+        private static char[] phpBlanks = new char[] { '\0', '\t', '\n', '\r', '\u000b', ' ' };
+
+        /// <summary>
+        /// Strips whitespace characters from the beginning of a string.
+        /// </summary>
+        /// <param name="str">The string to trim.</param>
+        /// <returns>The trimmed string.</returns>
+        /// <remarks>This one-parameter version trims '\0', '\t', '\n', '\r', '\u000b' and ' ' (space).</remarks>
+        public static string ltrim(string str)
+        {
+            return (str != null) ? str.TrimStart(phpBlanks) : String.Empty;
+        }
+
+        /// <summary>
+        /// Strips given characters from the beginning of a string.
+        /// </summary>
+        /// <param name="str">The string to trim.</param>
+        /// <param name="whiteSpaceCharacters">The characters to strip from <paramref name="str"/>. Can contain ranges
+        /// of characters, e.g. \0x00..\0x1F.</param>
+        /// <returns>The trimmed string.</returns>
+        /// <exception cref="PhpException"><paramref name="whiteSpaceCharacters"/> is invalid char mask. Multiple errors may be printed out.</exception>
+        /// <exception cref="PhpException"><paramref name="whiteSpaceCharacters"/> contains Unicode characters greater than '\u0800'.</exception>
+        public static string ltrim(string str, string whiteSpaceCharacters)
+        {
+            if (str == null) return String.Empty;
+
+            CharMap charmap = InitializeCharMap();
+
+            // may throw an exception:
+            try
+            {
+                charmap.AddUsingMask(whiteSpaceCharacters);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("unicode_characters"));
+                //return null;
+                throw;
+            }
+
+            int length = str.Length, i = 0;
+
+            while (i < length && charmap.Contains(str[i])) i++;
+
+            if (i < length) return str.Substring(i);
+            return String.Empty;
+        }
+
+        /// <summary>
+        /// Strips whitespace characters from the end of a string.
+        /// </summary>
+        /// <param name="str">The string to trim.</param>
+        /// <returns>The trimmed string.</returns>
+        /// <remarks>This one-parameter version trims '\0', '\t', '\n', '\r', '\u000b' and ' ' (space).</remarks>
+        public static string rtrim(string str)
+        {
+            return (str != null) ? str.TrimEnd(phpBlanks) : String.Empty;
+        }
+
+        /// <summary>
+        /// Strips given characters from the end of a string.
+        /// </summary>
+        /// <param name="str">The string to trim.</param>
+        /// <param name="whiteSpaceCharacters">The characters to strip from <paramref name="str"/>. Can contain ranges
+        /// of characters, e.g. \0x00..\0x1F.</param>
+        /// <returns>The trimmed string.</returns>
+        /// <exception cref="PhpException"><paramref name="whiteSpaceCharacters"/> is invalid char mask. Multiple errors may be printed out.</exception>
+        /// <exception cref="PhpException"><paramref name="whiteSpaceCharacters"/> contains Unicode characters greater than '\u0800'.</exception>
+        public static string rtrim(string str, string whiteSpaceCharacters)
+        {
+            if (str == null) return String.Empty;
+
+            CharMap charmap = InitializeCharMap();
+
+            try
+            {
+                charmap.AddUsingMask(whiteSpaceCharacters);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("unicode_characters"));
+                //return null;
+                throw;
+            }
+
+            int j = str.Length - 1;
+
+            while (j >= 0 && charmap.Contains(str[j])) j--;
+
+            return (j >= 0) ? str.Substring(0, j + 1) : String.Empty;
+        }
+
+        /// <summary>
+        /// Strips whitespace characters from the end of a string.
+        /// </summary>
+        /// <param name="str">The string to trim.</param>
+        /// <returns>The trimmed string.</returns>
+        /// <remarks>This one-parameter version trims '\0', '\t', '\n', '\r', '\u000b' and ' ' (space).</remarks>
+        public static string chop(string str)
+        {
+            return rtrim(str);
+        }
+
+        /// <summary>
+        /// Strips given characters from the end of a string.
+        /// </summary>
+        /// <param name="str">The string to trim.</param>
+        /// <param name="whiteSpaceCharacters">The characters to strip from <paramref name="str"/>. Can contain ranges
+        /// of characters, e.g. \0x00..\0x1F.</param>
+        /// <returns>The trimmed string.</returns>
+        /// <exception cref="PhpException">Thrown if <paramref name="whiteSpaceCharacters"/> is invalid char mask. Multiple errors may be printed out.</exception>
+        public static string chop(string str, string whiteSpaceCharacters)
+        {
+            return rtrim(str, whiteSpaceCharacters);
         }
 
         #endregion
