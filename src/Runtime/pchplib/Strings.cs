@@ -2407,6 +2407,244 @@ namespace Pchp.Library
 
         #endregion
 
+        #region hebrev, hebrevc
+
+        /// <summary>
+        /// Indicates whether a character is recognized as Hebrew letter.
+        /// </summary>
+        /// <param name="c">The character.</param>
+        /// <returns>
+        /// Whether the <paramref name="c"/> is a Hebrew letter according to 
+        /// the <A href="http://www.unicode.org/charts/PDF/U0590.pdf">Unicode 4.0 standard</A>.
+        /// </returns>
+        internal static bool IsHebrew(char c)
+        {
+            return c >= '\u05d0' && c <= '\u05ea';
+        }
+
+        /// <summary>
+        /// Indicates whether a character is a space or tab.
+        /// </summary>
+        /// <param name="c">The character.</param>
+        /// <returns>True iff space or tab.</returns>
+        internal static bool IsBlank(char c)
+        {
+            return c == ' ' || c == '\t';
+        }
+
+        /// <summary>
+        /// Indicates whether a character is new line or carriage return.
+        /// </summary>
+        /// <param name="c">The character.</param>
+        /// <returns>True iff new line or carriage return.</returns>
+        internal static bool IsNewLine(char c)
+        {
+            return c == '\n' || c == '\r';
+        }
+
+        /// <summary>
+        /// Converts logical Hebrew text to visual text.
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <param name="maxCharactersPerLine">If &gt;0, maximum number of characters per line. If 0,
+        /// there is no maximum.</param>
+        /// <param name="convertNewLines">Whether to convert new lines '\n' to "&lt;br/&gt;".</param>
+        /// <returns>The converted string.</returns>
+        internal static string HebrewReverseInternal(string str, int maxCharactersPerLine, bool convertNewLines)
+        {
+            if (str == null || str == String.Empty) return str;
+            int length = str.Length, blockLength = 0, blockStart = 0, blockEnd = 0;
+
+            StringBuilder hebStr = new StringBuilder(length);
+            hebStr.Length = length;
+
+            bool blockTypeHeb = IsHebrew(str[0]);
+            int source = 0, target = length - 1;
+
+            do
+            {
+                if (blockTypeHeb)
+                {
+                    while (source + 1 < length && (IsHebrew(str[source + 1]) || IsBlank(str[source + 1]) ||
+                        Char.IsPunctuation(str[source + 1]) || str[source + 1] == '\n') && blockEnd < length - 1)
+                    {
+                        source++;
+                        blockEnd++;
+                        blockLength++;
+                    }
+
+                    for (int i = blockStart; i <= blockEnd; i++)
+                    {
+                        switch (str[i])
+                        {
+                            case '(': hebStr[target] = ')'; break;
+                            case ')': hebStr[target] = '('; break;
+                            case '[': hebStr[target] = ']'; break;
+                            case ']': hebStr[target] = '['; break;
+                            case '{': hebStr[target] = '}'; break;
+                            case '}': hebStr[target] = '{'; break;
+                            case '<': hebStr[target] = '>'; break;
+                            case '>': hebStr[target] = '<'; break;
+                            case '\\': hebStr[target] = '/'; break;
+                            case '/': hebStr[target] = '\\'; break;
+                            default: hebStr[target] = str[i]; break;
+                        }
+                        target--;
+                    }
+                    blockTypeHeb = false;
+                }
+                else
+                {
+                    // blockTypeHeb == false
+
+                    while (source + 1 < length && !IsHebrew(str[source + 1]) && str[source + 1] != '\n' &&
+                        blockEnd < length - 1)
+                    {
+                        source++;
+                        blockEnd++;
+                        blockLength++;
+                    }
+                    while ((IsBlank(str[source]) || Char.IsPunctuation(str[source])) && str[source] != '/' &&
+                        str[source] != '-' && blockEnd > blockStart)
+                    {
+                        source--;
+                        blockEnd--;
+                    }
+                    for (int i = blockEnd; i >= blockStart; i--)
+                    {
+                        hebStr[target] = str[i];
+                        target--;
+                    }
+                    blockTypeHeb = true;
+                }
+
+                blockStart = blockEnd + 1;
+
+            } while (blockEnd < length - 1);
+
+            StringBuilder brokenStr = new StringBuilder(length);
+            brokenStr.Length = length;
+            int begin = length - 1, end = begin, charCount, origBegin;
+            target = 0;
+
+            while (true)
+            {
+                charCount = 0;
+                while ((maxCharactersPerLine == 0 || charCount < maxCharactersPerLine) && begin > 0)
+                {
+                    charCount++;
+                    begin--;
+                    if (begin <= 0 || IsNewLine(hebStr[begin]))
+                    {
+                        while (begin > 0 && IsNewLine(hebStr[begin - 1]))
+                        {
+                            begin--;
+                            charCount++;
+                        }
+                        break;
+                    }
+                }
+
+                if (charCount == maxCharactersPerLine)
+                {
+                    // try to avoid breaking words
+                    int newCharCount = charCount, newBegin = begin;
+
+                    while (newCharCount > 0)
+                    {
+                        if (IsBlank(hebStr[newBegin]) || IsNewLine(hebStr[newBegin])) break;
+
+                        newBegin++;
+                        newCharCount--;
+                    }
+                    if (newCharCount > 0)
+                    {
+                        charCount = newCharCount;
+                        begin = newBegin;
+                    }
+                }
+                origBegin = begin;
+
+                if (IsBlank(hebStr[begin])) hebStr[begin] = '\n';
+
+                while (begin <= end && IsNewLine(hebStr[begin]))
+                {
+                    // skip leading newlines
+                    begin++;
+                }
+
+                for (int i = begin; i <= end; i++)
+                {
+                    // copy content
+                    brokenStr[target] = hebStr[i];
+                    target++;
+                }
+
+                for (int i = origBegin; i <= end && IsNewLine(hebStr[i]); i++)
+                {
+                    brokenStr[target] = hebStr[i];
+                    target++;
+                }
+
+                begin = origBegin;
+                if (begin <= 0) break;
+
+                begin--;
+                end = begin;
+            }
+
+            if (convertNewLines) brokenStr.Replace("\n", "<br/>\n");
+            return brokenStr.ToString();
+        }
+
+        /// <summary>
+        /// Converts logical Hebrew text to visual text.
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <returns>The comverted string.</returns>
+        /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
+        public static string hebrev(string str)
+        {
+            return HebrewReverseInternal(str, 0, false);
+        }
+
+        /// <summary>
+        /// Converts logical Hebrew text to visual text.
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <param name="maxCharactersPerLine">Maximum number of characters per line.</param>
+        /// <returns>The comverted string.</returns>
+        /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
+        public static string hebrev(string str, int maxCharactersPerLine)
+        {
+            return HebrewReverseInternal(str, maxCharactersPerLine, false);
+        }
+
+        /// <summary>
+        /// Converts logical Hebrew text to visual text and also converts new lines '\n' to "&lt;br/&gt;".
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <returns>The converted string.</returns>
+        /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
+        public static string hebrevc(string str)
+        {
+            return HebrewReverseInternal(str, 0, true);
+        }
+
+        /// <summary>
+        /// Converts logical Hebrew text to visual text and also converts new lines '\n' to "&lt;br/&gt;".
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <param name="maxCharactersPerLine">Maximum number of characters per line.</param>
+        /// <returns>The comverted string.</returns>
+        /// <remarks>Although PHP returns false if <paramref name="str"/> is null or empty there is no reason to do so.</remarks>
+        public static string hebrevc(string str, int maxCharactersPerLine)
+        {
+            return HebrewReverseInternal(str, maxCharactersPerLine, true);
+        }
+
+        #endregion
+
         #region str_pad
 
         /// <summary>
