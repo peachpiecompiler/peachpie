@@ -161,6 +161,7 @@ namespace Pchp.Library
         /// <summary>
         /// Holds a context of <see cref="Tokenize"/> method.
         /// </summary>
+        private sealed class TokenizerContext
         {
             /// <summary>
             /// The <b>str</b> parameter of last <see cref="Tokenize"/> method call.
