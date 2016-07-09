@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -80,6 +81,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(double)) return Expression.Convert(expr, typeof(long));
             if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
+            if (source == typeof(void)) return VoidAsConstant(expr, 0L, typeof(long));
             
             // TODO: following conversions may fail, we should report it failed and throw an error
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToLong", Cache.Types.Empty));
@@ -95,6 +97,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(long)) return Expression.Convert(expr, typeof(double));
             if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(double), typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToDouble", Cache.Types.Empty));
+            if (source == typeof(void)) return VoidAsConstant(expr, 0.0, typeof(double));
 
             // TODO: following conversions may fail, we should report it failed and throw an error
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToDouble", Cache.Types.Empty));
@@ -111,6 +114,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToBoolean", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToBoolean", Cache.Types.Empty));
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToBoolean", Cache.Types.Empty));
+            if (source == typeof(void)) return VoidAsConstant(expr, false, typeof(bool));
 
             throw new NotImplementedException(source.FullName);
         }
@@ -131,7 +135,7 @@ namespace Pchp.Core.Dynamic
                 return Expression.Call(expr, Cache.Operators.PhpValue_ToString_Context, Expression.Constant(null, typeof(Context))); // TODO: Context
 
             if (source == typeof(void))
-                return Expression.Constant(string.Empty, typeof(string));
+                return VoidAsConstant(expr, string.Empty, typeof(string));
 
             throw new NotImplementedException(source.FullName);
         }
@@ -150,6 +154,7 @@ namespace Pchp.Core.Dynamic
             //
             if (source == typeof(long)) return Expression.Call(typeof(PhpNumber).GetMethod("Create", Cache.Types.Long), expr);
             if (source == typeof(double)) return Expression.Call(typeof(PhpNumber).GetMethod("Create", Cache.Types.Double), expr);
+            if (source == typeof(void)) return VoidAsConstant(expr, PhpNumber.Default, typeof(PhpNumber));
 
             throw new NotImplementedException(source.FullName);
         }
@@ -169,6 +174,8 @@ namespace Pchp.Core.Dynamic
 
             if (source.GetTypeInfo().IsValueType)
             {
+                if (source == typeof(void)) return VoidAsConstant(expr, PhpValue.Void, Cache.Types.PhpValue[0]);
+
                 throw new NotImplementedException(source.FullName);
             }
             else
@@ -210,6 +217,17 @@ namespace Pchp.Core.Dynamic
             {
                 return expr;
             }
+        }
+
+        private static Expression VoidAsConstant(Expression expr, object value, Type type)
+        {
+            Debug.Assert(expr.Type == typeof(void));
+
+            // block{ expr; return constant; }
+
+            var constant = Expression.Constant(value, type);
+
+            return Expression.Block(expr, constant);
         }
     }
 }

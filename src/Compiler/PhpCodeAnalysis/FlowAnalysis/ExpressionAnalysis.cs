@@ -433,7 +433,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             Visit(x.Value);
 
-            x.Target.Access = x.Target.Access.WithWrite(x.Value.TypeRefMask);
+            // keep WriteRef flag
+            var targetaccess = BoundAccess.Write;
+            if (x.Target.Access.IsWriteRef)
+                targetaccess = targetaccess.WithWriteRef(0);
+
+            // new target access with resolved target type
+            x.Target.Access = targetaccess.WithWrite(x.Value.TypeRefMask);
             Visit(x.Target);
 
             //
