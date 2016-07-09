@@ -156,6 +156,112 @@ namespace Pchp.Library
 
         #endregion
 
+        #region strtok
+
+        /// <summary>
+        /// Holds a context of <see cref="Tokenize"/> method.
+        /// </summary>
+        {
+            /// <summary>
+            /// The <b>str</b> parameter of last <see cref="Tokenize"/> method call.
+            /// </summary>
+            public string String;
+
+            /// <summary>
+            /// Current position in <see cref="TokenizerContext"/>.
+            /// </summary>
+            public int Position;
+
+            /// <summary>
+            /// The length of <see cref="TokenizerContext"/>.
+            /// </summary>
+            public int Length;
+
+            /// <summary>
+            /// Initializes the context.
+            /// </summary>
+            /// <param name="str"></param>
+            public void Initialize(string str)
+            {
+                Debug.Assert(str != null);
+
+                this.String = str;
+                this.Length = str.Length;
+                this.Position = 0;
+            }
+
+            /// <summary>
+            /// Splits current string from current position into tokens using given set of delimiter characters.
+            /// Tokenizes the string that was passed to a previous call of <see cref="Initialize"/>.
+            /// </summary>
+            public string Tokenize(string delimiters)
+            {
+                if (this.Position >= this.Length) return null;
+                if (delimiters == null) delimiters = String.Empty;
+
+                int index;
+                char[] delChars = delimiters.ToCharArray();
+                while ((index = this.String.IndexOfAny(delChars, this.Position)) == this.Position)
+                {
+                    if (this.Position == this.Length - 1) return null; // last char is delimiter
+                    this.Position++;
+                }
+
+                string token;
+                if (index == -1) // delimiter not found
+                {
+                    token = this.String.Substring(this.Position);
+                    this.Position = this.Length;
+                    return token;
+                }
+
+                token = this.String.Substring(this.Position, index - this.Position);
+                this.Position = index + 1;
+                return token;
+            }
+
+            /// <summary>
+            /// Empty constructor.
+            /// </summary>
+            public TokenizerContext() { }
+        }
+
+        /// <summary>
+        /// Splits a string into tokens using given set of delimiter characters. Tokenizes the string
+        /// that was passed to a previous call of the two-parameter version.
+        /// </summary>
+        /// <param name="delimiters">Set of delimiters.</param>
+        /// <returns>The next token or a <B>null</B> reference.</returns>
+        /// <remarks>This method implements the behavior introduced with PHP 4.1.0, i.e. empty tokens are
+        /// skipped and never returned.</remarks>
+        //[return: CastToFalse]
+        public static string strtok(Context ctx, string delimiters)
+        {
+            return ctx.GetStatic<TokenizerContext>().Tokenize(delimiters);
+        }
+
+        /// <summary>
+        /// Splits a string into tokens using given set of delimiter characters.
+        /// </summary>
+        /// <param name="str">The string to tokenize.</param>
+        /// <param name="delimiters">Set of delimiters.</param>
+        /// <returns>The first token or null. Call one-parameter version of this method to get next tokens.
+        /// </returns>
+        /// <remarks>This method implements the behavior introduced with PHP 4.1.0, i.e. empty tokens are
+        /// skipped and never returned.</remarks>
+        //[return: CastToFalse]
+        public static string strtok(Context ctx, string str, string delimiters)
+        {
+            if (str == null)
+                str = String.Empty;
+
+            var tctx = ctx.GetStatic<TokenizerContext>();
+            tctx.Initialize(str);
+            return tctx.Tokenize(delimiters);
+        }
+
+        #endregion
+
         #region sprintf, vsprintf
 
         /// <summary>
