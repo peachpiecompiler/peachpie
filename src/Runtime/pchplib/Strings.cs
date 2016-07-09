@@ -1,5 +1,6 @@
 ﻿using Pchp.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -175,6 +176,299 @@ namespace Pchp.Library
 
         //    return j - offset;
         //}
+
+        #endregion
+
+        #region explode, implode
+
+        /// <summary>
+        /// Splits a string by string separators.
+        /// </summary>
+        /// <param name="separator">The substrings separator. Must not be empty.</param>
+        /// <param name="str">The string to be split.</param>
+        /// <returns>The array of strings.</returns>
+        //[return: CastToFalse]
+        public static PhpArray explode(string separator, string str) => explode(separator, str, int.MaxValue);
+
+        /// <summary>
+        /// Splits a string by string separators with limited resulting array size.
+        /// </summary>
+        /// <param name="separator">The substrings separator. Must not be empty.</param>
+        /// <param name="str">The string to be split.</param>
+        /// <param name="limit">
+        /// The maximum number of elements in the resultant array. Zero value is treated in the same way as 1.
+        /// If negative, then the number of separators found in the string + 1 is added to the limit.
+        /// </param>
+        /// <returns>The array of strings.</returns>
+        /// <remarks>
+        /// If <paramref name="str"/> is empty an array consisting of exacty one empty string is returned.
+        /// If <paramref name="limit"/> is zero
+        /// </remarks>
+        /// <exception cref="PhpException">Thrown if the <paramref name="separator"/> is null or empty or if <paramref name="limit"/>is not positive nor -1.</exception>
+        //[return: CastToFalse]
+        public static PhpArray explode(string separator, string str, int limit)
+        {
+            // validate parameters:
+            if (string.IsNullOrEmpty(separator))
+            {
+                //PhpException.InvalidArgument("separator", LibResources.GetString("arg:null_or_empty"));
+                //return null;
+                throw new ArgumentException();
+            }
+
+            if (str == null) str = String.Empty;
+
+            bool last_part_is_the_rest = limit >= 0;
+
+            if (limit == 0)
+                limit = 1;
+            else if (limit < 0)
+                limit += SubstringCountInternal(str, separator, 0, str.Length) + 2;
+
+            // splits <str> by <separator>:
+            int sep_len = separator.Length;
+            int i = 0;                        // start searching at this position
+            int pos;                          // found separator's first character position
+            PhpArray result = new PhpArray(); // creates integer-keyed array with default capacity
+
+            var/*!*/compareInfo = System.Globalization.CultureInfo.InvariantCulture.CompareInfo;
+
+            while (--limit > 0)
+            {
+                pos = compareInfo.IndexOf(str, separator, i, str.Length - i, System.Globalization.CompareOptions.Ordinal);
+
+                if (pos < 0) break; // not found
+
+                result.AddValue(PhpValue.Create(str.Substring(i, pos - i))); // faster than Add()
+                i = pos + sep_len;
+            }
+
+            // Adds last chunk. If separator ends the string, it will add empty string (as PHP do).
+            if (i <= str.Length && last_part_is_the_rest)
+            {
+                result.AddValue(PhpValue.Create(str.Substring(i)));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Concatenates items of an array into a string separating them by a glue.
+        /// </summary>
+        /// <param name="pieces">The array to be impleded.</param>
+        /// <returns>The glued string.</returns>
+        public static PhpString join(PhpArray pieces) => implode(pieces);
+
+        /// <summary>
+        /// Concatenates items of an array into a string separating them by a glue.
+        /// </summary>
+        /// <param name="pieces">The array to be impleded.</param>
+        /// <param name="glue">The glue string.</param>
+        /// <returns>The glued string.</returns>
+        /// <exception cref="PhpException">Thrown if neither <paramref name="glue"/> nor <paramref name="pieces"/> is not null and of type <see cref="PhpArray"/>.</exception>
+        public static PhpString join(PhpValue glue, PhpValue pieces) => implode(glue, pieces);
+
+        /// <summary>
+        /// Concatenates items of an array into a string.
+        /// </summary>
+        /// <param name="pieces">The <see cref="PhpArray"/> to be imploded.</param>
+        /// <returns>The glued string.</returns>
+        public static PhpString implode(PhpArray pieces)
+        {
+            if (pieces == null)
+            {
+                //PhpException.ArgumentNull("pieces");
+                //return null;
+                throw new ArgumentException();
+            }
+
+            return ImplodeInternal(PhpValue.Void, pieces);
+        }
+
+        /// <summary>
+        /// Concatenates items of an array into a string separating them by a glue.
+        /// </summary>
+        /// <param name="glue">The glue of type <see cref="string"/> or <see cref="PhpArray"/> to be imploded.</param>
+        /// <param name="pieces">The <see cref="PhpArray"/> to be imploded or glue of type <see cref="string"/>.</param>
+        /// <returns>The glued string.</returns>
+        /// <exception cref="PhpException">Thrown if neither <paramref name="glue"/> nor <paramref name="pieces"/> is not null and of type <see cref="PhpArray"/>.</exception>
+        public static PhpString implode(PhpValue glue, PhpValue pieces)
+        {
+            if (pieces != null && pieces.IsArray)
+                return ImplodeInternal(glue, pieces.AsArray());
+
+            if (glue.IsArray)
+                return ImplodeInternal(pieces, glue.AsArray());
+
+            return ImplodeGenericEnumeration(glue, pieces);
+        }
+
+        private static PhpString ImplodeGenericEnumeration(PhpValue glue, PhpValue pieces)
+        {
+            IEnumerable enumerable;
+
+            if (pieces.IsObject && (enumerable = pieces.Object as IEnumerable) != null)
+                return ImplodeInternal(glue, new PhpArray(enumerable));
+
+            if (glue.IsObject && (enumerable = glue.Object as IEnumerable) != null)
+                return ImplodeInternal(pieces, new PhpArray(enumerable));
+
+            ////
+            //PhpException.InvalidArgument("pieces");
+            //return null;
+            throw new ArgumentException();
+        }
+
+        /// <summary>
+        /// Concatenates items of an array into a string separating them by a glue.
+        /// </summary>
+        /// <param name="glue">The glue string.</param>
+        /// <param name="pieces">The enumeration to be imploded.</param>
+        /// <returns>The glued string.</returns>           
+        /// <remarks>
+        /// Items of <paramref name="pieces"/> are converted to strings in the manner of PHP 
+        /// (i.e. by <see cref="PHP.Core.Convert.ObjectToString"/>).
+        /// </remarks>
+        /// <exception cref="PhpException">Thrown if <paramref name="pieces"/> is null.</exception>
+        private static PhpString ImplodeInternal(PhpValue glue, PhpArray/*!*/pieces)
+        {
+            Debug.Assert(pieces != null);
+
+            // handle empty pieces:
+            if (pieces.Count == 0)
+                return PhpString.Empty;
+
+            // check whether we have to preserve a binary string
+            //bool binary = glue != null && glue.GetType() == typeof(PhpBytes);
+            //if (!binary)    // try to find any binary string within pieces:
+            //    using (var x = pieces.GetFastEnumerator())
+            //        while (x.MoveNext())
+            //            if (x.CurrentValue.IsBinaryString)
+            //            {
+            //                binary = true;
+            //                break;
+            //            }
+
+            // concatenate pieces and glue:
+
+            bool not_first = false;                       // not the first iteration
+
+            //if (binary)
+            //{
+            //    Debug.Assert(pieces.Count > 0);
+
+            //    PhpBytes gluebytes = PHP.Core.Convert.ObjectToPhpBytes(glue);
+            //    PhpBytes[] piecesBytes = new PhpBytes[pieces.Count + pieces.Count - 1]; // buffer of PhpBytes to be concatenated
+            //    int p = 0;
+
+            //    using (var x = pieces.GetFastEnumerator())
+            //        while (x.MoveNext())
+            //        {
+            //            if (not_first) piecesBytes[p++] = gluebytes;
+            //            else not_first = true;
+
+            //            piecesBytes[p++] = PHP.Core.Convert.ObjectToPhpBytes(x.CurrentValue);
+            //        }
+
+            //    return PhpBytes.Concat(piecesBytes, 0, piecesBytes.Length);
+            //}
+            //else
+            {
+                string gluestr = glue.ToString();
+
+                var result = new PhpString(/*pieces.Count * 2*/);
+
+                using (var x = pieces.GetFastEnumerator())
+                    while (x.MoveNext())
+                    {
+                        if (not_first) result.Append(gluestr);
+                        else not_first = true;
+
+                        result.Append(x.CurrentValue.ToString());
+                    }
+
+                return result;
+            }
+        }
+
+        #endregion
+
+        #region substr_count internals
+
+        private static bool SubstringCountInternalCheck(string needle)
+        {
+            if (String.IsNullOrEmpty(needle))
+            {
+                //PhpException.InvalidArgument("needle", LibResources.GetString("arg:null_or_empty"));
+                //return false;
+                throw new ArgumentException();
+            }
+
+            return true;
+        }
+        private static bool SubstringCountInternalCheck(string haystack, int offset)
+        {
+            if (offset < 0)
+            {
+                //PhpException.InvalidArgument("offset", LibResources.GetString("substr_count_offset_zero"));
+                //return false;
+                throw new ArgumentException();
+            }
+            if (offset > haystack.Length)
+            {
+                //PhpException.InvalidArgument("offset", LibResources.GetString("substr_count_offset_exceeds", offset));
+                //return false;
+                throw new ArgumentException();
+            }
+
+            return true;
+        }
+        private static bool SubstringCountInternalCheck(string haystack, int offset, int length)
+        {
+            if (!SubstringCountInternalCheck(haystack, offset))
+                return false;
+
+            if (length == 0)
+            {
+                //PhpException.InvalidArgument("length", LibResources.GetString("substr_count_zero_length"));
+                //return false;
+                throw new ArgumentException();
+            }
+            if (offset + length > haystack.Length)
+            {
+                //PhpException.InvalidArgument("length", LibResources.GetString("substr_count_length_exceeds", length));
+                //return false;
+                throw new ArgumentException();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Count the number of substring occurrences. Expects correct argument values.
+        /// </summary>
+        internal static int SubstringCountInternal(string/*!*/ haystack, string/*!*/ needle, int offset, int end)
+        {
+            int result = 0;
+
+            if (needle.Length == 1)
+            {
+                while (offset < end)
+                {
+                    if (haystack[offset] == needle[0]) result++;
+                    offset++;
+                }
+            }
+            else
+            {
+                while ((offset = haystack.IndexOf(needle, offset, end - offset)) != -1)
+                {
+                    offset += needle.Length;
+                    result++;
+                }
+            }
+            return result;
+        }
 
         #endregion
 

@@ -96,6 +96,11 @@ namespace Pchp.Core
 
         #region Construction
 
+        /// <summary>
+        /// Empty immutable string.
+        /// </summary>
+        public static readonly PhpString Empty = new PhpString();
+
         public PhpString()
         {
             _chunks = null;
@@ -272,6 +277,14 @@ namespace Pchp.Core
         }
 
         #region Append
+
+        public void Append(PhpValue value)
+        {
+            if (value.TypeCode == PhpTypeCode.WritableString)
+                Append(value.WritableString);
+            else
+                Append(value.ToString());
+        }
 
         public void Append(string value)
         {
