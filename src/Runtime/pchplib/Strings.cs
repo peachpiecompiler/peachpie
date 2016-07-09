@@ -485,7 +485,7 @@ namespace Pchp.Library
             // sort replacePairs according to the key length, longer first
             var count = replacePairs.Count;
             var sorted = new KeyValuePair<string, string>[count];
-            
+
             int i = 0;
             var replacePairsEnum = replacePairs.GetFastEnumerator();
             while (replacePairsEnum.MoveNext())
@@ -550,6 +550,116 @@ namespace Pchp.Library
             return strtr(str,
                 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
                 "nopqrstuvwxyzabcdefghijklmNOPQRSTUVWXYZABCDEFGHIJKLM");
+        }
+
+        #endregion
+
+        #region substr, str_repeat
+
+        /// <summary>
+        /// Retrieves a substring from the given string.
+        /// </summary>
+        /// <param name="str">The source string (unicode or binary).</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <returns>The substring of the <paramref name="str"/>.</returns>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> where <c>length</c> is infinity.
+        /// </remarks>
+        //[return: CastToFalse]
+        public static string substr(string str, int offset) => substr(str, offset, int.MaxValue);
+
+        /// <summary>
+        /// Retrieves a substring from the given string.
+        /// </summary>
+        /// <param name="str">The source string (unicode or binary).</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <returns>The substring of the <paramref name="str"/>.</returns>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
+        /// </remarks>
+        //[return: CastToFalse]
+        public static string substr(string str, int offset, int length)
+        {
+            //PhpBytes binstr = str as PhpBytes;
+            //if (binstr != null)
+            //{
+            //    if (binstr.Length == 0) return null;
+
+            //    PhpMath.AbsolutizeRange(ref offset, ref length, binstr.Length);
+
+            //    // string is shorter than offset to start substring
+            //    if (offset == binstr.Length) return null;
+
+            //    if (length == 0) return PhpBytes.Empty;
+
+            //    byte[] substring = new byte[length];
+
+            //    Buffer.BlockCopy(binstr.ReadonlyData, offset, substring, 0, length);
+
+            //    return new PhpBytes(substring);
+            //}
+
+            string unistr = str; // Core.Convert.ObjectToString(str);
+            if (unistr != null)
+            {
+                if (unistr == String.Empty) return null;
+
+                PhpMath.AbsolutizeRange(ref offset, ref length, unistr.Length);
+
+                // string is shorter than offset to start substring
+                if (offset == unistr.Length) return null;
+
+                if (length == 0) return String.Empty;
+
+                return unistr.Substring(offset, length);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Repeats a string.
+        /// </summary>
+        /// <param name="str">The input string, can be both binary and unicode.</param>
+        /// <param name="count">The number of times <paramref name="str"/> should be repeated.</param>
+        /// <returns>The string where <paramref name="str"/> is repeated <paramref name="count"/> times.</returns>
+        /// <remarks>If <paramref name="str"/> is <b>null</b> reference, the function will return an empty string.</remarks>   
+        /// <remarks>If <paramref name="count"/> is set to 0, the function will return <b>null</b> reference.</remarks>   
+        /// <exception cref="PhpException">Thrown if <paramref name="count"/> is negative.</exception>
+        //[PureFunction]
+        public static string str_repeat(string str, int count)
+        {
+            if (str == null) return String.Empty;
+
+            if (count < 0)
+            {
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("number_of_repetitions_negative"));
+                //return null;
+                throw new ArgumentException();
+            }
+            if (count == 0) return null;
+
+            //PhpBytes binstr = str as PhpBytes;
+            //if (binstr != null)
+            //{
+            //    byte[] result = new byte[binstr.Length * count];
+
+            //    for (int i = 0; i < count; i++) Buffer.BlockCopy(binstr.ReadonlyData, 0, result, binstr.Length * i, binstr.Length);
+
+            //    return new PhpBytes(result);
+            //}
+
+            string unistr = str; // Core.Convert.ObjectToString(str);
+            if (unistr != null)
+            {
+                StringBuilder result = new StringBuilder(count * unistr.Length);
+                while (count-- > 0) result.Append(unistr);
+
+                return result.ToString();
+            }
+
+            return null;
         }
 
         #endregion

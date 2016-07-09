@@ -52,24 +52,24 @@ namespace Pchp.Library
 
         #region Constants
 
-        public const double Pi = System.Math.PI;
-        public const double E = System.Math.E;
-        public const double Log2e = 1.4426950408889634074;
-        public const double Log10e = 0.43429448190325182765;
-        public const double Ln2 = 0.69314718055994530942;
-        public const double Ln10 = 2.30258509299404568402;
-        public const double PiHalf = 1.57079632679489661923;
-        public const double PiFourth = 0.78539816339744830962;
-        public const double Pith = 0.31830988618379067154;
-        public const double TwoPiths = 0.63661977236758134308;
-        public const double SqrtPi = 1.77245385090551602729;
-        public const double TwoSqrtPi = 1.12837916709551257390;
-        public const double Sqrt3 = 1.73205080756887729352;
-        public const double SqrtHalf = 0.70710678118654752440;
-        public const double LnPi = 1.14472988584940017414;
-        public const double Euler = 0.57721566490153286061;
-        public const double NaN = Double.NaN;
-        public const double Infinity = Double.PositiveInfinity;
+        public const double M_PI = Math.PI;
+        public const double M_E = Math.E;
+        public const double M_LOG2E = 1.4426950408889634074;
+        public const double M_LOG10E = 0.43429448190325182765;
+        public const double M_LN2 = 0.69314718055994530942;
+        public const double M_LN10 = 2.30258509299404568402;
+        public const double M_PI_2 = 1.57079632679489661923;
+        public const double M_PI_4 = 0.78539816339744830962;
+        public const double M_1_PI = 0.31830988618379067154;
+        public const double M_2_PI = 0.63661977236758134308;
+        public const double M_SQRTPI = 1.77245385090551602729;
+        public const double M_2_SQRTPI = 1.12837916709551257390;
+        public const double M_SQRT3 = 1.73205080756887729352;
+        public const double M_SQRT1_2 = 0.70710678118654752440;
+        public const double M_LNPI = 1.14472988584940017414;
+        public const double M_EULER = 0.57721566490153286061;
+        public const double NAN = double.NaN;
+        public const double INF = double.PositiveInfinity;
 
         #endregion
 
@@ -91,7 +91,7 @@ namespace Pchp.Library
         /// <remarks>
         /// Ensures that <c>[offset,offset + length]</c> is subrange of <c>[0,count]</c>.
         /// </remarks>
-        static void AbsolutizeRange(ref int offset, ref int length, int count)
+        internal static void AbsolutizeRange(ref int offset, ref int length, int count)
         {
             Debug.Assert(count >= 0);
 
