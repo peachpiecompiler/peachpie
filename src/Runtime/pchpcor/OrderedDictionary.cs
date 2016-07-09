@@ -651,7 +651,7 @@ namespace Pchp.Core
             return new FastEnumerator(this);
         }
 
-        public struct FastEnumerator : IDisposable
+        public struct FastEnumerator : IDisposable, IEnumerator<PhpValue>
         {
             private readonly OrderedDictionary/*!*/_table;
             private int _currentEntry;
@@ -712,6 +712,20 @@ namespace Pchp.Core
                 _currentEntry = -1;
                 _current = new KeyValuePair<IntStringKey, PhpValue>();
             }
+
+            #endregion
+
+            #region IEnumerator<PhpValue>
+
+            /// <summary>
+            /// Gets the element as a PHP value in the collection at the current position of the enumerator.
+            /// </summary>
+            PhpValue IEnumerator<PhpValue>.Current => _current.Value;
+
+            /// <summary>
+            /// Gets the element converted to a CLR object in the collection at the current position of the enumerator.
+            /// </summary>
+            object IEnumerator.Current => _current.Value.ToClr();
 
             #endregion
 
