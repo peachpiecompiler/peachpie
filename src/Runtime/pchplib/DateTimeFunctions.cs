@@ -9,6 +9,32 @@ namespace Pchp.Library
 {
     public static class DateTimeFunctions
     {
+        #region Constants
+
+        public const string DATE_ATOM = @"Y-m-d\TH:i:sP";
+
+        public const string DATE_COOKIE = @"D, d M Y H:i:s T";
+
+        public const string DATE_ISO8601 = @"Y-m-d\TH:i:sO";
+
+        public const string DATE_RFC822 = @"D, d M y H:i:s O";
+
+        public const string DATE_RFC850 = @"l, d-M-y H:i:s T";
+
+        public const string DATE_RFC1123 = @"D, d M Y H:i:s T";
+
+        public const string DATE_RFC1036 = @"l, d-M-y H:i:s T";
+
+        public const string DATE_RFC2822 = @"D, d M Y H:i:s T";
+
+        public const string DATE_RFC3339 = @"Y-m-d\TH:i:sP";
+
+        public const string DATE_RSS = @"D, d M Y H:i:s T";
+
+        public const string DATE_W3C = @"Y-m-d\TH:i:sO";
+
+        #endregion
+
         #region microtime
 
         /// <summary>

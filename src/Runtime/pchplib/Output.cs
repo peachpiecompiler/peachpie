@@ -14,16 +14,9 @@ namespace Pchp.Library
     //[ImplementsExtension(LibraryDescriptor.ExtCore)]
     public static class Output
     {
-        [Flags]
-        public enum _ChunkPosition
-        {
-            //[ImplementsConstant("PHP_OUTPUT_HANDLER_START")]
-            First = BufferedOutput.ChunkPosition.First,
-            //[ImplementsConstant("PHP_OUTPUT_HANDLER_CONT")]
-            Middle = BufferedOutput.ChunkPosition.Middle,
-            //[ImplementsConstant("PHP_OUTPUT_HANDLER_END")]
-            Last = BufferedOutput.ChunkPosition.Last
-        }
+        public const int PHP_OUTPUT_HANDLER_START = (int)BufferedOutput.ChunkPosition.First;
+        public const int PHP_OUTPUT_HANDLER_CONT = (int)BufferedOutput.ChunkPosition.Middle;
+        public const int PHP_OUTPUT_HANDLER_END = (int)BufferedOutput.ChunkPosition.Last;
 
         #region fprintf, vprintf
 
