@@ -46,7 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Constants.cs" />
-    <Compile Include="DateTimeFunctions.cs" />
+    <Compile Include="DateTime\DateTimeFunctions.cs" />
     <Compile Include="Environment.cs" />
     <Compile Include="FileSystem.Path.cs" />
     <Compile Include="Math.cs" />

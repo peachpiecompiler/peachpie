@@ -18,7 +18,7 @@ namespace Pchp.Library
         public const int PHP_OUTPUT_HANDLER_CONT = (int)BufferedOutput.ChunkPosition.Middle;
         public const int PHP_OUTPUT_HANDLER_END = (int)BufferedOutput.ChunkPosition.Last;
 
-        #region fprintf, vprintf
+        #region printf, vprintf
 
         /// <summary>
         /// Generates output according to the specified formatting string.
@@ -26,14 +26,11 @@ namespace Pchp.Library
         /// <param name="format">The formatting string. See also the <b>sprintf</b> function (<see cref="PhpStrings.Format"/>).</param>
         /// <param name="args">Variables to format.</param>
         /// <returns>Returns the length of the outputted string. </returns>
-        public static int printf(Context ctx, string format, params object[] args)
+        public static int printf(Context ctx, string format, params PhpValue[] args)
         {
-            //string formattedString = PhpStrings.FormatInternal(format, args);
-
-            //ctx.Output.Write(formattedString);
-
-            //return formattedString.Length;
-            throw new NotImplementedException();
+            var formattedString = Strings.FormatInternal(ctx, format, args);
+            ctx.Output.Write(formattedString);
+            return formattedString.Length;
         }
 
         /// <summary>
@@ -44,12 +41,9 @@ namespace Pchp.Library
         /// <returns>Returns the length of the outputted string. </returns>
         public static int vprintf(Context ctx, string format, PhpArray args)
         {
-            //string formattedString = PhpStrings.Format(format, args);
-
-            //ctx.Output.Write(formattedString);
-
-            //return formattedString.Length;
-            throw new NotImplementedException();
+            var formattedString = Strings.vsprintf(ctx, format, args);
+            ctx.Output.Write(formattedString);
+            return formattedString.Length;
         }
 
         #endregion

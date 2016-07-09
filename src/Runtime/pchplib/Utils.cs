@@ -69,7 +69,7 @@ namespace Pchp.Library
         /// <summary>
         /// UTC time zone.
         /// </summary>
-        internal static TimeZoneInfo/*!*/UtcTimeZone { get { return TimeZoneInfo.Utc; } }
+        internal static TimeZoneInfo/*!*/UtcTimeZone => TimeZoneInfo.Utc;
 
         /// <summary>
         /// Converts <see cref="DateTime"/> representing UTC time to UNIX timestamp.
