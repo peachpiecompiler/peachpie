@@ -2191,6 +2191,137 @@ namespace Pchp.Library
 
         #endregion
 
+        #region wordwrap
+
+        /// <summary>
+        /// Wraps a string to 75 characters using new line as the break character.
+        /// </summary>
+        /// <param name="str">The string to word-wrap.</param>
+        /// <returns>The word-wrapped string.</returns>
+        /// <remarks>The only "break-point" character is space (' '). If a word is longer than 75 characers
+        /// it will stay uncut.</remarks>
+        //[return: CastToFalse]
+        public static string wordwrap(string str)
+        {
+            return wordwrap(str, 75, "\n", false);
+        }
+
+        /// <summary>
+        /// Wraps a string to a specified number of characters using new line as the break character.
+        /// </summary>
+        /// <param name="str">The string to word-wrap.</param>
+        /// <param name="width">The desired line length.</param>
+        /// <returns>The word-wrapped string.</returns>
+        /// <remarks>The only "break-point" character is space (' '). If a word is longer than <paramref name="width"/> 
+        /// characers it will stay uncut.</remarks>
+        //[return: CastToFalse]
+        public static string wordwrap(string str, int width)
+        {
+            return wordwrap(str, width, "\n", false);
+        }
+
+        /// <summary>
+        /// Wraps a string to a specified number of characters using a specified string as the break string.
+        /// </summary>
+        /// <param name="str">The string to word-wrap.</param>
+        /// <param name="width">The desired line length.</param>
+        /// <param name="lineBreak">The break string.</param>
+        /// <returns>The word-wrapped string.</returns>
+        /// <remarks>The only "break-point" character is space (' '). If a word is longer than <paramref name="width"/> 
+        /// characers it will stay uncut.</remarks>
+        //[return: CastToFalse]
+        public static string wordwrap(string str, int width, string lineBreak)
+        {
+            return wordwrap(str, width, lineBreak, false);
+        }
+
+        /// <summary>
+        /// Wraps a string to a specified number of characters using a specified string as the break string.
+        /// </summary>
+        /// <param name="str">The string to word-wrap.</param>
+        /// <param name="width">The desired line length.</param>
+        /// <param name="lineBreak">The break string.</param>
+        /// <param name="cut">If true, words longer than <paramref name="width"/> will be cut so that no line is longer
+        /// than <paramref name="width"/>.</param>
+        /// <returns>The word-wrapped string.</returns>
+        /// <remarks>The only "break-point" character is space (' ').</remarks>
+        /// <exception cref="PhpException">Thrown if the combination of <paramref name="width"/> and <paramref name="cut"/> is invalid.</exception>
+        //[return: CastToFalse]
+        public static string wordwrap(string str, int width, string lineBreak, bool cut)
+        {
+            if (width == 0 && cut)
+            {
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("cut_forced_with_zero_width"));
+                //return null;
+                throw new ArgumentException();
+            }
+            if (str == null) return null;
+
+            int length = str.Length;
+            StringBuilder result = new StringBuilder(length);
+
+            // mimic the strange PHP behaviour when width < 0 and cut is true
+            if (width < 0 && cut)
+            {
+                result.Append(lineBreak);
+                width = 1;
+            }
+
+            int lastSpace = -1, lineStart = 0;
+            for (int i = 0; i < length; i++)
+            {
+                if (str[i] == ' ')
+                {
+                    lastSpace = i;
+                    if (i - lineStart >= width + 1)
+                    {
+                        // cut is false if we get here
+                        if (lineStart == 0)
+                        {
+                            result.Append(str, 0, i);
+                        }
+                        else
+                        {
+                            result.Append(lineBreak);
+                            result.Append(str, lineStart, i - lineStart);
+                        }
+
+                        lineStart = i + 1;
+                        continue;
+                    }
+                }
+
+                if (i - lineStart >= width)
+                {
+                    // we reached the specified width
+
+                    if (lastSpace > lineStart) // obsolete: >=
+                    {
+                        if (lineStart > 0) result.Append(lineBreak);
+                        result.Append(str, lineStart, lastSpace - lineStart);
+                        lineStart = lastSpace + 1;
+                    }
+                    else if (cut)
+                    {
+                        if (lineStart > 0) result.Append(lineBreak);
+                        result.Append(str, lineStart, width);
+                        lineStart = i;
+                    }
+                }
+            }
+
+            // process the rest of str
+            if (lineStart < length || lastSpace == length - 1)
+            {
+                if (lineStart > 0) result.Append(lineBreak);
+                result.Append(str, lineStart, length - lineStart);
+            }
+
+            return result.ToString();
+        }
+
+        #endregion
+
         #region number_format, money_format
 
         /// <summary>
