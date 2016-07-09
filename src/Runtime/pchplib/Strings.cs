@@ -1806,6 +1806,69 @@ namespace Pchp.Library
 
         #endregion
 
+        #region ucfirst, lcfirst, ucwords
+
+        /// <summary>
+        /// Makes a string's first character uppercase.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <returns><paramref name="str"/> with the first character converted to uppercase.</returns>
+        public static string ucfirst(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return string.Empty;
+
+            return Char.ToUpper(str[0]) + str.Substring(1);
+        }
+
+        /// <summary>
+        /// Returns a string with the first character of str , lowercased if that character is alphabetic.
+        /// Note that 'alphabetic' is determined by the current locale. For instance, in the default "C" locale characters such as umlaut-a (ä) will not be converted. 
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <returns>Returns the resulting string.</returns>
+        public static string lcfirst(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return string.Empty;
+
+            // first character to lower case
+            return char.ToLower(str[0]) + str.Substring(1);
+        }
+
+        /// <summary>
+        /// Makes the first character of each word in a string uppercase.
+        /// </summary>
+        /// <param name="str">The input string.</param>
+        /// <returns><paramref name="str"/> with the first character of each word in a string converted to 
+        /// uppercase.</returns>
+        public static string ucwords(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return string.Empty;
+
+            int length = str.Length;
+            var result = new StringBuilder(str);
+
+            bool state = true;
+            for (int i = 0; i < length; i++)
+            {
+                if (char.IsWhiteSpace(result[i])) state = true;
+                else
+                {
+                    if (state)
+                    {
+                        result[i] = char.ToUpper(result[i]);
+                        state = false;
+                    }
+                }
+            }
+
+            return result.ToString();
+        }
+
+        #endregion
+
         #region sprintf, vsprintf
 
         /// <summary>
