@@ -478,6 +478,91 @@ namespace Pchp.Library
 
         #endregion
 
+        #region number_format, NS: money_format
+
+        /// <summary>
+        /// Formats a number with grouped thousands.
+        /// </summary>
+        /// <param name="number">The number to format.</param>
+        /// <returns>String representation of the number without decimals (rounded) with comma between every group
+        /// of thousands.</returns>
+        public static string number_format(double number)
+        {
+            return number_format(number, 0, ".", ",");
+        }
+
+        /// <summary>
+        /// Formats a number with grouped thousands and with given number of decimals.
+        /// </summary>
+        /// <param name="number">The number to format.</param>
+        /// <param name="decimals">The number of decimals.</param>
+        /// <returns>String representation of the number with <paramref name="decimals"/> decimals with a dot in front, and with 
+        /// comma between every group of thousands.</returns>
+        public static string number_format(double number, int decimals)
+        {
+            return number_format(number, decimals, ".", ",");
+        }
+
+        /// <summary>
+        /// Formats a number with grouped thousands, with given number of decimals, with given decimal point string
+        /// and with given thousand separator.
+        /// </summary>
+        /// <param name="number">The number to format.</param>
+        /// <param name="decimals">The number of decimals within range 0 to 99.</param>
+        /// <param name="decimalPoint">The string to separate integer part and decimals.</param>
+        /// <param name="thousandsSeparator">The character to separate groups of thousands. Only the first character
+        /// of <paramref name="thousandsSeparator"/> is used.</param>
+        /// <returns>
+        /// String representation of the number with <paramref name="decimals"/> decimals with <paramref name="decimalPoint"/> in 
+        /// front, and with <paramref name="thousandsSeparator"/> between every group of thousands.
+        /// </returns>
+        /// <remarks>
+        /// The <b>number_format</b> (<see cref="FormatNumber"/>) PHP function requires <paramref name="decimalPoint"/> and <paramref name="thousandsSeparator"/>
+        /// to be of length 1 otherwise it uses default values (dot and comma respectively). As this behavior does
+        /// not make much sense, this method has no such limitation except for <paramref name="thousandsSeparator"/> of which
+        /// only the first character is used (documented feature).
+        /// </remarks>
+        public static string number_format(double number, int decimals, string decimalPoint, string thousandsSeparator)
+        {
+            System.Globalization.NumberFormatInfo format = new System.Globalization.NumberFormatInfo();
+
+            if ((decimals >= 0) && (decimals <= 99))
+            {
+                format.NumberDecimalDigits = decimals;
+            }
+            else
+            {
+                //PhpException.InvalidArgument("decimals", LibResources.GetString("arg:out_of_bounds", decimals));
+                throw new ArgumentException();
+            }
+
+            if (!string.IsNullOrEmpty(decimalPoint))
+            {
+                format.NumberDecimalSeparator = decimalPoint;
+            }
+
+            if (thousandsSeparator == null) thousandsSeparator = String.Empty;
+
+            switch (thousandsSeparator.Length)
+            {
+                case 0: format.NumberGroupSeparator = String.Empty; break;
+                case 1: format.NumberGroupSeparator = thousandsSeparator; break;
+                default: format.NumberGroupSeparator = thousandsSeparator.Substring(0, 1); break;
+            }
+
+            return number.ToString("N", format);
+        }
+
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        public static string money_format(string format, double number)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
         #region str_pad
 
         /// <summary>
