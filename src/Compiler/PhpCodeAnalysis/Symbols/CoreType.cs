@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison,
             ScriptAttribute, ScriptDiedException,
-            IStaticInit,
+            IStaticInit, RoutineInfo,
             CallMethodBinder, CallFunctionBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray,
             IntStringKey,
@@ -133,6 +133,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Convert = Create("Convert");
             ScriptAttribute = Create("ScriptAttribute");
             IStaticInit = Create("IStaticInit");
+            RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");
 
             CallMethodBinder = Create("Dynamic.CallMethodBinder");

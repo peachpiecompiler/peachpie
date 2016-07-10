@@ -55,11 +55,13 @@
     <Compile Include="PhpCallback.cs" />
     <Compile Include="PhpHashtable.cs" />
     <Compile Include="PhpValue.DebuggerTypeProxy.cs" />
+    <Compile Include="Reflection\RoutineInfo.cs" />
     <Compile Include="Resources\ErrResources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ErrResources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Reflection\RoutinesTable.cs" />
     <Compile Include="Utilities\ArrayUtils.cs" />
     <Compile Include="Variables.cs" />
     <Compile Include="std\stdClass.cs" />

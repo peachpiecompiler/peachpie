@@ -23,7 +23,7 @@ namespace Pchp.Core
     /// <param name="ctx">Current runtime context. Cannot be <c>null</c>.</param>
     /// <param name="arguments">List of arguments to be passed to called routine.</param>
     /// <returns></returns>
-    public delegate PhpValue PhpCallableRoutine(Context ctx, PhpValue[] arguments);
+    public delegate PhpValue PhpCallable(Context ctx, PhpValue[] arguments);
 
     /// <summary>
     /// Callable object representing callback to a routine.
@@ -34,18 +34,18 @@ namespace Pchp.Core
         /// <summary>
         /// Resolved routine to be invoked.
         /// </summary>
-        protected PhpCallableRoutine _lazyResolved;
+        protected PhpCallable _lazyResolved;
 
         #region PhpCallbacks
 
         sealed class CallableCallback : PhpCallback
         {
-            public CallableCallback(PhpCallableRoutine routine)
+            public CallableCallback(PhpCallable routine)
             {
                 _lazyResolved = routine;
             }
 
-            protected override PhpCallableRoutine BindCore(Context ctx)
+            protected override PhpCallable BindCore(Context ctx)
             {
                 // cannot be reached
                 throw new InvalidOperationException();
@@ -64,7 +64,7 @@ namespace Pchp.Core
                 _function = function;
             }
 
-            protected override PhpCallableRoutine BindCore(Context ctx)
+            protected override PhpCallable BindCore(Context ctx)
             {
                 throw new NotImplementedException();
             }
@@ -82,7 +82,7 @@ namespace Pchp.Core
                 _method = method;
             }
 
-            protected override PhpCallableRoutine BindCore(Context ctx)
+            protected override PhpCallable BindCore(Context ctx)
             {
                 throw new NotImplementedException();
             }
@@ -100,7 +100,7 @@ namespace Pchp.Core
                 _item2 = item2;
             }
 
-            protected override PhpCallableRoutine BindCore(Context ctx)
+            protected override PhpCallable BindCore(Context ctx)
             {
                 throw new NotImplementedException();
             }
@@ -113,7 +113,7 @@ namespace Pchp.Core
 
             }
 
-            protected override PhpCallableRoutine BindCore(Context ctx)
+            protected override PhpCallable BindCore(Context ctx)
             {
                 return null;
             }
@@ -141,16 +141,16 @@ namespace Pchp.Core
         /// <summary>
         /// Ensures the routine delegate is bound.
         /// </summary>
-        private PhpCallableRoutine Bind(Context ctx) => _lazyResolved ?? BindNew(ctx);
+        private PhpCallable Bind(Context ctx) => _lazyResolved ?? BindNew(ctx);
 
         /// <summary>
         /// Binds the routine delegate.
         /// </summary>
         /// <returns>Instance to the delegate. Cannot be <c>null</c>.</returns>
-        private PhpCallableRoutine BindNew(Context ctx)
+        private PhpCallable BindNew(Context ctx)
         {
             var resolved = BindCore(ctx)
-                ?? new PhpCallableRoutine((_ctx, _args) => PhpValue.Null);  // TODO: cache // TODO: report call to missing function
+                ?? new PhpCallable((_ctx, _args) => PhpValue.Null);  // TODO: cache // TODO: report call to missing function
 
             _lazyResolved = resolved;
 
@@ -161,7 +161,7 @@ namespace Pchp.Core
         /// Performs binding to the routine delegate.
         /// </summary>
         /// <returns>Actual delegate or <c>null</c> if routine cannot be bound.</returns>
-        protected abstract PhpCallableRoutine BindCore(Context ctx);
+        protected abstract PhpCallable BindCore(Context ctx);
 
         #endregion
 

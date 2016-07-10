@@ -16,12 +16,12 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents a global PHP function.
     /// </summary>
-    internal sealed class SourceFunctionSymbol : SourceRoutineSymbol
+    internal sealed partial class SourceFunctionSymbol : SourceRoutineSymbol
     {
         readonly SourceFileSymbol _file;
         readonly FunctionDecl _syntax;
 
-        FieldSymbol _lazyIndexField;    // internal static int <name>idx;
+        FieldSymbol _lazyRoutineInfoField;    // internal static RoutineInfo !name;
 
         /// <summary>
         /// Whether the function is declared conditionally.
@@ -38,17 +38,21 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// A field representing the function index at runtime.
-        /// Lazily associated with name by runtime.
+        /// A field representing the function info at runtime.
+        /// Lazily associated with index by runtime.
         /// </summary>
-        public FieldSymbol IndexField
+        public FieldSymbol RoutineInfoField
         {
             get
             {
-                if (_lazyIndexField == null)
-                    _lazyIndexField = ((IWithSynthesized)_file).GetOrCreateSynthesizedField(this.DeclaringCompilation.CoreTypes.Int32, $"f<{this.Name}>idx", Accessibility.Internal, true);
+                if (_lazyRoutineInfoField == null)
+                {
+                    var synthesized = (IWithSynthesized)_file;
+                    _lazyRoutineInfoField = synthesized
+                        .GetOrCreateSynthesizedField(this.DeclaringCompilation.CoreTypes.RoutineInfo, "!" + this.MetadataName, Accessibility.Internal, true, true);
+                }
 
-                return _lazyIndexField;
+                return _lazyRoutineInfoField;
             }
         }
 

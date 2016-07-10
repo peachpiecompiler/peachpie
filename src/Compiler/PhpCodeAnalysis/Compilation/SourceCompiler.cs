@@ -130,6 +130,10 @@ namespace Pchp.CodeAnalysis
 
             // TODO: synthesized manager
 
+            // initialize RoutineInfo
+            _compilation.SourceSymbolTables.GetFiles().SelectMany(f => f.Functions)
+                .ForEach(f => f.EmitInit(_moduleBuilder));
+
             // __statics.Init
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
                 .ForEach(t => t.EmitInit(_moduleBuilder));

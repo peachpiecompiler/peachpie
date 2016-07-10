@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Creates synthesized field.
         /// </summary>
-        SynthesizedFieldSymbol GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic);
+        SynthesizedFieldSymbol GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly);
 
         /// <summary>
         /// Adds a type member to the class.

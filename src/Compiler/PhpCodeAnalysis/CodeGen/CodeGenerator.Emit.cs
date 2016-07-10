@@ -973,13 +973,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(f != null);
 
-            // <ctx>.DeclareFunction(ref index, name, handle)
+            // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
-            new FieldPlace(null, f.IndexField).EmitLoadAddress(_il);
-            _il.EmitStringConstant(f.PhpName);
-            EmitLoadToken(f, null);
-
-            EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareFunction_intRef_string_method);
+            new FieldPlace(null, f.RoutineInfoField).EmitLoad(_il);
+            
+            EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareFunction_RoutineInfo);
         }
 
         /// <summary>

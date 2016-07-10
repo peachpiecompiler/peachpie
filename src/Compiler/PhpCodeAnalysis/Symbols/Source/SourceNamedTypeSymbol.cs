@@ -360,14 +360,14 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyCctorSymbol;
         }
 
-        SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic)
+        SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly)
         {
             GetMembers();
 
-            var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type);
+            var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
             if (field == null)
             {
-                field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic);
+                field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic, @readonly);
                 _lazyMembers = _lazyMembers.Add(field);
             }
 

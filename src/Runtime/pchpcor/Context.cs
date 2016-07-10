@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace Pchp.Core
 {
-    using TFunctionsMap = Context.HandleMap<RuntimeMethodHandle, Providers.RuntimeMethodHandleComparer, Providers.OrdinalIgnoreCaseStringComparer>;
+    using Reflection;
     using TTypesMap = Context.HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer>;
 
     /// <summary>
@@ -30,7 +30,7 @@ namespace Pchp.Core
 
         protected Context()
         {
-            _functions = new TFunctionsMap(FunctionRedeclared);
+            _functions = new RoutinesTable(RoutinesAppContext.NameToIndex, RoutinesAppContext.AppRoutines, RoutinesAppContext.ContextRoutinesCounter, FunctionRedeclared);
             _types = new TTypesMap(TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
 
@@ -75,7 +75,7 @@ namespace Pchp.Core
         /// <summary>
         /// Map of global functions.
         /// </summary>
-        readonly TFunctionsMap _functions;
+        readonly RoutinesTable _functions;
 
         /// <summary>
         /// Map of global types.
@@ -107,11 +107,8 @@ namespace Pchp.Core
 
             var tscriptinfo = tscript.GetTypeInfo();
 
-            TFunctionsMap.LazyAddReferencedSymbols(() =>
-            {
-                tscriptinfo.GetDeclaredMethod("EnumerateReferencedFunctions")
-                    .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(TFunctionsMap.AddReferencedSymbol) });
-            });
+            tscriptinfo.GetDeclaredMethod("EnumerateReferencedFunctions")
+                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(RoutinesAppContext.DeclareClrRoutine) }); 
 
             tscriptinfo.GetDeclaredMethod("EnumerateScripts")
                 .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(ScriptsMap.DeclareScript) });
@@ -121,19 +118,13 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Declare a runtime function.
+        /// Declare a runtime user function.
         /// </summary>
-        /// <param name="index">Index variable.</param>
-        /// <param name="name">Fuction name.</param>
-        /// <param name="handle">Function runtime handle.</param>
-        public void DeclareFunction(ref int index, string name, RuntimeMethodHandle handle)
-        {
-            _functions.Declare(ref index, name, handle);
-        }
+        public void DeclareFunction(RoutineInfo routine) => _functions.DeclarePhpRoutine(routine);
 
-        public void AssertFunctionDeclared(ref int index, string name, RuntimeMethodHandle handle)
+        public void AssertFunctionDeclared(RoutineInfo routine)
         {
-            if (!_functions.IsDeclared(ref index, name, handle))
+            if (!_functions.IsDeclared(routine))
             {
                 // TODO: ErrCode function is not declared
             }
@@ -142,7 +133,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets declared function with given name. In case of more items they are considered as overloads.
         /// </summary>
-        internal RuntimeMethodHandle[] GetDeclaredFunction(string name) => _functions.TryGetHandle(name);
+        internal RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
 
         /// <summary>
         /// Declare a runtime type.
@@ -167,10 +158,10 @@ namespace Pchp.Core
         /// </summary>
         internal Type[] GetDeclaredType(string name) => _types.TryGetHandle(name);
 
-        void FunctionRedeclared(RuntimeMethodHandle handle)
+        void FunctionRedeclared(RoutineInfo routine)
         {
             // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Function {MethodBase.GetMethodFromHandle(handle).Name} redeclared!");
+            throw new InvalidOperationException($"Function {routine.Name} redeclared!");
         }
 
         void TypeRedeclared(Type handle)

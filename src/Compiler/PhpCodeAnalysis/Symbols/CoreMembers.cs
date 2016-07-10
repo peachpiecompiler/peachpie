@@ -274,6 +274,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly ConstructorsHolder Ctors;
         public readonly ContextHolder Context;
         public readonly DynamicHolder Dynamic;
+        public readonly ReflectionHolder Reflection;
 
         public CoreMethods(CoreTypes types)
         {
@@ -288,6 +289,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Ctors = new ConstructorsHolder(types);
             Context = new ContextHolder(types);
             Dynamic = new DynamicHolder(types);
+            Reflection = new ReflectionHolder(types);
         }
 
         public struct OperatorsHolder
@@ -667,7 +669,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AddScriptReference_TScript = ct.Context.Method("AddScriptReference");
                 Dispose = ct.Context.Method("Dispose");
 
-                DeclareFunction_intRef_string_method = ct.Context.Method("DeclareFunction", ct.Int32, ct.String, ct.RuntimeMethodHandle);
+                DeclareFunction_RoutineInfo = ct.Context.Method("DeclareFunction", ct.RoutineInfo);
                 DeclareType_T_string = ct.Context.Method("DeclareType", ct.String);
 
                 DisableErrorReporting = ct.Context.Method("DisableErrorReporting");
@@ -689,7 +691,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 AddScriptReference_TScript,
-                DeclareFunction_intRef_string_method, DeclareType_T_string,
+                DeclareFunction_RoutineInfo, DeclareType_T_string,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
                 ScriptPath_TScript,
@@ -717,6 +719,16 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 CallFunctionBinder_Create,
                 CallMethodBinder_Create;
+        }
+
+        public struct ReflectionHolder
+        {
+            public ReflectionHolder(CoreTypes ct)
+            {
+                CreateUserRoutine_string_RuntimeMethodHandle = ct.RoutineInfo.Method("CreateUserRoutine", ct.String, ct.RuntimeMethodHandle);
+            }
+
+            public CoreMethod CreateUserRoutine_string_RuntimeMethodHandle;
         }
     }
 }

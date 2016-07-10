@@ -54,24 +54,16 @@ namespace Pchp.Core.Dynamic
             // [] PhpArray <locals>
 
             // resolve overload:
-            var candidates = ctxInstance.GetDeclaredFunction(_nameOpt).Select(MethodBase.GetMethodFromHandle).ToList();
-            if (candidates.Count == 0)
+            var routine = ctxInstance.GetDeclaredFunction(_nameOpt);
+            if (routine == null)
             {
                 // TODO: ErrCode method not found
-                // TODO: __call, __callStatic
                 throw new NotImplementedException("Function not found!");
             }
 
             // TODO: restriction <ctx>.DeclaredFunction[idx] == handle
 
-            candidates = candidates.SelectStatic().ToList();
-            if (candidates.Count == 0)
-            {
-                // TOOD: ErrCode invalid function handle
-                throw new NotImplementedException("Function is not static!");
-            }
-
-            var boundcandidates = candidates.Select(m =>
+            var boundcandidates = routine.Handles.Select(MethodBase.GetMethodFromHandle).Select(m =>
             {
                 try
                 {

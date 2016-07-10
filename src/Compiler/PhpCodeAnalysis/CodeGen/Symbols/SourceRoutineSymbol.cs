@@ -1,4 +1,5 @@
-﻿using Pchp.CodeAnalysis.CodeGen;
+﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -41,6 +42,24 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             return base.GetContextPlace();
+        }
+    }
+
+    partial class SourceFunctionSymbol
+    {
+        internal void EmitInit(Emit.PEModuleBuilder module)
+        {
+            var cctor = module.GetStaticCtorBuilder(_file);
+
+            var field = new FieldPlace(null, this.RoutineInfoField);
+            // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle)
+            field.EmitStorePrepare(cctor);
+
+            cctor.EmitStringConstant(this.QualifiedName.ToString());
+            cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
+            cctor.EmitCall(module, DiagnosticBag.GetInstance(), System.Reflection.Metadata.ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
+
+            field.EmitStore(cctor);
         }
     }
 }
