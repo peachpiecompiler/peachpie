@@ -331,7 +331,7 @@ namespace Pchp.Core
         /// <summary>
         /// The dictionary enumerator according to PHP semantic, allowing to change underlaying collection during the enumeration.
         /// </summary>
-        public class Enumerator : IDictionaryEnumerator, IPhpEnumerator, IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IDisposable
+        public class Enumerator : IDictionaryEnumerator, IPhpEnumerator, IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IEnumerator<PhpValue>, IDisposable
         {
             /// <summary>
             /// Enumerated table.
@@ -443,6 +443,12 @@ namespace Pchp.Core
                 _element = -1;
                 _start = true;
             }
+
+            #endregion
+
+            #region IEnumerator<PhpValue>
+
+            PhpValue IEnumerator<PhpValue>.Current => CurrentValue;
 
             #endregion
 
@@ -566,7 +572,7 @@ namespace Pchp.Core
         /// <summary>
         /// An enumerator representing an empty collection. Single instance can be reused.
         /// </summary>
-        internal sealed class EmptyEnumerator : IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IDictionaryEnumerator, IDisposable // , IPhpEnumerator
+        internal sealed class EmptyEnumerator : IEnumerator<KeyValuePair<IntStringKey, PhpValue>>, IEnumerator<PhpValue>, IDictionaryEnumerator, IDisposable // , IPhpEnumerator
         {
             /// <summary>
             /// Singleton instance of this class. Can be reused.
@@ -584,7 +590,9 @@ namespace Pchp.Core
 
             public KeyValuePair<IntStringKey, PhpValue> Current { get { throw new InvalidOperationException(); } }
 
-            object System.Collections.IEnumerator.Current { get { throw new InvalidOperationException(); } }
+            object IEnumerator.Current { get { throw new InvalidOperationException(); } }
+
+            PhpValue IEnumerator<PhpValue>.Current => PhpValue.Void;
 
             public bool MoveNext()
             {
@@ -2598,6 +2606,16 @@ namespace Pchp.Core
             using (var enumerator = GetFastEnumerator())
                 while (enumerator.MoveNext())
                     array[arrayIndex++] = enumerator.Current;
+        }
+
+        public void CopyTo(PhpValue[] array, int arrayIndex)
+        {
+            if (array == null || arrayIndex < 0 || (arrayIndex + this.Count) > array.Length)
+                throw new ArgumentException();
+
+            using (var enumerator = GetFastEnumerator())
+                while (enumerator.MoveNext())
+                    array[arrayIndex++] = enumerator.CurrentValue;
         }
 
         public int Count

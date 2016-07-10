@@ -13,7 +13,7 @@ namespace Pchp.Core
 	/// The hashtable storing entries with <see cref="string"/> and <see cref="int"/> keys in a manner of PHP.
 	/// </summary>
 	[DebuggerNonUserCode]
-    public class PhpHashtable : IDictionary<IntStringKey, PhpValue>, IList, IDictionary // , ICloneable
+    public class PhpHashtable : IDictionary<IntStringKey, PhpValue>, IList, IList<PhpValue>, IDictionary // , ICloneable
     {
         #region Fields and Properties
 
@@ -647,12 +647,20 @@ namespace Pchp.Core
             if (this.Count == 0)
                 return OrderedDictionary.EmptyEnumerator.SingletonInstance;
 
-            return new OrderedDictionary.Enumerator(this); //(IEnumerator)table.GetEnumerator();
+            return new OrderedDictionary.Enumerator(this);
+        }
+
+        IEnumerator<PhpValue> IEnumerable<PhpValue>.GetEnumerator()
+        {
+            if (this.Count == 0)
+                return OrderedDictionary.EmptyEnumerator.SingletonInstance;
+
+            return new OrderedDictionary.Enumerator(this);
         }
 
         #endregion
 
-        #region ICollection Members
+        #region ICollection, ICollection<PhpValue> Members
 
         /// <summary>Retrieves the number of items in this instance.</summary>
         public virtual int Count { get { return table.Count; } }
@@ -668,9 +676,31 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="array">The one-dimensional array.</param>
         /// <param name="index">The zero-based index in array at which copying begins.</param>
-        public void CopyTo(Array/*!*/ array, int index)
+        public void CopyTo(Array/*!*/ array, int index) => table.CopyTo(array, index);
+
+        void ICollection<PhpValue>.CopyTo(PhpValue[] array, int arrayIndex) => table.CopyTo(array, arrayIndex);
+
+        void ICollection<PhpValue>.Add(PhpValue item) => Add(item);
+
+        bool ICollection<PhpValue>.Contains(PhpValue item)
         {
-            ((ICollection)table).CopyTo(array, index);
+            using (var e = GetFastEnumerator())
+            {
+                while (e.MoveNext())
+                {
+                    if (e.CurrentValue == item)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        bool ICollection<PhpValue>.Remove(PhpValue item)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -900,7 +930,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region IList Members
+        #region IList, IList<PhpValue> Members
 
         /// <summary>
         /// Adds an entry into the table at its logical end. The key is generated automatically.
@@ -933,17 +963,32 @@ namespace Pchp.Core
             //return 0;
         }
 
-        public void RemoveAt(int index)
+        void IList.RemoveAt(int index)
         {
             throw new NotImplementedException();
         }
 
-        public void Insert(int index, object value)
+        void IList<PhpValue>.RemoveAt(int index)
         {
             throw new NotImplementedException();
         }
 
-        public int IndexOf(object value)
+        void IList.Insert(int index, object value)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IList<PhpValue>.Insert(int index, PhpValue value)
+        {
+            throw new NotImplementedException();
+        }
+
+        int IList.IndexOf(object value)
+        {
+            throw new NotImplementedException();
+        }
+
+        int IList<PhpValue>.IndexOf(PhpValue value)
         {
             throw new NotImplementedException();
         }
