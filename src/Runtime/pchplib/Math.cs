@@ -881,27 +881,28 @@ namespace Pchp.Library
             /// <summary>
             /// When a number is halfway between two others, it is rounded away from zero.
             /// </summary>
-            //[ImplementsConstant("PHP_ROUND_HALF_UP")]
             HalfUp = 1,
 
             /// <summary>
             /// When a number is halfway between two others, it is rounded to the zero.
             /// </summary>
-            //[ImplementsConstant("PHP_ROUND_HALF_DOWN")]
             HalfDown = 2,
 
             /// <summary>
             /// When a number is halfway between two others, it is rounded toward the nearest even number.
             /// </summary>
-            //[ImplementsConstant("PHP_ROUND_HALF_EVEN")]
             HalfEven = 3,
 
             /// <summary>
             /// When a number is halfway between two others, it is rounded toward the nearest odd number.
             /// </summary>
-            //[ImplementsConstant("PHP_ROUND_HALF_ODD")]
             HalfOdd = 4,
         }
+
+        public const int PHP_ROUND_HALF_UP = (int)RoundMode.HalfUp;
+        public const int PHP_ROUND_HALF_DOWN = (int)RoundMode.HalfDown;
+        public const int PHP_ROUND_HALF_EVEN = (int)RoundMode.HalfEven;
+        public const int PHP_ROUND_HALF_ODD = (int)RoundMode.HalfOdd;
 
         #region Round Helpers
 
@@ -1179,29 +1180,29 @@ namespace Pchp.Library
         /// </summary>
         public static long min(long a, long b) => Math.Min(a, b);
 
-  //      /// <summary>
-  //      /// Find highest value.
-  //      /// If the first and only parameter is an array, max() returns the highest value in that array. If at least two parameters are provided, max() returns the biggest of these values.
-  //      /// </summary>
-  //      /// <param name="numbers">An array containing the values or values separately.</param>
-  //      /// <returns>max() returns the numerically highest of the parameter values. If multiple values can be considered of the same size, the one that is listed first will be returned.
-  //      /// When max() is given multiple arrays, the longest array is returned. If all the arrays have the same length, max() will use lexicographic ordering to find the return value.
-  //      /// When given a string it will be cast as an integer when comparing.</returns>
-		//public static PhpValue max(params PhpValue[] numbers)
-  //      {
-  //          return GetExtreme(numbers, true);
-  //      }
+        /// <summary>
+        /// Find highest value.
+        /// If the first and only parameter is an array, max() returns the highest value in that array. If at least two parameters are provided, max() returns the biggest of these values.
+        /// </summary>
+        /// <param name="numbers">An array containing the values or values separately.</param>
+        /// <returns>max() returns the numerically highest of the parameter values. If multiple values can be considered of the same size, the one that is listed first will be returned.
+        /// When max() is given multiple arrays, the longest array is returned. If all the arrays have the same length, max() will use lexicographic ordering to find the return value.
+        /// When given a string it will be cast as an integer when comparing.</returns>
+		public static PhpValue max(params PhpValue[] numbers)
+        {
+            return GetExtreme(numbers, true);
+        }
 
-  //      /// <summary>
-  //      /// Find lowest value.
-  //      /// If the first and only parameter is an array, min() returns the lowest value in that array. If at least two parameters are provided, min() returns the smallest of these values.
-  //      /// </summary>
-  //      /// <param name="numbers">An array containing the values or values separately.</param>
-  //      /// <returns>min() returns the numerically lowest of the parameter values.</returns>
-		//public static PhpValue min(params PhpValue[] numbers)
-  //      {
-  //          return GetExtreme(numbers, false);
-  //      }
+        /// <summary>
+        /// Find lowest value.
+        /// If the first and only parameter is an array, min() returns the lowest value in that array. If at least two parameters are provided, min() returns the smallest of these values.
+        /// </summary>
+        /// <param name="numbers">An array containing the values or values separately.</param>
+        /// <returns>min() returns the numerically lowest of the parameter values.</returns>
+		public static PhpValue min(params PhpValue[] numbers)
+        {
+            return GetExtreme(numbers, false);
+        }
 
         internal static PhpValue GetExtreme(PhpValue[] numbers, bool maximum)
         {
@@ -1229,11 +1230,10 @@ namespace Pchp.Library
 
                 while (enumerator.MoveNext())
                 {
-                    throw new NotImplementedException();    // once we implement generic value comparer
-                    //if ((PhpComparer.Default.Compare(o, ex) * fact) > 0)
-                    //{
-                    //    ex = enumerator.Current;
-                    //}
+                    if (Comparison.Compare(enumerator.Current, ex) * fact > 0)
+                    {
+                        ex = enumerator.Current;
+                    }
                 }
             }
             else
