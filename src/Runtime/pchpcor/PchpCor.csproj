@@ -52,6 +52,7 @@
     <Compile Include="Output.cs" />
     <Compile Include="PhpArray.cs" />
     <Compile Include="PhpArray.DebuggerTypeProxy.cs" />
+    <Compile Include="PhpCallback.cs" />
     <Compile Include="PhpHashtable.cs" />
     <Compile Include="PhpValue.DebuggerTypeProxy.cs" />
     <Compile Include="Resources\ErrResources.Designer.cs">
