@@ -29,9 +29,7 @@ namespace Pchp.Library
                 return _generator;
             }
         }
-#if !SILVERLIGHT
         [ThreadStatic]
-#endif
         private static Random _generator;   // TODO: move to Context
 
         /// <summary>
@@ -46,6 +44,7 @@ namespace Pchp.Library
                 return _mtGenerator;
             }
         }
+        [ThreadStatic]
         private static MersenneTwister _mtGenerator;    // TODO: move to Context
 
         #endregion
