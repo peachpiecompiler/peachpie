@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,6 +39,7 @@ namespace Pchp.Core
 
         #region PhpCallbacks
 
+        [DebuggerDisplay("{_lazyResolved,nq}()")]
         sealed class CallableCallback : PhpCallback
         {
             public CallableCallback(PhpCallable callable)
@@ -52,6 +54,7 @@ namespace Pchp.Core
             }
         }
 
+        [DebuggerDisplay("{_function,nq}()")]
         sealed class FunctionCallback : PhpCallback
         {
             /// <summary>
@@ -67,6 +70,7 @@ namespace Pchp.Core
             protected override PhpCallable BindCore(Context ctx) => ctx.GetDeclaredFunction(_function)?.PhpCallable;
         }
 
+        [DebuggerDisplay("{_class,nq}::{_method,nq}()")]
         sealed class MethodCallback : PhpCallback
         {
             readonly string _class, _method;
@@ -85,6 +89,7 @@ namespace Pchp.Core
             }
         }
 
+        [DebuggerDisplay("[{_item1,nq}, {_item2,nq}]()")]
         sealed class ArrayCallback : PhpCallback
         {
             readonly PhpValue _item1, _item2;
@@ -103,6 +108,7 @@ namespace Pchp.Core
             }
         }
 
+        [DebuggerDisplay("invalid callback")]
         sealed class InvalidCallback : PhpCallback
         {
             public InvalidCallback()

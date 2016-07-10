@@ -38,6 +38,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_EnsureAlias = typeof(PhpValue).GetMethod("EnsureAlias", Types.Empty);
             public static MethodInfo PhpValue_ToClass = typeof(PhpValue).GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_AsArray = typeof(PhpValue).GetMethod("AsArray", Types.Empty);
+            public static MethodInfo PhpValue_AsCallable = typeof(PhpValue).GetMethod("AsCallable", Types.Empty);
             public static MethodInfo PhpValue_ToString_Context = typeof(PhpValue).GetMethod("ToString", typeof(Context));
 
             public static MethodInfo PhpArray_ToClass = typeof(PhpArray).GetMethod("ToClass", Types.Empty);
