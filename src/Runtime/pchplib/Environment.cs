@@ -31,5 +31,7 @@ namespace Pchp.Library
         public const object NULL = null;
         public const bool TRUE = true;
         public const bool FALSE = false;
+
+        public static readonly string PHP_EOL = System.Environment.NewLine;
     }
 }

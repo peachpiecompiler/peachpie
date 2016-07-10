@@ -74,6 +74,8 @@ namespace Pchp.Core
         {
             readonly string _class, _method;
 
+            // TODO: caller (to resolve accessibility)
+
             public MethodCallback(string @class, string method)
             {
                 _class = @class;
@@ -89,6 +91,8 @@ namespace Pchp.Core
         sealed class ArrayCallback : PhpCallback
         {
             readonly PhpValue _item1, _item2;
+
+            // TODO: caller (to resolve accessibility)
 
             public ArrayCallback(PhpValue item1, PhpValue item2)
             {
