@@ -123,11 +123,11 @@ namespace Pchp.Core.Dynamic
                 }
 
                 //
-                args.Add(Dynamic.ConvertExpression.Bind(Expression.ArrayIndex(ps[1], Expression.Constant(source_index++, typeof(int))), p.ParameterType));
+                args.Add(ConvertExpression.Bind(Expression.ArrayIndex(ps[1], Expression.Constant(source_index++, typeof(int))), p.ParameterType));
             }
 
             // invoke target
-            var invocation = Dynamic.ConvertExpression.Bind(Expression.Call(target, args), typeof(PhpValue));
+            var invocation = ConvertExpression.Bind(Expression.Call(target, args), typeof(PhpValue));
 
             // compile & create delegate
             var lambda = Expression.Lambda<PhpCallable>(invocation, target.Name, true, ps);

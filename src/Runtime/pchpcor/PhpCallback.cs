@@ -150,7 +150,7 @@ namespace Pchp.Core
         private PhpCallable BindNew(Context ctx)
         {
             var resolved = BindCore(ctx)
-                ?? new PhpCallable((_ctx, _args) => PhpValue.Null);  // TODO: cache // TODO: report call to missing function
+                ?? new PhpCallable((_ctx, _args) => PhpValue.False);  // TODO: cache // TODO: report call to missing function
 
             _lazyResolved = resolved;
 

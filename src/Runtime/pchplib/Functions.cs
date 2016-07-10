@@ -48,7 +48,7 @@ namespace Pchp.Library
             if (args != null && args.Count != 0)
             {
                 args_array = new PhpValue[args.Count];
-                ((IList<PhpValue>)args).CopyTo(args_array, 0);
+                args.CopyValuesTo(args_array, 0);
             }
             else
             {

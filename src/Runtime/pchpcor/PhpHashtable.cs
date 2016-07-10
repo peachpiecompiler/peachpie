@@ -1419,22 +1419,11 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Copy values of this array into 
+        /// Copy values of this array into single dimensional array.
         /// </summary>
         /// <param name="dst"></param>
         /// <param name="offset"></param>
-        public void CopyValuesTo(object[]/*!*/dst, int offset)
-        {
-            Debug.Assert(dst != null);
-            Debug.Assert(dst.Length - offset >= this.Count);
-            Debug.Assert(offset >= 0);
-
-            using (var enumerator = this.GetFastEnumerator())
-                while (enumerator.MoveNext())
-                {
-                    dst[offset++] = enumerator.CurrentValue;
-                }
-        }
+        public void CopyValuesTo(PhpValue[]/*!*/dst, int offset) => table.CopyTo(dst, offset);
 
         #endregion
 
