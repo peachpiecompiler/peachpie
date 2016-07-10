@@ -435,6 +435,18 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Call
+
+        /// <summary>
+        /// Call a function by its name dynamically.
+        /// </summary>
+        /// <param name="function">Function name valid within current runtime context.</param>
+        /// <param name="arguments">Arguments to be passed to the function call.</param>
+        /// <returns>Returns value given from the function call.</returns>
+        public PhpValue Call(string function, params PhpValue[] arguments) => PhpCallback.Create(function).Invoke(this, arguments);
+
+        #endregion
+
         #region Error Reporting
 
         /// <summary>
