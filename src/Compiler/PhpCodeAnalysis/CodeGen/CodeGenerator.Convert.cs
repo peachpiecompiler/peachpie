@@ -560,6 +560,17 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             Debug.Assert(to != CoreTypes.PhpArray && to != CoreTypes.PhpString && to != CoreTypes.PhpAlias);
 
+            if (to == CoreTypes.IPhpCallable)
+            {
+                // (IPhpCallable)
+                if (!from.IsEqualToOrDerivedFrom(CoreTypes.IPhpCallable))
+                {
+                    EmitConvertToPhpValue(from, fromHint);
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_PhpValue);
+                }
+                return;
+            }
+
             switch (from.SpecialType)
             {
                 case SpecialType.System_Void:

@@ -368,7 +368,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (value.IsPrimitiveType)
                 {
                     var pname = value.PrimitiveTypeName.Name;
-                    if (pname == QualifiedName.Callable.Name) return GetCallableTypeMask(); // array | object | string
+                    if (pname == QualifiedName.Callable.Name) return GetCallableTypeMask();
                     if (pname == QualifiedName.Array.Name) return GetArrayTypeMask();
                     if (pname == QualifiedName.String.Name) return GetStringTypeMask();
                     if (pname == QualifiedName.Boolean.Name) return GetBooleanTypeMask();
@@ -485,7 +485,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetCallableTypeMask()
         {
-            return GetArrayTypeMask() | GetStringTypeMask() | GetTypeMask(QualifiedName.SystemObject, true);
+            return GetPrimitiveTypeRefMask(TypeRefFactory.CallableTypeRef);
         }
 
         /// <summary>

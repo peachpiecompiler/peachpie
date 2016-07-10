@@ -141,7 +141,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region AsObject, AsArray, ToObject
+        #region AsObject, AsArray, ToObject, AsCallable
 
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
@@ -157,6 +157,11 @@ namespace Pchp.Core
         /// Converts given value to a class object.
         /// </summary>
         public static object ToClass(PhpValue value) => value.ToClass();
+
+        /// <summary>
+        /// Gets value as a callable object that can be invoked dynamically.
+        /// </summary>
+        public static IPhpCallable AsCallable(PhpValue value) => value.AsCallable();
 
         #endregion
 

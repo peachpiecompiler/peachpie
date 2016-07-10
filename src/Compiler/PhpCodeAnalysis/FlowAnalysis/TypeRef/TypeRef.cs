@@ -208,7 +208,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public bool IsPrimitiveType { get { return true; } }
 
-        public bool IsLambda { get { return false; } }
+        public bool IsLambda { get { return _code == PhpTypeCode.Callable; } }
 
         public IEnumerable<object> Keys { get { return null; } }
 

@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.Utilities
                 if (qname == QualifiedName.Array)
                     return ct.PhpArray;
                 if (qname == QualifiedName.Callable)
-                    throw new NotImplementedException();
+                    return ct.IPhpCallable;
                 if (qname == QualifiedName.Object)
                     return ct.Object;
 

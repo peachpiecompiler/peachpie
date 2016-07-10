@@ -57,6 +57,11 @@ namespace Pchp.Core
         Object,
 
         /// <summary>
+        /// <c>callable</c> object.
+        /// </summary>
+        Callable,
+
+        /// <summary>
         /// <see cref="PhpAlias"/> type.
         /// </summary>
         Alias,

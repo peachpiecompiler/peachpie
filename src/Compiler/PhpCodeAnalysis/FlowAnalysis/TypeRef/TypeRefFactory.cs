@@ -20,6 +20,7 @@ namespace Pchp.CodeAnalysis
         internal static readonly PrimitiveTypeRef/*!*/StringTypeRef = new PrimitiveTypeRef(PhpTypeCode.String);
         internal static readonly PrimitiveTypeRef/*!*/WritableStringRef = new PrimitiveTypeRef(PhpTypeCode.WritableString);
         internal static readonly PrimitiveTypeRef/*!*/ArrayTypeRef = new PrimitiveTypeRef(PhpTypeCode.PhpArray);
+        internal static readonly PrimitiveTypeRef/*!*/CallableTypeRef = new PrimitiveTypeRef(PhpTypeCode.Callable);
 
         #endregion
 
@@ -79,6 +80,7 @@ namespace Pchp.CodeAnalysis
                         if (t.Name == "PhpNumber") return ctx.GetNumberTypeMask();
                         if (t.Name == "PhpString") return ctx.GetWritableStringTypeMask();
                         if (t.Name == "PhpArray") return ctx.GetArrayTypeMask();
+                        if (t.Name == "IPhpCallable") return ctx.GetCallableTypeMask();
                     }
 
                     break;

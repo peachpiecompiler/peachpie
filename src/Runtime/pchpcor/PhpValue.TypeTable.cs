@@ -104,6 +104,13 @@ namespace Pchp.Core
             public virtual object AsObject(ref PhpValue me) => null;
 
             /// <summary>
+            /// Gets callable wrapper for dynamic object invocation.
+            /// </summary>
+            /// <param name="me"></param>
+            /// <returns>Instance of a callable object, cannot be <c>null</c>, can be invalid.</returns>
+            public virtual IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.CreateInvalid();
+
+            /// <summary>
             /// Creates a deep copy of PHP variable.
             /// </summary>
             /// <returns>A deep copy of the value.</returns>
@@ -294,6 +301,7 @@ namespace Pchp.Core
                 return arr;
             }
             public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
+            public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.String);
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
         }
 
@@ -349,6 +357,7 @@ namespace Pchp.Core
                 throw new NotImplementedException();
             }
             public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
+            public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.WritableString.ToString());
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
         }
 
@@ -401,6 +410,14 @@ namespace Pchp.Core
             }
             public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }
             public override object AsObject(ref PhpValue me) => me.Object;
+            public override IPhpCallable AsCallable(ref PhpValue me)
+            {
+                var obj = me.Object;
+
+                if (obj is IPhpCallable) return PhpCallback.Create((IPhpCallable)obj);
+
+                throw new NotImplementedException();    // return PhpCallback.Create(obj);
+            }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
         }
 
@@ -426,6 +443,17 @@ namespace Pchp.Core
             public override PhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
             public override PhpArray AsArray(ref PhpValue me) => me.Array;
+            public override IPhpCallable AsCallable(ref PhpValue me)
+            {
+                if (me.Array.Count == 2)
+                {
+                    throw new NotImplementedException(); // [ class => object|string, methodname => string ]
+                }
+                else
+                {
+                    return base.AsCallable(ref me);
+                }
+            }
             public override string DisplayString(ref PhpValue me) => $"array(length = {me.Array.Count})";
         }
 
@@ -449,6 +477,7 @@ namespace Pchp.Core
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override PhpArray AsArray(ref PhpValue me) => me.Alias.Value.AsArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
+            public override IPhpCallable AsCallable(ref PhpValue me) => me.Alias.Value.AsCallable();
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
         }
     }

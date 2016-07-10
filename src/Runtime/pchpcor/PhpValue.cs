@@ -228,6 +228,12 @@ namespace Pchp.Core
 
         public PhpArray AsArray() => _type.AsArray(ref this);   // TODO: return IPhpArrayOperators
 
+        /// <summary>
+        /// Gets callable wrapper for the object dynamic invocation.
+        /// </summary>
+        /// <returns></returns>
+        public IPhpCallable AsCallable() => _type.AsCallable(ref this);
+
         public object EnsureObject() => _type.EnsureObject(ref this);
 
         public PhpArray EnsureArray() => _type.EnsureArray(ref this);
