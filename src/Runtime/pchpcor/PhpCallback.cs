@@ -40,9 +40,9 @@ namespace Pchp.Core
 
         sealed class CallableCallback : PhpCallback
         {
-            public CallableCallback(PhpCallable routine)
+            public CallableCallback(PhpCallable callable)
             {
-                _lazyResolved = routine;
+                _lazyResolved = callable;
             }
 
             protected override PhpCallable BindCore(Context ctx)
@@ -64,10 +64,7 @@ namespace Pchp.Core
                 _function = function;
             }
 
-            protected override PhpCallable BindCore(Context ctx)
-            {
-                throw new NotImplementedException();
-            }
+            protected override PhpCallable BindCore(Context ctx) => ctx.GetDeclaredFunction(_function)?.PhpCallable;
         }
 
         sealed class MethodCallback : PhpCallback
@@ -113,10 +110,7 @@ namespace Pchp.Core
 
             }
 
-            protected override PhpCallable BindCore(Context ctx)
-            {
-                return null;
-            }
+            protected override PhpCallable BindCore(Context ctx) => null;
         }
 
         #endregion

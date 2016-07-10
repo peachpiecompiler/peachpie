@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,8 +23,13 @@ namespace Pchp.Core.Reflection
         public string Name => _name;
         protected readonly string _name;
 
-        protected PhpCallable _lazyDelegate;
+        /// <summary>
+        /// Gets routine callable delegate.
+        /// </summary>
+        public abstract PhpCallable PhpCallable { get; }
+
         //ulong _aliasedParams; // bit field corresponding to parameters that are passed by reference
+        //_routineFlags;    // routine requirements, accessibility
 
         /// <summary>
         /// Gets routine runtime method handle.
@@ -49,8 +56,50 @@ namespace Pchp.Core.Reflection
     internal class PhpRoutineInfo : RoutineInfo
     {
         RuntimeMethodHandle _handle;
+        PhpCallable _lazyDelegate;
 
         public override RuntimeMethodHandle[] Handles => new RuntimeMethodHandle[] { _handle };
+
+        public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
+
+        PhpCallable BindDelegate()
+        {
+            // TODO: move to Pcph.Core.Dynamic { }
+
+            // (Context ctx, PhpValue[] arguments)
+            var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "arguments") };
+            var target = (MethodInfo)MethodBase.GetMethodFromHandle(_handle);
+            var target_ps = target.GetParameters();
+
+            // Convert( Expression.Call( method, Convert(args[0]), Convert(args[1]), ... ), PhpValue)
+
+            // TODO: bind arguments properly, merge with CallFunctionBinder, handle vararg, handle missing mandatory args
+
+            // bind parameters
+            var args = new List<Expression>(target_ps.Length);
+            int source_index = 0;
+            foreach (var p in target_ps)
+            {
+                if (args.Count == 0)
+                {
+                    if (p.ParameterType == typeof(Context))
+                    {
+                        args.Add(ps[0]);
+                        continue;
+                    }
+                }
+
+                //
+                args.Add(Dynamic.ConvertExpression.Bind(Expression.ArrayIndex(ps[1], Expression.Constant(source_index++, typeof(int))), p.ParameterType));
+            }
+
+            // invoke target
+            var invocation = Dynamic.ConvertExpression.Bind(Expression.Call(target, args), typeof(PhpValue));
+            
+            // compile & create delegate
+            var lambda = Expression.Lambda<PhpCallable>(invocation, target.Name, true, ps);
+            return lambda.Compile();
+        }
 
         public PhpRoutineInfo(string name, RuntimeMethodHandle handle)
             : base(0, name)
@@ -61,9 +110,27 @@ namespace Pchp.Core.Reflection
 
     internal class ClrRoutineInfo : RoutineInfo
     {
+        PhpCallable _lazyDelegate;
+
         RuntimeMethodHandle[] _handles;
 
         public override RuntimeMethodHandle[] Handles => _handles;
+
+        public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
+
+        PhpCallable BindDelegate()
+        {
+            if (_handles.Length == 1)
+            {
+
+            }
+            else
+            {
+                // TODO: runtime overload resolution
+            }
+
+            throw new NotImplementedException();
+        }
 
         public ClrRoutineInfo(int index, string name, RuntimeMethodHandle handle)
             : base(index, name)
