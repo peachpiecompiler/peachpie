@@ -97,5 +97,41 @@ namespace Pchp.Core.Dynamic
         //{
 
         //}
+
+        public static PhpCallable BindToPhpCallable(MethodInfo target)
+        {
+            // (Context ctx, PhpValue[] arguments)
+            var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "arguments") };
+            var target_ps = target.GetParameters();
+
+            // Convert( Expression.Call( method, Convert(args[0]), Convert(args[1]), ... ), PhpValue)
+
+            // TODO: bind arguments properly, merge with CallFunctionBinder, handle vararg, handle missing mandatory args
+
+            // bind parameters
+            var args = new List<Expression>(target_ps.Length);
+            int source_index = 0;
+            foreach (var p in target_ps)
+            {
+                if (args.Count == 0)
+                {
+                    if (p.ParameterType == typeof(Context))
+                    {
+                        args.Add(ps[0]);
+                        continue;
+                    }
+                }
+
+                //
+                args.Add(Dynamic.ConvertExpression.Bind(Expression.ArrayIndex(ps[1], Expression.Constant(source_index++, typeof(int))), p.ParameterType));
+            }
+
+            // invoke target
+            var invocation = Dynamic.ConvertExpression.Bind(Expression.Call(target, args), typeof(PhpValue));
+
+            // compile & create delegate
+            var lambda = Expression.Lambda<PhpCallable>(invocation, target.Name, true, ps);
+            return lambda.Compile();
+        }
     }
 }
