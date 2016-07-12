@@ -414,8 +414,8 @@ namespace Pchp.Core
             {
                 var obj = me.Object;
 
-                if (obj is IPhpCallable) return PhpCallback.Create((IPhpCallable)obj);
-
+                if (obj is IPhpCallable) return (IPhpCallable)obj;
+                
                 throw new NotImplementedException();    // return PhpCallback.Create(obj);
             }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");

@@ -86,15 +86,7 @@ namespace Pchp.Core.Reflection
 
         PhpCallable BindDelegate()
         {
-            if (_handles.Length == 1)
-            {
-                return Dynamic.BinderHelpers.BindToPhpCallable((MethodInfo)MethodBase.GetMethodFromHandle(_handles[0]));
-            }
-            else
-            {
-                // TODO: runtime overload resolution
-                throw new NotImplementedException("Runtime overload resolution.");
-            }
+            return Dynamic.BinderHelpers.BindToPhpCallable(Handles.Select(MethodBase.GetMethodFromHandle).ToArray());                    
         }
 
         public ClrRoutineInfo(int index, string name, RuntimeMethodHandle handle)

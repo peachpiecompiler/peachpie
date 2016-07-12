@@ -79,14 +79,6 @@ namespace Pchp.Core.Dynamic
         }
 
         /// <summary>
-        /// Gets value indicating the parameter is a special context parameter.
-        /// </summary>
-        static bool IsContextParameter(ParameterInfo p)
-        {
-            return p.Position == 0 && p.ParameterType == typeof(Context);
-        }
-
-        /// <summary>
         /// Gets value indicating the parameter is a special late static bound parameter.
         /// </summary>
         static bool IsStaticBoundParameter(ParameterInfo p)
@@ -100,17 +92,6 @@ namespace Pchp.Core.Dynamic
         static bool IsLocalsParameter(ParameterInfo p)
         {
             return p.ParameterType == typeof(PhpArray) && p.Name == "<locals>";
-        }
-
-        /// <summary>
-        /// Gets value indicating the parameter for variable parameters count.
-        /// </summary>
-        static bool IsParams(ParameterInfo[] parameters, ParameterInfo p)
-        {
-            return
-                p.Position == parameters.Length - 1 &&
-                p.ParameterType.IsArray &&
-                p.GetCustomAttribute<ParamArrayAttribute>() != null;
         }
 
         public class ArgumentsBindingResult
@@ -149,7 +130,7 @@ namespace Pchp.Core.Dynamic
                 {
                     // special parameters:
 
-                    if (IsContextParameter(p))
+                    if (p.IsContextParameter())
                     {
                         result.Add(ctx);
                         continue;
@@ -169,7 +150,7 @@ namespace Pchp.Core.Dynamic
                 }
 
                 // params
-                if (IsParams(ps, p))
+                if (p.IsParamsParameter())
                 {
                     Debug.Assert(p.Position == ps.Length - 1);
                     Debug.Assert(p.ParameterType.HasElementType); // => Array

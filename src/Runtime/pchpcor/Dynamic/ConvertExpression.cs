@@ -10,8 +10,60 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Dynamic
 {
+    /// <summary>
+    /// Conversion value used for overload resolution.
+    /// </summary>
+    [Flags]
+    public enum ConversionCost : byte
+    {
+        /// <summary>
+        /// No conversion is needed. Best case.
+        /// </summary>
+        Pass = 0,
+
+        /// <summary>
+        /// Conversion using implicit cast without loosing precision.
+        /// </summary>
+        ImplicitCast = 1,
+
+        /// <summary>
+        /// Conversion using explicit cast that may loose precision.
+        /// </summary>
+        LoosingPrecision = 2,
+
+        /// <summary>
+        /// Conversion is possible but the value is lost and warning should be generated.
+        /// </summary>
+        Warning = 4,
+
+        /// <summary>
+        /// Too many arguments provided. Arguments will be omitted.
+        /// </summary>
+        TooManyArgs = 8,
+
+        /// <summary>
+        /// Missing mandatory arguments, default values will be used instead.
+        /// </summary>
+        MissingArgs = 16,
+
+        /// <summary>
+        /// Conversion does not exist.
+        /// </summary>
+        NoConversion = 32,
+
+        /// <summary>
+        /// Unspecified error.
+        /// </summary>
+        Error = 128,
+    }
+
+    /// <summary>
+    /// Helper methods for converting expressions.
+    /// </summary>
     internal static class ConvertExpression
     {
+        #region Bind
+
         public static Expression Bind(DynamicMetaObject arg, ref int cost, ref BindingRestrictions restrictions, Type target)
         {
             var result = Bind(arg.Expression, target);
@@ -43,6 +95,12 @@ namespace Pchp.Core.Dynamic
             return result;
         }
 
+        /// <summary>
+        /// Creates expression that converts <paramref name="arg"/> to <paramref name="target"/> type.
+        /// </summary>
+        /// <param name="arg">Source expression to be converted.</param>
+        /// <param name="target">Target type.</param>
+        /// <returns>Expression converting <paramref name="arg"/> to <paramref name="target"/> type.</returns>
         public static Expression Bind(Expression arg, Type target)
         {
             if (arg.Type == target)
@@ -59,6 +117,7 @@ namespace Pchp.Core.Dynamic
 
             //
             if (target == typeof(long)) return BindToLong(arg);
+            if (target == typeof(int)) return Expression.Convert(BindToLong(arg), target);
             if (target == typeof(double)) return BindToDouble(arg);
             if (target == typeof(string)) return BindToString(arg);
             if (target == typeof(bool)) return BindToBool(arg);
@@ -159,6 +218,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(double)) return Expression.Call(typeof(PhpNumber).GetMethod("Create", Cache.Types.Double), expr);
             if (source == typeof(void)) return VoidAsConstant(expr, PhpNumber.Default, typeof(PhpNumber));
             if (source == typeof(PhpNumber)) return expr;
+            if (source == typeof(PhpValue)) return Expression.Convert(expr, typeof(PhpNumber));
 
             throw new NotImplementedException(source.FullName);
         }
@@ -244,5 +304,164 @@ namespace Pchp.Core.Dynamic
 
             return Expression.Block(expr, constant);
         }
+
+        #endregion
+
+        #region BindCost
+
+        /// <summary>
+        /// Creates expression that calculates cost of conversion from <paramref name="arg"/> to type <paramref name="target"/>.
+        /// In some cases, returned expression is a constant and can be used in compile time.
+        /// </summary>
+        /// <param name="arg">Expression to be converted.</param>
+        /// <param name="target">Target type.</param>
+        /// <returns>Expression calculating the cost of conversion.</returns>
+        public static Expression BindCost(Expression arg, Type target)
+        {
+            if (arg == null || target == null)
+                throw new ArgumentNullException();
+
+            var t = arg.Type;
+            if (t == target)
+                return Expression.Constant(ConversionCost.Pass);
+
+            if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
+
+            //
+            throw new NotImplementedException($"costof({t} -> {target})");
+        }
+
+        static Expression BindCostFromValue(Expression arg, Type target)
+        {
+            Debug.Assert(arg.Type == typeof(PhpValue));
+
+            // constant cases
+            if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.Pass);
+
+            //
+            if (!target.GetTypeInfo().IsValueType)
+            {
+                // ...
+            }
+
+            // fallback
+            return Expression.Call(typeof(CostOf).GetMethod("To" + target.Name, arg.Type), arg);
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// Runtime routines that calculates cost of conversion.
+    /// </summary>
+    public static class CostOf
+    {
+        /// <summary>
+        /// Gets minimal value of given operands.
+        /// </summary>
+        public static ConversionCost Min(ConversionCost a, ConversionCost b) => (a < b) ? a : b;
+
+        public static ConversionCost Or(ConversionCost a, ConversionCost b) => a | b;
+
+        #region CostOf
+
+        public static ConversionCost ToInt32(PhpValue value) => ToInt64(value);
+
+        public static ConversionCost ToInt64(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                    return ConversionCost.Pass;
+
+                case PhpTypeCode.Boolean:
+                    return ConversionCost.ImplicitCast;
+
+                case PhpTypeCode.Double:
+                case PhpTypeCode.WritableString:
+                case PhpTypeCode.String:
+                    return ConversionCost.LoosingPrecision;
+
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.Warning;
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
+        public static ConversionCost ToString(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Boolean:
+                case PhpTypeCode.Double:
+                case PhpTypeCode.Object:
+                    return ConversionCost.ImplicitCast;
+
+                case PhpTypeCode.WritableString:
+                case PhpTypeCode.String:
+                    return ConversionCost.Pass;
+
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.Warning;
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
+        public static ConversionCost ToDouble(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Boolean:
+                    return ConversionCost.ImplicitCast;
+
+                case PhpTypeCode.Double:
+                    return ConversionCost.Pass;
+
+                case PhpTypeCode.WritableString:
+                case PhpTypeCode.String:
+                    return ConversionCost.LoosingPrecision;
+
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.Warning;
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
+        public static ConversionCost ToPhpNumber(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Double:
+                    return ConversionCost.Pass;
+
+                case PhpTypeCode.Boolean:
+                    return ConversionCost.ImplicitCast;
+
+                case PhpTypeCode.WritableString:
+                case PhpTypeCode.String:
+                    return ConversionCost.LoosingPrecision;
+
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.Warning;
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
+        #endregion
     }
 }

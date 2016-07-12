@@ -46,6 +46,7 @@
     <Compile Include="Context.ScriptsMap.cs" />
     <Compile Include="Context.Statics.cs" />
     <Compile Include="Dynamic\CallFunctionBinder.cs" />
+    <Compile Include="Dynamic\OverloadBinder.cs" />
     <Compile Include="Dynamic\OverloadResolver.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="OrderedDictionary.cs" />

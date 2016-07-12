@@ -191,6 +191,18 @@ namespace Pchp.Core
 
         public static explicit operator double(PhpValue value) => value.ToDouble();
 
+        public static explicit operator PhpNumber(PhpValue value)
+        {
+            PhpNumber result;
+            if ((value.ToNumber(out result) & Convert.NumberInfo.Unconvertible) != 0)
+            {
+                // TODO: ErrCode
+                throw new InvalidCastException();
+            }
+
+            return result;
+        }
+
         public static explicit operator PhpArray(PhpValue value) => value.AsArray();
 
         public override bool Equals(object obj) => Equals((obj is PhpValue) ? (PhpValue)obj : FromClr(obj));
