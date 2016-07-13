@@ -124,7 +124,7 @@ namespace Pchp.Core.Dynamic
             return null;
         }
 
-        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, Expression argsarray, Expression expr_argc)
+        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args)
         {
             Debug.Assert(method is MethodInfo);
 
@@ -148,26 +148,13 @@ namespace Pchp.Core.Dynamic
                 }
                 else
                 {
-                    Expression expr_arg = Expression.ArrayIndex(argsarray, Expression.Constant(argi));
-
                     if (p.IsParamsParameter())
                     {
                         throw new NotImplementedException();
                     }
                     else
                     {
-                        expr_arg = ConvertExpression.Bind(expr_arg, p.ParameterType);
-
-                        if (p.IsMandatoryParameter())
-                        {
-                            boundargs[i] = expr_arg;
-                        }
-                        else
-                        {
-                            // (argc >= argi) ? arg : default(T)
-                            boundargs[i] = Expression.Condition(Expression.GreaterThan(expr_argc, Expression.Constant(argi)),
-                                expr_arg, Expression.Constant(p.HasDefaultValue ? p.DefaultValue : null, p.ParameterType));
-                        }
+                        boundargs[i] = args.BindArgument(argi, p);
                     }
 
                     //
@@ -190,7 +177,7 @@ namespace Pchp.Core.Dynamic
             var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
 
             // invoke targets
-            var invocation = OverloadBinder.BindOverloadCall<PhpValue>(targets, ps[0], ps[1]);
+            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), null, targets, ps[0], ps[1]);
             Debug.Assert(invocation.Type == typeof(PhpValue));
 
             // compile & create delegate

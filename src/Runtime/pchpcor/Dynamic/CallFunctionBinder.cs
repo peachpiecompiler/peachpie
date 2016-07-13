@@ -63,40 +63,13 @@ namespace Pchp.Core.Dynamic
 
             // TODO: restriction <ctx>.DeclaredFunction[idx] == handle
 
-            var boundcandidates = routine.Handles.Select(MethodBase.GetMethodFromHandle).Select(m =>
-            {
-                try
-                {
-                    return m.TryBindArguments(argsList, ctx.Expression);
-                }
-                catch
-                {
-                    return null;
-                }
-            })
-            .Where(x => x != null)
-            //.Where(x => x.ErrCode == 0)
-            .OrderBy(binding => binding.Cost)
-            .ToList();
+            var methods = routine.Handles.Select(MethodBase.GetMethodFromHandle).ToArray();
 
-            if (boundcandidates.Count == 0)
-            {
-                // TODO: ErrCode no overload with specified arguments
-                throw new NotImplementedException("Cannot bind arguments to parameters!");
-            }
-
-            if (boundcandidates.Count > 1 && boundcandidates[0].Cost == boundcandidates[1].Cost)
-            {
-                // TODO: ErrCode ambiguous call
-                throw new NotImplementedException("Call is ambiguous!");
-            }
-
-            var bound = boundcandidates[0];
-            restrictions = restrictions.Merge(bound.Restrictions);
-            var invocation = Expression.Call((MethodInfo)bound.Method, bound.Arguments);
+            var expr_args = argsList.Select(x => x.Expression).ToArray();
+            var invocation = OverloadBinder.BindOverloadCall(_returnType, null, methods, ctx.Expression, expr_args);
 
             // TODO: by alias or by value
-            return new DynamicMetaObject(ConvertExpression.Bind(invocation, _returnType), restrictions);
+            return new DynamicMetaObject(invocation, restrictions);
         }
 
         #endregion

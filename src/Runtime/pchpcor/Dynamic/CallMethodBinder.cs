@@ -95,46 +95,17 @@ namespace Pchp.Core.Dynamic
                 throw new NotImplementedException("Method not accessible!");
             }
 
-            var boundcandidates = candidates.Select(m =>
-            {
-                try
-                {
-                    return m.TryBindArguments(argsList, ctx.Expression);
-                }
-                catch
-                {
-                    return null;
-                }
-            })
-            .Where(x => x != null)
-            //.Where(x => x.ErrCode == 0)
-            .OrderBy(binding => binding.Cost)
-            .ToList();
-
-            if (boundcandidates.Count == 0)
-            {
-                // TODO: ErrCode no overload with specified arguments
-                throw new NotImplementedException("Cannot bind arguments to parameters!");
-            }
-
-            if (boundcandidates.Count > 1 && boundcandidates[0].Cost == boundcandidates[1].Cost)
-            {
-                // TODO: ErrCode ambiguous call
-                throw new NotImplementedException("Call is ambiguous!");
-            }
-
             if (!target_expr.Type.GetTypeInfo().IsSealed)
             {
                 restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
                 target_expr = Expression.Convert(target_expr, runtime_type);
             }
 
-            var bound = boundcandidates[0];
-            restrictions = restrictions.Merge(bound.Restrictions);
-            var invocation = Expression.Call(target_expr, (MethodInfo)bound.Method, bound.Arguments);
+            var expr_args = argsList.Select(x => x.Expression).ToArray();
+            var invocation = OverloadBinder.BindOverloadCall(_returnType, target_expr, candidates.ToArray(), ctx.Expression, expr_args);
 
             // TODO: by alias or by value
-            return new DynamicMetaObject(ConvertExpression.Bind(invocation, _returnType), restrictions);
+            return new DynamicMetaObject(invocation, restrictions);
         }
 
         #endregion

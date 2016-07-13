@@ -34,7 +34,7 @@ namespace Pchp.Core.Dynamic
         /// Helper object managing access to arguments.
         /// Different for arguments passed as an array of values and arguments passed through callsite binder, where their count and types are known.
         /// </summary>
-        abstract class ArgumentsBinder
+        public abstract class ArgumentsBinder
         {
             #region CostOfKey, CostOfValue
 
@@ -294,6 +294,8 @@ namespace Pchp.Core.Dynamic
 
                 public override Expression BindArgument(int srcarg, ParameterInfo targetparam = null)
                 {
+                    Debug.Assert(srcarg >= 0);
+
                     var expr_arg = Expression.ArrayIndex(_argsarray, Expression.Constant(srcarg));
 
                     return (targetparam == null)
@@ -311,6 +313,48 @@ namespace Pchp.Core.Dynamic
                     }
 
                     return body;
+                }
+            }
+
+            #endregion
+
+            #region ArgsBinder
+
+            internal sealed class ArgsBinder : ArgumentsBinder
+            {
+                readonly Expression[] _args;
+
+                public ArgsBinder(Expression[] args)
+                {
+                    _args = args;
+                }
+
+                public override Expression BindArgsCount() => Expression.Constant(_args.Length, typeof(int));
+
+                public override Expression BindArgument(int srcarg, ParameterInfo targetparam = null)
+                {
+                    Debug.Assert(srcarg >= 0);
+
+                    if (srcarg < _args.Length)
+                    {
+                        var expr = _args[srcarg];
+
+                        return (targetparam != null)
+                            ? ConvertExpression.Bind(expr, targetparam.ParameterType)
+                            : expr;
+                    }
+                    else
+                    {
+                        if (targetparam != null)
+                        {
+                            if (targetparam.HasDefaultValue)
+                                return Expression.Constant(targetparam.DefaultValue, targetparam.ParameterType);
+
+                            return Expression.Default(targetparam.ParameterType);
+                        }
+
+                        return Expression.Default(typeof(PhpValue));
+                    }
                 }
             }
 
@@ -378,14 +422,16 @@ namespace Pchp.Core.Dynamic
         /// <param name="method">Method to calculate the cost.</param>
         /// <param name="argsarray">Expression representing array of arguments to be passed to method.</param>
         /// <returns></returns>
-        private static Expression BindCostOf(MethodBase method, ArgumentsBinder args)
+        static Expression BindCostOf(MethodBase method, ArgumentsBinder args, out ConversionCost worstCost)
         {
             if (method == null || args == null)
                 throw new ArgumentNullException();
 
             var ps = method.GetParameters();
 
-            // method( {implicit}, {mandatory}, {optional} )
+            worstCost = ConversionCost.Pass;
+
+            // method( {implicit}, {mandatory}, {optional+params} )
 
             var nimplicit = ImplicitParametersCount(ps);
             var nmandatory = MandatoryParametersCount(ps, nimplicit);
@@ -422,6 +468,12 @@ namespace Pchp.Core.Dynamic
                 expr_costs.Add(args.BindCostOfTooManyArgs(nmandatory + noptional));
             }
 
+            // collect known costs
+            foreach (var cc in expr_costs.OfType<ConstantExpression>().Select(x => (ConversionCost)x.Value))
+            {
+                worstCost |= cc;
+            }
+
             var expr_combined_cost = BinaryOrCosts(expr_costs);
             block_cost.Add(Expression.Assign(var_result, expr_combined_cost));  // result = CostOf1 | .. | CostOfN;
 
@@ -441,8 +493,6 @@ namespace Pchp.Core.Dynamic
                 if (p.IsParamsParameter())
                 {
                     Debug.Assert(expr_optcheck == null && hasparams);    // last parameter
-
-                    hasparams = true;
 
                     // for (int o = io + nmandatory; o < argc; o++) result |= CostOf(argv[o], p.ElementType)
                     throw new NotImplementedException();
@@ -477,17 +527,20 @@ namespace Pchp.Core.Dynamic
             return Expression.Block(typeof(ConversionCost), new[] { var_result }, body);
         }
 
-        private static Expression BindCostOf(MethodBase method, Expression[] args)
+        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression argsarray)
         {
-            throw new NotImplementedException();
+            return BindOverloadCall(treturn, target, methods, ctx, new ArgumentsBinder.ArgsArrayBinder(argsarray));
         }
 
-        public static Expression BindOverloadCall<TReturn>(MethodBase[] methods, Expression ctx, Expression argsarray)
+        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression[] args)
         {
-            if (methods == null || argsarray == null)
-                throw new ArgumentNullException();
+            return BindOverloadCall(treturn, target, methods, ctx, new ArgumentsBinder.ArgsBinder(args));
+        }
 
-            Debug.Assert(argsarray.Type.IsArray);
+        static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, ArgumentsBinder args)
+        {
+            if (methods == null || args == null)
+                throw new ArgumentNullException();
 
             // overload resolution
 
@@ -505,9 +558,8 @@ namespace Pchp.Core.Dynamic
 
             var locals = new List<ParameterExpression>();
             var body = new List<Expression>();
-            var args = new ArgumentsBinder.ArgsArrayBinder(argsarray);
-
-            Expression invoke = Expression.Default(typeof(TReturn));
+            
+            Expression invoke = Expression.Default(treturn);
 
             //
             if (methods.Length == 0)
@@ -518,7 +570,7 @@ namespace Pchp.Core.Dynamic
             if (methods.Length == 1)
             {
                 // just this piece of code is enough:
-                invoke = ConvertExpression.Bind(BinderHelpers.BindToCall(null, methods[0], ctx, argsarray, args.BindArgsCount()), typeof(TReturn));
+                invoke = ConvertExpression.Bind(BinderHelpers.BindToCall(target, methods[0], ctx, args), treturn);
             }
             else
             {
@@ -528,10 +580,10 @@ namespace Pchp.Core.Dynamic
                 // costX = CostOf(mX)
                 foreach (var m in methods)
                 {
-                    //ConversionCost bestcost;
-                    var expr_cost = BindCostOf(m, args);
-                    //if (bestcost >= ConversionCost.NoConversion)
-                    //    continue;   // we don't have to try this overload // won't happen in dynamic call
+                    ConversionCost worstcost;
+                    var expr_cost = BindCostOf(m, args, out worstcost);
+                    if (worstcost >= ConversionCost.NoConversion)
+                        continue;   // we don't have to try this overload // won't happen in dynamic call   // TODO: restart ArgumentsBinder and bind costs without skipped methods
 
                     var cost_var = Expression.Variable(typeof(ConversionCost), "cost" + mlist.Count);
 
@@ -560,7 +612,7 @@ namespace Pchp.Core.Dynamic
                 {
                     // (best == costI) mI(...) : ...
 
-                    var mcall = ConvertExpression.Bind(BinderHelpers.BindToCall(null, mlist[i], ctx, argsarray, args.BindArgsCount()), typeof(TReturn));
+                    var mcall = ConvertExpression.Bind(BinderHelpers.BindToCall(target, mlist[i], ctx, args), treturn);
                     invoke = Expression.Condition(Expression.Equal(expr_best, clist[i]), mcall, invoke);
                 }
             }
@@ -572,7 +624,7 @@ namespace Pchp.Core.Dynamic
             body.Add(invoke);
 
             // return Block { ... ; invoke; }
-            return Expression.Block(typeof(TReturn), locals, body);
+            return Expression.Block(treturn, locals, body);
         }
     }
 }

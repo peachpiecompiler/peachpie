@@ -86,7 +86,7 @@ namespace Pchp.Core.Reflection
 
         PhpCallable BindDelegate()
         {
-            return Dynamic.BinderHelpers.BindToPhpCallable(Handles.Select(MethodBase.GetMethodFromHandle).ToArray());                    
+            return Dynamic.BinderHelpers.BindToPhpCallable(Handles.Select(MethodBase.GetMethodFromHandle).ToArray());
         }
 
         public ClrRoutineInfo(int index, string name, RuntimeMethodHandle handle)
