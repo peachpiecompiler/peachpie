@@ -37,19 +37,24 @@ namespace Pchp.Core.Dynamic
         Warning = 4,
 
         /// <summary>
+        /// Implicit value will be used, argument is missing and parameter is optional.
+        /// </summary>
+        DefaultValue = 8,
+
+        /// <summary>
         /// Too many arguments provided. Arguments will be omitted.
         /// </summary>
-        TooManyArgs = 8,
+        TooManyArgs = 16,
 
         /// <summary>
         /// Missing mandatory arguments, default values will be used instead.
         /// </summary>
-        MissingArgs = 16,
+        MissingArgs = 32,
 
         /// <summary>
         /// Conversion does not exist.
         /// </summary>
-        NoConversion = 32,
+        NoConversion = 64,
 
         /// <summary>
         /// Unspecified error.
