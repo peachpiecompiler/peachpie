@@ -159,6 +159,8 @@ namespace Pchp.Core.Dynamic
 
             #region Fields
 
+            readonly protected Expression _ctx;
+
             /// <summary>
             /// Block of code that initializes temporary variables created by subsequent calls to binding methods.
             /// </summary>
@@ -174,6 +176,11 @@ namespace Pchp.Core.Dynamic
 
             #endregion
 
+            protected ArgumentsBinder(Expression ctx)
+            {
+                _ctx = ctx;
+            }
+
             #region ArgumentsBinder Methods
 
             /// <summary>
@@ -186,6 +193,11 @@ namespace Pchp.Core.Dynamic
             /// The expression can be constant in case of default argument value.
             /// </summary>
             public abstract Expression BindArgument(int srcarg, ParameterInfo targetparam = null);
+
+            /// <summary>
+            /// Bind arguments to array of parameters.
+            /// </summary>
+            public abstract Expression BindParams(int fromarg, Type element_type);
 
             /// <summary>
             /// Gets expression representing cost of argument binding operation.
@@ -327,11 +339,11 @@ namespace Pchp.Core.Dynamic
                 ParameterExpression _lazyArgc = null;
 
                 public ArgsArrayBinder(Expression ctx, Expression argsarray)
+                    :base(ctx)
                 {
                     if (argsarray == null) throw new ArgumentNullException();
                     if (!argsarray.Type.IsArray) throw new ArgumentException();
 
-                    _ctx = ctx;
                     _argsarray = argsarray;
                 }
 
@@ -373,6 +385,17 @@ namespace Pchp.Core.Dynamic
                         : ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);
                 }
 
+                public override Expression BindParams(int fromarg, Type element_type)
+                {
+                    /* IF (fromarg < argc)
+                     *   Array.Copy(values, argv, fromarg)
+                     * ELSE
+                     *   Array.Empty()
+                     */
+
+                    throw new NotImplementedException();
+                }
+
                 public override Expression CreatePreamble(List<ParameterExpression> variables)
                 {
                     var body = base.CreatePreamble(variables);
@@ -393,11 +416,10 @@ namespace Pchp.Core.Dynamic
             internal sealed class ArgsBinder : ArgumentsBinder
             {
                 readonly Expression[] _args;
-                readonly Expression _ctx;
-
+                
                 public ArgsBinder(Expression ctx, Expression[] args)
+                    :base(ctx)
                 {
-                    _ctx = ctx;
                     _args = args;
                 }
 
@@ -427,6 +449,22 @@ namespace Pchp.Core.Dynamic
 
                         return Expression.Default(typeof(PhpValue));
                     }
+                }
+
+                public override Expression BindParams(int fromarg, Type element_type)
+                {
+                    var values = new List<Expression>();
+                    for (int i = fromarg; i < _args.Length; i++)
+                    {
+                        values.Add(ConvertExpression.Bind(_args[i], element_type, _ctx));
+                    }
+                    
+                    if (values.Count == 0)
+                    {
+                        // TODO: return static singleton with empty array
+                    }
+
+                    return Expression.NewArrayInit(element_type, values);
                 }
 
                 public override Expression BindCostOf(int srcarg, Type ptype, bool ismandatory)
@@ -492,17 +530,20 @@ namespace Pchp.Core.Dynamic
                 {
                     hasparams = true;
 
+                    var element_type = p.ParameterType.GetElementType();
+
                     // for (int o = io + nmandatory; o < argc; o++) result |= CostOf(argv[o], p.ElementType)
                     if (argc_opt.HasValue)
                     {
                         for (; im < argc_opt.Value; im++)
                         {
-                            expr_costs.Add(args.BindCostOf(im, p.ParameterType.GetElementType(), false));
+                            expr_costs.Add(args.BindCostOf(im, element_type, false));
                         }
                     }
                     else
                     {
-                        throw new NotImplementedException();
+                        // just return DefaultValue (which is greater than Warning), for performance reasons
+                        expr_costs.Add(Expression.Constant(ConversionCost.DefaultValue));
                     }
 
                     break;
