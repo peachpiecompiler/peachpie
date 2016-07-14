@@ -14,7 +14,7 @@ namespace Pchp.Core.Dynamic
     /// Conversion value used for overload resolution.
     /// </summary>
     [Flags]
-    public enum ConversionCost : byte
+    public enum ConversionCost : ushort
     {
         /// <summary>
         /// No conversion is needed. Best case.
@@ -22,44 +22,49 @@ namespace Pchp.Core.Dynamic
         Pass = 0,
 
         /// <summary>
+        /// The operation is costly but the value is kept without loosing precision.
+        /// </summary>
+        PassCostly = 1,
+
+        /// <summary>
         /// Conversion using implicit cast without loosing precision.
         /// </summary>
-        ImplicitCast = 1,
+        ImplicitCast = 2,
 
         /// <summary>
         /// Conversion using explicit cast that may loose precision.
         /// </summary>
-        LoosingPrecision = 2,
+        LoosingPrecision = 4,
 
         /// <summary>
         /// Conversion is possible but the value is lost and warning should be generated.
         /// </summary>
-        Warning = 4,
+        Warning = 8,
 
         /// <summary>
         /// Implicit value will be used, argument is missing and parameter is optional.
         /// </summary>
-        DefaultValue = 8,
+        DefaultValue = 16,
 
         /// <summary>
         /// Too many arguments provided. Arguments will be omitted.
         /// </summary>
-        TooManyArgs = 16,
+        TooManyArgs = 32,
 
         /// <summary>
         /// Missing mandatory arguments, default values will be used instead.
         /// </summary>
-        MissingArgs = 32,
+        MissingArgs = 64,
 
         /// <summary>
         /// Conversion does not exist.
         /// </summary>
-        NoConversion = 64,
+        NoConversion = 128,
 
         /// <summary>
         /// Unspecified error.
         /// </summary>
-        Error = 128,
+        Error = 256,
     }
 
     /// <summary>
@@ -291,7 +296,7 @@ namespace Pchp.Core.Dynamic
 
             if (source != typeof(void))
             {
-                return Expression.Block(expr);
+                return Expression.Block(typeof(void), expr);
             }
             else
             {
@@ -331,6 +336,8 @@ namespace Pchp.Core.Dynamic
                 return Expression.Constant(ConversionCost.Pass);
 
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
+            if (t == typeof(double)) return Expression.Constant(BindCostFromDouble(arg, target));
+            if (t == typeof(long)) return Expression.Constant(BindCostFromLong(arg, target));
 
             //
             throw new NotImplementedException($"costof({t} -> {target})");
@@ -351,6 +358,36 @@ namespace Pchp.Core.Dynamic
 
             // fallback
             return Expression.Call(typeof(CostOf).GetMethod("To" + target.Name, arg.Type), arg);
+        }
+
+        static ConversionCost BindCostFromDouble(Expression arg, Type target)
+        {
+            Debug.Assert(arg.Type == typeof(double));
+
+            if (target == typeof(double)) return (ConversionCost.Pass);
+            if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
+            if (target == typeof(long)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
+            if (target == typeof(string)) return (ConversionCost.ImplicitCast);
+            if (target == typeof(PhpArray)) return (ConversionCost.Warning);
+
+            throw new NotImplementedException($"costof(double -> {target})");
+        }
+
+        static ConversionCost BindCostFromLong(Expression arg, Type target)
+        {
+            Debug.Assert(arg.Type == typeof(double));
+
+            if (target == typeof(long)) return (ConversionCost.Pass);
+            if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
+            if (target == typeof(double)) return (ConversionCost.ImplicitCast);
+            if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
+            if (target == typeof(string)) return (ConversionCost.ImplicitCast);
+            if (target == typeof(PhpArray)) return (ConversionCost.Warning);
+
+            throw new NotImplementedException($"costof(long -> {target})");
         }
 
         #endregion

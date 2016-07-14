@@ -129,8 +129,7 @@ namespace Pchp.Core.Dynamic
             Debug.Assert(method is MethodInfo);
 
             // TODO: handle vararg, handle missing mandatory args
-            // TODO: check argc if needed
-
+            
             var ps = method.GetParameters();
             var boundargs = new Expression[ps.Length];
 
