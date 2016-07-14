@@ -23,6 +23,7 @@ namespace Pchp.Core.Dynamic
             public static Type[] PhpValue = new Type[] { typeof(PhpValue) };
             public static Type[] PhpAlias = new Type[] { typeof(PhpAlias) };
             public static Type[] PhpNumber = new Type[] { typeof(PhpNumber) };
+            public static Type[] PhpArray = new Type[] { typeof(PhpArray) };
         }
 
         public static class Operators

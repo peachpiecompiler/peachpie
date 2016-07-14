@@ -147,9 +147,26 @@ namespace Pchp.Core.Dynamic
                 }
                 else
                 {
-                    if (p.IsParamsParameter())
+                    if (i == ps.Length - 1 && p.IsParamsParameter())
                     {
-                        throw new NotImplementedException();
+                        var element_type = p.ParameterType.GetElementType();
+
+                        var expr_argc = args.BindArgsCount();
+                        int? argc_opt = (expr_argc is ConstantExpression) ? (int?)((ConstantExpression)expr_argc).Value : null;
+                        if (argc_opt.HasValue)
+                        {
+                            var paramvalues = new Expression[argc_opt.Value - argi];
+                            for (int pvi = 0; pvi < paramvalues.Length; pvi++)
+                            {
+                                paramvalues[pvi] = ConvertExpression.Bind(args.BindArgument(argi + pvi), element_type, ctx);
+                            }
+                            boundargs[i] = Expression.NewArrayInit(element_type, paramvalues);
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();
+                        }
+                        break;
                     }
                     else
                     {

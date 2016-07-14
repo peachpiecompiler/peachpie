@@ -221,6 +221,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpString)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpString), expr);
             if (source == typeof(PhpNumber)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpNumber), expr);
             if (source == typeof(PhpValue)) return expr;
+            if (source == typeof(PhpArray)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpArray), expr);
 
             if (source.GetTypeInfo().IsValueType)
             {
@@ -312,7 +313,7 @@ namespace Pchp.Core.Dynamic
 
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
             if (t == typeof(double)) return Expression.Constant(BindCostFromDouble(arg, target));
-            if (t == typeof(long)) return Expression.Constant(BindCostFromLong(arg, target));
+            if (t == typeof(long) || t == typeof(int)) return Expression.Constant(BindCostFromLong(arg, target));
 
             //
             throw new NotImplementedException($"costof({t} -> {target})");
@@ -320,8 +321,6 @@ namespace Pchp.Core.Dynamic
 
         static Expression BindCostFromValue(Expression arg, Type target)
         {
-            Debug.Assert(arg.Type == typeof(PhpValue));
-
             // constant cases
             if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.Pass);
 
@@ -337,8 +336,6 @@ namespace Pchp.Core.Dynamic
 
         static ConversionCost BindCostFromDouble(Expression arg, Type target)
         {
-            Debug.Assert(arg.Type == typeof(double));
-
             if (target == typeof(double)) return (ConversionCost.Pass);
             if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
             if (target == typeof(long)) return (ConversionCost.LoosingPrecision);
@@ -352,8 +349,6 @@ namespace Pchp.Core.Dynamic
 
         static ConversionCost BindCostFromLong(Expression arg, Type target)
         {
-            Debug.Assert(arg.Type == typeof(double));
-
             if (target == typeof(long)) return (ConversionCost.Pass);
             if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
             if (target == typeof(double)) return (ConversionCost.ImplicitCast);

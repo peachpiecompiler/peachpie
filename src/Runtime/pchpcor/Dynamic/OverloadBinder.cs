@@ -54,7 +54,7 @@ namespace Pchp.Core.Dynamic
                     const_value = combine(const_value, (T)((ConstantExpression)const_ops[i]).Value);
                 }
 
-                expr1 = Expression.Constant(const_value);
+                expr1 = !object.Equals(const_value, default(T)) ? Expression.Constant(const_value) : null;
             }
 
             // combine expressions
@@ -78,7 +78,7 @@ namespace Pchp.Core.Dynamic
             if (expr2 == null)
                 return expr1;
 
-            return Expression.Or(expr1, expr2);
+            return Expression.Or(expr1, expr2, or_method);
         }
 
         static Expression CombineCosts(IList<Expression> ops) => BinaryOr<ConversionCost>(ops, CostOf.Or, typeof(CostOf).GetMethod("Or", typeof(ConversionCost), typeof(ConversionCost)));
@@ -177,27 +177,6 @@ namespace Pchp.Core.Dynamic
             #region ArgumentsBinder Methods
 
             /// <summary>
-            /// Gets combined known conversion costs.
-            /// </summary>
-            public ConversionCost WorstConversionCost
-            {
-                get
-                {
-                    var result = ConversionCost.Pass;
-
-                    foreach (var c in _tmpvars.Values
-                        .Select(x => x.Expression as ConstantExpression)
-                        .Where(x => x != null && x.Value is ConversionCost)
-                        .Select(x => (ConversionCost)x.Value))
-                    {
-                        result |= c;
-                    }
-
-                    return result;
-                }
-            }
-
-            /// <summary>
             /// Gets expression (dynamic or constant) representing arguments count.
             /// </summary>
             public abstract Expression BindArgsCount();
@@ -212,10 +191,9 @@ namespace Pchp.Core.Dynamic
             /// Gets expression representing cost of argument binding operation.
             /// The expression can be constant.
             /// </summary>
-            public virtual Expression BindCostOf(int srcarg, ParameterInfo targetparam)
+            public virtual Expression BindCostOf(int srcarg, Type ptype, bool ismandatory)
             {
-                var ismandatory = targetparam.IsMandatoryParameter();
-                var key = new TmpVarKey() { Priority = 100, ArgIndex = srcarg, TargetTypeOpt = targetparam.ParameterType, Prefix = "costOf" + (ismandatory ? "" : "Opt") };
+                var key = new TmpVarKey() { Priority = 100, ArgIndex = srcarg, TargetTypeOpt = ptype, Prefix = "costOf" + (ismandatory ? "" : "Opt") };
 
                 // lookup cache
                 TmpVarValue value;
@@ -224,7 +202,7 @@ namespace Pchp.Core.Dynamic
                     // bind cost expression
                     value = new TmpVarValue();
 
-                    var expr_cost = ConvertExpression.BindCost(BindArgument(srcarg), targetparam.ParameterType);
+                    var expr_cost = ConvertExpression.BindCost(BindArgument(srcarg), ptype);
                     if (expr_cost is ConstantExpression)
                     {
                         value.Expression = expr_cost;
@@ -451,15 +429,15 @@ namespace Pchp.Core.Dynamic
                     }
                 }
 
-                public override Expression BindCostOf(int srcarg, ParameterInfo targetparam)
+                public override Expression BindCostOf(int srcarg, Type ptype, bool ismandatory)
                 {
                     if (srcarg < _args.Length)
                     {
-                        return base.BindCostOf(srcarg, targetparam);
+                        return base.BindCostOf(srcarg, ptype, ismandatory);
                     }
                     else
                     {
-                        return Expression.Constant(targetparam.IsMandatoryParameter() ? ConversionCost.MissingArgs : ConversionCost.DefaultValue);
+                        return Expression.Constant(ismandatory ? ConversionCost.MissingArgs : ConversionCost.DefaultValue);
                     }
                 }
             }
@@ -515,11 +493,23 @@ namespace Pchp.Core.Dynamic
                     hasparams = true;
 
                     // for (int o = io + nmandatory; o < argc; o++) result |= CostOf(argv[o], p.ElementType)
-                    throw new NotImplementedException();
+                    if (argc_opt.HasValue)
+                    {
+                        for (; im < argc_opt.Value; im++)
+                        {
+                            expr_costs.Add(args.BindCostOf(im, p.ParameterType.GetElementType(), false));
+                        }
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    break;
                 }
 
-                Debug.Assert(im < nmandatory || !p.IsMandatoryParameter());
-                expr_costs.Add(args.BindCostOf(im, p));
+                //
+                expr_costs.Add(args.BindCostOf(im, p.ParameterType, im < nmandatory));
             }
 
             if (hasparams == false)
