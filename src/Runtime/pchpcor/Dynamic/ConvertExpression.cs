@@ -73,45 +73,14 @@ namespace Pchp.Core.Dynamic
     internal static class ConvertExpression
     {
         #region Bind
-
-        public static Expression Bind(DynamicMetaObject arg, ref int cost, ref BindingRestrictions restrictions, Type target)
-        {
-            var result = Bind(arg.Expression, target);
-
-            if (arg.Expression != result)
-            {
-                switch (result.NodeType)
-                {
-                    case ExpressionType.Call:
-                        cost += 2;
-                        break;
-                    case ExpressionType.Convert:
-                        // TODO: conversion cost
-
-                        // int -> long is not considered as a conversion
-                        if (arg.Expression.Type == typeof(int) && target == typeof(long))
-                            break;
-
-                        //
-                        goto default;
-                    case ExpressionType.Constant:
-                        break;
-                    default:
-                        cost++;
-                        break;
-                }
-            }
-
-            return result;
-        }
-
+        
         /// <summary>
         /// Creates expression that converts <paramref name="arg"/> to <paramref name="target"/> type.
         /// </summary>
         /// <param name="arg">Source expression to be converted.</param>
         /// <param name="target">Target type.</param>
         /// <returns>Expression converting <paramref name="arg"/> to <paramref name="target"/> type.</returns>
-        public static Expression Bind(Expression arg, Type target)
+        public static Expression Bind(Expression arg, Type target, Expression ctx = null)
         {
             if (arg.Type == target)
                 return arg;
@@ -125,11 +94,17 @@ namespace Pchp.Core.Dynamic
                     return arg;
             }
 
+            if (ctx == null)
+            {
+                Debug.Assert(false, "Provide context Expression");
+                ctx = Expression.Constant(null, typeof(Context));
+            }
+
             //
             if (target == typeof(long)) return BindToLong(arg);
             if (target == typeof(int)) return Expression.Convert(BindToLong(arg), target);
             if (target == typeof(double)) return BindToDouble(arg);
-            if (target == typeof(string)) return BindToString(arg);
+            if (target == typeof(string)) return BindToString(arg, ctx);
             if (target == typeof(bool)) return BindToBool(arg);
             if (target == typeof(PhpNumber)) return BindToNumber(arg);
             if (target == typeof(PhpValue)) return BindToValue(arg);
@@ -191,7 +166,7 @@ namespace Pchp.Core.Dynamic
             throw new NotImplementedException(source.FullName);
         }
 
-        private static Expression BindToString(Expression expr)
+        private static Expression BindToString(Expression expr, Expression ctx)
         {
             var source = expr.Type;
 
@@ -204,7 +179,7 @@ namespace Pchp.Core.Dynamic
                 return expr;
 
             if (source == typeof(PhpValue))
-                return Expression.Call(expr, Cache.Operators.PhpValue_ToString_Context, Expression.Constant(null, typeof(Context))); // TODO: Context
+                return Expression.Call(expr, Cache.Operators.PhpValue_ToString_Context, ctx);
 
             if (source == typeof(void))
                 return VoidAsConstant(expr, string.Empty, typeof(string));

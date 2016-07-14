@@ -14,6 +14,8 @@ namespace Pchp.Core.Dynamic
     /// </summary>
     internal static class OverloadBinder
     {
+        #region Helpers
+
         /// <summary>
         /// Gets count of implicit parameters.
         /// Such parameters are passed by runtime automatically and not read from given arguments.
@@ -27,6 +29,61 @@ namespace Pchp.Core.Dynamic
         {
             return ps.Skip(from).TakeWhile(BinderHelpers.IsMandatoryParameter).Count();
         }
+
+        static Expression BinaryOr<T>(IList<Expression> ops, Func<T, T, T> combine, MethodInfo or_method)
+        {
+            var const_ops = new List<Expression>();
+            var expr_ops = new List<Expression>();
+
+            Debug.Assert(ops.All(c => c.Type == typeof(T)));
+
+            foreach (var op in ops)
+            {
+                ((op.NodeType == ExpressionType.Constant) ? const_ops : expr_ops).Add(op);
+            }
+
+            Expression expr1 = null;
+            Expression expr2 = null;
+
+            // combine constants
+            if (const_ops.Count != 0)
+            {
+                T const_value = default(T);
+                for (int i = 0; i < const_ops.Count; i++)
+                {
+                    const_value = combine(const_value, (T)((ConstantExpression)const_ops[i]).Value);
+                }
+
+                expr1 = Expression.Constant(const_value);
+            }
+
+            // combine expressions
+            if (expr_ops.Count != 0)
+            {
+                expr2 = expr_ops[0];
+
+                for (int i = 1; i < expr_ops.Count; i++)
+                {
+                    expr2 = Expression.Or(expr2, expr_ops[i], or_method);
+                }
+            }
+
+            //
+            if (expr1 == null && expr2 == null)
+                return Expression.Constant(default(T));
+
+            if (expr1 == null)
+                return expr2;
+
+            if (expr2 == null)
+                return expr1;
+
+            return Expression.Or(expr1, expr2);
+        }
+
+        static Expression CombineCosts(IList<Expression> ops) => BinaryOr<ConversionCost>(ops, CostOf.Or, typeof(CostOf).GetMethod("Or", typeof(ConversionCost), typeof(ConversionCost)));
+
+        #endregion
 
         #region ArgumentsBinder
 
@@ -282,15 +339,21 @@ namespace Pchp.Core.Dynamic
                 readonly Expression _argsarray;
 
                 /// <summary>
+                /// Context expression.
+                /// </summary>
+                readonly Expression _ctx;
+
+                /// <summary>
                 /// Lazily initialized variable with arguments count.
                 /// </summary>
                 ParameterExpression _lazyArgc = null;
 
-                public ArgsArrayBinder(Expression argsarray)
+                public ArgsArrayBinder(Expression ctx, Expression argsarray)
                 {
                     if (argsarray == null) throw new ArgumentNullException();
                     if (!argsarray.Type.IsArray) throw new ArgumentException();
 
+                    _ctx = ctx;
                     _argsarray = argsarray;
                 }
 
@@ -329,7 +392,7 @@ namespace Pchp.Core.Dynamic
 
                     return (targetparam == null)
                         ? value.Expression
-                        : ConvertExpression.Bind(value.Expression, targetparam.ParameterType);
+                        : ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);
                 }
 
                 public override Expression CreatePreamble(List<ParameterExpression> variables)
@@ -352,9 +415,11 @@ namespace Pchp.Core.Dynamic
             internal sealed class ArgsBinder : ArgumentsBinder
             {
                 readonly Expression[] _args;
+                readonly Expression _ctx;
 
-                public ArgsBinder(Expression[] args)
+                public ArgsBinder(Expression ctx, Expression[] args)
                 {
+                    _ctx = ctx;
                     _args = args;
                 }
 
@@ -369,7 +434,7 @@ namespace Pchp.Core.Dynamic
                         var expr = _args[srcarg];
 
                         return (targetparam != null)
-                            ? ConvertExpression.Bind(expr, targetparam.ParameterType)
+                            ? ConvertExpression.Bind(expr, targetparam.ParameterType, _ctx)
                             : expr;
                     }
                     else
@@ -404,73 +469,20 @@ namespace Pchp.Core.Dynamic
 
         #endregion
 
-        static Expression BinaryOr<T>(IList<Expression> ops, Func<T, T, T> combine, MethodInfo or_method)
-        {
-            var const_ops = new List<Expression>();
-            var expr_ops = new List<Expression>();
-
-            Debug.Assert(ops.All(c => c.Type == typeof(T)));
-
-            foreach (var op in ops)
-            {
-                ((op.NodeType == ExpressionType.Constant) ? const_ops : expr_ops).Add(op);
-            }
-
-            Expression expr1 = null;
-            Expression expr2 = null;
-
-            // combine constants
-            if (const_ops.Count != 0)
-            {
-                T const_value = default(T);
-                for (int i = 0; i < const_ops.Count; i++)
-                {
-                    const_value = combine(const_value, (T)((ConstantExpression)const_ops[i]).Value);
-                }
-
-                expr1 = Expression.Constant(const_value);
-            }
-
-            // combine expressions
-            if (expr_ops.Count != 0)
-            {
-                expr2 = expr_ops[0];
-
-                for (int i = 1; i < expr_ops.Count; i++)
-                {
-                    expr2 = Expression.Or(expr2, expr_ops[i], or_method);
-                }
-            }
-
-            //
-            if (expr1 == null && expr2 == null)
-                return Expression.Constant(default(T));
-
-            if (expr1 == null)
-                return expr2;
-
-            if (expr2 == null)
-                return expr1;
-
-            return Expression.Or(expr1, expr2);
-        }
-
-        static Expression CombineCosts(IList<Expression> ops) => BinaryOr<ConversionCost>(ops, CostOf.Or, typeof(CostOf).GetMethod("Or", typeof(ConversionCost), typeof(ConversionCost)));
-
         /// <summary>
         /// Creates expression that computes cost of the method call with given arguments.
         /// </summary>
         /// <param name="method">Method to calculate the cost.</param>
         /// <param name="argsarray">Expression representing array of arguments to be passed to method.</param>
         /// <returns></returns>
-        static Expression BindCostOf(MethodBase method, ArgumentsBinder args, out ConversionCost worstCost)
+        static Expression BindCostOf(MethodBase method, ArgumentsBinder args, out ConversionCost minCost)
         {
             if (method == null || args == null)
                 throw new ArgumentNullException();
 
             var ps = method.GetParameters();
 
-            worstCost = ConversionCost.Pass;
+            minCost = ConversionCost.Pass;
 
             // method( {implicit}, {mandatory}, {optional+params} )
 
@@ -519,7 +531,7 @@ namespace Pchp.Core.Dynamic
             // collect known costs
             foreach (var cc in expr_costs.OfType<ConstantExpression>().Select(x => (ConversionCost)x.Value))
             {
-                worstCost |= cc;
+                minCost |= cc;
             }
 
             //
@@ -532,7 +544,7 @@ namespace Pchp.Core.Dynamic
 
             while (result == null)
             {
-                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsArrayBinder(argsarray));
+                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsArrayBinder(ctx, argsarray));
             }
 
             return result;
@@ -544,11 +556,41 @@ namespace Pchp.Core.Dynamic
 
             while (result == null)
             {
-                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsBinder(args));
+                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsBinder(ctx, args));
             }
             
             return result;
         }
+
+        #region MethodCostInfo
+
+        /// <summary>
+        /// Helper struct containing result of method cost.
+        /// </summary>
+        struct MethodCostInfo
+        {
+            /// <summary>
+            /// Expression determining the cost of method call.
+            /// </summary>
+            public Expression CostExpr;
+
+            /// <summary>
+            /// Method.
+            /// </summary>
+            public MethodBase Method;
+
+            /// <summary>
+            /// Optional. Resolved cost.
+            /// </summary>
+            public ConversionCost? ResolvedCost;
+
+            /// <summary>
+            /// Minimal cost known in compile time.
+            /// </summary>
+            public ConversionCost MinimalCost;
+        }
+
+        #endregion
 
         /// <summary>
         /// Creates expression with overload resolution.
@@ -592,76 +634,103 @@ namespace Pchp.Core.Dynamic
             if (methods.Length == 1)
             {
                 // just this piece of code is enough:
-                invoke = ConvertExpression.Bind(BinderHelpers.BindToCall(target, methods[0], ctx, args), treturn);
+                invoke = ConvertExpression.Bind(BinderHelpers.BindToCall(target, methods[0], ctx, args), treturn, ctx);
             }
             else
             {
-                var mlist = new List<MethodBase>(); // methods to call
-                var clist = new List<ParameterExpression>(); // methods computed cost
-                var resolvedlist = new List<ConversionCost?>(); // methods computed and compile-time resolved costs
-
+                var list = new List<MethodCostInfo>();
+                
                 // costX = CostOf(mX)
                 foreach (var m in methods)
                 {
-                    ConversionCost worstcost;
-                    var expr_cost = BindCostOf(m, args, out worstcost);
-                    if (worstcost >= ConversionCost.NoConversion)
+                    ConversionCost mincost; // minimal cost resolved in compile time
+                    var expr_cost = BindCostOf(m, args, out mincost);
+                    if (mincost >= ConversionCost.NoConversion)
                         continue;   // we don't have to try this overload
 
-                    var cost_var = Expression.Variable(typeof(ConversionCost), "cost" + mlist.Count);
+                    var const_cost = expr_cost as ConstantExpression;
+                    var cost_var = Expression.Variable(typeof(ConversionCost), "cost" + list.Count);
 
-                    body.Add(Expression.Assign(cost_var, expr_cost));   // costX = CostOf(m)
-
-                    mlist.Add(m);
-                    clist.Add(cost_var);
-                    resolvedlist.Add((expr_cost is ConstantExpression) ? (ConversionCost?)((ConstantExpression)expr_cost).Value : null);
-                }
-
-                if (resolvedlist.Count != 0 && resolvedlist.All(c => c.HasValue))
-                {
-                    int best = 0;
-                    for (int i = 1; i < resolvedlist.Count; i++)
+                    if (const_cost == null)
                     {
-                        if (resolvedlist[i].Value < resolvedlist[best].Value)
-                        {
-                            best = i;
-                        }
+                        body.Add(Expression.Assign(cost_var, expr_cost));   // costX = CostOf(m)
                     }
 
-                    mlist = new List<MethodBase>() { methods[best] };
-                    //clist ignored
+                    list.Add(new MethodCostInfo()
+                    {
+                        Method = m,
+                        CostExpr = (Expression)const_cost ?? cost_var,
+                        MinimalCost = mincost,
+                        ResolvedCost = (const_cost != null) ? (ConversionCost?)(ConversionCost)const_cost.Value : null,
+                    });
                 }
 
-                if (mlist.Count < methods.Length)
+                if (list.Count != 0)
+                {
+                    if (list.All(c => c.ResolvedCost.HasValue))
+                    {
+                        int best = 0;
+                        for (int i = 1; i < list.Count; i++)
+                        {
+                            if (list[i].ResolvedCost.Value < list[best].ResolvedCost.Value)
+                            {
+                                best = i;
+                            }
+                        }
+
+                        list = new List<MethodCostInfo>() { list[best] };
+                        //clist ignored
+                    }
+                    else
+                    {
+                        // if minimal cost is greater than some resolved cost, we can reduce it
+                        var minresolved = ConversionCost.Error;
+                        foreach (var c in list.Where(c => c.ResolvedCost.HasValue))
+                            minresolved = CostOf.Min(minresolved, c.ResolvedCost.Value);
+
+                        if (minresolved < ConversionCost.Error)
+                        {
+                            for (int i = list.Count - 1; i >= 0; i--)
+                            {
+                                if (list[i].MinimalCost > minresolved)
+                                {
+                                    list.RemoveAt(i);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (list.Count < methods.Length)
                 {
                     // restart binding with reduced list
-                    methods = mlist.ToArray();
+                    methods = list.Select(l => l.Method).ToArray();
                     return null;
                 }
 
-                Debug.Assert(mlist.Count != 0);
+                Debug.Assert(list.Count != 0);
 
                 // declare costI local variables
-                locals.AddRange(clist);
+                locals.AddRange(list.Select(l => l.CostExpr).OfType<ParameterExpression>());
 
                 // best = Min( cost1, .., costN )
                 var expr_best = Expression.Variable(typeof(ConversionCost), "best");
                 var min_cost_cost = typeof(CostOf).GetMethod("Min", typeof(ConversionCost), typeof(ConversionCost));
-                Expression minexpr = clist[0];
-                for (int i = 1; i < clist.Count; i++)
+                Expression minexpr = list[0].CostExpr;
+                for (int i = 1; i < list.Count; i++)
                 {
-                    minexpr = Expression.Call(min_cost_cost, clist[i], minexpr);
+                    minexpr = Expression.Call(min_cost_cost, list[i].CostExpr, minexpr);
                 }
                 body.Add(Expression.Assign(expr_best, minexpr));
                 locals.Add(expr_best);
 
                 // switch over method costs
-                for (int i = mlist.Count - 1; i >= 0; i--)
+                for (int i = list.Count - 1; i >= 0; i--)
                 {
                     // (best == costI) mI(...) : ...
 
-                    var mcall = ConvertExpression.Bind(BinderHelpers.BindToCall(target, mlist[i], ctx, args), treturn);
-                    invoke = Expression.Condition(Expression.Equal(expr_best, clist[i]), mcall, invoke);
+                    var mcall = ConvertExpression.Bind(BinderHelpers.BindToCall(target, list[i].Method, ctx, args), treturn, ctx);
+                    invoke = Expression.Condition(Expression.Equal(expr_best, list[i].CostExpr), mcall, invoke);
                 }
             }
 
