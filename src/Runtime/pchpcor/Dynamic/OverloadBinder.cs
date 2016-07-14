@@ -159,6 +159,9 @@ namespace Pchp.Core.Dynamic
 
             #region Fields
 
+            /// <summary>
+            /// Context expression. Cannot be <c>null</c>.
+            /// </summary>
             readonly protected Expression _ctx;
 
             /// <summary>
@@ -178,6 +181,7 @@ namespace Pchp.Core.Dynamic
 
             protected ArgumentsBinder(Expression ctx)
             {
+                Debug.Assert(ctx != null);
                 _ctx = ctx;
             }
 
@@ -329,11 +333,6 @@ namespace Pchp.Core.Dynamic
                 readonly Expression _argsarray;
 
                 /// <summary>
-                /// Context expression.
-                /// </summary>
-                readonly Expression _ctx;
-
-                /// <summary>
                 /// Lazily initialized variable with arguments count.
                 /// </summary>
                 ParameterExpression _lazyArgc = null;
@@ -387,13 +386,38 @@ namespace Pchp.Core.Dynamic
 
                 public override Expression BindParams(int fromarg, Type element_type)
                 {
-                    /* IF (fromarg < argc)
+                    /* 
+                     * length = argc - fromarg;
+                     * IF (length > 0)
                      *   Array.Copy(values, argv, fromarg)
                      * ELSE
                      *   Array.Empty()
                      */
 
-                    throw new NotImplementedException();
+                    /*
+                     */
+
+                    var var_length = Expression.Variable(typeof(int), "params_length");
+                    var var_array = Expression.Variable(element_type.MakeArrayType(), "params_array");
+
+                    // static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+                    var array_copy = typeof(Array).GetMethod("Copy", typeof(Array), typeof(int), typeof(Array), typeof(int), typeof(int));
+                    
+                    //
+                    var expr_newarr = Expression.Block(
+                        Expression.Assign(var_array, Expression.NewArrayBounds(element_type, var_length)),  // array = new [length];
+                        Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Expression.Constant(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
+                        var_array
+                        );
+                    var expr_emptyarr = Expression.NewArrayInit(element_type);
+
+                    return Expression.Block(
+                        var_array.Type,
+                        new ParameterExpression[] { var_length, var_array },
+                        Expression.Assign(var_length, Expression.Subtract(BindArgsCount(), Expression.Constant(fromarg))),  // length = argc - fromarg;
+                        Expression.Condition(
+                            Expression.GreaterThan(var_length, Expression.Constant(0)), // return (length > 0) ? newarr : emptyarr;
+                            expr_newarr, expr_emptyarr));
                 }
 
                 public override Expression CreatePreamble(List<ParameterExpression> variables)
@@ -516,7 +540,7 @@ namespace Pchp.Core.Dynamic
              * return result;
              */
 
-            var expr_argc = args.BindArgsCount();
+                    var expr_argc = args.BindArgsCount();
             int? argc_opt = (expr_argc is ConstantExpression) ? (int?)((ConstantExpression)expr_argc).Value : null;
 
             // parameters cost

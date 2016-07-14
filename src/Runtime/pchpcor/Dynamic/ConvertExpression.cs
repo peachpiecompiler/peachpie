@@ -474,6 +474,26 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        public static ConversionCost ToPhpArray(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Double:
+                case PhpTypeCode.Boolean:
+                case PhpTypeCode.WritableString:
+                case PhpTypeCode.String:
+                    return ConversionCost.Warning;
+
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.Pass;
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
         #endregion
     }
 }
