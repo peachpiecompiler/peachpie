@@ -574,6 +574,31 @@ namespace Pchp.CodeAnalysis.CodeGen
             return CoreTypes.PhpValue;
         }
 
+        public void Emit_NewArray(TypeSymbol elementType, BoundExpression[] values)
+        {
+            _il.EmitIntConstant(values.Length);
+            _il.EmitOpCode(ILOpCode.Newarr);
+            EmitSymbolToken(elementType, null);
+
+            if (values.Length != 0)
+            {
+                // new []{ argI, ..., argN }
+                for (int i = 0; i < values.Length; i++)
+                {
+                    _il.EmitOpCode(ILOpCode.Dup);   // <array>
+                    _il.EmitIntConstant(i);         // [i]
+                    EmitConvert(values[i], elementType);
+                    _il.EmitOpCode(ILOpCode.Stelem);
+                    EmitSymbolToken(elementType, null);
+                }
+            }
+            else
+            {
+                // empty array
+                // TODO: use static singleton
+            }
+        }
+
         public void EmitUnset(BoundReferenceExpression expr)
         {
             Debug.Assert(expr != null);
@@ -627,8 +652,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 thisType = null;
             }
 
-            // TODO: varargs
-
             // arguments
             var parameters = method.Parameters;
             int arg_index = 0;      // next argument to be emitted from <arguments>
@@ -638,19 +661,31 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 var p = parameters[param_index];
 
-                // special synthesized parameters
-                if (param_index == 0)
+                // special implicit parameters
+                if (arg_index == 0 && p.IsImplicitlyDeclared)
                 {
                     // <ctx>
-                    if (p.Type == CoreTypes.Context)
+                    if (SpecialParameterSymbol.IsContextParameter(p))
                     {
                         EmitLoadContext();
                         continue;
                     }
                     // TypeCtx, Locals, ...
+                    throw new NotImplementedException();
                 }
 
-                // all arguments loaded
+                // load arguments
+                if (p.IsParams)
+                {
+                    Debug.Assert(p.Type.IsArray());
+
+                    // wrap remaining arguments to array
+                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).ToArray() : new BoundExpression[0];
+                    arg_index += values.Length;
+                    Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
+                    break;  // p is last one
+                }
+
                 if (arg_index < arguments.Length)
                 {
                     EmitConvert(arguments[arg_index++], p.Type); // load argument
@@ -669,7 +704,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // emit remaining not used arguments
-            // TODO: params
             for (; arg_index < arguments.Length; arg_index++)
             {
                 EmitPop(Emit(arguments[arg_index]));

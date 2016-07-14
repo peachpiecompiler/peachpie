@@ -295,15 +295,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 foreach (var p in this.Parameters)
                 {
                     // skip wellknown parameters
-                    if (mandatory == 0)
-                    {
-                        if (p.Type is NamedTypeSymbol && ((NamedTypeSymbol)p.Type).NamespaceName == "Pchp.Core")
-                        {
-                            if (p.Type.Name == "Context") continue;
-                            // ...
-                        }
-                    }
-
+                    if (mandatory == 0 && p.IsImplicitlyDeclared) continue;
                     if (p.HasExplicitDefaultValue) break;
 
                     mandatory++;

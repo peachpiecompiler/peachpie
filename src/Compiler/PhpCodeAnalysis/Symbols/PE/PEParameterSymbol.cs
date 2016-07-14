@@ -566,7 +566,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //}
 
         internal override TypeSymbol Type => _type;
-        
+
         //public override ImmutableArray<CustomModifier> CustomModifiers
         //{
         //    get
@@ -657,9 +657,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                // TODO: Context <ctx>
-
-                return base.IsImplicitlyDeclared;
+                return SpecialParameterSymbol.IsContextParameter(this) || base.IsImplicitlyDeclared;
             }
         }
 
