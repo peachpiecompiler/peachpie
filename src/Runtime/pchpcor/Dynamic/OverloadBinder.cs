@@ -418,21 +418,22 @@ namespace Pchp.Core.Dynamic
                     else
                     {
                         /* newarr = new T[length];
-                         * while (length -->0) newarr[length] = convert(argv[fromarg + length]);
+                         * while (--length >= 0) newarr[length] = convert(argv[fromarg + length]);
                          * lblend: return newarr;
                          */
-                        var lblend = Expression.Label(var_array.Type);
-                        expr_newarr = Expression.Block(lblend.Type,
+                        var lblend = Expression.Label("lblend");
+                        expr_newarr = Expression.Block(var_array.Type,
                             expr_newarr,
                             Expression.Loop(
                                 Expression.IfThenElse(
-                                    Expression.GreaterThan(Expression.PostDecrementAssign(var_length), Expression.Constant(0)),
+                                    Expression.GreaterThanOrEqual(Expression.PreDecrementAssign(var_length), Expression.Constant(0)),
                                     Expression.Assign(
                                         Expression.ArrayAccess(var_array, var_length),
                                         ConvertExpression.Bind(Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length)), element_type)),
-                                    Expression.Break(lblend, var_array)
+                                    Expression.Break(lblend)
                                     )),
-                            Expression.Label(lblend, Expression.Constant(null, lblend.Type)));
+                            Expression.Label(lblend),
+                            var_array);
                     }
 
                     return Expression.Block(
