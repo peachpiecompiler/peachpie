@@ -429,7 +429,7 @@ namespace Pchp.Core.Dynamic
                                     Expression.GreaterThanOrEqual(Expression.PreDecrementAssign(var_length), Expression.Constant(0)),
                                     Expression.Assign(
                                         Expression.ArrayAccess(var_array, var_length),
-                                        ConvertExpression.Bind(Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length)), element_type)),
+                                        ConvertExpression.Bind(Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length)), element_type, _ctx)),
                                     Expression.Break(lblend)
                                     )),
                             Expression.Label(lblend),
