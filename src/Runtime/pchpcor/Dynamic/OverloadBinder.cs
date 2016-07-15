@@ -406,14 +406,22 @@ namespace Pchp.Core.Dynamic
 
                     if (element_type == _argsarray.Type.GetElementType())
                     {
-                        // static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-                        var array_copy = typeof(Array).GetMethod("Copy", typeof(Array), typeof(int), typeof(Array), typeof(int), typeof(int)); // TODO: to cache
+                        if (fromarg == 0)
+                        {
+                            // return argv;
+                            return _argsarray;
+                        }
+                        else
+                        {
+                            // static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+                            var array_copy = typeof(Array).GetMethod("Copy", typeof(Array), typeof(int), typeof(Array), typeof(int), typeof(int)); // TODO: to cache
 
-                        expr_newarr = Expression.Block(
-                            expr_newarr,
-                            Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Expression.Constant(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
-                            var_array
-                            );
+                            expr_newarr = Expression.Block(
+                                expr_newarr,
+                                Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Expression.Constant(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
+                                var_array
+                                );
+                        }
                     }
                     else
                     {
