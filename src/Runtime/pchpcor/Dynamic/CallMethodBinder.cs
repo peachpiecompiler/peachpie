@@ -81,19 +81,6 @@ namespace Pchp.Core.Dynamic
 
             // resolve overload:
             var candidates = runtime_type.SelectCandidates().SelectByName(methodName).ToList();
-            if (candidates.Count == 0)
-            {
-                // TODO: ErrCode method not found
-                // TODO: __call, __callStatic
-                throw new NotImplementedException("Method not found!");
-            }
-
-            candidates = candidates.SelectVisible(_classContext).ToList();
-            if (candidates.Count == 0)
-            {
-                // TOOD: ErrCode method is not accessible
-                throw new NotImplementedException("Method not accessible!");
-            }
 
             if (!target_expr.Type.GetTypeInfo().IsSealed)
             {

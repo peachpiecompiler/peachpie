@@ -96,7 +96,7 @@ namespace Pchp.Core.Dynamic
 
             if (ctx == null)
             {
-                Debug.Assert(false, "Provide context Expression");
+                //Debug.Assert(false, "Provide context Expression");
                 ctx = Expression.Constant(null, typeof(Context));
             }
 
@@ -372,6 +372,11 @@ namespace Pchp.Core.Dynamic
         /// Gets minimal value of given operands.
         /// </summary>
         public static ConversionCost Min(ConversionCost a, ConversionCost b) => (a < b) ? a : b;
+
+        /// <summary>
+        /// Gets maximal value of given operands.
+        /// </summary>
+        public static ConversionCost Max(ConversionCost a, ConversionCost b) => (a > b) ? a : b;
 
         public static ConversionCost Or(ConversionCost a, ConversionCost b) => a | b;
 

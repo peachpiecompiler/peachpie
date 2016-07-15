@@ -400,16 +400,40 @@ namespace Pchp.Core.Dynamic
                     var var_length = Expression.Variable(typeof(int), "params_length");
                     var var_array = Expression.Variable(element_type.MakeArrayType(), "params_array");
 
-                    // static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-                    var array_copy = typeof(Array).GetMethod("Copy", typeof(Array), typeof(int), typeof(Array), typeof(int), typeof(int));
-                    
                     //
-                    var expr_newarr = Expression.Block(
-                        Expression.Assign(var_array, Expression.NewArrayBounds(element_type, var_length)),  // array = new [length];
-                        Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Expression.Constant(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
-                        var_array
-                        );
-                    var expr_emptyarr = Expression.NewArrayInit(element_type);
+                    Expression expr_emptyarr = Expression.NewArrayInit(element_type);
+                    Expression expr_newarr = Expression.Assign(var_array, Expression.NewArrayBounds(element_type, var_length));  // array = new [length];
+
+                    if (element_type == _argsarray.Type.GetElementType())
+                    {
+                        // static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+                        var array_copy = typeof(Array).GetMethod("Copy", typeof(Array), typeof(int), typeof(Array), typeof(int), typeof(int)); // TODO: to cache
+
+                        expr_newarr = Expression.Block(
+                            expr_newarr,
+                            Expression.Call(array_copy, _argsarray, Expression.Constant(fromarg), var_array, Expression.Constant(0), var_length),   // Array.Copy(argv, fromarg, array, 0, length)
+                            var_array
+                            );
+                    }
+                    else
+                    {
+                        /* newarr = new T[length];
+                         * while (length -->0) newarr[length] = convert(argv[fromarg + length]);
+                         * lblend: return newarr;
+                         */
+                        var lblend = Expression.Label(var_array.Type);
+                        expr_newarr = Expression.Block(lblend.Type,
+                            expr_newarr,
+                            Expression.Loop(
+                                Expression.IfThenElse(
+                                    Expression.GreaterThan(Expression.PostDecrementAssign(var_length), Expression.Constant(0)),
+                                    Expression.Assign(
+                                        Expression.ArrayAccess(var_array, var_length),
+                                        ConvertExpression.Bind(Expression.ArrayIndex(_argsarray, Expression.Add(Expression.Constant(fromarg), var_length)), element_type)),
+                                    Expression.Break(lblend, var_array)
+                                    )),
+                            Expression.Label(lblend, Expression.Constant(null, lblend.Type)));
+                    }
 
                     return Expression.Block(
                         var_array.Type,
@@ -637,7 +661,7 @@ namespace Pchp.Core.Dynamic
             /// <summary>
             /// Optional. Resolved cost.
             /// </summary>
-            public ConversionCost? ResolvedCost;
+            public ConversionCost? ResolvedCost => (CostExpr is ConstantExpression) ? (ConversionCost?)(ConversionCost)((ConstantExpression)CostExpr).Value : null;
 
             /// <summary>
             /// Minimal cost known in compile time.
@@ -716,33 +740,31 @@ namespace Pchp.Core.Dynamic
                         Method = m,
                         CostExpr = (Expression)const_cost ?? cost_var,
                         MinimalCost = mincost,
-                        ResolvedCost = (const_cost != null) ? (ConversionCost?)(ConversionCost)const_cost.Value : null,
                     });
                 }
 
                 if (list.Count != 0)
                 {
+                    var minresolved = ConversionCost.Error;
+                    foreach (var c in list.Where(c => c.ResolvedCost.HasValue))
+                    {
+                        minresolved = CostOf.Min(minresolved, c.ResolvedCost.Value);
+                    }
+
                     if (list.All(c => c.ResolvedCost.HasValue))
                     {
-                        int best = 0;
                         for (int i = 1; i < list.Count; i++)
                         {
-                            if (list[i].ResolvedCost.Value < list[best].ResolvedCost.Value)
+                            if (list[i].ResolvedCost.Value == minresolved)
                             {
-                                best = i;
+                                list = new List<MethodCostInfo>() { list[i] };
+                                break;
                             }
                         }
-
-                        list = new List<MethodCostInfo>() { list[best] };
-                        //clist ignored
                     }
                     else
                     {
                         // if minimal cost is greater than some resolved cost, we can reduce it
-                        var minresolved = ConversionCost.Error;
-                        foreach (var c in list.Where(c => c.ResolvedCost.HasValue))
-                            minresolved = CostOf.Min(minresolved, c.ResolvedCost.Value);
-
                         if (minresolved < ConversionCost.Error)
                         {
                             for (int i = list.Count - 1; i >= 0; i--)
