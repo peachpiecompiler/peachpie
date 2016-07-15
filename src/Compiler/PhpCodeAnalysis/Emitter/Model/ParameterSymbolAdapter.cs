@@ -9,6 +9,7 @@ using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Emit;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -45,25 +46,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 return null;
             }
 
-            //ConstantValue constant = this.ExplicitDefaultConstantValue;
-            //TypeSymbol type;
-            //if (constant.SpecialType != SpecialType.None)
-            //{
-            //    // preserve the exact type of the constant for primitive types,
-            //    // e.g. it should be Int16 for [DefaultParameterValue((short)1)]int x
-            //    type = this.ContainingAssembly.GetSpecialType(constant.SpecialType);
-            //}
-            //else
-            //{
-            //    // default(struct), enum
-            //    type = this.Type;
-            //}
+            ConstantValue constant = this.ExplicitDefaultConstantValue;
+            TypeSymbol type;
+            if (constant.SpecialType != SpecialType.None)
+            {
+                // preserve the exact type of the constant for primitive types,
+                // e.g. it should be Int16 for [DefaultParameterValue((short)1)]int x
+                type = this.ContainingAssembly.GetSpecialType(constant.SpecialType);
+            }
+            else
+            {
+                // default(struct), enum
+                type = this.Type;
+            }
 
-            //return ((PEModuleBuilder)context.Module).CreateConstant(type, constant.Value,
-            //                                               syntaxNodeOpt: (CSharpSyntaxNode)context.SyntaxNodeOpt,
-            //                                               diagnostics: context.Diagnostics);
-
-            return null;
+            return ((PEModuleBuilder)context.Module).CreateConstant(type, constant.Value,
+                                                           syntaxNodeOpt: context.SyntaxNodeOpt,
+                                                           diagnostics: context.Diagnostics);
         }
 
         internal virtual bool HasMetadataConstantValue
@@ -71,14 +70,8 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                //// For a decimal value, DefaultValue won't be used directly, instead, DecimalConstantAttribute will be generated.
-                //// Similarly for DateTime. (C# does not directly support optional parameters with DateTime constants, but honors
-                //// the attributes if [Optional][DateTimeConstant(whatever)] are on the parameter.)
-                //return this.ExplicitDefaultConstantValue != null &&
-                //       this.ExplicitDefaultConstantValue.SpecialType != SpecialType.System_Decimal &&
-                //       this.ExplicitDefaultConstantValue.SpecialType != SpecialType.System_DateTime;
 
-                return false;
+                return HasExplicitDefaultValue;
             }
         }
 

@@ -499,12 +499,14 @@ namespace Pchp.Core.Dynamic
                         if (targetparam != null)
                         {
                             if (targetparam.HasDefaultValue)
-                                return Expression.Constant(targetparam.DefaultValue, targetparam.ParameterType);
+                            {
+                                return ConvertExpression.Bind(Expression.Constant(targetparam.DefaultValue), targetparam.ParameterType, _ctx);
+                            }
 
                             return Expression.Default(targetparam.ParameterType);
                         }
 
-                        return Expression.Default(typeof(PhpValue));
+                        return Expression.Constant(null, typeof(object));
                     }
                 }
 
