@@ -19,17 +19,19 @@ namespace Pchp.Core.Dynamic
             public static Type[] String = new Type[] { typeof(string) };
             public static Type[] Bool = new Type[] { typeof(bool) };
             public static Type[] Object = new Type[] { typeof(object) };
-            public static Type[] PhpString = new Type[] { typeof(PhpString) };
-            public static Type[] PhpValue = new Type[] { typeof(PhpValue) };
-            public static Type[] PhpAlias = new Type[] { typeof(PhpAlias) };
-            public static Type[] PhpNumber = new Type[] { typeof(PhpNumber) };
-            public static Type[] PhpArray = new Type[] { typeof(PhpArray) };
+            public static Type[] PhpString = new Type[] { typeof(Core.PhpString) };
+            public static Type[] PhpValue = new Type[] { typeof(Core.PhpValue) };
+            public static Type[] PhpAlias = new Type[] { typeof(Core.PhpAlias) };
+            public static Type[] PhpNumber = new Type[] { typeof(Core.PhpNumber) };
+            public static Type[] PhpArray = new Type[] { typeof(Core.PhpArray) };
         }
 
         public static class Operators
         {
             /// <summary><see cref="Core.Operators.SetValue(ref PhpValue, PhpValue)"/>.</summary>
             public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", typeof(PhpValue).MakeByRefType(), typeof(PhpValue));
+
+            public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
 
             public static MethodInfo PhpAlias_EnsureObject_Context = typeof(PhpAlias).GetMethod("EnsureObject", Types.Empty);
             public static MethodInfo PhpAlias_EnsureArray = typeof(PhpAlias).GetMethod("EnsureArray", Types.Empty);
@@ -52,6 +54,12 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpArray_RemoveKey = typeof(PhpArray).GetMethod("RemoveKey", typeof(IntStringKey));
         }
 
+        public static class PhpString
+        {
+            public static ConstructorInfo ctor_String = typeof(Core.PhpString).GetCtor(Types.String);
+            public static ConstructorInfo ctor_ByteArray = typeof(Core.PhpString).GetCtor(typeof(byte[]));
+        }
+
         public static class Object
         {
             /// <summary><see cref="System.Object"/>.</summary>
@@ -66,6 +74,27 @@ namespace Pchp.Core.Dynamic
             var result = type.GetRuntimeMethod(name, ptypes);
             Debug.Assert(result != null);
             return result;
+        }
+
+        /// <summary>
+        /// Gets .ctor in given type.
+        /// </summary>
+        public static ConstructorInfo GetCtor(this Type type, params Type[] ptypes)
+        {
+            var ctors = type.GetTypeInfo().DeclaredConstructors;
+            foreach (var ctor in ctors)
+            {
+                var ps = ctor.GetParameters();
+                if (ps.Length == ptypes.Length)
+                {
+                    if (Enumerable.SequenceEqual(ptypes, ps.Select(p => p.ParameterType)))
+                    {
+                        return ctor;
+                    }
+                }
+            }
+
+            throw new ArgumentException();
         }
     }
 }

@@ -73,7 +73,7 @@ namespace Pchp.Core.Dynamic
     internal static class ConvertExpression
     {
         #region Bind
-        
+
         /// <summary>
         /// Creates expression that converts <paramref name="arg"/> to <paramref name="target"/> type.
         /// </summary>
@@ -112,6 +112,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(object)) return BindToClass(arg);
             if (target == typeof(PhpArray)) return BindAsArray(arg);
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
+            if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
 
             //
             throw new NotImplementedException(target.ToString());
@@ -172,7 +173,7 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(int) ||
                 source == typeof(long) ||
-                source == typeof(double))   // TODO: Convert.ToString(double, context)
+                source == typeof(double))   // TODO: ToString_Double_Context
                 return Expression.Call(expr, Cache.Object.ToString);
 
             if (source == typeof(string))
@@ -184,6 +185,32 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(void))
                 return VoidAsConstant(expr, string.Empty, typeof(string));
 
+            throw new NotImplementedException(source.FullName);
+        }
+
+        private static Expression BindToPhpString(Expression expr, Expression ctx)
+        {
+            var source = expr.Type;
+
+            // string -> PhpString
+            if (source == typeof(int) ||
+                source == typeof(long) ||
+                source == typeof(double))   // TODO: ToString_Double_Context
+            {
+                expr = Expression.Call(expr, Cache.Object.ToString);
+                source = expr.Type;
+            }
+
+            if (source == typeof(PhpValue))
+            {
+                expr = Expression.Call(expr, Cache.Operators.PhpValue_ToString_Context, ctx);   // TODO: PhpValue.AsPhpString(ctx)
+                source = expr.Type;
+            }
+
+            if (source == typeof(string)) return Expression.New(Cache.PhpString.ctor_String, expr);        // new PhpString(string)
+            if (source == typeof(byte[])) return Expression.New(Cache.PhpString.ctor_ByteArray, expr);     // new PhpString(byte[])
+
+            //
             throw new NotImplementedException(source.FullName);
         }
 
@@ -420,6 +447,33 @@ namespace Pchp.Core.Dynamic
                     return ConversionCost.ImplicitCast;
 
                 case PhpTypeCode.WritableString:
+                    return value.WritableString.ContainsBinaryData ? ConversionCost.ImplicitCast : ConversionCost.PassCostly;
+
+                case PhpTypeCode.String:
+                    return ConversionCost.Pass;
+
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.Warning;
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
+        public static ConversionCost ToPhpString(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Boolean:
+                case PhpTypeCode.Double:
+                case PhpTypeCode.Object:
+                    return ConversionCost.ImplicitCast;
+
+                case PhpTypeCode.WritableString:
+                    return ConversionCost.PassCostly;
+
                 case PhpTypeCode.String:
                     return ConversionCost.Pass;
 
