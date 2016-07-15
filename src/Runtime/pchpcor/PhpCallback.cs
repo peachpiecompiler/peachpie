@@ -68,6 +68,13 @@ namespace Pchp.Core
             }
 
             protected override PhpCallable BindCore(Context ctx) => ctx.GetDeclaredFunction(_function)?.PhpCallable;
+
+            protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
+            {
+                Debug.WriteLine($"Function '{_function}' is not defined!");
+                // TODO: ctx.Error.CallToUndefinedFunction(_function)
+                return PhpValue.False;
+            }
         }
 
         [DebuggerDisplay("{_class,nq}::{_method,nq}()")]
@@ -149,12 +156,20 @@ namespace Pchp.Core
         /// <returns>Instance to the delegate. Cannot be <c>null</c>.</returns>
         private PhpCallable BindNew(Context ctx)
         {
-            var resolved = BindCore(ctx)
-                ?? new PhpCallable((_ctx, _args) => PhpValue.False);  // TODO: cache // TODO: report call to missing function
+            var resolved = BindCore(ctx) ?? InvokeError;
 
             _lazyResolved = resolved;
 
             return resolved;
+        }
+
+        /// <summary>
+        /// Missing function call callback.
+        /// </summary>
+        protected virtual PhpValue InvokeError(Context ctx, PhpValue[] arguments)
+        {
+            // TODO: ctx.Errors.InvalidCallback();
+            return PhpValue.False;
         }
 
         /// <summary>
