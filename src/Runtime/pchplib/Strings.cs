@@ -34,6 +34,65 @@ namespace Pchp.Library
 
         #endregion
 
+        #region ord, chr, bin2hex
+
+        /// <summary>
+        /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
+        /// </summary>
+        public static int ord(string str) => string.IsNullOrEmpty(str) ? 0 : (int)str[0];
+        
+        /// <summary>
+        /// Converts ordinal number of character to a binary string containing that character.
+        /// </summary>
+        /// <param name="charCode">The ASCII code.</param>
+        /// <returns>The character with <paramref name="charCode"/> ASCIT code.</returns>
+        /// <remarks>Current code-page is determined by the <see cref="ApplicationConfiguration.GlobalizationSection.PageEncoding"/> property.</remarks>
+        public static string chr(int charCode) => unchecked((char)charCode).ToString();
+
+        ///// <summary>
+        ///// Converts a string of bytes into hexadecimal representation.
+        ///// </summary>
+        ///// <param name="bytes">The string of bytes.</param>
+        ///// <returns>Concatenation of hexadecimal values of bytes of <paramref name="bytes"/>.</returns>
+        ///// <example>
+        ///// The string "01A" is converted into string "303140" because ord('0') = 0x30, ord('1') = 0x31, ord('A') = 0x40.
+        ///// </example>
+        //public static string bin2hex(PhpString bytes)
+        //{
+        //    return (bytes == null) ? String.Empty : StringUtils.BinToHex(bytes.ReadonlyData, null);
+        //}
+
+        /// <summary>
+        /// Converts a string into hexadecimal representation.
+        /// </summary>
+        /// <param name="str">The string to be converted.</param>
+        /// <returns>
+        /// The concatenated four-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
+        /// </returns>
+        public static string bin2hex(string str)
+        {
+            if (str == null) return null;
+
+            int length = str.Length;
+            StringBuilder result = new StringBuilder(length * 4, length * 4);
+            result.Length = length * 4;
+
+            const string hex_digs = "0123456789abcdef";
+
+            for (int i = 0; i < length; i++)
+            {
+                int c = (int)str[i];
+                result[4 * i + 0] = hex_digs[(c & 0xf000) >> 12];
+                result[4 * i + 1] = hex_digs[(c & 0x0f00) >> 8];
+                result[4 * i + 2] = hex_digs[(c & 0x00f0) >> 4];
+                result[4 * i + 3] = hex_digs[(c & 0x000f)];
+            }
+
+            return result.ToString();
+        }
+
+        #endregion
+
         #region strrev, strspn, strcspn
 
         /// <summary>
@@ -2990,6 +3049,42 @@ namespace Pchp.Library
             }
             return word_count;
         }
+
+        #endregion
+
+        #region strtolower, strtoupper, strlen
+
+        /// <summary>
+        /// Returns string with all alphabetic characters converted to lowercase. 
+        /// Note that 'alphabetic' is determined by the current culture.
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
+        public static string strtolower(string str) => str.ToLowerInvariant();
+        //{
+        //    // TODO: Locale: return (str == null) ? string.Empty : str.ToLower(Locale.GetCulture(Locale.Category.CType));
+        //}
+
+        /// <summary>
+        /// Returns string with all alphabetic characters converted to lowercase. 
+        /// Note that 'alphabetic' is determined by the current culture.
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
+        public static string strtoupper(string str) => str.ToUpperInvariant();
+        //{
+        //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));
+        //}
+
+        /// <summary>
+        /// Returns the length of a string.
+        /// </summary>
+        public static int strlen(string x) => (x ?? string.Empty).Length;
+
+        /// <summary>
+        /// Returns the length of a string.
+        /// </summary>
+        public static int strlen(PhpString x) => x.Length;
 
         #endregion
     }
