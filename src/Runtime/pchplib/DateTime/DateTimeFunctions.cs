@@ -12,6 +12,14 @@ namespace Pchp.Library
 {
     public static class DateTimeFunctions
     {
+        /// <summary>
+		/// Gets the current local time with respect to the current PHP time zone.
+		/// </summary>
+		internal static System_DateTime GetNow(Context ctx)
+        {
+            return TimeZoneInfo.ConvertTime(System_DateTime.UtcNow, PhpTimeZone.GetCurrentTimeZone(ctx));
+        }
+
         #region Constants
 
         public const string DATE_ATOM = @"Y-m-d\TH:i:sP";
@@ -501,6 +509,305 @@ namespace Pchp.Library
             else if (DayNumber10 == 3) { if (DayNumber/*%100*/ != 13) return "rd"; }
 
             return "th";
+        }
+
+        #endregion
+
+        #region MakeDateTime
+
+        internal static System_DateTime MakeDateTime(int hour, int minute, int second, int month, int day, int year)
+        {
+            if (year >= 0 && year < 70) year += 2000;
+            else if (year >= 70 && year <= 110) year += 1900;
+
+            // TODO (better)
+
+            var dt = new System_DateTime(0);
+            int i = 0;
+
+            try
+            {
+                // first add positive values, than negative to not throw exception
+                // if there will be negative values first.
+                // This works bad for upper limit, if there are big positive values that
+                // exceeds DateTime.MaxValue and big negative that will substract it to
+                // less value, this returns simply MaxValue - it is big enough, so it
+                // should not occur in real life. Algorithm handling this correctly will
+                // be much more complicated.
+                for (i = 1; i <= 2; i++)
+                {
+                    if (i == 1 && year >= 0)
+                        dt = dt.AddYears(year - 1);
+                    else if (i == 2 && year < 0)
+                        dt = dt.AddYears(year - 1);
+
+                    if (i == 1 && month >= 0)
+                        dt = dt.AddMonths(month - 1);
+                    else if (i == 2 && month < 0)
+                        dt = dt.AddMonths(month - 1);
+
+                    if (i == 1 && day >= 0)
+                        dt = dt.AddDays(day - 1);
+                    else if (i == 2 && day < 0)
+                        dt = dt.AddDays(day - 1);
+
+                    if (i == 1 && hour >= 0)
+                        dt = dt.AddHours(hour);
+                    else if (i == 2 && hour < 0)
+                        dt = dt.AddHours(hour);
+
+                    if (i == 1 && minute >= 0)
+                        dt = dt.AddMinutes(minute);
+                    else if (i == 2 && minute < 0)
+                        dt = dt.AddMinutes(minute);
+
+                    if (i == 1 && second >= 0)
+                        dt = dt.AddSeconds(second);
+                    else if (i == 2 && second < 0)
+                        dt = dt.AddSeconds(second);
+                }
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                if (i == 1) // exception while adding positive values
+                    dt = System_DateTime.MaxValue;
+                else // exception while substracting
+                    dt = System_DateTime.MinValue;
+            }
+
+            return dt;
+        }
+
+        #endregion
+
+        #region checkdate
+
+        /// <summary>
+        /// Returns TRUE if the date given is valid; otherwise returns FALSE.
+        /// Checks the validity of the date formed by the arguments.
+        /// </summary>
+        /// <remarks>
+        /// A date is considered valid if:
+        /// <list type="bullet">
+        /// <item>year is between 1 and 32767 inclusive</item>
+        /// <item>month is between 1 and 12 inclusive</item>
+        /// <item>day is within the allowed number of days for the given month. Leap years are taken into consideration.</item>
+        /// </list>
+        /// </remarks>
+        /// <param name="month">Month</param>
+        /// <param name="day">Day</param>
+        /// <param name="year">Year</param>
+        /// <returns>True if the date is valid, false otherwise.</returns>
+        public static bool checkdate(int month, int day, int year)
+        {
+            return month >= 1 && month <= 12
+                && year >= 1 && year <= 32767
+                && day >= 1 && day <= System_DateTime.DaysInMonth(year, month); // this works also with leap years
+        }
+
+        #endregion
+
+        #region getdate
+
+        /// <summary>
+        /// Returns an associative array containing the date information of the current local time.
+        /// </summary>
+        /// <returns>Associative array with date information.</returns>
+        public static PhpArray getdate(Context ctx)
+        {
+            return GetDate(ctx, System_DateTime.UtcNow);
+        }
+
+        /// <summary>
+        /// Returns an associative array containing the date information of the timestamp.
+        /// </summary>
+        /// <param name="timestamp">Number of seconds since 1970.</param>
+        /// <returns>Associative array with date information.</returns>
+        public static PhpArray getdate(Context ctx, int timestamp)
+        {
+            return GetDate(ctx, DateTimeUtils.UnixTimeStampToUtc(timestamp));
+        }
+
+        /// <summary>
+        /// Returns an associative array containing the date information.
+        /// </summary>
+        /// <param name="utc">UTC date time.</param>
+        /// <returns>Associative array with date information.</returns>
+        static PhpArray GetDate(Context ctx, System_DateTime utc)
+        {
+            PhpArray result = new PhpArray(1, 10);
+
+            var zone = PhpTimeZone.GetCurrentTimeZone(ctx);
+            var local = TimeZoneInfo.ConvertTime(utc, zone);
+
+            result.Add("seconds", local.Second);
+            result.Add("minutes", local.Minute);
+            result.Add("hours", local.Hour);
+            result.Add("mday", local.Day);
+            result.Add("wday", (int)local.DayOfWeek);
+            result.Add("mon", local.Month);
+            result.Add("year", local.Year);
+            result.Add("yday", local.DayOfYear - 1); // PHP: zero based day count
+            result.Add("weekday", local.DayOfWeek.ToString());
+            result.Add("month", local.ToString("MMMM", DateTimeFormatInfo.InvariantInfo));
+            result.Add(0, DateTimeUtils.UtcToUnixTimeStamp(utc));
+
+            return result;
+        }
+
+        #endregion
+
+        #region gettimeofday
+
+        /// <summary>
+        /// Gets time information.
+        /// </summary>
+        /// <remarks>
+        /// It returns <see cref="PhpArray"/> containing the following 4 entries:
+        /// <list type="table">
+        /// <item><term><c>"sec"</c></term><description>Unix timestamp (seconds since the Unix Epoch)</description></item>
+        /// <item><term><c>"usec"</c></term><description>microseconds</description></item>
+        /// <item><term><c>"minuteswest"</c></term><description>minutes west of Greenwich (doesn't take daylight savings time in consideration)</description></item>
+        /// <item><term><c>"dsttime"</c></term><description>type of DST correction (+1 or 0, determined only by the current time zone not by the time)</description></item>
+        /// </list>
+        /// </remarks>
+        /// <returns>Associative array</returns>
+        public static PhpArray gettimeofday(Context ctx)
+        {
+            return GetTimeOfDay(System_DateTime.UtcNow, PhpTimeZone.GetCurrentTimeZone(ctx));
+        }
+
+        public static object gettimeofday(Context ctx, bool returnDouble)
+        {
+            if (returnDouble)
+            {
+                return (GetNow(ctx) - DateTimeUtils.UtcStartOfUnixEpoch).TotalSeconds;
+            }
+            else
+            {
+                return gettimeofday(ctx);
+            }
+        }
+
+        internal static PhpArray GetTimeOfDay(System_DateTime utc, TimeZoneInfo/*!*/ zone)
+        {
+            var result = new PhpArray(0, 4);
+
+            var local = TimeZoneInfo.ConvertTime(utc, zone);
+
+            //int current_dst = 0;
+            if (zone.IsDaylightSavingTime(local))
+            {
+                // TODO: current_dst
+                //var rules = zone.GetAdjustmentRules();
+                //for (int i = 0; i < rules.Length; i++)
+                //{
+                //    if (rules[i].DateStart <= local && rules[i].DateEnd >= local)
+                //    {
+                //        current_dst = (int)rules[i].DaylightDelta.TotalHours;
+                //        break;
+                //    }
+                //}
+            }
+
+            const int ticks_per_microsecond = (int)TimeSpan.TicksPerMillisecond / 1000;
+
+            result["sec"] = PhpValue.Create(DateTimeUtils.UtcToUnixTimeStamp(utc));
+            result["usec"] = PhpValue.Create((int)(local.Ticks % TimeSpan.TicksPerSecond) / ticks_per_microsecond);
+            result["minuteswest"] = PhpValue.Create((int)(utc - local).TotalMinutes);
+            //result["dsttime"] = PhpValue.Create(current_dst);
+
+            return result;
+        }
+
+        #endregion
+
+        #region localtime
+
+        /// <summary>
+        /// The localtime() function returns an array identical to that of the structure returned by the C function call.
+        /// Current time is used, regular numericaly indexed array is returned.
+        /// </summary>
+        /// <returns>Array containing values specifying the date and time.</returns>
+        public static PhpArray localtime(Context ctx)
+        {
+            return GetLocalTime(PhpTimeZone.GetCurrentTimeZone(ctx), System_DateTime.UtcNow, false);
+        }
+
+        /// <summary>
+        /// The localtime() function returns an array identical to that of the structure returned by the C function call.
+        /// Time specified by the parameter timestamp is used, regular numericaly indexed array is returned.
+        /// </summary>
+        /// <param name="timestamp">Number of seconds since 1970.</param>
+        /// <returns>Array containing values specifying the date and time.</returns>
+        public static PhpArray localtime(Context ctx, int timestamp)
+        {
+            return GetLocalTime(PhpTimeZone.GetCurrentTimeZone(ctx), DateTimeUtils.UnixTimeStampToUtc(timestamp), false);
+        }
+
+        /// <summary>
+        /// The localtime() function returns an array identical to that of the structure returned by the C function call.
+        /// The first argument to localtime() is the timestamp. The second argument to the localtime() is
+        /// the isAssociative, if this is set to <c>false</c> than the array is returned as a regular, numerically indexed array.
+        /// If the argument is set to <c>true</c> then localtime() is an associative array containing all the different
+        /// elements of the structure returned by the C function call to localtime.
+        /// </summary>
+        /// <remarks>
+        /// Returned array contains these elements if isAssociative is set to true:
+        /// <list type="bullet">
+        /// <term><c>"tm_sec"</c></term><description>seconds</description>
+        /// <term><c>"tm_min"</c></term><description>minutes</description>
+        /// <term><c>"tm_hour"</c></term><description>hour</description>
+        ///	<term><c>"tm_mday"</c></term><description>day of the month</description>
+        ///	<term><c>"tm_mon"</c></term><description>month of the year, starting with 0 for January</description>
+        /// <term><c>"tm_year"</c></term><description>Years since 1900</description>
+        /// <term><c>"tm_wday"</c></term><description>Day of the week</description>
+        /// <term><c>"tm_yday"</c></term><description>Day of the year</description>
+        /// <term><c>"tm_isdst"</c></term><description>Is daylight savings time in effect</description>
+        /// </list>
+        /// </remarks>
+        /// <param name="timestamp"></param>
+        /// <param name="returnAssociative"></param>
+        /// <returns></returns>
+        public static PhpArray localtime(Context ctx, int timestamp, bool returnAssociative)
+        {
+            return GetLocalTime(PhpTimeZone.GetCurrentTimeZone(ctx), DateTimeUtils.UnixTimeStampToUtc(timestamp), returnAssociative);
+        }
+
+        internal static PhpArray GetLocalTime(TimeZoneInfo currentTz, System_DateTime utc, bool returnAssociative)
+        {
+            PhpArray result;
+
+            var local = TimeZoneInfo.ConvertTime(utc, currentTz);
+
+            if (returnAssociative)
+            {
+                result = new PhpArray(0, 9);
+                result["tm_sec"] = PhpValue.Create(local.Second);
+                result["tm_min"] = PhpValue.Create(local.Minute);
+                result["tm_hour"] = PhpValue.Create(local.Hour);
+                result["tm_mday"] = PhpValue.Create(local.Day);
+                result["tm_mon"] = PhpValue.Create(local.Month - 1);
+                result["tm_year"] = PhpValue.Create(local.Year - 1900);
+                result["tm_wday"] = PhpValue.Create((int)local.DayOfWeek);
+                result["tm_yday"] = PhpValue.Create(local.DayOfYear - 1);
+                result["tm_isdst"] = PhpValue.Create(currentTz.IsDaylightSavingTime(local) ? 1 : 0);
+            }
+            else
+            {
+                result = new PhpArray(9, 0);
+                result.AddValue(PhpValue.Create(local.Second));
+                result.AddValue(PhpValue.Create(local.Minute));
+                result.AddValue(PhpValue.Create(local.Hour));
+                result.AddValue(PhpValue.Create(local.Day));
+                result.AddValue(PhpValue.Create(local.Month - 1));
+                result.AddValue(PhpValue.Create(local.Year - 1900));
+                result.AddValue(PhpValue.Create((int)local.DayOfWeek));
+                result.AddValue(PhpValue.Create(local.DayOfYear - 1));
+                result.AddValue(PhpValue.Create(currentTz.IsDaylightSavingTime(local) ? 1 : 0));
+            }
+
+            return result;
         }
 
         #endregion
