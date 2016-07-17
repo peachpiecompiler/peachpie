@@ -296,7 +296,6 @@ namespace Pchp.Core
             /// <summary>
             /// Key associated with the element.
             /// </summary>
-            public IntStringKey Key { get { return _key; } set { _key = value; } }
             internal IntStringKey _key;
 
             // linked list of entries:
@@ -321,7 +320,7 @@ namespace Pchp.Core
                 return _key.Equals(ikey);
             }
 
-            public KeyValuePair<IntStringKey, PhpValue> KeyValuePair { get { return new KeyValuePair<IntStringKey, PhpValue>(_key, _value); } }
+            public KeyValuePair<IntStringKey, PhpValue> KeyValuePair => new KeyValuePair<IntStringKey, PhpValue>(_key, _value);
         }
 
         #endregion
@@ -663,54 +662,49 @@ namespace Pchp.Core
         {
             private readonly OrderedDictionary/*!*/_table;
             private int _currentEntry;
-            private KeyValuePair<IntStringKey, PhpValue> _current;
-
+            
             public FastEnumerator(OrderedDictionary/*!*/table)
             {
                 Debug.Assert(table != null);
 
                 _table = table;
                 _currentEntry = -1;
-                _current = new KeyValuePair<IntStringKey, PhpValue>();
             }
 
             public bool MoveNext()
             {
-                int next;
-                if (_currentEntry >= 0)
-                    _currentEntry = next = _table.entries[_currentEntry].listNext;
-                else
-                    _currentEntry = next = _table.listHead;  // start // note after unsuccessful MoveNext() enumerator is restarted
-
-                if (next >= 0)
-                {
-                    _current = _table.entries[next].KeyValuePair;
-                    return true;
-                }
-
-                _current = new KeyValuePair<IntStringKey, PhpValue>();
-                return false;
+                return ((_currentEntry = (_currentEntry >= 0)
+                        ? _table.entries[_currentEntry].listNext
+                        : _table.listHead  // start // note after unsuccessful MoveNext() enumerator is restarted
+                    ) >= 0);
+                //{
+                //    _current = _table.entries[_currentEntry].KeyValuePair;
+                //    return true;
+                //}
+                //else
+                //{
+                //    _current = new KeyValuePair<IntStringKey, PhpValue>();
+                //    return false;
+                //}
             }
 
-            public IntStringKey CurrentKey { get { return _current.Key; } }
+            public IntStringKey CurrentKey => _table.entries[_currentEntry]._key;
             public PhpValue CurrentValue
             {
                 get
                 {
-                    return _current.Value;
+                    return _table.entries[_currentEntry]._value;
                 }
                 set
                 {
                     ModifyCurrentValue(value);
-                    // current.Value is not updated for performance reasons
                 }
             }
-            public KeyValuePair<IntStringKey, PhpValue> Current => _current;
+            public KeyValuePair<IntStringKey, PhpValue> Current => _table.entries[_currentEntry].KeyValuePair;
 
             public void Reset()
             {
                 _currentEntry = -1;
-                _current = new KeyValuePair<IntStringKey, PhpValue>();
             }
 
             #region IDisposable
@@ -718,7 +712,6 @@ namespace Pchp.Core
             public void Dispose()
             {
                 _currentEntry = -1;
-                _current = new KeyValuePair<IntStringKey, PhpValue>();
             }
 
             #endregion
@@ -728,12 +721,12 @@ namespace Pchp.Core
             /// <summary>
             /// Gets the element as a PHP value in the collection at the current position of the enumerator.
             /// </summary>
-            PhpValue IEnumerator<PhpValue>.Current => _current.Value;
+            PhpValue IEnumerator<PhpValue>.Current => _table.entries[_currentEntry]._value;
 
             /// <summary>
             /// Gets the element converted to a CLR object in the collection at the current position of the enumerator.
             /// </summary>
-            object IEnumerator.Current => _current.Value.ToClr();
+            object IEnumerator.Current => _table.entries[_currentEntry]._value.ToClr();
 
             #endregion
 
@@ -832,12 +825,6 @@ namespace Pchp.Core
                 set
                 {
                     _currentEntry = value;
-
-                    // fetch current entry:
-                    if (value >= 0)
-                        _current = _table.entries[value].KeyValuePair;
-                    else
-                        _current = new KeyValuePair<IntStringKey, PhpValue>();
                 }
             }
 
@@ -1358,7 +1345,7 @@ namespace Pchp.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void _remove_entry(int p, Enumerator active_enumerators)
         {
-            _remove_entry(ref this.entries[p], p, this.entries[p].Key.Integer & this.tableMask, active_enumerators);   // remove the entry
+            _remove_entry(ref this.entries[p], p, this.entries[p]._key.Integer & this.tableMask, active_enumerators);   // remove the entry
         }
 
         /// <summary>
@@ -2270,7 +2257,7 @@ namespace Pchp.Core
             for (var iterator = this.listTail; iterator >= 0; iterator = _entries[iterator].listLast)
             {
                 if (_entries[iterator].listNext != deleted_dummy_next)
-                    result.Add(_entries[iterator].Key, _entries[iterator]._value);
+                    result.Add(_entries[iterator]._key, _entries[iterator]._value);
             }
 
             _reverse_prev_links();
@@ -2613,9 +2600,10 @@ namespace Pchp.Core
             if (array == null || arrayIndex < 0 || (arrayIndex + this.Count) > array.Length)
                 throw new ArgumentException();
 
-            using (var enumerator = GetFastEnumerator())
-                while (enumerator.MoveNext())
-                    array[arrayIndex++] = enumerator.CurrentValue;
+            var enumerator = GetFastEnumerator();
+            while (enumerator.MoveNext())
+                array[arrayIndex++] = enumerator.CurrentValue;
+            // FastEnumerator does not have to be disposed
         }
 
         public int Count
