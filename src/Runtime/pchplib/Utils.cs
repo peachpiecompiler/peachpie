@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System_DateTime = System.DateTime;
 
 namespace Pchp.Library
 {
@@ -15,7 +16,7 @@ namespace Pchp.Library
     }
 
     /// <summary>
-    /// Unix TimeStamp to DateTime conversion and vice versa
+    /// Unix TimeStamp to <see cref="System_DateTime"/> conversion and vice versa
     /// </summary>
     internal static class DateTimeUtils
     {
@@ -64,7 +65,7 @@ namespace Pchp.Library
         /// <summary>
         /// Time 0 in terms of Unix TimeStamp.
         /// </summary>
-        public static readonly DateTime/*!*/UtcStartOfUnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        public static readonly System_DateTime/*!*/UtcStartOfUnixEpoch = new System_DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         /// <summary>
         /// UTC time zone.
@@ -72,11 +73,11 @@ namespace Pchp.Library
         internal static TimeZoneInfo/*!*/UtcTimeZone => TimeZoneInfo.Utc;
 
         /// <summary>
-        /// Converts <see cref="DateTime"/> representing UTC time to UNIX timestamp.
+        /// Converts <see cref="System_DateTime"/> representing UTC time to UNIX timestamp.
         /// </summary>
         /// <param name="dt">Time.</param>
         /// <returns>Unix timestamp.</returns>
-        internal static int UtcToUnixTimeStamp(DateTime dt)
+        internal static int UtcToUnixTimeStamp(System_DateTime dt)
         {
             double seconds = (dt - UtcStartOfUnixEpoch).TotalSeconds;
 
@@ -89,27 +90,27 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Converts UNIX timestamp (number of seconds from 1.1.1970) to <see cref="DateTime"/>.
+        /// Converts UNIX timestamp (number of seconds from 1.1.1970) to <see cref="System_DateTime"/>.
         /// </summary>
         /// <param name="timestamp">UNIX timestamp</param>
-        /// <returns><see cref="DateTime"/> structure representing UTC time.</returns>
-        internal static DateTime UnixTimeStampToUtc(int timestamp)
+        /// <returns><see cref="System_DateTime"/> structure representing UTC time.</returns>
+        internal static System_DateTime UnixTimeStampToUtc(int timestamp)
         {
             return UtcStartOfUnixEpoch + TimeSpan.FromSeconds(timestamp);
         }
 
         /// <summary>
-        /// Determine maximum of three given <see cref="DateTime"/> values.
+        /// Determine maximum of three given <see cref="System_DateTime"/> values.
         /// </summary>
-        internal static DateTime Max(DateTime d1, DateTime d2)
+        internal static System_DateTime Max(System_DateTime d1, System_DateTime d2)
         {
             return (d1 > d2) ? d1 : d2;
         }
 
         /// <summary>
-        /// Determine maximum of three given <see cref="DateTime"/> values.
+        /// Determine maximum of three given <see cref="System_DateTime"/> values.
         /// </summary>
-        internal static DateTime Max(DateTime d1, DateTime d2, DateTime d3)
+        internal static System_DateTime Max(System_DateTime d1, System_DateTime d2, System_DateTime d3)
         {
             return (d1 < d2) ? ((d2 < d3) ? d3 : d2) : ((d1 < d3) ? d3 : d1);
         }

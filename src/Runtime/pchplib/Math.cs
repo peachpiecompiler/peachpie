@@ -24,7 +24,7 @@ namespace Pchp.Library
             get
             {
                 if (_generator == null)
-                    _generator = new Random(unchecked((int)DateTime.UtcNow.ToFileTime()));
+                    _generator = new Random(unchecked((int)System.DateTime.UtcNow.ToFileTime()));
 
                 return _generator;
             }
@@ -40,7 +40,7 @@ namespace Pchp.Library
             get
             {
                 if (_mtGenerator == null)
-                    _mtGenerator = new MersenneTwister(unchecked((uint)DateTime.UtcNow.ToFileTime()));
+                    _mtGenerator = new MersenneTwister(unchecked((uint)System.DateTime.UtcNow.ToFileTime()));
                 return _mtGenerator;
             }
         }
@@ -230,7 +230,7 @@ namespace Pchp.Library
         {
             // Note that Ticks specify time in 100nanoseconds but it is raised each 100144 
             // ticks which is around 10 times a second (the same for Milliseconds).
-            string ticks = String.Format("{0:X}", DateTime.Now.Ticks + Generator.Next());
+            string ticks = string.Format("{0:X}", System.DateTime.UtcNow.Ticks + Generator.Next());
 
             ticks = ticks.Substring(ticks.Length - 13);
             if (prefix == null) prefix = "";
@@ -238,9 +238,9 @@ namespace Pchp.Library
             {
                 string rnd = lcg_value().ToString();
                 rnd = rnd.Substring(2, 8);
-                return String.Format("{0}{1}.{2}", prefix, ticks, rnd);
+                return string.Format("{0}{1}.{2}", prefix, ticks, rnd);
             }
-            else return String.Format("{0}{1}", prefix, ticks);
+            else return string.Format("{0}{1}", prefix, ticks);
         }
 
         /// <summary>
