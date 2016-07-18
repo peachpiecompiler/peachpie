@@ -368,7 +368,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(long)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
-            if (target == typeof(string)) return (ConversionCost.ImplicitCast);
+            if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
 
             throw new NotImplementedException($"costof(double -> {target})");
@@ -381,7 +381,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(double)) return (ConversionCost.ImplicitCast);
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
-            if (target == typeof(string)) return (ConversionCost.ImplicitCast);
+            if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
 
             throw new NotImplementedException($"costof(long -> {target})");
