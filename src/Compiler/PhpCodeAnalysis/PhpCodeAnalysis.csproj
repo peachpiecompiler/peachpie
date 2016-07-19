@@ -109,6 +109,7 @@
     <Compile Include="FlowAnalysis\Visitors\LocalsWalker.cs" />
     <Compile Include="FlowAnalysis\Visitors\VariableResolver.cs" />
     <Compile Include="FlowAnalysis\Worklist.cs" />
+    <Compile Include="Semantics\BoundTypeRef.cs" />
     <Compile Include="Semantics\BoundVariable.cs" />
     <Compile Include="Semantics\BoundExpression.cs" />
     <Compile Include="Semantics\ExpressionsExtension.cs" />

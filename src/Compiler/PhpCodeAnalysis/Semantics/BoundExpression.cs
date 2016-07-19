@@ -392,6 +392,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public abstract BoundExpression Instance { get; }
 
+        /// <summary>
+        /// Resolved method if possible.
+        /// </summary>
         internal MethodSymbol TargetMethod { get; set; }
 
         public virtual bool IsVirtual => false;
@@ -412,107 +415,100 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     /// <summary>
-    /// Call to a global function.
+    /// Direct or indirect routine name.
     /// </summary>
-    public partial class BoundFunctionCall : BoundRoutineCall
+    public class BoundRoutineName
     {
-        TypeRef _typeRef;
-        BoundExpression _instance;
+        public QualifiedName NameValue => _nameValue;
+        readonly QualifiedName _nameValue;
 
-        QualifiedName _qname;
-        QualifiedName? _qnameAlt;
+        public BoundExpression NameExpression => _nameExpression;
+        readonly BoundExpression _nameExpression;
 
-        public TypeRef TypeRef => _typeRef;
+        public bool IsDirect => _nameExpression == null;
 
-        /// <summary>
-        /// Resolved <see cref="this.TypeRef"/>.
-        /// </summary>
-        internal TypeSymbol TargetType { get; set; }
-
-        /// <summary>
-        /// Gets the function name.
-        /// </summary>
-        public QualifiedName Name => _qname;
-
-        public QualifiedName? AlternativeName => _qnameAlt;
-
-        public override BoundExpression Instance => _instance;
-
-        internal virtual BoundExpression NameExpression => null;
-
-        public bool IsGlobalFunctionCall => _instance == null && _typeRef == null;
-
-        public bool IsStaticMethodCall => _typeRef != null;
-
-        public bool IsInstanceMethodCall => _instance != null;
-
-        protected BoundFunctionCall(ImmutableArray<BoundArgument> arguments)
-           : base(arguments)
+        public BoundRoutineName(QualifiedName name)
         {
+            _nameValue = name;
+            _nameExpression = null;
         }
 
-        protected BoundFunctionCall(BoundExpression instance, ImmutableArray<BoundArgument> arguments)
-            : this(arguments)
+        public BoundRoutineName(BoundExpression nameExpr)
         {
-            Debug.Assert(instance != null);
-            _instance = instance;
-        }
-
-        protected BoundFunctionCall(TypeRef typeRef, ImmutableArray<BoundArgument> arguments)
-            : this(arguments)
-        {
-            Debug.Assert(typeRef != null);
-            _typeRef = typeRef;
-        }
-
-        public BoundFunctionCall(QualifiedName qname, QualifiedName? qnameAlt, ImmutableArray<BoundArgument> arguments)
-            : this(arguments)
-        {
-            _qname = qname;
-            _qnameAlt = qnameAlt;
-        }
-
-        public BoundFunctionCall(BoundExpression instance, Name name, ImmutableArray<BoundArgument> arguments)
-            : this(instance, arguments)
-        {
-            _qname = new QualifiedName(name);
-        }
-
-        public BoundFunctionCall(TypeRef typeRef, Name name, ImmutableArray<BoundArgument> arguments)
-            : this(typeRef, arguments)
-        {
-            _qname = new QualifiedName(name);
+            Debug.Assert(nameExpr != null);
+            _nameExpression = nameExpr;
         }
     }
 
-    /// <summary>
-    /// Call to a function indirectly.
-    /// </summary>
-    public partial class BoundIndirectFunctionCall : BoundFunctionCall
+    public partial class BoundGlobalFunctionCall : BoundRoutineCall
     {
-        BoundExpression _nameExpr;
+        public override BoundExpression Instance => null;
 
-        /// <summary>
-        /// Gets the function name.
-        /// </summary>
-        internal override BoundExpression NameExpression => _nameExpr;
+        public BoundRoutineName Name => _name;
+        readonly BoundRoutineName _name;
 
-        public BoundIndirectFunctionCall(BoundExpression nameExpr, ImmutableArray<BoundArgument> arguments)
+        public QualifiedName? NameOpt => _nameOpt;
+        readonly QualifiedName? _nameOpt;
+
+        public BoundGlobalFunctionCall(BoundExpression nameExpression, ImmutableArray<BoundArgument> arguments) : base(arguments)
+        {
+            _name = new BoundRoutineName(nameExpression);
+        }
+
+        public BoundGlobalFunctionCall(QualifiedName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments) : base(arguments)
+        {
+            _name = new BoundRoutineName(name);
+            _nameOpt = nameOpt;
+        }
+    }
+
+    public partial class BoundInstanceFunctionCall : BoundRoutineCall
+    {
+        public override BoundExpression Instance => _instance;
+        readonly BoundExpression _instance;
+
+        public BoundRoutineName Name => _name;
+        readonly BoundRoutineName _name;
+
+        public override bool IsVirtual => this.TargetMethod == null || this.TargetMethod.IsVirtual;
+
+        public BoundInstanceFunctionCall(BoundExpression instance, QualifiedName name, ImmutableArray<BoundArgument> arguments)
+            :this(instance, new BoundRoutineName(name), arguments)
+        {
+
+        }
+
+        public BoundInstanceFunctionCall(BoundExpression instance, BoundExpression nameExpr, ImmutableArray<BoundArgument> arguments)
+            : this(instance, new BoundRoutineName(nameExpr), arguments)
+        {
+
+        }
+
+        public BoundInstanceFunctionCall(BoundExpression instance, BoundRoutineName name, ImmutableArray<BoundArgument> arguments)
             : base(arguments)
         {
-            _nameExpr = nameExpr;
-        }
+            Debug.Assert(instance != null);
+            Debug.Assert(name != null);
 
-        public BoundIndirectFunctionCall(BoundExpression instance, BoundExpression nameExpr, ImmutableArray<BoundArgument> arguments)
-            : base(instance, arguments)
-        {
-            _nameExpr = nameExpr;
+            _instance = instance;
+            _name = name;
         }
+    }
 
-        public BoundIndirectFunctionCall(TypeRef typeRef, BoundExpression nameExpr, ImmutableArray<BoundArgument> arguments)
-            : base(typeRef, arguments)
+    public partial class BoundStaticFunctionCall : BoundRoutineCall
+    {
+        public BoundTypeRef TypeRef => _typeRef;
+        readonly BoundTypeRef _typeRef;
+
+        public override BoundExpression Instance => null;
+
+        public BoundRoutineName Name => _name;
+        readonly BoundRoutineName _name;
+
+        public BoundStaticFunctionCall(BoundTypeRef typeRef, BoundRoutineName name, ImmutableArray<BoundArgument> arguments) : base(arguments)
         {
-            _nameExpr = nameExpr;
+            _typeRef = typeRef;
+            _name = name;
         }
     }
 
@@ -551,15 +547,15 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Instantiated class type name.
         /// </summary>
-        public QualifiedName TypeName => _qname;
-        readonly QualifiedName _qname;
+        public BoundTypeRef TypeRef => _typeref;
+        readonly BoundTypeRef _typeref;
 
         public override BoundExpression Instance => null;
 
-        public BoundNewEx(QualifiedName qname, ImmutableArray<BoundArgument> arguments)
+        public BoundNewEx(BoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
             : base(arguments)
         {
-            _qname = qname;
+            _typeref = tref;
         }
     }
 

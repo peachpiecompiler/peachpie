@@ -264,35 +264,41 @@ namespace Pchp.CodeAnalysis.Semantics
                 var f = (AST.DirectFcnCall)x;
                 if (f.IsMemberOf == null)
                 {
-                    return new BoundFunctionCall(f.QualifiedName, f.FallbackQualifiedName, boundargs)
+                    return new BoundGlobalFunctionCall(f.QualifiedName, f.FallbackQualifiedName, boundargs)
                         .WithAccess(access);
                 }
                 else
                 {
                     Debug.Assert(f.FallbackQualifiedName.HasValue == false);
                     Debug.Assert(f.QualifiedName.IsSimpleName);
-                    return new BoundFunctionCall(boundinstance, f.QualifiedName.Name, boundargs)
+                    return new BoundInstanceFunctionCall(boundinstance, f.QualifiedName, boundargs)
                         .WithAccess(access);
                 }
-            }
-            else if (x is AST.DirectStMtdCall)
-            {
-                var f = (AST.DirectStMtdCall)x;
-                Debug.Assert(f.IsMemberOf == null);
-                return new BoundFunctionCall(f.TypeRef, f.MethodName, boundargs)
-                    .WithAccess(access);
             }
             else if (x is AST.IndirectFcnCall)
             {
                 var f = (AST.IndirectFcnCall)x;
-                Debug.Assert(f.IsMemberOf == null);
-                return new BoundIndirectFunctionCall(BindExpression(f.NameExpr, BoundAccess.Read), boundargs)
-                    .WithAccess(access);
+                var nameExpr = BindExpression(f.NameExpr);
+                return ((f.IsMemberOf == null)
+                    ? (BoundRoutineCall)new BoundGlobalFunctionCall(nameExpr, boundargs)
+                    : new BoundInstanceFunctionCall(boundinstance, nameExpr, boundargs))
+                        .WithAccess(access);
             }
-            else if (x is AST.IndirectStMtdCall)
+            else if (x is AST.StaticMtdCall)
             {
-                var f = (AST.IndirectStMtdCall)x;
-                return new BoundIndirectFunctionCall(f.TypeRef, BindExpression(f.MethodNameVar, BoundAccess.Read), boundargs)
+                var f = (AST.StaticMtdCall)x;
+                Debug.Assert(f.IsMemberOf == null);
+
+                var tref = new BoundTypeRef(f.TypeRef)
+                {
+                    //TODO: TypeExpression = BindExpression()
+                };
+
+                var boundname = (f is AST.DirectStMtdCall)
+                    ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)f).MethodName))
+                    : new BoundRoutineName(BindExpression(((AST.IndirectStMtdCall)f).MethodNameVar));
+
+                return new BoundStaticFunctionCall(tref, boundname, boundargs)
                     .WithAccess(access);
             }
 
@@ -340,15 +346,10 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(access.IsRead || access.IsReadRef || access.IsNone);
 
-            if (x.ClassNameRef is AST.DirectTypeRef)
-            {
-                var qname = x.ClassNameRef.GenericQualifiedName;
-                if (!qname.IsGeneric && x.CallSignature.GenericParams.Length == 0)
-                    return new BoundNewEx(qname.QualifiedName, BindArguments(x.CallSignature.Parameters))
-                        .WithAccess(access);
-            }
+            var tref = new BoundTypeRef(x.ClassNameRef);
 
-            throw new NotImplementedException();
+            return new BoundNewEx(tref, BindArguments(x.CallSignature.Parameters))
+                .WithAccess(access);
         }
 
         BoundExpression BindArrayEx(AST.ArrayEx x, BoundAccess access)

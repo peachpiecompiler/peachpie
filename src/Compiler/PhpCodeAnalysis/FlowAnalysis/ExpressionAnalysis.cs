@@ -975,6 +975,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             var x = (BoundRoutineCall)operation;
 
+            x.TypeRefMask = TypeRefMask.AnyType;
+            
             // TODO: write arguments Access
             // TODO: visit invocation member of
             // TODO: 2 pass, analyze arguments -> resolve method -> assign argument to parameter -> write arguments access -> analyze arguments again
@@ -991,13 +993,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitConcat((BoundConcatEx)operation);
             }
-            else if (operation is BoundFunctionCall)
+            else if (operation is BoundGlobalFunctionCall)
             {
-                VisitFunctionCall((BoundFunctionCall)operation);
+                VisitFunctionCall((BoundGlobalFunctionCall)operation);
+            }
+            else if (operation is BoundInstanceFunctionCall)
+            {
+                VisitFunctionCall((BoundInstanceFunctionCall)operation);
+            }
+            else if (operation is BoundStaticFunctionCall)
+            {
+                VisitFunctionCall((BoundStaticFunctionCall)operation);
             }
             else if (operation is BoundNewEx)
             {
                 VisitNewEx((BoundNewEx)operation);
+                return;
             }
             else if (operation is BoundIncludeEx)
             {
@@ -1012,6 +1023,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 throw new NotImplementedException();
             }
 
+            //
+            if (x.TargetMethod != null)
+            {
+                TypeRefMask result_type = 0;
+
+                var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();
+
+                // reanalyse candidates
+                foreach (var m in new[] { x.TargetMethod }) // TODO: all candidates
+                {
+                    // analyze TargetMethod with x.Arguments
+                    // require method result type if access != none
+                    var enqueued = this.Worklist.EnqueueRoutine(m, _analysis.CurrentBlock, args);
+                    if (enqueued)   // => target has to be reanalysed
+                    {
+                        // note: continuing current block may be waste of time
+                    }
+
+                    result_type |= m.GetResultType(TypeCtx);
+                }
+
+                x.TypeRefMask = result_type;
+            }
+
+            //
             if (x.Access.IsReadRef)
             {
                 x.TypeRefMask = x.TypeRefMask.WithRefFlag;
@@ -1033,105 +1069,74 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = TypeCtx.GetWritableStringTypeMask();
         }
 
-        protected virtual void VisitFunctionCall(BoundFunctionCall x)
+        protected virtual void VisitFunctionCall(BoundGlobalFunctionCall x)
         {
-            var result_type = TypeRefMask.AnyType;
+            if (x.Name.IsDirect)
+            {
+                var candidates = _model.ResolveFunction(x.Name.NameValue).Cast<MethodSymbol>().ToArray();
+                if (candidates.Length == 0 && x.NameOpt.HasValue)
+                {
+                    candidates = _model.ResolveFunction(x.NameOpt.Value).Cast<MethodSymbol>().ToArray();
+                }
 
-            // resolve instance method target
+                var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, args, null);
+            }
+        }
+
+        protected virtual void VisitFunctionCall(BoundInstanceFunctionCall x)
+        {
             Visit(x.Instance);
 
-            // resolve static method type
-            if (x.IsStaticMethodCall)
+            if (x.Name.IsDirect)
             {
-                if (x.TypeRef is DirectTypeRef)
+                var typeref = TypeCtx.GetTypes(x.Instance.TypeRefMask);
+                if (typeref.Count > 1)
                 {
-                    x.TargetType = (TypeSymbol)_model.GetType(((DirectTypeRef)x.TypeRef).ClassName);
+                    // TODO: some common base ?
                 }
-            }
 
-            // resolve TargetMethod if possible
-
-            var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();
-            var argsType = args.Select(a => a.TypeRefMask).ToArray();
-
-            //
-            if (x.NameExpression == null)
-            {
-                // direct function call
-
-                if (x.IsGlobalFunctionCall)
+                if (typeref.Count == 1)
                 {
-                    var candidates = _model.ResolveFunction(x.Name).Cast<MethodSymbol>().ToArray();
-                    if (candidates.Length == 0 && x.AlternativeName.HasValue)
+                    var classtype = typeref.Where(t => t.IsObject).AsImmutable().SingleOrDefault();
+                    if (classtype != null)
                     {
-                        candidates = _model.ResolveFunction(x.AlternativeName.Value).Cast<MethodSymbol>().ToArray();
-                    }
-
-                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, argsType, null);
-                }
-                else if (x.IsInstanceMethodCall)
-                {
-                    var typeref = TypeCtx.GetTypes(x.Instance.TypeRefMask);
-                    if (typeref.Count > 1)
-                    {
-                        // TODO: some common base ?
-                    }
-
-                    if (typeref.Count == 1)
-                    {
-                        var classtype = typeref.Where(t => t.IsObject).AsImmutable().SingleOrDefault();
-                        if (classtype != null)
+                        var type = (NamedTypeSymbol)_model.GetType(classtype.QualifiedName);
+                        if (type != null)
                         {
-                            var type = (NamedTypeSymbol)_model.GetType(classtype.QualifiedName);
-                            if (type != null)
-                            {
-                                // TODO: resolve all candidates, visibility
-                                x.TargetMethod = type.LookupMember<MethodSymbol>(x.Name.Name.Value);
-                            }
+                            // TODO: resolve all candidates, visibility
+                            x.TargetMethod = type.LookupMember<MethodSymbol>(x.Name.NameValue.Name.Value);
                         }
                     }
                 }
-                else if (x.IsStaticMethodCall)
-                {
-                    if (x.TargetType != null)
-                    {
-                        // TODO: resolve all candidates, visibility
-                        x.TargetMethod = x.TargetType.LookupMember<MethodSymbol>(x.Name.Name.Value);
-                    }
-                }
-                else
-                {
-                    throw ExceptionUtilities.UnexpectedValue(x);
-                }
-
-                //
-                if (x.TargetMethod != null)
-                {
-                    result_type = 0;
-
-                    // reanalyse candidates
-                    foreach (var m in new[] { x.TargetMethod }) // TODO: all candidates
-                    {
-                        // analyze TargetMethod with x.Arguments
-                        // require method result type if access != none
-                        var enqueued = this.Worklist.EnqueueRoutine(m, _analysis.CurrentBlock, args);
-                        if (enqueued)   // => target has to be reanalysed
-                        {
-                            // note: continuing current block may be waste of time
-                        }
-
-                        result_type |= m.GetResultType(TypeCtx);
-                    }
-                }
             }
+        }
 
-            x.TypeRefMask = result_type;
+        protected virtual void VisitFunctionCall(BoundStaticFunctionCall x)
+        {
+            Visit(x.TypeRef);
+
+            if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
+            {
+                // TODO: resolve all candidates, visibility
+                x.TargetMethod = x.TypeRef.ResolvedType.LookupMember<MethodSymbol>(x.Name.NameValue.Name.Value);
+            }
+        }
+
+        protected virtual void Visit(BoundTypeRef tref)
+        {
+            if (tref.TypeRef is DirectTypeRef)
+            {
+                tref.ResolvedType = (TypeSymbol)_model.GetType(((DirectTypeRef)tref.TypeRef).ClassName);
+            }
         }
 
         protected virtual void VisitNewEx(BoundNewEx x)
         {
+            Visit(x.TypeRef);
+
             // resolve target type
-            var type = (NamedTypeSymbol)_model.GetType(x.TypeName);
+            var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
             if (type != null)
             {
                 var candidates = type.InstanceConstructors.ToArray();
@@ -1151,12 +1156,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 x.ResultType = type;
             }
-            else
-            {
-                x.ResultType = new MissingMetadataTypeSymbol(x.TypeName.ClrName(), 0, false);
-            }
 
-            x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeName, false);
+            x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeRef.TypeRef, false);
         }
 
         protected virtual void VisitIncludeEx(BoundIncludeEx x)

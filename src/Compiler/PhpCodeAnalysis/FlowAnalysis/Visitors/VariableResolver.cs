@@ -57,21 +57,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 
         public override void VisitInvocationExpression(IInvocationExpression operation)
         {
-            var fnc = operation as BoundFunctionCall;
+            var boundname =
+                (operation as BoundGlobalFunctionCall)?.Name ??
+                (operation as BoundInstanceFunctionCall)?.Name ??
+                (operation as BoundStaticFunctionCall)?.Name;
 
-            if (fnc != null)
+            if (boundname != null)
             {
-                Visit(fnc.NameExpression);  // in case of indirect function call
-
-                if (fnc.TypeRef != null && fnc.TypeRef is Syntax.AST.IndirectTypeRef)
-                {
-                    // Visit(fnc.TypeRef)
-                    throw new NotImplementedException();
-                }
+                Visit(boundname.NameExpression);  // in case of indirect function call
             }
-            else
+
+            var boundtype = (operation as BoundStaticFunctionCall)?.TypeRef;
+            if (boundtype != null)
             {
-                // TODO: BoundNewEx.TypeRef
+                Visit(boundtype.TypeExpression);    // indirect type name
             }
 
             base.VisitInvocationExpression(operation);

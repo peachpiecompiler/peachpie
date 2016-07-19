@@ -767,8 +767,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             switch (type.SpecialType)
             {
                 case SpecialType.System_Void:
-                    Debug.Assert(false);
-                    EmitPop(type);
+                    EmitPop(this.CoreTypes.Context);
                     return;
                 case SpecialType.System_String:
                     method = CoreMethods.Operators.Echo_String.Symbol;
