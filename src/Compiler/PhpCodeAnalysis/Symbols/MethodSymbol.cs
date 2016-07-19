@@ -286,25 +286,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual ImmutableArray<ControlFlowGraph> CFG => ImmutableArray<ControlFlowGraph>.Empty;
 
-        public virtual int MandatoryParamsCount
-        {
-            get
-            {
-                int mandatory = 0;
-
-                foreach (var p in this.Parameters)
-                {
-                    // skip wellknown parameters
-                    if (mandatory == 0 && p.IsImplicitlyDeclared) continue;
-                    if (p.HasExplicitDefaultValue) break;
-
-                    mandatory++;
-                }
-
-                return mandatory;
-            }
-        }
-
         public virtual bool IsParamByRef(int index)
         {
             throw new NotImplementedException();

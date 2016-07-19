@@ -36,11 +36,6 @@ namespace Pchp.CodeAnalysis.Semantics
         ImmutableArray<ControlFlowGraph> CFG { get; }
 
         /// <summary>
-        /// Gets mandatory parameters count.
-        /// </summary>
-        int MandatoryParamsCount { get; }
-
-        /// <summary>
         /// Gets expected type of parameter at <paramref name="index"/>.
         /// </summary>
         /// <param name="ctx">Type context.</param>

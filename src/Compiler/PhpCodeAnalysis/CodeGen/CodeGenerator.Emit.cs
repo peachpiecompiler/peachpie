@@ -644,7 +644,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                if (method.HasThis)
+                if (method.HasThis && code != ILOpCode.Newobj)
                 {
                     throw new ArgumentException();  // TODO: PHP would create temporary instance of class
                 }
@@ -711,105 +711,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // call the method
             return EmitCall(code, method);
-        }
-
-        internal TypeSymbol EmitCall(ILOpCode code, BoundExpression thisExpr, OverloadsList overloads, ImmutableArray<BoundExpression> arguments)
-        {
-            // at this point we do expect <this> is already emitted on top of the evaluation stack
-
-            if (!overloads.IsFinal)
-                throw new NotImplementedException();    // we have to fallback to indirect call, there might be more overloads in runtime
-
-            if (!overloads.IsStaticIsConsistent())
-                throw new NotImplementedException();    // TODO: fallback to indirect call; some overloads expect <this>, others don't
-
-            if (overloads.Candidates.Length > 1)
-            {
-                if (overloads.Candidates.All(c => c.ParameterCount == 0))
-                    throw new InvalidOperationException("Ambiguous call."); // TODO: ErrorCode // NOTE: overrides should be resolved already
-            }
-
-            // parameter types actually emitted on top of evaluation stack; used for eventual generic indirect call
-            var actualParamTypes = new List<TypeSymbol>(arguments.Length + 1);
-
-            //
-            var thisType = (thisExpr != null) ? Emit(thisExpr) : null;
-
-            //
-            int arg_index = 0;      // next argument to be emitted from <arguments>
-            
-            while (true)
-            {
-                int param_index = actualParamTypes.Count;    // next candidates parameter index
-                var t = overloads.ConsistentParameterType(param_index);
-
-                if (overloads.IsImplicitlyDeclaredParameter(param_index))
-                {
-                    // value for implicit parameter is not passed from source code
-
-                    if (t == CoreTypes.Context)
-                    {
-                        EmitLoadContext();
-                        actualParamTypes.Add(t);
-                        continue;
-                    }
-                    else
-                    {
-                        //throw new NotImplementedException();    // not handled implicit parameter (late static, global this, locals, ...)
-
-                        // ---> load arguments
-                    }
-                }
-
-                // all arguments and implicit parameters loaded
-                if (arg_index >= arguments.Length)
-                    break;
-
-                // magic
-                TypeSymbol arg_type;
-                if (t != null)                  // all overloads expect the same argument or there is just one
-                {
-                    EmitConvert(arguments[arg_index++], t); // load argument
-                    arg_type = t;
-                }
-                else
-                {
-                    arg_type = arguments[arg_index++].Emit(this);
-                }
-
-                actualParamTypes.Add(arg_type);
-            }
-
-            // find overloads matching emitted areguments
-            var candidates = overloads.FindByLoadedArgs(actualParamTypes).ToImmutableArray();
-            if (candidates.Length == 1 && overloads.IsFinal)
-            {
-                var target = candidates[0];
-
-                // pop unnecessary args
-                while (actualParamTypes.Count > target.ParameterCount)
-                {
-                    var last = actualParamTypes.Count - 1;
-                    this.EmitPop(actualParamTypes[last]);
-                    actualParamTypes.RemoveAt(last);
-                }
-
-                // emit default values for missing args
-                for (int i = actualParamTypes.Count; i < target.ParameterCount; i++)
-                {
-                    var t = target.Parameters[i].Type;
-                    EmitLoadDefaultValue(t, 0); // TODO: ErrorCode // Missing mandatory argument (if mandatory)
-                    actualParamTypes.Add(t);
-                }
-
-                //
-                return this.EmitCall(code, target);
-            }
-            else
-            {
-                // use call site and resolve the overload in runtime
-                throw new NotImplementedException();
-            }
         }
 
         internal TypeSymbol EmitGetProperty(IPlace holder, PropertySymbol prop)

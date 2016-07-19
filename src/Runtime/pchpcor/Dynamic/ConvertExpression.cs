@@ -125,7 +125,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(int)) return Expression.Convert(expr, typeof(long));
             if (source == typeof(long)) return expr;    // unreachable
             if (source == typeof(double)) return Expression.Convert(expr, typeof(long));
-            if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(long), typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
+            if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0L, typeof(long));
 
@@ -141,7 +141,7 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(int)) return Expression.Convert(expr, typeof(double));
             if (source == typeof(long)) return Expression.Convert(expr, typeof(double));
-            if (source == typeof(PhpNumber)) return Expression.Convert(expr, typeof(double), typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
+            if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToDouble", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0.0, typeof(double));
             if (source == typeof(double)) return expr;
@@ -341,6 +341,7 @@ namespace Pchp.Core.Dynamic
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
             if (t == typeof(double)) return Expression.Constant(BindCostFromDouble(arg, target));
             if (t == typeof(long) || t == typeof(int)) return Expression.Constant(BindCostFromLong(arg, target));
+            if (t == typeof(PhpNumber)) return BindCostFromNumber(arg, target);
 
             //
             throw new NotImplementedException($"costof({t} -> {target})");
@@ -387,6 +388,21 @@ namespace Pchp.Core.Dynamic
             throw new NotImplementedException($"costof(long -> {target})");
         }
 
+        static Expression BindCostFromNumber(Expression arg, Type target)
+        {
+            if (target == typeof(double) || target == typeof(long) || target == typeof(int))
+            {
+                return Expression.Call(typeof(CostOf).GetMethod("To" + target.Name, arg.Type), arg);
+            }
+
+            if (target == typeof(PhpNumber)) return Expression.Constant(ConversionCost.Pass);
+            if (target == typeof(string)) return Expression.Constant(ConversionCost.ImplicitCast);
+            if (target == typeof(bool)) return Expression.Constant(ConversionCost.LoosingPrecision);
+            if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.PassCostly);
+            
+            return Expression.Constant(ConversionCost.Warning);
+        }
+
         #endregion
     }
 
@@ -408,6 +424,12 @@ namespace Pchp.Core.Dynamic
         public static ConversionCost Or(ConversionCost a, ConversionCost b) => a | b;
 
         #region CostOf
+
+        public static ConversionCost ToInt32(PhpNumber value) => ToInt64(value);
+
+        public static ConversionCost ToInt64(PhpNumber value) => value.IsLong ? ConversionCost.Pass : ConversionCost.LoosingPrecision;
+
+        public static ConversionCost ToDouble(PhpNumber value) => value.IsLong ? ConversionCost.ImplicitCast : ConversionCost.Pass;
 
         public static ConversionCost ToInt32(PhpValue value) => ToInt64(value);
 

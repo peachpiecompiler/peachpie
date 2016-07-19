@@ -34,6 +34,31 @@ namespace Pchp.Core.Dynamic
 
         #endregion
 
+        protected string ResolveName(Context ctx, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            if (_nameOpt != null)
+            {
+                return _nameOpt;
+            }
+            else
+            {
+                var namearg = args[0];
+                args.RemoveAt(0);
+
+                // TODO: restrictions = restrictions.Merge(BindingRestrictions.)
+                // TODO: string, IPhpCallable, array, delegate
+
+                //if (namearg.Value is IPhpConvertible)
+                //{
+                //    return ((IPhpConvertible)namearg.Value).ToString(ctx);
+                //}
+
+                //return namearg.Value.ToString();
+
+                throw new NotImplementedException();
+            }
+        }
+
         #region DynamicMetaObjectBinder
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
@@ -49,12 +74,12 @@ namespace Pchp.Core.Dynamic
             var ctxInstance = (Context)ctx.Value;
 
             // [] Name
-            var methodName = _nameOpt;
+            var methodName = ResolveName(ctxInstance, argsList, ref restrictions);
 
             // [] PhpArray <locals>
 
             // resolve overload:
-            var routine = ctxInstance.GetDeclaredFunction(_nameOpt);
+            var routine = ctxInstance.GetDeclaredFunction(methodName);
             if (routine == null)
             {
                 // TODO: ErrCode method not found

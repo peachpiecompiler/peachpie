@@ -1708,178 +1708,106 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var overloads = this.Overloads;
-            if (overloads == null)
-                throw new InvalidOperationException();  // function call has to be analyzed first
+            return (TargetMethod != null)
+                ? EmitDirectCall(cg, TargetMethod)
+                : EmitCallsiteCall(cg);
+        }
 
-            Debug.Assert(overloads.Candidates.All(c => c.IsStatic));
-
-            // TODO:
-            // - autoload script containing routine declaration
+        TypeSymbol EmitDirectCall(CodeGenerator cg, MethodSymbol method)
+        {
+            // TODO: emit check the routine is declared
+            // <ctx>.AssertFunctionDeclared
 
             var arguments = _arguments.Select(a => a.Value).ToImmutableArray();
 
-            if (overloads.IsFinal && overloads.Candidates.Length == 1)
-            {
-                // TODO: emit check the routine is declared
-                // <ctx>.AssertFunctionDeclared
+            return cg.EmitCall(method.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, method, _instance, arguments);
+        }
 
-                return cg.EmitCall(ILOpCode.Call, overloads.Candidates[0], null, arguments);
+        TypeSymbol EmitCallsiteCall(CodeGenerator cg)
+        {
+            // callsite
+
+            var nameOpt = this.Name.IsEmpty() ? null : this.Name.Name.Value;
+            var callsite = cg.Factory.StartCallSite("call_" + nameOpt);
+
+            var callsiteargs = new List<TypeSymbol>(_arguments.Length);
+            var return_type = this.Access.IsRead
+                    ? this.Access.IsReadRef
+                        ? cg.CoreTypes.PhpAlias.Symbol
+                        : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
+                    : cg.CoreTypes.Void.Symbol;
+
+            // callsite
+            var fldPlace = callsite.Place;
+
+            // LOAD callsite.Target
+            callsite.EmitLoadTarget(cg.Builder);
+
+            // LOAD callsite arguments
+
+            // (callsite, [target], ctx, [name], ...)
+            fldPlace.EmitLoad(cg.Builder);
+
+            if (_instance != null)
+            {
+                callsiteargs.Add(cg.Emit(_instance));   // instance
             }
-            else
+            else if (_typeRef != null)
             {
-                // callsite
-
-                var callsite = cg.Factory.StartCallSite("call_" + this.Name.ClrName());
-
-                var callsiteargs = new List<TypeSymbol>(arguments.Length);
-                var return_type = this.Access.IsRead
-                        ? this.Access.IsReadRef
-                            ? cg.CoreTypes.PhpAlias.Symbol
-                            : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
-                        : cg.CoreTypes.Void.Symbol;
-
-                // callsite
-                var fldPlace = callsite.Place;
-
-                // callsite.Target
-                callsite.EmitLoadTarget(cg.Builder);
-
-                // (callsite, ctx, ...)
-                fldPlace.EmitLoad(cg.Builder);
-
-                callsiteargs.Add(cg.EmitLoadContext());     // ctx
-
-                // TODO: indirect name
-
-                foreach (var a in arguments)
+                if (this.TargetType == null)
                 {
-                    callsiteargs.Add(cg.Emit(a));
+                    // type
                 }
 
-                // Target()
-                var functype = cg.Factory.GetCallSiteDelegateType(
-                    null, RefKind.None,
-                    callsiteargs.AsImmutable(),
-                    default(ImmutableArray<RefKind>),
-                    null,
-                    return_type);
+                throw new NotImplementedException();
+            }
 
-                cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
+            callsiteargs.Add(cg.EmitLoadContext());     // ctx
 
-                callsite.Construct(functype, cctor =>
+            if (NameExpression != null)
+            {
+                callsiteargs.Add(cg.Emit(NameExpression));   // name
+            }
+
+            foreach (var a in _arguments)
+            {
+                callsiteargs.Add(cg.Emit(a.Value));
+            }
+
+            // Target()
+            var functype = cg.Factory.GetCallSiteDelegateType(
+                null, RefKind.None,
+                callsiteargs.AsImmutable(),
+                default(ImmutableArray<RefKind>),
+                null,
+                return_type);
+
+            cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
+
+            // Create CallSite ...
+            callsite.Construct(functype, cctor =>
+            {
+                if (IsGlobalFunctionCall)
                 {
-                    cctor.EmitStringConstant(this.Name.ToString()); // TODO: indirect call -> null
+                    cctor.EmitStringConstant(nameOpt);
                     cctor.EmitStringConstant(this.AlternativeName.HasValue ? this.AlternativeName.Value.ToString() : null);
                     cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
                     cctor.EmitIntConstant(0);
                     cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallFunctionBinder_Create);
-                });
-
-                //
-                return return_type;
-            }
-        }
-    }
-
-    partial class BoundInstanceMethodCall
-    {
-        internal override TypeSymbol Emit(CodeGenerator cg)
-        {
-            var overloads = this.Overloads;
-            if (overloads != null)
-            {
-                Debug.Assert(overloads.Candidates.All(c => !c.IsStatic));
-            }
-
-            // TODO: emit check the containing type is declared; options:
-            // 1. disable checks in release for better performance
-            // 2. autoload script containing the declaration
-            // 3. throw if type is not declared
-
-            if (overloads != null && overloads.IsFinal && overloads.Candidates.Length == 1)
-            {
-                // direct call
-                var method = overloads.Candidates[0];
-                return cg.EmitCall(
-                    (method.IsOverride && !method.IsMetadataFinal) ? ILOpCode.Callvirt : ILOpCode.Call,
-                    method,
-                    this.Instance, _arguments.Select(a => a.Value).ToImmutableArray());
-            }
-            else
-            {
-                // call site call
-
-                var callsite = cg.Factory.StartCallSite("call_" + this.Name.Value);
-
-                var callsiteargs = new List<TypeSymbol>(1 + _arguments.Length);
-                var return_type = this.Access.IsRead
-                        ? this.Access.IsReadRef
-                            ? cg.CoreTypes.PhpAlias.Symbol
-                            : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
-                        : cg.CoreTypes.Void.Symbol;
-
-                // callsite
-                var fldPlace = callsite.Place;
-
-                // callsite.Target
-                callsite.EmitLoadTarget(cg.Builder);
-
-                // (callsite, instance, ctx, ...)
-                fldPlace.EmitLoad(cg.Builder);
-                cg.Emit(this.Instance);   // instance
-
-                callsiteargs.Add(cg.EmitLoadContext());     // ctx
-
-                foreach (var a in _arguments)
-                {
-                    callsiteargs.Add(cg.Emit(a.Value));
                 }
-
-                //
-                Debug.Assert(this.Instance.ResultType != null);
-
-                // Target()
-                var functype = cg.Factory.GetCallSiteDelegateType(
-                    this.Instance.ResultType, RefKind.None,
-                    callsiteargs.AsImmutable(),
-                    default(ImmutableArray<RefKind>),
-                    null,
-                    return_type);
-
-                cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
-
-                callsite.Construct(functype, cctor =>
+                else
                 {
-                    cctor.EmitStringConstant(this.Name.Value);
-                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
-                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
-                    cctor.EmitIntConstant(0);
+                    // TODO: type in case of static method call
+                    cctor.EmitStringConstant(nameOpt);    // nameOpt
+                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.CallerType, null);            // class context
+                    cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);              // return type
+                    cctor.EmitIntConstant(0);                   // generic params count
                     cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallMethodBinder_Create);
-                });
+                }
+            });
 
-                //
-                return return_type;
-            }
-        }
-    }
-
-    partial class BoundStMethodCall
-    {
-        internal override TypeSymbol Emit(CodeGenerator cg)
-        {
-            var overloads = this.Overloads;
-            if (overloads == null)
-                throw new InvalidOperationException();  // function call has to be analyzed first
-
-            Debug.Assert(overloads.Candidates.All(c => c.IsStatic));
-
-            // TODO: emit check the containing type is declared; options:
-            // 1. disable checks in release for better performance
-            // 2. autoload script containing the declaration
-            // 3. throw if type is not declared
-
-            return cg.EmitCall(ILOpCode.Call, null, overloads, _arguments.Select(a => a.Value).ToImmutableArray());
+            //
+            return return_type;
         }
     }
 
@@ -1958,25 +1886,14 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            if (this.Overloads == null || this.ResultType == null || this.ResultType is ErrorTypeSymbol)
-                throw new InvalidOperationException();
-
-            if (this.Overloads.IsMethodKindConsistent() != MethodKind.Constructor)
-                throw new ArgumentException();
-
-            //
-            var type = cg.EmitCall(ILOpCode.Newobj, null, this.Overloads, _arguments.Select(a => a.Value).ToImmutableArray())
-                .Expect((TypeSymbol)this.ResultType);
-
-            //
-            if (this.Access.IsNone)
+            if (TargetMethod != null)
             {
-                cg.EmitPop(type);
-                type = cg.CoreTypes.Void;
+                return cg.EmitCall(ILOpCode.Newobj, TargetMethod, null, _arguments.Select(a => a.Value).AsImmutable());
             }
-
-            //
-            return type;
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 

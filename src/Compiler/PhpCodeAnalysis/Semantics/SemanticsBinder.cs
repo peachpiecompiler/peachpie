@@ -79,12 +79,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 ((AST.StaticStmt)stmt).StVarList
                     .Select(s => (BoundStaticLocal)_flowCtx.GetVar(s.Variable.VarName.Value))
                     .ToImmutableArray())
-                { PhpSyntax = stmt };
+            { PhpSyntax = stmt };
             if (stmt is AST.UnsetStmt) return new BoundUnset(
                 ((AST.UnsetStmt)stmt).VarList
                     .Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Unset))
                     .ToImmutableArray())
-                { PhpSyntax = stmt };
+            { PhpSyntax = stmt };
             if (stmt is AST.ThrowStmt) return new BoundThrowStatement(BindExpression(((AST.ThrowStmt)stmt).Expression, BoundAccess.Read)) { PhpSyntax = stmt };
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
 
@@ -256,7 +256,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotSupportedException();
             }
 
-            var boundinstance = (x.IsMemberOf != null) ? BindExpression(x.IsMemberOf) : null;
+            var boundinstance = (x.IsMemberOf != null) ? BindExpression(x.IsMemberOf, BoundAccess.Read/*Object?*/) : null;
             var boundargs = BindArguments(x.CallSignature.Parameters);
 
             if (x is AST.DirectFcnCall)
@@ -271,7 +271,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     Debug.Assert(f.FallbackQualifiedName.HasValue == false);
                     Debug.Assert(f.QualifiedName.IsSimpleName);
-                    return new BoundInstanceMethodCall(boundinstance, f.QualifiedName.Name, boundargs)
+                    return new BoundFunctionCall(boundinstance, f.QualifiedName.Name, boundargs)
                         .WithAccess(access);
                 }
             }
@@ -279,15 +279,25 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 var f = (AST.DirectStMtdCall)x;
                 Debug.Assert(f.IsMemberOf == null);
-                var containingType = f.TypeRef;
-                if (containingType is AST.DirectTypeRef)
-                {
-                    return new BoundStMethodCall(((AST.DirectTypeRef)containingType).GenericQualifiedName, f.MethodName, boundargs)
-                        .WithAccess(access);
-                }
+                return new BoundFunctionCall(f.TypeRef, f.MethodName, boundargs)
+                    .WithAccess(access);
+            }
+            else if (x is AST.IndirectFcnCall)
+            {
+                var f = (AST.IndirectFcnCall)x;
+                Debug.Assert(f.IsMemberOf == null);
+                return new BoundIndirectFunctionCall(BindExpression(f.NameExpr, BoundAccess.Read), boundargs)
+                    .WithAccess(access);
+            }
+            else if (x is AST.IndirectStMtdCall)
+            {
+                var f = (AST.IndirectStMtdCall)x;
+                return new BoundIndirectFunctionCall(f.TypeRef, BindExpression(f.MethodNameVar, BoundAccess.Read), boundargs)
+                    .WithAccess(access);
             }
 
-            throw new NotImplementedException();
+            //
+            throw new NotImplementedException(x.GetType().FullName);
         }
 
         BoundExpression BindConditionalEx(AST.ConditionalEx expr)
@@ -322,7 +332,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ArrayEx) return BindArrayEx((AST.ArrayEx)expr, access);
             if (expr is AST.ItemUse) return BindItemUse((AST.ItemUse)expr, access);
             if (expr is AST.StaticFieldUse) return BindFieldUse((AST.StaticFieldUse)expr, access);
-            
+
             throw new NotImplementedException(expr.GetType().FullName);
         }
 

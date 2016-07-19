@@ -15,172 +15,84 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal class OverloadsList
     {
-        /// <summary>
-        /// Name of the functions, as a string literal or an expression in case of indirect function call.
-        /// </summary>
-        BoundExpression _nameExpr;
+        readonly List<MethodSymbol> _methods;
 
-        /// <summary>
-        /// In case of a direct call, gets the function name. Otherwise gets <c>null</c>.
-        /// </summary>
-        public string DirectName
+        public OverloadsList(params MethodSymbol[] methods)
         {
-            get
+            _methods = new List<MethodSymbol>(methods);
+        }
+
+        public MethodSymbol Resolve(TypeRefContext typeCtx, TypeRefMask[] args, TypeSymbol classCtx)
+        {
+            // see Pchp.Core.Dynamic.OverloadBinder
+
+            var result = new List<MethodSymbol>(_methods);
+
+            //
+            RemoveInaccessible(result, classCtx);
+
+            if (result.Count == 1)
+                return result[0];
+
+            // TODO: cost of args convert operation
+
+            // by params count
+
+            var result2 = new List<MethodSymbol>();
+
+            foreach (var m in result)
             {
-                if (_nameExpr.ConstantValue.HasValue)
+                var nmandatory = 0;
+                var nall = 0;
+                var hasoptional = false;
+                var hasparams = false;
+
+                foreach (var p in m.Parameters)
                 {
-                    var value = _nameExpr.ConstantValue.Value;
-                    if (value is string) return (string)value;
-                    throw new NotImplementedException();    // TODO: conversion object -> string
+                    if (nmandatory == 0 && p.IsImplicitlyDeclared) continue;
+
+                    if (p.HasExplicitDefaultValue) hasoptional = true;
+
+                    if (p.IsParams) hasparams = true;
+                    else if (!hasoptional) nmandatory++;
+
+                    nall++;
                 }
 
-                return null;
-            }
-            set
-            {
-                Contract.ThrowIfNull(value);
-                _nameExpr = new BoundLiteral(value);
-            }
-        }
-
-        /// <summary>
-        /// The name of called function as an expression in case of indirect function call.
-        /// </summary>
-        public BoundExpression NameExpr => _nameExpr;
-
-        /// <summary>
-        /// Gets or sets value indicating the list of overloads is final and cannot be extended in runtime.
-        /// </summary>
-        public bool IsFinal { get; set; }
-
-        /// <summary>
-        /// List of function call candidates.
-        /// </summary>
-        public ImmutableArray<MethodSymbol> Candidates => _candidates;
-
-        ImmutableArray<MethodSymbol> _candidates;
-
-        public OverloadsList(string name, IEnumerable<MethodSymbol> candidates)
-        {
-            this.DirectName = name;
-            _candidates = candidates.AsImmutableOrEmpty();
-
-            var kind = IsMethodKindConsistent();
-            this.IsFinal |= (kind == MethodKind.Constructor || kind == MethodKind.StaticConstructor || kind == MethodKind.BuiltinOperator);
-        }
-
-        /// <summary>
-        /// Prefer instance methods.
-        /// </summary>
-        public void WithInstanceCall(TypeSymbol t)
-        {
-            IsFinal |= (t.IsSealed);   // type is sealed -> no more possible overrides or overloads
-        }
-
-        /// <summary>
-        /// Prefer instance methods.
-        /// </summary>
-        public void WithInstanceCall(TypeRefContext ctx, TypeRefMask tmask)
-        {
-            if (!tmask.IsAnyType)
-            {
-                IsFinal |= (!tmask.IncludesSubclasses);    // instance type does not include subclasses -> there won't be any other overrides or overloads
-            }
-        }
-
-        /// <summary>
-        /// Prefer methods having at least given amount of mandatory parameters count.
-        /// </summary>
-        /// <param name="count">Passed arguments count.</param>
-        public void WithParametersCount(int count)
-        {
-            var better = _candidates.WhereAsArray(s => s.MandatoryParamsCount == count || (s.IsParams() && s.ParameterCount - 1 <= count));
-            if (better.Length != 0)
-            {
-                _candidates = better;
+                if (args.Length >= nmandatory && (hasparams || args.Length <= nall))
+                {
+                    result2.Add(m);
+                }
             }
 
-            //Filter(s => s.MandatoryParamsCount <= count); // not provided mandatory parameter has default value in PHP
+            //
+            return (result2.Count == 1) ? result2[0] : null;
         }
 
-        public void WithParametersType(TypeRefContext ctx, TypeRefMask[] ptypes)
+        static bool IsAccessible(MethodSymbol method, TypeSymbol classCtx)
         {
-            WithParametersCount(ptypes.Length);
-
-            // TODO: remove candidates that cannot be called with given arguments (an argument is not convertible to a parameter type)
-
-            // TODO: filter candidates which parameters are convertible from provided types
-            // prefer single candidate matching types perfectly
-
-            // var expected = s.GetExpectedParamType(ctx, index);
-            // { tmask is convertible to expected} ?
-            // any candidate with perfect match ?
-        }
-
-        /// <summary>
-        /// Checks all candidates expect or do not expect <c>this</c> parameter on evaluation stack.
-        /// </summary>
-        /// <returns></returns>
-        internal bool IsStaticIsConsistent()
-        {
-            if (_candidates.Length != 0)
+            if (method.DeclaredAccessibility == Accessibility.Private)
             {
-                return _candidates.All(c => c.IsStatic == _candidates[0].IsStatic);
+                return (method.ContainingType == classCtx);
+            }
+            else if (method.DeclaredAccessibility == Accessibility.Protected)
+            {
+                return classCtx != null && (
+                    method.ContainingType.IsEqualToOrDerivedFrom(classCtx) ||
+                    classCtx.IsEqualToOrDerivedFrom(method.ContainingType));
             }
 
             return true;
         }
 
-        internal bool IsImplicitlyDeclaredParameter(int index)
+        static void RemoveInaccessible(List<MethodSymbol> methods, TypeSymbol classCtx)
         {
-            return _candidates.Length != 0 && _candidates.All(c => c.ParameterCount > index && c.Parameters[index].IsImplicitlyDeclared);
-        }
-
-        internal TypeSymbol ConsistentParameterType(int index)
-        {
-            if (_candidates.Length != 0)
+            for (int i = methods.Count - 1; i >= 0; i--)
             {
-                var first = _candidates[0];
-                var t = (first.ParameterCount > index) ? first.Parameters[index].Type : null;
-                if (_candidates.Length == 1 || _candidates.All(c => c.ParameterCount > index && c.Parameters[index].Type == t))
-                    return t;
-            }
-
-            return null;
-        }
-
-        internal MethodKind IsMethodKindConsistent()
-        {
-            if (_candidates.Length != 0)
-            {
-                var kind = _candidates[0].MethodKind;
-                if (_candidates.Length == 1 || _candidates.All(c => c.MethodKind == kind))
-                    return kind;
-            }
-
-            return (MethodKind)(-1);
-        }
-
-        /// <summary>
-        /// Find overloads that can be called with given arguments loaded on evaluation stack.
-        /// </summary>
-        internal IEnumerable<MethodSymbol> FindByLoadedArgs(IList<TypeSymbol> emittedArgs)
-        {
-            foreach (var c in _candidates)
-            {
-                var ps = c.ParametersType();
-                var matches = true;
-                for (int i = 0; i < ps.Length && i < emittedArgs.Count; i++)
+                if (!IsAccessible(methods[i], classCtx))
                 {
-                    if (!emittedArgs[i].IsOfType(ps[i]))
-                    {
-                        matches = false;
-                        break;
-                    }
+                    methods.RemoveAt(i);
                 }
-
-                if (matches)
-                    yield return c;
             }
         }
     }

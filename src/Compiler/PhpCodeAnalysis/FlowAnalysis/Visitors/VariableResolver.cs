@@ -55,6 +55,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             base.VisitCatch(operation);
         }
 
+        public override void VisitInvocationExpression(IInvocationExpression operation)
+        {
+            var fnc = operation as BoundFunctionCall;
+
+            if (fnc != null)
+            {
+                Visit(fnc.NameExpression);  // in case of indirect function call
+
+                if (fnc.TypeRef != null && fnc.TypeRef is Syntax.AST.IndirectTypeRef)
+                {
+                    // Visit(fnc.TypeRef)
+                    throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                // TODO: BoundNewEx.TypeRef
+            }
+
+            base.VisitInvocationExpression(operation);
+        }
+
         public override void VisitLocalReferenceExpression(ILocalReferenceExpression operation)
         {
             var vref = ((BoundVariableRef)operation);
