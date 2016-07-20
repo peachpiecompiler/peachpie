@@ -185,6 +185,9 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(void))
                 return VoidAsConstant(expr, string.Empty, typeof(string));
 
+            if (source == typeof(PhpNumber))
+                return Expression.Call(expr, Cache.Operators.PhpNumber_ToString_Context, ctx);
+
             throw new NotImplementedException(source.FullName);
         }
 

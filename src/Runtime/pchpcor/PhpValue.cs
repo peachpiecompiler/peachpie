@@ -138,7 +138,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets underlaying reference object.
         /// </summary>
-        public object Object { get { Debug.Assert(TypeCode == PhpTypeCode.Object); return _obj.Obj; } }
+        public object Object { get { return _obj.Obj; } }
 
         // <summary>
         /// Gets underlaying array object.

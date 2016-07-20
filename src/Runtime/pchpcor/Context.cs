@@ -130,11 +130,13 @@ namespace Pchp.Core
             }
         }
 
+        internal bool CheckFunctionDeclared(int index, RuntimeMethodHandle expected) => _functions.IsDeclared(index, expected);
+
         /// <summary>
         /// Gets declared function with given name. In case of more items they are considered as overloads.
         /// </summary>
         internal RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
-
+        
         /// <summary>
         /// Declare a runtime type.
         /// </summary>

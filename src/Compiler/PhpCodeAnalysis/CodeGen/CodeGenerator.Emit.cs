@@ -423,7 +423,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol EmitLoadToken(TypeSymbol type, SyntaxNode syntaxNodeOpt)
         {
-            _il.EmitLoadToken(_moduleBuilder, _diagnostics, type, syntaxNodeOpt);
+            if (type != null)
+            {
+                _il.EmitLoadToken(_moduleBuilder, _diagnostics, type, syntaxNodeOpt);
+            }
+            else
+            {
+                EmitLoadDefaultOfValueType(this.CoreTypes.RuntimeTypeHandle);
+            }
 
             return this.CoreTypes.RuntimeTypeHandle;
         }

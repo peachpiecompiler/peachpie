@@ -35,7 +35,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             public MethodSymbol CallSite_Create => _callsite_create;
             MethodSymbol _callsite_create;
 
-            public void Construct(NamedTypeSymbol functype, Action<ILBuilder> binder_builder)
+            public void Construct(NamedTypeSymbol functype, Action<CodeGenerator> binder_builder)
             {
                 var callsitetype = _factory.CallSite_T.Construct(functype);
 
@@ -54,7 +54,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var fldPlace = this.Place;
                 fldPlace.EmitStorePrepare(cctor);
 
-                binder_builder(cctor);                
+                var cctor_cg = new CodeGenerator(cctor, _factory._cg.Module, _factory._cg.Diagnostics, _factory._cg.DeclaringCompilation.Options.OptimizationLevel, false, _factory._container, null, null);
+                binder_builder(cctor_cg);
                 cctor.EmitCall(_factory._cg.Module, _factory._cg.Diagnostics, ILOpCode.Call, this.CallSite_Create);
 
                 fldPlace.EmitStore(cctor);

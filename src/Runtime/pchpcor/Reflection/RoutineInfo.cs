@@ -58,6 +58,11 @@ namespace Pchp.Core.Reflection
         RuntimeMethodHandle _handle;
         PhpCallable _lazyDelegate;
 
+        /// <summary>
+        /// CLR method handle.
+        /// </summary>
+        public RuntimeMethodHandle Handle => _handle;
+
         public override RuntimeMethodHandle[] Handles => new RuntimeMethodHandle[] { _handle };
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());

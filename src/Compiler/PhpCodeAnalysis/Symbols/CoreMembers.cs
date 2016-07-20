@@ -708,8 +708,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public DynamicHolder(CoreTypes ct)
             {
-                CallMethodBinder_Create = ct.CallMethodBinder.Method("Create", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
-                CallFunctionBinder_Create = ct.CallFunctionBinder.Method("Create", ct.String, ct.String, ct.RuntimeTypeHandle, ct.Int32);
+                CallBinderFactory_Function = ct.CallBinderFactory.Method("Function", ct.String, ct.String, ct.RuntimeTypeHandle, ct.Int32);
+                CallBinderFactory_InstanceFunction = ct.CallBinderFactory.Method("InstanceFunction", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
+                CallBinderFactory_StaticFunction = ct.CallBinderFactory.Method("StaticFunction", ct.RuntimeTypeHandle, ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
                 GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
                 SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessFlags);
             }
@@ -718,8 +719,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetFieldBinder_ctor, SetFieldBinder_ctor;
 
             public readonly CoreMethod
-                CallFunctionBinder_Create,
-                CallMethodBinder_Create;
+                CallBinderFactory_Function, CallBinderFactory_InstanceFunction, CallBinderFactory_StaticFunction;
         }
 
         public struct ReflectionHolder

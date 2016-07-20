@@ -1551,11 +1551,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyLoadCallSite.Construct(functype, cctor =>
             {
                 // new GetFieldBinder(field_name, context, return, flags)
-                cctor.EmitStringConstant(this.NameString); Debug.Assert(this.Name is BoundLiteral);   // TODO: in case of expression, postpone this to runtime
-                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
-                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, return_type, null);
-                cctor.EmitIntConstant((int)_access.AccessFlags);
-                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
+                cctor.Builder.EmitStringConstant(this.NameString); Debug.Assert(this.Name is BoundLiteral);   // TODO: in case of expression, postpone this to runtime
+                cctor.EmitLoadToken(cg.Routine.ContainingType, null);
+                cctor.EmitLoadToken(return_type, null);
+                cctor.Builder.EmitIntConstant((int)_access.AccessFlags);
+                cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
             });
 
             //
@@ -1592,10 +1592,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _lazyStoreCallSite.Construct(functype, cctor =>
             {
-                cctor.EmitStringConstant(this.NameString);   // TODO: expression potpone to runtime
-                cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.Routine.ContainingType, null);
-                cctor.EmitIntConstant((int)_access.AccessFlags);   // flags
-                cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
+                cctor.Builder.EmitStringConstant(this.NameString);   // TODO: expression potpone to runtime
+                cctor.EmitLoadToken(cg.Routine.ContainingType, null);
+                cctor.Builder.EmitIntConstant((int)_access.AccessFlags);   // flags
+                cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
             });
         }
 

@@ -289,21 +289,28 @@ namespace Pchp.CodeAnalysis.Semantics
                 var f = (AST.StaticMtdCall)x;
                 Debug.Assert(f.IsMemberOf == null);
 
-                var tref = new BoundTypeRef(f.TypeRef)
-                {
-                    //TODO: TypeExpression = BindExpression()
-                };
-
                 var boundname = (f is AST.DirectStMtdCall)
                     ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)f).MethodName))
                     : new BoundRoutineName(BindExpression(((AST.IndirectStMtdCall)f).MethodNameVar));
 
-                return new BoundStaticFunctionCall(tref, boundname, boundargs)
+                return new BoundStaticFunctionCall(BindTypeRef(f.TypeRef), boundname, boundargs)
                     .WithAccess(access);
             }
 
             //
             throw new NotImplementedException(x.GetType().FullName);
+        }
+
+        BoundTypeRef BindTypeRef(AST.TypeRef tref)
+        {
+            var bound = new BoundTypeRef(tref);
+
+            if (tref is AST.IndirectTypeRef)
+            {
+                bound.TypeExpression = BindExpression(((AST.IndirectTypeRef)tref).ClassNameVar);
+            }
+
+            return bound;
         }
 
         BoundExpression BindConditionalEx(AST.ConditionalEx expr)
@@ -346,9 +353,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(access.IsRead || access.IsReadRef || access.IsNone);
 
-            var tref = new BoundTypeRef(x.ClassNameRef);
-
-            return new BoundNewEx(tref, BindArguments(x.CallSignature.Parameters))
+            return new BoundNewEx(BindTypeRef(x.ClassNameRef), BindArguments(x.CallSignature.Parameters))
                 .WithAccess(access);
         }
 

@@ -1704,25 +1704,25 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             return (TargetMethod != null)
-                ? EmitDirectCall(cg, TargetMethod)
+                ? EmitDirectCall(cg, TargetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod)
                 : EmitCallsiteCall(cg);
         }
 
-        internal virtual TypeSymbol EmitDirectCall(CodeGenerator cg, MethodSymbol method)
+        internal virtual TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method)
         {
             // TODO: emit check the routine is declared
             // <ctx>.AssertFunctionDeclared
 
             var arguments = _arguments.Select(a => a.Value).ToImmutableArray();
 
-            return cg.EmitCall(method.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, method, this.Instance, arguments);
+            return cg.EmitCall(opcode, method, this.Instance, arguments);
         }
 
         protected virtual string CallsiteName => null;
         protected virtual BoundExpression RoutineNameExpr => null;
         protected virtual BoundExpression TypeNameExpr => null;
         
-        internal virtual TypeSymbol EmitCallsiteCall(CodeGenerator cg)
+        internal TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
             // callsite
 
@@ -1779,13 +1779,13 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
 
             // Create CallSite ...
-            callsite.Construct(functype, cctor => BuildCallsiteCreate(cg, return_type, cctor));
+            callsite.Construct(functype, cctor_cg => BuildCallsiteCreate(cctor_cg, return_type));
 
             //
             return return_type;
         }
 
-        internal virtual void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype, ILBuilder cctor) { throw new InvalidOperationException(); }
+        internal virtual void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype) { throw new InvalidOperationException(); }
     }
 
     partial class BoundGlobalFunctionCall
@@ -1793,13 +1793,13 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
 
-        internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype, ILBuilder cctor)
+        internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
-            cctor.EmitStringConstant(CallsiteName);
-            cctor.EmitStringConstant(_nameOpt.HasValue ? _nameOpt.Value.ToString() : null);
-            cctor.EmitLoadToken(cg.Module, cg.Diagnostics, returntype, null);
-            cctor.EmitIntConstant(0);
-            cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallFunctionBinder_Create);
+            cg.Builder.EmitStringConstant(CallsiteName);
+            cg.Builder.EmitStringConstant(_nameOpt.HasValue ? _nameOpt.Value.ToString() : null);
+            cg.EmitLoadToken(returntype, null);
+            cg.Builder.EmitIntConstant(0);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_Function);
         }
     }
 
@@ -1808,13 +1808,13 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
 
-        internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype, ILBuilder cctor)
+        internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
-            cctor.EmitStringConstant(CallsiteName);    // nameOpt
-            cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.CallerType ?? cg.CoreTypes.Void, null);            // class context
-            cctor.EmitLoadToken(cg.Module, cg.Diagnostics, returntype, null);              // return type
-            cctor.EmitIntConstant(0);                   // generic params count
-            cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallMethodBinder_Create);
+            cg.Builder.EmitStringConstant(CallsiteName);    // name
+            cg.EmitLoadToken(cg.CallerType, null);            // class context
+            cg.EmitLoadToken(returntype, null);              // return type
+            cg.Builder.EmitIntConstant(0);                   // generic params count
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_InstanceFunction);
         }
     }
 
@@ -1824,14 +1824,38 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
         protected override BoundExpression TypeNameExpr => _typeRef.TypeExpression;
 
-        internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype, ILBuilder cctor)
+        internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
-            // TODO: type in case of static method call
-            cctor.EmitStringConstant(CallsiteName);    // nameOpt
-            cctor.EmitLoadToken(cg.Module, cg.Diagnostics, cg.CallerType ?? cg.CoreTypes.Void, null);            // class context
-            cctor.EmitLoadToken(cg.Module, cg.Diagnostics, returntype, null);              // return type
-            cctor.EmitIntConstant(0);                   // generic params count
-            cctor.EmitCall(cg.Module, cg.Diagnostics, ILOpCode.Call, cg.CoreMethods.Dynamic.CallMethodBinder_Create);
+            cg.EmitLoadToken(_typeRef.ResolvedType, null);            // class context
+            cg.Builder.EmitStringConstant(CallsiteName);    // name
+            cg.EmitLoadToken(cg.CallerType, null);            // class context
+            cg.EmitLoadToken(returntype, null);              // return type
+            cg.Builder.EmitIntConstant(0);                   // generic params count
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_StaticFunction);
+        }
+    }
+
+    partial class BoundNewEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            if (TargetMethod != null)
+            {
+                return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);
+            }
+            else
+            {
+                return EmitCallsiteCall(cg);
+            }
+        }
+
+        protected override string CallsiteName => (_typeref.TypeRef is DirectTypeRef) ? ((DirectTypeRef)_typeref.TypeRef).ClassName.ClrName() : null;
+        protected override BoundExpression RoutineNameExpr => null;
+        protected override BoundExpression TypeNameExpr => _typeref.TypeExpression;
+
+        internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -1903,21 +1927,6 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             return false;
-        }
-    }
-
-    partial class BoundNewEx
-    {
-        internal override TypeSymbol Emit(CodeGenerator cg)
-        {
-            if (TargetMethod != null)
-            {
-                return cg.EmitCall(ILOpCode.Newobj, TargetMethod, null, _arguments.Select(a => a.Value).AsImmutable());
-            }
-            else
-            {
-                return EmitCallsiteCall(cg);
-            }
         }
     }
 

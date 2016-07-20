@@ -44,6 +44,8 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_AsCallable = typeof(PhpValue).GetMethod("AsCallable", Types.Empty);
             public static MethodInfo PhpValue_ToString_Context = typeof(PhpValue).GetMethod("ToString", typeof(Context));
 
+            public static MethodInfo PhpNumber_ToString_Context = typeof(PhpNumber).GetMethod("ToString", typeof(Context));
+
             public static MethodInfo PhpArray_ToClass = typeof(PhpArray).GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(IntStringKey), typeof(PhpAlias));
             public static MethodInfo PhpArray_SetItemValue = typeof(PhpArray).GetMethod("SetItemValue", typeof(IntStringKey), typeof(PhpValue));
@@ -72,8 +74,24 @@ namespace Pchp.Core.Dynamic
         public static MethodInfo GetMethod(this Type type, string name, params Type[] ptypes)
         {
             var result = type.GetRuntimeMethod(name, ptypes);
+            if (result == null)
+            {
+                foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
+                {
+                    if (ParamsMatch(m.GetParameters(), ptypes))
+                        return m;
+                }
+            }
+
             Debug.Assert(result != null);
             return result;
+        }
+
+        static bool ParamsMatch(ParameterInfo[] ps, Type[] ptypes)
+        {
+            if (ps.Length != ptypes.Length) return false;
+            for (int i = 0; i < ps.Length; i++) if (ps[i].ParameterType != ptypes[i]) return false;
+            return true;
         }
 
         /// <summary>

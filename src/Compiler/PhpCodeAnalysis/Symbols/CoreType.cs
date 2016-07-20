@@ -95,7 +95,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context, Operators, Convert, Comparison, StrictComparison,
             ScriptAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
-            CallMethodBinder, CallFunctionBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
+            CallBinderFactory, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, IPhpCallable,
             IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
@@ -137,8 +137,7 @@ namespace Pchp.CodeAnalysis.Symbols
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");
 
-            CallMethodBinder = Create("Dynamic.CallMethodBinder");
-            CallFunctionBinder = Create("Dynamic.CallFunctionBinder");
+            CallBinderFactory = Create("Dynamic.CallBinderFactory");
             GetFieldBinder = Create("Dynamic.GetFieldBinder");
             SetFieldBinder = Create("Dynamic.SetFieldBinder");
             AccessFlags = Create("Dynamic.AccessFlags");

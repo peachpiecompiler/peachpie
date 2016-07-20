@@ -45,7 +45,7 @@
     <Compile Include="Context.Properties.cs" />
     <Compile Include="Context.ScriptsMap.cs" />
     <Compile Include="Context.Statics.cs" />
-    <Compile Include="Dynamic\CallFunctionBinder.cs" />
+    <Compile Include="Dynamic\CallBinder.cs" />
     <Compile Include="Dynamic\OverloadBinder.cs" />
     <Compile Include="Dynamic\OverloadResolver.cs" />
     <Compile Include="Exceptions.cs" />
@@ -73,7 +73,6 @@
     <Compile Include="Dynamic\AccessFlags.cs" />
     <Compile Include="Dynamic\BinderHelpers.cs" />
     <Compile Include="Dynamic\Cache.cs" />
-    <Compile Include="Dynamic\CallMethodBinder.cs" />
     <Compile Include="Dynamic\ConvertExpression.cs" />
     <Compile Include="Dynamic\SetFieldBinder.cs" />
     <Compile Include="Dynamic\GetFieldBinder.cs" />
