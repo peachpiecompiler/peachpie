@@ -1832,10 +1832,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
-            cg.Builder.EmitStringConstant(CallsiteName);    // name
-            cg.EmitLoadToken(cg.CallerType, null);            // class context
-            cg.EmitLoadToken(returntype, null);              // return type
-            cg.Builder.EmitIntConstant(0);                   // generic params count
+            cg.Builder.EmitStringConstant(CallsiteName);        // name
+            cg.EmitLoadToken(cg.CallerType, null);              // class context
+            cg.EmitLoadToken(returntype, null);                 // return type
+            cg.Builder.EmitIntConstant(0);                      // generic params count
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_InstanceFunction);
         }
     }
@@ -1848,11 +1848,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
-            cg.EmitLoadToken(_typeRef.ResolvedType, null);            // class context
-            cg.Builder.EmitStringConstant(CallsiteName);    // name
-            cg.EmitLoadToken(cg.CallerType, null);            // class context
-            cg.EmitLoadToken(returntype, null);              // return type
-            cg.Builder.EmitIntConstant(0);                   // generic params count
+            cg.EmitLoadToken(_typeRef.ResolvedType, null);      // type
+            cg.Builder.EmitStringConstant(CallsiteName);        // name
+            cg.EmitLoadToken(cg.CallerType, null);              // class context
+            cg.EmitLoadToken(returntype, null);                 // return type
+            cg.Builder.EmitIntConstant(0);                      // generic params count
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_StaticFunction);
         }
     }

@@ -417,6 +417,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Direct or indirect routine name.
     /// </summary>
+    [DebuggerDisplay("{DebugView,nq}")]
     public class BoundRoutineName
     {
         public QualifiedName NameValue => _nameValue;
@@ -424,6 +425,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundExpression NameExpression => _nameExpression;
         readonly BoundExpression _nameExpression;
+
+        string DebugView
+        {
+            get
+            {
+                return IsDirect ? _nameValue.ToString() : _nameExpression.ToString();
+            }
+        }
 
         public bool IsDirect => _nameExpression == null;
 
