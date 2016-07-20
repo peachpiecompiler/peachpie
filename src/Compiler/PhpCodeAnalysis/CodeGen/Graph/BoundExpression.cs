@@ -1722,7 +1722,7 @@ namespace Pchp.CodeAnalysis.Semantics
         protected virtual BoundExpression RoutineNameExpr => null;
         protected virtual BoundExpression TypeNameExpr => null;
         
-        internal TypeSymbol EmitCallsiteCall(CodeGenerator cg)
+        internal virtual TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
             // callsite
 
@@ -1792,6 +1792,28 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
+
+        internal override TypeSymbol EmitCallsiteCall(CodeGenerator cg)
+        {
+            if (_name.IsDirect)
+            {
+                return base.EmitCallsiteCall(cg);
+            }
+            else
+            {
+                Debug.Assert(_name.NameExpression != null);
+
+                // faster to emit PhpCallback.Invoke
+
+                // NameExpression.AsCallback().Invoke(Context, PhpValue[])
+
+                cg.EmitConvert(_name.NameExpression, cg.CoreTypes.IPhpCallable);    // (IPhpCallable)Name
+                cg.EmitLoadContext();       // Context
+                cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray()); // PhpValue[]
+
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke"));
+            }
+        }
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
