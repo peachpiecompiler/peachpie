@@ -182,14 +182,18 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Check PHP routine at <paramref name="index"/> is declared.
         /// </summary>
-        internal bool IsDeclared(int index, RuntimeMethodHandle expected) => ((PhpRoutineInfo)_contextRoutines[index - 1])?.Handle == expected;
+        internal bool IsDeclared(int index, RuntimeMethodHandle expected)
+        {
+            var routines = _contextRoutines;
+            return index <= routines.Length && ((PhpRoutineInfo)routines[index - 1])?.Handle == expected;
+        }
 
         /// <summary>
         /// Checks whether given routine is declared in current context.
         /// </summary>
         internal bool IsDeclared(RoutineInfo routine)
         {
-            return (routine.Index > 0 && routine.Index <= _contextRoutines.Length && _contextRoutines[routine.Index] == routine);
+            return (routine.Index > 0 && routine.Index <= _contextRoutines.Length && _contextRoutines[routine.Index - 1] == routine);
         }
     }
 }
