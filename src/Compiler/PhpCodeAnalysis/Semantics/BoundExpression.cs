@@ -1066,7 +1066,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.ArrayCreationExpression;
 
-        internal override bool RequiresContext => _items.Any(x => x.Key.RequiresContext || x.Value.RequiresContext);
+        internal override bool RequiresContext => _items.Any(x => (x.Key != null && x.Key.RequiresContext) || x.Value.RequiresContext);
 
         ITypeSymbol IArrayCreationExpression.ElementType
         {
