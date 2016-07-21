@@ -343,8 +343,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
         {
             // emit number literal directly as double
-            var constant = expr.ConstantValue;
-            if (constant != null)
+            var constant = expr.ConstantObject;
+            if (constant.HasValue)
             {
                 if (constant.Value is long)
                 {
@@ -555,7 +555,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitIntConstant(1);
             return EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpAlias_PhpValue_int);
         }
-        
+
         /// <summary>
         /// Emits load of PhpValue representing void.
         /// </summary>
@@ -665,7 +665,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             int arg_index = 0;      // next argument to be emitted from <arguments>
             var param_index = 0;    // loaded parameters
 
-            for (;  param_index < parameters.Length; param_index++)
+            for (; param_index < parameters.Length; param_index++)
             {
                 var p = parameters[param_index];
 
@@ -741,10 +741,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     holder.EmitLoad(_il);
                 }
             }
-            
+
             return EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
         }
-        
+
         internal void EmitCastClass(TypeSymbol from, TypeSymbol to)
         {
             if (!from.IsEqualToOrDerivedFrom(to))
@@ -865,8 +865,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(expr);
 
-            var constant = expr.ConstantValue;
-            if (constant != null)
+            var constant = expr.ConstantObject;
+            if (constant.HasValue)
             {
                 if (constant.Value is string)
                 {
@@ -918,7 +918,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
             new FieldPlace(null, f.RoutineInfoField).EmitLoad(_il);
-            
+
             EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareFunction_RoutineInfo);
         }
 
@@ -1260,7 +1260,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitSymbolToken(il, module, diagnostics, method, syntaxNodeOpt);
         }
 
-        public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics,  TypeSymbol symbol, SyntaxNode syntaxNode)
+        public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, TypeSymbol symbol, SyntaxNode syntaxNode)
         {
             il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics), syntaxNode, diagnostics);
         }

@@ -1485,7 +1485,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public BoundExpression Instance => _instance;
         readonly BoundExpression _instance;
 
-        public string NameString => _name.ConstantValue != null ? _name.ConstantValue.Value.ToString() : null;
+        public string NameString => _name.ConstantObject.HasValue ? _name.ConstantObject.Value?.ToString() : null;
 
         readonly BoundAccess _access;
 

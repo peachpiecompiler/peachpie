@@ -161,10 +161,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         bool IsLongConstant(BoundExpression expr, long value)
         {
-            if (expr.ConstantValue != null)
+            if (expr.ConstantObject.HasValue)
             {
-                if (expr.ConstantValue.Value is long) return ((long)expr.ConstantValue.Value) == value;
-                if (expr.ConstantValue.Value is int) return ((int)expr.ConstantValue.Value) == value;
+                if (expr.ConstantObject.Value is long) return ((long)expr.ConstantObject.Value) == value;
+                if (expr.ConstantObject.Value is int) return ((int)expr.ConstantObject.Value) == value;
             }
             return false;
         }
@@ -1169,9 +1169,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             x.Target = null;
 
-            if (targetExpr.ConstantValue != null)
+            if (targetExpr.ConstantObject.HasValue)
             {
-                var value = targetExpr.ConstantValue.Value as string;
+                var value = targetExpr.ConstantObject.Value as string;
                 if (value != null)
                 {
                     var targetFile = _model.GetFile(value);

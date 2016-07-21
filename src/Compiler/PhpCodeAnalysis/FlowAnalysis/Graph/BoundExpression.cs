@@ -15,8 +15,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal TypeRefMask ResolveTypeMask(TypeRefContext typeCtx)
         {
-            Debug.Assert(this.ConstantValue != null);
-            var value = this.ConstantValue.Value;
+            Debug.Assert(this.ConstantObject.HasValue);
+            var value = this.ConstantObject.Value;
 
             if (value == null)
             {

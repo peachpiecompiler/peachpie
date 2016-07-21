@@ -1568,8 +1568,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // push value onto the evaluation stack
 
-            Debug.Assert(ConstantValue != null);
-            return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);
+            Debug.Assert(ConstantObject.HasValue);
+            return cg.EmitLoadConstant(ConstantObject.Value, this.Access.TargetType);
         }
     }
 
@@ -1592,9 +1592,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
-            if (ConstantValue != null)
+            if (ConstantObject.HasValue)
             {
-                return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);
+                return cg.EmitLoadConstant(ConstantObject.Value, this.Access.TargetType);
             }
 
             var place = this.BindPlace(cg);
@@ -1935,9 +1935,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         bool IsEmpty(BoundExpression x)
         {
-            if (x.ConstantValue != null)
+            if (x.ConstantObject.HasValue)
             {
-                var value = x.ConstantValue.Value;
+                var value = x.ConstantObject.Value;
                 if (value == null)
                     return true;
 
@@ -2720,9 +2720,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
-            if (this.ConstantValue != null)
+            if (this.ConstantObject.HasValue)
             {
-                return cg.EmitLoadConstant(this.ConstantValue.Value, this.Access.TargetType);
+                return cg.EmitLoadConstant(this.ConstantObject.Value, this.Access.TargetType);
             }
 
             if (_boundExpressionOpt != null)

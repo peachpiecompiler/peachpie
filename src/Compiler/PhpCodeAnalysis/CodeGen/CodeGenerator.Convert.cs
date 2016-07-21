@@ -633,9 +633,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             expr.Access = expr.Access.WithRead(to);
 
             // constants
-            if (expr.ConstantValue != null && to != null)
+            if (expr.ConstantObject.HasValue && to != null)
             {
-                EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to), 0, to);
+                EmitConvert(EmitLoadConstant(expr.ConstantObject.Value, to), 0, to);
                 return;
             }
 

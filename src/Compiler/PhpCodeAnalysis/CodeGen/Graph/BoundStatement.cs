@@ -148,9 +148,9 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var loctype = holder.ValueField.Type;
 
-            var constant = (initializer != null) ? initializer.ConstantValue : default(Optional<object>);
+            bool requiresContext = initializer != null && initializer.RequiresContext;
 
-            if (initializer != null && !constant.HasValue)
+            if (requiresContext)
             {
                 // emit Init only if it needs Context
 
@@ -175,7 +175,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // default .ctor
             holder.EmitCtor(module, (il) =>
             {
-                if (initializer == null || constant.HasValue)
+                if (!requiresContext)
                 {
                     // emit default value only if it won't be initialized by Init above
 
@@ -187,9 +187,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     // Template: this.value = default(T);
 
                     valuePlace.EmitStorePrepare(il);
-                    if (constant.HasValue)
+                    if (initializer != null)
                     {
-                        cg.EmitConvert(cg.EmitLoadConstant(constant.Value, valuePlace.TypeOpt), 0, valuePlace.TypeOpt);
+                        cg.EmitConvert(initializer, valuePlace.TypeOpt);
                     }
                     else
                     {
