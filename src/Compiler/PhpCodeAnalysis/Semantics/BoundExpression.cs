@@ -314,6 +314,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal LangElement PhpSyntax { get; set; }
 
+        /// <summary>
+        /// Whether the expression needs current <c>Pchp.Core.Context</c> to be evaluated.
+        /// Otherwise, the expression can be evaluated in app context or in compile time.
+        /// </summary>
+        internal virtual bool RequiresContext => true;
+
         public abstract void Accept(OperationVisitor visitor);
 
         public abstract TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument);
@@ -634,6 +640,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.LiteralExpression;
 
+        internal override bool RequiresContext => false;
+
         public BoundLiteral(object value)
         {
             this.ConstantValue = new Optional<object>(value);
@@ -655,6 +663,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public BinaryOperationKind BinaryOperationKind { get { throw new NotSupportedException(); } }
 
         public override OperationKind Kind => OperationKind.BinaryOperatorExpression;
+
+        internal override bool RequiresContext => Left.RequiresContext || Right.RequiresContext;
 
         public Operations Operation { get; private set; }
 
@@ -694,6 +704,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundExpression Operand { get; set; }
 
         public override OperationKind Kind => OperationKind.UnaryOperatorExpression;
+
+        internal override bool RequiresContext => Operation == Operations.StringCast || Operation == Operations.Print || Operand.RequiresContext;
 
         IExpression IUnaryOperatorExpression.Operand => Operand;
 
@@ -761,6 +773,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundExpression IfTrue { get; private set; }
 
         public override OperationKind Kind => OperationKind.ConditionalChoiceExpression;
+
+        internal override bool RequiresContext => Condition.RequiresContext || IfTrue.RequiresContext || IfFalse.RequiresContext;
 
         public BoundConditionalEx(BoundExpression condition, BoundExpression iftrue, BoundExpression iffalse)
         {
@@ -1020,6 +1034,8 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override OperationKind Kind => OperationKind.ArrayCreationExpression;
+
+        internal override bool RequiresContext => _items.Any(x => x.Key.RequiresContext || x.Value.RequiresContext);
 
         ITypeSymbol IArrayCreationExpression.ElementType
         {
