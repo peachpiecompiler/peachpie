@@ -161,11 +161,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         bool IsLongConstant(BoundExpression expr, long value)
         {
-            var l = (expr as BoundLiteral);
-            if (l != null && l.ConstantValue.HasValue)
+            if (expr.ConstantValue != null)
             {
-                if (l.ConstantValue.Value is long) return ((long)l.ConstantValue.Value) == value;
-                if (l.ConstantValue.Value is int) return ((int)l.ConstantValue.Value) == value;
+                if (expr.ConstantValue.Value is long) return ((long)expr.ConstantValue.Value) == value;
+                if (expr.ConstantValue.Value is int) return ((int)expr.ConstantValue.Value) == value;
             }
             return false;
         }
@@ -174,8 +173,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (symbol != null && symbol.IsConst)
             {
-                var constant = symbol.GetConstantValue(false);
-                target.ConstantValue = new Optional<object>(constant.Value);
+                target.ConstantValue = symbol.GetConstantValue(false);
                 target.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, symbol.Type);
 
                 return true;
@@ -1171,7 +1169,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             x.Target = null;
 
-            if (targetExpr.ConstantValue.HasValue)
+            if (targetExpr.ConstantValue != null)
             {
                 var value = targetExpr.ConstantValue.Value as string;
                 if (value != null)

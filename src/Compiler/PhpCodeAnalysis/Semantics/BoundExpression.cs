@@ -296,7 +296,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundAccess Access { get; internal set; }
 
-        public Optional<object> ConstantValue { get; set; } // => default(Optional<object>);
+        Optional<object> IExpression.ConstantValue => (ConstantValue != null) ? new Optional<object>(ConstantValue.Value) : default(Optional<object>);
 
         public virtual bool IsInvalid => false;
 
@@ -319,6 +319,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Otherwise, the expression can be evaluated in app context or in compile time.
         /// </summary>
         internal virtual bool RequiresContext => true;
+
+        /// <summary>
+        /// Optional. Resolved constant value.
+        /// </summary>
+        internal virtual ConstantValue ConstantValue { get; set; }
 
         public abstract void Accept(OperationVisitor visitor);
 
@@ -636,7 +641,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundLiteral : BoundExpression, ILiteralExpression
     {
-        public string Spelling => this.ConstantValue.Value != null ? this.ConstantValue.Value.ToString() : "NULL";
+        public string Spelling => this.ConstantValue.Value != null ? this.ConstantValue.GetValueToDisplay() : "NULL";
 
         public override OperationKind Kind => OperationKind.LiteralExpression;
 
@@ -644,8 +649,19 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundLiteral(object value)
         {
-            this.ConstantValue = new Optional<object>(value);
+            this.ConstantValue = BindConstantValue(value);
         }
+
+        static ConstantValue BindConstantValue(object value)
+        {
+            if (value == null) return ConstantValue.Null;
+            if (value is int) return ConstantValue.Create((int)value);
+            if (value is long) return ConstantValue.Create((long)value);
+            if (value is string) return ConstantValue.Create((string)value);
+            if (value is bool) return ConstantValue.Create((bool)value);
+
+            throw new ArgumentException();
+        }            
 
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitLiteralExpression(this);

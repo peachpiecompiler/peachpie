@@ -343,21 +343,22 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
         {
             // emit number literal directly as double
-            if (expr is BoundLiteral && expr.ConstantValue.HasValue)
+            var constant = expr.ConstantValue;
+            if (constant != null)
             {
-                if (expr.ConstantValue.Value is long)
+                if (constant.Value is long)
                 {
-                    _il.EmitDoubleConstant((long)expr.ConstantValue.Value);
+                    _il.EmitDoubleConstant((long)constant.Value);
                     return this.CoreTypes.Double;
                 }
-                if (expr.ConstantValue.Value is int)
+                if (constant.Value is int)
                 {
-                    _il.EmitDoubleConstant((int)expr.ConstantValue.Value);
+                    _il.EmitDoubleConstant((int)constant.Value);
                     return this.CoreTypes.Double;
                 }
-                if (expr.ConstantValue.Value is bool)
+                if (constant.Value is bool)
                 {
-                    _il.EmitDoubleConstant((bool)expr.ConstantValue.Value ? 1.0 : 0.0);
+                    _il.EmitDoubleConstant((bool)constant.Value ? 1.0 : 0.0);
                     return this.CoreTypes.Double;
                 }
             }
@@ -865,7 +866,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(expr);
 
             var constant = expr.ConstantValue;
-            if (constant.HasValue)
+            if (constant != null)
             {
                 if (constant.Value is string)
                 {

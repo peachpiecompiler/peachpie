@@ -471,7 +471,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 // CIL Switch:
-                bool allconsts = this.CaseBlocks.All(c => c.IsDefault || c.CaseValue.ConstantValue.HasValue);
+                bool allconsts = this.CaseBlocks.All(c => c.IsDefault || c.CaseValue.ConstantValue != null);
                 bool allconstints = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsInt32(c.CaseValue.ConstantValue.Value));
                 //bool allconststrings = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsString(c.CaseValue.ConstantValue.Value));
 

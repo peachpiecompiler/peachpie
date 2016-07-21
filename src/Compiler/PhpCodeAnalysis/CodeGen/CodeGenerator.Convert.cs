@@ -632,6 +632,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             // bind target expression type
             expr.Access = expr.Access.WithRead(to);
 
+            // constants
+            if (expr.ConstantValue != null && to != null)
+            {
+                EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to), 0, to);
+                return;
+            }
+
             // loads value from place most effectively without runtime type checking
             var place = PlaceOrNull(expr);
             var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
@@ -738,13 +745,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return;
                     }
                 }
-            }
-
-            // literals
-            if (expr.ConstantValue.HasValue && to != null)    // <= (expr is BoundLiteral)
-            {
-                EmitConvert(EmitLoadConstant(expr.ConstantValue.Value, to), 0, to);
-                return;
             }
 
             //
