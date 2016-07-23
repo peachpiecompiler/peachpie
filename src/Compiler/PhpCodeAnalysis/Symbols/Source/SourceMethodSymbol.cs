@@ -24,16 +24,6 @@ namespace Pchp.CodeAnalysis.Symbols
         ParameterSymbol _lazyThisSymbol;
         MethodSymbol _lazyOverridenMethod;
 
-        internal bool IsPhpConstructorMethod
-        {
-            get
-            {
-                return !this.IsStatic && (
-                    this.Name == Pchp.Syntax.Name.SpecialMethodNames.Construct.Value ||
-                    this.Name == this.ContainingType.Name);
-            }
-        }
-
         public SourceMethodSymbol(SourceNamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
         {
             Contract.ThrowIfNull(type);
@@ -159,8 +149,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.Modifiers.IsStatic();
 
-        public override bool IsVirtual => !IsSealed && !_type.IsSealed && !IsStatic
-            && !IsPhpConstructorMethod;   // __construct is not overridable
+        public override bool IsVirtual => !IsSealed && !_type.IsSealed && !IsStatic;
 
         public override ImmutableArray<Location> Locations
         {

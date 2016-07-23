@@ -372,7 +372,7 @@ namespace Pchp.Core.Dynamic
                         value = new TmpVarValue();
 
                         value.TrueInitializer = Expression.ArrayIndex(_argsarray, Expression.Constant(srcarg));
-                        value.FalseInitializer = Expression.Default(value.TrueInitializer.Type); // ~ default(_argsarray.Type.GetElementType())
+                        value.FalseInitializer = ConvertExpression.BindDefault(value.TrueInitializer.Type); // ~ default(_argsarray.Type.GetElementType())
                         value.Expression = Expression.Variable(value.TrueInitializer.Type);
 
                         //

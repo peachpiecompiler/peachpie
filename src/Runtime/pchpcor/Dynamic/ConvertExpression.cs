@@ -325,6 +325,18 @@ namespace Pchp.Core.Dynamic
 
         #endregion
 
+        #region BindDefault
+
+        public static Expression BindDefault(Type t)
+        {
+            if (t == typeof(PhpValue)) return Expression.Field(null, typeof(PhpValue), "Void");
+            if (t == typeof(PhpNumber)) return Expression.Field(null, typeof(PhpNumber), "Default");
+
+            return Expression.Default(t);
+        }
+
+        #endregion
+
         #region BindCost
 
         /// <summary>
