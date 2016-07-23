@@ -195,9 +195,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (SpecialParameterSymbol.IsContextParameter(p))
                         continue;
 
-                    // TODO: ExplicitDefaultvalue
-
-                    ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name));
+                    ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name,
+                        explicitDefaultConstantValue: p.ExplicitDefaultConstantValue));
                 }
             }
 

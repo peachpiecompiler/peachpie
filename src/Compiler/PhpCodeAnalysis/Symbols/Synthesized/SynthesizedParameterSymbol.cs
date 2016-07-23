@@ -21,6 +21,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private readonly ImmutableArray<CustomModifier> _customModifiers;
         private readonly ushort _countOfCustomModifiersPrecedingByRef;
         private readonly RefKind _refKind;
+        private readonly ConstantValue _explicitDefaultConstantValue;
 
         public SynthesizedParameterSymbol(
             MethodSymbol container,
@@ -29,7 +30,8 @@ namespace Pchp.CodeAnalysis.Symbols
             RefKind refKind,
             string name = "",
             ImmutableArray<CustomModifier> customModifiers = default(ImmutableArray<CustomModifier>),
-            ushort countOfCustomModifiersPrecedingByRef = 0)
+            ushort countOfCustomModifiersPrecedingByRef = 0,
+            ConstantValue explicitDefaultConstantValue = null)
         {
             Debug.Assert((object)type != null);
             Debug.Assert(name != null);
@@ -42,6 +44,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _name = name;
             _customModifiers = customModifiers.NullToEmpty();
             _countOfCustomModifiersPrecedingByRef = countOfCustomModifiersPrecedingByRef;
+            _explicitDefaultConstantValue = explicitDefaultConstantValue;
         }
 
         internal override TypeSymbol Type
@@ -99,10 +102,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return SpecialParameterSymbol.IsContextParameter(this) || base.IsImplicitlyDeclared; }
         }
 
-        internal override ConstantValue ExplicitDefaultConstantValue
-        {
-            get { return null; }
-        }
+        internal override ConstantValue ExplicitDefaultConstantValue => _explicitDefaultConstantValue;
 
         //internal override bool IsIDispatchConstant
         //{
