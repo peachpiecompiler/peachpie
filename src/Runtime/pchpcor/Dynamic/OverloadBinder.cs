@@ -379,6 +379,34 @@ namespace Pchp.Core.Dynamic
                         _tmpvars[key] = value;
                     }
 
+                    if (targetparam != null)
+                    {
+                        // create specialized variable with default value
+                        if (targetparam.HasDefaultValue)
+                        {
+                            var @default = targetparam.DefaultValue;
+                            var defaultValueExpr = Expression.Constant(@default);
+                            var defaultValueStr = (@default != null) ? @default.ToString() : "NULL";
+
+                            //
+                            var key2 = new TmpVarKey() { Priority = 1 /*after key*/, ArgIndex = srcarg, Prefix = "arg(" + defaultValueStr + ")" };
+                            TmpVarValue value2;
+                            if (!_tmpvars.TryGetValue(key2, out value2))
+                            {
+                                value2 = new TmpVarValue();
+
+                                value2.TrueInitializer = ConvertExpression.Bind(value.Expression, targetparam.ParameterType);   // reuse the value already obtained from argv
+                                value2.FalseInitializer = ConvertExpression.Bind(defaultValueExpr, value2.TrueInitializer.Type); // ~ default(targetparam)
+                                value2.Expression = Expression.Variable(value2.TrueInitializer.Type);
+
+                                //
+                                _tmpvars[key] = value;
+                            }
+
+                            return value2.Expression;   // already converted to targetparam.ParameterType
+                        }
+                    }
+
                     return (targetparam == null)
                         ? value.Expression
                         : ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);
