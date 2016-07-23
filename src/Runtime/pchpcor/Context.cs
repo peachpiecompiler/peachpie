@@ -139,7 +139,7 @@ namespace Pchp.Core
         {
             if (!_types.IsDeclared(TypeInfoHolder<T>.TypeInfo))
             {
-                // TODO: ErrCode type is not declared
+                // TODO: autoload, ErrCode
             }
         }
 

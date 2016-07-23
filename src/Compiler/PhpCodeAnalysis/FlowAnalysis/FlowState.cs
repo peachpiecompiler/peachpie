@@ -36,10 +36,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             readonly FlowContext/*!*/_flowcontext;
 
             /// <summary>
-            /// Reference to corresponding routine symbol. Cannot be null.
+            /// Reference to corresponding routine symbol. Cannot be a <c>null</c> reference.
             /// </summary>
             public Symbols.SourceRoutineSymbol/*!*/Routine => _routine;
-
             readonly Symbols.SourceRoutineSymbol/*!*/_routine;
 
             /// <summary>
@@ -54,6 +53,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             public CommonState(FlowContext/*!*/flowcontext, Symbols.SourceRoutineSymbol/*!*/routine)
             {
+                Debug.Assert(flowcontext != null);
+                Debug.Assert(routine != null);
+
                 _flowcontext = flowcontext;
                 _routine = routine;
 

@@ -1138,6 +1138,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
                 else if (qname.IsStaticClassName)
                 {
+                    this.Routine.Flags |= RoutineFlags.UsesLateStatic;
+
                     throw new NotImplementedException("Late static bound type.");
                 }
                 else
@@ -1178,7 +1180,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitIncludeEx(BoundIncludeEx x)
         {
-            this.Routine.Flags |= SourceRoutineSymbol.RoutineFlags.HasInclude;
+            this.Routine.Flags |= RoutineFlags.HasInclude;
 
             // resolve target script
             Debug.Assert(x.ArgumentsInSourceOrder.Length == 1);

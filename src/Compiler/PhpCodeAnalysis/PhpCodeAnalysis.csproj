@@ -98,7 +98,9 @@
     <Compile Include="FlowAnalysis\Graph\ControlFlowGraph.cs" />
     <Compile Include="FlowAnalysis\IFlowState.cs" />
     <Compile Include="FlowAnalysis\PHPDoc.cs" />
+    <Compile Include="FlowAnalysis\RoutineFlags.cs" />
     <Compile Include="FlowAnalysis\StateBinder.cs" />
+    <Compile Include="FlowAnalysis\Symbols\SourceRoutineSymbol.cs" />
     <Compile Include="FlowAnalysis\TypeRef\CallInfo.cs" />
     <Compile Include="FlowAnalysis\TypeRef\ITypeRef.cs" />
     <Compile Include="FlowAnalysis\TypeRef\TypeRef.cs" />

@@ -68,6 +68,8 @@ namespace Pchp.Core.Reflection
 
         // TODO: magic methods (__call, __callStatic, __get, __set, ...)
 
+        // TODO: type constants
+
         // TODO: PHPDoc
     }
 
