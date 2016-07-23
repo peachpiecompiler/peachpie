@@ -974,7 +974,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var x = (BoundRoutineCall)operation;
 
             x.TypeRefMask = TypeRefMask.AnyType;
-            
+
             // TODO: write arguments Access
             // TODO: visit invocation member of
             // TODO: 2 pass, analyze arguments -> resolve method -> assign argument to parameter -> write arguments access -> analyze arguments again

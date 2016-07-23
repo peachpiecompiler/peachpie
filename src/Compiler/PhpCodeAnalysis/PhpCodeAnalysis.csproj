@@ -58,6 +58,7 @@
     <Compile Include="CodeGen\DynamicOperationFactory.cs" />
     <Compile Include="CodeGen\Graph\BoundBlock.cs" />
     <Compile Include="CodeGen\Graph\BoundEdge.cs" />
+    <Compile Include="CodeGen\Graph\BoundTypeRef.cs" />
     <Compile Include="CodeGen\Graph\BoundVariable.cs" />
     <Compile Include="CodeGen\CodeGenerator.cs" />
     <Compile Include="CodeGen\Graph\BoundExpression.cs" />

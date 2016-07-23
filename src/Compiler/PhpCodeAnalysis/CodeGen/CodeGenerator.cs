@@ -312,7 +312,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 Debug.Assert(routine.ParameterCount >= 2 && routine.Parameters[1].Name == SpecialParameterSymbol.LocalsName);
                 return new ParamPlace(routine.Parameters[1]);
             }
-            else if ((routine.Flags & SourceRoutineSymbol.RoutineFlags.RequiresLocalsArray) != 0)
+            else if ((routine.Flags & RoutineFlags.RequiresLocalsArray) != 0)
             {
                 // declare PhpArray <locals>
                 var symbol = new SynthesizedLocalSymbol(Routine, "<locals>", CoreTypes.PhpArray);

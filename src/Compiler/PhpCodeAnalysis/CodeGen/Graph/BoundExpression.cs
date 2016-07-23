@@ -1867,17 +1867,35 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return EmitCallsiteCall(cg);
+                if (_typeref.ResolvedType != null)
+                {
+                    // context.Create<T>(params)
+                    var create_t = cg.CoreTypes.Context.Symbol.GetMembers("Create")
+                        .OfType<MethodSymbol>()
+                        .Where(s => s.Arity == 1 && s.ParameterCount == 1 && s.Parameters[0].IsParams)
+                        .Single()
+                        .Construct(_typeref.ResolvedType);
+
+                    cg.EmitLoadContext();   // Context
+                    cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray());  // PhpValue[]
+
+                    return cg.EmitCall(ILOpCode.Call, create_t);
+                }
+                else
+                {
+                    // ctx.Create(classname, params)
+                    var create = cg.CoreTypes.Context.Symbol.GetMembers("Create")
+                        .OfType<MethodSymbol>()
+                        .Where(s => s.Arity == 0 && s.ParameterCount == 2 && s.Parameters[0].Type.PrimitiveTypeCode == Microsoft.Cci.PrimitiveTypeCode.String && s.Parameters[1].IsParams)
+                        .Single();
+
+                    cg.EmitLoadContext();   // Context
+                    _typeref.EmitClassName(cg);   // String
+                    cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray());  // PhpValue[]
+
+                    return cg.EmitCall(ILOpCode.Call, create);
+                }
             }
-        }
-
-        protected override string CallsiteName => (_typeref.TypeRef is DirectTypeRef) ? ((DirectTypeRef)_typeref.TypeRef).ClassName.ClrName() : null;
-        protected override BoundExpression RoutineNameExpr => null;
-        protected override BoundExpression TypeNameExpr => _typeref.TypeExpression;
-
-        internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
-        {
-            throw new NotImplementedException();
         }
     }
 

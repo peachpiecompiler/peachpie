@@ -66,6 +66,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // <ctx>.DeclareFunction()
                 cg.Routine.ContainingFile.Functions.Where(f => !f.IsConditional).ForEach(cg.EmitDeclareFunction);
+                // <ctx>.DeclareType()
+                cg.DeclaringCompilation.SourceSymbolTables.GetTypes().OfType<Symbols.SourceNamedTypeSymbol>().Where(t => t.ContainingFile == cg.Routine.ContainingFile).ForEach(cg.EmitDeclareType);
             }
             else
             {

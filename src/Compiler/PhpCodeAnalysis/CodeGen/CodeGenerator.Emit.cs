@@ -933,6 +933,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits declaring type into the context.
+        /// </summary>
+        public void EmitDeclareType(SourceNamedTypeSymbol t)
+        {
+            Debug.Assert(t != null);
+
+            // <ctx>.DeclareType<T>()
+            EmitLoadContext();            
+            EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));
+        }
+
+        /// <summary>
         /// Emits call to main method.
         /// </summary>
         /// <param name="mainmethod">Static Main method representing the script global code.</param>

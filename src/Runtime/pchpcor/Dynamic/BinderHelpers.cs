@@ -127,7 +127,7 @@ namespace Pchp.Core.Dynamic
 
         public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args)
         {
-            Debug.Assert(method is MethodInfo);
+            Debug.Assert(method is MethodInfo || method is ConstructorInfo);
 
             // TODO: handle vararg, handle missing mandatory args
             
@@ -205,8 +205,8 @@ namespace Pchp.Core.Dynamic
             var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
 
             // invoke targets
-            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), null, ctors, ps[0], ps[1]);
-            Debug.Assert(invocation.Type == typeof(PhpValue));
+            var invocation = OverloadBinder.BindOverloadCall(typeof(object), null, ctors, ps[0], ps[1]);
+            Debug.Assert(invocation.Type == typeof(object));
 
             // compile & create delegate
             var lambda = Expression.Lambda<TObjectCreator>(invocation, ctors[0].Name + "#" + ctors.Length, true, ps);

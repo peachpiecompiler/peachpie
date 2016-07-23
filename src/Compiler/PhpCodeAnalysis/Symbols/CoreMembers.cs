@@ -671,7 +671,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Dispose = ct.Context.Method("Dispose");
 
                 DeclareFunction_RoutineInfo = ct.Context.Method("DeclareFunction", ct.RoutineInfo);
-                DeclareType_T_string = ct.Context.Method("DeclareType", ct.String);
+                DeclareType_T = ct.Context.Method("DeclareType");
 
                 DisableErrorReporting = ct.Context.Method("DisableErrorReporting");
                 EnableErrorReporting = ct.Context.Method("EnableErrorReporting");
@@ -692,7 +692,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 AddScriptReference_TScript,
-                DeclareFunction_RoutineInfo, DeclareType_T_string,
+                DeclareFunction_RoutineInfo, DeclareType_T,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
                 ScriptPath_TScript,

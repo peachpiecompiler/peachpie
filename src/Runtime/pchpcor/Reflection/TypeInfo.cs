@@ -28,7 +28,7 @@ namespace Pchp.Core.Reflection
         internal bool IsInAppContext => _index < 0;
 
         /// <summary>
-        /// Gets the type name, cannot be <c>null</c> or empty.
+        /// Gets the type name in PHP synytax, cannot be <c>null</c> or empty.
         /// </summary>
         public string Name => _name;
         protected readonly string _name;
@@ -63,7 +63,7 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(t != null);
             _type = t;
-            _name = t.FullName;
+            _name = t.FullName.Replace('.', '\\');
         }
 
         // TODO: magic methods (__call, __callStatic, __get, __set, ...)

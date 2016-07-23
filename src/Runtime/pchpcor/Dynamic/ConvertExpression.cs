@@ -274,6 +274,8 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpArray)) return Expression.Call(expr, Cache.Operators.PhpArray_ToClass);
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToClass", Cache.Types.Empty));
 
+            if (!source.GetTypeInfo().IsValueType) return expr;
+
             throw new NotImplementedException(source.FullName);
         }
 
