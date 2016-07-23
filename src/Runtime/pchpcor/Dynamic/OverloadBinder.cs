@@ -373,7 +373,7 @@ namespace Pchp.Core.Dynamic
 
                         value.TrueInitializer = Expression.ArrayIndex(_argsarray, Expression.Constant(srcarg));
                         value.FalseInitializer = ConvertExpression.BindDefault(value.TrueInitializer.Type); // ~ default(_argsarray.Type.GetElementType())
-                        value.Expression = Expression.Variable(value.TrueInitializer.Type);
+                        value.Expression = Expression.Variable(value.TrueInitializer.Type, "arg_" + srcarg);
 
                         //
                         _tmpvars[key] = value;
@@ -397,10 +397,10 @@ namespace Pchp.Core.Dynamic
 
                                 value2.TrueInitializer = ConvertExpression.Bind(value.Expression, targetparam.ParameterType);   // reuse the value already obtained from argv
                                 value2.FalseInitializer = ConvertExpression.Bind(defaultValueExpr, value2.TrueInitializer.Type); // ~ default(targetparam)
-                                value2.Expression = Expression.Variable(value2.TrueInitializer.Type);
+                                value2.Expression = Expression.Variable(value2.TrueInitializer.Type, "arg_" + srcarg + "_" + defaultValueStr);
 
                                 //
-                                _tmpvars[key] = value;
+                                _tmpvars[key2] = value2;
                             }
 
                             return value2.Expression;   // already converted to targetparam.ParameterType
