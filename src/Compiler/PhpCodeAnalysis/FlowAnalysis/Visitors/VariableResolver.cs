@@ -67,7 +67,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                 Visit(boundname.NameExpression);  // in case of indirect function call
             }
 
-            var boundtype = (operation as BoundStaticFunctionCall)?.TypeRef;
+            BoundTypeRef boundtype =
+                (operation as BoundStaticFunctionCall)?.TypeRef ??
+                (operation as BoundNewEx)?.TypeRef;
+
             if (boundtype != null)
             {
                 Visit(boundtype.TypeExpression);    // indirect type name
