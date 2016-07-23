@@ -1112,7 +1112,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitFunctionCall(BoundStaticFunctionCall x)
         {
-            Visit(x.TypeRef);
+            VisitTypeRef(x.TypeRef);
 
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {
@@ -1121,17 +1121,35 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        protected virtual void Visit(BoundTypeRef tref)
+        protected virtual void VisitTypeRef(BoundTypeRef tref)
         {
+            Debug.Assert(tref.TypeRef.GenericParams.Count == 0, "Generics not implemented.");
+
             if (tref.TypeRef is DirectTypeRef)
             {
-                tref.ResolvedType = (TypeSymbol)_model.GetType(((DirectTypeRef)tref.TypeRef).ClassName);
+                var qname = ((DirectTypeRef)tref.TypeRef).ClassName;
+                if (qname.IsSelfClassName)
+                {
+                    tref.ResolvedType = TypeCtx.ContainingType ?? new MissingMetadataTypeSymbol(qname.ToString(), 0, false);
+                }
+                else if (qname.IsParentClassName)
+                {
+                    tref.ResolvedType = TypeCtx.ContainingType?.BaseType ?? new MissingMetadataTypeSymbol(qname.ToString(), 0, false);
+                }
+                else if (qname.IsStaticClassName)
+                {
+                    throw new NotImplementedException("Late static bound type.");
+                }
+                else
+                {
+                    tref.ResolvedType = (TypeSymbol)_model.GetType(qname);
+                }
             }
         }
 
         protected virtual void VisitNewEx(BoundNewEx x)
         {
-            Visit(x.TypeRef);
+            VisitTypeRef(x.TypeRef);
 
             // resolve target type
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;

@@ -654,7 +654,17 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (method.HasThis && code != ILOpCode.Newobj)
                 {
-                    throw new ArgumentException();  // TODO: PHP would create temporary instance of class
+                    if (ThisPlaceOpt != null && ThisPlaceOpt.TypeOpt != null &&
+                        ThisPlaceOpt.TypeOpt.IsEqualToOrDerivedFrom(method.ContainingType))
+                    {
+                        // implicit $this instance
+                        thisType = EmitThis();
+                        code = ILOpCode.Call;   // instead of .callvirt
+                    }
+                    else
+                    {
+                        throw new ArgumentException();  // TODO: PHP would create temporary instance of class
+                    }
                 }
 
                 thisType = null;
