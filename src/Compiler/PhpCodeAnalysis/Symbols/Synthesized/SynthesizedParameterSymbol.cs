@@ -104,6 +104,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ConstantValue ExplicitDefaultConstantValue => _explicitDefaultConstantValue;
 
+        public override bool IsOptional => _explicitDefaultConstantValue != null;
+
         //internal override bool IsIDispatchConstant
         //{
         //    get { return false; }

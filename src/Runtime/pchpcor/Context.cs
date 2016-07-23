@@ -40,7 +40,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates context to be used within a console application.
         /// </summary>
-        public static Context CreateConsole(string[] args)
+        public static Context CreateConsole(params string[] args)
         {
             var ctx = new Context();
 
