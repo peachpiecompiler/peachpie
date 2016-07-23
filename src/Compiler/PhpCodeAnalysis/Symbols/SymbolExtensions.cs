@@ -21,5 +21,21 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(type.TypeParameters.IsEmpty == (typeArguments.Length == 0));
             return type.TypeParameters.IsEmpty ? type : type.Construct(typeArguments, unbound: false);
         }
+
+        /// <summary>
+        /// Gets type full qualified name.
+        /// </summary>
+        public static QualifiedName MakeQualifiedName(this NamedTypeSymbol type)
+        {
+            if (string.IsNullOrEmpty(type.NamespaceName))
+            {
+                return new QualifiedName(new Name(type.Name));
+            }
+            else
+            {
+                var ns = type.NamespaceName.Replace('.', QualifiedName.Separator);
+                return NameUtils.MakeQualifiedName(ns + QualifiedName.Separator + type.Name, true);
+            }
+        }
     }
 }

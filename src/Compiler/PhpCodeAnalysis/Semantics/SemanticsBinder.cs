@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax;
 using Roslyn.Utilities;
 using System;
@@ -211,11 +212,26 @@ namespace Pchp.CodeAnalysis.Semantics
                     return new BoundPseudoConst(x.Type);
 
                 case AST.PseudoConstUse.Types.Function:
-                    if (_routine is Symbols.SourceFunctionSymbol || _routine is Symbols.SourceMethodSymbol)
+                    if (_routine is SourceFunctionSymbol || _routine is SourceMethodSymbol)
                         return new BoundLiteral(_routine.Name);
-                    if (_routine is Symbols.SourceGlobalMethodSymbol)
+                    if (_routine is SourceGlobalMethodSymbol)
                         return new BoundLiteral(string.Empty);
-                    goto default;    // lambda
+
+                    throw ExceptionUtilities.UnexpectedValue(_routine);
+
+                case AST.PseudoConstUse.Types.Method:
+                    if (_routine is SourceMethodSymbol)
+                        return new BoundLiteral(_routine.ContainingType.MakeQualifiedName().ToString(new Name(_routine.Name), false));
+
+                    goto case AST.PseudoConstUse.Types.Function;
+
+                case AST.PseudoConstUse.Types.Class:
+                    if (_flowCtx.TypeRefContext.ContainingType != null)
+                    {
+                        return new BoundLiteral(_flowCtx.TypeRefContext.ContainingType.MakeQualifiedName().ToString());
+                    }
+
+                    return new BoundLiteral(string.Empty);
 
                 default:
                     throw new NotImplementedException(x.Type.ToString());    // 

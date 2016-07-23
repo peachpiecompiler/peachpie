@@ -837,7 +837,7 @@ namespace Pchp.Syntax
 			result.Append(Name);
 			if (memberName.HasValue)
 			{
-				result.Append(instance ? "->" : "::");
+				result.Append(instance ? "->" : Name.ClassMemberSeparator);
 				result.Append(memberName.Value.ToString());
 			}
 
