@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Reflection
 {
+    /// <summary>
+    /// Runtime information about a function.
+    /// </summary>
     public abstract class RoutineInfo
     {
         /// <summary>
@@ -30,6 +33,8 @@ namespace Pchp.Core.Reflection
 
         //ulong _aliasedParams; // bit field corresponding to parameters that are passed by reference
         //_routineFlags;    // routine requirements, accessibility
+
+        // TODO: PHPDoc
 
         /// <summary>
         /// Gets routine runtime method handle.

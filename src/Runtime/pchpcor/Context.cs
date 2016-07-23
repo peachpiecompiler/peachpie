@@ -9,12 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Pchp.Core.Utilities;
 using System.Reflection;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
-    using Reflection;
-    using TTypesMap = Context.HandleMap<Type, Providers.TypeComparer, Providers.OrdinalIgnoreCaseStringComparer>;
-
     /// <summary>
     /// Runtime context for a PHP application.
     /// </summary>
@@ -31,7 +29,7 @@ namespace Pchp.Core
         protected Context()
         {
             _functions = new RoutinesTable(RoutinesAppContext.NameToIndex, RoutinesAppContext.AppRoutines, RoutinesAppContext.ContextRoutinesCounter, FunctionRedeclared);
-            _types = new TTypesMap(TypeRedeclared);
+            _types = new TypesTable(TypesAppContext.NameToIndex, TypesAppContext.AppTypes, TypesAppContext.ContextTypesCounter, TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
 
             _globals = new PhpArray();
@@ -80,7 +78,7 @@ namespace Pchp.Core
         /// <summary>
         /// Map of global types.
         /// </summary>
-        readonly TTypesMap _types;
+        readonly TypesTable _types;
 
         /// <summary>
         /// Map of global constants.
@@ -108,7 +106,7 @@ namespace Pchp.Core
             var tscriptinfo = tscript.GetTypeInfo();
 
             tscriptinfo.GetDeclaredMethod("EnumerateReferencedFunctions")
-                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(RoutinesAppContext.DeclareClrRoutine) }); 
+                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(RoutinesAppContext.DeclareRoutine) });
 
             tscriptinfo.GetDeclaredMethod("EnumerateScripts")
                 .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(ScriptsMap.DeclareScript) });
@@ -137,28 +135,18 @@ namespace Pchp.Core
         /// </summary>
         internal RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
         
-        /// <summary>
-        /// Declare a runtime type.
-        /// </summary>
-        /// <typeparam name="T">Type.</typeparam>
-        /// <param name="name">Type name.</param>
-        public void DeclareType<T>(string name)
+        public void AssertTypeDeclared<T>()
         {
-            _types.Declare(ref IndexHolder<T>.Index, name, typeof(T));
-        }
-
-        public void AssertTypeDeclared<T>(string name)
-        {
-            if (!_types.IsDeclared(ref IndexHolder<T>.Index, name, typeof(T)))
+            if (!_types.IsDeclared(TypeInfoHolder<T>.TypeInfo))
             {
                 // TODO: ErrCode type is not declared
             }
         }
 
         /// <summary>
-        /// Gets declared function with given name. In case of more items they are considered as overloads.
+        /// Gets runtime type information, or <c>null</c> if type with given is not declared.
         /// </summary>
-        internal Type[] GetDeclaredType(string name) => _types.TryGetHandle(name);
+        internal Reflection.TypeInfo GetDeclaredType(string name) => _types.GetDeclaredType(name);
 
         void FunctionRedeclared(RoutineInfo routine)
         {
@@ -166,12 +154,12 @@ namespace Pchp.Core
             throw new InvalidOperationException($"Function {routine.Name} redeclared!");
         }
 
-        void TypeRedeclared(Type handle)
+        void TypeRedeclared(Reflection.TypeInfo type)
         {
-            Debug.Assert(handle != null);
+            Debug.Assert(type != null);
 
             // TODO: ErrCode & throw
-            throw new InvalidOperationException($"Type {handle.FullName} redeclared!");
+            throw new InvalidOperationException($"Type {type.Name} redeclared!");
         }
 
         #endregion

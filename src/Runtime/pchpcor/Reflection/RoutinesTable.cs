@@ -17,7 +17,7 @@ namespace Pchp.Core.Reflection
         /// Adds referenced symbol into the map.
         /// In case of redeclaration, the handle is added to the list.
         /// </summary>
-        public static void DeclareClrRoutine(string name, RuntimeMethodHandle handle)
+        public static void DeclareRoutine(string name, RuntimeMethodHandle handle)
         {
             // TODO: W lock
 

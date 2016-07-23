@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -167,6 +168,18 @@ namespace Pchp.Core.Dynamic
             Debug.Assert(boundargs.All(x => x != null));
 
             //
+            if (method.IsStatic)
+            {
+                instance = null;
+            }
+
+            //
+            if (method.IsConstructor)
+            {
+                return Expression.New((ConstructorInfo)method, boundargs);
+            }
+
+            //
             return Expression.Call(instance, (MethodInfo)method, boundargs);
         }
 
@@ -183,6 +196,20 @@ namespace Pchp.Core.Dynamic
 
             // compile & create delegate
             var lambda = Expression.Lambda<PhpCallable>(invocation, targets[0].Name + "#" + targets.Length, true, ps);
+            return lambda.Compile();
+        }
+
+        public static TObjectCreator BindToCreator(ConstructorInfo[] ctors)
+        {
+            // (Context ctx, PhpValue[] arguments)
+            var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
+
+            // invoke targets
+            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), null, ctors, ps[0], ps[1]);
+            Debug.Assert(invocation.Type == typeof(PhpValue));
+
+            // compile & create delegate
+            var lambda = Expression.Lambda<TObjectCreator>(invocation, ctors[0].Name + "#" + ctors.Length, true, ps);
             return lambda.Compile();
         }
     }
