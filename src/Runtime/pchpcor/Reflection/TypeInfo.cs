@@ -70,6 +70,8 @@ namespace Pchp.Core.Reflection
 
         // TODO: type constants
 
+        // TODO: runtime fields dictionary
+
         // TODO: PHPDoc
     }
 

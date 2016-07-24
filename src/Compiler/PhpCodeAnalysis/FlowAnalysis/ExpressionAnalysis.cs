@@ -498,16 +498,51 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                throw new NotImplementedException();
+                throw ExceptionUtilities.UnexpectedValue(expr);
             }
         }
 
         protected virtual void VisitBoundVariableRef(BoundVariableRef x)
         {
+            // bind variable place
+            if (x.Variable == null)
+            {
+                x.Variable = x.Name.IsDirect
+                    ? _analysis.State.FlowContext.GetVar(x.Name.NameValue.Value)
+                    : new BoundIndirectLocal(x.Name.NameExpression);
+            }
+
+            // indirect variable access:
+            if (!x.Name.IsDirect)
+            {
+                Routine.Flags |= RoutineFlags.HasIndirectVar;
+
+                Visit(x.Name.NameExpression);
+
+                if (x.Access.IsRead)
+                {
+                    State.Common.SetAllUsed();
+                }
+
+                if (x.Access.IsWrite)
+                {
+                    State.SetAllInitialized();
+                }
+
+                if (x.Access.IsUnset)
+                {
+
+                }
+
+                return;
+            }
+
+            // direct variable access:
+            var name = x.Name.NameValue.Value;
             if (x.Access.IsRead)
             {
-                State.SetVarUsed(x.Name);
-                var vartype = State.GetVarType(x.Name);
+                State.SetVarUsed(name);
+                var vartype = State.GetVarType(name);
 
                 if (vartype.IsVoid)
                     vartype = TypeRefMask.AnyType;
@@ -516,7 +551,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     if (x.Access.IsReadRef)
                     {
-                        State.SetVarRef(x.Name);
+                        State.SetVarRef(name);
                         vartype.IsRef = true;
                     }
                     if (x.Access.EnsureObject && !IsClassOnly(vartype))
@@ -528,8 +563,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         vartype |= TypeCtx.GetArrayTypeMask();
                     }
 
-                    State.SetVarInitialized(x.Name);
-                    State.SetVar(x.Name, vartype);
+                    State.SetVarInitialized(name);
+                    State.SetVar(name, vartype);
                 }
 
                 x.TypeRefMask = vartype;
@@ -537,15 +572,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (x.Access.IsWrite)
             {
-                State.SetVarInitialized(x.Name);
-                State.SetVar(x.Name, x.Access.WriteMask);
-                State.LTInt64Max(x.Name, false);
+                State.SetVarInitialized(name);
+                State.SetVar(name, x.Access.WriteMask);
+                State.LTInt64Max(name, false);
 
                 x.TypeRefMask = x.Access.WriteMask;
 
                 if (x.Access.IsWriteRef)
                 {
-                    State.SetVarRef(x.Name);
+                    State.SetVarRef(name);
                     x.TypeRefMask = x.TypeRefMask.WithRefFlag;
                 }
 
@@ -556,10 +591,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var startBlock = Routine.ControlFlowGraph.Start;
                     var startState = startBlock.FlowState;
 
-                    var oldVar = startState.GetVarType(x.Name);
+                    var oldVar = startState.GetVarType(name);
                     if (oldVar != x.TypeRefMask)
                     {
-                        startState.SetVar(x.Name, x.TypeRefMask);
+                        startState.SetVar(name, x.TypeRefMask);
                         this.Worklist.Enqueue(startBlock);
                     }
                 }
@@ -567,8 +602,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (x.Access.IsUnset)
             {
-                State.SetVar(x.Name, 0);
-                State.LTInt64Max(x.Name, false);
+                State.SetVar(name, 0);
+                State.LTInt64Max(name, false);
                 x.TypeRefMask = 0;
             }
         }
@@ -956,8 +991,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (branch == ConditionBranch.ToTrue && x.Operand is BoundVariableRef)
                 {
-                    // if (Variable is T) => variable is T in True branch state
-                    State.SetVar(((BoundVariableRef)x.Operand).Name, TypeCtx.GetTypeMask(x.IsTypeDirect));
+                    var vref = (BoundVariableRef)x.Operand;
+                    if (vref.Name.IsDirect)
+                    {
+                        // if (Variable is T) => variable is T in True branch state
+                        State.SetVar(vref.Name.NameValue.Value, TypeCtx.GetTypeMask(x.IsTypeDirect));
+                    }
                 }
             }
 
@@ -1123,6 +1162,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitTypeRef(BoundTypeRef tref)
         {
+            if (tref == null)
+                return;
+
             Debug.Assert(tref.TypeRef.GenericParams.Count == 0, "Generics not implemented.");
 
             if (tref.TypeRef is DirectTypeRef)
@@ -1147,6 +1189,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     tref.ResolvedType = (TypeSymbol)_model.GetType(qname);
                 }
             }
+
+            Visit(tref.TypeExpression);
         }
 
         protected virtual void VisitNewEx(BoundNewEx x)
@@ -1255,8 +1299,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected void VisitFieldRef(BoundFieldRef x)
         {
-            Visit(x.ParentExpression);  // aka Instance
-            Visit(x.FieldNameExpression);
+            Visit(x.Instance);
+            VisitTypeRef(x.ParentType);
+            Visit(x.FieldName.NameExpression);
 
             if (x.IsInstanceField)  // {Instance}->FieldName
             {
@@ -1271,10 +1316,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var t = _model.GetType(typerefs[0].QualifiedName);
                     if (t != null)
                     {
-                        if (!x.FieldName.IsEmpty())
+                        if (x.FieldName.IsDirect)
                         {
                             // TODO: visibility and resolution (model)
-                            var field = t.GetMembers(x.FieldName.Value).OfType<FieldSymbol>().SingleOrDefault();
+                            var field = t.GetMembers(x.FieldName.NameValue.Value).OfType<FieldSymbol>().SingleOrDefault();
                             if (field != null)
                             {
                                 x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
@@ -1288,9 +1333,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // dynamic behavior
                 x.TypeRefMask = TypeRefMask.AnyType;
 
-                if (!x.FieldName.IsEmpty())
+                if (x.FieldName.IsDirect)
                 {
-                    x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName.Value, x.Access);
+                    x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName.NameValue.Value, x.Access);
                     return;
                 }
 
@@ -1298,22 +1343,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             // static fields or constants
-            NamedTypeSymbol ParentType = x.ParentName.IsEmpty()
-                ? null
-                : (NamedTypeSymbol)_model.GetType(x.ParentName);
-
-            //
             if (x.IsStaticField || x.IsClassConstant)    // {ClassName}::${StaticFieldName}, {ClassName}::{ConstantName}
             {
+                var ParentType = (NamedTypeSymbol)x.ParentType.ResolvedType;
+
                 if (x.IsClassConstant)
                 {
                     Debug.Assert(x.Access.IsRead);
                     Debug.Assert(!x.Access.IsEnsure && !x.Access.IsWrite && !x.Access.IsReadRef);
                 }
 
-                if (!x.FieldName.IsEmpty() && ParentType != null)
+                if (x.FieldName.IsDirect && ParentType != null)
                 {
-                    var field = ParentType.ResolveStaticField(x.FieldName.Value);
+                    var field = ParentType.ResolveStaticField(x.FieldName.NameValue.Value);
                     if (field != null)
                     {
                         // TODO: visibility -> ErrCode
@@ -1321,7 +1363,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         Debug.Assert(
                             field.IsConst ||    // .NET constant
                             field.IsStatic ||   // .NET static
-                            field.ContainingType.TryGetStatics().LookupMember<FieldSymbol>(x.FieldName.Value) != null); // or PHP context static
+                            field.ContainingType.TryGetStatics().LookupMember<FieldSymbol>(x.FieldName.NameValue.Value) != null); // or PHP context static
 
                         if (BindConstantValue(x, field))
                         {

@@ -81,6 +81,38 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
+    #region BoundIndirectLocal
+
+    public partial class BoundIndirectLocal : BoundVariable, IVariable
+    {
+        public override OperationKind Kind => OperationKind.VariableDeclaration;
+
+        internal override Symbol Symbol => null;
+
+        IExpression IVariable.InitialValue => null;
+
+        ILocalSymbol IVariable.Variable => (ILocalSymbol)Symbol;
+
+        public override string Name => null;
+
+        public BoundExpression NameExpression => _nameExpr;
+        readonly BoundExpression _nameExpr;
+
+        public BoundIndirectLocal(BoundExpression nameExpr)
+            : base(VariableKind.LocalVariable)
+        {
+            _nameExpr = nameExpr;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitVariable(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitVariable(this, argument);
+    }
+
+    #endregion
+
     #region BoundStaticLocal
 
     public partial class BoundStaticLocal : BoundLocal

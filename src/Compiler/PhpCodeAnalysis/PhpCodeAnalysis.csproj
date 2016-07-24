@@ -110,7 +110,6 @@
     <Compile Include="FlowAnalysis\TypeRef\TypeRefMask.cs" />
     <Compile Include="FlowAnalysis\Visitors\GraphWalker.cs" />
     <Compile Include="FlowAnalysis\Visitors\LocalsWalker.cs" />
-    <Compile Include="FlowAnalysis\Visitors\VariableResolver.cs" />
     <Compile Include="FlowAnalysis\Worklist.cs" />
     <Compile Include="Semantics\BoundTypeRef.cs" />
     <Compile Include="Semantics\BoundVariable.cs" />

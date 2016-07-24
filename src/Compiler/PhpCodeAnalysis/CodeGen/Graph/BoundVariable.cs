@@ -112,6 +112,16 @@ namespace Pchp.CodeAnalysis.Semantics
         private IPlace LocalPlace(ILBuilder il) => _place;
     }
 
+    partial class BoundIndirectLocal
+    {
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
+        {
+            return new BoundIndirectVariablePlace(_nameExpr, access);
+        }
+
+        internal override IPlace Place(ILBuilder il) => null;
+    }
+
     partial class BoundStaticLocal
     {
         /// <summary>

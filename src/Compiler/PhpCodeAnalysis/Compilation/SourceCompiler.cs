@@ -98,13 +98,8 @@ namespace Pchp.CodeAnalysis
         {
             // _worklist.AddAnalysis:
 
-            // Resolve variable references
             // TypeAnalysis + ResolveSymbols
             // LowerBody(block)
-
-            // Resolve variable references
-            this.WalkMethods(routine
-                => GraphWalker.Walk(routine.ControlFlowGraph, new VariableResolver(routine.ControlFlowGraph.FlowContext)));
 
             // analyse blocks
             _worklist.DoAll();

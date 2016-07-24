@@ -125,7 +125,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var tmask = _flowCtx.TypeRefContext.GetTypeMask(x.TypeRef, true);
 
-            return new BoundVariableRef(x.Variable.VarName.Value)
+            return new BoundVariableRef(new BoundVariableName(x.Variable.VarName))
                 .WithAccess(BoundAccess.Write.WithWrite(tmask));
         }
 
@@ -171,16 +171,14 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 var cx = (AST.ClassConstUse)x;
                 var dtype = cx.TypeRef as AST.DirectTypeRef;
-                var itype = cx.TypeRef as AST.IndirectTypeRef;
-
                 if (dtype != null && cx.Name.Equals("class"))   // Type::class ~ "Type"
                 {
                     return new BoundLiteral(dtype.ClassName.ToString());
                 }
 
-                return (dtype != null)
-                    ? BoundFieldRef.CreateClassConst(dtype.ClassName, cx.Name)
-                    : BoundFieldRef.CreateClassConst(BindExpression(itype.ClassNameVar, BoundAccess.Read), cx.Name);
+                var typeref = BindTypeRef(cx.TypeRef);
+
+                return BoundFieldRef.CreateClassConst(typeref, new BoundVariableName(cx.Name));
             }
 
             throw ExceptionUtilities.UnexpectedValue(x);
@@ -355,7 +353,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, BoundAccess access)
         {
-            if (expr is AST.DirectVarUse) return BindDirectVarUse((AST.DirectVarUse)expr, access);
+            if (expr is AST.SimpleVarUse) return BindSimpleVarUse((AST.SimpleVarUse)expr, access);
             if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
             if (expr is AST.NewEx) return BindNew((AST.NewEx)expr, access);
             if (expr is AST.ArrayEx) return BindArrayEx((AST.ArrayEx)expr, access);
@@ -419,11 +417,20 @@ namespace Pchp.CodeAnalysis.Semantics
                 .WithAccess(access);
         }
 
-        BoundExpression BindDirectVarUse(AST.DirectVarUse expr, BoundAccess access)
+        BoundExpression BindSimpleVarUse(AST.SimpleVarUse expr, BoundAccess access)
         {
+            var dexpr = expr as AST.DirectVarUse;
+            var iexpr = expr as AST.IndirectVarUse;
+
+            Debug.Assert(dexpr != null || iexpr != null);
+
+            var varname = (dexpr != null)
+                ? new BoundVariableName(dexpr.VarName)
+                : new BoundVariableName(BindExpression(iexpr.VarNameEx));
+
             if (expr.IsMemberOf == null)
             {
-                return new BoundVariableRef(expr.VarName.Value).WithAccess(access);
+                return new BoundVariableRef(varname);
             }
             else
             {
@@ -435,34 +442,33 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (access.IsQuiet)
                     instanceAccess = instanceAccess.WithQuiet();
 
-                return BoundFieldRef.CreateInstanceField(BindExpression(expr.IsMemberOf, instanceAccess), expr.VarName).WithAccess(access);
+                return BoundFieldRef.CreateInstanceField(BindExpression(expr.IsMemberOf, instanceAccess), varname).WithAccess(access);
             }
         }
 
         BoundExpression BindFieldUse(AST.StaticFieldUse x, BoundAccess access)
         {
-            var dtype = x.TypeRef as AST.DirectTypeRef;
-            var itype = x.TypeRef as AST.IndirectTypeRef;
+            var typeref = BindTypeRef(x.TypeRef);
+            BoundVariableName varname;
 
             if (x is AST.DirectStFldUse)
             {
                 var dx = (AST.DirectStFldUse)x;
-
-                return (dtype != null)
-                    ? BoundFieldRef.CreateStaticField(dtype.ClassName, dx.PropertyName)
-                    : BoundFieldRef.CreateStaticField(BindExpression(itype.ClassNameVar, BoundAccess.Read), dx.PropertyName);
+                varname = new BoundVariableName(dx.PropertyName);
             }
             else if (x is AST.IndirectStFldUse)
             {
                 var ix = (AST.IndirectStFldUse)x;
                 var fieldNameExpr = BindExpression(ix.FieldNameExpr, BoundAccess.Read);
 
-                return (dtype != null)
-                    ? BoundFieldRef.CreateStaticField(dtype.ClassName, fieldNameExpr)
-                    : BoundFieldRef.CreateStaticField(BindExpression(itype.ClassNameVar, BoundAccess.Read), fieldNameExpr);
+                varname = new BoundVariableName(fieldNameExpr);
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(x);
             }
 
-            throw ExceptionUtilities.UnexpectedValue(x);
+            return BoundFieldRef.CreateStaticField(typeref, varname);
         }
 
         BoundExpression BindGlobalConstUse(AST.GlobalConstUse expr)

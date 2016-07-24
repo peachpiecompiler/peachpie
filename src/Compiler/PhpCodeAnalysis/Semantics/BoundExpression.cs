@@ -455,7 +455,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// Direct or indirect routine name.
     /// </summary>
     [DebuggerDisplay("{DebugView,nq}")]
-    public class BoundRoutineName
+    public partial class BoundRoutineName
     {
         public QualifiedName NameValue => _nameValue;
         readonly QualifiedName _nameValue;
@@ -897,14 +897,51 @@ namespace Pchp.CodeAnalysis.Semantics
     #region BoundVariableRef
 
     /// <summary>
+    /// Direct or indirect variable name.
+    /// </summary>
+    [DebuggerDisplay("{DebugView,nq}")]
+    public partial class BoundVariableName
+    {
+        public VariableName NameValue => _nameValue;
+        readonly VariableName _nameValue;
+
+        public BoundExpression NameExpression => _nameExpression;
+        readonly BoundExpression _nameExpression;
+
+        string DebugView
+        {
+            get
+            {
+                return IsDirect ? _nameValue.ToString() : _nameExpression.ToString();
+            }
+        }
+
+        public bool IsDirect => _nameExpression == null;
+
+        public BoundVariableName(VariableName name)
+        {
+            _nameValue = name;
+            _nameExpression = null;
+        }
+
+        public BoundVariableName(BoundExpression nameExpr)
+        {
+            Debug.Assert(nameExpr != null);
+            _nameExpression = nameExpr;
+        }
+    }
+
+    /// <summary>
     /// A variable reference that can be read or written to.
     /// </summary>
     public partial class BoundVariableRef : BoundReferenceExpression, ILocalReferenceExpression
     {
+        readonly BoundVariableName _name;
+
         /// <summary>
         /// Name of the variable.
         /// </summary>
-        public string Name { get; private set; }
+        public BoundVariableName Name => _name;
 
         /// <summary>
         /// Resolved variable source.
@@ -924,9 +961,10 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitLocalReferenceExpression(this, argument);
 
-        public BoundVariableRef(string name)
+        public BoundVariableRef(BoundVariableName name)
         {
-            this.Name = name;
+            Debug.Assert(name != null);
+            _name = name;
         }
     }
 
@@ -982,34 +1020,22 @@ namespace Pchp.CodeAnalysis.Semantics
 
         FieldType _type;
 
+        BoundExpression _parentExpr;    // in case of instance field
+        BoundTypeRef _parentType;       // in case of class constant or static field
+        BoundVariableName _fieldName;   // field name
+
         public bool IsInstanceField => _type == FieldType.InstanceField;
         public bool IsStaticField => _type == FieldType.StaticField;
         public bool IsClassConstant => _type == FieldType.ClassConstant;
-
-        BoundExpression _parentExpr;
-        QualifiedName _parentName;
-
-        VariableName _fieldName;
-        BoundExpression _fieldNameExpr;
 
         /// <summary>
         /// In case of a non static field, gets its instance expression.
         /// </summary>
         public BoundExpression Instance => IsInstanceField ? _parentExpr : null;
 
-        public BoundExpression ParentExpression => _parentExpr;
+        public BoundTypeRef ParentType => _parentType;
 
-        public QualifiedName ParentName => _parentName;
-
-        /// <summary>
-        /// Direct field name.
-        /// </summary>
-        public VariableName FieldName => _fieldName;
-
-        /// <summary>
-        /// In case of indirect field access.
-        /// </summary>
-        public BoundExpression FieldNameExpression => _fieldNameExpr;
+        public BoundVariableName FieldName => _fieldName;
 
         public override OperationKind Kind => OperationKind.FieldReferenceExpression;
 
@@ -1017,18 +1043,9 @@ namespace Pchp.CodeAnalysis.Semantics
         {
         }
 
-        public static BoundFieldRef CreateInstanceField(BoundExpression instance, VariableName name) => new BoundFieldRef() { _parentExpr = instance, _fieldName = name, _type = FieldType.InstanceField };
-        public static BoundFieldRef CreateInstanceField(BoundExpression instance, BoundExpression nameExpr) => new BoundFieldRef() { _parentExpr = instance, _fieldNameExpr = nameExpr, _type = FieldType.InstanceField };
-
-        public static BoundFieldRef CreateStaticField(QualifiedName parent, VariableName name) => new BoundFieldRef() { _parentName = parent, _fieldName = name, _type = FieldType.StaticField };
-        public static BoundFieldRef CreateStaticField(BoundExpression parent, VariableName name) => new BoundFieldRef() { _parentExpr = parent, _fieldName = name, _type = FieldType.StaticField };
-        public static BoundFieldRef CreateStaticField(QualifiedName parent, BoundExpression nameExpr) => new BoundFieldRef() { _parentName = parent, _fieldNameExpr = nameExpr, _type = FieldType.StaticField };
-        public static BoundFieldRef CreateStaticField(BoundExpression parent, BoundExpression nameExpr) => new BoundFieldRef() { _parentExpr = parent, _fieldNameExpr = nameExpr, _type = FieldType.StaticField };
-
-        public static BoundFieldRef CreateClassConst(QualifiedName parent, VariableName name) => new BoundFieldRef() { _parentName = parent, _fieldName = name, _type = FieldType.ClassConstant };
-        public static BoundFieldRef CreateClassConst(BoundExpression parent, VariableName name) => new BoundFieldRef() { _parentExpr = parent, _fieldName = name, _type = FieldType.ClassConstant };
-        public static BoundFieldRef CreateClassConst(QualifiedName parent, BoundExpression name) => new BoundFieldRef() { _parentName = parent, _fieldNameExpr = name, _type = FieldType.ClassConstant };
-        public static BoundFieldRef CreateClassConst(BoundExpression parent, BoundExpression name) => new BoundFieldRef() { _parentExpr = parent, _fieldNameExpr = name, _type = FieldType.ClassConstant };
+        public static BoundFieldRef CreateInstanceField(BoundExpression instance, BoundVariableName name) => new BoundFieldRef() { _parentExpr = instance, _fieldName = name, _type = FieldType.InstanceField };
+        public static BoundFieldRef CreateStaticField(BoundTypeRef parent, BoundVariableName name) => new BoundFieldRef() { _parentType = parent, _fieldName = name, _type = FieldType.StaticField };
+        public static BoundFieldRef CreateClassConst(BoundTypeRef parent, BoundVariableName name) => new BoundFieldRef() { _parentType = parent, _fieldName = name, _type = FieldType.ClassConstant };
 
 
         public override void Accept(OperationVisitor visitor)

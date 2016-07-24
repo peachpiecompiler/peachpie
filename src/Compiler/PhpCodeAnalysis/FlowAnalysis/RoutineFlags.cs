@@ -28,6 +28,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Whether the routine has to define local variables as an array instead of native local variables.
         /// </summary>
-        RequiresLocalsArray = HasEval | HasInclude | HasInclude | UsesLocals,
+        RequiresLocalsArray = HasEval | HasInclude | HasIndirectVar | UsesLocals,
     }
 }
