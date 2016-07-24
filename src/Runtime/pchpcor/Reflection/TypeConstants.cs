@@ -23,7 +23,10 @@ namespace Pchp.Core.Reflection
         /// </summary>
         readonly Dictionary<string, object> _values;
 
-        readonly Func<Context, object> _staticsGetter;
+        /// <summary>
+        /// Lazily initialized function getting <c>_statics</c> in given runtime <see cref="Context"/>.
+        /// </summary>
+        Func<Context, object> _staticsGetter;
 
         #endregion
 
@@ -41,15 +44,9 @@ namespace Pchp.Core.Reflection
                 foreach (var c in ReflectConstants(tinfo))
                 {
                     if (values == null)
-                        values = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                        values = new Dictionary<string, object>(StringComparer.Ordinal);    // class constants are case sensitive
 
                     values.Add(c.Key, c.Value);
-
-                    //
-                    if (c.Value is FieldInfo && _staticsGetter == null)
-                    {
-                        _staticsGetter = CreateStaticsGetter(((FieldInfo)c.Value).DeclaringType);
-                    }
                 }
             }
 
@@ -118,7 +115,11 @@ namespace Pchp.Core.Reflection
                 {
                     if (obj is FieldInfo)
                     {
-                        Debug.Assert(_staticsGetter != null);
+                        if (_staticsGetter == null)
+                        {
+                            _staticsGetter = CreateStaticsGetter(((FieldInfo)obj).DeclaringType);
+                        }
+
                         return ((FieldInfo)obj).GetValue(_staticsGetter(ctx));  // Context.GetStatics<_statics>().FIELD                        
                     }
                     else
