@@ -1108,6 +1108,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitFunctionCall(BoundGlobalFunctionCall x)
         {
+            Visit(x.Name.NameExpression);
+
             if (x.Name.IsDirect)
             {
                 var candidates = _model.ResolveFunction(x.Name.NameValue).Cast<MethodSymbol>().ToArray();
@@ -1124,6 +1126,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void VisitFunctionCall(BoundInstanceFunctionCall x)
         {
             Visit(x.Instance);
+            Visit(x.Name.NameExpression);
 
             if (x.Name.IsDirect)
             {
@@ -1152,6 +1155,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void VisitFunctionCall(BoundStaticFunctionCall x)
         {
             VisitTypeRef(x.TypeRef);
+            Visit(x.Name.NameExpression);
 
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {
