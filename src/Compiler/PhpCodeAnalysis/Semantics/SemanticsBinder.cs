@@ -295,7 +295,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var nameExpr = BindExpression(f.NameExpr);
                 return ((f.IsMemberOf == null)
                     ? (BoundRoutineCall)new BoundGlobalFunctionCall(nameExpr, boundargs)
-                    : new BoundInstanceFunctionCall(boundinstance, nameExpr, boundargs))
+                    : new BoundInstanceFunctionCall(boundinstance, new BoundUnaryEx(nameExpr, AST.Operations.StringCast), boundargs))
                         .WithAccess(access);
             }
             else if (x is AST.StaticMtdCall)

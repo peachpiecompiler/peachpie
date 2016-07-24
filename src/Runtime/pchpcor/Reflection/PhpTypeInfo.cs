@@ -63,7 +63,9 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(t != null);
             _type = t;
-            _name = t.FullName.Replace('.', '\\');
+            _name = t.FullName  // full PHP type name instead of CLR type name
+                .Replace('.', '\\')     // namespace separator
+                .Replace('+', '\\');    // nested type separator
         }
 
         #region Reflection

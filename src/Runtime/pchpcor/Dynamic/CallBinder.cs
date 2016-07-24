@@ -275,16 +275,24 @@ namespace Pchp.Core.Dynamic
 
             target = new DynamicMetaObject(target_expr, target.Restrictions, target_value);
 
-            if (_name != null)
+            string name = _name;
+
+            if (_name == null)
             {
-                // candidates:
-                var candidates = target.RuntimeType.SelectCandidates().SelectByName(_name).SelectVisible(_classCtx).ToList();
-                return candidates.ToArray();
+                // indirect function name
+
+                Debug.Assert(args.Count >= 1 && args[0].LimitType == typeof(string));
+                Debug.Assert(args[0].Value is string);
+
+                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[0].Expression, Expression.Constant(args[0].Value)))); // args[0] == "VALUE"
+
+                name = (string)args[0].Value;
+                args.RemoveAt(0);
             }
-            else
-            {
-                throw new NotImplementedException();
-            }
+
+            // candidates:
+            var candidates = target.RuntimeType.SelectCandidates().SelectByName(name).SelectVisible(_classCtx).ToList();
+            return candidates.ToArray();
         }
     }
 
