@@ -10,8 +10,8 @@ class Dog {
 }
 
 class BigDog extends Dog {
-	function __construct($breed) {
-		echo __METHOD__, $breed;
+	function __construct($breed, $size = 0) {
+		echo __METHOD__, $breed, $size;
 		parent::__construct($breed);
 	}
 	function Bark(){
