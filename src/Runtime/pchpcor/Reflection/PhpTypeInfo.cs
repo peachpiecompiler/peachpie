@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Reflection
 {
-    #region TypeInfo
+    #region PhpTypeInfo
 
     /// <summary>
     /// Runtime information about a type.
     /// </summary>
-    public class TypeInfo
+    public class PhpTypeInfo
     {
         /// <summary>
         /// Index to the type slot.
@@ -59,7 +59,7 @@ namespace Pchp.Core.Reflection
             return _lazyCreator;
         }
 
-        internal TypeInfo(Type t)
+        internal PhpTypeInfo(Type t)
         {
             Debug.Assert(t != null);
             _type = t;
@@ -111,6 +111,68 @@ namespace Pchp.Core.Reflection
         #endregion
     }
 
+    #endregion
+
+    #region PhpTypeInfoExtension
+
+    public static class PhpTypeInfoExtension
+    {
+        static MethodInfo _lazyGetPhpTypeInfo_T;
+
+        readonly static Dictionary<RuntimeTypeHandle, PhpTypeInfo> _cache = new Dictionary<RuntimeTypeHandle, PhpTypeInfo>();
+
+        /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of given <typeparamref name="TType"/>.
+        /// </summary>
+        /// <typeparam name="TType">Type to get info about.</typeparam>
+        /// <returns>Runtime type information.</returns>
+        public static PhpTypeInfo GetPhpTypeInfo<TType>()
+            => TypeInfoHolder<TType>.TypeInfo;
+
+        /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of given <paramref name="type"/>.
+        /// </summary>
+        public static PhpTypeInfo GetPhpTypeInfo(this Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException("type");
+            }
+
+            PhpTypeInfo result = null;
+            var handle = type.TypeHandle;
+
+            // lookup cache first
+            lock (_cache)
+            {
+                _cache.TryGetValue(handle, out result);
+            }
+
+            // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
+            if (result == null)
+            {
+                if (_lazyGetPhpTypeInfo_T == null)
+                {
+                    _lazyGetPhpTypeInfo_T = typeof(PhpTypeInfoExtension).GetRuntimeMethod("GetPhpTypeInfo", Dynamic.Cache.Types.Empty);
+                }
+
+                // TypeInfoHolder<TType>.TypeInfo;
+                result = (PhpTypeInfo)_lazyGetPhpTypeInfo_T
+                    .MakeGenericMethod(type)
+                    .Invoke(null, Utilities.ArrayUtils.EmptyObjects);
+
+                lock (_cache)
+                {
+                    _cache[handle] = result;
+                }
+            }
+
+            //
+            return result;
+        }
+    }
+
+
     /// <summary>
     /// Delegate for dynamic object creation.
     /// </summary>
@@ -132,11 +194,11 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Associated runtime type information.
         /// </summary>
-        public static readonly TypeInfo TypeInfo = Create(typeof(TType));
+        public static readonly PhpTypeInfo TypeInfo = Create(typeof(TType));
 
-        static TypeInfo Create(Type type)
+        static PhpTypeInfo Create(Type type)
         {
-            return new TypeInfo(type);
+            return new PhpTypeInfo(type);
         }
     }
 

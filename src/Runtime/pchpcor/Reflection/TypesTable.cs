@@ -10,7 +10,7 @@ namespace Pchp.Core.Reflection
     internal static class TypesAppContext
     {
         public static readonly Dictionary<string, int> NameToIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        public static readonly List<TypeInfo> AppTypes = new List<TypeInfo>();
+        public static readonly List<PhpTypeInfo> AppTypes = new List<PhpTypeInfo>();
         public static readonly TypesTable.TypesCount ContextTypesCounter = new TypesTable.TypesCount();
 
         /// <summary>
@@ -74,20 +74,20 @@ namespace Pchp.Core.Reflection
         /// </summary>
         readonly Dictionary<string, int> _nameToIndex;
 
-        readonly List<TypeInfo> _appTypes;
+        readonly List<PhpTypeInfo> _appTypes;
 
         readonly TypesCount _contextTypesCounter;
 
-        TypeInfo[] _contextTypes;
+        PhpTypeInfo[] _contextTypes;
 
-        readonly Action<TypeInfo> _redeclarationCallback;
+        readonly Action<PhpTypeInfo> _redeclarationCallback;
 
-        internal TypesTable(Dictionary<string, int> nameToIndex, List<TypeInfo> appTypes, TypesCount counter, Action<TypeInfo> redeclarationCallback)
+        internal TypesTable(Dictionary<string, int> nameToIndex, List<PhpTypeInfo> appTypes, TypesCount counter, Action<PhpTypeInfo> redeclarationCallback)
         {
             _nameToIndex = nameToIndex;
             _appTypes = appTypes;
             _contextTypesCounter = counter;
-            _contextTypes = new TypeInfo[counter.Count];
+            _contextTypes = new PhpTypeInfo[counter.Count];
             _redeclarationCallback = redeclarationCallback;
         }
 
@@ -129,7 +129,7 @@ namespace Pchp.Core.Reflection
             DeclareType(ref _contextTypes[index - 1], info);
         }
 
-        void DeclareType(ref TypeInfo slot, TypeInfo type)
+        void DeclareType(ref PhpTypeInfo slot, PhpTypeInfo type)
         {
             if (object.ReferenceEquals(slot, null))
             {
@@ -148,8 +148,8 @@ namespace Pchp.Core.Reflection
         /// Gets runtime type information in current context.
         /// </summary>
         /// <param name="name">Name of the type. Case insensitive.</param>
-        /// <returns><see cref="TypeInfo"/> instance or <c>null</c> if type with given name is not declared.</returns>
-        public TypeInfo GetDeclaredType(string name)
+        /// <returns><see cref="PhpTypeInfo"/> instance or <c>null</c> if type with given name is not declared.</returns>
+        public PhpTypeInfo GetDeclaredType(string name)
         {
             int index;
             if (_nameToIndex.TryGetValue(name, out index))
@@ -172,7 +172,7 @@ namespace Pchp.Core.Reflection
             return null;
         }
 
-        internal bool IsDeclared(TypeInfo type)
+        internal bool IsDeclared(PhpTypeInfo type)
         {
             return (type.Index > 0 && type.Index <= _contextTypes.Length && _contextTypes[type.Index - 1] == type);
         }
