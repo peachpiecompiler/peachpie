@@ -23,15 +23,19 @@ namespace Pchp.Core.Dynamic
             _access = access;
         }
 
-        string ResolveName(DynamicMetaObject[] args, ref BindingRestrictions restrictions)
+        void ResolveArgs(DynamicMetaObject[] args, ref BindingRestrictions restrictions, out string fieldName, out Expression valueExpr)
         {
             if (_name != null)
             {
-                return _name;
+                fieldName = _name;
+                valueExpr = (args.Length > 0) ? args[0].Expression : null;
             }
             else
             {
-                throw new NotImplementedException();
+                Debug.Assert(args.Length >= 1 && args[0].LimitType == typeof(string));
+                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[0].Expression, Expression.Constant(args[0].Value)))); // args[0] == "VALUE"
+                fieldName = (string)args[0].Value;
+                valueExpr = (args.Length > 1) ? args[1].Expression : null;
             }
         }
 
@@ -43,10 +47,12 @@ namespace Pchp.Core.Dynamic
             object target_value;
             BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
 
-            var fldName = ResolveName(args, ref restrictions);
+            string fldName;
+            Expression value;
+
+            ResolveArgs(args, ref restrictions, out fldName, out value);
 
             var runtime_type = target_value.GetType();
-            var value = (args.Length == 1) ? args[0].Expression : null;
 
             // 
             if (target_expr.Type != runtime_type)
@@ -94,7 +100,7 @@ namespace Pchp.Core.Dynamic
                 {
                     Debug.Assert(value == null);
 
-                    throw new NotImplementedException();    // <fld> = default(T)
+                    setter = Expression.Assign(lvalue, ConvertExpression.BindDefault(fld.FieldType));
                 }
                 else
                 {

@@ -33,7 +33,9 @@ namespace Pchp.Core.Dynamic
             }
             else
             {
-                throw new NotImplementedException();
+                Debug.Assert(args.Length >= 1 && args[0].LimitType == typeof(string));
+                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[0].Expression, Expression.Constant(args[0].Value)))); // args[0] == "VALUE"
+                return (string)args[0].Value;
             }
         }
 

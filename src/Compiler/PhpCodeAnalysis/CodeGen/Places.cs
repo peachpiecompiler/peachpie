@@ -394,21 +394,21 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(cg != null);
 
-                if (_instance_loc != null)
-                {
-                    cg.Builder.EmitLocalLoad(_instance_loc);
-                }
-                else
-                {
-                    _cg = cg;
+            if (_instance_loc != null)
+            {
+                cg.Builder.EmitLocalLoad(_instance_loc);
+            }
+            else
+            {
+                _cg = cg;
 
-                    // return (<loc> = <instance>);
-                    _instance_loc = cg.GetTemporaryLocal(emitter());
-                    cg.EmitOpCode(ILOpCode.Dup);
-                    cg.Builder.EmitLocalStore(_instance_loc);
-                }
+                // return (<loc> = <instance>);
+                _instance_loc = cg.GetTemporaryLocal(emitter());
+                cg.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(_instance_loc);
+            }
 
-                return (TypeSymbol)_instance_loc.Type;
+            return (TypeSymbol)_instance_loc.Type;
         }
 
         /// <summary>
@@ -517,7 +517,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(place);
             Debug.Assert(place.HasAddress);
-            
+
             _place = place;
             _access = access;
             _thint = thint;
@@ -843,7 +843,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         readonly Syntax.VariableName _name;
         readonly BoundAccess _access;
-        
+
         public BoundSuperglobalPlace(Syntax.VariableName name, BoundAccess access)
         {
             Debug.Assert(name.IsAutoGlobal);
@@ -907,7 +907,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         protected virtual TypeSymbol LoadVariablesArray(CodeGenerator cg)
         {
             Debug.Assert(cg.LocalsPlaceOpt != null);
-            
+
             // <locals>
             return cg.LocalsPlaceOpt.EmitLoad(cg.Builder)
                 .Expect(cg.CoreTypes.PhpArray);
@@ -1001,7 +1001,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     internal class BoundGlobalPlace : BoundIndirectVariablePlace
     {
         public BoundGlobalPlace(BoundExpression nameExpr, BoundAccess access)
-            :base(nameExpr, access)
+            : base(nameExpr, access)
         {
         }
 
@@ -1118,7 +1118,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public BoundFieldPlace(BoundExpression instance, FieldSymbol field, BoundExpression boundref)
         {
             Contract.ThrowIfNull(field);
-            
+
             _instance = instance;
             _field = field;
             _boundref = boundref;
@@ -1457,7 +1457,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     internal class BoundPhpStaticFieldPlace : BoundFieldPlace
     {
         public BoundPhpStaticFieldPlace(FieldSymbol field, BoundExpression boundref)
-            :base(null, field, boundref)
+            : base(null, field, boundref)
         {
             Debug.Assert(!field.IsStatic);
             Debug.Assert(field.ContainingType.TryGetStatics() != null);
@@ -1479,26 +1479,20 @@ namespace Pchp.CodeAnalysis.CodeGen
     /// </summary>
     internal class BoundIndirectFieldPlace : IBoundReference
     {
-        public BoundExpression Name => _name;
-        readonly BoundExpression _name;
+        public BoundVariableName Name => _name;
+        readonly BoundVariableName _name;
 
         public BoundExpression Instance => _instance;
         readonly BoundExpression _instance;
 
-        public string NameString => _name.ConstantObject.HasValue ? _name.ConstantObject.Value?.ToString() : null;
+        public string NameValueOpt => _name.IsDirect ? _name.NameValue.Value : null;
 
         readonly BoundAccess _access;
 
-        public BoundIndirectFieldPlace(BoundExpression instance, string name, BoundAccess access)
-            :this(instance, new BoundLiteral(name), access)
-        {
-
-        }
-
-        public BoundIndirectFieldPlace(BoundExpression instance, BoundExpression name, BoundAccess access)
+        public BoundIndirectFieldPlace(BoundExpression instance, BoundVariableName name, BoundAccess access)
         {
             Contract.ThrowIfNull(name);
-            
+
             _instance = instance;
             _name = name;
             _access = access;
@@ -1514,10 +1508,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
         {
             if (_lazyLoadCallSite == null)
-                _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameString);
+                _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameValueOpt);
 
             // callsite.Target callsite
-                _lazyLoadCallSite.EmitLoadTarget(cg.Builder);
+            _lazyLoadCallSite.EmitLoadTarget(cg.Builder);
             _lazyLoadCallSite.Place.EmitLoad(cg.Builder);
 
             // instance
@@ -1536,10 +1530,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (_access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
             else return_type = _access.TargetType ?? cg.CoreTypes.PhpValue;
 
+            var args = new List<TypeSymbol>();
+
+            // NameExpression in case of indirect call
+            if (!_name.IsDirect)
+            {
+                cg.EmitConvert(_name.NameExpression, cg.CoreTypes.String);
+                args.Add(cg.CoreTypes.String);
+            }
+
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
                 this.Instance.ResultType, RefKind.None,
-                ImmutableArray<TypeSymbol>.Empty,
+                args.AsImmutable(),
                 default(ImmutableArray<RefKind>),
                 null,
                 return_type);
@@ -1551,7 +1554,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyLoadCallSite.Construct(functype, cctor =>
             {
                 // new GetFieldBinder(field_name, context, return, flags)
-                cctor.Builder.EmitStringConstant(this.NameString); Debug.Assert(this.Name is BoundLiteral);   // TODO: in case of expression, postpone this to runtime
+                cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
                 cctor.EmitLoadToken(return_type, null);
                 cctor.Builder.EmitIntConstant((int)_access.AccessFlags);
@@ -1565,7 +1568,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
         {
             if (_lazyStoreCallSite == null)
-                _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameString);
+                _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
 
             // callsite.Target callsite
             _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
@@ -1573,6 +1576,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // instance
             InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+
+            // NameExpression in case of indirect call
+            if (!_name.IsDirect)
+            {
+                cg.EmitConvert(_name.NameExpression, cg.CoreTypes.String);
+            }
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
@@ -1580,10 +1589,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(_lazyStoreCallSite != null);
             Debug.Assert(this.Instance.ResultType != null);
 
+            var args = new List<TypeSymbol>();
+
+            // NameExpression in case of indirect call
+            if (!_name.IsDirect)
+            {
+                args.Add(cg.CoreTypes.String);
+            }
+
+            if (valueType != null)
+            {
+                args.Add(valueType);
+            }
+
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
                 this.Instance.ResultType, RefKind.None,
-                (valueType != null) ? ImmutableArray.Create(valueType) : ImmutableArray<TypeSymbol>.Empty,
+                args.AsImmutable(),
                 default(ImmutableArray<RefKind>),
                 null,
                 cg.CoreTypes.Void);
@@ -1592,7 +1614,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _lazyStoreCallSite.Construct(functype, cctor =>
             {
-                cctor.Builder.EmitStringConstant(this.NameString);   // TODO: expression potpone to runtime
+                cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
                 cctor.Builder.EmitIntConstant((int)_access.AccessFlags);   // flags
                 cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);

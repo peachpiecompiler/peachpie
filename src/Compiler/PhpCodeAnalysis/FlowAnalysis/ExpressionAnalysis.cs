@@ -1330,20 +1330,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 x.TypeRefMask = field.GetResultType(TypeCtx);
                                 return;
                             }
+                            else
+                            {
+                                // TODO: use runtime fields directly, __get, __set, etc.,
+                                // do not fallback to BoundIndirectFieldPlace
+                            }
                         }
                     }
                 }
 
                 // dynamic behavior
-                x.TypeRefMask = TypeRefMask.AnyType;
-
-                if (x.FieldName.IsDirect)
-                {
-                    x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName.NameValue.Value, x.Access);
-                    return;
-                }
-
                 // indirect field access ...
+
+                x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName, x.Access);
+                x.TypeRefMask = TypeRefMask.AnyType;
+                return;
             }
 
             // static fields or constants

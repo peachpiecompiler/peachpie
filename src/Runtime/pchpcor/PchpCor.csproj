@@ -44,6 +44,7 @@
     <Compile Include="Context.Properties.cs" />
     <Compile Include="Context.ScriptsMap.cs" />
     <Compile Include="Context.Statics.cs" />
+    <Compile Include="Context.Api.cs" />
     <Compile Include="Dynamic\CallBinder.cs" />
     <Compile Include="Dynamic\OverloadBinder.cs" />
     <Compile Include="Dynamic\OverloadResolver.cs" />
