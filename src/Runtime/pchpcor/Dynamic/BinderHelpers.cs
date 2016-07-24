@@ -43,6 +43,14 @@ namespace Pchp.Core.Dynamic
             return !p.HasDefaultValue && !p.IsOptional && !p.IsParamsParameter();
         }
 
+        /// <summary>
+        /// Gets <see cref="Context.GetStatic{T}"/> method bound to a type.
+        /// </summary>
+        public static MethodInfo GetStatic_T_Method(Type t)
+        {
+            return typeof(Context).GetMethod("GetStatic", Cache.Types.Empty).MakeGenericMethod(t);
+        }
+
         public static void TargetAsObject(DynamicMetaObject target, out Expression target_expr, out object target_value, ref BindingRestrictions restrictions)
         {
             target_expr = target.Expression;

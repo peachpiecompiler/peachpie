@@ -55,6 +55,7 @@
     <Compile Include="PhpCallback.cs" />
     <Compile Include="PhpHashtable.cs" />
     <Compile Include="PhpValue.DebuggerTypeProxy.cs" />
+    <Compile Include="Reflection\TypeConstants.cs" />
     <Compile Include="Reflection\RoutineInfo.cs" />
     <Compile Include="Reflection\TypeInfo.cs" />
     <Compile Include="Reflection\TypesTable.cs" />

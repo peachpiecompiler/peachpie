@@ -66,13 +66,49 @@ namespace Pchp.Core.Reflection
             _name = t.FullName.Replace('.', '\\');
         }
 
+        #region Reflection
+
+        /// <summary>
+        /// Various type info flags.
+        /// </summary>
+        [Flags]
+        enum Flags
+        {
+
+            RuntimeFieldsHolderPopulated = 128,
+        }
+
+        Flags _flags;
+
         // TODO: magic methods (__call, __callStatic, __get, __set, ...)
 
-        // TODO: type constants
+        /// <summary>
+        /// Gets collection of PHP constants declared in this type.
+        /// </summary>
+        public TypeConstants DeclaredConstants => _declaredConstants ?? (_declaredConstants = new TypeConstants(_type));
+        TypeConstants _declaredConstants;
 
-        // TODO: runtime fields dictionary
+        /// <summary>
+        /// Gets field holding the array of runtime fields.
+        /// Can be <c>null</c>.
+        /// </summary>
+        public FieldInfo RuntimeFieldsHolder
+        {
+            get
+            {
+                if ((_flags & Flags.RuntimeFieldsHolderPopulated) == 0)
+                {
+                    _runtimeFieldsHolder = Dynamic.BinderHelpers.LookupRuntimeFields(_type);
+                    _flags |= Flags.RuntimeFieldsHolderPopulated;
+                }
+                return _runtimeFieldsHolder;
+            }
+        }
+        FieldInfo _runtimeFieldsHolder;
 
         // TODO: PHPDoc
+
+        #endregion
     }
 
     /// <summary>

@@ -13,6 +13,8 @@ namespace Pchp.Core.Utilities
 
         public static readonly PhpValue[] EmptyValues = new PhpValue[0];
 
+        public static readonly object[] EmptyObjects = new object[0];
+
         #endregion
 
         public static void Write(this Stream stream, byte[] bytes) => stream.Write(bytes, 0, bytes.Length);
