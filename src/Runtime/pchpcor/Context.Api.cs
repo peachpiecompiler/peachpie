@@ -23,7 +23,7 @@ namespace Pchp.Core
         /// <param name="function">Function name valid within current runtime context.</param>
         /// <param name="arguments">Arguments to be passed to the function call.</param>
         /// <returns>Returns value given from the function call.</returns>
-        public PhpValue Call(string function, params object[] arguments) => PhpCallback.Create(function).Invoke(this, arguments.Select(obj => PhpValue.FromClr(obj)).ToArray());
+        public PhpValue Call(string function, params object[] arguments) => PhpCallback.Create(function).Invoke(this, PhpValue.FromClr(arguments));
 
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
@@ -32,6 +32,14 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>New instance of <typeparamref name="T"/>.</returns>
         public T Create<T>(params PhpValue[] arguments) => (T)TypeInfoHolder<T>.TypeInfo.Creator(this, arguments);
+
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
+        /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
+        public object Create(string classname, params object[] arguments) => Create(classname, PhpValue.FromClr(arguments));
 
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.

@@ -1886,7 +1886,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // ctx.Create(classname, params)
                     var create = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
-                        .Where(s => s.Arity == 0 && s.ParameterCount == 2 && s.Parameters[0].Type.PrimitiveTypeCode == Microsoft.Cci.PrimitiveTypeCode.String && s.Parameters[1].IsParams)
+                        .Where(s => s.Arity == 0 && s.ParameterCount == 2 && s.Parameters[0].Type.PrimitiveTypeCode == Microsoft.Cci.PrimitiveTypeCode.String && s.Parameters[1].IsParams && ((ArrayTypeSymbol)s.Parameters[1].Type).ElementType == cg.CoreTypes.PhpValue)
                         .Single();
 
                     cg.EmitLoadContext();   // Context

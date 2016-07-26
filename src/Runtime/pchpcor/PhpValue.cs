@@ -404,6 +404,25 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Converts an array of CLR values to PHP values.
+        /// </summary>
+        public static PhpValue[] FromClr(params object[] values)
+        {
+            if (values == null || values.Length == 0)
+                return Utilities.ArrayUtils.EmptyValues;
+
+            //
+            var result = new PhpValue[values.Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                result[i] = FromClass(values[i]);
+            }
+
+            //
+            return result;
+        }
+
         #endregion
     }
 }
