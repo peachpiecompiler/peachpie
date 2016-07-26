@@ -1,6 +1,8 @@
 # Peachpie Compiler
 ### The open-source PHP compiler to .NET
 
+[![Join the chat at https://gitter.im/iolevel/peachpie](https://badges.gitter.im/iolevel/peachpie.svg)](https://gitter.im/iolevel/peachpie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started)  
 [Documentation](https://github.com/iolevel/peachpie/wiki)
 
