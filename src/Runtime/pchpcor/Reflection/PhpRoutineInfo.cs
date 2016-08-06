@@ -118,4 +118,36 @@ namespace Pchp.Core.Reflection
             }
         }
     }
+
+    /// <summary>
+    /// PHP routine representing class methods.
+    /// </summary>
+    internal class PhpMethodInfo : RoutineInfo
+    {
+        PhpCallable _lazyDelegate;
+
+        /// <summary>
+        /// Array of CLR methods. Cannot be <c>null</c> or empty.
+        /// </summary>
+        public MethodInfo[] Methods => _methods;
+        readonly MethodInfo[] _methods;
+
+        public PhpMethodInfo(int index, string name, MethodInfo[] methods)
+            : base(index, name)
+        {
+            _methods = methods;
+        }
+
+        public override RuntimeMethodHandle[] Handles
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
+
+        PhpCallable BindDelegate() => Dynamic.BinderHelpers.BindToPhpCallable(_methods);
+    }
 }

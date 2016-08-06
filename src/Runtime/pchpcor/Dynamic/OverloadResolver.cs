@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -36,9 +37,9 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static bool IsVisible(this MethodBase m, Type classCtx)
         {
-            if (m.IsPrivate && m.DeclaringType != classCtx)
+            if (m.IsPrivate)
             {
-                return false;
+                return m.DeclaringType == classCtx;
             }
 
             if (m.IsFamily)
@@ -48,16 +49,40 @@ namespace Pchp.Core.Dynamic
                     return false;
                 }
 
-                var m_type = m.DeclaringType.GetTypeInfo();
-                var classCtx_type = classCtx.GetTypeInfo();
-
-                if (!classCtx_type.IsAssignableFrom(m_type) && !m_type.IsAssignableFrom(classCtx_type))
+                if (m.DeclaringType == classCtx)
                 {
-                    return false;
+                    return true;
+                }
+                else
+                {
+                    var m_type = m.DeclaringType.GetTypeInfo();
+                    var classCtx_type = classCtx.GetTypeInfo();
+
+                    return classCtx_type.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx_type);
                 }
             }
 
+            //
             return true;
+        }
+
+        public static MethodInfo[] SelectVisible(this MethodInfo[] methods, Type classCtx)
+        {
+            if (methods.Length == 1)
+            {
+                return methods[0].IsVisible(classCtx) ? methods : EmptyArray<MethodInfo>.Instance;
+            }
+
+            var result = new List<MethodInfo>(methods.Length);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (methods[i].IsVisible(classCtx))
+                {
+                    result.Add(methods[i]);
+                }
+            }
+
+            return (result.Count == methods.Length) ? methods : result.ToArray();
         }
 
         public static IEnumerable<MethodBase> SelectVisible(this IEnumerable<MethodBase> candidates, Type classCtx)

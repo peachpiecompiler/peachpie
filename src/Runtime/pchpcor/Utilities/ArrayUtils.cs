@@ -15,10 +15,18 @@ namespace Pchp.Core.Utilities
 
         public static readonly object[] EmptyObjects = new object[0];
 
+        public static T[] Empty<T>() => EmptyArray<T>.Instance;
+
         #endregion
 
         public static void Write(this Stream stream, byte[] bytes) => stream.Write(bytes, 0, bytes.Length);
 
         public static string GetString(this Encoding encoding, byte[] bytes) => encoding.GetString(bytes, 0, bytes.Length);
     }
+
+    public static class EmptyArray<T>
+    {
+        public readonly static T[] Instance = new T[0];
+    }
+
 }

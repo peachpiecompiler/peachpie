@@ -82,13 +82,17 @@ namespace Pchp.Core.Reflection
 
         Flags _flags;
 
-        // TODO: magic methods (__call, __callStatic, __get, __set, ...)
+        /// <summary>
+        /// Gets collection of PHP methods in this type.
+        /// </summary>
+        public TypeMethods DeclaredMethods => _declaredMethods ?? (_declaredMethods = new TypeMethods(_type));
+        TypeMethods _declaredMethods;
 
         /// <summary>
-        /// Gets collection of PHP constants declared in this type.
+        /// Gets collection of PHP fields, static fields and constants declared in this type.
         /// </summary>
-        public TypeConstants DeclaredConstants => _declaredConstants ?? (_declaredConstants = new TypeConstants(_type));
-        TypeConstants _declaredConstants;
+        public TypeFields DeclaredFields => _declaredfields ?? (_declaredfields = new TypeFields(_type));
+        TypeFields _declaredfields;
 
         /// <summary>
         /// Gets field holding the array of runtime fields.
