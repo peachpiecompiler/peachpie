@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -62,128 +63,15 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            Expression setter;
-
-            //
-            var fld = runtime_type.GetRuntimeField(fldName);
-            if (fld != null)
+            var setter = BinderHelpers.BindField(runtime_type.GetPhpTypeInfo(), _classContext, target_expr, fldName, null, _access, value);
+            if (setter != null)
             {
-                // TODO: check context and accessibility
-
-                Expression lvalue = Expression.Field(target_expr, fld);
-                
-                if (_access.WriteAlias())
-                {
-                    // write alias
-
-                    Debug.Assert(value.Type == typeof(PhpAlias));
-                    value = ConvertExpression.Bind(value, typeof(PhpAlias));
-
-                    if (fld.FieldType == typeof(PhpAlias))
-                    {
-                        setter = Expression.Assign(lvalue, value);
-                    }
-                    else if (fld.FieldType == typeof(PhpValue))
-                    {
-                        // fld = PhpValue.Create(alias)
-                        value = Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpAlias), value);
-                        setter = Expression.Assign(lvalue, value);
-                    }
-                    else
-                    {
-                        // fld is not aliasable
-                        Debug.Assert(false, "Cannot assign aliased value to field " + fld.FieldType.ToString() + " " + fld.Name);
-                        setter = Expression.Assign(lvalue, ConvertExpression.Bind(value, fld.FieldType));
-                    }
-                }
-                else if (_access.Unset())
-                {
-                    Debug.Assert(value == null);
-
-                    setter = Expression.Assign(lvalue, ConvertExpression.BindDefault(fld.FieldType));
-                }
-                else
-                {
-                    // write by value
-
-                    if (fld.FieldType == typeof(PhpAlias))
-                    {
-                        // Template: fld.Value = (PhpValue)value
-                        setter = Expression.Assign(Expression.PropertyOrField(lvalue, "Value"), ConvertExpression.Bind(value, typeof(PhpValue)));
-                    }
-                    else if (fld.FieldType == typeof(PhpValue))
-                    {
-                        // Template: Operators.SetValue(ref fld, (PhpValue)value)
-                        setter = Expression.Call(Cache.Operators.SetValue_PhpValueRef_PhpValue, lvalue, ConvertExpression.Bind(value, typeof(PhpValue)));
-                    }
-                    else
-                    {
-                        // Template: fld = value
-                        // default behaviour by value to value
-                        setter = Expression.Assign(lvalue, ConvertExpression.Bind(value, fld.FieldType));
-                    }
-                }
-            }
-            else
-            {
-                // TODO: __set($name, $value)
-
-                // PhpArray __peach__runtimeFields
-                var __peach__runtimeFields = BinderHelpers.LookupRuntimeFields(runtime_type);
-                if (__peach__runtimeFields != null)
-                {
-                    var __runtimeflds_field = Expression.Field(target_expr, __peach__runtimeFields);
-
-                    if (_access.WriteAlias())
-                    {
-                        // write alias
-
-                        Debug.Assert(value.Type == typeof(PhpAlias));
-                        value = ConvertExpression.Bind(value, typeof(PhpAlias));
-
-                        // <target>.RuntimeFields.SetItemAlias(name, alias);
-                        setter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_SetItemAlias,
-                            Expression.Constant(new IntStringKey(fldName)), value);
-                    }
-                    else if (_access.Unset())
-                    {
-                        Debug.Assert(value == null);
-
-                        // remove key
-
-                        // <target>.RuntimeFields.RemoveKey(name)
-                        setter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_RemoveKey, Expression.Constant(new IntStringKey(fldName)));
-                    }
-                    else
-                    {
-                        // write by value
-
-                        value = ConvertExpression.Bind(value, typeof(PhpValue));
-
-                        // <target>.RuntimeFields.SetItemValue(name, value);
-                        setter = Expression.Call(__runtimeflds_field, Cache.Operators.PhpArray_SetItemValue,
-                            Expression.Constant(new IntStringKey(fldName)), value);
-                    }
-
-                    //
-
-                    if (!_access.Unset())
-                    {
-                        // prepend ensure __peach__runtimeFields != null
-                        setter = Expression.Block(
-                            BinderHelpers.EnsureNotNullPhpArray(__runtimeflds_field),
-                            setter);
-                    }
-                }
-                else
-                {
-                    // field cannot be set
-                    throw new NotImplementedException();
-                }
+                //
+                return new DynamicMetaObject(setter, restrictions);
             }
 
-            //
-            return new DynamicMetaObject(setter, restrictions);
+            // field not found
+            throw new NotImplementedException();
         }
     }
 }

@@ -194,6 +194,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (IsReadRef) result |= Core.Dynamic.AccessFlags.EnsureAlias;
                 if (IsQuiet) result |= Core.Dynamic.AccessFlags.CheckOnly;
                 if (IsUnset) result |= Core.Dynamic.AccessFlags.Unset;
+                if (IsWriteRef) result |= Core.Dynamic.AccessFlags.WriteAlias;
+                else if (IsWrite) result |= Core.Dynamic.AccessFlags.WriteValue;
 
                 return result;
             }

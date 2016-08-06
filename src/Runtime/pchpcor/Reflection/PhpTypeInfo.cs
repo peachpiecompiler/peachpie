@@ -45,6 +45,24 @@ namespace Pchp.Core.Reflection
         public TObjectCreator Creator => _lazyCreator ?? BuildCreator();
         TObjectCreator _lazyCreator;
 
+        /// <summary>
+        /// Gets base type or <c>null</c> in case type does not extend another class.
+        /// </summary>
+        public PhpTypeInfo BaseType
+        {
+            get
+            {
+                if ((_flags & Flags.BaseTypePopulated) == 0)
+                {
+                    var binfo = _type.GetTypeInfo().BaseType;
+                    _lazyBaseType = (binfo != null && binfo != typeof(object)) ? binfo.GetPhpTypeInfo() : null;
+                    _flags |= Flags.BaseTypePopulated;
+                }
+                return _lazyBaseType;
+            }
+        }
+        PhpTypeInfo _lazyBaseType;
+
         TObjectCreator BuildCreator()
         {
             lock (this)
@@ -76,7 +94,7 @@ namespace Pchp.Core.Reflection
         [Flags]
         enum Flags
         {
-
+            BaseTypePopulated = 64,
             RuntimeFieldsHolderPopulated = 128,
         }
 

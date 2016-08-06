@@ -172,11 +172,6 @@ namespace Pchp.Core.Reflection
         /// <returns><see cref="Expression"/> instance or <c>null</c> if constant does not exist.</returns>
         internal Expression Bind(string name, Type classCtx, Expression target, Expression ctx, FieldKind kind)
         {
-            if (ctx == null)
-            {
-                throw new ArgumentNullException("ctx");
-            }
-
             FieldInfo fld;
 
             //
@@ -212,6 +207,7 @@ namespace Pchp.Core.Reflection
                     (kind == FieldKind.StaticField))
                 {
                     Debug.Assert(target == null);
+                    Debug.Assert(ctx != null);
 
                     // Context.GetStatics<_statics>().FIELD
                     var getstatics = BinderHelpers.GetStatic_T_Method(fld.DeclaringType);

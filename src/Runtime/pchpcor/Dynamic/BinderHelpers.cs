@@ -107,8 +107,9 @@ namespace Pchp.Core.Dynamic
 
         public static Expression EnsureNotNullPhpArray(Expression variable)
         {
-            return Expression.IfThen(
-                Expression.ReferenceEqual(variable, Expression.Constant(null)),
+            // variable ?? (variable = [])
+            return Expression.Coalesce(
+                variable,
                 Expression.Assign(variable, Expression.New(typeof(PhpArray))));
         }
 
@@ -128,6 +129,247 @@ namespace Pchp.Core.Dynamic
                     }
                 }
             }
+
+            //
+            return null;
+        }
+
+        static Expression BindAccess(Expression expr, Expression ctx, AccessFlags access, Expression rvalue)
+        {
+            if (access.EnsureObject())
+            {
+                if (expr.Type == typeof(PhpAlias))
+                {
+                    // ((PhpAlias)fld).EnsureObject(ctx)
+                    expr = Expression.Call(expr, Cache.Operators.PhpAlias_EnsureObject_Context);
+                }
+                else if (expr.Type == typeof(PhpValue))
+                {
+                    // ((PhpValue)fld).EnsureObject(ctx)
+                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureObject_Context);
+                }
+                else
+                {
+                    // getter // TODO: ensure it is not null
+                }
+            }
+            else if (access.EnsureArray())
+            {
+                if (expr.Type == typeof(PhpAlias))
+                {
+                    // ((PhpAlias)fld).EnsureArray()
+                    expr = Expression.Call(expr, Cache.Operators.PhpAlias_EnsureArray);
+                }
+                else if (expr.Type == typeof(PhpValue))
+                {
+                    // ((PhpValue)fld).EnsureArray()
+                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureArray);
+                }
+                else if (expr.Type == typeof(PhpArray))
+                {
+                    // (PhpArray)fld // TODO: ensure it is not null
+                }
+                else
+                {
+                    // getter
+                }
+            }
+            else if (access.EnsureAlias())
+            {
+                if (expr.Type == typeof(PhpAlias))
+                {
+                    // (PhpAlias)getter
+                }
+                else if (expr.Type == typeof(PhpValue))
+                {
+                    // ((PhpValue)fld).EnsureAlias()
+                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureAlias);
+                }
+                else
+                {
+                    // getter // cannot read as reference
+                }
+            }
+            else if (access.WriteAlias())
+            {
+                // write alias
+
+                Debug.Assert(rvalue.Type == typeof(PhpAlias));
+                rvalue = ConvertExpression.Bind(rvalue, typeof(PhpAlias), ctx);
+
+                if (expr.Type == typeof(PhpAlias))
+                {
+                    // ok    
+                }
+                else if (expr.Type == typeof(PhpValue))
+                {
+                    // fld = PhpValue.Create(alias)
+                    rvalue = Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpAlias), rvalue);
+                }
+                else
+                {
+                    // fld is not aliasable
+                    Debug.Assert(false, "Cannot assign aliased value to field of type " + expr.Type.ToString());
+                    rvalue = ConvertExpression.Bind(rvalue, expr.Type, ctx);
+                }
+
+                expr = Expression.Assign(expr, rvalue);
+            }
+            else if (access.Unset())
+            {
+                Debug.Assert(rvalue == null);
+
+                expr = Expression.Assign(expr, ConvertExpression.BindDefault(expr.Type));
+            }
+            else if (access.Write())
+            {
+                // write by value
+
+                if (expr.Type == typeof(PhpAlias))
+                {
+                    // Template: fld.Value = (PhpValue)value
+                    expr = Expression.Assign(Expression.PropertyOrField(expr, "Value"), ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
+                }
+                else if (expr.Type == typeof(PhpValue))
+                {
+                    // Template: Operators.SetValue(ref fld, (PhpValue)value)
+                    expr = Expression.Call(Cache.Operators.SetValue_PhpValueRef_PhpValue, expr, ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
+                }
+                else
+                {
+                    // Template: fld = value
+                    // default behaviour by value to value
+                    expr = Expression.Assign(expr, ConvertExpression.Bind(rvalue, expr.Type, ctx));
+                }
+            }
+
+            //
+            return expr;
+        }
+
+        static Expression BindArrayAccess(Expression arr, Expression key, Expression ctx, AccessFlags access, Expression rvalue)
+        {
+            Debug.Assert(key.Type == typeof(IntStringKey));
+
+            if (access.EnsureObject())
+            {
+                // (arr ?? arr = []).EnsureItemObject(key)
+                return Expression.Call(
+                    EnsureNotNullPhpArray(arr),
+                    Cache.Operators.PhpArray_EnsureItemObject, key);
+            }
+            else if (access.EnsureArray())
+            {
+                // (arr ?? arr = []).EnsureItemArray(key)
+                return Expression.Call(
+                    EnsureNotNullPhpArray(arr),
+                    Cache.Operators.PhpArray_EnsureItemArray, key);
+            }
+            else if (access.EnsureAlias())
+            {
+                // (arr ?? arr = []).EnsureItemAlias(key)
+                return Expression.Call(
+                    EnsureNotNullPhpArray(arr),
+                    Cache.Operators.PhpArray_EnsureItemAlias, key);
+            }
+            else if (access.WriteAlias())
+            {
+                Debug.Assert(rvalue.Type == typeof(PhpAlias));
+                rvalue = ConvertExpression.Bind(rvalue, typeof(PhpAlias), ctx);
+
+                // (arr ?? arr = []).SetItemAlias(key, value)
+                return Expression.Call(
+                    EnsureNotNullPhpArray(arr),
+                    Cache.Operators.PhpArray_SetItemAlias, key, rvalue);
+            }
+            else if (access.Unset())
+            {
+                Debug.Assert(rvalue == null);
+
+                // remove key
+
+                // arr.RemoveKey(name)
+                // TODO: if (arr != null)
+                return Expression.Call(arr, Cache.Operators.PhpArray_RemoveKey, key);
+            }
+            else if (access.Write())
+            {
+                rvalue = ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx);
+
+                return Expression.Call(
+                    EnsureNotNullPhpArray(arr),
+                    Cache.Operators.PhpArray_SetItemValue, key, rvalue);
+            }
+            else
+            {
+                // read
+                // TODO: (arr != null) ? arr[key] : (quiet ? void : ERROR)
+                return Expression.Call(arr, Cache.Operators.PhpArray_GetItemValue, key);
+            }
+        }
+
+        public static Expression BindField(PhpTypeInfo type, Type classCtx, Expression target, string field, Expression ctx, AccessFlags access, Expression rvalue)
+        {
+            if (access.Write() != (rvalue != null))
+            {
+                throw new ArgumentException();
+            }
+
+            // lookup a declared field
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                var expr = t.DeclaredFields.Bind(field, classCtx, target, ctx, (target != null) ? TypeFields.FieldKind.InstanceField : TypeFields.FieldKind.StaticField);
+                if (expr != null)
+                {
+                    return BindAccess(expr, ctx, access, rvalue);
+                }
+            }
+
+            // lookup __get, __set, ...
+            TypeMethods.MagicMethods magic;
+            if (access.Write())
+                magic = TypeMethods.MagicMethods.__set;
+            else if (access.Unset())
+                magic = TypeMethods.MagicMethods.__unset;
+            else if (access.Isset())
+                magic = TypeMethods.MagicMethods.__isset;
+            else
+                magic = TypeMethods.MagicMethods.__get;
+
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                var m = (PhpMethodInfo)t.DeclaredMethods[magic];
+                if (m != null)
+                {
+                    if (m.Methods.Length == 1 && m.Methods[0].IsVisible(classCtx))
+                    {
+                        if (access.Write())
+                        {
+                            // __set(name, value)
+                            return OverloadBinder.BindOverloadCall(rvalue.Type, target, m.Methods, ctx, new Expression[] { Expression.Constant(field), rvalue });
+                        }
+                        else
+                        {
+                            // __get(name), __unset(name), __isset(name)
+                            return OverloadBinder.BindOverloadCall(m.Methods[0].ReturnType, target, m.Methods, ctx, new Expression[] { Expression.Constant(field) });
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            // runtime fields
+            var __runtimeflds = type.RuntimeFieldsHolder;
+            if (__runtimeflds != null)
+            {
+                var __runtimeflds_field = Expression.Field(target, __runtimeflds);
+                var key = Expression.Constant(new IntStringKey(field));
+
+                return BindArrayAccess(__runtimeflds_field, key, ctx, access, rvalue);
+            }
+
+            // TODO: dynamic
 
             //
             return null;

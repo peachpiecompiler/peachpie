@@ -48,6 +48,11 @@ namespace Pchp.Core.Dynamic
         /// The variable has to be unset. Valid for fields and runtime fields.
         /// </summary>
         Unset = 64,
+
+        /// <summary>
+        /// The variable is checked for existance.
+        /// </summary>
+        Isset = 128,
     }
 
     internal static class AccessFlagsExtensions
@@ -59,5 +64,6 @@ namespace Pchp.Core.Dynamic
         public static bool WriteAlias(this AccessFlags flags) => (flags & AccessFlags.WriteAlias) == AccessFlags.WriteAlias;
         public static bool Write(this AccessFlags flags) => (flags & (AccessFlags.WriteAlias | AccessFlags.WriteValue)) != 0;
         public static bool Unset(this AccessFlags flags) => (flags & AccessFlags.Unset) == AccessFlags.Unset;
+        public static bool Isset(this AccessFlags flags) => (flags & AccessFlags.Isset) == AccessFlags.Isset;
     }
 }
