@@ -24,6 +24,11 @@ namespace Pchp.Core.Reflection
         readonly Dictionary<string, FieldInfo> _fields;
 
         /// <summary>
+        /// Declared properties.
+        /// </summary>
+        readonly Dictionary<string, PropertyInfo> _properties;
+
+        /// <summary>
         /// Declared fields in <c>__statics</c> nested class.
         /// </summary>
         readonly Dictionary<string, FieldInfo> _staticsFields;
@@ -41,17 +46,19 @@ namespace Pchp.Core.Reflection
         {
             var tinfo = type.GetTypeInfo();
 
-            _fields = tinfo.DeclaredFields.ToDictionary(_FieldName);
+            _fields = tinfo.DeclaredFields.ToDictionary(_FieldName, StringComparer.Ordinal);
             if (_fields.Count == 0)
-            {
                 _fields = null;
-            }
 
             var staticscontainer = tinfo.GetDeclaredNestedType("_statics");
             if (staticscontainer != null)
             {
-                _staticsFields = staticscontainer.DeclaredFields.ToDictionary(_FieldName);
+                _staticsFields = staticscontainer.DeclaredFields.ToDictionary(_FieldName, StringComparer.Ordinal);
             }
+
+            _properties = tinfo.DeclaredProperties.ToDictionary(_PropertyName, StringComparer.Ordinal);
+            if (_properties.Count == 0)
+                _properties = null;
         }
 
         Func<Context, object> EnsureStaticsGetter(Type type)
@@ -67,6 +74,7 @@ namespace Pchp.Core.Reflection
         }
 
         static Func<FieldInfo, string> _FieldName = f => f.Name;
+        static Func<PropertyInfo, string> _PropertyName = p => p.Name;
 
         static Func<Context, object> CreateStaticsGetter(Type _statics)
         {
@@ -100,6 +108,13 @@ namespace Pchp.Core.Reflection
             if (_staticsFields != null && _staticsFields.TryGetValue(name, out fld))
             {
                 return fld.IsInitOnly ? FieldKind.Constant : FieldKind.StaticField;
+            }
+
+            //
+            PropertyInfo p;
+            if (_properties != null && _properties.TryGetValue(name, out p))
+            {
+                return p.GetMethod.IsStatic ? FieldKind.StaticField : FieldKind.InstanceField;
             }
 
             //
@@ -155,7 +170,7 @@ namespace Pchp.Core.Reflection
         /// <param name="target">Expression representing self instance.</param>
         /// <param name="ctx">Expression representing current <see cref="Context"/>.</param>
         /// <returns><see cref="Expression"/> instance or <c>null</c> if constant does not exist.</returns>
-        internal Expression Bind(string name, Expression target, Expression ctx, FieldKind kind)
+        internal Expression Bind(string name, Type classCtx, Expression target, Expression ctx, FieldKind kind)
         {
             if (ctx == null)
             {
@@ -185,19 +200,34 @@ namespace Pchp.Core.Reflection
 
                 if (kind == FieldKind.InstanceField)
                 {
+                    Debug.Assert(target != null);
                     return Expression.Field(target, fld);
                 }
             }
 
             //
-            if (_staticsFields != null && _staticsFields.TryGetValue(name, out fld))
+            if (kind != FieldKind.InstanceField && _staticsFields != null && _staticsFields.TryGetValue(name, out fld))
             {
                 if ((kind == FieldKind.Constant && fld.IsInitOnly) ||
                     (kind == FieldKind.StaticField))
                 {
+                    Debug.Assert(target == null);
+
                     // Context.GetStatics<_statics>().FIELD
                     var getstatics = BinderHelpers.GetStatic_T_Method(fld.DeclaringType);
                     return Expression.Field(Expression.Call(ctx, getstatics), fld);
+                }
+            }
+
+            //
+            PropertyInfo p;
+            if (kind != FieldKind.Constant && _properties != null && _properties.TryGetValue(name, out p))
+            {
+                var isstatic = p.GetMethod.IsStatic;
+                if ((kind == FieldKind.StaticField) == isstatic)
+                {
+                    Debug.Assert(isstatic ? target == null : target != null);
+                    return Expression.Property(target, p);
                 }
             }
 

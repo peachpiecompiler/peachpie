@@ -132,13 +132,11 @@ namespace Pchp.Core.Dynamic
             //
             return null;
         }
-
+        
         public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args)
         {
             Debug.Assert(method is MethodInfo || method is ConstructorInfo);
 
-            // TODO: handle vararg, handle missing mandatory args
-            
             var ps = method.GetParameters();
             var boundargs = new Expression[ps.Length];
 

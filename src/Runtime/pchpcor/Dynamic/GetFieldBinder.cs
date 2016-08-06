@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -56,6 +57,8 @@ namespace Pchp.Core.Dynamic
                 restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
                 target_expr = Expression.Convert(target_expr, runtime_type);
             }
+
+            //var boundfld = runtime_type.GetPhpTypeInfo().DeclaredFields.Bind(fldName, target_expr, null, TypeFields.FieldKind.InstanceField);
 
             //
             var fld = runtime_type.GetRuntimeField(fldName);
