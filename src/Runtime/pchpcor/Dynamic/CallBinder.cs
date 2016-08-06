@@ -314,7 +314,7 @@ namespace Pchp.Core.Dynamic
         internal CallStaticMethodBinder(RuntimeTypeHandle type, string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int genericParams)
             : base(returnType, genericParams)
         {
-            _type = type.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(type); ;
+            _type = type.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(type);
             _name = name;
             _classCtx = classContext.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(classContext);
         }

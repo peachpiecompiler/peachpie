@@ -90,7 +90,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the class contains a field with specified name.
         /// </summary>
-        public FieldKind ResolveField(string name)
+        public FieldKind HasField(string name)
         {
             FieldInfo fld;
 
