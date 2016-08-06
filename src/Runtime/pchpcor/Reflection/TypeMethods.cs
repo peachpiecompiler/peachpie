@@ -1,6 +1,7 @@
 ﻿using Pchp.Core.Dynamic;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -14,21 +15,34 @@ namespace Pchp.Core.Reflection
     /// </summary>
     public class TypeMethods
     {
+        /// <summary>
+        /// Enumeration of magic methods.
+        /// Enum name corresponds to the method name.
+        /// Names all lowercased.
+        /// </summary>
+        public enum MagicMethods
+        {
+            undefined = 0,
+
+            __get, __set,
+            __call, __callstatic,
+            __isset, __unset,
+            __invoke, __tostring,
+            __clone, __set_state, __debuginfo,
+            __sleep, __wakeup,
+        }
+
         #region Fields
-        /// <summary>
-        /// Index to the magic method.
-        /// </summary>
-        readonly short _get, _set, _call, _callStatic, _isset, _unset, _invoke, _clone, _toString;
 
         /// <summary>
-        /// Array of declared routines.
+        /// Declared magic methods. Optional.
         /// </summary>
-        readonly PhpMethodInfo[] _methods;
+        readonly Dictionary<MagicMethods, PhpMethodInfo> _magicMethods;
 
         /// <summary>
-        /// Map of routine name to its index in <see cref="_methods"/>.
+        /// Declared methods. Optional.
         /// </summary>
-        readonly Dictionary<string, int> _methodsByName;
+        readonly Dictionary<string, PhpMethodInfo> _methods;
 
         #endregion
 
@@ -36,80 +50,71 @@ namespace Pchp.Core.Reflection
 
         internal TypeMethods(Type type)
         {
-            var methods = new List<PhpMethodInfo>();
-
             // collect available methods
             foreach (var m in type.GetTypeInfo().DeclaredMethods.ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
             {
-                var info = new PhpMethodInfo(methods.Count + 1, m.Key, m.ToArray());
-                methods.Add(info);
+                if (_methods == null)
+                    _methods = new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
+
+                var info = new PhpMethodInfo(_methods.Count + 1, m.Key, m.ToArray());
+
+                _methods[info.Name] = info;
 
                 // resolve special methods
-                if (info.Name.StartsWith("__", StringComparison.Ordinal))
+                var magic = MagicMethodByName(info.Name);
+                if (magic != MagicMethods.undefined)
                 {
-                    switch (info.Name.ToLowerInvariant())
-                    {
-                        case "__get": _get = (short)info.Index; break;
-                        case "__set": _set = (short)info.Index; break;
-                        case "__call": _call = (short)info.Index; break;
-                        case "__callstatic": _callStatic = (short)info.Index; break;
-                        case "__isset": _isset = (short)info.Index; break;
-                        case "__unset": _unset = (short)info.Index; break;
-                        case "__invoke": _invoke = (short)info.Index; break;
-                        case "__clone": _clone = (short)info.Index; break;
-                        case "__tostring": _toString = (short)info.Index; break;
-                        case "__sleep": break;
-                        case "__wakeup": break;
-                    }
+                    if (_magicMethods == null)
+                        _magicMethods = new Dictionary<MagicMethods, PhpMethodInfo>();
+
+                    _magicMethods[magic] = info;
                 }
             }
+        }
 
-            _methods = (methods.Count != 0) ? methods.ToArray() : null;
+        MagicMethods MagicMethodByName(string name)
+        {
+            var result = MagicMethods.undefined;
 
-            // init map of names
-            if (_methods != null)
+            if (name.StartsWith("__", StringComparison.Ordinal))
             {
-                _methodsByName = new Dictionary<string, int>(_methods.Length, StringComparer.OrdinalIgnoreCase);
-
-                foreach (var r in _methods)
-                {
-                    _methodsByName.Add(r.Name, r.Index - 1);
-                }
+                Enum.TryParse<MagicMethods>(name.ToLowerInvariant(), out result);
             }
+
+            return result;
         }
 
         static Func<MethodInfo, string> _MethodName = m => m.Name;
 
         #endregion
 
-        internal Expression Bind(string name, Type classCtx, Type treturn, Expression target, Expression ctx, params Expression[] arguments)
+        /// <summary>
+        /// Gets routine by its name.
+        /// Returns <c>null</c> in case method does not exist.
+        /// </summary>
+        /// <param name="name">Method name.</param>
+        /// <returns>Routine or <c>null</c> reference.</returns>
+        public RoutineInfo this[string name]
         {
-            int idx;
-            if (_methodsByName != null && _methodsByName.TryGetValue(name, out idx))
+            get
             {
-                var m = _methods[idx];
-                var methods = m.Methods.SelectVisible(classCtx);
-                if (methods.Length != 0)
-                {
-                    return OverloadBinder.BindOverloadCall(treturn, target, methods, ctx, arguments);
-                }
+                PhpMethodInfo info;
+                return (_methods != null && _methods.TryGetValue(name, out info)) ? info : null;
             }
+        }
 
-            // TODO: magic call
-
-            if (target != null && _call != 0)
+        /// <summary>
+        /// Gets magic method if declared.
+        /// </summary>
+        public RoutineInfo this[MagicMethods magic]
+        {
+            get
             {
-                var m = _methods[_call];
-                // return Dynamic.OverloadBinder.BindOverloadCall(treturn, target, m.Methods, ctx, name, args[]);
-            }
+                Debug.Assert(magic != MagicMethods.undefined);
 
-            if (target == null && _callStatic != 0)
-            {
-                // return Dynamic.OverloadBinder.BindOverloadCall(treturn, target, _methods[_callStatic].Methods, ctx, name, args[]);
+                PhpMethodInfo m;
+                return (_magicMethods != null && _magicMethods.TryGetValue(magic, out m)) ? m : null;
             }
-
-            //
-            return null;
         }
     }
 }
