@@ -1704,7 +1704,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             return (TargetMethod != null)
-                ? EmitDirectCall(cg, TargetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod)
+                ? EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod)
                 : EmitCallsiteCall(cg);
         }
 
@@ -1721,6 +1721,7 @@ namespace Pchp.CodeAnalysis.Semantics
         protected virtual string CallsiteName => null;
         protected virtual BoundExpression RoutineNameExpr => null;
         protected virtual BoundExpression TypeNameExpr => null;
+        protected virtual bool IsVirtualCall => true;
         
         internal virtual TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
@@ -1792,6 +1793,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
+        protected override bool IsVirtualCall => false;
 
         internal override TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
@@ -1829,7 +1831,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
-
+        
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
             cg.Builder.EmitStringConstant(CallsiteName);        // name
@@ -1845,6 +1847,7 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
         protected override BoundExpression TypeNameExpr => _typeRef.TypeExpression;
+        protected override bool IsVirtualCall => false;
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
