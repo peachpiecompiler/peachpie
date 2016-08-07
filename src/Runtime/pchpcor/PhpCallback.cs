@@ -198,4 +198,12 @@ namespace Pchp.Core
 
         #endregion
     }
+
+    public static class PhpCallableExtension
+    {
+        /// <summary>
+        /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> by fixing the target argument.
+        /// </summary>
+        internal static PhpCallable Bind(this PhpInvokable invokable, object target) => (ctx, arguments) => invokable(ctx, target, arguments);
+    }
 }
