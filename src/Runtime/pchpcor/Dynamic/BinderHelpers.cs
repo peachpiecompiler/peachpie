@@ -464,7 +464,7 @@ namespace Pchp.Core.Dynamic
 
             // dynamic method parameters
             var dtypes = new Type[ps.Length + 1];
-            dtypes[0] = method.DeclaringType;   // target
+            dtypes[0] = typeof(object); // method.DeclaringType;   // target
             for (int i = 0; i < ps.Length; i++)
             {
                 dtypes[i + 1] = ps[i].ParameterType;    // parameter_i
@@ -502,6 +502,23 @@ namespace Pchp.Core.Dynamic
 
             // compile & create delegate
             var lambda = Expression.Lambda<PhpCallable>(invocation, targets[0].Name + "#" + targets.Length, true, ps);
+            return lambda.Compile();
+        }
+
+        public static PhpInvokable BindToPhpInvokable(MethodInfo[] methods)
+        {
+            // (Context ctx, object target, PhpValue[] arguments)
+            var ps = new ParameterExpression[] {
+                Expression.Parameter(typeof(Context), "ctx"),
+                Expression.Parameter(typeof(object), "target"),
+                Expression.Parameter(typeof(PhpValue[]), "argv") };
+
+            // invoke targets
+            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), ps[1], methods, ps[0], ps[2]);
+            Debug.Assert(invocation.Type == typeof(PhpValue));
+
+            // compile & create delegate
+            var lambda = Expression.Lambda<PhpInvokable>(invocation, methods[0].Name + "#" + methods.Length, true, ps);
             return lambda.Compile();
         }
 

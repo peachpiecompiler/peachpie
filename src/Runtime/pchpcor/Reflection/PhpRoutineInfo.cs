@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -93,11 +94,11 @@ namespace Pchp.Core.Reflection
 
         public override RuntimeMethodHandle[] Handles => _handles;
 
-        public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
+        public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
         PhpCallable BindDelegate()
         {
-            return Dynamic.BinderHelpers.BindToPhpCallable(Handles.Select(MethodBase.GetMethodFromHandle).ToArray());
+            return _lazyDelegate = Dynamic.BinderHelpers.BindToPhpCallable(Handles.Select(MethodBase.GetMethodFromHandle).ToArray());
         }
 
         public ClrRoutineInfo(int index, string name, RuntimeMethodHandle handle)
@@ -125,6 +126,8 @@ namespace Pchp.Core.Reflection
     /// </summary>
     internal class PhpMethodInfo : RoutineInfo
     {
+        PhpInvokable _lazyDelegate;
+
         /// <summary>
         /// Array of CLR methods. Cannot be <c>null</c> or empty.
         /// </summary>
@@ -143,6 +146,13 @@ namespace Pchp.Core.Reflection
             {
                 throw new NotImplementedException();
             }
+        }
+
+        internal PhpInvokable PhpInvokable => _lazyDelegate ?? BindDelegate();
+
+        PhpInvokable BindDelegate()
+        {
+            return _lazyDelegate = Dynamic.BinderHelpers.BindToPhpInvokable(_methods);
         }
 
         public override PhpCallable PhpCallable { get { throw new NotSupportedException(); } }  // instance methods cannot be bound to PhpCallable
