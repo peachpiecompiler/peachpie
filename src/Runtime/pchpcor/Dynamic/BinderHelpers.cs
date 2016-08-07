@@ -6,6 +6,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -427,14 +428,71 @@ namespace Pchp.Core.Dynamic
                 return Expression.New((ConstructorInfo)method, boundargs);
             }
 
+            if (instance != null && method.IsVirtual)
+            {
+                // Ugly hack here,
+                // we NEED to call the method nonvirtually, but LambdaCompiler emits .callvirt always and there is no way how to change it (except we can emit all the stuff by ourselfs).
+                // We use DynamicMethod to emit .call inside, and use its MethodInfo which is static.
+                // LambdaCompiler generates .call to static DynamicMethod which calls our method via .call as well,
+                // after all the inlining, there should be no overhead.
+
+                method = WrapInstanceMethodToStatic((MethodInfo)method);
+
+                //
+                var newargs = new Expression[boundargs.Length + 1];
+                newargs[0] = instance;
+                Array.Copy(boundargs, 0, newargs, 1, boundargs.Length);
+                boundargs = newargs;
+                instance = null;
+            }
+
             //
             return Expression.Call(instance, (MethodInfo)method, boundargs);
+        }
+
+        /// <summary>
+        /// Builds MethodInfo as a static method calling an instance method nonvirtually inside.
+        /// </summary>
+        static MethodInfo WrapInstanceMethodToStatic(MethodInfo method)
+        {
+            if (method.IsStatic)
+            {
+                return method;
+            }
+
+            var ps = method.GetParameters();
+
+            // dynamic method parameters
+            var dtypes = new Type[ps.Length + 1];
+            dtypes[0] = method.DeclaringType;   // target
+            for (int i = 0; i < ps.Length; i++)
+            {
+                dtypes[i + 1] = ps[i].ParameterType;    // parameter_i
+            }
+
+            // dynamic method
+            var d = new DynamicMethod("<>." + method.Name, method.ReturnType, dtypes, method.DeclaringType, true);
+
+            // return ARG0.{method}(ARG1, ..., ARGN)
+            var il = d.GetILGenerator();
+
+            for (int i = 0; i < dtypes.Length; i++)
+            {
+                il.Emit(OpCodes.Ldarg, i);
+            }
+            il.EmitCall(OpCodes.Call, method, null);    // .call instead of .callvirt
+            il.Emit(OpCodes.Ret);
+
+            //
+            return d;
         }
 
         public static PhpCallable BindToPhpCallable(MethodBase target) => BindToPhpCallable(new[] { target });
 
         public static PhpCallable BindToPhpCallable(MethodBase[] targets)
         {
+            Debug.Assert(targets.All(t => t.IsStatic), "Only static methods can be bound to PhpCallable delegate.");
+
             // (Context ctx, PhpValue[] arguments)
             var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
 

@@ -146,8 +146,6 @@ namespace Pchp.Core.Reflection
             }
         }
 
-        public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
-
-        PhpCallable BindDelegate() => Dynamic.BinderHelpers.BindToPhpCallable(_methods);
+        public override PhpCallable PhpCallable { get { throw new NotSupportedException(); } }  // instance methods cannot be bound to PhpCallable
     }
 }
