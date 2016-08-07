@@ -11,6 +11,7 @@ namespace Pchp.Core.Reflection
     /// <summary>
     /// Runtime information about a function.
     /// </summary>
+    [DebuggerDisplay("{Name,nq}")]
     public abstract class RoutineInfo
     {
         /// <summary>
@@ -124,8 +125,6 @@ namespace Pchp.Core.Reflection
     /// </summary>
     internal class PhpMethodInfo : RoutineInfo
     {
-        PhpCallable _lazyDelegate;
-
         /// <summary>
         /// Array of CLR methods. Cannot be <c>null</c> or empty.
         /// </summary>

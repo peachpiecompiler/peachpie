@@ -13,6 +13,7 @@ namespace Pchp.Core.Reflection
     /// <summary>
     /// Runtime information about a type.
     /// </summary>
+    [DebuggerDisplay("{Name,nq}")]
     public class PhpTypeInfo
     {
         /// <summary>
