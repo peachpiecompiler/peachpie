@@ -447,7 +447,16 @@ namespace Pchp.Core
             {
                 if (me.Array.Count == 2)
                 {
-                    throw new NotImplementedException(); // [ class => object|string, methodname => string ]
+                    PhpValue a, b;
+
+                    var e = me.Array.GetFastEnumerator();
+                    e.MoveNext();
+                    a = e.CurrentValue;
+                    e.MoveNext();
+                    b = e.CurrentValue;
+
+                    // [ class => object|string, methodname => string ]
+                    return PhpCallback.Create(a, b);
                 }
                 else
                 {

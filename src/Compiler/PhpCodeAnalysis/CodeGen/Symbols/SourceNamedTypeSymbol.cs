@@ -75,6 +75,9 @@ namespace Pchp.CodeAnalysis.Symbols
             var statics = this.EnsureStaticsContainer();
             if (statics != null && !statics.IsEmpty)
                 statics.EmitCtors(module);
+
+            // IPhpCallable.Invoke
+            EmitInvoke(EnsureInvokeMethod(), module);
         }
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
@@ -93,6 +96,38 @@ namespace Pchp.CodeAnalysis.Symbols
                     f.EmitInit(cg);
                 }
             }
+        }
+
+        void EmitInvoke(MethodSymbol invoke, Emit.PEModuleBuilder module)
+        {
+            if (invoke == null)
+            {
+                return;
+            }
+
+            module.SetMethodBody(invoke, MethodGenerator.GenerateMethodBody(module, invoke, il =>
+            {
+                var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new ParamPlace(invoke.Parameters[0]), new ArgPlace(this, 0));
+                //var __invoke = (MethodSymbol)GetMembers(Pchp.Syntax.Name.SpecialMethodNames.Invoke.Value).Single(s => s is MethodSymbol);
+
+                // TODO: call __invoke() directly
+
+                // context.Call<T>(T, TypeMethods.MagicMethods, params PhpValue[])
+                var call_t = cg.CoreTypes.Context.Symbol.GetMembers("Call")
+                    .OfType<MethodSymbol>()
+                    .Where(s => s.Arity == 1 && s.ParameterCount == 3 && s.Parameters[2].IsParams)
+                    .Single()
+                    .Construct(this);
+
+                // return context.Call<T>(this, __invoke, args)
+                cg.EmitLoadContext();
+                cg.EmitThis();
+                cg.Builder.EmitIntConstant((int)Core.Reflection.TypeMethods.MagicMethods.__invoke);
+                cg.Builder.EmitLoadArgumentOpcode(2);
+                cg.EmitCall(ILOpCode.Call, call_t);
+                cg.EmitRet(false);
+
+            }, null, DiagnosticBag.GetInstance(), false));
         }
     }
 }

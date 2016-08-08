@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -101,7 +102,16 @@ namespace Pchp.Core
 
             protected override PhpCallable BindCore(Context ctx)
             {
-                throw new NotImplementedException();
+                for (var tinfo = ctx.GetDeclaredType(_class); tinfo != null; tinfo = tinfo.BaseType)
+                {
+                    var method = (Reflection.PhpMethodInfo)tinfo.DeclaredMethods[_method];
+                    if (method != null)
+                    {
+                        return method.PhpInvokable.Bind(null);
+                    }
+                }
+
+                return null;
             }
         }
 
@@ -120,7 +130,29 @@ namespace Pchp.Core
 
             protected override PhpCallable BindCore(Context ctx)
             {
-                throw new NotImplementedException();
+                PhpTypeInfo tinfo;
+                
+                if (_item1.IsObject)
+                {
+                    tinfo = _item1.Object.GetType().GetPhpTypeInfo();
+                }
+                else
+                {
+                    tinfo = ctx.GetDeclaredType(_item1.ToString(ctx));
+                }
+
+                var method = _item2.ToString(ctx);
+
+                for (; tinfo != null; tinfo = tinfo.BaseType)
+                {
+                    var routine = (PhpMethodInfo)tinfo.DeclaredMethods[method];
+                    if (routine != null)
+                    {
+                        return routine.PhpInvokable.Bind(_item1.IsObject ? _item1.Object : null);
+                    }
+                }
+
+                return null;
             }
         }
 
@@ -141,7 +173,18 @@ namespace Pchp.Core
 
         public static PhpCallback Create(IPhpCallable callable) => new CallableCallback(callable.Invoke);
 
-        public static PhpCallback Create(string function) => new FunctionCallback(function);
+        public static PhpCallback Create(string function)
+        {
+            if (function != null)
+            {
+                var idx = function.IndexOf("::", StringComparison.Ordinal);
+                return (idx < 0)
+                    ? (PhpCallback)new FunctionCallback(function)
+                    : new MethodCallback(function.Remove(idx), function.Substring(idx + 2));
+            }
+
+            return CreateInvalid();
+        }
 
         public static PhpCallback Create(PhpValue item1, PhpValue item2) => new ArrayCallback(item1, item2);
 

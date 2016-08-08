@@ -29,6 +29,7 @@ namespace Pchp.CodeAnalysis.Symbols
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
         SynthesizedStaticFieldsHolder _lazyStaticsContainer; // class __statics { ... }
+        SynthesizedMethodSymbol _lazyInvokeSymbol; // IPhpCallable.Invoke(Context, PhpValue[]);
 
         public SourceFileSymbol ContainingFile => _file;
         
@@ -216,6 +217,29 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyStaticsContainer;
         }
 
+        /// <summary>
+        /// In case the class implements <c>__invoke</c> method, we create special Invoke() method that is compatible with IPhpCallable interface.
+        /// </summary>
+        internal SynthesizedMethodSymbol EnsureInvokeMethod()
+        {
+            if (_lazyInvokeSymbol == null)
+            {
+                if (GetMembers(Pchp.Syntax.Name.SpecialMethodNames.Invoke.Value).Any(s => s is MethodSymbol))
+                {
+                    _lazyInvokeSymbol = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue)
+                    {
+                        ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("Invoke").Single(),
+                    };
+                    _lazyInvokeSymbol.SetParameters(
+                        new SpecialParameterSymbol(_lazyInvokeSymbol, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
+                        new SpecialParameterSymbol(_lazyInvokeSymbol, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), "arguments", 1));
+
+                    _lazyMembers = _lazyMembers.Add(_lazyInvokeSymbol);
+                }
+            }
+            return _lazyInvokeSymbol;
+        }
+
         public override NamedTypeSymbol BaseType
         {
             get
@@ -341,6 +365,12 @@ namespace Pchp.CodeAnalysis.Symbols
                         ?? new MissingMetadataTypeSymbol(i.QualifiedName.ClrName(), 0, false);
 
                 ifaces.Add(t);
+            }
+
+            // __invoke => IPhpCallable
+            if (EnsureInvokeMethod() != null)
+            {
+                ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
             }
 
             //

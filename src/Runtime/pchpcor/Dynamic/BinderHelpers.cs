@@ -344,15 +344,14 @@ namespace Pchp.Core.Dynamic
                 {
                     if (m.Methods.Length == 1 && m.Methods[0].IsVisible(classCtx))
                     {
-                        if (access.Write())
+                        switch (magic)
                         {
-                            // __set(name, value)
-                            return OverloadBinder.BindOverloadCall(rvalue.Type, target, m.Methods, ctx, new Expression[] { Expression.Constant(field), rvalue });
-                        }
-                        else
-                        {
-                            // __get(name), __unset(name), __isset(name)
-                            return OverloadBinder.BindOverloadCall(m.Methods[0].ReturnType, target, m.Methods, ctx, new Expression[] { Expression.Constant(field) });
+                            case TypeMethods.MagicMethods.__set:
+                                // __set(name, value)
+                                return OverloadBinder.BindOverloadCall(rvalue.Type, target, m.Methods, ctx, new Expression[] { Expression.Constant(field), rvalue });
+                            default:
+                                // __get(name), __unset(name), __isset(name)
+                                return OverloadBinder.BindOverloadCall(m.Methods[0].ReturnType, target, m.Methods, ctx, new Expression[] { Expression.Constant(field) });
                         }
                     }
 
@@ -375,7 +374,7 @@ namespace Pchp.Core.Dynamic
             //
             return null;
         }
-        
+
         public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args)
         {
             Debug.Assert(method is MethodInfo || method is ConstructorInfo);

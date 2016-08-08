@@ -237,8 +237,6 @@ namespace Pchp.CodeAnalysis
             public static Name offsetGet { get { return new Name("offsetGet"); } }
             public static Name offsetSet { get { return new Name("offsetSet"); } }
             public static Name current { get { return new Name("current"); } }
-            public static Name __invoke { get { return new Name("__invoke"); } }
-            public static Name __toString { get { return new Name("__toString"); } }
         }
     }
 }

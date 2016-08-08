@@ -18,6 +18,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Accessibility _accessibility;
         protected ImmutableArray<ParameterSymbol> _parameters;
 
+        internal MethodSymbol ExplicitOverride { get; set; }
+
         public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, params ParameterSymbol[] ps)
         {
             _type = containingType;
@@ -69,6 +71,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations =>
+            IsExplicitInterfaceImplementation ? ImmutableArray.Create(ExplicitOverride) : ImmutableArray<MethodSymbol>.Empty;
+
+        internal override bool IsExplicitInterfaceImplementation => ExplicitOverride != null;
+
         public override MethodKind MethodKind => MethodKind.Ordinary;
 
         public override string Name => _name;
@@ -81,7 +88,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;
 
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
+        public override bool HidesBaseMethodsByName => !IsExplicitInterfaceImplementation && true;
+
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => IsExplicitInterfaceImplementation || false;
 
         internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual;
     }

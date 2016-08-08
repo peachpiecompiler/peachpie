@@ -273,17 +273,17 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (member.Kind == SymbolKind.Method)
                 {
-                    //var method = (MethodSymbol)member;
-                    //Debug.Assert((object)method.PartialDefinitionPart == null); // must be definition
+                    var method = (MethodSymbol)member;
+                    Debug.Assert((object)method.PartialDefinitionPart == null); // must be definition
 
-                    //var explicitImplementations = method.ExplicitInterfaceImplementations;
-                    //if (explicitImplementations.Length != 0)
-                    //{
-                    //    foreach (var implemented in method.ExplicitInterfaceImplementations)
-                    //    {
-                    //        yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(implemented, (CSharpSyntaxNode)context.SyntaxNodeOpt, context.Diagnostics));
-                    //    }
-                    //}
+                    var explicitImplementations = method.ExplicitInterfaceImplementations;
+                    if (explicitImplementations.Length != 0)
+                    {
+                        foreach (var implemented in explicitImplementations)
+                        {
+                            yield return new Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(implemented, context.SyntaxNodeOpt, context.Diagnostics));
+                        }
+                    }
 
                     //if (method.RequiresExplicitOverride())
                     //{
@@ -292,7 +292,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     //    // specify the override explicitly.
                     //    // This mostly affects accessors - C# ignores method interactions
                     //    // between accessors and non-accessors, whereas the runtime does not.
-                    //    yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(method.OverriddenMethod, (CSharpSyntaxNode)context.SyntaxNodeOpt, context.Diagnostics));
+                    //    yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference((MethodSymbol)method.OverriddenMethod, context.SyntaxNodeOpt, context.Diagnostics));
                     //}
                     //else if (method.MethodKind == MethodKind.Destructor && this.SpecialType != SpecialType.System_Object)
                     //{
@@ -301,13 +301,13 @@ namespace Pchp.CodeAnalysis.Symbols
                     //    // a destructor that will never be invoked by the runtime.
                     //    // NOTE: If System.Object doesn't contain a destructor, you're on your own - this destructor may
                     //    // or not be called by the runtime.
-                    //    TypeSymbol objectType = this.DeclaringCompilation.GetSpecialType(CodeAnalysis.SpecialType.System_Object);
+                    //    TypeSymbol objectType = this.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
                     //    foreach (Symbol objectMember in objectType.GetMembers(WellKnownMemberNames.DestructorName))
                     //    {
                     //        MethodSymbol objectMethod = objectMember as MethodSymbol;
                     //        if ((object)objectMethod != null && objectMethod.MethodKind == MethodKind.Destructor)
                     //        {
-                    //            yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(objectMethod, (CSharpSyntaxNode)context.SyntaxNodeOpt, context.Diagnostics));
+                    //            yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(objectMethod, context.SyntaxNodeOpt, context.Diagnostics));
                     //        }
                     //    }
                     //}

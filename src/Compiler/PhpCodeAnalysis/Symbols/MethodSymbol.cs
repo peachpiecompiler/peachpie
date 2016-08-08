@@ -41,13 +41,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<IMethodSymbol> IMethodSymbol.ExplicitInterfaceImplementations => StaticCast<IMethodSymbol>.From(ExplicitInterfaceImplementations);
 
-        public virtual ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public virtual ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations => ImmutableArray<MethodSymbol>.Empty;
 
         /// <summary>
         /// Returns value 'Method' of the <see cref="SymbolKind"/>

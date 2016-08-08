@@ -1218,7 +1218,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitRet(bool isVoid)
         {
             // sequence point
-            var body = AstUtils.BodySpanOrInvalid(Routine.Syntax);
+            var body = AstUtils.BodySpanOrInvalid(Routine?.Syntax);
             if (body.IsValid)
             {
                 EmitSequencePoint(new Syntax.Text.Span(body.End - 1, 1));

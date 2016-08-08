@@ -1084,51 +1084,51 @@ namespace Pchp.CodeAnalysis.Emit
             return methodSymbol;
         }
 
-        //internal Cci.IMethodReference TranslateOverriddenMethodReference(
-        //    MethodSymbol methodSymbol,
-        //    SyntaxNode syntaxNodeOpt,
-        //    DiagnosticBag diagnostics)
-        //{
-        //    Cci.IMethodReference methodRef;
-        //    NamedTypeSymbol container = methodSymbol.ContainingType;
+        internal Cci.IMethodReference TranslateOverriddenMethodReference(
+            MethodSymbol methodSymbol,
+            SyntaxNode syntaxNodeOpt,
+            DiagnosticBag diagnostics)
+        {
+            Cci.IMethodReference methodRef;
+            NamedTypeSymbol container = methodSymbol.ContainingType;
 
-        //    if (IsGenericType(container))
-        //    {
-        //        if (methodSymbol.IsDefinition)
-        //        {
-        //            object reference;
+            if (IsGenericType(container))
+            {
+                if (methodSymbol.IsDefinition)
+                {
+                    object reference;
 
-        //            if (_genericInstanceMap.TryGetValue(methodSymbol, out reference))
-        //            {
-        //                methodRef = (Cci.IMethodReference)reference;
-        //            }
-        //            else
-        //            {
-        //                methodRef = new SpecializedMethodReference(methodSymbol);
-        //                methodRef = (Cci.IMethodReference)_genericInstanceMap.GetOrAdd(methodSymbol, methodRef);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            methodRef = new SpecializedMethodReference(methodSymbol);
-        //        }
-        //    }
-        //    else
-        //    {
-        //        Debug.Assert(methodSymbol.IsDefinition);
+                    if (_genericInstanceMap.TryGetValue(methodSymbol, out reference))
+                    {
+                        methodRef = (Cci.IMethodReference)reference;
+                    }
+                    else
+                    {
+                        methodRef = new SpecializedMethodReference(methodSymbol);
+                        methodRef = (Cci.IMethodReference)_genericInstanceMap.GetOrAdd(methodSymbol, methodRef);
+                    }
+                }
+                else
+                {
+                    methodRef = new SpecializedMethodReference(methodSymbol);
+                }
+            }
+            else
+            {
+                Debug.Assert(methodSymbol.IsDefinition);
 
-        //        if (_embeddedTypesManagerOpt != null)
-        //        {
-        //            methodRef = _embeddedTypesManagerOpt.EmbedMethodIfNeedTo(methodSymbol, syntaxNodeOpt, diagnostics);
-        //        }
-        //        else
-        //        {
-        //            methodRef = methodSymbol;
-        //        }
-        //    }
+                //if (_embeddedTypesManagerOpt != null)
+                //{
+                //    methodRef = _embeddedTypesManagerOpt.EmbedMethodIfNeedTo(methodSymbol, syntaxNodeOpt, diagnostics);
+                //}
+                //else
+                {
+                    methodRef = methodSymbol;
+                }
+            }
 
-        //    return methodRef;
-        //}
+            return methodRef;
+        }
 
         internal static Cci.IGenericParameterReference Translate(TypeParameterSymbol param)
         {
