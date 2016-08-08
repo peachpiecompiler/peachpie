@@ -121,6 +121,19 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Creates an instance of <see cref="PhpArray"/> filled by given values.
+        /// </summary>
+        /// <param name="values">Values to be added to the new instance. 
+        /// Keys will correspond order of values in the array.</param>
+        public static PhpArray New(params PhpValue[] values)
+        {
+            PhpArray result = new PhpArray(values.Length, 0);
+            foreach (var value in values)
+                result.Add(value);
+            return result;
+        }
+
+        /// <summary>
         /// Creates an instance of <see cref="PhpArray"/> filled by given entries.
         /// </summary>
         /// <param name="keysValues">Keys and values (alternating) or values only.</param>

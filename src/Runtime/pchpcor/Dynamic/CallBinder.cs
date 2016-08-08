@@ -320,7 +320,7 @@ namespace Pchp.Core.Dynamic
                 var call_args = new Expression[]
                 {
                     Expression.Constant(_name),
-                    Expression.NewArrayInit(typeof(PhpValue), args.Select(a => ConvertExpression.Bind(a.Expression, typeof(PhpValue), ctx.Expression)))
+                    BinderHelpers.NewPhpArray(ctx.Expression, args.Select(a => a.Expression)),
                 };
                 return OverloadBinder.BindOverloadCall(_returnType, target.Expression, call.Methods, ctx.Expression, call_args);
             }
@@ -398,7 +398,7 @@ namespace Pchp.Core.Dynamic
                 var call_args = new Expression[]
                 {
                     Expression.Constant(_name),
-                    Expression.NewArrayInit(typeof(PhpValue), args.Select(a => ConvertExpression.Bind(a.Expression, typeof(PhpValue), ctx.Expression)))
+                    BinderHelpers.NewPhpArray(ctx.Expression, args.Select(a => a.Expression)),
                 };
                 return OverloadBinder.BindOverloadCall(_returnType, null, call.Methods, ctx.Expression, call_args);
             }

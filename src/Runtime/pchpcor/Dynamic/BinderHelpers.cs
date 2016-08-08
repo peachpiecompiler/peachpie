@@ -114,6 +114,13 @@ namespace Pchp.Core.Dynamic
                 Expression.Assign(variable, Expression.New(typeof(PhpArray))));
         }
 
+        public static Expression NewPhpArray(Expression ctx, IEnumerable<Expression> values)
+        {
+            return Expression.Call(
+                typeof(PhpArray), "New", Cache.Types.Empty, // PhpArray.New(values[])
+                Expression.NewArrayInit(typeof(PhpValue), values.Select(x => ConvertExpression.Bind(x, typeof(PhpValue), ctx))));
+        }
+
         /// <summary>
         /// Find field corresponding to object's runtime fields.
         /// </summary>
