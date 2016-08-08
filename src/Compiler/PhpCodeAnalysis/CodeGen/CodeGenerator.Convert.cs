@@ -565,8 +565,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // (IPhpCallable)
                 if (!from.IsEqualToOrDerivedFrom(CoreTypes.IPhpCallable))
                 {
-                    EmitConvertToPhpValue(from, fromHint);
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_PhpValue);
+                    if (from.SpecialType == SpecialType.System_String)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_String);
+                    }
+                    else if (
+                        from.SpecialType == SpecialType.System_Int64 ||
+                        from.SpecialType == SpecialType.System_Boolean ||
+                        from.SpecialType == SpecialType.System_Double)
+                    {
+                        throw new ArgumentException($"{from.Name} cannot be converted to a class of type {to.Name}!");  // TODO: ErrCode
+                    }
+                    else
+                    {
+                        EmitConvertToPhpValue(from, fromHint);
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_PhpValue);
+                    }
                 }
                 return;
             }

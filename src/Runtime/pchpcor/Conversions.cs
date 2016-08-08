@@ -163,6 +163,11 @@ namespace Pchp.Core
         /// </summary>
         public static IPhpCallable AsCallable(PhpValue value) => value.AsCallable();
 
+        /// <summary>
+        /// Creates a callable object from string value.
+        /// </summary>
+        public static IPhpCallable AsCallable(string value) => PhpCallback.Create(value);
+
         #endregion
 
         #region ToNumber
