@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -65,6 +66,12 @@ namespace Pchp.Core.Dynamic
         /// <returns>Array of methods.</returns>
         protected abstract MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, /*in, out*/IList<DynamicMetaObject> args, ref BindingRestrictions restrictions);
 
+        protected virtual Expression BindMissingMethod(DynamicMetaObject ctx, DynamicMetaObject target, /*in, out*/IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            // TODO: ErrCode method not found
+            throw new ArgumentException("Function not found!");
+        }
+
         protected void Combine(ref BindingRestrictions restrictions, BindingRestrictions restriction)
         {
             restrictions = restrictions.Merge(restriction);
@@ -93,16 +100,18 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            var methods = ResolveMethods(ctx, ref target, argsList, ref restrictions);
-            if (methods == null || methods.Length == 0)
-            {
-                // TODO: ErrCode method not found
-                throw new ArgumentException("Function not found!");
-            }
+            Expression invocation;
 
-            //
-            var expr_args = argsList.Select(x => x.Expression).ToArray();
-            var invocation = OverloadBinder.BindOverloadCall(_returnType, target?.Expression, methods, ctx.Expression, expr_args);
+            var methods = ResolveMethods(ctx, ref target, argsList, ref restrictions);
+            if (methods != null && methods.Length != 0)
+            {
+                var expr_args = argsList.Select(x => x.Expression).ToArray();
+                invocation = OverloadBinder.BindOverloadCall(_returnType, target?.Expression, methods, ctx.Expression, expr_args);
+            }
+            else
+            {
+                invocation = BindMissingMethod(ctx, target, argsList, ref restrictions);
+            }
 
             // TODO: by alias or by value
             return new DynamicMetaObject(invocation, restrictions);
@@ -204,9 +213,9 @@ namespace Pchp.Core.Dynamic
             }
 
             // array[2]
-            
+
             // object with __invoke
-            
+
             // IPhpCallable
 
             // delegate
@@ -246,12 +255,12 @@ namespace Pchp.Core.Dynamic
         public override bool HasTarget => true;
 
         internal CallInstanceMethodBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int genericParams)
-            :base(returnType, genericParams)
+            : base(returnType, genericParams)
         {
             _name = name;
             _classCtx = classContext.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(classContext);
         }
-        
+
         protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
             if (target.Value == null)
@@ -294,6 +303,30 @@ namespace Pchp.Core.Dynamic
             var candidates = target.RuntimeType.SelectCandidates().SelectByName(name).SelectVisible(_classCtx).ToList();
             return candidates.ToArray();
         }
+
+        protected override Expression BindMissingMethod(DynamicMetaObject ctx, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            var tinfo = target.RuntimeType.GetPhpTypeInfo();
+            var call = (PhpMethodInfo)tinfo.DeclaredMethods[TypeMethods.MagicMethods.__call];
+
+            if (call != null)
+            {
+                if (_name == null)
+                {
+                    throw new NotImplementedException();
+                }
+
+                // target.__call(name, array)
+                var call_args = new Expression[]
+                {
+                    Expression.Constant(_name),
+                    Expression.NewArrayInit(typeof(PhpValue), args.Select(a => ConvertExpression.Bind(a.Expression, typeof(PhpValue), ctx.Expression)))
+                };
+                return OverloadBinder.BindOverloadCall(_returnType, target.Expression, call.Methods, ctx.Expression, call_args);
+            }
+
+            return base.BindMissingMethod(ctx, target, args, ref restrictions);
+        }
     }
 
     #endregion
@@ -319,24 +352,59 @@ namespace Pchp.Core.Dynamic
             _classCtx = classContext.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(classContext);
         }
 
-        protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        Type ResolveType(Context ctx, Expression target)
         {
-            if (_type == null)  // HasTarget
+            Debug.Assert(ctx != null);
+            Debug.Assert(target == null || target.Type == typeof(string));
+
+            var t = _type;
+            if (t == null)
             {
-                // target -> string, resolve class by name
                 throw new NotImplementedException();
             }
+
+            return t;
+        }
+
+        protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            var t = ResolveType((Context)ctx.Value, target?.Expression);
 
             if (_name != null)
             {
                 // candidates:
-                var candidates = _type.SelectCandidates().SelectByName(_name).SelectVisible(_classCtx).SelectStatic().ToList();
+                var candidates = t.SelectCandidates().SelectByName(_name).SelectVisible(_classCtx).SelectStatic().ToList();
                 return candidates.ToArray();
             }
             else
             {
                 throw new NotImplementedException();
             }
+        }
+
+        protected override Expression BindMissingMethod(DynamicMetaObject ctx, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            var tinfo = ResolveType((Context)ctx.Value, target?.Expression).GetPhpTypeInfo();
+            var call = (PhpMethodInfo)tinfo.DeclaredMethods[TypeMethods.MagicMethods.__callstatic];
+
+            if (call != null)
+            {
+                if (_name == null)
+                {
+                    throw new NotImplementedException();
+                }
+
+                // T.__callStatic(name, array)
+                var call_args = new Expression[]
+                {
+                    Expression.Constant(_name),
+                    Expression.NewArrayInit(typeof(PhpValue), args.Select(a => ConvertExpression.Bind(a.Expression, typeof(PhpValue), ctx.Expression)))
+                };
+                return OverloadBinder.BindOverloadCall(_returnType, null, call.Methods, ctx.Expression, call_args);
+            }
+
+            //
+            return base.BindMissingMethod(ctx, target, args, ref restrictions);
         }
     }
 

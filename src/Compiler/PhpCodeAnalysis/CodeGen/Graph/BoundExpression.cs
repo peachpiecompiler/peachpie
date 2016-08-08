@@ -1754,7 +1754,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (TypeNameExpr != null)
             {
-                callsiteargs.Add(cg.Emit(TypeNameExpr));   // type
+                cg.EmitConvert(TypeNameExpr, cg.CoreTypes.String);
+                callsiteargs.Add(cg.CoreTypes.String);   // type
             }
 
             callsiteargs.Add(cg.EmitLoadContext());     // ctx

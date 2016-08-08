@@ -305,7 +305,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 var boundname = (f is AST.DirectStMtdCall)
                     ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)f).MethodName))
-                    : new BoundRoutineName(BindExpression(((AST.IndirectStMtdCall)f).MethodNameVar));
+                    : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)f).MethodNameVar), AST.Operations.StringCast));
 
                 return new BoundStaticFunctionCall(BindTypeRef(f.TypeRef), boundname, boundargs)
                     .WithAccess(access);
