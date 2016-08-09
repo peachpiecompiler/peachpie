@@ -126,20 +126,7 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static FieldInfo LookupRuntimeFields(Type target)
         {
-            foreach (var fld in target.GetRuntimeFields())
-            {
-                // TODO: lookup custom attribute [CompilerGenerated]
-                if (fld.Name == "__peach__runtimeFields" || fld.Name == "<runtime_fields>")
-                {
-                    if (fld.FieldType == typeof(PhpArray) && !fld.IsPublic && !fld.IsStatic)
-                    {
-                        return fld;
-                    }
-                }
-            }
-
-            //
-            return null;
+            return target.GetRuntimeFields().FirstOrDefault(ReflectionUtils.IsRuntimeFields);
         }
 
         static Expression BindAccess(Expression expr, Expression ctx, AccessFlags access, Expression rvalue)

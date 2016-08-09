@@ -46,7 +46,7 @@ namespace Pchp.Core.Reflection
         {
             var tinfo = type.GetTypeInfo();
 
-            _fields = tinfo.DeclaredFields.ToDictionary(_FieldName, StringComparer.Ordinal);
+            _fields = tinfo.DeclaredFields.Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
             if (_fields.Count == 0)
                 _fields = null;
 
@@ -73,6 +73,7 @@ namespace Pchp.Core.Reflection
             return getter;
         }
 
+        static Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name);
         static Func<FieldInfo, string> _FieldName = f => f.Name;
         static Func<PropertyInfo, string> _PropertyName = p => p.Name;
 
