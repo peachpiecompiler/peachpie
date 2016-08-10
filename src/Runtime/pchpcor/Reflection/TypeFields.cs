@@ -73,7 +73,7 @@ namespace Pchp.Core.Reflection
             return getter;
         }
 
-        static Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name);
+        static Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name) && !ReflectionUtils.IsRuntimeFields(f);
         static Func<FieldInfo, string> _FieldName = f => f.Name;
         static Func<PropertyInfo, string> _PropertyName = p => p.Name;
 
@@ -83,6 +83,7 @@ namespace Pchp.Core.Reflection
             Debug.Assert(_statics.IsNested);
 
             var getter = BinderHelpers.GetStatic_T_Method(_statics);    // ~ Context.GetStatics<_statics>, in closure
+            // TODO: getter.CreateDelegate
             return ctx => getter.Invoke(ctx, ArrayUtils.EmptyObjects);
         }
 
