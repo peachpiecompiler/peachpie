@@ -34,7 +34,6 @@ namespace Pchp.Core
         /// Gets references count.
         /// </summary>
         public int ReferenceCount => _refcount;
-        
 
         #endregion
 

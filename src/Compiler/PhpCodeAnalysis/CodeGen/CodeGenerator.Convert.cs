@@ -860,7 +860,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitConvertToPhpNumber(from, fromHint);
                         return;
                     }
-                    else if (to == CoreTypes.PhpArray)
+                    else if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpEnumerable)
                     {
                         EmitConvertToPhpArray(from, fromHint);
                         return;
