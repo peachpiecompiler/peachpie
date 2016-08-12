@@ -73,6 +73,15 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Copy
+
+        /// <summary>
+        /// Gets copy of given value.
+        /// </summary>
+        public static PhpValue DeepCopy(PhpValue value) => value.DeepCopy();
+
+        #endregion
+
         #region Enumerator
 
         /// <summary>

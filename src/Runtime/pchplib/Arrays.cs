@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -441,6 +442,230 @@ namespace Pchp.Library
 
             // if called by PHP languge then all items in the result should be inplace deeply copied:
             //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        #endregion
+
+        #region array_slice, array_splice
+
+        /// <summary>
+        /// Retrieves a slice of specified array.
+        /// </summary>
+        /// <param name="array">The array which slice to get.</param>
+        /// <param name="offset">The ordinal number of a first item of the slice.</param>
+        /// <returns>The slice of <paramref name="array"/>.</returns>
+        /// <remarks>
+        /// The same as <see cref="array_slice(PhpArray,int,int)"/> where <c>length</c> is infinity. 
+        /// <seealso cref="PhpMath.AbsolutizeRange"/>. Resets integer keys.
+        /// </remarks>
+        public static PhpArray array_slice(PhpArray array, int offset)
+        {
+            return array_slice(array, offset, int.MaxValue, false);
+        }
+
+        /// <summary>
+        /// Retrieves a slice of specified array.
+        /// </summary>
+        /// <param name="array">The array which slice to get.</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <returns>The slice of <paramref name="array"/>.</returns>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and 
+        /// <paramref name="length"/>. Resets integer keys.
+        /// </remarks>
+        public static PhpArray array_slice(PhpArray array, int offset, int length)
+        {
+            return array_slice(array, offset, length, false);
+        }
+
+        /// <summary>
+        /// Retrieves a slice of specified array.
+        /// </summary>
+        /// <param name="array">The array which slice to get.</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <param name="preserveKeys">Whether to preserve integer keys. If <B>false</B>, the integer keys are reset.</param>
+        /// <returns>The slice of <paramref name="array"/>.</returns>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
+        /// </remarks>
+        public static PhpArray array_slice(PhpArray array, int offset, int length, bool preserveKeys)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            // absolutizes range:
+            PhpMath.AbsolutizeRange(ref offset, ref length, array.Count);
+
+            var iterator = array.GetFastEnumerator();
+
+            // moves iterator to the first item of the slice;
+            // starts either from beginning or from the end (which one is more efficient):
+            if (offset < array.Count - offset)
+            {
+                for (int i = -1; i < offset; i++)
+                    if (iterator.MoveNext() == false)
+                        break;
+            }
+            else
+            {
+                for (int i = array.Count; i > offset; i--)
+                    if (iterator.MovePrevious() == false)
+                        break;
+            }
+
+            // copies the slice:
+            PhpArray result = new PhpArray(length);
+            int ikey = 0;
+            for (int i = 0; i < length; i++)
+            {
+                var entry = iterator.Current;
+
+                // integer keys are reindexed if preserveKeys is false, string keys are not touched:
+                if (preserveKeys || entry.Key.IsString)
+                {
+                    result.Add(entry.Key, entry.Value);
+                }
+                else
+                {
+                    result.Add(ikey++, entry.Value);
+                }
+
+                iterator.MoveNext();
+            }
+
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        /// <summary>
+        /// Removes a slice of an array.
+        /// </summary>
+        /// <param name="array">The array which slice to remove.</param>
+        /// <param name="offset">The relativized offset of a first item of the slice.</param>
+        /// <remarks>
+        /// <para>Items from <paramref name="offset"/>-th to the last one are removed from <paramref name="array"/>.</para>
+        /// </remarks>
+        /// <para>See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/>.</para>
+        public static PhpArray array_splice(PhpArray array, int offset)
+        {
+            // Splice would be equivalent to SpliceDc if no replacelent is specified (=> no SpliceDc):
+            return array_splice(array, offset, int.MaxValue, PhpValue.Null);
+        }
+
+        /// <summary>
+        /// Removes a slice of an array.
+        /// </summary>
+        /// <param name="array">The array which slice to remove.</param>
+        /// <param name="offset">The relativized offset of a first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <remarks>
+        /// <para><paramref name="length"/> items are removed from <paramref name="array"/> 
+        /// starting with the <paramref name="offset"/>-th one.</para>
+        /// </remarks>
+        /// <para>See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/>.</para>
+        public static PhpArray array_splice(PhpArray array, int offset, int length)
+        {
+            // Splice would be equivalent to SpliceDc if no replacement is specified (=> no SpliceDc):
+            return array_splice(array, offset, length, PhpValue.Null);
+        }
+
+        /// <summary>
+        /// Replaces a slice of an array with specified item(s).
+        /// </summary>
+        /// <remarks>
+        /// <para>The same as <see cref="Splice(PhpArray,int,int,object)"/> except for that
+        /// replacement items are deeply copied to the <paramref name="array"/>.</para>
+        /// </remarks>
+        public static PhpArray array_splice(PhpArray array, int offset, int length, PhpValue replacement)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            return SpliceInternal(array, offset, length, replacement, true);
+        }
+
+        /// <summary>
+        /// Replaces a slice of an array with specified item(s).
+        /// </summary>
+        /// <param name="array">The array which slice to replace.</param>
+        /// <param name="offset">The relativized offset of a first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <param name="replacement"><see cref="PhpArray"/> of items to replace the splice or a single item.</param>
+        /// <returns>The <see cref="PhpArray"/> of replaced items indexed by integers starting from zero.</returns>
+        /// <remarks>
+        /// <para>See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.</para>
+        /// <para>Reindexes all integer keys in resulting array.</para>
+        /// </remarks>
+        internal static PhpArray Splice(PhpArray array, int offset, int length, PhpValue replacement)
+        {
+            if (array == null)
+            {
+                //PhpException.Throw(
+                //    PhpError.Warning,
+                //    string.Format(Strings.unexpected_arg_given, "array", PhpArray.PhpTypeName, PhpVariable.TypeNameNull));
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            return SpliceInternal(array, offset, length, replacement, false);
+        }
+
+        /// <summary>
+        /// Implementation of <see cref="array_splice(PhpArray,int,int,object)"/> and <see cref="array_splice(PhpArray,int,int,object)"/>.
+        /// </summary>
+        /// <remarks>Whether to make a deep-copy of items in the replacement.</remarks>
+        internal static PhpArray SpliceInternal(PhpArray array, int offset, int length, PhpValue replacement, bool deepCopy)
+        {
+            Debug.Assert(array != null);
+            int count = array.Count;
+
+            // converts offset and length to interval [first,last]:
+            PhpMath.AbsolutizeRange(ref offset, ref length, count);
+
+            PhpArray result = new PhpArray(length);
+
+            // replacement is an array:
+            if (replacement.IsArray)
+            {
+                // provides deep copies:
+                IEnumerable<PhpValue> e = replacement.Array.Values;
+
+                if (deepCopy)
+                {
+                    e = e.Select(Operators.DeepCopy);
+                }
+
+                // does replacement:
+                array.ReindexAndReplace(offset, length, e, result);
+            }
+            else if (replacement.IsNull)
+            {
+                // replacement is null:
+
+                array.ReindexAndReplace(offset, length, null, result);
+            }
+            else
+            {
+                // replacement is another type //
+
+                // creates a deep copy:
+                if (deepCopy) replacement = replacement.DeepCopy();
+
+                // does replacement:
+                array.ReindexAndReplace(offset, length, new[] { replacement }, result);
+            }
+
             return result;
         }
 

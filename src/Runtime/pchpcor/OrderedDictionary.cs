@@ -688,6 +688,15 @@ namespace Pchp.Core
                 //}
             }
 
+            public bool MovePrevious()
+            {
+                _currentEntry = (_currentEntry >= 0)
+                    ? _table.entries[_currentEntry].listLast
+                    : _table.listTail;  // start // note after unsuccessful MovePrevious() enumerator is restarted
+
+                return _currentEntry >= 0;
+            }
+
             public IntStringKey CurrentKey => _table.entries[_currentEntry]._key;
             public PhpValue CurrentValue
             {
