@@ -670,5 +670,133 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region shuffle, array_rand
+
+        /// <summary>
+        /// Randomizes the order of elements in the array using PhpMath random numbers generator.
+        /// </summary>
+        /// <exception cref="PhpException">Thrown if the <paramref name="array"/> argument is null.</exception>
+        /// <remarks>Reindexes all keys in the resulting array.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool shuffle(PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Shuffle(PhpMath.Generator);
+            array.ReindexAll();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Returns a key of an entry chosen at random using PhpMath random numbers generator.
+        /// </summary>
+        /// <param name="array">The array which to choose from.</param>
+        /// <returns>The chosen key.</returns>
+        /// <exception cref="System.NullReferenceException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        public static PhpValue array_rand(PhpArray array)
+        {
+            return array_rand(array, 1);
+        }
+
+        /// <summary>
+        /// Chooses specified number of keys from an array at random.
+        /// </summary>
+        /// <param name="array">The <see cref="PhpArray"/> from which to choose.</param>
+        /// <param name="count">The number of items to choose.</param>
+        /// <returns>Either <see cref="PhpArray"/> of chosen keys (<paramref name="count"/> &gt; 1) or a single key.</returns>
+        /// <remarks>
+        /// Items are chosen uniformly in time <I>O(n)</I>, where <I>n</I> is the number of items in the 
+        /// <paramref name="array"/> using conveyor belt sampling. 
+        /// </remarks>
+        /// <exception cref="NullReferenceException"><paramref name="array"/>  is a <B>null</B> reference.</exception>
+        /// <exception cref="PhpException"><paramref name="count"/> is not positive and less 
+        /// than the number of items in <paramref name="array"/>. (Warning)</exception>
+        public static PhpValue array_rand(PhpArray array, int count)
+        {
+            if (count == 1)
+            {
+                var result = new List<PhpValue>(1);
+                return RandomSubset(array.Keys, result, count, PhpMath.Generator) ? result[0] : PhpValue.Null;
+            }
+            else
+            {
+                var result = new PhpArray(count > 0 ? count : 0);
+                if (RandomSubset(array.Keys, result, count, PhpMath.Generator))
+                {
+                    //result.InplaceCopyOnReturn = true;
+                    return PhpValue.Create(result);
+                }
+                else
+                {
+                    return PhpValue.Null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Chooses specified number of items from a collection at random.
+        /// </summary>
+        /// <param name="source">The <see cref="ICollection"/> from which to choose.</param>
+        /// <param name="result">The <see cref="IList"/> where to add chosen items.</param>
+        /// <param name="count">The number of items to choose.</param>
+        /// <param name="generator">The initialized random numbers generator.</param>
+        /// <remarks>
+        /// Items are chosen uniformly in time <I>O(n)</I>, where <I>n</I> is the number of items in the collection
+        /// using conveyor belt sampling. 
+        /// </remarks>
+        /// <returns><B>false</B> on failure.</returns>
+        /// <exception cref="PhpException">Either <paramref name="source"/> or <paramref name="result"/> or 
+        /// <paramref name="generator"/> is a <B>null</B> reference (Warning)</exception>
+        /// <exception cref="PhpException"><paramref name="count"/> is not positive and less 
+        /// than the number of items in <paramref name="source"/>. (Warning)</exception>
+        private static bool RandomSubset(ICollection<IntStringKey> source, IList<PhpValue> result, int count, Random generator)
+        {
+            if (source == null)
+            {
+                // TODO: PhpException.ArgumentNull("array");
+                return false;
+            }
+            if (result == null)
+            {
+                // TODO: PhpException.ArgumentNull("result");
+                return false;
+            }
+            if (generator == null)
+            {
+                // TODO: PhpException.ArgumentNull("generator");
+                return false;
+            }
+            if (count < 1 || count > source.Count)
+            {
+                // TODO: PhpException.InvalidArgument("count", LibResources.GetString("number_of_items_not_between_one_and_item_count", count, source.Count));
+                return false;
+            }
+
+            int n = source.Count;
+            using (var iterator = source.GetEnumerator())
+            {
+                while (iterator.MoveNext())
+                {
+                    // adds item to result with probability count/n:
+                    if ((double)count > generator.NextDouble() * n)
+                    {
+                        result.Add(PhpValue.Create(iterator.Current));
+                        if (--count == 0) break;
+                    }
+                    n--;
+                }
+            }
+
+            return true;
+        }
+
+        #endregion
     }
 }
