@@ -1490,5 +1490,129 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region usort,uasort,uksort
+
+        /// <summary>
+        /// Sorts an array using user comparison callback for comparing values.
+        /// </summary>
+        /// <param name="caller">The class context used to bind the callback.</param>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="compare">The user callback to be used for comparison of values.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool usort(Context ctx, [In, Out] PhpArray array, IPhpCallable compare)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+            if (compare == null || !compare.IsValid) return false;
+
+            // sorts array using callback for comparisons:
+            array.Sort(new ValueComparer(new PhpUserComparer(ctx, compare), false));
+
+            array.ReindexAll();
+            array.RestartIntrinsicEnumerator();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sorts an array user comparison callback method for comparing values preserving key-value associations.
+        /// </summary>
+        /// <param name="caller">The class context used to bind the callback.</param>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="compare">The user callback to be used for comparison of values.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool uasort(Context ctx, [In, Out] PhpArray array, IPhpCallable compare)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+            if (compare == null || !compare.IsValid) return false;
+
+            // sorts array using callback for comparisons:
+            array.Sort(new ValueComparer(new PhpUserComparer(ctx, compare), false));
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sorts an array using user comparison callback for comparing keys.
+        /// </summary>
+        /// <param name="caller">The class context used to bind the callback.</param>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="compare">The user callback to be used for comparison of values.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool uksort(Context ctx, [In, Out] PhpArray array, IPhpCallable compare)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+            if (compare == null || !compare.IsValid) return false;
+
+            array.Sort(new KeyComparer(new PhpUserComparer(ctx, compare), false));
+
+            return true;
+        }
+
+        #endregion
+
+        #region natsort,natcasesort
+
+        /// <summary>
+        /// Sorts an array using case sensitive natural comparison method for comparing 
+        /// values preserving key-value association.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool natsort(Context ctx, [In, Out] PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Sort(new ValueComparer(new PhpNaturalComparer(ctx, false), false));
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sorts an array using case insensitive natural comparison method for 
+        /// comparing values preserving key-value association.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool natcasesort(Context ctx, [In, Out] PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Sort(new ValueComparer(new PhpNaturalComparer(ctx, true), false));
+
+            return true;
+        }
+
+        #endregion
     }
 }

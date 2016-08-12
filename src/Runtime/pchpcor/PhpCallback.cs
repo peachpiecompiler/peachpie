@@ -17,6 +17,11 @@ namespace Pchp.Core
         /// Invokes the object with given arguments.
         /// </summary>
         PhpValue Invoke(Context ctx, params PhpValue[] arguments);
+
+        /// <summary>
+        /// Gets value indicating the callback is valid.
+        /// </summary>
+        bool IsValid { get; }
     }
 
     /// <summary>
@@ -165,6 +170,8 @@ namespace Pchp.Core
             }
 
             protected override PhpCallable BindCore(Context ctx) => null;
+
+            public override bool IsValid => false;
         }
 
         #endregion
@@ -238,6 +245,8 @@ namespace Pchp.Core
         /// Invokes the callback with given arguments.
         /// </summary>
         public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Bind(ctx)(ctx, arguments);
+
+        public virtual bool IsValid => true;
 
         #endregion
     }
