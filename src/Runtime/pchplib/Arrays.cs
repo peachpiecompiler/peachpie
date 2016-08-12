@@ -1138,10 +1138,15 @@ namespace Pchp.Library
         /// <param name="low">Lower bound of the interval.</param>
         /// <param name="high">Upper bound of the interval.</param>
         /// <returns>The array.</returns>
-        public static PhpArray range(Context ctx, PhpValue low, PhpValue high)
-        {
-            return range(ctx, low, high, PhpValue.Create(1));
-        }
+        public static PhpArray range(long low, long high) => RangeOfLongInts(low, high, 1L);
+
+        /// <summary>
+        /// Creates an array containing range of elements with step 1.
+        /// </summary>
+        /// <param name="low">Lower bound of the interval.</param>
+        /// <param name="high">Upper bound of the interval.</param>
+        /// <returns>The array.</returns>
+        public static PhpArray range(Context ctx, PhpValue low, PhpValue high) => range(ctx, low, high, PhpValue.Create(1));
 
         /// <summary>
         /// Creates an array containing range of elements with arbitrary step.
