@@ -1234,5 +1234,54 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region GetComparer
+
+        /// <summary>
+        /// Gets an instance of PHP comparer parametrized by specified method, order, and compared item type.
+        /// </summary>
+        /// <param name="method">The <see cref="ComparisonMethod"/>.</param>
+        /// <param name="order">The <see cref="SortingOrder"/>.</param>
+        /// <param name="keyComparer">Whether to compare keys (<B>false</B> for value comparer).</param>
+        /// <returns>A comparer (either a new instance or existing singleton instance).</returns>
+        internal static IComparer<KeyValuePair<IntStringKey, PhpValue>>/*!*/ GetComparer(Context ctx, ComparisonMethod method, SortingOrder order, bool keyComparer)
+        {
+            if (keyComparer)
+            {
+                switch (method)
+                {
+                    case ComparisonMethod.Numeric:
+                        return (order == SortingOrder.Descending) ? KeyComparer.ReverseNumeric : KeyComparer.Numeric;
+
+                    case ComparisonMethod.String:
+                        return (order == SortingOrder.Descending) ? KeyComparer.ReverseString(ctx) : KeyComparer.String(ctx);
+
+                    case ComparisonMethod.LocaleString:
+                        return new KeyComparer(Locale.GetStringComparer(ctx, false), order == SortingOrder.Descending);
+
+                    default:
+                        return (order == SortingOrder.Descending) ? KeyComparer.Reverse : KeyComparer.Default;
+                }
+            }
+            else
+            {
+                switch (method)
+                {
+                    case ComparisonMethod.Numeric:
+                        return (order == SortingOrder.Descending) ? ValueComparer.ReverseNumeric : ValueComparer.Numeric;
+
+                    case ComparisonMethod.String:
+                        return (order == SortingOrder.Descending) ? ValueComparer.ReverseString(ctx) : ValueComparer.String(ctx);
+
+                    case ComparisonMethod.LocaleString:
+                        return new ValueComparer(Locale.GetStringComparer(ctx, false), order == SortingOrder.Descending);
+
+                    default:
+                        return (order == SortingOrder.Descending) ? ValueComparer.Reverse : ValueComparer.Default;
+                }
+            }
+        }
+
+        #endregion
     }
 }
