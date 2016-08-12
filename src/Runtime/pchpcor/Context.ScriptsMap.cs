@@ -15,6 +15,18 @@ namespace Pchp.Core
     partial class Context
     {
         /// <summary>
+        /// Helper generic class holding an app static index.
+        /// </summary>
+        /// <typeparam name="T">Type of object kept as context static.</typeparam>
+        static class ScriptIndexHolder<T>
+        {
+            /// <summary>
+            /// Index of the object of type <typeparamref name="T"/>.
+            /// </summary>
+            public static int Index;
+        }
+
+        /// <summary>
         /// Signature of the scripts main method.
         /// </summary>
         /// <param name="ctx">Reference to current context. Cannot be <c>null</c>.</param>
@@ -102,15 +114,15 @@ namespace Pchp.Core
                 GetScriptIndex(path, mainmethod.DeclaringType.GetTypeInfo());
             }
 
-            public void SetIncluded<TScript>() => array.SetTrue(EnsureIndex<TScript>(ref IndexHolder<TScript>.Index) - 1);
+            public void SetIncluded<TScript>() => array.SetTrue(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 
-            public bool IsIncluded<TScript>() => IsIncluded(EnsureIndex<TScript>(ref IndexHolder<TScript>.Index) - 1);
+            public bool IsIncluded<TScript>() => IsIncluded(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 
             internal bool IsIncluded(int index) => array[index];
 
             public static ScriptInfo GetScript<TScript>()
             {
-                var idx = EnsureIndex<TScript>(ref IndexHolder<TScript>.Index);
+                var idx = EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index);
                 return _scripts[idx - 1];
             }
 
