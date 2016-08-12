@@ -920,5 +920,117 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region array_fill, array_fill_keys, array_pad
+
+        /// <summary>
+		/// Creates a new array filled with a specified value.
+		/// </summary>
+		/// <param name="startIndex">The value of the key of the first item in the array.</param>
+		/// <param name="count">The number of items in the array.</param>
+		/// <param name="value">The value copied to all items in the array.</param>
+		/// <returns>The array.</returns>
+		/// <exception cref="PhpException">Thrown if <paramref name="count"/> is not positive.</exception>
+		public static PhpArray array_fill(int startIndex, int count, PhpValue value)
+        {
+            if (count <= 0)
+            {
+                // TODO: PhpException.InvalidArgument("count", LibResources.GetString("arg:negative_or_zero"));
+                return null;
+            }
+
+            PhpArray result = new PhpArray(count, 0);
+            int last = startIndex + count;
+            for (int i = startIndex; i < last; i++)
+                result.Add(i, value);
+
+            // makes deep copies of all added items:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        public static PhpArray array_fill_keys(PhpArray keys, PhpValue value)
+        {
+            if (keys == null)
+            {
+                // PhpException.ArgumentNull("keys");
+                // return null;
+                throw new ArgumentNullException();
+            }
+
+            var result = new PhpArray(keys.Count);
+            var iterator = keys.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                IntStringKey key = iterator.CurrentValue.ToIntStringKey();
+                //if (Core.Convert.ObjectToArrayKey(x.Value, out key) && !result.ContainsKey(key))
+                {
+                    result[key] = value;
+                }
+            }
+
+            // makes deep copies of all added items:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        /// <summary>
+        /// Pads array to the specified length with a value.
+        /// If the length is negative adds |length| elements at beginning otherwise adds elements at the end.
+        /// Values with integer keys that are contained in the source array are inserted to the resulting one with new 
+        /// integer keys counted from zero (or from |length| if length negative).
+        /// </summary>
+        /// <param name="array">The source array.</param>
+        /// <param name="length">The length of the resulting array.</param>
+        /// <param name="value">The value to add in array.</param>
+        /// <returns>Padded array.</returns>
+        /// <exception cref="PhpException">The <paramref name="array"/> argument is a <B>null</B> reference.</exception>
+        public static PhpArray array_pad(PhpArray array, int length, PhpValue value)
+        {
+            if (array == null)
+            {
+                // PhpException.ArgumentNull("array");
+                // return null;
+                throw new ArgumentNullException();
+            }
+
+            // number of items to add:
+            int remains = Math.Abs(length) - array.Count;
+
+            // returns unchanged array (or its deep copy if called from PHP):
+            if (remains <= 0) return array;
+
+            PhpArray result = new PhpArray(array.Count + remains);
+
+            // prepends items:
+            if (length < 0)
+            {
+                while (remains-- > 0) result.Add(value);
+            }
+
+            // inserts items from source array
+            // if a key is a string inserts it unchanged otherwise inserts value with max. integer key:  
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                var key = iterator.CurrentKey;
+                if (key.IsString)
+                    result.Add(key, iterator.CurrentValue);
+                else
+                    result.Add(iterator.CurrentValue);
+            }
+
+            // appends items:
+            if (length > 0)
+            {
+                while (remains-- > 0) result.Add(value);
+            }
+
+            // the result is inplace deeply copied on return to PHP code:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        #endregion
     }
 }
