@@ -97,6 +97,8 @@ namespace Pchp.CodeAnalysis
                     if (second.IsOfType(first)) return first;
                     // TODO: find common base
                     // TODO: otherwise find a common interface
+
+                    return CoreTypes.Object;
                 }
             }
 
