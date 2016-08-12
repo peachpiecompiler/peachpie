@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -819,7 +820,7 @@ namespace Pchp.Library
             }
 
             return array.ContainsKey(key);
-            
+
             //if (Core.Convert.ObjectToArrayKey(key, out array_key))
             //    return array.ContainsKey(array_key);
 
@@ -1194,7 +1195,7 @@ namespace Pchp.Library
         public static PhpArray range(Context ctx, PhpValue low, PhpValue high, PhpValue step)
         {
             PhpNumber num_low, num_high, num_step;
-            
+
             // converts each parameter to a number, determines what type of number it is (int/double)
             // and whether it wholly represents that number:
             var info_step = step.ToNumber(out num_step);
@@ -1280,6 +1281,212 @@ namespace Pchp.Library
                         return (order == SortingOrder.Descending) ? ValueComparer.Reverse : ValueComparer.Default;
                 }
             }
+        }
+
+        #endregion
+
+        #region sort,asort,ksort,rsort,arsort,krsort
+
+        /// <summary>
+        /// Sorts an array using regular comparison method for comparing values.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool sort(Context ctx, [In, Out]PhpArray array)
+        {
+            return sort(ctx, array, ComparisonMethod.Regular);
+        }
+
+        /// <summary>
+        /// Sorts an array using specified comparison method for comparing values.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool sort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, false));
+            array.ReindexAll();
+            array.RestartIntrinsicEnumerator();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sorts an array using regular comparison method for comparing values preserving key-value associations.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool asort(Context ctx, [In, Out]PhpArray array)
+        {
+            return asort(ctx, array, ComparisonMethod.Regular);
+        }
+
+        /// <summary>
+        /// Sorts an array using specified comparison method for comparing values preserving key-value associations.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool asort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, false));
+            array.RestartIntrinsicEnumerator();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sorts an array using regular comparison method for comparing keys.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool ksort(Context ctx, [In, Out]PhpArray array)
+        {
+            return ksort(ctx, array, ComparisonMethod.Regular);
+        }
+
+        /// <summary>
+        /// Sorts an array using specified comparison method for comparing keys.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool ksort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Ascending, true));
+            array.RestartIntrinsicEnumerator();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sorts an array using regular comparison method for comparing values in reverse order.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool rsort(Context ctx, [In, Out]PhpArray array)
+        {
+            return rsort(ctx, array, ComparisonMethod.Regular);
+        }
+
+        /// <summary>
+        /// Sorts an array using specified comparison method for comparing values in reverse order.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool rsort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, false));
+            array.ReindexAll();
+            array.RestartIntrinsicEnumerator();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sorts an array using regular comparison method for comparing values in reverse order 
+        /// preserving key-value associations.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool arsort(Context ctx, [In, Out]PhpArray array)
+        {
+            return arsort(ctx, array, ComparisonMethod.Regular);
+        }
+
+        /// <summary>
+        /// Sorts an array using specified comparison method for comparing values in reverse order
+        /// preserving key-value associations.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool arsort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, false));
+            array.RestartIntrinsicEnumerator();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Sorts an array using regular comparison method for comparing keys in reverse order.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool krsort(Context ctx, [In, Out] PhpArray array)
+        {
+            return krsort(ctx, array, ComparisonMethod.Regular);
+        }
+
+        /// <summary>
+        /// Sorts an array using specified comparison method for comparing keys in reverse order.
+        /// </summary>
+        /// <param name="array">The array to be sorted.</param>
+        /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
+        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
+        /// <returns>True on success, False on failure.</returns>
+        public static bool krsort(Context ctx, [In, Out] PhpArray array, ComparisonMethod comparisonMethod)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            array.Sort(GetComparer(ctx, comparisonMethod, SortingOrder.Descending, true));
+            array.RestartIntrinsicEnumerator();
+
+            return true;
         }
 
         #endregion
