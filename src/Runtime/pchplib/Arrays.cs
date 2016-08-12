@@ -1614,5 +1614,179 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region array_multisort
+
+        /// <summary>
+        /// Resolves arguments passed to <see cref="MultiSort"/> method according to PHP manual for <c>array_multisort</c> function.
+        /// </summary>
+        /// <param name="first">The first argument of <see cref="MultiSort"/>.</param>
+        /// <param name="args">The rest of arguments of <see cref="MultiSort"/>.</param>
+        /// <param name="arrays">An array to be filled with arrays passed in all arguments.</param>
+        /// <param name="comparers">An array to be filled with comparers defined by arguments.</param>
+        /// <remarks>
+        /// Arrays and comparers can be a <B>null</B> reference. In such a case only number of arrays to be sorted
+        /// is returned. Otherwise, <paramref name="arrays"/> is filled with these arrays and <paramref name="comparers"/>
+        /// with comparers defined by appropriate arguments.
+        /// </remarks>
+        private static int MultiSortResolveArgs(
+            Context ctx,
+            PhpArray first,
+            PhpValue[] args,
+            PhpArray[] arrays,
+            IComparer<KeyValuePair<IntStringKey, PhpValue>>[] comparers)
+        {
+            int col_count = 1;
+            int row_count = first.Count;
+            ComparisonMethod method = ComparisonMethod.Undefined;
+            SortingOrder order = SortingOrder.Undefined;
+
+            if (arrays != null)
+            {
+                arrays[0] = first;
+            }
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+
+                if (arg.IsArray)
+                {
+                    var array = arg.Array;
+
+                    // checks whether the currently processed array has the same length as the first one:
+                    if (array.Count != row_count)
+                    {
+                        //PhpException.Throw(PhpError.Warning, CoreResources.GetString("lengths_are_different", "the first array", string.Format("{0}-th array", col_count)));
+                        //return 0;
+                        throw new ArgumentException();
+                    }
+                    // sets next array:
+                    if (arrays != null)
+                        arrays[col_count] = array;
+
+                    // sets comparer of the previous array:
+                    if (comparers != null)
+                        comparers[col_count - 1] = GetComparer(ctx, method, order, false);
+
+                    // resets values:
+                    method = ComparisonMethod.Undefined;
+                    order = SortingOrder.Undefined;
+
+                    col_count++;
+                }
+                else if (arg.TypeCode == PhpTypeCode.Long)
+                {
+                    var num = (int)arg.ToLong();
+
+                    switch (num)
+                    {
+                        case (int)ComparisonMethod.Numeric:
+                        case (int)ComparisonMethod.Regular:
+                        case (int)ComparisonMethod.String:
+                        case (int)ComparisonMethod.LocaleString:
+                            if (method != ComparisonMethod.Undefined)
+                            {
+                                //PhpException.Throw(PhpError.Warning, LibResources.GetString("sorting_flag_already_specified", i));
+                                //return 0;
+                                throw new ArgumentException();
+                            }
+                            else
+                            {
+                                method = (ComparisonMethod)num;
+                            }
+                            break;
+
+                        case (int)SortingOrder.Ascending:
+                        case (int)SortingOrder.Descending:
+                            if (order != SortingOrder.Undefined)
+                            {
+                                //PhpException.Throw(PhpError.Warning, LibResources.GetString("sorting_flag_already_specified", i));
+                                //return 0;
+                                throw new ArgumentException();
+                            }
+                            else
+                            {
+                                order = (SortingOrder)num;
+                            }
+                            break;
+
+                        default:
+                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array_or_sort_flag", i));
+                            //return 0;
+                            throw new ArgumentException();
+                    }
+                }
+                else
+                {
+                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array_or_sort_flag", i));
+                    //return 0;
+                    throw new ArgumentException();
+                }
+            }
+
+            // sets comparer of the previous array:
+            if (comparers != null)
+                comparers[col_count - 1] = GetComparer(ctx, method, order, false);
+            
+            return col_count;
+        }
+
+        /// <summary>
+        /// Sort multiple arrays.
+        /// </summary>
+        /// <param name="first">The first array to be sorted.</param>
+        /// <param name="args">Arrays to be sorted along with flags affecting sort order and 
+        /// comparison methods to be used. See PHP manual for more details.</param>
+        /// <returns>Whether arrays were sorted successfully.</returns>
+        /// <remarks>Reindexes integer keys in the sorted arrays and restarts their intrinsic enumerators.</remarks>
+        /// <exception cref="PhpException"><paramref name="first"/> is a <B>null</B> reference (Warning).</exception>
+        /// <exception cref="PhpException">Arrays has different lengths (Warning).</exception>
+        /// <exception cref="PhpException">Invalid sorting flags (Warning).</exception>
+        /// <exception cref="PhpException">Multiple sorting flags applied on single array (Warning).</exception>
+        public static bool array_multisort(Context ctx, [In, Out] PhpArray first, params PhpValue[] args)
+        {
+            // some "args" are also [PhpRw] but which ones is compile time unknown
+            // but it is not neccessary to mark them since this attribute has no important effect
+
+            if (first == null)
+            {
+                //TODO: PhpException.ArgumentNull("first");
+                throw new ArgumentNullException();
+            }
+
+            IComparer<KeyValuePair<IntStringKey, PhpValue>>[] comparers;
+            PhpArray[] arrays;
+            int length = MultiSortResolveArgs(ctx, first, args, null, null);
+
+            if (length == 0)
+            {
+                return false;
+            }
+            if (length == 1)
+            {
+                comparers = new IComparer<KeyValuePair<IntStringKey, PhpValue>>[1];
+                MultiSortResolveArgs(ctx, first, args, null, comparers);
+                first.Sort(comparers[0]);
+                first.ReindexIntegers(0);
+                first.RestartIntrinsicEnumerator();
+                return true;
+            }
+
+            arrays = new PhpArray[length];
+            comparers = new IComparer<KeyValuePair<IntStringKey, PhpValue>>[length];
+            MultiSortResolveArgs(ctx, first, args, arrays, comparers);
+            PhpHashtable.Sort(arrays, comparers);
+
+            for (int i = 0; i < length; i++)
+            {
+                arrays[i].ReindexIntegers(0);
+                arrays[i].RestartIntrinsicEnumerator();
+            }
+
+            return true;
+        }
+
+        #endregion
     }
 }
