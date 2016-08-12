@@ -73,10 +73,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets string representation of a boolean value (according to PHP, it is <c>"1"</c> or <c>""</c>).
         /// </summary>
-        public static string ToString(bool value)
-        {
-            return value ? "1" : string.Empty;
-        }
+        public static string ToString(bool value) => value ? "1" : string.Empty;
 
         /// <summary>
         /// Gets string representation of an integer value.

@@ -1032,5 +1032,202 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region range
+
+        /// <summary>
+        /// Creates an array containing range of long integers from the [low;high] interval with arbitrary step.
+        /// </summary>
+        /// <param name="low">Lower bound of the interval.</param>
+        /// <param name="high">Upper bound of the interval.</param>
+        /// <param name="step">The step. An absolute value is taken if step is zero.</param>
+        /// <returns>The array.</returns>
+        private static PhpArray RangeOfLongInts(long low, long high, long step)
+        {
+            if (step == 0)
+            {
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //return null;
+                throw new ArgumentException();
+            }
+
+            if (step < 0) step = -step;
+
+            PhpArray result = new PhpArray(unchecked((int)(Math.Abs(high - low) / step + 1)));
+
+            if (high >= low)
+            {
+                for (int i = 0; low <= high; i++, low += step) result.Add(i, low);
+            }
+            else
+            {
+                for (int i = 0; low >= high; i++, low -= step) result.Add(i, low);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Creates an array containing range of doubles from the [low;high] interval with arbitrary step.
+        /// </summary>
+        /// <param name="low">Lower bound of the interval.</param>
+        /// <param name="high">Upper bound of the interval.</param>
+        /// <param name="step">The step. An absolute value is taken if step is less than zero.</param>
+        /// <returns>The array.</returns>
+        /// <exception cref="PhpException">Thrown if the <paramref name="step"/> argument is zero.</exception>
+        private static PhpArray RangeOfDoubles(double low, double high, double step)
+        {
+            if (step == 0)
+            {
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //return null;
+                throw new ArgumentException();
+            }
+
+            if (step < 0) step = -step;
+
+            PhpArray result = new PhpArray(System.Convert.ToInt32(Math.Abs(high - low) / step) + 1);
+
+            if (high >= low)
+            {
+                for (int i = 0; low <= high; i++, low += step) result.Add(i, low);
+            }
+            else
+            {
+                for (int i = 0; low >= high; i++, low -= step) result.Add(i, low);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Creates an array containing range of characters from the [low;high] interval with arbitrary step.
+        /// </summary>
+        /// <param name="low">Lower bound of the interval.</param>
+        /// <param name="high">Upper bound of the interval.</param>
+        /// <param name="step">The step.</param>
+        /// <returns>The array.</returns>
+        /// <exception cref="PhpException">Thrown if the <paramref name="step"/> argument is zero.</exception>
+        private static PhpArray RangeOfChars(char low, char high, int step)
+        {
+            if (step == 0)
+            {
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //step = 1;
+                throw new ArgumentException();
+            }
+
+            if (step < 0) step = -step;
+
+            PhpArray result = new PhpArray(Math.Abs(high - low) / step + 1, 0);
+            if (high >= low)
+            {
+                for (int i = 0; low <= high; i++, low = unchecked((char)(low + step))) result.Add(i, low.ToString());
+            }
+            else
+            {
+                for (int i = 0; low >= high; i++, low = unchecked((char)(low - step))) result.Add(i, low.ToString());
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Creates an array containing range of elements with step 1.
+        /// </summary>
+        /// <param name="low">Lower bound of the interval.</param>
+        /// <param name="high">Upper bound of the interval.</param>
+        /// <returns>The array.</returns>
+        public static PhpArray range(Context ctx, PhpValue low, PhpValue high)
+        {
+            return range(ctx, low, high, PhpValue.Create(1));
+        }
+
+        /// <summary>
+        /// Creates an array containing range of elements with arbitrary step.
+        /// </summary>
+        /// <param name="low">Lower bound of the interval.</param>
+        /// <param name="high">Upper bound of the interval.</param>
+        /// <param name="step">The step.</param>
+        /// <returns>The array.</returns>
+        /// <remarks>
+        /// Implements PHP awful range function. The result depends on types and 
+        /// content of parameters under the following rules:
+        /// <list type="number">
+        /// <item>
+        ///   <description>
+        ///   If at least one parameter (low, high or step) is of type double or is a string wholly representing 
+        ///       double value (i.e. whole string is converted to a number and no chars remains, 
+        ///       e.g. "1.5" is wholly representing but the value "1.5x" is not)
+        ///    than
+        ///       range of double values is generated with a step treated as a double value
+        ///       (e.g. <c>range("1x","2.5x","0.5") = array(1.0, 1.5, 2.0, 2.5)</c> etc.)
+        ///    otherwise 
+        ///   </description>
+        /// </item>
+        /// <item>
+        ///   <description>
+        ///    if at least one bound (i.e. low or high parameter) is of type int or is a string wholly representing
+        ///       integer value 
+        ///    than 
+        ///       range of integer values is generated with a step treated as integer value
+        ///       (e.g. <c>range("1x","2","1.5") = array(1, 2, 3, 4)</c> etc.)
+        ///    otherwise
+        ///   </description>
+        /// </item>
+        /// <item>
+        ///   <description>
+        ///    low and high are both non-empty strings (otherwise one of the two previous conditions would be true),
+        ///    so the first characters of these strings are taken and a sequence of characters is generated.
+        ///   </description>     
+        /// </item>
+        /// </list>
+        /// Moreover, if <paramref name="low"/> is greater than <paramref name="high"/> then descending sequence is generated 
+        /// and ascending one otherwise. If <paramref name="step"/> is less than zero than an absolute value is used.
+        /// </remarks>
+        /// <exception cref="PhpException">Thrown if the <paramref name="step"/> argument is zero (or its absolute value less than 1 in the case 2).</exception>
+        public static PhpArray range(Context ctx, PhpValue low, PhpValue high, PhpValue step)
+        {
+            PhpNumber num_low, num_high, num_step;
+            
+            // converts each parameter to a number, determines what type of number it is (int/double)
+            // and whether it wholly represents that number:
+            var info_step = step.ToNumber(out num_step);
+            var info_low = low.ToNumber(out num_low);
+            var info_high = high.ToNumber(out num_high);
+
+            var is_step_double = (info_step & Core.Convert.NumberInfo.Double) != 0;
+            var is_low_double = (info_low & Core.Convert.NumberInfo.Double) != 0;
+            var is_high_double = (info_high & Core.Convert.NumberInfo.Double) != 0;
+
+            var w_step = (info_step & Core.Convert.NumberInfo.IsNumber) != 0;
+            var w_low = (info_low & Core.Convert.NumberInfo.IsNumber) != 0;
+            var w_high = (info_high & Core.Convert.NumberInfo.IsNumber) != 0;
+
+            // at least one parameter is a double or its numeric value is wholly double:
+            if (is_low_double && w_low || is_high_double && w_high || is_step_double && w_step)
+            {
+                return RangeOfDoubles(num_low.ToDouble(), num_high.ToDouble(), num_step.ToDouble());
+            }
+
+            // at least one bound is wholly integer (doesn't matter what the step is):
+            if (!is_low_double && w_low || !is_high_double && w_high)
+            {
+                // at least one long integer:
+                return RangeOfLongInts(num_low.ToLong(), num_high.ToLong(), num_step.ToLong());
+            }
+
+            // both bounds are strings which are not wholly representing numbers (other types wholly represents a number):
+
+            string slow = low.ToString(ctx);
+            string shigh = high.ToString(ctx);
+
+            // because each string doesn't represent a number it isn't empty:
+            Debug.Assert(slow != "" && shigh != "");
+
+            return RangeOfChars(slow[0], shigh[0], (int)num_step.ToLong());
+        }
+
+        #endregion
     }
 }
