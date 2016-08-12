@@ -798,5 +798,127 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region array_key_exists, in_array, array_search
+
+        /// <summary>
+        /// Checks if a key exists in the array.
+        /// </summary>
+        /// <param name="key">The key to be searched for.</param>
+        /// <param name="array">The array where to search for the key.</param>
+        /// <returns>Whether the <paramref name="key"/> exists in the <paramref name="array"/>.</returns>
+        /// <remarks><paramref name="key"/> is converted before the search.</remarks>
+        /// <exception cref="PhpException"><paramref name="array"/> argument is a <B>null</B> reference (Warning).</exception>
+        /// <exception cref="PhpException"><paramref name="key"/> has type which is illegal for array key.</exception>
+        public static bool array_key_exists(IntStringKey key, PhpArray array)
+        {
+            if (array == null)
+            {
+                // TODO: PhpException.ArgumentNull("array");
+                return false;
+            }
+
+            return array.ContainsKey(key);
+            
+            //if (Core.Convert.ObjectToArrayKey(key, out array_key))
+            //    return array.ContainsKey(array_key);
+
+            //PhpException.Throw(PhpError.Warning, CoreResources.GetString("illegal_offset_type"));
+            //return false;
+        }
+
+        /// <summary>
+        /// Alias of <see cref="array_key_exists"/>.
+        /// </summary>
+        public static bool key_exists(IntStringKey key, PhpArray array) => array_key_exists(key, array);
+
+        /// <summary>
+        /// Checks if a value exists in an array.
+        /// </summary>
+        /// <param name="needle">The value to search for.</param>
+        /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
+        /// <returns>Whether there is the <paramref name="needle"/> value in the <see cref="PhpArray"/>.</returns>
+        /// <remarks>Regular comparison (<see cref="PhpComparer.CompareEq(object,object)"/>) is used for comparing values.</remarks>
+        /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
+        public static bool in_array(PhpValue needle, PhpArray haystack)
+        {
+            var b = array_search(needle, haystack, false);
+            return !b.IsBoolean || b.Boolean;
+        }
+
+        /// <summary>
+        /// Checks if a value exists in an array.
+        /// </summary>
+        /// <param name="needle">The value to search for.</param>
+        /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
+        /// <param name="strict">Whether strict comparison method (operator ===) is used for comparing values.</param>
+        /// <returns>Whether there is the <paramref name="needle"/> value in the <see cref="PhpArray"/>.</returns>
+        /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
+        public static bool in_array(PhpValue needle, PhpArray haystack, bool strict)
+        {
+            var b = array_search(needle, haystack, strict);
+            return !b.IsBoolean || b.Boolean;
+        }
+
+        /// <summary>
+        /// Searches the array for a given value and returns the corresponding key if successful.
+        /// </summary>
+        /// <param name="needle">The value to search for.</param>
+        /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
+        /// <returns>The key associated with the <paramref name="needle"/> or <B>false</B> if there is no such key.</returns>
+        /// <remarks>Regular comparison (<see cref="PhpComparer.CompareEq(object,object)"/>) is used for comparing values.</remarks>
+        /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
+        public static PhpValue array_search(PhpValue needle, PhpArray haystack)
+        {
+            return array_search(needle, haystack, false);
+        }
+
+        /// <summary>
+        /// Searches the array for a given value and returns the corresponding key if successful.
+        /// </summary>
+        /// <param name="needle">The value to search for.</param>
+        /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
+        /// <param name="strict">Whether strict comparison method (operator ===) is used for comparing values.</param>
+        /// <returns>The key associated with the <paramref name="needle"/> or <B>false</B> if there is no such key.</returns>
+        /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
+        public static PhpValue array_search(PhpValue needle, PhpArray haystack, bool strict)
+        {
+            // result needn't to be deeply copied because it is a key of an array //
+
+            if (haystack == null)
+            {
+                // TODO: PhpException.ArgumentNull("haystack");
+                return PhpValue.False;
+            }
+
+            // using operator ===:
+            if (strict)
+            {
+                using (var enumerator = haystack.GetFastEnumerator())
+                    while (enumerator.MoveNext())
+                    {
+                        // TODO: dereferences value (because of StrictEquality operator):
+                        if (needle.StrictEquals(enumerator.CurrentValue))
+                            return PhpValue.Create(enumerator.CurrentKey);
+                    }
+            }
+            else
+            {
+                // using operator ==:
+
+                using (var enumerator = haystack.GetFastEnumerator())
+                    while (enumerator.MoveNext())
+                    {
+                        // note: comparator manages references well:
+                        if (needle.Equals(enumerator.CurrentValue))
+                            return PhpValue.Create(enumerator.CurrentKey);
+                    }
+            }
+
+            // not found:
+            return PhpValue.False;
+        }
+
+        #endregion
     }
 }

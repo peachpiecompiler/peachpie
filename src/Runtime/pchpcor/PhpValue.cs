@@ -106,6 +106,11 @@ namespace Pchp.Core
         public bool IsArray => (TypeCode == PhpTypeCode.PhpArray);
 
         /// <summary>
+        /// Gets value indicating the value represents boolean.
+        /// </summary>
+        public bool IsBoolean => (TypeCode == PhpTypeCode.Boolean);
+
+        /// <summary>
         /// Gets the long field of the value.
         /// Does not perform a conversion, expects the value is of type long.
         /// </summary>
