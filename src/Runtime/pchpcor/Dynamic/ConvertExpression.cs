@@ -114,6 +114,11 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
             if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
 
+            var target_type = target.GetTypeInfo();
+
+            if (target_type.IsEnum) return Expression.Convert(BindToLong(arg), target);
+            if (target_type.IsValueType == false) { } // TODO
+
             //
             throw new NotImplementedException(target.ToString());
         }
@@ -370,9 +375,16 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.Pass);
 
             //
-            if (!target.GetTypeInfo().IsValueType)
+            var target_type = target.GetTypeInfo();
+            if (!target_type.IsValueType)
             {
-                // ...
+                // TODO
+            }
+
+            //
+            if (target_type.IsEnum)
+            {
+                return Expression.Call(typeof(CostOf).GetMethod("ToInt64", arg.Type), arg);
             }
 
             // fallback
