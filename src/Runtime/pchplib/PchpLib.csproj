@@ -65,6 +65,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resource.resx</DependentUpon>
     </Compile>
+    <Compile Include="SPL\Countable.cs" />
     <Compile Include="Strings.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Variables.cs" />

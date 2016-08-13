@@ -89,6 +89,8 @@ namespace Pchp.Library
         ErrorExtension,
     }
 
+    #endregion
+
     public static class Variables
     {
         #region Constants
@@ -166,6 +168,69 @@ namespace Pchp.Library
         /// A PHP extension stopped the file upload
         /// </summary>
         public const int UPLOAD_ERR_EXTENSION = (int)FileUploadError.ErrorExtension;
+
+        #endregion
+
+        #region count, sizeof
+
+        /// <summary>
+        /// Counts items in a variable.
+        /// </summary>
+        /// <param name="variable">The variable which items to count.</param>
+        /// <param name="mode">Whether to count recursively.</param>
+        /// <returns>The number of items in all arrays contained recursivelly in <paramref name="variable"/>.</returns>
+        /// <remarks>If any item of the <paramref name="variable"/> contains infinite recursion 
+        /// skips items that are repeating because of such recursion.
+        /// </remarks>
+        public static long @sizeof(PhpValue variable, int mode = COUNT_NORMAL) => count(variable, mode);
+
+        /// <summary>
+        /// Counts items in a variable.
+        /// </summary>
+        /// <param name="variable">The variable which items to count.</param>
+        /// <param name="mode">Whether to count recursively.</param>
+        /// <returns>The number of items in all arrays contained recursivelly in <paramref name="variable"/>.</returns>
+        /// <remarks>If any item of the <paramref name="variable"/> contains infinite recursion 
+        /// skips items that are repeating because of such recursion.
+        /// </remarks>
+        public static long count(PhpValue variable, int mode = COUNT_NORMAL)
+        {
+            // null or uninitialized variable:
+            if (variable.IsNull)
+            {
+                return 0;
+            }
+            else if (variable.IsArray)
+            {
+                // PHP array
+                return (mode == COUNT_RECURSIVE)
+                    ? variable.Array.RecursiveCount
+                    : variable.Array.Count;
+            }
+            else if (variable.IsObject)
+            {
+                // PHP Countable
+                var countable = variable.Object as Countable;
+                if (countable != null)
+                {
+                    return countable.count().ToLong();
+                }
+
+                // CLR ICollection
+                var collection = variable.Object as System.Collections.ICollection;
+                if (collection != null)
+                {
+                    return collection.Count;
+                }
+            }
+            else if (variable.IsAlias)
+            {
+                return count(variable.Alias.Value, mode);
+            }
+
+            // count not supported
+            return 1;
+        }
 
         #endregion
 

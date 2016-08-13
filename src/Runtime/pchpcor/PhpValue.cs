@@ -81,7 +81,7 @@ namespace Pchp.Core
         #region Properties
 
         /// <summary>
-        /// Gets value indicating whether the value is a <c>NULL</c>.
+        /// Gets value indicating whether the value is a <c>NULL</c> or undefined.
         /// </summary>
         public bool IsNull => _type.IsNull;
 

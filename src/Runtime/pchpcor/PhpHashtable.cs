@@ -1425,6 +1425,31 @@ namespace Pchp.Core
 
         #endregion
 
+        #region RecursiveCount
+
+        /// <summary>
+        /// Counts items in the array recursivelly, following contained arrays and references.
+        /// </summary>
+        public int RecursiveCount
+        {
+            get
+            {
+                int result = 0;
+                using (var iterator = this.GetRecursiveEnumerator(true, true))
+                {
+                    while (iterator.MoveNext())
+                    {
+                        result++;
+                    }
+                }
+
+                //
+                return result;
+            }
+        }
+
+        #endregion
+
         #region Misc methods: Sort, Diff, Reverse, Shuffle, Unite
 
         /// <summary>
