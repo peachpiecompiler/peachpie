@@ -1788,5 +1788,316 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region array_u?(diff|intersect)(_u?assoc)?, array_(diff|intersect)_u?key
+
+        /// <summary>
+        /// Internal method common for all functions.
+        /// </summary>
+        private static PhpArray SetOperation(SetOperations op, PhpArray array, PhpArray[] arrays, IComparer<KeyValuePair<IntStringKey, PhpValue>> comparer)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            if (arrays == null || arrays.Length == 0)
+            {
+                //PhpException.InvalidArgumentCount(null, null);
+                //return null;
+                throw new ArgumentException();
+            }
+
+            Debug.Assert(comparer != null);
+
+            PhpArray result = new PhpArray();
+            array.SetOperation(op, arrays, comparer, result);
+
+            // the result is inplace deeply copied on return to PHP code:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        // TODO: specific parameters instead of 'params PhpValue[] arraysAndComparer'
+
+        /// <summary>
+        /// There have to be at least 1 value in <paramref name="vars"/>.
+        /// The last is converted to callback, the rest to arrays.
+        /// </summary>
+        private static bool SplitArraysAndComparers(int comparerCount, PhpArray array, PhpValue[] vars, out PhpArray[] arrays, out IPhpCallable cmp1, out IPhpCallable cmp2)
+        {
+            arrays = null;
+            cmp1 = cmp2 = null;
+
+            if (vars == null || vars.Length == 0)
+            {
+                // TODO: PhpException.InvalidArgumentCount(null, null);
+                return false;
+            }
+
+            // the first callback:
+            cmp1 = vars[vars.Length - comparerCount].AsCallable();
+            if (!cmp1.IsValid) return false;
+
+            // the second callback:
+            if (comparerCount > 1)
+            {
+                cmp2 = vars[vars.Length - 1].AsCallable();
+                if (!cmp2.IsValid) return false;
+            }
+
+            // remaining arguments should be arrays:
+            arrays = new PhpArray[vars.Length - comparerCount + 1];
+            arrays[0] = array;
+            for (int i = 0; i < vars.Length - comparerCount; i++)
+            {
+                var var = vars[i];
+                if ((arrays[i + 1] = vars[i].AsArray()) == null)
+                {
+                    // TODO: PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 3));
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        /// <summary>
+        /// Computes the difference of arrays.
+        /// </summary>
+        /// <param name="array">The array from which to take items away.</param>
+        /// <param name="arrays">The arrays to be differentiated.</param>
+        /// <returns>The array containing all the entries of <paramref name="array"/> that are not present 
+        /// in any of the <paramref name="arrays"/>.</returns>
+        /// <remarks>Keys are preserved. Entries are considered to be equal iff values compared by  
+        /// by string comparison method are the same (see <see cref="ValueComparer.String"/>).</remarks>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        /// <exception cref="PhpException"><paramref name="arrays"/> is a <B>null</B> reference or an empty array.</exception>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_diff(Context ctx, PhpArray array, params PhpArray[] arrays)
+        {
+            return SetOperation(SetOperations.Difference, array, arrays, ValueComparer.String(ctx));
+        }
+
+        /// <summary>
+        /// Computes the intersection of arrays.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_intersect(Context ctx, PhpArray array, params PhpArray[] arrays)
+        {
+            return SetOperation(SetOperations.Intersection, array, arrays, ValueComparer.String(ctx));
+        }
+
+        /// <summary>
+        /// Computes the difference of arrays.
+        /// </summary>
+        /// <param name="array">The array from which to take items away.</param>
+        /// <param name="arrays">The arrays to be differentiated.</param>
+        /// <returns>The array containing all the entries of <paramref name="array"/> that are not present 
+        /// in any of the <paramref name="arrays"/>.</returns>
+        /// <remarks>Keys are preserved. Entries are considered to be equal iff they has the same keys and values
+        /// according to string method comparison (see <see cref="EntryComparer"/> and <see cref="PhpStringComparer"/>).</remarks>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        /// <exception cref="PhpException"><paramref name="arrays"/> is a <B>null</B> reference or an empty array.</exception>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_diff_assoc(Context ctx, PhpArray array, params PhpArray[] arrays)
+        {
+            return SetOperation(SetOperations.Difference, array, arrays,
+                new EntryComparer(new PhpStringComparer(ctx), false, new PhpStringComparer(ctx), false));
+        }
+
+        /// <summary>
+        /// Computes the intersection of arrays.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_intersect_assoc(Context ctx, PhpArray array, params PhpArray[] arrays)
+        {
+            return SetOperation(SetOperations.Intersection, array, arrays,
+                new EntryComparer(new PhpStringComparer(ctx), false, new PhpStringComparer(ctx), false));
+        }
+
+        /// <summary>
+        /// Computes the difference of arrays.
+        /// </summary>
+        /// <param name="array">The array from which to take items away.</param>
+        /// <param name="arrays">The arrays to be differentiated.</param>
+        /// <returns>The array containing all the entries of <paramref name="array"/> that are not present 
+        /// in any of the <paramref name="arrays"/>.</returns>
+        /// <remarks>Entries are considered to be equal iff keys compared by  
+        /// by string comparison method are the same (see <see cref="KeyComparer.String"/>).</remarks>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        /// <exception cref="PhpException"><paramref name="arrays"/> is a <B>null</B> reference or an empty array.</exception>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_diff_key(Context ctx, PhpArray array, params PhpArray[] arrays)
+        {
+            return SetOperation(SetOperations.Difference, array, arrays, KeyComparer.String(ctx));
+        }
+
+        /// <summary>
+        /// Computes the intersection of arrays.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_intersect_key(Context ctx, PhpArray array, params PhpArray[] arrays)
+        {
+            return SetOperation(SetOperations.Intersection, array, arrays, KeyComparer.String(ctx));
+        }
+
+        /// <summary>
+        /// Computes the difference of arrays using a specified key comparer.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_diff_ukey(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        {
+            PhpArray[] arrays;
+            IPhpCallable key_comparer, cmp;
+
+            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out key_comparer, out cmp)) return null;
+
+            return SetOperation(SetOperations.Difference, array, arrays,
+                new KeyComparer(new PhpUserComparer(ctx, key_comparer), false));
+        }
+
+        /// <summary>
+        /// Computes the intersection of arrays using a specified key comparer.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_intersect_ukey(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        {
+            PhpArray[] arrays;
+            IPhpCallable key_comparer, cmp;
+
+            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out key_comparer, out cmp)) return null;
+
+            return SetOperation(SetOperations.Intersection, array, arrays,
+                new KeyComparer(new PhpUserComparer(ctx, key_comparer), false));
+        }
+
+        /// <summary>
+        /// Computes the difference of arrays using a specified comparer.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_udiff(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        {
+            PhpArray[] arrays;
+            IPhpCallable value_comparer, cmp;
+
+            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out value_comparer, out cmp)) return null;
+
+            return SetOperation(SetOperations.Difference, array, arrays,
+                new ValueComparer(new PhpUserComparer(ctx, value_comparer), false));
+        }
+
+        /// <summary>
+        /// Computes the intersection of arrays using a specified comparer.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_uintersect(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        {
+            PhpArray[] arrays;
+            IPhpCallable value_comparer, cmp;
+
+            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out value_comparer, out cmp)) return null;
+
+            return SetOperation(SetOperations.Intersection, array, arrays,
+                new ValueComparer(new PhpUserComparer(ctx, value_comparer), false));
+        }
+
+        /// <summary>
+        /// Computes the difference of arrays using a specified comparer.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_udiff_assoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        {
+            PhpArray[] arrays;
+            IPhpCallable value_comparer, cmp;
+
+            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out value_comparer, out cmp)) return null;
+
+            return SetOperation(SetOperations.Difference, array, arrays,
+                new EntryComparer(new PhpStringComparer(ctx), false, new PhpUserComparer(ctx, value_comparer), false));
+        }
+
+        /// <summary>
+        /// Computes the intersection of arrays using a specified comparer.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_uintersect_assoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        {
+            PhpArray[] arrays;
+            IPhpCallable value_comparer, cmp;
+
+            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out value_comparer, out cmp)) return null;
+
+            return SetOperation(SetOperations.Intersection, array, arrays,
+                new EntryComparer(new PhpStringComparer(ctx), false, new PhpUserComparer(ctx, value_comparer), false));
+        }
+
+
+        /// <summary>
+        /// Computes the difference of arrays using a specified comparer.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_diff_uassoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        {
+            PhpArray[] arrays;
+            IPhpCallable key_comparer, cmp;
+
+            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out key_comparer, out cmp)) return null;
+
+            return SetOperation(SetOperations.Difference, array, arrays,
+                new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpStringComparer(ctx), false));
+        }
+
+        /// <summary>
+        /// Computes the intersection of arrays using a specified comparer.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_intersect_uassoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        {
+            PhpArray[] arrays;
+            IPhpCallable key_comparer, cmp;
+
+            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out key_comparer, out cmp)) return null;
+
+            return SetOperation(SetOperations.Intersection, array, arrays,
+                new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpStringComparer(ctx), false));
+        }
+
+        /// <summary>
+        /// Computes the difference of arrays using specified comparers.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_udiff_uassoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparers)
+        {
+            PhpArray[] arrays;
+            IPhpCallable key_comparer, value_comparer;
+
+            if (!SplitArraysAndComparers(2, array0, arraysAndComparers, out arrays, out value_comparer, out key_comparer))
+                return null;
+
+            return SetOperation(SetOperations.Difference, array, arrays,
+                new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpUserComparer(ctx, value_comparer), false));
+        }
+
+        /// <summary>
+        /// Computes the intersection of arrays using specified comparers.
+        /// </summary>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_uintersect_uassoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparers)
+        {
+            PhpArray[] arrays;
+            IPhpCallable key_comparer, value_comparer;
+
+            if (!SplitArraysAndComparers(2, array0, arraysAndComparers, out arrays, out value_comparer, out key_comparer))
+                return null;
+
+            return SetOperation(SetOperations.Intersection, array, arrays,
+                new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpUserComparer(ctx, value_comparer), false));
+        }
+        
+        #endregion
     }
 }
