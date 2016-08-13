@@ -173,5 +173,26 @@ namespace Pchp.Core
 
             return callable != null && ((tmp = callable as PhpCallback) == null || tmp.IsValid);
         }
+
+        /// <summary>
+        /// Finds whether a value is a scalar.
+        /// </summary>
+        /// <remarks>Scalar variables are those containing an integer, float, string or boolean.</remarks>
+        public static bool IsScalar(PhpValue variable)
+        {
+            switch (variable.TypeCode)
+            {
+                case PhpTypeCode.Boolean:
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Double:
+                case PhpTypeCode.String:
+                case PhpTypeCode.WritableString:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
     }
 }

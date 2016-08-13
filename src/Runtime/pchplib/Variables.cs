@@ -422,7 +422,7 @@ namespace Pchp.Library
         /// <returns>Whether <paramref name="variable"/> is <see cref="Core.Reflection.DObject"/>.</returns>
         public static bool is_object(PhpValue variable)
             => variable.IsObject && variable.Object != null && !(variable.Object is __PHP_Incomplete_Class);
-        
+
         /// <summary>
         /// Checks whether a dereferenced variable is a valid <see cref="PhpResource"/>.
         /// </summary>
@@ -441,6 +441,93 @@ namespace Pchp.Library
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is a <B>null</B> reference.</returns>
         public static bool is_null(PhpValue variable) => variable.IsNull;
+
+        #endregion
+
+        #region is_scalar, is_numeric, is_callable, get_resource_type
+
+        /// <summary>
+        /// Checks whether a dereferenced variable is a scalar.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>Whether <paramref name="variable"/> is an integer, a double, a bool or a string after dereferencing.</returns>
+        public static bool is_scalar(PhpValue variable) => PhpVariable.IsScalar(variable);
+
+        /// <summary>
+        /// Checks whether a dereferenced variable is numeric.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <returns>Whether <paramref name="variable"/> is integer, double or numeric string.
+        /// <seealso cref="PHP.Core.Convert.StringToNumber"/></returns>
+        public static bool is_numeric(PhpValue variable)
+        {
+            switch (variable.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Double:
+                    return true;
+
+                case PhpTypeCode.String:
+                case PhpTypeCode.WritableString:
+                    PhpNumber tmp;
+                    return (variable.ToNumber(out tmp) & Core.Convert.NumberInfo.IsNumber) != 0;
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Verifies that the contents of a variable can be called as a function.
+        /// </summary>
+        /// <param name="caller">Current class context.</param>
+        /// <param name="variable">The variable.</param>
+        /// <param name="syntaxOnly">If <B>true</B>, it is only checked that has <pararef name="variable"/>
+        /// a valid structure to be used as a callback. if <B>false</B>, the existence of the function (or
+        /// method) is also verified.</param>
+        /// <returns><B>true</B> if <paramref name="variable"/> denotes a function, <B>false</B>
+        /// otherwise.</returns>
+        public static bool IsCallable(PhpValue variable, bool syntaxOnly = false)
+        {
+            return PhpVariable.IsValidCallback(variable.AsCallable());  // TODO: check syntaxOnly || can be bound
+        }
+
+        /// <summary>
+        /// Verifies that the contents of a variable can be called as a function.
+        /// </summary>
+        /// <param name="caller">Current class context.</param>
+        /// <param name="variable">The variable.</param>
+        /// <param name="syntaxOnly">If <B>true</B>, it is only checked that has <pararef name="variable"/>
+        /// a valid structure to be used as a callback. if <B>false</B>, the existence of the function (or
+        /// method) is also verified.</param>
+        /// <param name="callableName">Receives the name of the function or method (for example
+        /// <c>SomeClass::SomeMethod</c>).</param>
+        /// <returns><B>true</B> if <paramref name="variable"/> denotes a function, <B>false</B>
+        /// otherwise.</returns>
+        public static bool is_callable(Context ctx, PhpValue variable, bool syntaxOnly, out string callableName)
+        {
+            var callback = variable.AsCallable();
+            if (PhpVariable.IsValidCallback(callback))
+            {
+                callableName = callback.ToString();
+                return true;
+            }
+
+            callableName = variable.ToString(ctx);
+            return false;
+        }
+
+        ///// <summary>
+        ///// Returns the type of a resource.
+        ///// </summary>
+        ///// <param name="resource">The resource.</param>
+        ///// <returns>The resource type name or <c>null</c> if <paramref name="resource"/> is <c>null</c>.</returns>
+        ////[return: CastToFalse]
+        //public static string get_resource_type(PhpResource resource)  // TODO: once we implement PhpResource API
+        //{
+        //    return (resource != null ? resource.TypeName : null);
+        //}
 
         #endregion
     }
