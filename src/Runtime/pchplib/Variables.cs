@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -529,6 +530,78 @@ namespace Pchp.Library
         //    return (resource != null ? resource.TypeName : null);
         //}
 
+        #endregion
+
+        #region print_r, var_export, var_dump
+
+        /// <summary>
+        /// Outputs or returns human-readable information about a variable. 
+        /// </summary>
+        /// <param name="value">The variable.</param>
+        /// <param name="returnString">Whether to return a string representation.</param>
+        /// <returns>A string representation or <c>true</c> if <paramref name="returnString"/> is <c>false</c>.</returns>
+        public static PhpValue print_r(Context ctx, PhpValue value, bool returnString = false)
+        {
+            // TODO: IPhpPrintable
+
+            //if (returnString)
+            //{
+            //    // output to a string:
+            //    var output = new StringWriter();
+            //    //Print(output, value);
+            //    return PhpValue.Create(output.ToString());
+            //}
+            //else
+            //{
+            //    // output to script context:
+            //    //Print(ctx.Output, value);
+            //    return PhpValue.True;
+            //}
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Dumps variables.
+        /// </summary>
+        /// <param name="variables">Variables to be dumped.</param>
+        public static void var_dump(Context ctx, params PhpValue[] variables)
+        {
+            // TODO: IPhpPrintable
+
+            //TextWriter output = ctx.Output;
+            //foreach (object variable in variables)
+            //    PhpVariable.Dump(output, variable);
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Outputs or returns a pars-able string representation of a variable.
+        /// </summary>
+        /// <param name="variable">The variable.</param>
+        /// <param name="returnString">Whether to return a string representation.</param>
+        /// <returns>A string representation or a <c>null</c> reference if <paramref name="returnString"/> is <c>false</c>.</returns>
+        public static string var_export(Context ctx, PhpValue variable, bool returnString = false)
+        {
+            // TODO: IPhpPrintable
+
+            //if (returnString)
+            //{
+            //    // output to a string:
+            //    StringWriter output = new StringWriter();
+            //    PhpVariable.Export(output, variable);
+            //    return output.ToString();
+            //}
+            //else
+            //{
+            //    // output to script context:
+            //    PhpVariable.Export(ctx.Output, variable);
+            //    return null;
+            //}
+            throw new NotImplementedException();
+
+        }
         #endregion
     }
 }
