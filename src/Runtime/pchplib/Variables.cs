@@ -7,8 +7,168 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
+    #region Enumerations
+
+    /// <summary>
+    /// Type of extraction for <c>extract</c> function.
+    /// </summary>
+    [Flags]
+    public enum ExtractType
+    {
+        /// <summary>PHP constant: EXTR_OVERWRITE</summary>
+        Overwrite,
+
+        /// <summary>PHP constant: EXTR_SKIP</summary>
+        Skip,
+
+        /// <summary>PHP constant: EXTR_PREFIX_SAME</summary>
+        PrefixSame,
+
+        /// <summary>PHP constant: EXTR_PREFIX_ALL</summary>
+        PrefixAll,
+
+        /// <summary>PHP constant: EXTR_PREFIX_INVALID</summary>
+        PrefixInvalid,
+
+        /// <summary>PHP constant: EXTR_PREFIX_IF_EXISTS</summary>
+        PrefixIfExists,
+
+        /// <summary>PHP constant: EXTR_IF_EXISTS</summary>
+        IfExists,
+
+        /// <summary>PHP constant: EXTR_REFS</summary>
+        Refs = 256,
+
+        /// <summary>A value masking all options but <see cref="Refs"/> (0xff).</summary>
+        NonFlags = 0xff
+    }
+
+    /// <summary>
+    /// File upload errors.
+    /// </summary>
+    public enum FileUploadError
+    {
+        /// <summary>
+        /// No error.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// The uploaded file exceeds the "upload_max_filesize" configuration option.
+        /// </summary>
+        SizeExceededOnServer,
+
+        /// <summary>
+        /// The uploaded file exceeds the "MAX_FILE_SIZE" value specified in the form.
+        /// </summary>
+        SizeExceededOnClient,
+
+        /// <summary>
+        /// The uploaded file was only partially uploaded.
+        /// </summary>
+        Partial,
+
+        /// <summary>
+        /// No file was uploaded.
+        /// </summary>
+        NoFile,
+
+        /// <summary>
+        /// Missing a temporary folder
+        /// </summary>
+        NoTempDirectory,
+
+        /// <summary>
+        /// Missing a temporary folder
+        /// </summary>
+        CantWrite,
+
+        /// <summary>
+        /// A PHP extension stopped the file upload
+        /// </summary>
+        ErrorExtension,
+    }
+
     public static class Variables
     {
+        #region Constants
+
+        /// <summary>
+        /// Recursive counting.
+        /// </summary>
+        public const int COUNT_RECURSIVE = 1;
+
+        /// <summary>
+        /// Non-recursive counting.
+        /// </summary>
+        public const int COUNT_NORMAL = 0;
+
+        /// <summary>PHP constant: EXTR_OVERWRITE</summary>
+        public const int EXTR_OVERWRITE = (int)ExtractType.Overwrite;
+
+        /// <summary>PHP constant: EXTR_SKIP</summary>
+        public const int EXTR_SKIP = (int)ExtractType.Skip;
+
+        /// <summary>PHP constant: EXTR_PREFIX_SAME</summary>
+        public const int EXTR_PREFIX_SAME = (int)ExtractType.PrefixSame;
+
+        /// <summary>PHP constant: EXTR_PREFIX_ALL</summary>
+        public const int EXTR_PREFIX_ALL = (int)ExtractType.PrefixAll;
+
+        /// <summary>PHP constant: EXTR_PREFIX_INVALID</summary>
+        public const int EXTR_PREFIX_INVALID = (int)ExtractType.PrefixInvalid;
+
+        /// <summary>PHP constant: EXTR_PREFIX_IF_EXISTS</summary>
+        public const int EXTR_PREFIX_IF_EXISTS = (int)ExtractType.PrefixIfExists;
+
+        /// <summary>PHP constant: EXTR_IF_EXISTS</summary>
+        public const int EXTR_IF_EXISTS = (int)ExtractType.IfExists;
+
+        /// <summary>PHP constant: EXTR_REFS</summary>
+        public const int EXTR_REFS = (int)ExtractType.Refs;
+
+        /// <summary>
+        /// No error.
+        /// </summary>
+        public const int UPLOAD_ERR_OK = (int)FileUploadError.None;
+
+        /// <summary>
+        /// The uploaded file exceeds the "upload_max_filesize" configuration option.
+        /// </summary>
+        public const int UPLOAD_ERR_INI_SIZE = (int)FileUploadError.SizeExceededOnServer;
+
+        /// <summary>
+        /// The uploaded file exceeds the "MAX_FILE_SIZE" value specified in the form.
+        /// </summary>
+        public const int UPLOAD_ERR_FORM_SIZE = (int)FileUploadError.SizeExceededOnClient;
+
+        /// <summary>
+        /// The uploaded file was only partially uploaded.
+        /// </summary>
+        public const int UPLOAD_ERR_PARTIAL = (int)FileUploadError.Partial;
+
+        /// <summary>
+        /// No file was uploaded.
+        /// </summary>
+        public const int UPLOAD_ERR_NO_FILE = (int)FileUploadError.NoFile;
+
+        /// <summary>
+        /// Missing a temporary folder
+        /// </summary>
+        public const int UPLOAD_ERR_NO_TMP_DIR = (int)FileUploadError.NoTempDirectory;
+
+        /// <summary>
+        /// Missing a temporary folder
+        /// </summary>
+        public const int UPLOAD_ERR_CANT_WRITE = (int)FileUploadError.CantWrite;
+
+        /// <summary>
+        /// A PHP extension stopped the file upload
+        /// </summary>
+        public const int UPLOAD_ERR_EXTENSION = (int)FileUploadError.ErrorExtension;
+
+        #endregion
+
         #region doubleval, floatval, intval, strval, settype, gettype, boolval
 
         /// <summary>
