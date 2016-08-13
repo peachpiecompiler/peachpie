@@ -2231,7 +2231,7 @@ namespace Pchp.Library
 
                             // source item:
                             PhpValue x = xv.GetValue();
-                            
+
                             // if x is not a reference then we can reuse the ax array for the result
                             // since it has been deeply copied when added to the resulting array:
                             PhpArray item_result = (deepCopy && x.IsArray && !xv.IsAlias) ? x.Array : new PhpArray();
@@ -2253,7 +2253,7 @@ namespace Pchp.Library
 
                                 visited.Remove(ax);
                                 visited.Remove(ay);
-                                
+
                                 if (!finite) return false;
                             }
                             else
@@ -2270,7 +2270,7 @@ namespace Pchp.Library
                                 }
 
                                 if (y.IsArray) y.Array.AddTo(item_result, deepCopy);
-                                else /*if (y != null)*/ item_result.Add(deepCopy ? y.DeepCopy(): y);
+                                else /*if (y != null)*/ item_result.Add(deepCopy ? y.DeepCopy() : y);
                             }
 
                             result[entry.Key] = PhpValue.Create(item_result);
@@ -2289,6 +2289,112 @@ namespace Pchp.Library
                 }
 
             return true;
+        }
+
+        #endregion
+
+        #region array_change_key_case
+
+        /// <summary>
+        /// Converts string keys in <see cref="PhpArray"/> to lower case.
+        /// </summary>
+        /// <param name="array">The <see cref="PhpArray"/> to be converted.</param>
+        /// <returns>The copy of <paramref name="array"/> with all string keys lower cased.</returns>
+        /// <remarks>Integer keys as well as all values remain unchanged.</remarks>
+        internal static PhpArray StringKeysToLower(PhpArray/*!*/ array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            PhpArray result = new PhpArray();
+
+            var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo; // cache current culture to avoid repetitious CurrentCulture.get
+
+            using (var iterator = array.GetFastEnumerator())
+                while (iterator.MoveNext())
+                {
+                    var entry = iterator.Current;
+                    if (entry.Key.IsString)
+                    {
+                        result[textInfo.ToLower(entry.Key.String)] = entry.Value;
+                    }
+                    else
+                        result[entry.Key] = entry.Value;
+                }
+            return result;
+        }
+
+        /// <summary>
+        /// Converts string keys in <see cref="PhpArray"/> to upper case.
+        /// </summary>
+        /// <param name="array">The <see cref="PhpArray"/> to be converted.</param>
+        /// <returns>The copy of <paramref name="array"/> with all string keys upper cased.</returns>
+        /// <remarks>Integer keys as well as all values remain unchanged.</remarks>
+        internal static PhpArray StringKeysToUpper(PhpArray/*!*/ array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo; // cache current culture to avoid repetitious CurrentCulture.get
+
+            PhpArray result = new PhpArray(array.Count);
+            using (var iterator = array.GetFastEnumerator())
+                while (iterator.MoveNext())
+                {
+                    var entry = iterator.Current;
+                    if (entry.Key.IsString)
+                        result[textInfo.ToUpper(entry.Key.String)] = entry.Value;
+                    else
+                        result[entry.Key] = entry.Value;
+                }
+            return result;
+        }
+
+        /// <summary>
+        /// Converts string keys in <see cref="PhpArray"/> to lower case.
+        /// </summary>
+        /// <param name="array">The <see cref="PhpArray"/> to be converted.</param>
+        /// <returns>The copy of <paramref name="array"/> with all string keys lower cased.</returns>
+        /// <remarks>Integer keys as well as all values remain unchanged.</remarks>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_change_key_case(PhpArray/*!*/ array)
+        {
+            PhpArray result = StringKeysToLower(array);
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        /// <summary>
+        /// Converts string keys in <see cref="PhpArray"/> to specified case.
+        /// </summary>
+        /// <param name="array">The <see cref="PhpArray"/> to be converted.</param>
+        /// <param name="keyCase">The <see cref="LetterCase"/> to convert keys to.</param>
+        /// <returns>The copy of <paramref name="array"/> with all string keys lower cased.</returns>
+        /// <remarks>Integer keys as well as all values remain unchanged.</remarks>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_change_key_case(PhpArray array, LetterCase keyCase)
+        {
+            PhpArray result;
+            switch (keyCase)
+            {
+                case LetterCase.Lower: result = StringKeysToLower(array); break;
+                case LetterCase.Upper: result = StringKeysToUpper(array); break;
+
+                default:
+                    //PhpException.InvalidArgument("keyCase");
+                    //goto case LetterCase.Upper;
+                    throw new ArgumentException(nameof(keyCase));
+            }
+            //result.InplaceCopyOnReturn = true;
+            return result;
         }
 
         #endregion
