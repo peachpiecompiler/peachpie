@@ -292,46 +292,45 @@ namespace Pchp.Library
         /// <param name="type">The string identifying a new type. See PHP manual for details.</param>
         /// <returns>Whether <paramref name="type"/> is valid type identifier.</returns>
         /// <exception cref="PhpException"><paramref name="type"/> has invalid value.</exception>
-        public static bool settype(ref PhpValue variable, string type)
+        public static bool settype(Context ctx, ref PhpValue variable, string type)
         {
-            //switch (System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToLower(type)) // we don't need Unicode characters to be lowercased properly // CurrentCulture is slow
-            //{
-            //    case "bool":
-            //    case "boolean":
-            //        variable = PHP.Core.Convert.ObjectToBoolean(variable);
-            //        return true;
+            switch (type.ToLowerInvariant())
+            {
+                case "bool":
+                case "boolean":
+                    variable = PhpValue.Create(variable.ToBoolean());
+                    return true;
 
-            //    case "int":
-            //    case "integer":
-            //        variable = PHP.Core.Convert.ObjectToInteger(variable);
-            //        return true;
+                case "int":
+                case "integer":
+                    variable = PhpValue.Create(variable.ToLong());
+                    return true;
 
-            //    case "float":
-            //    case "double":
-            //        variable = PHP.Core.Convert.ObjectToDouble(variable);
-            //        return true;
+                case "float":
+                case "double":
+                    variable = PhpValue.Create(variable.ToDouble());
+                    return true;
 
-            //    case "string":
-            //        variable = PHP.Core.Convert.ObjectToString(variable);
-            //        return true;
+                case "string":
+                    variable = PhpValue.Create(variable.ToString(ctx));
+                    return true;
 
-            //    case "array":
-            //        variable = PHP.Core.Convert.ObjectToPhpArray(variable);
-            //        return true;
+                case "array":
+                    variable = PhpValue.Create(variable.AsArray());
+                    return true;
 
-            //    case "object":
-            //        variable = PHP.Core.Convert.ObjectToDObject(variable, ScriptContext.CurrentContext);
-            //        return true;
+                case "object":
+                    variable = PhpValue.FromClass(variable.ToClass());
+                    return true;
 
-            //    case "null":
-            //        variable = null;
-            //        return true;
+                case "null":
+                    variable = PhpValue.Null;
+                    return true;
+            }
 
-            //    default:
-            //        PhpException.InvalidArgument("type", LibResources.GetString("invalid_type_name"));
-            //        return false;
-            //}
-            throw new NotImplementedException();
+            //PhpException.InvalidArgument("type", LibResources.GetString("invalid_type_name"));
+            //return false;
+            throw new ArgumentException(nameof(type));
         }
 
         /// <summary>
