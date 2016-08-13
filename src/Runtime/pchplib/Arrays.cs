@@ -2513,5 +2513,127 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region array_count_values, array_unique
+
+        /// <summary>
+        /// Counts frequency of each value in an array.
+        /// </summary>
+        /// <param name="array">The array which values to count.</param>
+        /// <returns>The array which keys are values of <paramref name="array"/> and values are their frequency.</returns>
+        /// <remarks>
+        /// Only <see cref="string"/> and <see cref="int"/> values are counted.
+        /// Note, string numbers (e.g. "10") and their integer equivalents (e.g. 10) are counted separately.
+        /// </remarks>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        /// <exception cref="PhpException">A value is neither <see cref="string"/> nor <see cref="int"/>.</exception>
+        public static PhpArray array_count_values(PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            string skey;
+            PhpArray result = new PhpArray();
+
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                // dereferences value:
+                var val = iterator.CurrentValue.GetValue();
+                IntStringKey askey;
+
+                switch (val.TypeCode)
+                {
+                    case PhpTypeCode.Int32:
+                    case PhpTypeCode.Long:
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                        askey = val.ToIntStringKey();
+                        break;
+                    default:
+                        // TODO: PhpException.Throw(PhpError.Warning, LibResources.GetString("neither_string_nor_integer_value", "count"));
+                        throw new ArgumentException();
+                }
+
+                var countval = result[askey].ToLong();  // 0 for nonexisting entry
+                result[askey] = PhpValue.Create(countval + 1L);
+            }
+
+            // no need to deep copy (values are ints):
+            return result;
+        }
+
+        /// <summary>
+        /// Removes duplicate values from an array.
+        /// </summary>
+        /// <param name="array">The array which duplicate values to remove.</param>
+        /// <returns>A copy of <paramref name="array"/> without duplicated values.</returns>
+        /// <remarks>
+        /// Values are compared using string comparison method (<see cref="ValueComparer.String"/>).  
+        /// </remarks>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_unique(Context ctx, PhpArray array) => array_unique(ctx, array, ComparisonMethod.String);
+
+        /// <summary>
+        /// Removes duplicate values from an array.
+        /// </summary>
+        /// <param name="array">The array which duplicate values to remove.</param>
+        /// <param name="sortFlags">Specifies how the values are compared to be identical.</param>
+        /// <returns>A copy of <paramref name="array"/> without duplicated values.</returns>
+        /// <remarks>
+        /// Values are compared using string comparison method (<see cref="ValueComparer.String"/>).  
+        /// </remarks>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_unique(Context ctx, PhpArray array, ComparisonMethod sortFlags /*= String*/)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            IComparer<PhpValue> comparer;
+            switch (sortFlags)
+            {
+                case ComparisonMethod.Regular:
+                    comparer = PhpComparer.Default; break;
+                case ComparisonMethod.Numeric:
+                    comparer = PhpNumericComparer.Default; break;
+                case ComparisonMethod.String:
+                    comparer = new PhpStringComparer(ctx); break;
+                case ComparisonMethod.LocaleString:
+                    //comparer = new PhpLocaleStringComparer(ctx); break;
+                default:
+                    //PhpException.ArgumentValueNotSupported("sortFlags", (int)sortFlags);
+                    //return null;
+                    throw new ArgumentException(nameof(sortFlags));
+            }
+
+            var result = new PhpArray(array.Count);
+
+            var/*!*/identitySet = new HashSet<object>();
+
+            // get only unique values - first found
+            using (var enumerator = array.GetFastEnumerator())
+                while (enumerator.MoveNext())
+                {
+                    if (identitySet.Add(enumerator.CurrentValue.GetValue()))
+                    {
+                        result.Add(enumerator.Current);
+                    }
+                }
+
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        #endregion
     }
 }
