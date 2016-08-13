@@ -11,17 +11,13 @@ namespace Pchp.Core
     /// <summary>
     /// An object that can be invoked dynamically.
     /// </summary>
+    /// <remarks>The interface is implemented by compiler for classes with <c>__invoke</c> method.</remarks>
     public interface IPhpCallable
     {
         /// <summary>
         /// Invokes the object with given arguments.
         /// </summary>
         PhpValue Invoke(Context ctx, params PhpValue[] arguments);
-
-        /// <summary>
-        /// Gets value indicating the callback is valid.
-        /// </summary>
-        bool IsValid { get; }
     }
 
     /// <summary>
@@ -51,6 +47,11 @@ namespace Pchp.Core
         /// Resolved routine to be invoked.
         /// </summary>
         protected PhpCallable _lazyResolved;
+
+        /// <summary>
+        /// Gets value indicating the callback is valid.
+        /// </summary>
+        public virtual bool IsValid => true;
 
         #region PhpCallbacks
 
@@ -247,8 +248,6 @@ namespace Pchp.Core
         /// Invokes the callback with given arguments.
         /// </summary>
         public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Bind(ctx)(ctx, arguments);
-
-        public virtual bool IsValid => true;
 
         #endregion
     }

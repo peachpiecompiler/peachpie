@@ -1509,7 +1509,7 @@ namespace Pchp.Library
                 //return false;
                 throw new ArgumentNullException();
             }
-            if (compare == null || !compare.IsValid) return false;
+            if (!PhpVariable.IsValidCallback(compare)) return false;
 
             // sorts array using callback for comparisons:
             array.Sort(new ValueComparer(new PhpUserComparer(ctx, compare), false));
@@ -1536,7 +1536,7 @@ namespace Pchp.Library
                 //return false;
                 throw new ArgumentNullException();
             }
-            if (compare == null || !compare.IsValid) return false;
+            if (!PhpVariable.IsValidCallback(compare)) return false;
 
             // sorts array using callback for comparisons:
             array.Sort(new ValueComparer(new PhpUserComparer(ctx, compare), false));
@@ -1560,7 +1560,7 @@ namespace Pchp.Library
                 //return false;
                 throw new ArgumentNullException();
             }
-            if (compare == null || !compare.IsValid) return false;
+            if (!PhpVariable.IsValidCallback(compare)) return false;
 
             array.Sort(new KeyComparer(new PhpUserComparer(ctx, compare), false));
 
@@ -1839,13 +1839,13 @@ namespace Pchp.Library
 
             // the first callback:
             cmp1 = vars[vars.Length - comparerCount].AsCallable();
-            if (!cmp1.IsValid) return false;
+            if (PhpVariable.IsValidCallback(cmp1)) return false;
 
             // the second callback:
             if (comparerCount > 1)
             {
                 cmp2 = vars[vars.Length - 1].AsCallable();
-                if (!cmp2.IsValid) return false;
+                if (!PhpVariable.IsValidCallback(cmp2)) return false;
             }
 
             // remaining arguments should be arrays:

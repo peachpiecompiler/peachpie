@@ -153,6 +153,8 @@ namespace Pchp.Core
             throw new ArgumentException();
         }
 
+        #endregion
+
         /// <summary>
         /// Enumerates deep copy of iterator values.
         /// </summary>
@@ -165,6 +167,11 @@ namespace Pchp.Core
             }
         }
 
-        #endregion
+        public static bool IsValidCallback(IPhpCallable callable)
+        {
+            PhpCallback tmp;
+
+            return callable != null && ((tmp = callable as PhpCallback) == null || tmp.IsValid);
+        }
     }
 }
