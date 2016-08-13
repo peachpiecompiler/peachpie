@@ -2398,5 +2398,120 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region array_chunk
+
+        /// <summary>
+        /// Splits an array into chunks.
+        /// </summary>
+        /// <param name="array">The array to be split.</param>
+        /// <param name="size">The number of items in each chunk (except for the last one where can be lesser items).</param>
+        /// <returns>The array containing chunks indexed by integers starting from zero, 
+        /// all keys in chunks are reindexed starting from zero.</returns>
+        /// <remarks>Chunks will contain deep copies of <paramref name="array"/> items.</remarks>
+        public static PhpArray array_chunk(PhpArray array, int size)
+        {
+            return ChunkInternal(array, size, false, true);
+        }
+
+        /// <summary>
+        /// Splits an array into chunks.
+        /// </summary>
+        /// <param name="array">The array to be split.</param>
+        /// <param name="size">The number of items in each chunk (except for the last one where can be lesser items).</param>
+        /// <param name="preserveKeys">Whether to preserve keys in chunks.</param>
+        /// <returns>The array containing chunks indexed by integers starting from zero.</returns>
+        /// <remarks>Chunks will contain deep copies of <paramref name="array"/> items.</remarks>
+        public static PhpArray array_chunk(PhpArray array, int size, bool preserveKeys)
+        {
+            return ChunkInternal(array, size, preserveKeys, true);
+        }
+
+        /// <summary>
+        /// Splits an array into chunks.
+        /// </summary>
+        /// <param name="array">The array to be split.</param>
+        /// <param name="size">The number of items in each chunk (except for the last one where can be lesser items).</param>
+        /// <param name="preserveKeys">Whether to preserve keys in chunks.</param>
+        /// <returns>The array containing chunks indexed by integers starting from zero.</returns>
+        internal static PhpArray Chunk(PhpArray array, int size, bool preserveKeys = false)
+        {
+            return ChunkInternal(array, size, preserveKeys, false);
+        }
+
+        /// <summary>
+        /// Internal version of <see cref="Chunk"/> with deep-copy option.
+        /// </summary>
+        internal static PhpArray ChunkInternal(PhpArray array, int size, bool preserveKeys, bool deepCopy)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException(nameof(array));
+            }
+            if (size <= 0)
+            {
+                //PhpException.InvalidArgument("array", LibResources.GetString("arg:negative_or_zero"));
+                //return null;
+                throw new ArgumentException(nameof(size));
+            }
+
+            // nothing to do:
+            if (array.Count == 0)
+                return new PhpArray();
+
+            // number of chunks:
+            int count = (array.Count - 1) / size + 1; // = ceil(Count/size):
+
+            PhpArray chunk;
+            PhpArray result = new PhpArray(count, 0);
+
+            IEnumerator<KeyValuePair<IntStringKey, PhpValue>> iterator = array.GetEnumerator();
+
+            // if deep-copies are required, wrapp iterator by enumerator making deep copies:
+            if (deepCopy)
+                iterator = PhpVariable.EnumerateDeepCopies(iterator);
+
+            iterator.MoveNext();
+
+            // all chunks except for the last one:
+            for (int i = 0; i < count - 1; i++)
+            {
+                chunk = new PhpArray(size, 0);
+
+                if (preserveKeys)
+                {
+                    for (int j = 0; j < size; j++, iterator.MoveNext())
+                        chunk.Add(iterator.Current.Key, iterator.Current.Value);
+                }
+                else
+                {
+                    for (int j = 0; j < size; j++, iterator.MoveNext())
+                        chunk.Add(iterator.Current.Value);
+                }
+
+                result.Add(chunk);
+            }
+
+            // the last chunk:
+            chunk = new PhpArray((size <= array.Count) ? size : array.Count, 0);
+
+            if (preserveKeys)
+            {
+                do { chunk.Add(iterator.Current.Key, iterator.Current.Value); } while (iterator.MoveNext());
+            }
+            else
+            {
+                do { chunk.Add(iterator.Current.Value); } while (iterator.MoveNext());
+            }
+
+            result.Add(chunk);
+
+            // no deep copy is needed since it has already been done on chunks:
+            return result;
+        }
+
+        #endregion
     }
 }

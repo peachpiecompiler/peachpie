@@ -153,6 +153,18 @@ namespace Pchp.Core
             throw new ArgumentException();
         }
 
+        /// <summary>
+        /// Enumerates deep copy of iterator values.
+        /// </summary>
+        public static IEnumerator<KeyValuePair<IntStringKey, PhpValue>> EnumerateDeepCopies(IEnumerator<KeyValuePair<IntStringKey, PhpValue>> iterator)
+        {
+            while (iterator.MoveNext())
+            {
+                var entry = iterator.Current;
+                yield return new KeyValuePair<IntStringKey, PhpValue>(entry.Key, entry.Value.DeepCopy());
+            }
+        }
+
         #endregion
     }
 }
