@@ -1407,14 +1407,12 @@ namespace Pchp.Core
             using (var enumerator = this.GetFastEnumerator())
                 while (enumerator.MoveNext())
                 {
-                    var val = enumerator.CurrentValue;
-                    if (deepCopy)
-                        val = val.DeepCopy();
-
-                    if (enumerator.CurrentKey.IsInteger)
+                    var val = deepCopy ? enumerator.CurrentValue.DeepCopy() : enumerator.CurrentValue;
+                    var key = enumerator.CurrentKey;
+                    if (key.IsInteger)
                         dst.Add(val);
                     else
-                        dst.Add(enumerator.CurrentKey, val);
+                        dst.Add(key, val);
                 }
         }
 

@@ -142,8 +142,8 @@ namespace Pchp.Core
     /// </summary>
     public sealed class EntryComparer : IComparer<KeyValuePair<IntStringKey, PhpValue>>
     {
-        private readonly IComparer/*!*/ keyComparer; // TODO: <IntStringKey>
-        private readonly IComparer/*!*/ valueComparer;
+        private readonly IComparer<PhpValue>/*!*/ keyComparer;
+        private readonly IComparer<PhpValue>/*!*/ valueComparer;
         private readonly int keyReverse;
         private readonly int valueReverse;
 
@@ -154,10 +154,8 @@ namespace Pchp.Core
         /// <param name="keyReverse">Whether the the result of the key comparer is inversed.</param>
         /// <param name="valueComparer">The comparer used on values.</param>
         /// <param name="valueReverse">Whether the the result of the value comparer is inversed</param>
-        public EntryComparer(IComparer/*!*/ keyComparer, bool keyReverse, IComparer/*!*/ valueComparer, bool valueReverse)
+        public EntryComparer(IComparer<PhpValue>/*!*/ keyComparer, bool keyReverse, IComparer<PhpValue>/*!*/ valueComparer, bool valueReverse)
         {
-            // TODO: key: <IntStringKey>
-
             if (keyComparer == null)
                 throw new ArgumentNullException("keyComparer");
 
@@ -189,9 +187,8 @@ namespace Pchp.Core
 
         public int Compare(KeyValuePair<IntStringKey, PhpValue> x, KeyValuePair<IntStringKey, PhpValue> y)
         {
-            int kcmp = keyReverse * keyComparer.Compare(x.Key.Object, y.Key.Object);
-            if (kcmp != 0) return kcmp;
-            return valueReverse * valueComparer.Compare(x.Value, y.Value);
+            int kcmp = keyReverse * keyComparer.Compare(PhpValue.Create(x.Key), PhpValue.Create(y.Key));
+            return (kcmp != 0) ? kcmp : valueReverse * valueComparer.Compare(x.Value, y.Value);
         }
 
         #endregion

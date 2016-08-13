@@ -1728,7 +1728,7 @@ namespace Pchp.Library
             // sets comparer of the previous array:
             if (comparers != null)
                 comparers[col_count - 1] = GetComparer(ctx, method, order, false);
-            
+
             return col_count;
         }
 
@@ -2097,7 +2097,200 @@ namespace Pchp.Library
             return SetOperation(SetOperations.Intersection, array, arrays,
                 new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpUserComparer(ctx, value_comparer), false));
         }
-        
+
+        #endregion
+
+        #region array_merge, array_merge_recursive
+
+        /// <summary>
+        /// Merges one or more arrays. Integer keys are changed to new ones, string keys are preserved.
+        /// Values associated with existing string keys are be overwritten.
+        /// </summary>
+        /// <param name="arrays">Arrays to be merged.</param>
+        /// <returns>The <see cref="PhpArray"/> containing items from all <paramref name="arrays"/>.</returns>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_merge(params PhpArray[] arrays)
+        {
+            // "arrays" argument is PhpArray[] => compiler generates code converting any value to PhpArray.
+            // Note, PHP does reject non-array arguments.
+
+            if (arrays == null || arrays.Length == 0)
+            {
+                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg:null_or_empty"));
+                //return null;
+                throw new ArgumentException();
+            }
+
+            var result = new PhpArray(arrays[0].Count);
+
+            for (int i = 0; i < arrays.Length; i++)
+            {
+                if (arrays[i] != null)
+                {
+                    using (var enumerator = arrays[i].GetFastEnumerator())
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.CurrentKey.IsString)
+                                result[enumerator.CurrentKey] = enumerator.CurrentValue;
+                            else
+                                result.Add(enumerator.CurrentValue);
+                        }
+                }
+            }
+
+            // results is inplace deeply copied if returned to PHP code:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        /// <summary>
+        /// Merges arrays recursively.
+        /// </summary>
+        /// <param name="array">The first array to merge.</param>
+        /// <param name="arrays">The next arrays to merge.</param>
+        /// <returns>An array containing items of all specified arrays.</returns>
+        /// <remarks>
+        /// Integer keys are reset so there cannot be a conflict among them. 
+        /// Conflicts among string keys are resolved by merging associated values into arrays. 
+        /// Merging is propagated recursively. Merged values are dereferenced. References are 
+        /// preserved in non-merged values.
+        /// </remarks>
+        /// <exception cref="PhpException">Some array is a <B>null</B> reference (Warning).</exception>
+        public static PhpArray array_merge_recursive(PhpArray array, params PhpArray[] arrays)
+        {
+            if (array == null || arrays == null)
+            {
+                //PhpException.ArgumentNull((array == null) ? "array" : "arrays");
+                //return null;
+                throw new ArgumentException();
+            }
+
+            for (int i = 0; i < arrays.Length; i++)
+            {
+                if (arrays[i] == null)
+                {
+                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));
+                    //return null;
+                    throw new ArgumentException();
+                }
+            }
+
+            return MergeRecursive(array, true, arrays);
+        }
+
+        /// <summary>
+        /// Merges arrays recursively.
+        /// </summary>
+        /// <param name="array">The first array to merge.</param>
+        /// <param name="arrays">The next arrays to merge.</param>
+        /// <param name="deepCopy">Whether to deep copy merged items.</param>
+        /// <returns>An array containing items of all specified arrays.</returns>
+        private static PhpArray MergeRecursive(PhpArray array, bool deepCopy, params PhpArray[] arrays)
+        {
+            if (array == null) return null;
+
+            PhpArray result = new PhpArray();
+            array.AddTo(result, deepCopy);
+
+            if (arrays != null)
+            {
+                for (int i = 0; i < arrays.Length; i++)
+                {
+                    if (arrays[i] != null)
+                    {
+                        if (!MergeRecursiveInternal(result, arrays[i], deepCopy))
+                        {
+                            //PhpException.Throw(PhpError.Warning, LibResources.GetString("recursion_detected"));
+                            throw new ArgumentException();
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Adds items of "array" to "result" merging those whose string keys are the same.
+        /// </summary>
+        private static bool MergeRecursiveInternal(PhpArray/*!*/ result, PhpArray/*!*/ array, bool deepCopy)
+        {
+            var visited = new HashSet<object>();    // marks arrays that are being visited
+
+            using (var iterator = array.GetFastEnumerator())
+                while (iterator.MoveNext())
+                {
+                    var entry = iterator.Current;
+                    if (entry.Key.IsString)
+                    {
+                        if (result.ContainsKey(entry.Key))
+                        {
+                            // the result array already contains the item => merging take place
+                            var xv = result[entry.Key];
+                            var y = entry.Value.GetValue();
+
+                            // source item:
+                            PhpValue x = xv.GetValue();
+                            
+                            // if x is not a reference then we can reuse the ax array for the result
+                            // since it has been deeply copied when added to the resulting array:
+                            PhpArray item_result = (deepCopy && x.IsArray && !xv.IsAlias) ? x.Array : new PhpArray();
+
+                            if (x.IsArray && y.IsArray)
+                            {
+                                var ax = x.Array;
+                                var ay = y.Array;
+
+                                if (ax != item_result)
+                                    ax.AddTo(item_result, deepCopy);
+
+                                if (visited.Add(ax) == false && visited.Add(ay) == false)
+                                    return false;
+
+                                // merges ay to the item result (may lead to stack overflow, 
+                                // but only with both arrays recursively referencing themselves - who cares?):
+                                bool finite = MergeRecursiveInternal(item_result, ay, deepCopy);
+
+                                visited.Remove(ax);
+                                visited.Remove(ay);
+                                
+                                if (!finite) return false;
+                            }
+                            else
+                            {
+                                if (x.IsArray)
+                                {
+                                    if (x.Array != item_result)
+                                        x.Array.AddTo(item_result, deepCopy);
+                                }
+                                else
+                                {
+                                    /*if (x != null)*/
+                                    item_result.Add(deepCopy ? x.DeepCopy() : x);
+                                }
+
+                                if (y.IsArray) y.Array.AddTo(item_result, deepCopy);
+                                else /*if (y != null)*/ item_result.Add(deepCopy ? y.DeepCopy(): y);
+                            }
+
+                            result[entry.Key] = PhpValue.Create(item_result);
+                        }
+                        else
+                        {
+                            // PHP does no dereferencing when items are not merged:
+                            result.Add(entry.Key, (deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                        }
+                    }
+                    else
+                    {
+                        // PHP does no dereferencing when items are not merged:
+                        result.Add((deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                    }
+                }
+
+            return true;
+        }
+
         #endregion
     }
 }
