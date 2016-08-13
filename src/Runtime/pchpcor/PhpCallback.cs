@@ -178,7 +178,9 @@ namespace Pchp.Core
 
         #region Create
 
-        public static PhpCallback Create(IPhpCallable callable) => new CallableCallback(callable.Invoke);
+        public static PhpCallback Create(IPhpCallable callable) => Create(callable.Invoke);
+
+        public static PhpCallback Create(PhpCallable callable) => new CallableCallback(callable);
 
         public static PhpCallback Create(string function)
         {

@@ -374,6 +374,11 @@ namespace Pchp.Core
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
 
+        /// <summary>
+        /// Creates value containing new <see cref="PhpAlias"/> pointing to <c>NULL</c> value.
+        /// </summary>
+        public static PhpValue CreateAlias() => Create(new PhpAlias(Null));
+
         public static PhpValue Create(IntStringKey value) => value.IsInteger ? Create(value.Integer) : Create(value.String);
 
         public static PhpValue FromClass(object value)

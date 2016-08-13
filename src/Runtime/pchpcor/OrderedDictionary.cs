@@ -744,7 +744,7 @@ namespace Pchp.Core
             /// <summary>
             /// Checks whether enumerator points to an entry.
             /// </summary>
-            internal bool IsValid { get { return _currentEntry >= 0; } }
+            public bool IsValid { get { return _currentEntry >= 0; } }
 
             /// <summary>
             /// Gets or sets current entry's <see cref="Entry.listLast"/> field.

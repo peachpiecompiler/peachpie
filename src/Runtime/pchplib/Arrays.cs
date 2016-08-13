@@ -963,8 +963,8 @@ namespace Pchp.Library
             var iterator = keys.GetFastEnumerator();
             while (iterator.MoveNext())
             {
-                IntStringKey key = iterator.CurrentValue.ToIntStringKey();
-                //if (Core.Convert.ObjectToArrayKey(x.Value, out key) && !result.ContainsKey(key))
+                IntStringKey key;
+                if (Core.Convert.TryToIntStringKey(iterator.CurrentValue, out key) && !result.ContainsKey(key))
                 {
                     result[key] = value;
                 }
@@ -2536,7 +2536,6 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            string skey;
             PhpArray result = new PhpArray();
 
             var iterator = array.GetFastEnumerator();
@@ -2609,7 +2608,7 @@ namespace Pchp.Library
                 case ComparisonMethod.String:
                     comparer = new PhpStringComparer(ctx); break;
                 case ComparisonMethod.LocaleString:
-                    //comparer = new PhpLocaleStringComparer(ctx); break;
+                //comparer = new PhpLocaleStringComparer(ctx); break;
                 default:
                     //PhpException.ArgumentValueNotSupported("sortFlags", (int)sortFlags);
                     //return null;
@@ -2632,6 +2631,848 @@ namespace Pchp.Library
 
             //result.InplaceCopyOnReturn = true;
             return result;
+        }
+
+        #endregion
+
+        #region array_flip
+
+        /// <summary>
+        /// Swaps all keys and their associated values in an array.
+        /// </summary>
+        /// <param name="array">The array.</param>
+        /// <returns>An array containing entries which keys are values from the <paramref name="array"/>
+        /// and which values are the corresponding keys.</returns>
+        /// <remarks>
+        /// <para>
+        /// Values which are not of type <see cref="string"/> nor <see cref="int"/> are skipped 
+        /// and for each such value a warning is reported. If there are more entries with the same 
+        /// value in the <paramref name="array"/> the last key is considered others are ignored.
+        /// String keys are converted using <see cref="Core.Convert.StringToArrayKey"/>.
+        /// </para>
+        /// <para>
+        /// Unlike PHP this method doesn't return <B>false</B> on failure but a <B>null</B> reference.
+        /// This is because it fails only if <paramref name="array"/> is a <B>null</B> reference.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference (Warning).</exception>
+        /// <exception cref="PhpException">A value is neither <see cref="string"/> nor <see cref="int"/> (Warning).</exception>     
+        public static PhpArray array_flip(PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            string skey;
+            PhpArray result = new PhpArray(array.Count);
+
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                var entry = iterator.Current;
+                // dereferences value:
+                var val = entry.Value.GetValue();
+                switch (val.TypeCode)
+                {
+                    case PhpTypeCode.Int32:
+                    case PhpTypeCode.Long:
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                        var askey = val.ToIntStringKey();
+                        result[askey] = PhpValue.Create(entry.Key);
+                        break;
+                    default:
+                        // PhpException.Throw(PhpError.Warning, LibResources.GetString("neither_string_nor_integer_value", "flip"));
+                        throw new ArgumentException();
+                }
+            }
+
+            // no need to deep copy because values are ints/strings only (<= keys were int/strings only):
+            return result;
+        }
+
+        #endregion
+
+        #region array_keys, array_values, array_combine
+
+        /// <summary>
+        /// Retrieves an array of keys contained in a given array.
+        /// </summary>
+        /// <param name="array">An array which keys to get.</param>
+        /// <returns><see cref="PhpArray"/> of <paramref name="array"/>'s keys.
+        /// Keys in returned array are successive integers starting from zero.</returns>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        public static PhpArray array_keys(PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            // no need to make a deep copy since keys are immutable objects (strings, ints):
+            var result = new PhpArray(array.Count);
+
+            var enumerator = array.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                result.Add(PhpValue.Create(enumerator.CurrentKey));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Retrieves an array of some keys contained in a given array.
+        /// </summary>
+        /// <param name="array">An array which keys to get.</param>
+        /// <param name="searchValue">Only the keys for this value are returned. 
+        /// Values are compared using regular comparison method (<see cref="PhpComparer.CompareEq"/>).</param>
+        /// <returns>An array of keys being associated with specified value. 
+        /// Keys in returned array are successive integers starting from zero.</returns>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        public static PhpArray array_keys(PhpArray array, PhpValue searchValue)
+        {
+            return array_keys(array, searchValue, false);
+        }
+
+        /// <summary>
+        /// Retrieves an array of some keys contained in a given array.
+        /// </summary>
+        /// <param name="array">An array which keys to get.</param>
+        /// <param name="searchValue">Only the keys for this value are returned. 
+        /// Values are compared using regular comparison method (<see cref="PhpComparer.CompareEq"/>).</param>
+        /// <param name="strict">If true, uses strict comparison method (operator "===").</param>
+        /// <returns>An array of keys being associated with specified value. 
+        /// Keys in returned array are successive integers starting from zero.</returns>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        public static PhpArray array_keys(PhpArray array, PhpValue searchValue, bool strict)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException();
+            }
+
+            var result = new PhpArray();
+            var enumerator = array.GetFastEnumerator();
+
+            if (strict)
+            {
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.CurrentValue.StrictEquals(searchValue))
+                        result.AddValue(PhpValue.Create(enumerator.CurrentKey));
+                }
+            }
+            else
+            {
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.CurrentValue.Equals(searchValue))
+                        result.AddValue(PhpValue.Create(enumerator.CurrentKey));
+                }
+            }
+
+            // no need to make a deep copy since keys are immutable objects (strings, ints):
+            return result;
+        }
+
+        /// <summary>
+        /// Retrieves an array of values contained in a given array.
+        /// </summary>
+        /// <param name="array">An array which values to get.</param>
+        /// <returns>A copy of <paramref name="array"/> with all keys indexed starting from zero.</returns>
+        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
+        /// <remarks>Doesn't dereference PHP references.</remarks>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_values(PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            // references are not dereferenced:
+            PhpArray result = new PhpArray(array.Count);
+            var enumerator = array.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                result.Add(enumerator.CurrentValue);
+            }
+
+            // result is inplace deeply copied on return to PHP code:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        /// <summary>
+        /// Creates an array using one array for its keys and the second for its values.
+        /// </summary>
+        /// <param name="keys">The keys of resulting array.</param>
+        /// <param name="values">The values of resulting array.</param>
+        /// <returns>An array with keys from <paramref name="keys"/> values and values 
+        /// from <paramref name="values"/> values.</returns>
+        /// <remarks>
+        /// <paramref name="keys"/> and <paramref name="values"/> should have the same length (zero is 
+        /// adminssible - an empty array is returned).
+        /// Keys are converted using <see cref="PHP.Core.Convert.ObjectToArrayKey"/> before hashed to resulting array.
+        /// If more keys has the same value after conversion the last one is used.
+        /// If a key is not a legal array key it is skipped.
+        /// </remarks>
+        /// <exception cref="PhpException"><paramref name="keys"/> or <paramref name="values"/> is a <B>null</B> reference.</exception>
+        /// <exception cref="PhpException"><paramref name="keys"/> and <paramref name="values"/> has different length.</exception>
+        /// <remarks>Doesn't dereference PHP references.</remarks>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_combine(PhpArray keys, PhpArray values)
+        {
+            if (keys == null)
+            {
+                //PhpException.ArgumentNull("keys");
+                //return null;
+                throw new ArgumentNullException(nameof(keys));
+            }
+
+            if (values == null)
+            {
+                //PhpException.ArgumentNull("values");
+                //return null;
+                throw new ArgumentNullException(nameof(values));
+            }
+
+            if (keys.Count != values.Count)
+            {
+                //PhpException.Throw(PhpError.Warning, CoreResources.GetString("lengths_are_different", "keys", "values"));
+                //return null;
+                throw new ArgumentException();
+            }
+
+            IntStringKey key;
+
+            PhpArray result = new PhpArray();
+            var k_iterator = keys.GetFastEnumerator();
+            var v_iterator = values.GetFastEnumerator();
+            while (k_iterator.MoveNext())
+            {
+                v_iterator.MoveNext();
+
+                // invalid keys are skipped, values are not dereferenced:
+                if (Core.Convert.TryToIntStringKey(k_iterator.CurrentValue, out key))
+                {
+                    result[key] = v_iterator.CurrentValue;
+                }
+            }
+
+            // result is inplace deeply copied on return to PHP code:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        #endregion
+
+        #region array_sum, array_product, array_reduce
+
+        /// <summary>
+        /// Sums all values in an array. Each value is converted to a number in the same way it is done by PHP.
+        /// </summary>
+        /// <exception cref="PhpException">Thrown if the <paramref name="array"/> argument is null.</exception>
+        /// <returns>
+        /// An integer, if all items are integers or strings converted to integers and the result is in integer range.
+        /// A double, otherwise.
+        /// </returns>
+        public static PhpNumber array_sum(PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return 0.0;
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            if (array.Count == 0)
+            {
+                return PhpNumber.Default;
+            }
+
+            PhpNumber result = PhpNumber.Default;
+            PhpNumber num;
+
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                iterator.CurrentValue.ToNumber(out num);
+                result += num;
+            }
+
+            //
+            return result;
+        }
+
+        /// <summary>
+        /// Computes a product of all values in an array. 
+        /// Each value is converted to a number in the same way it is done by PHP.
+        /// </summary>
+        /// <exception cref="PhpException">Thrown if the <paramref name="array"/> argument is null.</exception>
+        /// <returns>
+        /// An integer, if all items are integers or strings converted to integers and the result is in integer range.
+        /// A double, otherwise.
+        /// </returns>
+        public static PhpNumber array_product(PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return 0;
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            if (array.Count == 0)
+            {
+                return PhpNumber.Default;
+            }
+
+            PhpNumber result = PhpNumber.Create(1L);
+            PhpNumber num;
+
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                iterator.CurrentValue.ToNumber(out num);
+
+                result *= num;
+            }
+
+            //
+            return result;
+        }
+
+        public static PhpValue array_reduce(Context ctx, [In, Out] PhpArray array, IPhpCallable function)
+        {
+            return array_reduce(ctx, array, function, PhpValue.Null);
+        }
+
+        public static PhpValue array_reduce(Context ctx, [In, Out] PhpArray array, IPhpCallable function, PhpValue initialValue)
+        {
+            if (array == null)
+            {
+                //PhpException.ReferenceNull("array");
+                //return PhpValue.Null;
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            //if (!PhpArgument.CheckCallback(function, caller, "function", 0, false)) return null;
+
+            if (array.Count == 0)
+            {
+                return initialValue;
+            }
+
+            PhpValue[] args = new PhpValue[] { initialValue.DeepCopy(), PhpValue.Null };
+
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                var item = iterator.CurrentValue;
+
+                args[1] = item.IsAlias ? item : PhpValue.Create(item.EnsureAlias());
+                args[0] = function.Invoke(ctx, args);
+
+                // updates an item if it wasn't alias
+                if (!item.IsAlias)
+                {
+                    iterator.CurrentValue = args[1].Alias.Value;
+                }
+            }
+
+            // dereferences the last returned value:
+            return args[0].GetValue();
+        }
+
+        #endregion
+
+        #region array_walk, array_walk_recursive
+
+        /// <summary>
+        /// Applies a user function or method on each element of a specified array or dictionary.
+        /// </summary>
+        /// <returns><B>true</B>.</returns>
+        /// <remarks>See <see cref="Walk(PHP.Core.Reflection.DTypeDesc,PhpHashtable,PhpCallback,object)"/> for details.</remarks>
+        /// <exception cref="PhpException"><paramref name="function"/> or <paramref name="array"/> are <B>null</B> references.</exception>
+        public static bool array_walk(Context ctx, [In, Out] PhpHashtable array, IPhpCallable function)
+        {
+            return array_walk(ctx, array, function, PhpValue.Null);
+        }
+
+        /// <summary>
+        /// Applies a user function or method on each element (value) of a specified dictionary.
+        /// </summary>
+        /// <param name="caller">Current class context.</param>
+        /// <param name="array">The array (or generic dictionary) to walk through.</param>
+        /// <param name="callback">
+        /// The callback called for each element of <paramref name="array"/>.
+        /// The callback is assumed to have two or three parameters:
+        /// <list type="number">
+        ///   <item>
+        ///     <term>
+        ///       A value of dictionary entry. Can be specified with &amp; modifier which propagates any changes
+        ///       make to the argument back to the entry. The dictionary can be changed in this way.
+        ///     </term>
+        ///   </item>
+        ///   <item>A key of dictionary entry.</item>
+        ///   <item>
+        ///     Value of <paramref name="data"/> parameter if it is not a <B>null</B> reference.
+        ///     Otherwise, the callback is assumed to have two parameters only.
+        ///   </item>
+        /// </list>
+        /// </param>
+        /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
+        /// <returns><B>true</B>.</returns>
+        /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
+        public static bool array_walk(Context ctx, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data)
+        {
+            PhpValue[] args = PrepareWalk(array, callback, data);
+            if (args == null) return false;
+
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                VisitEntryOnWalk(ctx, iterator.Current, array, callback, args);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Applies a user function or method on each element of a specified array recursively.
+        /// </summary>
+        /// <returns><B>true</B>.</returns>
+        /// <remarks>See <see cref="Walk(PHP.Core.Reflection.DTypeDesc,PhpHashtable,PhpCallback,object)"/> for details.</remarks>
+        /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
+        public static bool array_walk_recursive(Context ctx, [In, Out] PhpHashtable array, IPhpCallable callback)
+        {
+            return array_walk_recursive(ctx, array, callback, PhpValue.Null);
+        }
+
+        /// <summary>
+        /// Applies a user function or method on each element (value) of a specified dictionary recursively.
+        /// </summary>
+        /// <param name="caller">Current class context.</param>
+        /// <param name="array">The array to walk through.</param>
+        /// <param name="callback">The callback called for each element of <paramref name="array"/>.</param>
+        /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
+        /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
+        /// <remarks><seealso cref="Walk"/>.</remarks>
+        public static bool array_walk_recursive(Context ctx, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data)
+        {
+            var args = PrepareWalk(array, callback, data);
+            if (args == null)
+            {
+                return false;
+            }
+
+            using (var iterator = array.GetRecursiveEnumerator(true, false))
+            {
+                while (iterator.MoveNext())
+                {
+                    var current = iterator.Current;
+
+                    // visits the item unless it is an array or a reference to an array:
+                    if (!current.Value.GetValue().IsArray)
+                    {
+                        VisitEntryOnWalk(ctx, iterator.Current, iterator.CurrentTable, callback, args);
+                    }
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Prepares a walk for <see cref="array_walk"/> and <see cref="array_walk_recursive"/> methods.
+        /// </summary>
+        /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
+        private static PhpValue[] PrepareWalk(IDictionary array, IPhpCallable callback, PhpValue data)
+        {
+            if (callback == null)
+            {
+                //PhpException.ArgumentNull("callback");
+                // return null;
+                throw new ArgumentNullException(nameof(callback));
+            }
+
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            // prepares an array of callback's arguments (no deep copying needed because it is done so in callback):
+            return (data != null)
+                ? new PhpValue[] { PhpValue.CreateAlias(), PhpValue.Null, data }
+                : new PhpValue[] { PhpValue.CreateAlias(), PhpValue.Null };
+        }
+
+        /// <summary>
+        /// Visits an entry of array which <see cref="array_walk"/> or <see cref="array_walk_recursive"/> is walking through.
+        /// </summary>
+        private static void VisitEntryOnWalk(Context ctx,
+            KeyValuePair<IntStringKey, PhpValue> entry,
+            IDictionary<IntStringKey, PhpValue> array,
+            IPhpCallable callback, PhpValue[] args)
+        {
+            Debug.Assert(args[0].IsAlias);
+
+            // fills arguments for the callback:
+            args[0].Alias.Value = entry.Value.GetValue();
+            args[1] = PhpValue.Create(entry.Key);
+
+            // invoke callback:
+            callback.Invoke(ctx, args);
+
+            // loads a new value from a reference:
+            if (entry.Value.IsAlias)
+            {
+                entry.Value.Alias.Value = args[0].Alias.Value;
+            }
+            else
+            {
+                array[entry.Key] = args[0].Alias.Value;
+            }
+        }
+
+        #endregion
+
+        #region array_filter
+
+        /// <summary>
+        /// Retuns the specified array.
+        /// see http://php.net/manual/en/function.array-filter.php
+        /// </summary>
+        /// <remarks>The caller argument is here just because of the second Filter() method. Phalanger shares the function properties over the overloads.</remarks>
+        public static PhpArray array_filter(PhpArray array)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            var result = new PhpArray();
+
+            var enumerator = array.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var entry = enumerator.Current;
+                if (entry.Value.ToBoolean())
+                {
+                    result.Add(entry);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Filters an array using a specified callback.
+        /// </summary>
+        /// <param name="caller">Current class context.</param>
+        /// <param name="array">The array to be filtered.</param>
+        /// <param name="callback">
+        /// The callback called on each value in the <paramref name="array"/>. 
+        /// If the callback returns value convertible to <B>true</B> the value is copied to the resulting array.
+        /// Otherwise, it is ignored.
+        /// </param>
+        /// <returns>An array of unfiltered items.</returns>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_filter(Context ctx, PhpArray array, IPhpCallable callback)
+        {
+            if (array == null)
+            {
+                //PhpException.ArgumentNull("array");
+                //return null;
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            if (callback == null)
+            {
+                //PhpException.ArgumentNull("callback");
+                //return null;
+                throw new ArgumentNullException(nameof(callback));
+            }
+
+            var result = new PhpArray();
+            var args = new PhpValue[1];
+
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                var entry = iterator.Current;
+
+                // no deep copying needed because it is done so in callback:
+                args[0] = entry.Value;
+
+                // adds entry to the resulting array if callback returns true:
+                if (callback.Invoke(ctx, args).ToBoolean())
+                {
+                    result.Add(entry);
+                }
+            }
+
+            // values should be inplace deeply copied:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        #endregion
+
+        #region array_map
+
+
+        /// <summary>
+        /// Default callback for <see cref="Map"/>.
+        /// </summary>
+        /// <param name="instance">Unused.</param>
+        /// <param name="stack">A PHP stack.</param>
+        /// <returns>A <see cref="PhpArray"/> containing items on the stack (passed as arguments).</returns>
+        private static readonly IPhpCallable _mapIdentity = PhpCallback.Create((ctx, args) =>
+        {
+            PhpArray result = new PhpArray(args.Length);
+
+            for (int i = 0; i <= args.Length; i++)
+            {
+                // TODO: result.Add(PhpVariable.Copy(args[i], CopyReason.PassedByCopy));
+                result.Add(args[i]);
+            }
+
+            return PhpValue.Create(result);
+        });
+
+        /// <summary>
+        /// Applies a callback function on specified tuples one by one storing its results to an array.
+        /// </summary>
+        /// <param name="caller">The class context used to resolve given callback.</param>
+        /// <param name="map">
+        /// A callback to be called on tuples. The number of arguments should be the same as
+        /// the number of arrays specified by <pramref name="arrays"/>.
+        /// Arguments passed by reference modifies elements of <pramref name="arrays"/>.
+        /// A <B>null</B> means default callback which makes integer indexed arrays from the tuples is used. 
+        /// </param>
+        /// <param name="arrays">Arrays where to load tuples from. </param>
+        /// <returns>An array of return values of the callback
+        /// keyed by keys of the <paramref name="arrays"/> if it
+        /// is a single array or by integer keys starting from 0.</returns>
+        /// <remarks>
+        /// <para>
+        /// In the <I>i</I>-th call the <I>j</I>-th parameter of the callback will be 
+        /// the <I>i</I>-th value of the <I>j</I>-the array or a <B>null</B> if that array 
+        /// has less then <I>i</I> entries.
+        /// </para>
+        /// <para>
+        /// If the callback assigns a value to a parameter passed by reference in the <I>i</I>-the call 
+        /// and the respective array contains at least <I>i</I> elements the assigned value is propagated 
+        /// to the array.
+        /// </para>
+        /// </remarks>
+        public static PhpArray array_map(Context ctx, IPhpCallable map, [In, Out] params PhpArray[] arrays)
+        {
+            //if (!PhpArgument.CheckCallback(map, caller, "map", 0, true)) return null;
+            if (arrays == null || arrays.Length == 0)
+            {
+                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg:null_or_emtpy"));
+                //return null;
+                throw new ArgumentException();
+            }
+
+            // if callback has not been specified uses the default one:
+            if (map == null)
+            {
+                map = _mapIdentity;
+            }
+
+            int count = arrays.Length;
+            bool preserve_keys = count == 1;
+            var args = new PhpValue[count];
+            var iterators = new OrderedDictionary.FastEnumerator[count];
+            PhpArray result;
+
+            // initializes iterators and args array, computes length of the longest array:
+            int max_count = 0;
+            for (int i = 0; i < arrays.Length; i++)
+            {
+                var array = arrays[i];
+
+                if (array == null)
+                {
+                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));// +2 (first arg is callback) 
+                    //return null;
+                    throw new ArgumentException();
+                }
+
+                args[i] = PhpValue.CreateAlias();
+                iterators[i] = array.GetFastEnumerator();
+                if (array.Count > max_count) max_count = array.Count;
+            }
+
+            // keys are preserved in a case of a single array and re-indexed otherwise:
+            if (preserve_keys)
+                result = new PhpArray(arrays[0].IntegerCount, arrays[0].StringCount);
+            else
+                result = new PhpArray(max_count, 0);
+
+            for (;;)
+            {
+                bool hasvalid = false;
+
+                // fills args[] with items from arrays:
+                for (int i = 0; i < arrays.Length; i++)
+                {
+                    if (iterators[i].IsValid)
+                    {
+                        hasvalid = true;
+
+                        // note: deep copy is not necessary since a function copies its arguments if needed:
+                        args[i].Alias.Value = iterators[i].CurrentValue.GetValue();
+                        // TODO: throws if the current Value is PhpReference
+                    }
+                    else
+                    {
+                        args[i].Alias.Value = PhpValue.Null;
+                    }
+                }
+
+                if (!hasvalid) break;
+
+                // invokes callback:
+                var return_value = map.Invoke(ctx, args);
+
+                // return value is not deeply copied:
+                if (preserve_keys)
+                    result.Add(iterators[0].CurrentKey, return_value);
+                else
+                    result.Add(return_value);
+
+                // loads new values (callback may modify some by ref arguments):
+                for (int i = 0; i < arrays.Length; i++)
+                {
+                    if (iterators[i].IsValid)
+                    {
+                        var item = iterators[i].CurrentValue;
+                        if (item.IsAlias)
+                        {
+                            item.Alias.Value = args[i].Alias.Value;
+                        }
+                        else
+                        {
+                            iterators[i].CurrentValue = args[i].Alias.Value;
+                        }
+
+                        //
+                        iterators[i].MoveNext();
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region array_replace, array_replace_recursive
+
+        /// <summary>
+        /// array_replace() replaces the values of the first array with the same values from
+        /// all the following arrays. If a key from the first array exists in the second array,
+        /// its value will be replaced by the value from the second array. If the key exists in
+        /// the second array, and not the first, it will be created in the first array. If a key
+        /// only exists in the first array, it will be left as is. If several arrays are passed
+        /// for replacement, they will be processed in order, the later arrays overwriting the
+        /// previous values.
+        ///  
+        /// array_replace() is not recursive : it will replace values in the first array by
+        /// whatever type is in the second array. 
+        /// </summary>
+        /// <param name="array">The array in which elements are replaced. </param>
+        /// <param name="arrays">The arrays from which elements will be extracted. </param>
+        /// <returns>Deep copy of array with replacements. Returns an array, or NULL if an error occurs. </returns>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_replace([In, Out] PhpArray array, params PhpArray[] arrays)
+        {
+            return ArrayReplaceImpl(array, arrays, false);
+        }
+
+        /// <summary>
+        ///  array_replace_recursive() replaces the values of the first array with the same values
+        ///  from all the following arrays. If a key from the first array exists in the second array,
+        ///  its value will be replaced by the value from the second array. If the key exists in the
+        ///  second array, and not the first, it will be created in the first array. If a key only
+        ///  exists in the first array, it will be left as is. If several arrays are passed for
+        ///  replacement, they will be processed in order, the later array overwriting the previous
+        ///  values.
+        ///  
+        /// array_replace_recursive() is recursive : it will recurse into arrays and apply the same
+        /// process to the inner value.
+        /// 
+        /// When the value in array is scalar, it will be replaced by the value in array1, may it be
+        /// scalar or array. When the value in array and array1 are both arrays, array_replace_recursive()
+        /// will replace their respective value recursively. 
+        /// </summary>
+        /// <param name="array">The array in which elements are replaced. </param>
+        /// <param name="arrays">The arrays from which elements will be extracted.</param>
+        /// <returns>Deep copy of array with replacements. Returns an array, or NULL if an error occurs. </returns>
+        //[return: PhpDeepCopy]
+        public static PhpArray array_replace_recursive([In, Out] PhpArray array, params PhpArray[] arrays)
+        {
+            return ArrayReplaceImpl(array, arrays, true);
+        }
+
+        /// <remarks>Performs deep copy of array, return array with replacements.</remarks>
+        internal static PhpArray ArrayReplaceImpl(PhpArray array, PhpArray[] arrays, bool recursive)
+        {
+            PhpArray result = array.DeepCopy();
+
+            if (arrays != null)
+            {
+                for (int i = 0; i < arrays.Length; i++)
+                {
+                    ArrayReplaceImpl(result, arrays[i], recursive);
+                }
+            }
+
+            //// if called by PHP language then all items in the result should be in place deeply copied:
+            //result.InplaceCopyOnReturn = true;
+            return result;
+        }
+
+        /// <summary>
+        /// Performs replacements on deeply-copied array. Performs deep copies of replace values.
+        /// </summary>
+        internal static void ArrayReplaceImpl(PhpArray array, PhpArray replaceWith, bool recursive)
+        {
+            if (array != null && replaceWith != null)
+            {
+                var iterator = replaceWith.GetFastEnumerator();
+                while (iterator.MoveNext())
+                {
+                    PhpValue tmp;
+                    var entry = iterator.Current;
+                    if (recursive && entry.Value.IsArray && (tmp = array[entry.Key]).IsArray)
+                    {
+                        ArrayReplaceImpl(tmp.Array, entry.Value.Array, true);
+                    }
+                    else
+                    {
+                        array[entry.Key] = entry.Value.DeepCopy();
+                    }
+                }
+            }
         }
 
         #endregion
