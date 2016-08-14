@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -534,6 +535,334 @@ namespace Pchp.Library
 
         #region print_r, var_export, var_dump
 
+        #region IPhpVariableFormatter Implementation
+
+        class PrintFormatter : PhpVariableVisitor, IPhpVariableFormatter
+        {
+            readonly Context _ctx;
+            readonly string _nl;
+
+            PhpString _output;
+            int _indent;
+
+            const int IndentSize = 4;
+
+            void OutputIndent()
+            {
+                if (_indent > 0)
+                {
+                    _output.Append(new string(' ', _indent * IndentSize));
+                }
+            }
+
+            public PrintFormatter(Context ctx, string newline)
+            {
+                Debug.Assert(ctx != null);
+                _ctx = ctx;
+                _nl = newline;
+            }
+
+            public PhpString Serialize(PhpValue value)
+            {
+                _output = new PhpString();
+                _indent = 0;
+
+                //
+                Accept(value);
+                _output.Append(_nl);
+
+                return _output;
+            }
+
+            public override void Accept(bool obj) => _output.Append(obj ? "1" : string.Empty);
+
+            public override void Accept(long obj) => _output.Append(obj.ToString());
+
+            public override void Accept(double obj) => _output.Append(Core.Convert.ToString(obj, _ctx));
+
+            public override void Accept(string obj) => _output.Append(obj);
+
+            public override void Accept(PhpString obj) => _output.Append(obj);
+
+            public override void AcceptNull() { }
+
+            public override void Accept(PhpArray obj)
+            {
+                // Array
+                // (
+                _output.Append(PhpArray.PrintablePhpTypeName);
+                _output.Append(_nl);
+                OutputIndent();
+                _output.Append("(");
+                _output.Append(_nl);
+
+                _indent++;
+
+                base.Accept(obj);
+
+                _indent--;
+                OutputIndent();
+                _output.Append(")");
+            }
+
+            public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
+            {
+                // [key] => value
+                OutputIndent();
+
+                _output.Append($"[{entry.Key.ToString()}] => ");
+                _indent++;
+                Accept(entry.Value);
+                _indent--;
+
+                if (entry.Value.IsArray)
+                {
+                    _output.Append(_nl);
+                }
+
+                _output.Append(_nl);
+            }
+
+            public override void AcceptObject(object obj)
+            {
+                // typename Object
+                // (
+                _output.Append(obj.GetType().FullName.Replace('.', '\\').Replace('+', '\\') + " ");
+                _output.Append("Object");
+                _output.Append(_nl);
+                OutputIndent();
+                _output.Append("(");
+
+                _indent++;
+
+                // TODO: object members
+
+                _indent--;
+                _output.Append(")");
+            }
+        }
+
+        class ExportFormatter : PhpVariableVisitor, IPhpVariableFormatter
+        {
+            readonly Context _ctx;
+            readonly string _nl;
+
+            PhpString _output;
+            int _indent;
+
+            const int IndentSize = 2;
+
+            void OutputIndent()
+            {
+                if (_indent > 0)
+                {
+                    _output.Append(new string(' ', _indent * IndentSize));
+                }
+            }
+
+            public ExportFormatter(Context ctx, string newline)
+            {
+                Debug.Assert(ctx != null);
+                _ctx = ctx;
+                _nl = newline;
+            }
+
+            public PhpString Serialize(PhpValue value)
+            {
+                _output = new PhpString();
+                _indent = 0;
+
+                //
+                Accept(value);
+                return _output;
+            }
+
+            public override void Accept(bool obj) => _output.Append(obj ? PhpVariable.True : PhpVariable.False);
+
+            public override void Accept(long obj) => _output.Append(obj.ToString());
+
+            public override void Accept(double obj) => _output.Append(Core.Convert.ToString(obj, _ctx));
+
+            public override void Accept(string obj) => _output.Append($"'{obj}'");
+
+            public override void Accept(PhpString obj)
+            {
+                _output.Append("'");
+                _output.Append(obj);
+                _output.Append("'");
+            }
+
+            public override void AcceptNull() => _output.Append(PhpVariable.TypeNameNull);
+
+            public override void Accept(PhpArray obj)
+            {
+                // array (
+                _output.Append(PhpArray.PhpTypeName);
+                _output.Append(" (");
+                _output.Append(_nl);
+                
+                _indent++;
+
+                base.Accept(obj);
+
+                _indent--;
+                OutputIndent();
+                _output.Append(")");
+            }
+
+            public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
+            {
+                // [key] => value
+                OutputIndent();
+
+                Accept(PhpValue.Create(entry.Key));
+                _output.Append(" => ");
+                if (entry.Value.IsArray || entry.Value.IsObject && !entry.Value.IsNull)
+                {
+                    _output.Append(_nl);
+                    OutputIndent();
+                }
+                Accept(entry.Value);
+                
+                _output.Append(",");
+                _output.Append(_nl);
+            }
+
+            public override void AcceptObject(object obj)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        class DumpFormatter : PhpVariableVisitor, IPhpVariableFormatter
+        {
+            readonly Context _ctx;
+            readonly string _nl;
+
+            PhpString _output;
+            int _indent;
+
+            const int IndentSize = 2;
+
+            void OutputIndent()
+            {
+                if (_indent > 0)
+                {
+                    _output.Append(new string(' ', _indent * IndentSize));
+                }
+            }
+
+            public DumpFormatter(Context ctx, string newline)
+            {
+                Debug.Assert(ctx != null);
+                _ctx = ctx;
+                _nl = newline;
+            }
+
+            public PhpString Serialize(PhpValue value)
+            {
+                _output = new PhpString();
+                _indent = 0;
+
+                //
+                Accept(value);
+                _output.Append(_nl);
+
+                return _output;
+            }
+
+            public override void Accept(bool obj)
+            {
+                _output.Append(PhpVariable.TypeNameBool);
+                _output.Append("(");
+                _output.Append(obj ? PhpVariable.True : PhpVariable.False);
+                _output.Append(")");
+            }
+
+            public override void Accept(long obj)
+            {
+                _output.Append(PhpVariable.TypeNameInt);
+                _output.Append("(");
+                _output.Append(obj.ToString());
+                _output.Append(")");
+            }
+
+            public override void Accept(double obj)
+            {
+                _output.Append(PhpVariable.TypeNameFloat);
+                _output.Append("(");
+                _output.Append(Core.Convert.ToString(obj, _ctx));
+                _output.Append(")");
+            }
+
+            public override void Accept(string obj)
+            {
+                _output.Append(PhpVariable.TypeNameString);
+                _output.Append($"({obj.Length}) ");
+                _output.Append($"\"{obj}\"");
+            }
+
+            public override void Accept(PhpString obj)
+            {
+                _output.Append(PhpVariable.TypeNameString);
+                _output.Append($"({obj.Length}) ");
+                _output.Append("\"");
+                _output.Append(obj);
+                _output.Append("\"");
+            }
+
+            public override void Accept(PhpAlias obj)
+            {
+                _output.Append("&");
+                base.Accept(obj);
+            }
+
+            public override void AcceptNull() => _output.Append(PhpVariable.TypeNameNull);
+
+            public override void Accept(PhpArray obj)
+            {
+                // array (size=COUNT)
+                _output.Append(PhpArray.PhpTypeName);
+                _output.Append($"({obj.Count}) {{");
+                _output.Append(_nl);
+
+                _indent++;
+
+                base.Accept(obj);
+
+                _indent--;
+                OutputIndent();
+                _output.Append("}");
+            }
+
+            public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
+            {
+                // ikey => value
+                // 'skey' => value
+
+                OutputIndent();
+
+                _output.Append("[" + (entry.Key.IsString ? $"\"{entry.Key.String}\"" : entry.Key.Integer.ToString()) + "]");
+                _output.Append("=>");
+                _output.Append(_nl);
+                OutputIndent();
+                Accept(entry.Value);
+                _output.Append(_nl);
+            }
+
+            public override void AcceptObject(object obj)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        //class HtmlDumpFormatter : DumpFormatter
+        //{
+            
+        //}
+
+        #endregion
+
         /// <summary>
         /// Outputs or returns human-readable information about a variable. 
         /// </summary>
@@ -542,23 +871,19 @@ namespace Pchp.Library
         /// <returns>A string representation or <c>true</c> if <paramref name="returnString"/> is <c>false</c>.</returns>
         public static PhpValue print_r(Context ctx, PhpValue value, bool returnString = false)
         {
-            // TODO: IPhpPrintable
+            var output = (new PrintFormatter(ctx, "\n")).Serialize(value);
 
-            //if (returnString)
-            //{
-            //    // output to a string:
-            //    var output = new StringWriter();
-            //    //Print(output, value);
-            //    return PhpValue.Create(output.ToString());
-            //}
-            //else
-            //{
-            //    // output to script context:
-            //    //Print(ctx.Output, value);
-            //    return PhpValue.True;
-            //}
-
-            throw new NotImplementedException();
+            if (returnString)
+            {
+                // output to a string:
+                return PhpValue.Create(output);
+            }
+            else
+            {
+                // output to script context:
+                ctx.Echo(output);
+                return PhpValue.True;
+            }
         }
 
         /// <summary>
@@ -567,13 +892,11 @@ namespace Pchp.Library
         /// <param name="variables">Variables to be dumped.</param>
         public static void var_dump(Context ctx, params PhpValue[] variables)
         {
-            // TODO: IPhpPrintable
-
-            //TextWriter output = ctx.Output;
-            //foreach (object variable in variables)
-            //    PhpVariable.Dump(output, variable);
-
-            throw new NotImplementedException();
+            var formatter = new DumpFormatter(ctx, "\n"); // TODO: HtmlDumpFormatter
+            for (int i = 0; i < variables.Length; i++)
+            {
+                ctx.Echo(formatter.Serialize(variables[i]));
+            }
         }
 
         /// <summary>
@@ -584,24 +907,22 @@ namespace Pchp.Library
         /// <returns>A string representation or a <c>null</c> reference if <paramref name="returnString"/> is <c>false</c>.</returns>
         public static string var_export(Context ctx, PhpValue variable, bool returnString = false)
         {
-            // TODO: IPhpPrintable
+            var output = (new ExportFormatter(ctx, "\n")).Serialize(variable);
 
-            //if (returnString)
-            //{
-            //    // output to a string:
-            //    StringWriter output = new StringWriter();
-            //    PhpVariable.Export(output, variable);
-            //    return output.ToString();
-            //}
-            //else
-            //{
-            //    // output to script context:
-            //    PhpVariable.Export(ctx.Output, variable);
-            //    return null;
-            //}
-            throw new NotImplementedException();
+            if (returnString)
+            {
+                // output to a string:
+                return output.ToString(ctx);
+            }
+            else
+            {
+                // output to script context:
+                ctx.Echo(output);
+                return null;
+            }
 
         }
+
         #endregion
     }
 }

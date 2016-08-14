@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -67,6 +68,45 @@ namespace Pchp.Core
         /// <param name="caller">Type of the class in whose context the caller operates.</param>
         /// <returns>The dictionary enumerator.</returns>
         IPhpEnumerator GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller);
+    }
+
+    /// <summary>
+    /// Visitor implementation for a variable.
+    /// </summary>
+    /// <remarks>Used for serialization, printing, dumping.</remarks>
+    public class PhpVariableVisitor
+    {
+        public virtual void Accept(PhpValue obj) => obj.Accept(this);
+        public virtual void Accept(bool obj) { }
+        public virtual void Accept(long obj) { }
+        public virtual void Accept(double obj) { }
+        public virtual void Accept(string obj) { }
+        public virtual void Accept(PhpString obj) { }
+        public virtual void Accept(PhpArray obj)
+        {
+            var iterator = obj.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                AcceptArrayItem(iterator.Current);
+            }
+        }
+        public virtual void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry) => Accept(entry.Value);
+        public virtual void Accept(PhpAlias obj) => Accept(obj.Value);
+        public virtual void AcceptObject(object obj) { }
+        public virtual void AcceptNull() { }
+    }
+
+    /// <summary>
+    /// Provides method for serializing a variable into a stream.
+    /// </summary>
+    /// <remarks>Used for dumping, printing, export, serialization.</remarks>
+    public interface IPhpVariableFormatter
+    {
+        /// <summary>
+        /// Serializes a <paramref name="value"/> into a string (unicode or binary).
+        /// </summary>
+        /// <param name="value">Value to be serialized.</param>
+        PhpString Serialize(PhpValue value);
     }
 
     public class PhpVariable
@@ -189,6 +229,9 @@ namespace Pchp.Core
                 case PhpTypeCode.String:
                 case PhpTypeCode.WritableString:
                     return true;
+
+                case PhpTypeCode.Alias:
+                    return IsScalar(variable.Alias.Value);
 
                 default:
                     return false;

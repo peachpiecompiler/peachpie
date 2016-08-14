@@ -18,5 +18,10 @@ namespace Pchp.Core
         /// Gets number format used for converting <see cref="double"/> to <see cref="string"/>.
         /// </summary>
         public virtual NumberFormatInfo NumberFormat => NumberFormatInfo.InvariantInfo;
+
+        /// <summary>
+        /// Gets value indicating whether the application is a web application.
+        /// </summary>
+        public virtual bool IsWebApplication => false;
     }
 }

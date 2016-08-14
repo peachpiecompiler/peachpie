@@ -65,6 +65,11 @@ namespace Pchp.Core
         public override string RootPath => HttpRuntime.AppDomainAppPath;
 
         /// <summary>
+        /// Web application.
+        /// </summary>
+        public override bool IsWebApplication => true;
+
+        /// <summary>
         /// Includes requested script file.
         /// </summary>
         public void Include(HttpRequest req) => Include(string.Empty, req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length), false, true);

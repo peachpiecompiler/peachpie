@@ -293,6 +293,11 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Calls corresponding <c>Accept</c> method on visitor.
+        /// </summary>
+        public void Accept(PhpVariableVisitor visitor) => _type.Accept(ref this, visitor);
+
         #endregion
 
         #region IEquatable<PhpValue>

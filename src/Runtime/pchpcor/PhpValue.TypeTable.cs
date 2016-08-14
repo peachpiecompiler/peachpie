@@ -120,6 +120,12 @@ namespace Pchp.Core
             /// Debug textual representation of the value.
             /// </summary>
             public abstract string DisplayString(ref PhpValue me);
+
+            /// <summary>
+            /// Calls corresponding <c>Accept</c> method on visitor.
+            /// </summary>
+            /// <param name="visitor">Visitor to be called. Cannot be <c>null</c>.</param>
+            public abstract void Accept(ref PhpValue me, PhpVariableVisitor visitor);
         }
 
         class NullTable : TypeTable
@@ -155,6 +161,7 @@ namespace Pchp.Core
             }
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptNull();
         }
 
         sealed class VoidTable : NullTable
@@ -186,6 +193,7 @@ namespace Pchp.Core
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Long);
         }
 
         sealed class DoubleTable : TypeTable
@@ -211,6 +219,7 @@ namespace Pchp.Core
             public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Double);
         }
 
         sealed class BoolTable : TypeTable
@@ -254,6 +263,7 @@ namespace Pchp.Core
             }
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Boolean ? PhpVariable.True : PhpVariable.False;
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Boolean);
         }
 
         sealed class StringTable : TypeTable
@@ -303,6 +313,7 @@ namespace Pchp.Core
             public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.String);
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.String);
         }
 
         sealed class WritableStringTable : TypeTable
@@ -359,6 +370,7 @@ namespace Pchp.Core
             public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.WritableString.ToString());
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.WritableString);
         }
 
         sealed class ClassTable : TypeTable
@@ -419,6 +431,7 @@ namespace Pchp.Core
                 throw new NotImplementedException();    // return PhpCallback.Create(obj);
             }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptObject(me.Object);
         }
 
         sealed class ArrayTable : TypeTable
@@ -464,6 +477,7 @@ namespace Pchp.Core
                 }
             }
             public override string DisplayString(ref PhpValue me) => $"array(length = {me.Array.Count})";
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Array);
         }
 
         sealed class AliasTable : TypeTable
@@ -488,6 +502,7 @@ namespace Pchp.Core
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
             public override IPhpCallable AsCallable(ref PhpValue me) => me.Alias.Value.AsCallable();
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Alias);
         }
     }
 }
