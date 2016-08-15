@@ -535,7 +535,7 @@ namespace Pchp.Library
 
         #region print_r, var_export, var_dump
 
-        #region IPhpVariableFormatter Implementation
+        #region PrintFormatter (print_r)
 
         class PrintFormatter : PhpVariableVisitor, IPhpVariableFormatter
         {
@@ -642,6 +642,10 @@ namespace Pchp.Library
             }
         }
 
+        #endregion
+
+        #region ExportFormatter (var_export)
+
         class ExportFormatter : PhpVariableVisitor, IPhpVariableFormatter
         {
             readonly Context _ctx;
@@ -733,6 +737,10 @@ namespace Pchp.Library
                 throw new NotImplementedException();
             }
         }
+
+        #endregion
+
+        #region DumpFormatter (var_dump)
 
         class DumpFormatter : PhpVariableVisitor, IPhpVariableFormatter
         {
@@ -858,7 +866,7 @@ namespace Pchp.Library
 
         //class HtmlDumpFormatter : DumpFormatter
         //{
-            
+
         //}
 
         #endregion
