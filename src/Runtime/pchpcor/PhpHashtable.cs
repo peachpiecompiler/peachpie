@@ -121,7 +121,9 @@ namespace Pchp.Core
         internal void EnsureWritable()
         {
             if (table.IsShared)
+            {
                 Unshare();
+            }
         }
 
         private void Unshare()

@@ -1933,7 +1933,9 @@ namespace Pchp.Core
             {
                 var _entries = this.entries;
                 for (var p = this.listHead; p >= 0; p = _entries[p].listNext)
+                {
                     _deep_copy_entry_value(ref _entries[p], oldref, newref);
+                }
             }
         }
 
@@ -1968,8 +1970,6 @@ namespace Pchp.Core
             Debug.Assert(array != null, "array == null");
             Debug.Assert(array.table == this, "array.table != this");
 
-            PhpAlias valueref;
-
             var _entries = this.entries;
             var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
             for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
@@ -1978,7 +1978,7 @@ namespace Pchp.Core
                     var value = _entries[p]._value;
                     if (value.IsAlias)
                     {
-                        valueref = value.Alias;
+                        return value.Alias;
 
                         //// if valueref references the array itself, array must be lazily copied:
                         //if (this.IsShared && valueref.Value.Object == this.owner)
@@ -2004,15 +2004,12 @@ namespace Pchp.Core
                         }
 
                         // wrap _entries[p].Value into PhpAlias
-                        valueref = _entries[p]._value.EnsureAlias();
+                        return _entries[p]._value.EnsureAlias();
                     }
-
-                    //
-                    return valueref;
                 }
 
             // not found, create new item:
-            valueref = new PhpAlias(PhpValue.Void);
+            var valueref = new PhpAlias(PhpValue.Void);
             array.Add(key, PhpValue.Create(valueref));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
             return valueref;
         }
@@ -2029,39 +2026,24 @@ namespace Pchp.Core
             Debug.Assert(array != null, "array == null");
             Debug.Assert(array.table == this, "array.table != this");
 
-            object valueobj;
-
             var _entries = this.entries;
             var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
             for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
                 if (_entries[p].KeyEquals(ref key))
                 {
-                    var value = _entries[p]._value;
-
-                    if (value.IsObject && value.Object != null)
+                    if (this.IsShared)
                     {
-                        valueobj = value.Object;
-                    }
-                    else
-                    {
-                        // make the value array:
-                        if (this.IsShared)
-                        {
-                            // we have to unshare this, so we can modify the content:
-                            array.EnsureWritable();
-                            // "this" is not "array.table" anymore!
-                            _entries = array.table.entries;
-                        }
-
-                        valueobj = _entries[p]._value.EnsureObject();
+                        // we have to unshare this, so we can modify the content:
+                        array.EnsureWritable();
+                        // "this" is not "array.table" anymore!
+                        _entries = array.table.entries;
                     }
 
-                    //
-                    return valueobj;
+                    return _entries[p]._value.EnsureObject();
                 }
 
             // not found, create new item:
-            valueobj = new stdClass();
+            var valueobj = new stdClass();
             array.Add(key, PhpValue.FromClass(valueobj));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
             return valueobj;
         }
@@ -2077,41 +2059,26 @@ namespace Pchp.Core
             Debug.Assert(array != null, "array == null");
             Debug.Assert(array.table == this, "array.table != this");
 
-            PhpArray valuearray;
-
             var _entries = this.entries;
             var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
             for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
                 if (_entries[p].KeyEquals(ref key))
                 {
-                    var value = _entries[p]._value;
-
-                    if (value.IsArray)
+                    if (this.IsShared)
                     {
-                        valuearray = value.Array;
-                    }
-                    else
-                    {
-                        // make the value array:
-                        if (this.IsShared)
-                        {
-                            // we have to unshare this, so we can modify the content:
-                            array.EnsureWritable();
-                            // "this" is not "array.table" anymore!
-                            _entries = array.table.entries;
-                        }
-
-                        valuearray = _entries[p]._value.EnsureArray();
+                        // we have to unshare this, so we can modify the content:
+                        array.EnsureWritable();
+                        // "this" is not "array.table" anymore!
+                        _entries = array.table.entries;
                     }
 
-                    //
-                    return valuearray;
+                    return _entries[p]._value.EnsureArray();
                 }
 
             // not found, create new item:
-            valuearray = new PhpArray();
-            array.Add(key, PhpValue.Create(valuearray));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
-            return valuearray;
+            var newarr = new PhpArray();
+            array.Add(key, PhpValue.Create(newarr));    // we have to adjust maxIntKey and make the array writable; do not call _add_last directly
+            return newarr;
         }
 
         #endregion
