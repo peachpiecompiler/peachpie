@@ -2666,7 +2666,6 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            string skey;
             PhpArray result = new PhpArray(array.Count);
 
             var iterator = array.GetFastEnumerator();
