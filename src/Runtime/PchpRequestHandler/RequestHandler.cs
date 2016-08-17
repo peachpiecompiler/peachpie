@@ -28,7 +28,7 @@ namespace Pchp.Core
             // disables ASP.NET timeout if possible:
             try { context.Server.ScriptTimeout = Int32.MaxValue; } catch (HttpException) { }
 #endif
-            var phpctx = new RequestContext(context);
+            var phpctx = new RequestContextAspNet(context);
 
             try
             {

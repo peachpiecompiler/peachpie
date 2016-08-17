@@ -81,7 +81,7 @@ namespace Pchp.Core
         /// <summary>
         /// Manages map of known scripts and bit array of already included.
         /// </summary>
-        class ScriptsMap
+        protected class ScriptsMap
         {
             readonly ElasticBitArray array = new ElasticBitArray(_scriptsMap.Count);
 
@@ -126,7 +126,7 @@ namespace Pchp.Core
                 return _scripts[idx - 1];
             }
 
-            public ScriptInfo GetScript(string path)
+            public static ScriptInfo GetDeclaredScript(string path)
             {
                 int index;
 
@@ -138,6 +138,8 @@ namespace Pchp.Core
 
                 return _scripts[index];
             }
+
+            public ScriptInfo GetScript(string path) => GetDeclaredScript(path);
 
             static int EnsureIndex<TScript>(ref int script_id)
             {

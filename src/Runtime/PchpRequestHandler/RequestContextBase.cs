@@ -13,11 +13,11 @@ namespace Pchp.Core
     /// <summary>
     /// Script context for web requests.
     /// </summary>
-    class RequestContext : Context
+    class RequestContextBase : Context
     {
         #region .cctor
 
-        static RequestContext()
+        static RequestContextBase()
         {
             // load referenced scripts:
 
@@ -45,14 +45,9 @@ namespace Pchp.Core
 
         #region Construction
 
-        public RequestContext(HttpContext context)
+        public RequestContextBase()
             :base()
         {
-            Debug.Assert(HttpRuntime.UsingIntegratedPipeline);
-
-            this.SetProperty(context);
-            this.InitOutput(context.Response.OutputStream);
-            
             // TODO: set superglobal variables as expected within a web server
             // TODO: start session if AutoStart is On
         }
@@ -60,18 +55,8 @@ namespace Pchp.Core
         #endregion
 
         /// <summary>
-        /// Application physical root directory including trailing slash.
-        /// </summary>
-        public override string RootPath => HttpRuntime.AppDomainAppPath;
-
-        /// <summary>
         /// Web application.
         /// </summary>
         public override bool IsWebApplication => true;
-
-        /// <summary>
-        /// Includes requested script file.
-        /// </summary>
-        public void Include(HttpRequest req) => Include(string.Empty, req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length), false, true);
     }
 }
