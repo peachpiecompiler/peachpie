@@ -45,9 +45,11 @@ namespace Pchp.Core
 
         #region Construction
 
-        public RequestContextBase()
+        public RequestContextBase(Stream output)
             :base()
         {
+            this.InitOutput(output);
+
             // TODO: set superglobal variables as expected within a web server
             // TODO: start session if AutoStart is On
         }

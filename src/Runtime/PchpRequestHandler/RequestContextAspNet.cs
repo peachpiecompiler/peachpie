@@ -16,11 +16,9 @@ namespace Pchp.Core
         public override string RootPath => HttpRuntime.AppDomainAppPath;
 
         public RequestContextAspNet(HttpContext context)
-            : base()
+            : base(context.Response.OutputStream)
         {
             Debug.Assert(HttpRuntime.UsingIntegratedPipeline);
-
-            this.InitOutput(context.Response.OutputStream);
         }
 
         /// <summary>

@@ -39,9 +39,8 @@ namespace Pchp.Core
         //public override string RootPath => HttpRuntime.AppDomainAppPath;
 
         public RequestContextCore(HttpContext context)
-            : base()
+            : base(context.Response.Body)
         {
-            this.InitOutput(context.Response.Body);
         }
 
         public override Encoding StringEncoding => Encoding.UTF8;
