@@ -120,6 +120,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (assembly.AssemblyReferences.Length == 0 && assembly.DeclaresTheObjectClass)
                 _specialAssembly = SpecialAssembly.CorLibrary;
+            else if (assembly.Identity.Name == "System.Runtime")
+                _specialAssembly = SpecialAssembly.CorLibrary;
             else if (assembly.Identity.Name == "pchpcor")
             {
                 _specialAssembly = SpecialAssembly.PchpCorLibrary;

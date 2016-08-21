@@ -337,8 +337,62 @@ namespace Pchp.CodeAnalysis.Symbols
                 result = scope.LookupMetadataType(ref emittedName);
             }
 
-            Debug.Assert((object)result != null);
+            Debug.Assert(result != null);
             return result;
+        }
+
+        private NamedTypeSymbol GetTypeSymbolForWellKnownType(WellKnownType type)
+        {
+            MetadataTypeName emittedName = MetadataTypeName.FromFullName(type.GetMetadataName(), useCLSCompliantNameArityEncoding: true);
+            // First, check this module
+            NamedTypeSymbol currentModuleResult = this.LookupTopLevelMetadataType(ref emittedName);
+
+            if (IsAcceptableSystemTypeSymbol(currentModuleResult))
+            {
+                // It doesn't matter if there's another of this type in a referenced assembly -
+                // we prefer the one in the current module.
+                return currentModuleResult;
+            }
+
+            // If we didn't find it in this module, check the referenced assemblies
+            NamedTypeSymbol referencedAssemblyResult = null;
+            foreach (AssemblySymbol assembly in this.ReferencedAssemblySymbols)
+            {
+                NamedTypeSymbol currResult = assembly.LookupTopLevelMetadataType(ref emittedName, digThroughForwardedTypes: true);
+                if (IsAcceptableSystemTypeSymbol(currResult))
+                {
+                    if ((object)referencedAssemblyResult == null)
+                    {
+                        referencedAssemblyResult = currResult;
+                    }
+                    else
+                    {
+                        // CONSIDER: setting result to null will result in a MissingMetadataTypeSymbol 
+                        // being returned.  Do we want to differentiate between no result and ambiguous
+                        // results?  There doesn't seem to be an existing error code for "duplicate well-
+                        // known type".
+                        if (referencedAssemblyResult != currResult)
+                        {
+                            referencedAssemblyResult = null;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if ((object)referencedAssemblyResult != null)
+            {
+                Debug.Assert(IsAcceptableSystemTypeSymbol(referencedAssemblyResult));
+                return referencedAssemblyResult;
+            }
+
+            Debug.Assert((object)currentModuleResult != null);
+            return currentModuleResult;
+        }
+
+        private static bool IsAcceptableSystemTypeSymbol(NamedTypeSymbol candidate)
+        {
+            return candidate.Kind != SymbolKind.ErrorType || !(candidate is MissingMetadataTypeSymbol);
         }
 
         /// <summary>

@@ -108,38 +108,5 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </returns>
         /// <remarks></remarks>
         internal abstract NamedTypeSymbol LookupTopLevelMetadataType(ref MetadataTypeName emittedName);
-
-        internal AssemblyReferenceHandle GetAssemblyForForwardedType(string fullName, bool ignoreCase, out string matchedName)
-        {
-            //EnsureForwardTypeToAssemblyMap();
-
-            //if (ignoreCase)
-            //{
-            //    // This linear search is not the optimal way to use a hashmap, but we should only use
-            //    // this functionality when computing diagnostics.  Note
-            //    // that we can't store the map case-insensitively, since real metadata name
-            //    // lookup has to remain case sensitive.
-            //    foreach (var pair in _lazyForwardedTypesToAssemblyMap)
-            //    {
-            //        if (string.Equals(pair.Key, fullName, StringComparison.OrdinalIgnoreCase))
-            //        {
-            //            matchedName = pair.Key;
-            //            return pair.Value;
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    AssemblyReferenceHandle assemblyRef;
-            //    if (_lazyForwardedTypesToAssemblyMap.TryGetValue(fullName, out assemblyRef))
-            //    {
-            //        matchedName = fullName;
-            //        return assemblyRef;
-            //    }
-            //}
-
-            matchedName = null;
-            return default(AssemblyReferenceHandle);
-        }
     }
 }

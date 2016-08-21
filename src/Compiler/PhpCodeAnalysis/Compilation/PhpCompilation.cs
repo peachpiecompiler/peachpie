@@ -319,6 +319,27 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Return a list of assembly symbols than can be accessed without using an alias.
+        /// For example:
+        ///   1) /r:A.dll /r:B.dll -> A, B
+        ///   2) /r:Foo=A.dll /r:B.dll -> B
+        ///   3) /r:Foo=A.dll /r:A.dll -> A
+        /// </summary>
+        internal void GetUnaliasedReferencedAssemblies(ArrayBuilder<AssemblySymbol> assemblies)
+        {
+            var referenceManager = GetBoundReferenceManager();
+            var referencedAssemblies = referenceManager.GetReferencedAssemblies().ToArray();
+
+            for (int i = 0; i < referencedAssemblies.Length; i++)
+            {
+                //if (referenceManager.DeclarationsAccessibleWithoutAlias(i))
+                {
+                    assemblies.Add((AssemblySymbol)referencedAssemblies[i].Value);
+                }
+            }
+        }
+
         protected override void AppendDefaultVersionResource(Stream resourceStream)
         {
             var sourceAssembly = SourceAssembly;
