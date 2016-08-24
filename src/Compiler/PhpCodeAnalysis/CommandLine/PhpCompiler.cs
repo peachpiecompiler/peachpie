@@ -19,12 +19,12 @@ namespace Pchp.CodeAnalysis.CommandLine
     /// </summary>
     internal class PhpCompiler : CommonCompiler
     {
-        internal const string ResponseFileName = "pchp.rsp";
+        internal const string ResponseFileName = "php.rsp";
 
         protected internal new PhpCommandLineArguments Arguments { get { return (PhpCommandLineArguments)base.Arguments; } }
 
-        public PhpCompiler(CommandLineParser parser, string responseFile, string[] args, string clientDirectory, string baseDirectory, string additionalReferenceDirectories, IAnalyzerAssemblyLoader analyzerLoader)
-            :base(parser, responseFile, args, clientDirectory, baseDirectory, null, additionalReferenceDirectories, analyzerLoader)
+        public PhpCompiler(CommandLineParser parser, string responseFile, string[] args, string clientDirectory, string baseDirectory, string sdkDirectory, string additionalReferenceDirectories, IAnalyzerAssemblyLoader analyzerLoader)
+            :base(parser, responseFile, args, clientDirectory, baseDirectory, sdkDirectory, additionalReferenceDirectories, analyzerLoader)
         {
 
         }

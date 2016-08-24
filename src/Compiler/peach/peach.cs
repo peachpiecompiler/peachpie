@@ -17,6 +17,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                  args,
                  AppDomain.CurrentDomain.BaseDirectory,
                  Directory.GetCurrentDirectory(),
+                 System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(),
                  Environment.GetEnvironmentVariable("LIB"),
                  analyzerLoader)
         {
