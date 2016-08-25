@@ -201,8 +201,9 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (t.Symbol == null)
                 {
-                    var symbol = coreass.GetTypeByMetadataName(t.FullName);
-                    if (symbol != null)
+                    var mdname = MetadataTypeName.FromFullName(t.FullName, false); ;
+                    var symbol = coreass.LookupTopLevelMetadataType(ref mdname, true);
+                    if (symbol != null && !symbol.IsErrorType())
                     {
                         _typetable[symbol] = t;
                         t.Update(symbol);

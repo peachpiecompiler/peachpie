@@ -48,6 +48,9 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool emitPdb = false, debugPlus = false;
             string mainTypeName = null, pdbPath = null;
             DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
+            List<string> referencePaths = new List<string>();
+            if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
+            if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
 
             foreach (string arg in flattenedArgs)
             {
@@ -224,13 +227,14 @@ namespace Pchp.CodeAnalysis.CommandLine
             (
                 outputKind: outputKind,
                 baseDirectory: baseDirectory,
+                sdkDirectory: sdkDirectoryOpt,
                 moduleName: moduleName,
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 checkOverflow: false, // checkOverflow,
-                                    //deterministic: deterministic,
+                                      //deterministic: deterministic,
                 concurrentBuild: false, //concurrentBuild,  // TODO: true in Release
                                         //cryptoKeyContainer: keyContainerSetting,
                                         //cryptoKeyFile: keyFileSetting,
@@ -284,7 +288,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 MetadataReferences = metadataReferences.AsImmutable(),
                 AnalyzerReferences = analyzers.AsImmutable(),
                 AdditionalFiles = additionalFiles.AsImmutable(),
-                ReferencePaths = ImmutableArray<string>.Empty, //referencePaths,
+                ReferencePaths = referencePaths.AsImmutable(),
                 SourcePaths = ImmutableArray<string>.Empty, //sourcePaths.AsImmutable(),
                 //KeyFileSearchPaths = keyFileSearchPaths.AsImmutable(),
                 //Win32ResourceFile = win32ResourceFile,

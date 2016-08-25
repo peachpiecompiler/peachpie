@@ -213,24 +213,28 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 mdName = MetadataTypeName.FromFullName(metadataName, useCLSCompliantNameArityEncoding);
                 //type = GetTopLevelTypeByMetadataName(ref mdName, assemblyOpt: null, includeReferences: includeReferences, isWellKnownType: isWellKnownType, warnings: warnings);
+                type = LookupTopLevelMetadataType(ref mdName, true);
+                if (includeReferences && (type == null || type.IsErrorType()))
+                {
+                    type = null;
 
-                var assemblies = new HashSet<AssemblySymbol>() { this };
-
-                if (includeReferences)
+                    var assemblies = new HashSet<AssemblySymbol>() { this };
                     assemblies.UnionWith(this.DeclaringCompilation.GetBoundReferenceManager().GetReferencedAssemblies().Select(x => (AssemblySymbol)x.Value));
 
-                foreach (var ass in assemblies)
-                {
-                    var t = ass.GlobalNamespace.GetTypeMembers(mdName.FullName, mdName.ForcedArity);
-                    if (!t.IsDefaultOrEmpty)
+                    foreach (var ass in assemblies)
                     {
-                        if ((object)type != null || t.Length > 1)
+                        var t = ass.LookupTopLevelMetadataType(ref mdName, true);
+                        if (t != null && !t.IsErrorType())
                         {
-                            // TODO: ambiguity
-                            return null;
-                        }
+                            if ((object)type != null && type.ContainingAssembly != t.ContainingAssembly)
+                            {
+                                // TODO: ambiguity
+                                Debug.Assert(false, "ambiguity");
+                                return null;
+                            }
 
-                        type = (NamedTypeSymbol)t[0];
+                            type = (NamedTypeSymbol)t;
+                        }
                     }
                 }
             }

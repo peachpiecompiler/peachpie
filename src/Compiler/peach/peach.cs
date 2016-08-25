@@ -14,14 +14,30 @@ namespace Pchp.CodeAnalysis.CommandLine
             :base(
                  PhpCommandLineParser.Default,
                  Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ResponseFileName),
-                 args,
+                 CreateArgs(args),
                  AppDomain.CurrentDomain.BaseDirectory,
                  Directory.GetCurrentDirectory(),
                  System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(),
-                 Environment.GetEnvironmentVariable("LIB"),
+                 Environment.GetEnvironmentVariable("LIB") + @";C:\Windows\Microsoft.NET\assembly\GAC_MSIL",
                  analyzerLoader)
         {
             
+        }
+
+        static string[] CreateArgs(string[] args)
+        {
+            var basedir = AppDomain.CurrentDomain.BaseDirectory;
+            var list = new List<string>()
+            {
+                "/r:" + @"C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Runtime\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Runtime.dll",
+                "/r:" + @"C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Core\v4.0_4.0.0.0__b77a5c561934e089\System.Core.dll",
+                "/r:" + Path.Combine(basedir, "pchpcor.dll"),
+                "/r:" + Path.Combine(basedir, "pchplib.dll")
+            };
+
+            //
+            list.AddRange(args);
+            return list.ToArray();
         }
     }
 }

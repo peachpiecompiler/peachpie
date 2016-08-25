@@ -100,7 +100,7 @@ namespace Pchp.CodeAnalysis
             _wellKnownMemberSignatureComparer = new WellKnownMembersSignatureComparer(this);
 
             _options = options;
-            _referenceManager = new ReferenceManager();
+            _referenceManager = new ReferenceManager(options.SdkDirectory);
             _tables = new SourceDeclarations();
             _coreTypes = new CoreTypes(this);
             _coreMethods = new CoreMethods(_coreTypes);

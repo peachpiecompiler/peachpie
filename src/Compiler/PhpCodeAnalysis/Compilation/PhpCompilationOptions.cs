@@ -22,6 +22,12 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public string BaseDirectory { get; private set; }
 
+        /// <summary>
+        /// Compilation root directory.
+        /// All script paths will be emitted relatively to this path.
+        /// </summary>
+        public string SdkDirectory { get; private set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -33,6 +39,7 @@ namespace Pchp.CodeAnalysis
         public PhpCompilationOptions(
             OutputKind outputKind,
             string baseDirectory,
+            string sdkDirectory,
             bool reportSuppressedDiagnostics = false,
             string moduleName = null,
             string mainTypeName = null,
@@ -55,7 +62,7 @@ namespace Pchp.CodeAnalysis
             AssemblyIdentityComparer assemblyIdentityComparer = null,
             StrongNameProvider strongNameProvider = null,
             bool publicSign = false)
-            : this(outputKind, baseDirectory,
+            : this(outputKind, baseDirectory, sdkDirectory,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    optimizationLevel, checkOverflow,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, platform,
@@ -77,6 +84,7 @@ namespace Pchp.CodeAnalysis
         internal PhpCompilationOptions(
             OutputKind outputKind,
             string baseDirectory,
+            string sdkDirectory,
             bool reportSuppressedDiagnostics,
             string moduleName,
             string mainTypeName,
@@ -110,11 +118,13 @@ namespace Pchp.CodeAnalysis
                    strongNameProvider, metadataImportOptions)
         {
             this.BaseDirectory = baseDirectory;
+            this.SdkDirectory = sdkDirectory;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
             outputKind: other.OutputKind,
             baseDirectory: other.BaseDirectory,
+            sdkDirectory: other.SdkDirectory,
             moduleName: other.ModuleName,
             mainTypeName: other.MainTypeName,
             scriptClassName: other.ScriptClassName,

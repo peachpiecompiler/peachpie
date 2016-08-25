@@ -23,6 +23,8 @@ namespace Pchp.CodeAnalysis
 
             readonly Dictionary<AssemblyIdentity, PEAssemblySymbol> _assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
 
+            readonly string _sdkdir;
+
             /// <summary>
             /// COR library containing base system types.
             /// </summary>
@@ -64,32 +66,48 @@ namespace Pchp.CodeAnalysis
             {
                 get
                 {
-                    // TODO: mscorlib + System.Core as System.Runtime + type forwards
+                    //// TODO: mscorlib + System.Core as System.Runtime + type forwards
 
-                    // mscorlib
-                    yield return @"mscorlib";
+                    //// mscorlib
+                    //yield return @"mscorlib";
 
-                    // System.Core // 
-                    yield return @"System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+                    //// System.Core // 
+                    //yield return @"System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
 
-                    // pchpcor
-                    yield return @"pchpcor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";
+                    //// pchpcor
+                    //yield return @"pchpcor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";
 
-                    // pchplib
-                    yield return @"pchplib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";
+                    //// pchplib
+                    //yield return @"pchplib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";
+                    yield break;
                 }
             }
 
-            PEAssemblySymbol CreateAssemblyFromIdentity(MetadataReferenceResolver resolver, AssemblyIdentity identity, string basepath, List<PEModuleSymbol> modules)
+            public ReferenceManager(string sdkDir)
+            {
+                _sdkdir = sdkDir;
+            }
+
+            PEAssemblySymbol CreateAssemblyFromIdentity(MetadataReferenceResolver resolver, AssemblyIdentity identity, string basePath, List<PEModuleSymbol> modules)
             {
                 PEAssemblySymbol ass;
                 if (!_assembliesMap.TryGetValue(identity, out ass))
                 {
-                    var pe = resolver.ResolveReference(identity.GetDisplayName(), basepath, new MetadataReferenceProperties())[0];
-                    
-                    _assembliesMap[identity] = ass = PEAssemblySymbol.Create(pe);
-                    ass.SetCorLibrary(_lazyCorLibrary);
-                    modules.AddRange(ass.Modules.Cast<PEModuleSymbol>());
+                    string keytoken = string.Join("", identity.PublicKeyToken.Select(b => b.ToString("x2")));
+                    var pes = resolver.ResolveReference(identity.Name + ".dll", basePath, MetadataReferenceProperties.Assembly)
+                        .Concat(resolver.ResolveReference($"{identity.Name}/v4.0_{identity.Version}__{keytoken}/{identity.Name}.dll", basePath, MetadataReferenceProperties.Assembly));
+
+                    var pe = pes.FirstOrDefault();
+                    if (pe != null)
+                    {
+                        _assembliesMap[identity] = ass = PEAssemblySymbol.Create(pe);
+                        ass.SetCorLibrary(_lazyCorLibrary);
+                        modules.AddRange(ass.Modules.Cast<PEModuleSymbol>());
+                    }
+                    else
+                    {
+                        throw new DllNotFoundException(identity.GetDisplayName());
+                    }
                 }
 
                 return ass;

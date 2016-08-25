@@ -10,8 +10,9 @@ namespace Pchp.CodeAnalysis.CommandLine
     {
         static int Main(string[] args)
         {
-            var compiler = new Pchp(args, new SimpleAnalyzerAssemblyLoader());
-            return compiler.Run(Console.Out);
+            return
+                new Pchp(args, new SimpleAnalyzerAssemblyLoader())
+                .Run(Console.Out);
         }
     }
 }

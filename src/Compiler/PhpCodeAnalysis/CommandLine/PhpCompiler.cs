@@ -87,7 +87,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 return null;
             }
 
-            var referenceResolver = new AssemblyIdentityReferenceResolver(GetCommandLineMetadataReferenceResolver(touchedFilesLogger));
+            var referenceResolver = GetCommandLineMetadataReferenceResolver(touchedFilesLogger);
             var strongNameProvider = new LoggingStrongNameProvider(Arguments.KeyFileSearchPaths, touchedFilesLogger);
 
             var compilation = PhpCompilation.Create(
