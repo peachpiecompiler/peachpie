@@ -69,6 +69,7 @@
     <Compile Include="CodeGen\Symbols\SourceNamedTypeSymbol.cs" />
     <Compile Include="CodeGen\Symbols\SourceRoutineSymbol.cs" />
     <Compile Include="CodeGen\Symbols\SynthesizedStaticFieldsHolder.cs" />
+    <Compile Include="CommandLine\PhpCompilerDriver.cs" />
     <Compile Include="Compilation\PEModuleBuilder.cs" />
     <Compile Include="Compilation\SourceCompiler.cs" />
     <Compile Include="Emitter\Model\ArrayTypeSymbolAdapter.cs" />

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
-    internal sealed class PhpCommandLineParser : CommandLineParser
+    public sealed class PhpCommandLineParser : CommandLineParser
     {
         public static PhpCommandLineParser Default { get; } = new PhpCommandLineParser();
 
