@@ -24,6 +24,30 @@ namespace Pchp.CodeAnalysis.CommandLine
         {
         }
 
+        static bool TryParseOption2(string arg, out string name, out string value)
+        {
+            // additional support for "--argument:value"
+            // TODO: remove once implemented in CodeAnalysis
+            var colon = arg.IndexOf(':');
+            if (arg.StartsWith("--"))
+            {
+                if (colon > 0)
+                {
+                    name = arg.Substring(2, colon - 2).ToLowerInvariant();
+                    value = arg.Substring(colon + 1);
+                }
+                else
+                {
+                    name = arg.Substring(2).ToLowerInvariant();
+                    value = null;
+                }
+                return true;
+            }
+
+            //
+            return TryParseOption(arg, out name, out value);
+        }
+
         internal override CommandLineArguments CommonParse(IEnumerable<string> args, string baseDirectory, string sdkDirectoryOpt, string additionalReferenceDirectories)
         {
             List<Diagnostic> diagnostics = new List<Diagnostic>();
@@ -45,9 +69,9 @@ namespace Pchp.CodeAnalysis.CommandLine
             OutputKind outputKind = OutputKind.ConsoleApplication;
             bool optionsEnded = false;
             bool displayHelp = false, displayLogo = true;
-            bool emitPdb = false, debugPlus = false;
+            bool emitPdb = true, debugPlus = false;
             string mainTypeName = null, pdbPath = null;
-            DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
+            DebugInformationFormat debugInformationFormat = DebugInformationFormat.PortablePdb; // DebugInformationFormat.Pdb;
             List<string> referencePaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
@@ -57,7 +81,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 Debug.Assert(optionsEnded || !arg.StartsWith("@", StringComparison.Ordinal));
 
                 string name, value;
-                if (optionsEnded || !TryParseOption(arg, out name, out value))
+                if (optionsEnded || !TryParseOption2(arg, out name, out value))
                 {
                     sourceFiles.AddRange(ParseFileArgument(arg, baseDirectory, diagnostics));
                     continue;

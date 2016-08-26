@@ -190,7 +190,9 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
-                throw new NotImplementedException();
+                // used for PDB writer,
+                // C# returns null
+                return null;
             }
         }
 

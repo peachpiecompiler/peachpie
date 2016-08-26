@@ -93,6 +93,17 @@ namespace Pchp.CodeAnalysis
                 PEAssemblySymbol ass;
                 if (!_assembliesMap.TryGetValue(identity, out ass))
                 {
+                    // temporary: lookup ignoring minor version number
+                    foreach (var pair in _assembliesMap)
+                    {
+                        if (pair.Key.Name.Equals(identity.Name, StringComparison.OrdinalIgnoreCase) && pair.Key.Version.Major == identity.Version.Major)
+                        {
+                            _assembliesMap[identity] = pair.Value;
+                            return pair.Value;
+                        }
+                    }
+
+                    //
                     string keytoken = string.Join("", identity.PublicKeyToken.Select(b => b.ToString("x2")));
                     var pes = resolver.ResolveReference(identity.Name + ".dll", basePath, MetadataReferenceProperties.Assembly)
                         .Concat(resolver.ResolveReference($"{identity.Name}/v4.0_{identity.Version}__{keytoken}/{identity.Name}.dll", basePath, MetadataReferenceProperties.Assembly));
@@ -198,6 +209,8 @@ namespace Pchp.CodeAnalysis
                 SetReferencesOfReferencedModules(compilation.Options.MetadataReferenceResolver, refmodules);
 
                 // set cor types for this compilation
+                if (_lazyPhpCorLibrary == null) throw new DllNotFoundException("pchpcor.dll not found");
+                if (_lazyCorLibrary == null) throw new DllNotFoundException("corlib not found");
                 compilation.CoreTypes.Update(_lazyPhpCorLibrary);
                 compilation.CoreTypes.Update(_lazyCorLibrary);
             }
