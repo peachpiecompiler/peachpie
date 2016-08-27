@@ -9,9 +9,16 @@ namespace Peachpie.NETCore.Compiler
 {
     public class Program
     {
+        const string BasedirOption = "/basedir:";
+
         public static int Main(string[] args)
         {
-            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, args, null, null, null, null, new SimpleAnalyzerAssemblyLoader(), TextWriter.Null);
+            // /basedir:
+            string basedir = args.FirstOrDefault(x => x.StartsWith(BasedirOption));
+            if (basedir != null) basedir = basedir.Substring(BasedirOption.Length);
+
+            // compile
+            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, args, null, basedir, null, null, new SimpleAnalyzerAssemblyLoader(), TextWriter.Null);
         }
 
         class SimpleAnalyzerAssemblyLoader : Microsoft.CodeAnalysis.IAnalyzerAssemblyLoader
