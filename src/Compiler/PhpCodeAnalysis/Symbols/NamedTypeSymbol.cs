@@ -55,6 +55,11 @@ namespace Pchp.CodeAnalysis.Symbols
             .Where(m => m.MethodKind == MethodKind.StaticConstructor)
             .ToImmutableArray();
 
+        /// <summary>
+        /// Gets optional <c>.phpnew</c> method.
+        /// </summary>
+        internal virtual MethodSymbol PhpNewMethodSymbol => GetMembers(WellKnownPchpNames.PhpNewMethodName).OfType<MethodSymbol>().SingleOrDefault();
+
         internal abstract ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved);
 
         /// <summary>
@@ -290,11 +295,18 @@ namespace Pchp.CodeAnalysis.Symbols
         /// PHP constructor method in this class.
         /// Can be <c>null</c>.
         /// </summary>
-        internal MethodSymbol ResolvePhpCtor()
+        internal MethodSymbol ResolvePhpCtor(bool recursive = false)
         {
-            return
+            var ctor = 
                 this.GetMembers(Syntax.Name.SpecialMethodNames.Construct.Value).OfType<MethodSymbol>().FirstOrDefault() ??
                 this.GetMembers(this.Name).OfType<MethodSymbol>().FirstOrDefault();
+
+            if (ctor == null && recursive)
+            {
+                ctor = this.BaseType?.ResolvePhpCtor(true);
+            }
+
+            return ctor;
         }
 
         #region INamedTypeSymbol

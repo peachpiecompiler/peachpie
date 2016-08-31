@@ -28,5 +28,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Name of special nested class containing context bound static fields and constants.
         /// </summary>
         public const string StaticsHolderClassName = "_statics";
+
+        /// <summary>
+        /// Name of instance method that initializes the PHP type instance without calling a constructor function.
+        /// In case base type also defines this method, it gets called as well.
+        /// </summary>
+        /// <remarks><code>
+        /// void .phpnew(Context ctx, params ps) {
+        ///     init_context;
+        ///     init_fields;
+        ///     base..phpnew(ctx, ps);
+        /// }</code></remarks>
+        public const string PhpNewMethodName = ".phpnew";
     }
 }

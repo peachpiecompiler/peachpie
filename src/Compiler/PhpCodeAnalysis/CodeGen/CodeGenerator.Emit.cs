@@ -731,6 +731,63 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(code, method);
         }
 
+        /// <summary>
+        /// Emits .call to <paramref name="target"/> assuming it takes the same arguments as passed to the caller method (<paramref name="thismethod"/>).
+        /// </summary>
+        /// <param name="target">Method to be called.</param>
+        /// <param name="thismethod">Current method.</param>
+        /// <returns>Return of <paramref name="target"/>.</returns>
+        internal TypeSymbol EmitThisCall(MethodSymbol target, MethodSymbol thismethod)
+        {
+            if (target == null)
+            {
+                return CoreTypes.Void;
+            }
+
+            if (target.HasThis)
+            {
+                Debug.Assert(thismethod.HasThis);
+                Debug.Assert(this.ThisPlaceOpt != null);
+                Debug.Assert(this.ThisPlaceOpt.TypeOpt.IsEqualToOrDerivedFrom(target.ContainingType));
+                this.EmitThis();
+            }
+
+            var targetps = target.Parameters;
+            var givenps = thismethod.Parameters;
+
+            Debug.Assert(targetps.Length <= givenps.Length);
+
+            int srcp = 0;
+            while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared)
+            {
+                srcp++;
+            }
+
+            for (int i = 0; i < targetps.Length; i++)
+            {
+                var targetp = targetps[i];
+                if (targetp.IsImplicitlyDeclared)
+                {
+                    if (SpecialParameterSymbol.IsContextParameter(targetp))
+                    {
+                        this.EmitLoadContext();
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                }
+                else
+                {
+                    var p = givenps[srcp++];
+                    EmitConvert(new ParamPlace(p).EmitLoad(Builder), 0, targetp.Type);
+                }
+            }
+
+            //
+            return this.EmitCall(ILOpCode.Call, target);
+        }
+
         internal TypeSymbol EmitGetProperty(IPlace holder, PropertySymbol prop)
         {
             Debug.Assert(prop.IsStatic || holder != null);

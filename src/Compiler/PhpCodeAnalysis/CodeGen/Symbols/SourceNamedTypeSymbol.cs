@@ -2,6 +2,7 @@
 using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -78,6 +79,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // IPhpCallable.Invoke
             EmitInvoke(EnsureInvokeMethod(), module);
+
+            // .phpnew
+            EmitPhpNew((SynthesizedPhpNewMethodSymbol)PhpNewMethodSymbol, module);
+
+            // .ctor
+            EmitPhpCtor(PhpCtorMethodSymbol, module);
         }
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
@@ -126,6 +133,75 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.Builder.EmitLoadArgumentOpcode(2);
                 cg.EmitCall(ILOpCode.Call, call_t);
                 cg.EmitRet(false);
+
+            }, null, DiagnosticBag.GetInstance(), false));
+        }
+
+        void EmitPhpNew(SynthesizedPhpNewMethodSymbol phpnew, Emit.PEModuleBuilder module)
+        {
+            if (phpnew == null) return; // static class
+
+            module.SetMethodBody(phpnew, MethodGenerator.GenerateMethodBody(module, phpnew, il =>
+            {
+                Debug.Assert(SpecialParameterSymbol.IsContextParameter(phpnew.Parameters[0]));
+
+                var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new ParamPlace(phpnew.Parameters[0]), new ArgPlace(this, 0));
+
+                // initialize <ctx> field,
+                // if field is declared within this type
+                var ctxField = this.ContextField;
+                if (ctxField != null && object.ReferenceEquals(ctxField.ContainingType, this))
+                {
+                    var ctxFieldPlace = new FieldPlace(cg.ThisPlaceOpt, ctxField);
+
+                    // Debug.Assert(<ctx> != null)
+                    cg.EmitDebugAssertNotNull(cg.ContextPlaceOpt, "Context cannot be null.");
+
+                    // <this>.<ctx> = <ctx>
+                    ctxFieldPlace.EmitStorePrepare(il);
+                    cg.EmitLoadContext();
+                    ctxFieldPlace.EmitStore(il);
+                }
+
+                // initialize class fields,
+                // default(PhpValue) is not a valid value, its TypeTable must not be null
+                foreach (var fld in this.GetFieldsToEmit().OfType<SourceFieldSymbol>().Where(fld => !fld.IsStatic && !fld.IsConst))
+                {
+                    fld.EmitInit(cg);
+                }
+
+                // base..phpnew ?? base..ctor
+                var basenew = phpnew.BasePhpNew;
+                Debug.Assert(basenew != null);
+                cg.EmitPop(cg.EmitThisCall(basenew, phpnew));
+
+                Debug.Assert(phpnew.ReturnsVoid);
+                cg.EmitRet(true);
+
+            }, null, DiagnosticBag.GetInstance(), false));
+        }
+
+        void EmitPhpCtor(MethodSymbol ctor, Emit.PEModuleBuilder module)
+        {
+            if (ctor == null) return;   // static class
+            Debug.Assert(ctor.MethodKind == MethodKind.Constructor);
+
+            module.SetMethodBody(ctor, MethodGenerator.GenerateMethodBody(module, ctor, il =>
+            {
+                Debug.Assert(SpecialParameterSymbol.IsContextParameter(ctor.Parameters[0]));
+
+                var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0));
+
+                // call .phpnew
+                var phpnew = this.PhpNewMethodSymbol;
+                cg.EmitPop(cg.EmitThisCall(phpnew, ctor));
+
+                // call __construct
+                var phpctor = this.ResolvePhpCtor(true);
+                cg.EmitPop(cg.EmitThisCall(phpctor, ctor));
+
+                Debug.Assert(ctor.ReturnsVoid);
+                cg.EmitRet(true);
 
             }, null, DiagnosticBag.GetInstance(), false));
         }

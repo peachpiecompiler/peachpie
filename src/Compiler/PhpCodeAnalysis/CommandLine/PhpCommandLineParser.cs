@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool displayHelp = false, displayLogo = true;
             bool emitPdb = true, debugPlus = false;
             string mainTypeName = null, pdbPath = null;
-            DebugInformationFormat debugInformationFormat = DebugInformationFormat.PortablePdb; // DebugInformationFormat.Pdb;
+            DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb; // DebugInformationFormat.PortablePdb
             List<string> referencePaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));

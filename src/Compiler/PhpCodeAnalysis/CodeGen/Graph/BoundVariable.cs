@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var def = il.LocalSlotManager.DeclareLocal(
                     (Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal,
                     this.Name, SynthesizedLocalKind.UserDefined,
-                    LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false);
+                    LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
 
             _place = new LocalPlace(def);
             il.AddLocalToScope(def);
@@ -138,7 +138,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // local with its instance
             var symbol = new SynthesizedLocalSymbol(cg.Routine, this.Name, _holder);
-            var loc = cg.Builder.LocalSlotManager.DeclareLocal(_holder, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, false, ImmutableArray<TypedConstant>.Empty, false);
+            var loc = cg.Builder.LocalSlotManager.DeclareLocal(_holder, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
 
             _holderPlace = new LocalPlace(loc);
 

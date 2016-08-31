@@ -129,15 +129,9 @@ namespace Pchp.CodeAnalysis
             _compilation.SourceSymbolTables.GetFiles().SelectMany(f => f.Functions)
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
-            // __statics.Init
+            // __statics.Init, .phpnew, .ctor
             _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
                 .ForEach(t => t.EmitInit(_moduleBuilder));
-
-            // default .ctors
-            _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
-                .Select(t => (SynthesizedCtorWrapperSymbol)t.InstanceCtorMethodSymbol)
-                .WhereNotNull()
-                .ForEach(ctor => MethodGenerator.EmitCtorBody(_moduleBuilder, ctor, _diagnostics, _emittingPdb));
 
             // realize .cctor if any
             _moduleBuilder.GetTopLevelTypes(default(Microsoft.CodeAnalysis.Emit.EmitContext)).OfType<NamedTypeSymbol>()

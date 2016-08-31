@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.Symbols
         ImmutableArray<Symbol> _lazyMembers;
         
         NamedTypeSymbol _lazyBaseType;
-        MethodSymbol _lazyCtorMethod;   // .ctor
+        MethodSymbol _lazyCtorMethod, _lazyPhpNewMethod;   // .ctor, .phpnew 
         SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
@@ -73,12 +73,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return new SourceMethodSymbol(this, m);
             }
 
-            // default .ctor
-            if (InstanceCtorMethodSymbol != null)
-                yield return InstanceCtorMethodSymbol;
+            // .ctor
+            if (PhpCtorMethodSymbol != null)
+            {
+                yield return PhpCtorMethodSymbol;
+            }
 
+            // .phpnew
+            if (PhpNewMethodSymbol != null)
+            {
+                yield return PhpNewMethodSymbol;
+            }
+
+            // ..ctor
             if (_lazyCctorSymbol != null)
+            {
                 yield return _lazyCctorSymbol;
+            }
         }
 
         IEnumerable<FieldSymbol> LoadFields()
@@ -118,10 +129,11 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// <c>.ctor</c> synthesized method.
-        /// Only if type is not static.
+        /// <c>.ctor</c> synthesized method. Only if type is not static.
         /// </summary>
-        internal MethodSymbol InstanceCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedCtorWrapperSymbol(this)));
+        internal MethodSymbol PhpCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedPhpCtorSymbol(this)));
+
+        internal override MethodSymbol PhpNewMethodSymbol => this.IsStatic ? null : (_lazyPhpNewMethod ?? (_lazyPhpNewMethod = new SynthesizedPhpNewMethodSymbol(this)));
 
         public override ImmutableArray<MethodSymbol> StaticConstructors
         {
