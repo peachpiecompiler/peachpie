@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "exports": {
+    "PchpCor/1.0.0": {
+      "type": "project",
+      "framework": ".NETPortable,Version=v4.5,Profile=Profile7",
+      "compile": {
+        "bin/Release/pchpcor.dll": {}
+      },
+      "runtime": {
+        "bin/Release/pchpcor.dll": {}
+      },
+      "contentFiles": {
+        "bin/Release/pchpcor.pdb": {
+          "buildAction": "None",
+          "codeLanguage": "any",
+          "copyToOutput": true
+        }
+      }
+    },
+    "PchpLib/1.0.0": {
+      "type": "project",
+      "framework": ".NETFramework,Version=v4.5",
+      "compile": {
+        "bin/Release/pchplib.dll": {}
+      },
+      "runtime": {
+        "bin/Release/pchplib.dll": {}
+      },
+      "contentFiles": {
+        "bin/Release/pchplib.pdb": {
+          "buildAction": "None",
+          "codeLanguage": "any",
+          "copyToOutput": true
+        }
+      }
+    }
+  }
+}

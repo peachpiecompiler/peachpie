@@ -1,25 +1,16 @@
 ﻿{
   "version": "0.1.0-*",
-  "description": "Command line tool enabling 'php' project compilation.",
+  "description": "A set of dependencies for Peachpie programs including pchpcor and pchplib.",
   "packOptions": {
-    "tags": [
-      "dotnet",
-      "compile-php"
-    ],
     "owners": [ "jmisek", "iolevel", "peachpie" ],
     "projectUrl": "https://github.com/iolevel/peachpie"
   },
-  "keywords": [ "dotnet", "peachpie", "php", "compiler" ],
+  "keywords": [ "dotnet", "peachpie", "php" ],
   "buildOptions": {
-    "outputName": "dotnet-compile-php",
-    "emitEntryPoint": true,
     "keyFile": "../../build/StrongKeys/core.snk"
   },
   "dependencies": {
-    "Microsoft.NETCore.App": {
-      "type": "platform",
-      "version": "1.0.0"
-    }
+    "NETStandard.Library": "1.6.0"
   },
   "frameworks": {
     "netcoreapp1.0": {
