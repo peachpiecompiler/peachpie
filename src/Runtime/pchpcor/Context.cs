@@ -44,13 +44,17 @@ namespace Pchp.Core
         {
             // TODO: dependency to 'System.Console, Version=4.0.0'
 
-            var tconsole = Type.GetType("System.Console", true)?.GetTypeInfo();
+            var tconsole = Type.GetType("System.Console", false)?.GetTypeInfo();
             Debug.Assert(tconsole != null, "TODO: dependency to 'System.Console, Version=4.0.0'");
 
-            var sink = (TextWriter)tconsole?.GetDeclaredProperty("Out")?.GetMethod?.Invoke(null, new object[0]) ?? TextWriter.Null;
-            var stream = (tconsole != null)
-                ? (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").First(m => m.GetParameters().Length == 0).Invoke(null, new object[0])
-                : null;
+            Stream stream = Stream.Null;
+            TextWriter sink = TextWriter.Null;
+
+            if (tconsole != null)
+            {
+                sink = (TextWriter)tconsole?.GetDeclaredProperty("Out")?.GetMethod?.Invoke(null, new object[0]) ?? sink;
+                stream = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").FirstOrDefault(m => m.GetParameters().Length == 0)?.Invoke(null, new object[0]) ?? stream;
+            }
 
             return new Context()
             {

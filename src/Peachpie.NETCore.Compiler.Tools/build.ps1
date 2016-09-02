@@ -1,2 +1,2 @@
 dotnet build -c Release
-dotnet pack --no-build -c Release --version-suffix preview-4
+dotnet pack --no-build -c Release --version-suffix preview-7
