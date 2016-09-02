@@ -42,17 +42,30 @@ namespace Pchp.Core
         /// </summary>
         public static Context CreateConsole(params string[] args)
         {
-            var ctx = new Context();
+            // TODO: dependency to 'System.Console, Version=4.0.0'
 
-            var tconsole = Type.GetType("System.Console", true).GetTypeInfo();
+            var tconsole = Type.GetType("System.Console", true)?.GetTypeInfo();
+            Debug.Assert(tconsole != null, "TODO: dependency to 'System.Console, Version=4.0.0'");
 
-            // initializes output redirecting fields:
-            ctx._textSink = (TextWriter)tconsole.GetDeclaredProperty("Out").GetMethod.Invoke(null, new object[0]);
-            ctx._streamSink = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").First(m => m.GetParameters().Length == 0).Invoke(null, new object[0]);
-            ctx.IsOutputBuffered = false;
+            var sink = (TextWriter)tconsole?.GetDeclaredProperty("Out")?.GetMethod?.Invoke(null, new object[0]) ?? TextWriter.Null;
+            var stream = (tconsole != null)
+                ? (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").First(m => m.GetParameters().Length == 0).Invoke(null, new object[0])
+                : null;
 
-            //
-            return ctx;
+            return new Context()
+            {
+                _textSink = sink,
+                _streamSink = stream,
+                IsOutputBuffered = false,
+            };
+            
+            //// initializes output redirecting fields:
+            //ctx._textSink = (TextWriter)tconsole.GetDeclaredProperty("Out").GetMethod.Invoke(null, new object[0]);
+            //ctx._streamSink = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").First(m => m.GetParameters().Length == 0).Invoke(null, new object[0]);
+            //ctx.IsOutputBuffered = false;
+
+            ////
+            //return ctx;
         }
 
         /// <summary>
