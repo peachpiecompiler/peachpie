@@ -1,5 +1,5 @@
 ﻿{
-  "version": "0.1.0-*",
+  "version": "0.1.1-*",
   "description": "Command line tool enabling 'php' project compilation.",
   "packOptions": {
     "tags": [
@@ -20,7 +20,7 @@
       "type": "platform",
       "version": "1.0.0"
     },
-    "Peachpie.CodeAnalysis" : "0.1.0-preview-7"
+    "Peachpie.CodeAnalysis" : "0.1.1-preview-1"
   },
   "frameworks": {
     "netcoreapp1.0": {

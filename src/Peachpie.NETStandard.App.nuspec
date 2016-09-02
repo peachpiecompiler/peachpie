@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Peachpie.NETStandard.App</id>
-    <version>0.1.0-preview-6</version>
+    <version>0.1.1-preview-1</version>
     <title>Peachpie.NETStandard.App.</title>
     <description>Peachpie platform dependencies.</description>
     <authors>Jakub Misek, Peachpie</authors>
