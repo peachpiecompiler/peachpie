@@ -10,7 +10,7 @@
     <ProjectGuid>{1EE8CAD3-55F9-4D91-96B2-084641DA9A6C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Microsoft.CodeAnalysis</RootNamespace>
-    <AssemblyName>Microsoft.CodeAnalysis</AssemblyName>
+    <AssemblyName>Microsoft.CodeAnalysis.Private</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SolutionDir Condition="'$(SolutionDir)' == '' OR '$(SolutionDir)' == '*Undefined*'">..\..\..\..\</SolutionDir>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
@@ -18,8 +18,8 @@
     <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <RestorePackages>true</RestorePackages>
-	<NonShipping>true</NonShipping>
-	<DefineConstants>$(DefineConstants);COMPILERCORE</DefineConstants>
+    <NonShipping>true</NonShipping>
+    <DefineConstants>$(DefineConstants);COMPILERCORE</DefineConstants>
     <CodeAnalysisRuleSet>..\CodeAnalysisRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

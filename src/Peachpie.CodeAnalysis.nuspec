@@ -19,7 +19,7 @@
   </metadata>
   <files>
     <!--netstandard1.6-->
-    <file src="Compiler/PhpCodeAnalysis/bin/Release/Microsoft.CodeAnalysis.dll" target="lib/netstandard1.6" />
+    <file src="Compiler/PhpCodeAnalysis/bin/Release/Microsoft.CodeAnalysis.Private.dll" target="lib/netstandard1.6" />
     <file src="Compiler/PhpCodeAnalysis/bin/Release/Pchp.Syntax.dll" target="lib/netstandard1.6" />
     <file src="Compiler/PhpCodeAnalysis/bin/Release/Pchp.CodeAnalysis.dll" target="lib/netstandard1.6" />
   </files>
