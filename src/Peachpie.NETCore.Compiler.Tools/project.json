@@ -20,7 +20,7 @@
       "type": "platform",
       "version": "1.0.0"
     },
-    "Peachpie.CodeAnalysis" : "0.1.1-preview-1"
+    "Peachpie.CodeAnalysis" : "0.1.1-preview-2"
   },
   "frameworks": {
     "netcoreapp1.0": {
