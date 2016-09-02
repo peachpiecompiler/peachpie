@@ -19,7 +19,8 @@
     "Microsoft.NETCore.App": {
       "type": "platform",
       "version": "1.0.0"
-    }
+    },
+    "Peachpie.CodeAnalysis" : "0.1.0-preview-4"
   },
   "frameworks": {
     "netcoreapp1.0": {

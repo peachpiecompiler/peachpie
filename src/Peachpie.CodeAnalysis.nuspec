@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Peachpie.CodeAnalysis</id>
+    <version>0.1.0-preview-4</version>
+    <title>Peachpie.CodeAnalysis.</title>
+    <description>Peachpie code analysis and compiler core.</description>
+    <authors>Jakub Misek, Peachpie</authors>
+    <owners>iolevel peachpie jmisek</owners>
+    <projectUrl>https://github.com/iolevel/peachpie</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>php peachpie dotnet compiler</tags>
+    <dependencies>
+      <dependency id="Peachpie.NETStandard.App" version="0.1.0-preview-4" />
+      <dependency id="System.Collections.Immutable" version="1.2.0" />
+      <dependency id="System.Reflection.Metadata" version="1.4.1-beta-24430-01" />
+    </dependencies>
+  </metadata>
+  <files>
+    <!--netstandard1.6-->
+    <file src="Compiler/PhpCodeAnalysis/bin/Release/Microsoft.CodeAnalysis.dll" target="lib/netstandard1.6" />
+    <file src="Compiler/PhpCodeAnalysis/bin/Release/Pchp.Syntax.dll" target="lib/netstandard1.6" />
+    <file src="Compiler/PhpCodeAnalysis/bin/Release/Pchp.CodeAnalysis.dll" target="lib/netstandard1.6" />
+  </files>
+</package>
