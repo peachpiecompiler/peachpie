@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool displayHelp = false, displayLogo = true;
             bool emitPdb = true, debugPlus = false;
             string mainTypeName = null, pdbPath = null;
-            DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb; // DebugInformationFormat.PortablePdb
+            DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
             List<string> referencePaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
@@ -100,6 +100,30 @@ namespace Pchp.CodeAnalysis.CommandLine
                         continue;
 
                     case "debug":
+                        emitPdb = true;
+                        
+                        // unused, parsed for backward compat only
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            switch (value.ToLower())
+                            {
+                                case "full":
+                                case "pdbonly":
+                                    debugInformationFormat = DebugInformationFormat.Pdb;
+                                    break;
+                                case "portable":
+                                    debugInformationFormat = DebugInformationFormat.PortablePdb;
+                                    break;
+                                case "embedded":
+                                    debugInformationFormat = DebugInformationFormat.Embedded;
+                                    break;
+                                default:
+                                    //AddDiagnostic(diagnostics, ErrorCode.ERR_BadDebugType, value);
+                                    break;
+                            }
+                        }
+                        continue;
+
                     case "debug+":
                         //guard against "debug+:xx"
                         if (value != null)

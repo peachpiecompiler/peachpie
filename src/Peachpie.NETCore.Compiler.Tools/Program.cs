@@ -60,12 +60,14 @@ namespace Peachpie.NETCore.Compiler.Tools
                             case "emit-entry-point":
                                 newargs.Insert(0, "/target:" + ((value == "true") ? "exe" : "library"));
                                 break;
-                            case "define": // DEBUG => /debug+
-                                if (value == "debug") newargs.Insert(0, "/debug+");
+
+                            case "define": // DEBUG => /debug+ /debug:portable (portable PDB)
+                                if (value == "debug")
+                                {
+                                    newargs.InsertRange(0, new[] { "/debug+", "/debug:portable" });
+                                }
                                 break;
                         }
-
-                        // TODO: portable PDB
                     }
                 }
             }
