@@ -31,6 +31,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="ctx">Reference to current context. Cannot be <c>null</c>.</param>
         /// <param name="locals">Reference to variables scope. Cannot be <c>null</c>. Can refer to either globals or new array locals.</param>
+        /// <param name="this">Reference to self in case the script is called within an instance method.</param>
         /// <returns>Result of the main method call.</returns>
         public delegate PhpValue MainDelegate(Context ctx, PhpArray locals, object @this);
 

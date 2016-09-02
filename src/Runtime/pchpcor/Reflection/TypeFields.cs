@@ -169,8 +169,10 @@ namespace Pchp.Core.Reflection
         /// Gets <see cref="Expression"/> representing field value.
         /// </summary>
         /// <param name="name">Class constant name.</param>
+        /// <param name="classCtx">Current class context. Can be <c>null</c>.</param>
         /// <param name="target">Expression representing self instance.</param>
         /// <param name="ctx">Expression representing current <see cref="Context"/>.</param>
+        /// <param name="kind">Field kind.</param>
         /// <returns><see cref="Expression"/> instance or <c>null</c> if constant does not exist.</returns>
         internal Expression Bind(string name, Type classCtx, Expression target, Expression ctx, FieldKind kind)
         {

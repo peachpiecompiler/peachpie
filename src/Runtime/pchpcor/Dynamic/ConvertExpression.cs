@@ -79,6 +79,7 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         /// <param name="arg">Source expression to be converted.</param>
         /// <param name="target">Target type.</param>
+        /// <param name="ctx">Expression with current context.</param>
         /// <returns>Expression converting <paramref name="arg"/> to <paramref name="target"/> type.</returns>
         public static Expression Bind(Expression arg, Type target, Expression ctx = null)
         {

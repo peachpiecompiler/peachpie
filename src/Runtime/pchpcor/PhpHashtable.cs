@@ -310,7 +310,7 @@ namespace Pchp.Core
             public int Level { get { return _stack.Count; } }
 
             /// <summary>
-            /// Whether to follow <see cref="PhpReference"/>s when resolving next level of recursion.
+            /// Whether to follow <see cref="PhpAlias"/>s when resolving next level of recursion.
             /// </summary>
             public bool FollowReferences { get { return _followReferences; } set { _followReferences = value; } }
             private bool _followReferences = false;
@@ -594,7 +594,7 @@ namespace Pchp.Core
         /// <summary>
         /// Retrieves a recursive enumerator of this instance.
         /// </summary>
-        /// <param name="followReferences">Whether <see cref="PhpReference"/>s are followed by recursion.</param>
+        /// <param name="followReferences">Whether <see cref="PhpAlias"/>s are followed by recursion.</param>
         /// <param name="readOnly">True if the array items will be read only. Lazy copy is not necessary.</param>
         /// <returns>The <see cref="RecursiveEnumerator"/>.</returns>
         public RecursiveEnumerator/*!*/ GetRecursiveEnumerator(bool followReferences, bool readOnly)

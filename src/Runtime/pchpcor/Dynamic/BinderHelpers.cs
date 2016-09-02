@@ -45,7 +45,7 @@ namespace Pchp.Core.Dynamic
         }
 
         /// <summary>
-        /// Gets <see cref="Context.GetStatic{T}"/> method bound to a type.
+        /// Gets <see cref="Context.GetStatic{T}()"/> method bound to a type.
         /// </summary>
         public static MethodInfo GetStatic_T_Method(Type t)
         {

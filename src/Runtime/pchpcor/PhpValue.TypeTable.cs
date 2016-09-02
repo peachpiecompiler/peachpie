@@ -124,6 +124,7 @@ namespace Pchp.Core
             /// <summary>
             /// Calls corresponding <c>Accept</c> method on visitor.
             /// </summary>
+            /// <param name="me">Reference to this.</param>
             /// <param name="visitor">Visitor to be called. Cannot be <c>null</c>.</param>
             public abstract void Accept(ref PhpValue me, PhpVariableVisitor visitor);
         }

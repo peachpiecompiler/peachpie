@@ -507,7 +507,7 @@ namespace Pchp.Core
         /// Implements <c>-</c> operator on numbers.
         /// </summary>
         /// <param name="x">First operand.</param>
-        /// <param name="y">Second operand.</param>
+        /// <param name="ly">Second operand.</param>
         /// <returns></returns>
         public static PhpNumber operator -(PhpNumber x, long ly)
         {
@@ -523,7 +523,7 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>-</c> operator on numbers.
         /// </summary>
-        /// <param name="x">First operand.</param>
+        /// <param name="lx">First operand.</param>
         /// <param name="y">Second operand.</param>
         /// <returns></returns>
         public static PhpNumber operator -(long lx, PhpNumber y)

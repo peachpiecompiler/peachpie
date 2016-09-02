@@ -133,7 +133,7 @@ namespace Pchp.Core
 		/// Compares two double values.
 		/// </summary>
 		/// <returns>(+1,0,-1)</returns>
-		/// <remarks>We cannot used <see cref="Math.Sign"/> on <c>x - y</c> since the result can be NaN.</remarks>
+		/// <remarks>We cannot used <see cref="Math.Sign(double)"/> on <c>x - y</c> since the result can be NaN.</remarks>
         public static int Compare(double x, double y) => (x > y) ? +1 : (x < y ? -1 : 0);
 
         /// <summary>

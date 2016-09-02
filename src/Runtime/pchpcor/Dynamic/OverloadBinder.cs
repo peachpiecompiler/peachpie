@@ -576,8 +576,9 @@ namespace Pchp.Core.Dynamic
         /// Creates expression that computes cost of the method call with given arguments.
         /// </summary>
         /// <param name="method">Method to calculate the cost.</param>
-        /// <param name="argsarray">Expression representing array of arguments to be passed to method.</param>
-        /// <returns></returns>
+        /// <param name="args">Arguments provider.</param>
+        /// <param name="minCost">Gets minimal compile-time cost of conversion.</param>
+        /// <returns>Expression getting cost of conversion.</returns>
         static Expression BindCostOf(MethodBase method, ArgumentsBinder args, out ConversionCost minCost)
         {
             if (method == null || args == null)

@@ -1,9 +1,11 @@
 ﻿{
-  "supports": { },
+  "supports": {},
   "dependencies": {
     "System.Reflection.Emit.Lightweight": "4.0.1"
   },
   "frameworks": {
-    ".NETPortable,Version=v4.5,Profile=Profile7": { }
+    ".NETPortable,Version=v4.5,Profile=Profile7": {},
+    ".NETFramework,Version=v4.6": { "dependencies": { "system.console": "4.0.0" } },
+    ".NETStandard,Version=v1.3": { "dependencies": { "system.console": "4.0.0" } }
   }
 }

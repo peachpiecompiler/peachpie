@@ -1077,9 +1077,6 @@ namespace Pchp.Core
         /// 
         /// Otherwise new item is added at the end of the array.
         /// </summary>
-        /// <param name="array">Caller array.</param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
         public void _add_or_update_preserve_ref(ref IntStringKey key, PhpValue value)
         {
             Debug.Assert(!value.IsAlias);
@@ -2019,7 +2016,6 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="key">Index of item to be checked.</param>
         /// <param name="array">Caller. Used to lazy copy if necessary.</param>
-        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
         /// <returns><see cref="object"/> ensured to be at given <paramref name="key"/>.</returns>
         public object/*!*/_ensure_item_object(ref IntStringKey key, PhpArray/*!*/array)
         {

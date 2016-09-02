@@ -267,7 +267,6 @@ namespace Pchp.Core
         /// <summary>
         /// Compares two objects in a manner of PHP numeric comparison.
         /// </summary>
-        /// <include file='Doc/Common.xml' path='docs/method[@name="Compare(x,y)"]/*'/>
         public int Compare(PhpValue x, PhpValue y)
         {
             PhpNumber numx, numy;
@@ -304,7 +303,6 @@ namespace Pchp.Core
         /// <summary>
         /// Compares two objects in a manner of PHP string comparison.
         /// </summary>
-        /// <include file='Doc/Common.xml' path='docs/method[@name="Compare(x,y)"]/*'/>
         public int Compare(PhpValue x, PhpValue y)
         {
             return string.CompareOrdinal(x.ToString(_ctx), y.ToString(_ctx));
@@ -347,7 +345,6 @@ namespace Pchp.Core
         /// <summary>
         /// Compares two objects in a manner of PHP string comparison.
         /// </summary>
-        /// <include file='Doc/Common.xml' path='docs/method[@name="Compare(x,y)"]/*'/>
         public int Compare(PhpValue x, PhpValue y)
         {
             return _culture.CompareInfo.Compare(x.ToString(_ctx), y.ToString(_ctx), _options);
@@ -374,7 +371,6 @@ namespace Pchp.Core
         /// <summary>
         /// Compares keys of an array.
         /// </summary>
-        /// <include file='Doc/Common.xml' path='docs/method[@name="Compare(x,y)"]/*'/>
         /// <remarks>
         /// Keys are compared as strings if at least one of them is a string 
         /// otherwise they have to be integers and so they are compared as integers.
@@ -409,6 +405,7 @@ namespace Pchp.Core
         private bool _caseInsensitive;
 
         /// <summary>Prevents from creating instances of this class.</summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
         /// <param name="caseInsensitive">Whether comparisons will be case insensitive.</param>
         public PhpNaturalComparer(Context ctx, bool caseInsensitive)
         {
@@ -419,7 +416,6 @@ namespace Pchp.Core
         /// <summary>
         /// Compares two objects using the natural ordering.
         /// </summary>
-        /// <include file='Doc/Common.xml' path='docs/method[@name="Compare(x,y)"]/*'/>
         public int Compare(PhpValue x, PhpValue y)
         {
             return CompareStrings(x.ToString(_ctx), y.ToString(_ctx));
@@ -428,7 +424,6 @@ namespace Pchp.Core
         /// <summary>
 		/// Compares two strings using the natural ordering.
 		/// </summary>
-		/// <include file='Doc/Common.xml' path='docs/method[@name="Compare(x,y)"]/*'/>
 		public int CompareStrings(string x, string y)
         {
             if (x == null) x = String.Empty;
@@ -585,13 +580,14 @@ namespace Pchp.Core
         /// <summary>
         /// Creates a new instance of a comparer using <see cref="PhpCallback"/> for comparisons.
         /// </summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
         /// <param name="compare">User callback which provides comparing functionality.</param>
         /// <remarks>
         /// <para>
         /// Callback should have the signature <c>object(object,object)</c> and should already be bound.
         /// </para>
         /// <para>
-        /// The result of calback's invocation is converted to a double by <see cref="Convert.ObjectToDouble"/>
+        /// The result of calback's invocation is converted to a double by <see cref="PhpValue.ToDouble"/>
         /// and than the sign is taken as a result of the comparison.</para>
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="compare"/> is a <B>null</B> reference.</exception>
@@ -610,7 +606,6 @@ namespace Pchp.Core
         /// <summary>
         /// Compares two objects in a manner of PHP numeric comparison.
         /// </summary>
-        /// <include file='Doc/Common.xml' path='docs/method[@name="Compare(x,y)"]/*'/>
         public int Compare(PhpValue x, PhpValue y)
         {
             return Comparison.Compare(_compare.Invoke(_ctx, x, y).ToDouble(), 0.0);

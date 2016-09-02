@@ -563,7 +563,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets a content of buffers on current buffering level.
         /// </summary>
-        /// <returns>The content as <see cref="string"/> or <see cref="byte[]"/> or a 
+        /// <returns>The content as <see cref="string"/> or array of <see cref="byte"/>s or a 
         /// <c>null</c> reference if output buffering is disabled.</returns>
         /// <remarks>
         /// Character data are returned unchanged, binary data are converted to string by 

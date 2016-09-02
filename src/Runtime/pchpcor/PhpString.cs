@@ -30,7 +30,7 @@ namespace Pchp.Core
         #region Fields
 
         /// <summary>
-        /// One string or concatenated string chunks of either <see cref="string"/>, <see cref="byte[]"/>, <see cref="char[]"/> or <see cref="PhpString"/>.
+        /// One string or concatenated string chunks of either <see cref="string"/>, <see cref="byte"/>, <see cref="char"/> or <see cref="PhpString"/>.
         /// </summary>
         object _chunks;
 
@@ -66,7 +66,7 @@ namespace Pchp.Core
         #endregion
 
         /// <summary>
-        /// Gets value indicating the string contains <see cref="byte[]"/> instead of unicode <see cref="string"/>.
+        /// Gets value indicating the string contains <see cref="byte"/> instead of unicode <see cref="string"/>.
         /// </summary>
         public bool ContainsBinaryData => (_flags & Flags.ContainsBinary) != 0;
 

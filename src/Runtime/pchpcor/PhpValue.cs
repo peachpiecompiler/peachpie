@@ -145,7 +145,7 @@ namespace Pchp.Core
         /// </summary>
         public object Object { get { return _obj.Obj; } }
 
-        // <summary>
+        /// <summary>
         /// Gets underlaying array object.
         /// </summary>
         public PhpArray Array { get { Debug.Assert(TypeCode == PhpTypeCode.PhpArray); return _obj.Array; } }
