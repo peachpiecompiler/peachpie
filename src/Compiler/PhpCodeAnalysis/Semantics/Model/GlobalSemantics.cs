@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.Syntax;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Semantics.Model
 {
@@ -70,8 +71,27 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
 
             // TODO: reserved type names: self, parent, static
-            // TODO: library types
+            Debug.Assert(!name.IsReservedClassName);
 
+            // library types
+            foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
+            {
+                if (!ass.IsPchpCorLibrary)
+                {
+                    var candidate = ass.GetTypeByMetadataName(name.ClrName());
+                    if (candidate != null && !candidate.IsErrorType())
+                    {
+                        if (ass is PEAssemblySymbol && ((PEAssemblySymbol)ass).IsExtensionLibrary && candidate.IsStatic)
+                        {
+                            continue;
+                        }
+
+                        return candidate;
+                    }
+                }
+            }
+
+            //
             return Next.GetType(name);
         }
 

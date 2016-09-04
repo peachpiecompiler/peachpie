@@ -1360,6 +1360,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (x.FieldName.IsDirect && ParentType != null)
                 {
+                    // TODO: CLR properties
+
                     var field = ParentType.ResolveStaticField(x.FieldName.NameValue.Value);
                     if (field != null)
                     {

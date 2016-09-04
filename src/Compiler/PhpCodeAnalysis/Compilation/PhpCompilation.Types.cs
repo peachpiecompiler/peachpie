@@ -366,7 +366,7 @@ namespace Pchp.CodeAnalysis
             return result;
         }
 
-        IEnumerable<IAssemblySymbol> ProbingAssemblies
+        internal IEnumerable<IAssemblySymbol> ProbingAssemblies
         {
             get
             {
