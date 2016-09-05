@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 _specialAssembly = SpecialAssembly.CorLibrary;
             else if (assembly.Identity.Name == "System.Runtime")
                 _specialAssembly = SpecialAssembly.CorLibrary;
-            else if (assembly.Identity.Name == "pchpcor")
+            else if (IsPchpCor(assembly))
             {
                 _specialAssembly = SpecialAssembly.PchpCorLibrary;
 
@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal static bool IsPchpCor(PEAssembly ass) => ass.Identity.Name == "pchpcor";
+        internal static bool IsPchpCor(PEAssembly ass) => ass.Identity.Name == "Peachpie.Runtime" || ass.Identity.Name == "pchpcor";
 
         internal static PEAssemblySymbol Create(PortableExecutableReference reference)
         {

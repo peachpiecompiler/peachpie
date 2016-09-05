@@ -1,0 +1,8 @@
+{
+    "projects":[
+        "Peachpie.Runtime",
+        "Peachpie.NETStandard.Library",
+		"Peachpie.NETStandard.App",
+        "Peachpie.NETCore.Compiler.Tools"
+    ]
+}

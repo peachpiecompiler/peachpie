@@ -1,0 +1,32 @@
+﻿{
+  "version": "0.1.0-*",
+
+  "packOptions": {
+    "tags": [
+      "peachpoe",
+      "library"
+    ],
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "Peachpie.Runtime": "0.1.0-*"
+  },
+
+  "buildOptions": {
+    "xmlDoc": true,
+    "keyFile": "../../build/StrongKeys/core.snk",
+    "nowarn": [ "1591", "1574" ]
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50"
+    },
+    ".NETPortable,Version=v4.5,Profile=Profile7": {
+      "dependencies": {}
+    }
+  }
+}

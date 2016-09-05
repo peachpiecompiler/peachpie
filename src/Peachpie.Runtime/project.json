@@ -1,0 +1,33 @@
+﻿{
+  "version": "0.1.0-*",
+
+  "packOptions": {
+    "tags": [
+      "peachpie",
+      "runtime"
+    ],
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+
+  "buildOptions": {
+    "xmlDoc": true,
+    "keyFile": "../../build/StrongKeys/core.snk",
+    "nowarn": [ "1591" ]
+  },
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "System.Reflection.Emit.Lightweight": "4.0.1",
+    "System.Dynamic.Runtime": "4.0.*"
+  },
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50",
+      "dependencies": {}
+    },
+    ".NETPortable,Version=v4.5,Profile=Profile7": {
+      "dependencies": {}
+    }
+  }
+}

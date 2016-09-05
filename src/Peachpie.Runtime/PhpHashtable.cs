@@ -244,8 +244,8 @@ namespace Pchp.Core
         /// Enumerator starts enumeration with a <see cref="PhpHashtable"/> specified in its constructor and 
         /// enumerates its items by instance of <see cref="IDictionaryEnumerator"/> retrieved via 
         /// <see cref="PhpHashtable.GetEnumerator"/>. This enumerator is supposed to be unbreakable.
-        /// If an enumerated item value is <see cref="PhpHashtable"/>  (or <see cref="PhpReference"/> and its 
-        /// <see cref="PhpReference.value"/> is <see cref="PhpHashtable"/> and <see cref="FollowReferences"/>
+        /// If an enumerated item value is <see cref="PhpHashtable"/>  (or <see cref="PhpAlias"/> and its 
+        /// <see cref="PhpAlias.Value"/> is <see cref="PhpHashtable"/> and <see cref="FollowReferences"/>
         /// property is <B>true</B>) then this item is returned by Current and Entry
         /// like any other item but the enumerator continues with enumeration of that item when it is moved by
         /// <see cref="MoveNext"/>. The <see cref="Level"/> of recursion is increased and the previous hashtable
@@ -1475,7 +1475,7 @@ namespace Pchp.Core
         /// All these tables has to be of the same length which has to be .
         /// </param> 
         /// <param name="comparers">
-        /// An array of <see cref="IDictionaryComparer"/>s.
+        /// An array of entry comparers.
         /// The number of comparers has to be the same as the number of <paramref name="hashtables"/>.
         /// </param>
         /// <remarks>
@@ -1520,7 +1520,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="op">The operation.</param>
         /// <param name="hashtables">The <see cref="ICollection"/> of <see cref="PhpHashtable"/>s.</param>
-        /// <param name="comparer">The <see cref="IDictionaryComparer"/> used to compare entries of <paramref name="hashtables"/>.</param>
+        /// <param name="comparer">The dictionary entry comparer used to compare entries of <paramref name="hashtables"/>.</param>
         /// <param name="result">The <see cref="IDictionary"/> where to add remaining elements.</param>
         /// <remarks>
         /// Entries that will remain in this instance if a difference was made are stored into 

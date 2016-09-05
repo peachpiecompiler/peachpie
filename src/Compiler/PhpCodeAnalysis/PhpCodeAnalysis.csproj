@@ -44,10 +44,6 @@
       <Project>{1ee8cad3-55f9-4d91-96b2-084641da9a6c}</Project>
       <Name>CodeAnalysis</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Runtime\pchpcor\PchpCor.csproj">
-      <Project>{9c5f04ef-13be-47c0-b416-45fad5722eef}</Project>
-      <Name>PchpCor</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PhpSyntax\PhpSyntax.csproj">
       <Project>{3775018b-7f9f-4cb1-8b0a-18cfb589a54b}</Project>
       <Name>PhpSyntax</Name>
@@ -261,12 +257,16 @@
     <Compile Include="CodeGen\CodeGenerator.Locals.cs" />
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <EmbeddedResource Include="PhpResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>PhpResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Peachpie.Runtime">
+      <HintPath>..\..\Peachpie.Runtime\bin\Debug\portable45-net45+win8\Peachpie.Runtime.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

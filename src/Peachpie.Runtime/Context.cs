@@ -43,7 +43,7 @@ namespace Pchp.Core
         public static Context CreateConsole(params string[] args)
         {
             // TODO: dependency to 'System.Console, Version=4.0.0'
-
+            
             var tconsole = Type.GetType("System.Console", false)?.GetTypeInfo();
             Debug.Assert(tconsole != null, "TODO: dependency to 'System.Console, Version=4.0.0'");
 

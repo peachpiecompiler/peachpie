@@ -41,6 +41,12 @@
     <StartupObject>Pchp.CodeAnalysis.CommandLine.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Peachpie.NETStandard.Library">
+      <HintPath>..\..\Peachpie.NETStandard.Library\bin\Debug\portable45-net45+win8\Peachpie.NETStandard.Library.dll</HintPath>
+    </Reference>
+    <Reference Include="Peachpie.Runtime">
+      <HintPath>..\..\Peachpie.NETStandard.Library\bin\Debug\portable45-net45+win8\Peachpie.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -64,14 +70,6 @@
     <ProjectReference Include="..\..\..\roslyn %40 33e2491\src\Compilers\Core\Portable\CodeAnalysis.csproj">
       <Project>{1ee8cad3-55f9-4d91-96b2-084641da9a6c}</Project>
       <Name>CodeAnalysis</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Runtime\pchpcor\PchpCor.csproj">
-      <Project>{9c5f04ef-13be-47c0-b416-45fad5722eef}</Project>
-      <Name>PchpCor</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Runtime\pchplib\PchpLib.csproj">
-      <Project>{ca76dca9-42cf-4373-be96-95de71aa0ed1}</Project>
-      <Name>PchpLib</Name>
     </ProjectReference>
     <ProjectReference Include="..\PhpCodeAnalysis\PhpCodeAnalysis.csproj">
       <Project>{1a060993-2fed-42c2-a9bb-1ef9de9cbf83}</Project>

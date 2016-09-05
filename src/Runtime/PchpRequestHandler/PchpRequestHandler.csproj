@@ -43,6 +43,9 @@
       <HintPath>..\..\..\..\packages\Microsoft.Extensions.Primitives.1.0.0\lib\netstandard1.0\Microsoft.Extensions.Primitives.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Peachpie.Runtime">
+      <HintPath>..\..\Peachpie.Runtime\bin\Debug\portable45-net45+win8\Peachpie.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
@@ -65,16 +68,6 @@
     <Compile Include="RequestDelegateExtension.cs" />
     <Compile Include="RequestHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\pchpcor\PchpCor.csproj">
-      <Project>{9c5f04ef-13be-47c0-b416-45fad5722eef}</Project>
-      <Name>PchpCor</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\pchplib\PchpLib.csproj">
-      <Project>{ca76dca9-42cf-4373-be96-95de71aa0ed1}</Project>
-      <Name>PchpLib</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

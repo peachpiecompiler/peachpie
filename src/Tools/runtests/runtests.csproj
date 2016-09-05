@@ -75,14 +75,6 @@
       <Project>{3775018b-7f9f-4cb1-8b0a-18cfb589a54b}</Project>
       <Name>PhpSyntax</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Runtime\pchpcor\PchpCor.csproj">
-      <Project>{9c5f04ef-13be-47c0-b416-45fad5722eef}</Project>
-      <Name>PchpCor</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Runtime\pchplib\PchpLib.csproj">
-      <Project>{ca76dca9-42cf-4373-be96-95de71aa0ed1}</Project>
-      <Name>PchpLib</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

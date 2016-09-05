@@ -1,5 +1,4 @@
-﻿using Pchp.Core.Resources;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -253,7 +252,7 @@ namespace Pchp.Core
         void ThrowIfDisabled()
         {
             if (_level == null)
-                throw new InvalidOperationException(ErrResources.output_buffering_disabled);
+                throw new InvalidOperationException(Resources.ErrResources.output_buffering_disabled);
         }
 
         /// <summary>
@@ -565,10 +564,6 @@ namespace Pchp.Core
         /// </summary>
         /// <returns>The content as <see cref="string"/> or array of <see cref="byte"/>s or a 
         /// <c>null</c> reference if output buffering is disabled.</returns>
-        /// <remarks>
-        /// Character data are returned unchanged, binary data are converted to string by 
-        /// the <see cref="System.Text.Encoding.GetString"/> method of the current encoding.
-        /// </remarks>
         public PhpValue GetContent()
         {
             if (_level == null)

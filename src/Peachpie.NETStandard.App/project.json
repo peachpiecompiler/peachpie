@@ -1,0 +1,27 @@
+﻿{
+  "version": "0.1.0-*",
+
+  "packOptions": {
+    "tags": [
+      "peachpie",
+      "app"
+    ],
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "Peachpie.NETStandard.Library": "0.1.0-*",
+    "Peachpie.Runtime": "0.1.0-*"
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50"
+    },
+    ".NETPortable,Version=v4.5,Profile=Profile7": {
+      "dependencies": {}
+    }
+  }
+}
