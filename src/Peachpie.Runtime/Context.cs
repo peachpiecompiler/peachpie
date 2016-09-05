@@ -42,34 +42,27 @@ namespace Pchp.Core
         /// </summary>
         public static Context CreateConsole(params string[] args)
         {
-            // TODO: dependency to 'System.Console, Version=4.0.0'
-            
-            var tconsole = Type.GetType("System.Console", false)?.GetTypeInfo();
-            Debug.Assert(tconsole != null, "TODO: dependency to 'System.Console, Version=4.0.0'");
-
             Stream stream = Stream.Null;
             TextWriter sink = TextWriter.Null;
 
+#if NET45 // .NET Portable
+            var tconsole = Type.GetType("System.Console", false)?.GetTypeInfo();
             if (tconsole != null)
             {
                 sink = (TextWriter)tconsole?.GetDeclaredProperty("Out")?.GetMethod?.Invoke(null, new object[0]) ?? sink;
                 stream = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").FirstOrDefault(m => m.GetParameters().Length == 0)?.Invoke(null, new object[0]) ?? stream;
             }
-
+#else
+            sink = Console.Out;
+            stream = Console.OpenStandardOutput();
+#endif
+            
             return new Context()
             {
                 _textSink = sink,
                 _streamSink = stream,
                 IsOutputBuffered = false,
             };
-            
-            //// initializes output redirecting fields:
-            //ctx._textSink = (TextWriter)tconsole.GetDeclaredProperty("Out").GetMethod.Invoke(null, new object[0]);
-            //ctx._streamSink = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").First(m => m.GetParameters().Length == 0).Invoke(null, new object[0]);
-            //ctx.IsOutputBuffered = false;
-
-            ////
-            //return ctx;
         }
 
         /// <summary>
@@ -83,9 +76,9 @@ namespace Pchp.Core
             return ctx;
         }
 
-        #endregion
+#endregion
 
-        #region Symbols
+#region Symbols
 
         /// <summary>
         /// Map of global functions.
@@ -203,9 +196,9 @@ namespace Pchp.Core
             throw new InvalidOperationException($"Type {type.Name} redeclared!");
         }
 
-        #endregion
+#endregion
 
-        #region Inclusions
+#region Inclusions
 
         /// <summary>
         /// Used by runtime.
@@ -268,9 +261,9 @@ namespace Pchp.Core
             }
         }
 
-        #endregion
+#endregion
 
-        #region Path Resolving
+#region Path Resolving
 
         /// <summary>
         /// Root directory (web root or console app root) where loaded scripts are relative to.
@@ -287,9 +280,9 @@ namespace Pchp.Core
         /// <returns>Full script path.</returns>
         public string ScriptPath<TScript>() => RootPath + ScriptsMap.GetScript<TScript>().Path;
 
-        #endregion
+#endregion
         
-        #region Superglobals
+#region Superglobals
 
         /// <summary>
         /// Array of global variables.
@@ -329,9 +322,9 @@ namespace Pchp.Core
         }
         PhpArray _server;
 
-        #endregion
+#endregion
 
-        #region Constants
+#region Constants
 
         /// <summary>
         /// Gets a constant value.
@@ -367,9 +360,9 @@ namespace Pchp.Core
         /// </summary>
         public IEnumerable<KeyValuePair<string, PhpValue>> GetConstants() => _constants;
 
-        #endregion
+#endregion
 
-        #region Error Reporting
+#region Error Reporting
 
         /// <summary>
         /// Whether to throw an exception on soft error (Notice, Warning, Strict).
@@ -400,9 +393,9 @@ namespace Pchp.Core
                 _errorReportingDisabled--;
         }
 
-        #endregion
+#endregion
 
-        #region IDisposable
+#region IDisposable
 
         public void Dispose()
         {
@@ -430,6 +423,6 @@ namespace Pchp.Core
             }
         }
 
-        #endregion
+#endregion
     }
 }
