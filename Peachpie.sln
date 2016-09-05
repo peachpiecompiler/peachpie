@@ -12,14 +12,30 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpSyntax", "src\Compiler\PhpSyntax\PhpSyntax.csproj", "{3775018B-7F9F-4CB1-8B0A-18CFB589A54B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpCodeAnalysis", "src\Compiler\PhpCodeAnalysis\PhpCodeAnalysis.csproj", "{1A060993-2FED-42C2-A9BB-1EF9DE9CBF83}"
+	ProjectSection(ProjectDependencies) = postProject
+		{262137A5-BB53-4B82-B7B8-E44A9898AE33} = {262137A5-BB53-4B82-B7B8-E44A9898AE33}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{664C373F-DAA4-4E03-B250-C64CDCA3C71E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "peach", "src\Compiler\peach\peach.csproj", "{5CDE7685-F997-4515-86D2-CAE834FF3ED3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F699B379-97F0-4385-B2CB-3296003C8008} = {F699B379-97F0-4385-B2CB-3296003C8008}
+		{262137A5-BB53-4B82-B7B8-E44A9898AE33} = {262137A5-BB53-4B82-B7B8-E44A9898AE33}
+		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E} = {6B01EDAF-56BD-4302-98FD-EDD81FA2617E}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "runtests", "src\Tools\runtests\runtests.csproj", "{BDE73F7B-8E77-4648-BC17-CAA0F0095D04}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F699B379-97F0-4385-B2CB-3296003C8008} = {F699B379-97F0-4385-B2CB-3296003C8008}
+		{262137A5-BB53-4B82-B7B8-E44A9898AE33} = {262137A5-BB53-4B82-B7B8-E44A9898AE33}
+		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E} = {6B01EDAF-56BD-4302-98FD-EDD81FA2617E}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PchpRequestHandler", "src\Runtime\PchpRequestHandler\PchpRequestHandler.csproj", "{F0566051-DB18-4DE4-B3CE-D97C1F96258E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{262137A5-BB53-4B82-B7B8-E44A9898AE33} = {262137A5-BB53-4B82-B7B8-E44A9898AE33}
+	EndProjectSection
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.NETCore.Compiler.Tools", "src\Peachpie.NETCore.Compiler.Tools\Peachpie.NETCore.Compiler.Tools.xproj", "{F679A98B-01EE-4A7F-8D56-F0DED48450AF}"
 EndProject
