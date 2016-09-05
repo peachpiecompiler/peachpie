@@ -1,11 +1,12 @@
 ﻿{
-  "version": "0.1.0-*",
+  "version": "0.1.1-*",
 
   "packOptions": {
     "tags": [
       "peachpie",
       "runtime"
     ],
+    "summary": "Peachpie runtime.",
     "owners": [ "jmisek", "iolevel", "peachpie" ],
     "projectUrl": "https://github.com/iolevel/peachpie"
   },

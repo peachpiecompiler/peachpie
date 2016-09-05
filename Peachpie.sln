@@ -20,14 +20,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{664C373F-D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "peach", "src\Compiler\peach\peach.csproj", "{5CDE7685-F997-4515-86D2-CAE834FF3ED3}"
 	ProjectSection(ProjectDependencies) = postProject
-		{F699B379-97F0-4385-B2CB-3296003C8008} = {F699B379-97F0-4385-B2CB-3296003C8008}
 		{262137A5-BB53-4B82-B7B8-E44A9898AE33} = {262137A5-BB53-4B82-B7B8-E44A9898AE33}
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E} = {6B01EDAF-56BD-4302-98FD-EDD81FA2617E}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "runtests", "src\Tools\runtests\runtests.csproj", "{BDE73F7B-8E77-4648-BC17-CAA0F0095D04}"
 	ProjectSection(ProjectDependencies) = postProject
-		{F699B379-97F0-4385-B2CB-3296003C8008} = {F699B379-97F0-4385-B2CB-3296003C8008}
 		{262137A5-BB53-4B82-B7B8-E44A9898AE33} = {262137A5-BB53-4B82-B7B8-E44A9898AE33}
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E} = {6B01EDAF-56BD-4302-98FD-EDD81FA2617E}
 	EndProjectSection
@@ -43,7 +41,11 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Runtime", "src\Pea
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.NETStandard.Library", "src\Peachpie.NETStandard.Library\Peachpie.NETStandard.Library.xproj", "{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.NETStandard.App", "src\Peachpie.NETStandard.App\Peachpie.NETStandard.App.xproj", "{F699B379-97F0-4385-B2CB-3296003C8008}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{63D67827-E6F7-4BA1-A696-E51B24A0232E}"
+	ProjectSection(SolutionItems) = preProject
+		src\Peachpie.CodeAnalysis.nuspec = src\Peachpie.CodeAnalysis.nuspec
+		src\Peachpie.NETStandard.App.nuspec = src\Peachpie.NETStandard.App.nuspec
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -244,26 +246,6 @@ Global
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x64.Build.0 = Release|Any CPU
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x86.ActiveCfg = Release|Any CPU
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x86.Build.0 = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|ARM.Build.0 = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|x64.Build.0 = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Debug|x86.Build.0 = Debug|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|ARM.ActiveCfg = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|ARM.Build.0 = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|x64.ActiveCfg = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|x64.Build.0 = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|x86.ActiveCfg = Release|Any CPU
-		{F699B379-97F0-4385-B2CB-3296003C8008}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

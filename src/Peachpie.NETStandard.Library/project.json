@@ -1,24 +1,25 @@
 ﻿{
-  "version": "0.1.0-*",
+  "version": "0.1.1-*",
 
   "packOptions": {
     "tags": [
-      "peachpoe",
+      "peachpie",
       "library"
     ],
+    "summary": "Peachpie library containing standard function set.",
     "owners": [ "jmisek", "iolevel", "peachpie" ],
     "projectUrl": "https://github.com/iolevel/peachpie"
-  },
-
-  "dependencies": {
-    "NETStandard.Library": "1.6.0",
-    "Peachpie.Runtime": "0.1.0-*"
   },
 
   "buildOptions": {
     "xmlDoc": true,
     "keyFile": "../../build/StrongKeys/core.snk",
     "nowarn": [ "1591", "1574" ]
+  },
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "Peachpie.Runtime": "0.1.0-*"
   },
 
   "frameworks": {
