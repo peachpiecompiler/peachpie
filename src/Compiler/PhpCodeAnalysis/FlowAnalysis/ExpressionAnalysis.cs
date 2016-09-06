@@ -1144,8 +1144,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         var type = (NamedTypeSymbol)_model.GetType(classtype.QualifiedName);
                         if (type != null)
                         {
-                            // TODO: resolve all candidates, visibility
-                            x.TargetMethod = type.LookupMember<MethodSymbol>(x.Name.NameValue.Name.Value);
+                            var candidates = type.LookupMethods(x.Name.NameValue.Name.Value);
+                            var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
+                            x.TargetMethod = new OverloadsList(candidates.ToArray()).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
                         }
                     }
                 }
@@ -1159,8 +1160,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {
-                // TODO: resolve all candidates, visibility
-                x.TargetMethod = x.TypeRef.ResolvedType.LookupMember<MethodSymbol>(x.Name.NameValue.Name.Value);
+                // TODO: resolve all candidates, visibility, static methods or instance on self/parent/static
+                var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
+                // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
+
+                var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
+                x.TargetMethod = new OverloadsList(candidates.ToArray()).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
             }
         }
 
@@ -1174,19 +1179,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (tref.TypeRef is DirectTypeRef)
             {
                 var qname = ((DirectTypeRef)tref.TypeRef).ClassName;
-                if (qname.IsSelfClassName)
+                if (qname.IsReservedClassName)
                 {
-                    tref.ResolvedType = TypeCtx.ContainingType ?? new MissingMetadataTypeSymbol(qname.ToString(), 0, false);
-                }
-                else if (qname.IsParentClassName)
-                {
-                    tref.ResolvedType = TypeCtx.ContainingType?.BaseType ?? new MissingMetadataTypeSymbol(qname.ToString(), 0, false);
-                }
-                else if (qname.IsStaticClassName)
-                {
-                    this.Routine.Flags |= RoutineFlags.UsesLateStatic;
+                    if (qname.IsSelfClassName)
+                    {
+                        tref.ResolvedType = TypeCtx.ContainingType ?? new MissingMetadataTypeSymbol(qname.ToString(), 0, false);
+                    }
+                    else if (qname.IsParentClassName)
+                    {
+                        tref.ResolvedType = TypeCtx.ContainingType?.BaseType ?? new MissingMetadataTypeSymbol(qname.ToString(), 0, false);
+                    }
+                    else if (qname.IsStaticClassName)
+                    {
+                        this.Routine.Flags |= RoutineFlags.UsesLateStatic;
 
-                    throw new NotImplementedException("Late static bound type.");
+                        throw new NotImplementedException("Late static bound type.");
+                    }
                 }
                 else
                 {
@@ -1317,13 +1325,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (typerefs.Count == 1 && typerefs[0].IsObject)
                 {
                     // TODO: x.Instance.ResultType instead of following
-                    var t = _model.GetType(typerefs[0].QualifiedName);
+
+                    var t = (NamedTypeSymbol)_model.GetType(typerefs[0].QualifiedName);
                     if (t != null)
                     {
                         if (x.FieldName.IsDirect)
                         {
                             // TODO: visibility and resolution (model)
-                            var field = t.GetMembers(x.FieldName.NameValue.Value).OfType<FieldSymbol>().SingleOrDefault();
+
+                            var field = t.LookupMember<FieldSymbol>(x.FieldName.NameValue.Value);
                             if (field != null)
                             {
                                 x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
@@ -1332,11 +1342,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             }
                             else
                             {
-                                // TODO: use runtime fields directly, __get, __set, etc.,
-                                // do not fallback to BoundIndirectFieldPlace
+                                var prop = t.LookupMember<PropertySymbol>(x.FieldName.NameValue.Value);
+                                if (prop != null)
+                                {
+                                    x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
+                                    x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
+                                    return;
+                                }
+                                else
+                                {
+                                    // TODO: use runtime fields directly, __get, __set, etc.,
+                                    // do not fallback to BoundIndirectFieldPlace
+                                }
                             }
                         }
                     }
+
                 }
 
                 // dynamic behavior
@@ -1358,7 +1379,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Debug.Assert(!x.Access.IsEnsure && !x.Access.IsWrite && !x.Access.IsReadRef);
                 }
 
-                if (x.FieldName.IsDirect && ParentType != null)
+                if (ParentType != null && x.FieldName.IsDirect)
                 {
                     // TODO: CLR properties
 
@@ -1386,6 +1407,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                         x.TypeRefMask = field.GetResultType(TypeCtx);
                         return;
+                    }
+                    else if (x.IsStaticField)
+                    {
+                        // TODO: visibility
+                        var prop = ParentType.LookupMember<PropertySymbol>(x.FieldName.NameValue.Value);
+                        if (prop != null)
+                        {
+                            x.BoundReference = new BoundPropertyPlace(null, prop);
+                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
+                            return;
+                        }
                     }
                 }
 

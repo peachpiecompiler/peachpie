@@ -1066,8 +1066,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             cg.EmitConvert(valueType, 0, setter.Parameters[0].Type);
             cg.EmitCall(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, setter);
-
-            // TODO: unset
         }
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)

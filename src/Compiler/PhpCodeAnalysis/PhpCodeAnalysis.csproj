@@ -190,6 +190,7 @@
     <Compile Include="Symbols\PE\PEModuleSymbol.cs" />
     <Compile Include="Symbols\PE\PENamedTypeSymbol.cs" />
     <Compile Include="Symbols\PE\PENamespaceSymbol.cs" />
+    <Compile Include="Symbols\SignatureEqualityComparer.cs" />
     <Compile Include="Symbols\Source\ExplicitInterfaceHelpers.cs" />
     <Compile Include="Symbols\Source\IndexedTypeParameterSymbol.cs" />
     <Compile Include="Symbols\Source\IWithSynthesized.cs" />

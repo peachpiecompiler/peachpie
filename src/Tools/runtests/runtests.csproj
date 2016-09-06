@@ -76,6 +76,11 @@
       <Name>PhpSyntax</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+	<Reference Include="Peachpie.NETStandard.Library">
+      <HintPath>..\..\Peachpie.NETStandard.Library\bin\$(Configuration)\portable45-net45+win8\Peachpie.NETStandard.Library.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

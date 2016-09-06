@@ -644,7 +644,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                 thisType = Emit(thisExpr);
                 Debug.Assert(thisType != null && thisType.SpecialType != SpecialType.System_Void);
 
-                if (!method.HasThis)
+                if (method.HasThis)
+                {
+                    if (thisType.IsValueType)
+                    {
+                        EmitStructAddr(thisType);   // value -> valueref
+                    }
+                }
+                else
                 {
                     EmitPop(thisType);
                     thisType = null;

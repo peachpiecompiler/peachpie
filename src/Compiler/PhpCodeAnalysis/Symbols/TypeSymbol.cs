@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual bool IsPointerType => false;
 
         public virtual SpecialType SpecialType => SpecialType.None;
-        
+
         /// <summary>
         /// The original definition of this symbol. If this symbol is constructed from another
         /// symbol by type substitution then OriginalDefinition gets the original symbol as it was defined in
@@ -271,6 +271,24 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return null;
+        }
+
+        public MethodSymbol[] LookupMethods(string name)
+        {
+            var set = new HashSet<MethodSymbol>(new SignatureEqualityComparer());
+
+            for (var t = this; t != null; t = t.BaseType)
+            {
+                set.UnionWith(t.GetMembers(name).OfType<MethodSymbol>());
+            }
+
+            foreach (var t in this.AllInterfaces)
+            {
+                set.UnionWith(t.GetMembers(name).OfType<MethodSymbol>());
+            }
+
+            //
+            return set.ToArray();
         }
     }
 }

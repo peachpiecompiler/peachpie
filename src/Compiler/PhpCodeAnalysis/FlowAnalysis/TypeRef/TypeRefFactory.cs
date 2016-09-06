@@ -40,6 +40,7 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Double: return DoubleTypeRef;
                 case SpecialType.System_Boolean: return BoolTypeRef;
                 case SpecialType.System_Object: return new ClassTypeRef(Syntax.QualifiedName.SystemObject);
+                case SpecialType.System_DateTime: return new ClassTypeRef(new Syntax.QualifiedName(new Syntax.Name("DateTime"), new[] { new Syntax.Name("System") }));
                 default:
                     throw new NotImplementedException();
             }
