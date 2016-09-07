@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Copies a value type from the top of evaluation stack into a temporary variable and loads its address.
         /// </summary>
-        private void EmitStructAddr(NamedTypeSymbol t)
+        private void EmitStructAddr(TypeSymbol t)
         {
             Debug.Assert(t.IsStructType());
             var tmp = GetTemporaryLocal(t, true);
