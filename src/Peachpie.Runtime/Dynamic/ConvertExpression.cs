@@ -11,63 +11,6 @@ using System.Threading.Tasks;
 namespace Pchp.Core.Dynamic
 {
     /// <summary>
-    /// Conversion value used for overload resolution.
-    /// </summary>
-    [Flags]
-    public enum ConversionCost : ushort
-    {
-        /// <summary>
-        /// No conversion is needed. Best case.
-        /// </summary>
-        Pass = 0,
-
-        /// <summary>
-        /// The operation is costly but the value is kept without loosing precision.
-        /// </summary>
-        PassCostly = 1,
-
-        /// <summary>
-        /// Conversion using implicit cast without loosing precision.
-        /// </summary>
-        ImplicitCast = 2,
-
-        /// <summary>
-        /// Conversion using explicit cast that may loose precision.
-        /// </summary>
-        LoosingPrecision = 4,
-
-        /// <summary>
-        /// Conversion is possible but the value is lost and warning should be generated.
-        /// </summary>
-        Warning = 8,
-
-        /// <summary>
-        /// Implicit value will be used, argument is missing and parameter is optional.
-        /// </summary>
-        DefaultValue = 16,
-
-        /// <summary>
-        /// Too many arguments provided. Arguments will be omitted.
-        /// </summary>
-        TooManyArgs = 32,
-
-        /// <summary>
-        /// Missing mandatory arguments, default values will be used instead.
-        /// </summary>
-        MissingArgs = 64,
-
-        /// <summary>
-        /// Conversion does not exist.
-        /// </summary>
-        NoConversion = 128,
-
-        /// <summary>
-        /// Unspecified error.
-        /// </summary>
-        Error = 256,
-    }
-
-    /// <summary>
     /// Helper methods for converting expressions.
     /// </summary>
     internal static class ConvertExpression
@@ -355,16 +298,25 @@ namespace Pchp.Core.Dynamic
         public static Expression BindCost(Expression arg, Type target)
         {
             if (arg == null || target == null)
+            {
                 throw new ArgumentNullException();
+            }
 
             var t = arg.Type;
             if (t == target)
+            {
                 return Expression.Constant(ConversionCost.Pass);
+            }
 
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
             if (t == typeof(double)) return Expression.Constant(BindCostFromDouble(arg, target));
             if (t == typeof(long) || t == typeof(int)) return Expression.Constant(BindCostFromLong(arg, target));
             if (t == typeof(PhpNumber)) return BindCostFromNumber(arg, target);
+            if (t == typeof(string)) return Expression.Constant(BindCostFromString(arg, target));
+            if (t == typeof(PhpString)) return Expression.Constant(BindCostFromPhpString(arg, target));
+
+            // other types
+            if (t.GetTypeInfo().IsAssignableFrom(target.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
 
             //
             throw new NotImplementedException($"costof({t} -> {target})");
@@ -414,6 +366,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
+            if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
             throw new NotImplementedException($"costof(long -> {target})");
         }
@@ -431,6 +384,40 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.PassCostly);
             
             return Expression.Constant(ConversionCost.Warning);
+        }
+
+        static ConversionCost BindCostFromString(Expression arg, Type target)
+        {
+            if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(long)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(double)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(PhpNumber)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(string)) return (ConversionCost.Pass);
+            if (target == typeof(PhpString)) return (ConversionCost.PassCostly);
+            if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
+            if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
+
+            var tinfo = target.GetTypeInfo();
+            if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) throw new NotImplementedException("IPhpCallable");
+
+            return ConversionCost.Error;
+        }
+
+        static ConversionCost BindCostFromPhpString(Expression arg, Type target)
+        {
+            if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(long)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(double)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(PhpNumber)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(string)) return (ConversionCost.PassCostly);
+            if (target == typeof(PhpString)) return (ConversionCost.Pass);
+            if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
+            if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
+
+            var tinfo = target.GetTypeInfo();
+            if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) throw new NotImplementedException("IPhpCallable");
+
+            return ConversionCost.Error;
         }
 
         #endregion
