@@ -16,7 +16,7 @@
     "keyFile": "../../build/StrongKeys/core.snk"
   },
   "dependencies": {
-    "Peachpie.CodeAnalysis": "0.1.1-preview5"
+    "Peachpie.CodeAnalysis": "0.1.1-preview6"
   },
   "frameworks": {
     "netcoreapp1.0": {

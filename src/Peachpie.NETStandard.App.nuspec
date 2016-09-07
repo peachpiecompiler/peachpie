@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Peachpie.NETStandard.App</id>
-    <version>0.1.1-preview3</version>
+    <version>0.1.1-tmp</version>
     <title>Peachpie.NETStandard.App.</title>
     <description>Peachpie platform dependencies.</description>
     <authors>Jakub Misek, Peachpie</authors>
@@ -12,8 +12,8 @@
     <tags>php peachpie dotnet</tags>
     <dependencies>
       <dependency id="NETStandard.Library" version="[1.6.0, )" />
-      <dependency id="Peachpie.NETStandard.Library" version="[0.1.1-preview5, )" />
-      <dependency id="Peachpie.Runtime" version="[0.1.1-preview5, )" />
+      <dependency id="Peachpie.NETStandard.Library" version="[0.1.1-preview6, )" />
+      <dependency id="Peachpie.Runtime" version="[0.1.1-preview6, )" />
     </dependencies>
   </metadata>
   <files></files>
