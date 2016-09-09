@@ -51,7 +51,8 @@ namespace Pchp.Library
         /// <summary>
 		/// Returns a string formatted according to the given format string using the current local time.
 		/// </summary>
-		/// <param name="format">Format definition for output.</param>
+		/// <param name="ctx">Current runtime context.</param>
+        /// <param name="format">Format definition for output.</param>
 		/// <returns>Formatted string.</returns>
 		public static string date(Context ctx, string format)
         {
@@ -61,6 +62,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a string formatted according to the given format string using the given integer timestamp.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">Format definition for output.</param>
         /// <param name="timestamp">Nuber of seconds since 1970 specifying a date.</param>
         /// <returns>Formatted string.</returns>
@@ -93,6 +95,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a part of current time.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">Format definition for output.</param>
         /// <returns>Part of the date, e.g. month or hours.</returns>
         public static int idate(Context ctx, string format)
@@ -107,6 +110,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a part of a specified timestamp.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">Format definition for output.</param>
         /// <param name="timestamp">Nuber of seconds since 1970 specifying a date.</param>
         /// <returns>Part of the date, e.g. month or hours.</returns>
@@ -621,6 +625,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns an associative array containing the date information of the timestamp.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="timestamp">Number of seconds since 1970.</param>
         /// <returns>Associative array with date information.</returns>
         public static PhpArray getdate(Context ctx, int timestamp)
@@ -631,6 +636,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns an associative array containing the date information.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="utc">UTC date time.</param>
         /// <returns>Associative array with date information.</returns>
         static PhpArray GetDate(Context ctx, System_DateTime utc)
@@ -738,6 +744,7 @@ namespace Pchp.Library
         /// The localtime() function returns an array identical to that of the structure returned by the C function call.
         /// Time specified by the parameter timestamp is used, regular numericaly indexed array is returned.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="timestamp">Number of seconds since 1970.</param>
         /// <returns>Array containing values specifying the date and time.</returns>
         public static PhpArray localtime(Context ctx, int timestamp)
@@ -766,6 +773,7 @@ namespace Pchp.Library
         /// <term><c>"tm_isdst"</c></term><description>Is daylight savings time in effect</description>
         /// </list>
         /// </remarks>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="timestamp"></param>
         /// <param name="returnAssociative"></param>
         /// <returns></returns>

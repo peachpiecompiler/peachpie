@@ -1660,6 +1660,7 @@ namespace Pchp.Library
         /// Splits a string into tokens using given set of delimiter characters. Tokenizes the string
         /// that was passed to a previous call of the two-parameter version.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="delimiters">Set of delimiters.</param>
         /// <returns>The next token or a <B>null</B> reference.</returns>
         /// <remarks>This method implements the behavior introduced with PHP 4.1.0, i.e. empty tokens are
@@ -1673,6 +1674,7 @@ namespace Pchp.Library
         /// <summary>
         /// Splits a string into tokens using given set of delimiter characters.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="str">The string to tokenize.</param>
         /// <param name="delimiters">Set of delimiters.</param>
         /// <returns>The first token or null. Call one-parameter version of this method to get next tokens.
@@ -1938,6 +1940,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a formatted string.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">The format string. 
         /// See <A href="http://www.php.net/manual/en/function.sprintf.php">PHP manual</A> for details.
         /// Besides, a type specifier "%C" is applicable. It converts an integer value to Unicode character.</param>
@@ -2188,6 +2191,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a formatted string.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">The format string. For details, see PHP manual.</param>
         /// <param name="arguments">The arguments.
         /// See <A href="http://www.php.net/manual/en/function.sprintf.php">PHP manual</A> for details.
@@ -2217,6 +2221,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns a formatted string.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">The format string. For details, see PHP manual.</param>
         /// <param name="arguments">The arguments.</param>
         /// <returns>The formatted string.</returns>

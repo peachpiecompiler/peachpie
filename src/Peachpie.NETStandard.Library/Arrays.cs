@@ -153,7 +153,6 @@ namespace Pchp.Library
         /// or <b>false</b> if the enumerator has moved behind the last item of <paramref name="array"/>.
         /// </returns>
         /// <remarks>The value returned is dereferenced.</remarks>
-        /// <include file='Doc/Arrays.xml' path='docs/intrinsicEnumeration/*'/>
         public static PhpValue next(IPhpEnumerable array)
         {
             if (array == null)
@@ -250,7 +249,6 @@ namespace Pchp.Library
         /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="array"/>
         /// before the call.
         /// </returns>
-        /// <include file='Doc/Arrays.xml' path='docs/intrinsicEnumeration/*'/>
         //[return: CastToFalse, PhpDeepCopy]
         public static PhpArray each(IPhpEnumerable array)
         {
@@ -1144,6 +1142,7 @@ namespace Pchp.Library
         /// <summary>
         /// Creates an array containing range of elements with step 1.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="low">Lower bound of the interval.</param>
         /// <param name="high">Upper bound of the interval.</param>
         /// <returns>The array.</returns>
@@ -1152,6 +1151,7 @@ namespace Pchp.Library
         /// <summary>
         /// Creates an array containing range of elements with arbitrary step.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="low">Lower bound of the interval.</param>
         /// <param name="high">Upper bound of the interval.</param>
         /// <param name="step">The step.</param>
@@ -1241,6 +1241,7 @@ namespace Pchp.Library
         /// <summary>
         /// Gets an instance of PHP comparer parametrized by specified method, order, and compared item type.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="method">The <see cref="ComparisonMethod"/>.</param>
         /// <param name="order">The <see cref="SortingOrder"/>.</param>
         /// <param name="keyComparer">Whether to compare keys (<B>false</B> for value comparer).</param>
@@ -1290,6 +1291,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using regular comparison method for comparing values.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
@@ -1301,6 +1303,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using specified comparison method for comparing values.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -1324,6 +1327,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using regular comparison method for comparing values preserving key-value associations.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
@@ -1335,6 +1339,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using specified comparison method for comparing values preserving key-value associations.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -1357,6 +1362,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using regular comparison method for comparing keys.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
@@ -1368,6 +1374,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using specified comparison method for comparing keys.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -1390,6 +1397,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using regular comparison method for comparing values in reverse order.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
@@ -1401,6 +1409,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using specified comparison method for comparing values in reverse order.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -1425,6 +1434,7 @@ namespace Pchp.Library
         /// Sorts an array using regular comparison method for comparing values in reverse order 
         /// preserving key-value associations.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
@@ -1437,6 +1447,7 @@ namespace Pchp.Library
         /// Sorts an array using specified comparison method for comparing values in reverse order
         /// preserving key-value associations.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -1459,6 +1470,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using regular comparison method for comparing keys in reverse order.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
@@ -1470,6 +1482,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using specified comparison method for comparing keys in reverse order.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -1496,12 +1509,13 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using user comparison callback for comparing values.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="caller">The class context used to bind the callback.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool usort(Context ctx, [In, Out] PhpArray array, IPhpCallable compare)
+        public static bool usort(Context ctx /*, caller*/, [In, Out] PhpArray array, IPhpCallable compare)
         {
             if (array == null)
             {
@@ -1523,12 +1537,13 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array user comparison callback method for comparing values preserving key-value associations.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="caller">The class context used to bind the callback.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool uasort(Context ctx, [In, Out] PhpArray array, IPhpCallable compare)
+        public static bool uasort(Context ctx /*, caller*/, [In, Out] PhpArray array, IPhpCallable compare)
         {
             if (array == null)
             {
@@ -1547,12 +1562,13 @@ namespace Pchp.Library
         /// <summary>
         /// Sorts an array using user comparison callback for comparing keys.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="caller">The class context used to bind the callback.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool uksort(Context ctx, [In, Out] PhpArray array, IPhpCallable compare)
+        public static bool uksort(Context ctx /*, caller*/, [In, Out] PhpArray array, IPhpCallable compare)
         {
             if (array == null)
             {
@@ -1575,6 +1591,7 @@ namespace Pchp.Library
         /// Sorts an array using case sensitive natural comparison method for comparing 
         /// values preserving key-value association.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
@@ -1596,6 +1613,7 @@ namespace Pchp.Library
         /// Sorts an array using case insensitive natural comparison method for 
         /// comparing values preserving key-value association.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
@@ -1620,6 +1638,7 @@ namespace Pchp.Library
         /// <summary>
         /// Resolves arguments passed to <see cref="MultiSort"/> method according to PHP manual for <c>array_multisort</c> function.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="first">The first argument of <see cref="MultiSort"/>.</param>
         /// <param name="args">The rest of arguments of <see cref="MultiSort"/>.</param>
         /// <param name="arrays">An array to be filled with arrays passed in all arguments.</param>
@@ -1735,6 +1754,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sort multiple arrays.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="first">The first array to be sorted.</param>
         /// <param name="args">Arrays to be sorted along with flags affecting sort order and 
         /// comparison methods to be used. See PHP manual for more details.</param>
@@ -1868,6 +1888,7 @@ namespace Pchp.Library
         /// <summary>
         /// Computes the difference of arrays.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array from which to take items away.</param>
         /// <param name="arrays">The arrays to be differentiated.</param>
         /// <returns>The array containing all the entries of <paramref name="array"/> that are not present 
@@ -1894,6 +1915,7 @@ namespace Pchp.Library
         /// <summary>
         /// Computes the difference of arrays.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array from which to take items away.</param>
         /// <param name="arrays">The arrays to be differentiated.</param>
         /// <returns>The array containing all the entries of <paramref name="array"/> that are not present 
@@ -1922,6 +1944,7 @@ namespace Pchp.Library
         /// <summary>
         /// Computes the difference of arrays.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array from which to take items away.</param>
         /// <param name="arrays">The arrays to be differentiated.</param>
         /// <returns>The array containing all the entries of <paramref name="array"/> that are not present 
@@ -2569,6 +2592,7 @@ namespace Pchp.Library
         /// <summary>
         /// Removes duplicate values from an array.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array which duplicate values to remove.</param>
         /// <returns>A copy of <paramref name="array"/> without duplicated values.</returns>
         /// <remarks>
@@ -2581,6 +2605,7 @@ namespace Pchp.Library
         /// <summary>
         /// Removes duplicate values from an array.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array which duplicate values to remove.</param>
         /// <param name="sortFlags">Specifies how the values are compared to be identical.</param>
         /// <returns>A copy of <paramref name="array"/> without duplicated values.</returns>
@@ -3012,6 +3037,7 @@ namespace Pchp.Library
         /// <summary>
         /// Applies a user function or method on each element (value) of a specified dictionary.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="caller">Current class context.</param>
         /// <param name="array">The array (or generic dictionary) to walk through.</param>
         /// <param name="callback">
@@ -3034,7 +3060,7 @@ namespace Pchp.Library
         /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
         /// <returns><B>true</B>.</returns>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
-        public static bool array_walk(Context ctx, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data)
+        public static bool array_walk(Context ctx /*, caller*/, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data)
         {
             PhpValue[] args = PrepareWalk(array, callback, data);
             if (args == null) return false;
@@ -3062,13 +3088,14 @@ namespace Pchp.Library
         /// <summary>
         /// Applies a user function or method on each element (value) of a specified dictionary recursively.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="caller">Current class context.</param>
         /// <param name="array">The array to walk through.</param>
         /// <param name="callback">The callback called for each element of <paramref name="array"/>.</param>
         /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
         /// <remarks><seealso cref="Walk"/>.</remarks>
-        public static bool array_walk_recursive(Context ctx, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data)
+        public static bool array_walk_recursive(Context ctx /*, caller*/, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data)
         {
             var args = PrepareWalk(array, callback, data);
             if (args == null)
@@ -3093,7 +3120,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Prepares a walk for <see cref="array_walk"/> and <see cref="array_walk_recursive"/> methods.
+        /// Prepares a walk for <see cref="array_walk(Context, PhpHashtable, IPhpCallable, PhpValue)"/> and <see cref="array_walk_recursive(Context, PhpHashtable, IPhpCallable, PhpValue)"/> methods.
         /// </summary>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
         private static PhpValue[] PrepareWalk(IDictionary array, IPhpCallable callback, PhpValue data)
@@ -3119,7 +3146,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Visits an entry of array which <see cref="array_walk"/> or <see cref="array_walk_recursive"/> is walking through.
+        /// Visits an entry of array which <see cref="array_walk(Context, PhpHashtable, IPhpCallable, PhpValue)"/> or <see cref="array_walk_recursive(Context, PhpHashtable, IPhpCallable, PhpValue)"/> is walking through.
         /// </summary>
         private static void VisitEntryOnWalk(Context ctx,
             KeyValuePair<IntStringKey, PhpValue> entry,
@@ -3182,6 +3209,7 @@ namespace Pchp.Library
         /// <summary>
         /// Filters an array using a specified callback.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="caller">Current class context.</param>
         /// <param name="array">The array to be filtered.</param>
         /// <param name="callback">
@@ -3191,7 +3219,7 @@ namespace Pchp.Library
         /// </param>
         /// <returns>An array of unfiltered items.</returns>
         //[return: PhpDeepCopy]
-        public static PhpArray array_filter(Context ctx, PhpArray array, IPhpCallable callback)
+        public static PhpArray array_filter(Context ctx /*, caller*/, PhpArray array, IPhpCallable callback)
         {
             if (array == null)
             {
@@ -3257,6 +3285,7 @@ namespace Pchp.Library
         /// <summary>
         /// Applies a callback function on specified tuples one by one storing its results to an array.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="caller">The class context used to resolve given callback.</param>
         /// <param name="map">
         /// A callback to be called on tuples. The number of arguments should be the same as
@@ -3280,7 +3309,7 @@ namespace Pchp.Library
         /// to the array.
         /// </para>
         /// </remarks>
-        public static PhpArray array_map(Context ctx, IPhpCallable map, [In, Out] params PhpArray[] arrays)
+        public static PhpArray array_map(Context ctx /*, caller*/, IPhpCallable map, [In, Out] params PhpArray[] arrays)
         {
             //if (!PhpArgument.CheckCallback(map, caller, "map", 0, true)) return null;
             if (arrays == null || arrays.Length == 0)

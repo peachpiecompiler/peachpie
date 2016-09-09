@@ -86,6 +86,7 @@ namespace Pchp.Library
         /// <summary>
         /// Gets a culture specific for the given category.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="category">The category.</param>
         /// <returns>Non-null culture info.</returns>
         internal static CultureInfo GetCulture(Context ctx, Category category)
@@ -99,6 +100,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sets a culture specific for the given category.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="category">The category.</param>
         /// <param name="culture">The culture.</param>
         internal static void SetCulture(Context ctx, Category category, CultureInfo culture)
@@ -127,6 +129,7 @@ namespace Pchp.Library
         /// <summary>
         /// Creates a new <see cref="PhpLocaleStringComparer"/> comparing according to the current collate.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="ignoreCase">Whether to create a case-insensitive comparer.</param>
         /// <returns>The comparer.</returns>
         internal static PhpLocaleStringComparer GetStringComparer(Context ctx, bool ignoreCase)
@@ -203,6 +206,7 @@ namespace Pchp.Library
         /// <param name="category">
         /// A category to be modified. The only supported value in this version is <see cref="Category.All"/>.
         /// </param>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="locale">Either an instance of <see cref="PhpArray"/> containing locales or a locale.</param>
         /// <param name="moreLocales">If <paramref name="locale"/> is not of type <see cref="PhpArray"/> contains locales, ignored otherwise.</param>
         /// <returns>The culture string (e.g. "en-US").</returns>
@@ -249,6 +253,7 @@ namespace Pchp.Library
         /// <summary>
         /// Searches in given objects for a locale string describing an existing culture.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="locale">Contains either an instance of <see cref="PhpArray"/> containing locales or a locale.</param>
         /// <param name="moreLocales">If <paramref name="locale"/> is not of type <see cref="PhpArray"/> contains locales, ignored otherwise.</param>
         /// <param name="culture">The resulting culture. A <B>null</B> reference means no culture has been found.</param>
@@ -348,7 +353,8 @@ namespace Pchp.Library
         /// <summary>
 		/// Compares two specified strings, honoring their case, using culture specific comparison.
 		/// </summary>
-		/// <param name="str1">A string.</param>
+		/// <param name="ctx">Current runtime context.</param>
+        /// <param name="str1">A string.</param>
 		/// <param name="str2">A string.</param>
 		/// <returns>
 		/// Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,

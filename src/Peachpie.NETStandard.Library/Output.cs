@@ -23,6 +23,7 @@ namespace Pchp.Library
         /// <summary>
         /// Generates output according to the specified formatting string.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">The formatting string. See also the <b>sprintf</b> function (<see cref="PhpStrings.Format"/>).</param>
         /// <param name="args">Variables to format.</param>
         /// <returns>Returns the length of the outputted string. </returns>
@@ -36,6 +37,7 @@ namespace Pchp.Library
         /// <summary>
         /// Generates output according to the specified formatting string.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">The formatting string.</param>
         /// <param name="args">Array of variables to format.</param>
         /// <returns>Returns the length of the outputted string. </returns>
@@ -60,6 +62,7 @@ namespace Pchp.Library
         /// Increases the level of buffering, enables output buffering if disabled and assignes the filtering callback
         /// to the new level of buffering.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="filter">The filtering callback. Ignores invalid callbacks.</param>
         /// <returns>Whether the filter is empty or a valid callback.</returns>
         public static bool ob_start(Context ctx, Delegate filter) => ob_start(ctx, filter, 0, true);
@@ -68,6 +71,7 @@ namespace Pchp.Library
         /// Increases the level of buffering, enables output buffering if disabled and assignes the filtering callback
         /// to the new level of buffering.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="filter">The filtering callback. Ignores invalid callbacks.</param>
         /// <param name="chunkSize">Not supported.</param>
         /// <returns>Whether the filter is empty or a valid callback.</returns>
@@ -77,6 +81,7 @@ namespace Pchp.Library
         /// Increases the level of buffering, enables output buffering if disabled and assignes the filtering callback
         /// to the new level of buffering.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="filter">The filtering callback. Ignores invalid callbacks.</param>
         /// <param name="chunkSize">Not supported.</param>
         /// <param name="erase">Not supported.</param>
@@ -131,7 +136,7 @@ namespace Pchp.Library
         /// <summary>
         /// Decreases the level of buffering and discards or flushes data on the current level of buffering.
         /// </summary>
-        /// <param name="context">Current script context.</param>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="flush">Whether to flush data.</param>
         /// <returns>Whether the content was discarded and the level was decreased.</returns>
         private static bool EndInternal(Context/*!*/ ctx, bool flush)
@@ -158,7 +163,7 @@ namespace Pchp.Library
         /// <summary>
         /// Gets the contents of the current buffer and cleans it.
         /// </summary>
-        /// <returns>The content of type <see cref="string"/> or <see cref="byte[]"/> or <c>false</c>.</returns>
+        /// <returns>The content of type <see cref="string"/> or <see cref="byte"/> or <c>false</c>.</returns>
         public static PhpValue ob_get_clean(Context ctx)
         {
             BufferedOutput bo = ctx.BufferedOutput;
@@ -172,7 +177,7 @@ namespace Pchp.Library
         /// <summary>
         /// Gets the content of the current buffer.
         /// </summary>
-        /// <returns>The content of type <see cref="string"/> or <see cref="byte[]"/> or <c>false</c>.</returns>
+        /// <returns>The content of type <see cref="string"/> or <see cref="byte"/> or <c>false</c>.</returns>
         public static PhpValue ob_get_contents(Context ctx)
         {
             return ctx.BufferedOutput.GetContent();
@@ -219,6 +224,7 @@ namespace Pchp.Library
         /// <summary>
         /// Get the status of the current or all output buffers.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="full">Whether to retrieve extended information about all levels of buffering or about the current one.</param>
         /// <returns>The array of name => value pairs containing information.</returns>
         public static PhpArray ob_get_status(Context ctx, bool full)
@@ -312,6 +318,7 @@ namespace Pchp.Library
         /// Switches implicit flushing on or off.
         /// No value is returned.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="doFlush">Do flush implicitly?</param>
         /// <remarks>
         /// Affects the current script context.
@@ -375,6 +382,7 @@ namespace Pchp.Library
         /// <summary>
         /// Compresses data by gzip compression.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="data">Data to be compressed.</param>
         /// <param name="mode">Compression mode.</param>
         /// <returns>Compressed data or <c>FALSE</c>.</returns>

@@ -276,6 +276,7 @@ namespace Pchp.Library
         /// <summary>
         /// Converts to string.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="variable">The variable.</param>
         /// <returns>The converted value.</returns>
         public static string strval(Context ctx, PhpValue variable) => variable.ToString(ctx);
@@ -290,6 +291,7 @@ namespace Pchp.Library
         /// <summary>
         /// Sets variable's type.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="variable">The variable.</param>
         /// <param name="type">The string identifying a new type. See PHP manual for details.</param>
         /// <returns>Whether <paramref name="type"/> is valid type identifier.</returns>
@@ -498,6 +500,7 @@ namespace Pchp.Library
         /// <summary>
         /// Verifies that the contents of a variable can be called as a function.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="caller">Current class context.</param>
         /// <param name="variable">The variable.</param>
         /// <param name="syntaxOnly">If <B>true</B>, it is only checked that has <pararef name="variable"/>
@@ -507,7 +510,7 @@ namespace Pchp.Library
         /// <c>SomeClass::SomeMethod</c>).</param>
         /// <returns><B>true</B> if <paramref name="variable"/> denotes a function, <B>false</B>
         /// otherwise.</returns>
-        public static bool is_callable(Context ctx, PhpValue variable, bool syntaxOnly, out string callableName)
+        public static bool is_callable(Context ctx /*, caller*/, PhpValue variable, bool syntaxOnly, out string callableName)
         {
             var callback = variable.AsCallable();
             if (PhpVariable.IsValidCallback(callback))
@@ -874,6 +877,7 @@ namespace Pchp.Library
         /// <summary>
         /// Outputs or returns human-readable information about a variable. 
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="value">The variable.</param>
         /// <param name="returnString">Whether to return a string representation.</param>
         /// <returns>A string representation or <c>true</c> if <paramref name="returnString"/> is <c>false</c>.</returns>
@@ -897,6 +901,7 @@ namespace Pchp.Library
         /// <summary>
         /// Dumps variables.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="variables">Variables to be dumped.</param>
         public static void var_dump(Context ctx, params PhpValue[] variables)
         {
@@ -910,6 +915,7 @@ namespace Pchp.Library
         /// <summary>
         /// Outputs or returns a pars-able string representation of a variable.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="variable">The variable.</param>
         /// <param name="returnString">Whether to return a string representation.</param>
         /// <returns>A string representation or a <c>null</c> reference if <paramref name="returnString"/> is <c>false</c>.</returns>

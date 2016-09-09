@@ -16,7 +16,8 @@ namespace Pchp.Library
         /// <summary>
 		/// Defines a constant.
 		/// </summary>
-		/// <param name="name">The name of the constant. Can be arbitrary string.</param>
+		/// <param name="ctx">Current runtime context.</param>
+        /// <param name="name">The name of the constant. Can be arbitrary string.</param>
 		/// <param name="value">The value of the constant.  Can be <B>null</B> or a scalar or array.</param>
 		/// <returns>Whether the new constant has been defined.</returns>
         public static bool define(Context ctx, string name, PhpValue value)
@@ -25,6 +26,7 @@ namespace Pchp.Library
         /// <summary>
         /// Defines a constant.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="name">The name of the constant. Can be arbitrary string.</param>
         /// <param name="value">The value of the constant. Can be <B>null</B> or a scalar or array.</param>
         /// <param name="caseInsensitive">Whether the name is case insensitive.</param>
@@ -35,7 +37,7 @@ namespace Pchp.Library
         /// <summary>
         /// Determines whether a constant is defined.
         /// </summary>
-        /// <param name="context">Current <see cref="ScriptContext"/>.</param>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="name">The name of the constant.</param>
         /// <returns>Whether the constant is defined.</returns>
         public static bool defined(Context ctx, string name)
@@ -44,7 +46,8 @@ namespace Pchp.Library
         /// <summary>
 		/// Retrieves a value of a constant.
 		/// </summary>
-		/// <param name="name">The name of the constant.</param>
+		/// <param name="ctx">Current runtime context.</param>
+        /// <param name="name">The name of the constant.</param>
 		/// <returns>The value.</returns>
 		public static PhpValue constant(Context ctx, string name)
             => ctx.GetConstant(name);
@@ -68,6 +71,7 @@ namespace Pchp.Library
         /// <summary>
         /// Retrieves defined constants.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="categorize">Returns a multi-dimensional array with categories in the keys of the first dimension and constants and their values in the second dimension. </param>
         /// <returns>Retrives the names and values of all the constants currently defined.</returns>
         public static PhpArray get_defined_constants(Context ctx, bool categorize)
