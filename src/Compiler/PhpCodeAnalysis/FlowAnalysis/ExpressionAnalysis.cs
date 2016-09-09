@@ -765,6 +765,42 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Resolves value of bit operation.
+        /// </summary>
+        /// <remarks>TODO: move to **evaluation**.</remarks>
+        object ResolveBitOperation(object xobj, object yobj, Operations op)
+        {
+            if (xobj is string && yobj is string)
+            {
+                throw new NotImplementedException();    // bit op of chars
+            }
+
+            var x = Core.PhpValue.FromClr(xobj);
+            var y = Core.PhpValue.FromClr(yobj);
+            long result;
+
+            // TODO: use PhpValue overriden operators
+
+            switch (op)
+            {
+                case Operations.BitOr: result = x.ToLong() | y.ToLong(); break;
+                case Operations.BitAnd: result = x.ToLong() & y.ToLong(); break;
+                case Operations.BitXor: result = x.ToLong() ^ y.ToLong(); break;
+                default:
+                    throw new ArgumentException(nameof(op));
+            }
+
+            if (result >= int.MinValue && result <= int.MaxValue)
+            {
+                return (int)result;
+            }
+            else
+            {
+                return result;
+            }
+        }
+
+        /// <summary>
         /// Gets resulting type of <c>+</c> operation.
         /// </summary>
         TypeRefMask GetPlusOperationType(BoundExpression left, BoundExpression right)
@@ -855,6 +891,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.BitAnd:
                 case Operations.BitOr:
                 case Operations.BitXor:
+
+                    if (x.Left.ConstantObject.HasValue && x.Right.ConstantObject.HasValue)
+                    {
+                        x.ConstantObject = ResolveBitOperation(x.Left.ConstantObject.Value, x.Right.ConstantObject.Value, x.Operation);
+                    }
+
                     return GetBitOperationType(x.Left.TypeRefMask, x.Right.TypeRefMask);    // int or string
 
                 #endregion

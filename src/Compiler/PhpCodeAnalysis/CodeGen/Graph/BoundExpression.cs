@@ -37,6 +37,21 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(this.Access.IsRead || this.Access.IsNone);
 
+            // load resulting value directly if resolved:
+            if (this.ConstantObject.HasValue)
+            {
+                if (this.Access.IsNone)
+                {
+                    return cg.CoreTypes.Void;
+                }
+
+                if (this.Access.IsRead)
+                {
+                    return cg.EmitLoadConstant(this.ConstantObject.Value);
+                }
+            }
+
+            //
             TypeSymbol returned_type;
 
             if (UsesOperatorMethod)
@@ -127,15 +142,14 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.BitAnd:
-                    //returned_typecode = EmitBitOperation(node, codeGenerator, Operators.BitOp.And);
+                    //returned_type = EmitBitAnd(cg, Left, Right);
                     //break;
                     throw new NotImplementedException();
 
                 case Operations.BitOr:
-                    //returned_typecode = EmitBitOperation(node, codeGenerator, Operators.BitOp.Or);
-                    //break;
-                    throw new NotImplementedException();
-
+                    returned_type = EmitBitOr(cg, Left, Right);
+                    break;
+                    
                 case Operations.BitXor:
                     //returned_typecode = EmitBitOperation(node, codeGenerator, Operators.BitOp.Xor);
                     //break;
@@ -466,6 +480,27 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     throw new NotImplementedException($"Sub({xtype.Name},...)");
             }
+        }
+
+        internal static TypeSymbol EmitBitOr(CodeGenerator cg, BoundExpression left, BoundExpression right)
+        {
+            // most common cases:
+            if (cg.IsLongOnly(left.TypeRefMask) && cg.IsLongOnly(right.TypeRefMask))
+            {
+                // i64 | i64 : i64
+                cg.EmitConvert(left, cg.CoreTypes.Long);
+                cg.EmitConvert(right, cg.CoreTypes.Long);
+                cg.Builder.EmitOpCode(ILOpCode.Or);
+                return cg.CoreTypes.Long;
+            }
+            
+            //
+            return EmitBitOr(cg, cg.Emit(left), right);
+        }
+
+        internal static TypeSymbol EmitBitOr(CodeGenerator cg, TypeSymbol xtype, BoundExpression right)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
