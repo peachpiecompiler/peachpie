@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -129,26 +130,15 @@ namespace Pchp.Library
         /// </summary>
         class ErrorContext
         {
-            ///// <summary>
-            ///// Stores user error handlers which has been rewritten by a new one.
-            ///// </summary>
-            //[ThreadStatic]
-            //private static Stack OldUserErrorHandlers;          // GENERICS: <ErrorHandlerRecord>
+            /// <summary>
+            /// Stores user error handlers which has been rewritten by a new one.
+            /// </summary>
+            public Stack<ErrorHandlerRecord> OldUserErrorHandlers = null;
 
-            ///// <summary>
-            ///// Stores user exception handlers which has been rewritten by a new one.
-            ///// </summary>
-            //[ThreadStatic]
-            //private static Stack OldUserExceptionHandlers;          // GENERICS: <PhpCallback>
-
-            ///// <summary>
-            ///// Clears <see cref="OldUserErrorHandlers"/> and <see cref="OldUserExceptionHandlers"/> on request end.
-            ///// </summary>
-            //private void ClearOldUserHandlers()
-            //{
-            //    OldUserErrorHandlers = null;
-            //    OldUserExceptionHandlers = null;
-            //}
+            /// <summary>
+            /// Stores user exception handlers which has been rewritten by a new one.
+            /// </summary>
+            public Stack<ErrorHandlerRecord> OldUserExceptionHandlers = null;
 
             /// <summary>
             /// Errors to be reported to user.
@@ -194,32 +184,33 @@ namespace Pchp.Library
             return result;
         }
 
-        ///// <summary>
-        ///// Internal record in the error handler stack.
-        ///// </summary>
-        //private class ErrorHandlerRecord
-        //{
-        //    /// <summary>
-        //    /// Error handler callback.
-        //    /// </summary>
-        //    public PhpCallback ErrorHandler;
+        /// <summary>
+        /// Internal record in the error handler stack.
+        /// </summary>
+        [DebuggerDisplay("{ErrorHandler,nq}, {ErrorTypes}")]
+        class ErrorHandlerRecord
+        {
+            /// <summary>
+            /// Error handler callback.
+            /// </summary>
+            public readonly PhpCallback ErrorHandler;
 
-        //    /// <summary>
-        //    /// Error types to be handled.
-        //    /// </summary>
-        //    public PhpError ErrorTypes;
+            /// <summary>
+            /// Error types to be handled.
+            /// </summary>
+            public readonly PhpError ErrorTypes;
 
-        //    /// <summary>
-        //    /// Public constructor of the class.
-        //    /// </summary>
-        //    /// <param name="handler">Error handler callback.</param>
-        //    /// <param name="errors">Error types to be handled.</param>
-        //    public ErrorHandlerRecord(PhpCallback handler, PhpError errors)
-        //    {
-        //        ErrorHandler = handler;
-        //        ErrorTypes = errors;
-        //    }
-        //}
+            /// <summary>
+            /// Public constructor of the class.
+            /// </summary>
+            /// <param name="handler">Error handler callback.</param>
+            /// <param name="errors">Error types to be handled.</param>
+            public ErrorHandlerRecord(PhpCallback handler, PhpError errors)
+            {
+                ErrorHandler = handler;
+                ErrorTypes = errors;
+            }
+        }
 
         ///// <summary>
         ///// Sets user defined handler to handle errors.
