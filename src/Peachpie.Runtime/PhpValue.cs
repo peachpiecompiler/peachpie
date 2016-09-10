@@ -190,6 +190,8 @@ namespace Pchp.Core
 
         public static bool operator >(PhpValue left, PhpValue right) => left.Compare(right) > 0;
 
+        public static PhpValue operator |(PhpValue left, PhpValue right) => Operators.BitOr(ref left, ref right);
+
         public static explicit operator bool(PhpValue value) => value.ToBoolean();
 
         public static explicit operator long(PhpValue value) => value.ToLong();

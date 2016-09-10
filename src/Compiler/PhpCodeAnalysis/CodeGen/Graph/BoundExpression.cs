@@ -485,7 +485,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal static TypeSymbol EmitBitOr(CodeGenerator cg, BoundExpression left, BoundExpression right)
         {
             // most common cases:
-            if (cg.IsLongOnly(left.TypeRefMask) && cg.IsLongOnly(right.TypeRefMask))
+            if (cg.IsLongOnly(left.TypeRefMask) || cg.IsLongOnly(right.TypeRefMask))
             {
                 // i64 | i64 : i64
                 cg.EmitConvert(left, cg.CoreTypes.Long);

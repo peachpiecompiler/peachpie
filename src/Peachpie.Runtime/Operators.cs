@@ -17,6 +17,25 @@ namespace Pchp.Core
         /// </summary>
         internal const long LONG_SIGN_MASK = (1L << (8 * sizeof(long) - 1));
 
+        /// <summary>
+        /// Performs bitwise or operation.
+        /// </summary>
+        internal static PhpValue BitOr(ref PhpValue x, ref PhpValue y)
+        {
+            var xtype = x.TypeCode;            
+            if (xtype == PhpTypeCode.String || xtype == PhpTypeCode.WritableString)
+            {
+                var ytype = y.TypeCode;
+                if (ytype == PhpTypeCode.String || ytype == PhpTypeCode.WritableString)
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            //
+            return PhpValue.Create(x.ToLong() | y.ToLong());
+        }
+
         #endregion
 
         #region Assignment
