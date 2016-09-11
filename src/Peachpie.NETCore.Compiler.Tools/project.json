@@ -1,4 +1,4 @@
-﻿{
+{
   "version": "0.1.1-*",
   "description": "Command line tool enabling 'php' project compilation.",
   "packOptions": {

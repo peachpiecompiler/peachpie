@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Pchp.CodeAnalysis.CommandLine</RootNamespace>
     <AssemblyName>peach</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
@@ -42,10 +42,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Peachpie.NETStandard.Library">
-      <HintPath>..\..\Peachpie.NETStandard.Library\bin\$(Configuration)\portable45-net45+win8\Peachpie.NETStandard.Library.dll</HintPath>
+      <HintPath>..\..\Peachpie.NETStandard.Library\bin\$(Configuration)\net46\Peachpie.NETStandard.Library.dll</HintPath>
     </Reference>
     <Reference Include="Peachpie.Runtime">
-      <HintPath>..\..\Peachpie.Runtime\bin\$(Configuration)\portable45-net45+win8\Peachpie.Runtime.dll</HintPath>
+      <HintPath>..\..\Peachpie.Runtime\bin\$(Configuration)\net46\Peachpie.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

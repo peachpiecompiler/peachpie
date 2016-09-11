@@ -1,4 +1,4 @@
-﻿{
+{
   "version": "0.1.1-*",
 
   "packOptions": {
@@ -28,11 +28,8 @@
         "NETStandard.Library": "1.6.0"
       }
     },
-    ".NETPortable,Version=v4.5,Profile=Profile7": {
-      "buildOptions": { "define": [ "NET45" ] },
-      "dependencies": {
-        "NETStandard.Library": "1.6.0"
-      }
+    ".NETFramework,Version=v4.6": {
+      "buildOptions": { "define": [ "NET46" ] }
     },
     ".netcoreapp1.0": {
       "dependencies": {

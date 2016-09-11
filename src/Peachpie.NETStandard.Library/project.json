@@ -1,4 +1,4 @@
-﻿{
+{
   "version": "0.1.1-*",
 
   "packOptions": {
@@ -25,6 +25,9 @@
   "frameworks": {
     "netstandard1.6": {
       "imports": "dnxcore50"
+    },
+    ".NETFramework,Version=v4.6": {
+      "buildOptions": { "define": [ "NET46" ] }
     },
     ".netcoreapp1.0": {
       "dependencies": {

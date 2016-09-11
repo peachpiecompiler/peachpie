@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>runtests</RootNamespace>
     <AssemblyName>runtests</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFrameworkProfile />
@@ -77,8 +77,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-	<Reference Include="Peachpie.NETStandard.Library">
-      <HintPath>..\..\Peachpie.NETStandard.Library\bin\$(Configuration)\portable45-net45+win8\Peachpie.NETStandard.Library.dll</HintPath>
+    <Reference Include="Peachpie.NETStandard.Library">
+      <HintPath>..\..\Peachpie.NETStandard.Library\bin\$(Configuration)\net46\Peachpie.NETStandard.Library.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

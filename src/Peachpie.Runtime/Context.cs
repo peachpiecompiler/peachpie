@@ -45,17 +45,17 @@ namespace Pchp.Core
             Stream stream = Stream.Null;
             TextWriter sink = TextWriter.Null;
 
-#if NET45 // .NET Portable
-            var tconsole = Type.GetType("System.Console", false)?.GetTypeInfo();
-            if (tconsole != null)
-            {
-                sink = (TextWriter)tconsole?.GetDeclaredProperty("Out")?.GetMethod?.Invoke(null, new object[0]) ?? sink;
-                stream = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").FirstOrDefault(m => m.GetParameters().Length == 0)?.Invoke(null, new object[0]) ?? stream;
-            }
-#else
+//#if NET45 // .NET Portable
+//            var tconsole = Type.GetType("System.Console", false)?.GetTypeInfo();
+//            if (tconsole != null)
+//            {
+//                sink = (TextWriter)tconsole?.GetDeclaredProperty("Out")?.GetMethod?.Invoke(null, new object[0]) ?? sink;
+//                stream = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").FirstOrDefault(m => m.GetParameters().Length == 0)?.Invoke(null, new object[0]) ?? stream;
+//            }
+//#else
             sink = Console.Out;
             stream = Console.OpenStandardOutput();
-#endif
+//#endif
 
             return new Context()
             {
