@@ -1,5 +1,21 @@
 ﻿{
-  "version": "1.0.0-*",
+  "version": "0.1.1-*",
+
+  "packOptions": {
+    "tags": [
+      "peachpie",
+      "web"
+    ],
+    "summary": "Peachpie ASP.NET Core extension.",
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+
+  "buildOptions": {
+    "xmlDoc": true,
+    "keyFile": "../../build/StrongKeys/core.snk",
+    "nowarn": [ "1591" ]
+  },
 
   "dependencies": {
     "NETStandard.Library": "1.6.0",
