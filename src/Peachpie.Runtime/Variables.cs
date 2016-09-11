@@ -109,7 +109,7 @@ namespace Pchp.Core
         PhpString Serialize(PhpValue value);
     }
 
-    public class PhpVariable
+    public static class PhpVariable
     {
         #region Types
 
@@ -236,6 +236,16 @@ namespace Pchp.Core
                 default:
                     return false;
             }
+        }
+
+        /// <summary>
+        /// In case value contains <see cref="PhpArray"/>,
+        /// its instance is returned. Otherwise <c>null</c>.
+        /// </summary>
+        /// <remarks>Value is dereferenced if necessary.</remarks>
+        public static PhpArray ArrayOrNull(this PhpValue value)
+        {
+            return (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpArray;
         }
     }
 }

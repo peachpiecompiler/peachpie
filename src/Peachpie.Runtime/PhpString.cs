@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,6 +16,22 @@ namespace Pchp.Core
     [DebuggerDisplay("{ToString()}", Type = PhpVariable.TypeNameString)]
     public partial class PhpString : IPhpConvertible
     {
+        //[StructLayout(LayoutKind.Explicit)]
+        //public struct StringChunk
+        //{
+        //    [FieldOffset(0)]
+        //    string _string;
+
+        //    [FieldOffset(0)]
+        //    byte[] _bytes;
+
+        //    [FieldOffset(0)]
+        //    char[] _chars;
+
+        //    [FieldOffset(0)]
+        //    PhpString _phpstring;
+        //}
+
         [Flags]
         enum Flags : byte
         {

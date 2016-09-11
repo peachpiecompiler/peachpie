@@ -26,16 +26,13 @@
     "netstandard1.6": {
       "imports": "dnxcore50"
     },
-    ".NETPortable,Version=v4.5,Profile=Profile7": {
-      "dependencies": {}
-    },
-	".netcoreapp1.0" : {
+    ".netcoreapp1.0": {
       "dependencies": {
         "Microsoft.NETCore.App": {
           "type": "platform",
           "version": "1.0.0"
         }
       }
-	}
+    }
   }
 }

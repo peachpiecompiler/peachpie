@@ -15,6 +15,8 @@ namespace Pchp.Core.Utilities
 
         public static readonly object[] EmptyObjects = new object[0];
 
+        public static string[] EmptyStrings => Empty<string>();
+
         public static T[] Empty<T>() => EmptyArray<T>.Instance;
 
         #endregion
