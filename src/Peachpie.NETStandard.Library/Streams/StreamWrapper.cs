@@ -23,21 +23,17 @@ namespace Pchp.Library.Streams
     /// </remarks>
     public abstract class StreamWrapper : IDisposable
     {
-        //#region Mandatory Wrapper Operations
+        #region Mandatory Wrapper Operations
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/method[@name="Open"]/*'/>
-        //public abstract PhpStream Open(ref string path, string mode, StreamOpenOptions options, StreamContext context);
+        public abstract PhpStream Open(ref string path, string mode, StreamOpenOptions options, StreamContext context);
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/property[@name="Label"]/*'/>
-        //public abstract string Label { get; }
+        public abstract string Label { get; }
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/property[@name="Scheme"]/*'/>
-        //public abstract string Scheme { get; }
+        public abstract string Scheme { get; }
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/property[@name="IsUrl"]/*'/>
-        //public abstract bool IsUrl { get; }
+        public abstract bool IsUrl { get; }
 
-        //#endregion
+        #endregion
 
         //#region Optional Wrapper Operations (Warning)
 
@@ -85,25 +81,6 @@ namespace Pchp.Library.Streams
         //    return false;
         //}
 
-        //#endregion
-
-        //#region Optional Wrapper Methods (Empty)
-
-        ///// <summary>
-        ///// Wrapper may be notified of closing a stream using this method.
-        ///// </summary>
-        ///// <param name="stream"></param>
-        //public virtual void OnClose(PhpStream stream) { }
-
-        //// int (*stream_closer)(php_stream_wrapper *wrapper, php_stream *stream TSRMLS_DC);
-
-        ///// <summary>
-        ///// Wrapper may override the <c>stat()</c>ing of a stream using this method.
-        ///// </summary>
-        ///// <param name="stream">The Wrapper-opened stream to be <c>stat()</c>ed.</param>
-        ///// <returns></returns>
-        //public virtual PhpArray OnStat(PhpStream stream) { return null; }
-
         //public virtual StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
         //{
         //    // int (*url_stat)(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
@@ -112,6 +89,24 @@ namespace Pchp.Library.Streams
         //}
 
         //#endregion
+
+        #region Optional Wrapper Methods (Empty)
+
+        /// <summary>
+        /// Wrapper may be notified of closing a stream using this method.
+        /// </summary>
+        public virtual void OnClose(PhpStream stream) { }
+
+        // int (*stream_closer)(php_stream_wrapper *wrapper, php_stream *stream TSRMLS_DC);
+
+        /// <summary>
+        /// Wrapper may override the <c>stat()</c>ing of a stream using this method.
+        /// </summary>
+        /// <param name="stream">The Wrapper-opened stream to be <c>stat()</c>ed.</param>
+        /// <returns></returns>
+        public virtual PhpArray OnStat(PhpStream stream) { return null; }
+
+        #endregion
 
         //#region Helper methods (ParseMode, FileSystemUtils.StripPassword)
 
@@ -300,7 +295,7 @@ namespace Pchp.Library.Streams
 
         //#endregion
 
-        //#region Static wrapper-list handling methods
+        #region Static wrapper-list handling methods
 
         ///// <summary>
         ///// Insert a new wrapper to the list of user StreamWrappers.
@@ -322,20 +317,20 @@ namespace Pchp.Library.Streams
         //    return true;
         //}
 
-        ///// <summary>
-        ///// Register a new system wrapper
-        ///// </summary>
-        ///// <param name="wrapper">An instance of the corresponding StreamWrapper descendant.</param>
-        ///// <returns>True if succeeds, false if the scheme is already registered.</returns>
-        //public static bool RegisterSystemWrapper(StreamWrapper wrapper)
-        //{
-        //    if (!systemStreamWrappers.ContainsKey(wrapper.Scheme))
-        //    {
-        //        systemStreamWrappers.Add(wrapper.Scheme, wrapper);
-        //        return true;
-        //    }
-        //    return false;
-        //}
+        /// <summary>
+        /// Register a new system wrapper
+        /// </summary>
+        /// <param name="wrapper">An instance of the corresponding StreamWrapper descendant.</param>
+        /// <returns>True if succeeds, false if the scheme is already registered.</returns>
+        public static bool RegisterSystemWrapper(StreamWrapper wrapper)
+        {
+            if (!systemStreamWrappers.ContainsKey(wrapper.Scheme))
+            {
+                systemStreamWrappers.Add(wrapper.Scheme, wrapper);
+                return true;
+            }
+            return false;
+        }
 
         ///// <summary>
         ///// Checks if a wrapper is already registered for the given scheme.
@@ -384,16 +379,16 @@ namespace Pchp.Library.Streams
         //    return wrapper;
         //}
 
-        ///// <summary>
-        ///// Gets the list of built-in stream wrapper schemes.
-        ///// </summary>
-        ///// <returns></returns>
-        //public static ICollection<string> GetSystemWrapperSchemes()
-        //{
-        //    var keys = new string[systemStreamWrappers.Count];
-        //    systemStreamWrappers.Keys.CopyTo(keys, 0);
-        //    return keys;
-        //}
+        /// <summary>
+        /// Gets the list of built-in stream wrapper schemes.
+        /// </summary>
+        /// <returns></returns>
+        public static ICollection<string> GetSystemWrapperSchemes()
+        {
+            var keys = new string[systemStreamWrappers.Count];
+            systemStreamWrappers.Keys.CopyTo(keys, 0);
+            return keys;
+        }
 
         ///// <summary>
         ///// Gets the list of user wrapper schemes.
@@ -476,14 +471,14 @@ namespace Pchp.Library.Streams
         //    }
         //}
 
-        ///// <summary>
-        ///// Registered system stream wrappers for all requests.
-        ///// </summary>
-        //public static Dictionary<string, StreamWrapper> SystemStreamWrappers { get { return systemStreamWrappers; } }
+        /// <summary>
+        /// Registered system stream wrappers for all requests.
+        /// </summary>
+        public static Dictionary<string, StreamWrapper> SystemStreamWrappers { get { return systemStreamWrappers; } }
 
-        //private static readonly Dictionary<string, StreamWrapper> systemStreamWrappers = new Dictionary<string, StreamWrapper>(5);  // TODO: thread safe
+        private static readonly Dictionary<string, StreamWrapper> systemStreamWrappers = new Dictionary<string, StreamWrapper>(5);  // TODO: thread safe
 
-        //#endregion
+        #endregion
 
         #region Optional Dispose
 
