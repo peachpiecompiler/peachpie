@@ -43,9 +43,12 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.NETStandard.Librar
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{63D67827-E6F7-4BA1-A696-E51B24A0232E}"
 	ProjectSection(SolutionItems) = preProject
+		src\global.json = src\global.json
 		src\Peachpie.CodeAnalysis.nuspec = src\Peachpie.CodeAnalysis.nuspec
 		src\Peachpie.NETStandard.App.nuspec = src\Peachpie.NETStandard.App.nuspec
 	EndProjectSection
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.NETCore.Web", "src\Peachpie.NETCore.Web\Peachpie.NETCore.Web.xproj", "{039A63A4-9A86-477A-B1C6-1C7172B90F81}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -246,6 +249,26 @@ Global
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x64.Build.0 = Release|Any CPU
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x86.ActiveCfg = Release|Any CPU
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x86.Build.0 = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|ARM.Build.0 = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|x64.Build.0 = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|x86.Build.0 = Debug|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|Any CPU.Build.0 = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|ARM.ActiveCfg = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|ARM.Build.0 = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|x64.ActiveCfg = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|x64.Build.0 = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|x86.ActiveCfg = Release|Any CPU
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
