@@ -65,6 +65,11 @@ namespace Pchp.Core
         /// <see cref="PhpAlias"/> type.
         /// </summary>
         Alias,
+
+        /// <summary>
+        /// A resource object.
+        /// </summary>
+        Resource,
     }
 
     /// <summary>
