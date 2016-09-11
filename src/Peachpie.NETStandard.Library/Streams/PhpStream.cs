@@ -1,4 +1,6 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Resources;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -107,291 +109,291 @@ namespace Pchp.Library.Streams
     /// </remarks>
     public abstract class PhpStream : PhpResource
     {
-        //       #region PhpStream Opening
+        #region PhpStream Opening
 
-        //       /// <summary>
-        //       /// Simple version of the stream opening function
-        //       /// </summary>
-        //       /// <param name="path">URI or filename of the resource to be opened</param>
-        //       /// <param name="mode">File access mode</param>
-        //       /// <returns></returns>
-        //       internal static PhpStream Open(string path, StreamOpenMode mode)
-        //       {
-        //           string modeStr = null;
-        //           switch (mode)
-        //           {
-        //               case StreamOpenMode.ReadBinary: modeStr = "rb"; break;
-        //               case StreamOpenMode.WriteBinary: modeStr = "wb"; break;
-        //               case StreamOpenMode.ReadText: modeStr = "rt"; break;
-        //               case StreamOpenMode.WriteText: modeStr = "wt"; break;
-        //           }
-        //           Debug.Assert(modeStr != null);
-        //           return Open(path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
-        //       }
+        /// <summary>
+        /// Simple version of the stream opening function
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="path">URI or filename of the resource to be opened</param>
+        /// <param name="mode">File access mode</param>
+        /// <returns></returns>
+        internal static PhpStream Open(Context ctx, string path, StreamOpenMode mode)
+        {
+            string modeStr = null;
+            switch (mode)
+            {
+                case StreamOpenMode.ReadBinary: modeStr = "rb"; break;
+                case StreamOpenMode.WriteBinary: modeStr = "wb"; break;
+                case StreamOpenMode.ReadText: modeStr = "rt"; break;
+                case StreamOpenMode.WriteText: modeStr = "wt"; break;
+            }
+            Debug.Assert(modeStr != null);
+            return Open(ctx, path, modeStr, StreamOpenOptions.Empty, StreamContext.Default);
+        }
 
+        public static PhpStream Open(Context ctx, string path, string mode)
+        {
+            return Open(ctx, path, mode, StreamOpenOptions.Empty, StreamContext.Default);
+        }
 
-        //       public static PhpStream Open(string path, string mode)
-        //       {
-        //           return Open(path, mode, StreamOpenOptions.Empty, StreamContext.Default);
-        //       }
+        public static PhpStream Open(Context ctx, string path, string mode, StreamOpenOptions options)
+        {
+            return Open(ctx, path, mode, options, StreamContext.Default);
+        }
 
-        //       public static PhpStream Open(string path, string mode, StreamOpenOptions options)
-        //       {
-        //           return Open(path, mode, options, StreamContext.Default);
-        //       }
+        /// <summary>
+        /// Checks if the given path is a filesystem path or an URL and returns the corresponding scheme.
+        /// </summary>
+        /// <param name="path">The path to be canonicalized.</param>
+        /// <param name="filename">The filesystem path before canonicalization (may be both relative or absolute).</param>
+        /// <returns>The protocol portion of the given URL or <c>"file"</c>o for local files.</returns>
+        internal static string GetSchemeInternal(string path, out string filename)
+        {
+            int colon_index = path.IndexOf(':');
+            if (colon_index == -1)
+            {
+                // No scheme, no root directory, it's a relative path.
+                filename = path;
+                return "file";
+            }
 
+            if (Path.IsPathRooted(path))
+            {
+                // It already is an absolute path.
+                filename = path;
+                return "file";
+            }
 
-        //       /// <summary>
-        //       /// Checks if the given path is a filesystem path or an URL and returns the corresponding scheme.
-        //       /// </summary>
-        //       /// <param name="path">The path to be canonicalized.</param>
-        //       /// <param name="filename">The filesystem path before canonicalization (may be both relative or absolute).</param>
-        //       /// <returns>The protocol portion of the given URL or <c>"file"</c>o for local files.</returns>
-        //       internal static string GetSchemeInternal(string path, out string filename)
-        //       {
-        //           int colon_index = path.IndexOf(':');
-        //           if (colon_index == -1)
-        //           {
-        //               // No scheme, no root directory, it's a relative path.
-        //               filename = path;
-        //               return "file";
-        //           }
+            if (path.Length < colon_index + 3 || path[colon_index + 1] != '/' || path[colon_index + 2] != '/')
+            {
+                // There is no "//" following the colon.
+                filename = path;
+                return "file";
+            }
 
-        //           if (Path.IsPathRooted(path))
-        //           {
-        //               // It already is an absolute path.
-        //               filename = path;
-        //               return "file";
-        //           }
+            // Otherwise it is an URL (including file://), set the filename and return the scheme.
+            filename = path.Substring(colon_index + "://".Length);
+            return path.Substring(0, colon_index);
+        }
 
-        //           if (path.Length < colon_index + 3 || path[colon_index + 1] != '/' || path[colon_index + 2] != '/')
-        //           {
-        //               // There is no "//" following the colon.
-        //               filename = path;
-        //               return "file";
-        //           }
+        /// <summary>
+        /// Openes a PhpStream using the appropriate StreamWrapper.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="path">URI or filename of the resource to be opened.</param>
+        /// <param name="mode">A file-access mode as passed to the PHP function.</param>
+        /// <param name="options">A combination of <see cref="StreamOpenOptions"/>.</param>
+        /// <param name="context">A valid StreamContext. Must not be <c>null</c>.</param>
+        /// <returns></returns>
+        public static PhpStream Open(Context ctx, string path, string mode, StreamOpenOptions options, StreamContext context)
+        {
+            if (context == null)
+                throw new ArgumentNullException("context");
 
-        //           // Otherwise it is an URL (including file://), set the filename and return the scheme.
-        //           filename = path.Substring(colon_index + "://".Length);
-        //           return path.Substring(0, colon_index);
-        //       }
+            StreamWrapper wrapper;
+            if (!PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileMayExist, (CheckAccessOptions)options))
+                return null;
 
+            return wrapper.Open(ref path, mode, options, context);
 
-        //       /// <summary>
-        //       /// Openes a PhpStream using the appropriate StreamWrapper.
-        //       /// </summary>
-        //       /// <param name="path">URI or filename of the resource to be opened.</param>
-        //       /// <param name="mode">A file-access mode as passed to the PHP function.</param>
-        //       /// <param name="options">A combination of <see cref="StreamOpenOptions"/>.</param>
-        //       /// <param name="context">A valid StreamContext. Must not be <c>null</c>.</param>
-        //       /// <returns></returns>
-        //       public static PhpStream Open(string path, string mode, StreamOpenOptions options, StreamContext context)
-        //       {
-        //           if (context == null)
-        //               throw new ArgumentNullException("context");
+        }
 
-        //           StreamWrapper wrapper;
-        //           if (!PhpStream.ResolvePath(ref path, out wrapper, CheckAccessMode.FileMayExist, (CheckAccessOptions)options))
-        //               return null;
+        #endregion
 
-        //           return wrapper.Open(ref path, mode, options, context);
+        #region Opening utilities
 
-        //       }
+        /// <summary>
+        /// Merges the path with the current working directory
+        /// to get a canonicalized absolute pathname representing the same file.
+        /// </summary>
+        /// <remarks>
+        /// This method is an analogy of <c>main/safe_mode.c: php_checkuid</c>.
+        /// Looks for the file in the <c>include_path</c> and checks for <c>open_basedir</c> restrictions.
+        /// </remarks>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="path">An absolute or relative path to a file.</param>
+        /// <param name="wrapper">The wrapper found for the specified file or <c>null</c> if the path resolution fails.</param>
+        /// <param name="mode">The checking mode of the <see cref="CheckAccess"/> method (file, directory etc.).</param>
+        /// <param name="options">Additional options for the <see cref="CheckAccess"/> method.</param>
+        /// <returns><c>true</c> if all the resolution and checking passed without an error, <b>false</b> otherwise.</returns>
+        /// <exception cref="PhpException">Security violation - when the target file 
+        /// lays outside the tree defined by <c>open_basedir</c> configuration option.</exception>
+        public static bool ResolvePath(Context ctx, ref string path, out StreamWrapper wrapper, CheckAccessMode mode, CheckAccessOptions options)
+        {
+            // Path will contain the absolute path without file:// or the complete URL; filename is the relative path.
+            string filename, scheme = GetSchemeInternal(path, out filename);
+            wrapper = StreamWrapper.GetWrapper(ctx, scheme, (StreamOptions)options);
+            if (wrapper == null) return false;
 
-        //       #endregion
+            if (wrapper.IsUrl)
+            {
+                // Note: path contains the whole URL, filename the same without the scheme:// portion.
+                // What to check more?
+            }
+            else if (scheme != "php")
+            {
+                try
+                {
+                    // Filename contains the original path without the scheme:// portion, check for include path.
+                    bool isInclude = false;
+                    if ((options & CheckAccessOptions.UseIncludePath) > 0)
+                    {
+                        isInclude = CheckIncludePath(ctx, filename, ref path);
+                    }
 
-        //       #region Opening utilities
+                    // Path will now contain an absolute path (either to an include or actual directory).
+                    if (!isInclude)
+                    {
+                        path = Path.GetFullPath(Path.Combine(ctx.WorkingDirectory, filename));
+                    }
+                }
+                catch (Exception)
+                {
+                    if ((options & CheckAccessOptions.Quiet) == 0)
+                        PhpException.Throw(PhpError.Warning, ErrResources.stream_filename_invalid, FileSystemUtils.StripPassword(path));
+                    return false;
+                }
 
-        //       /// <summary>
-        //       /// Merges the path with the current working directory
-        //       /// to get a canonicalized absolute pathname representing the same file.
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// This method is an analogy of <c>main/safe_mode.c: php_checkuid</c>.
-        //       /// Looks for the file in the <c>include_path</c> and checks for <c>open_basedir</c> restrictions.
-        //       /// </remarks>
-        //       /// <param name="path">An absolute or relative path to a file.</param>
-        //       /// <param name="wrapper">The wrapper found for the specified file or <c>null</c> if the path resolution fails.</param>
-        //       /// <param name="mode">The checking mode of the <see cref="CheckAccess"/> method (file, directory etc.).</param>
-        //       /// <param name="options">Additional options for the <see cref="CheckAccess"/> method.</param>
-        //       /// <returns><c>true</c> if all the resolution and checking passed without an error, <b>false</b> otherwise.</returns>
-        //       /// <exception cref="PhpException">Security violation - when the target file 
-        //       /// lays outside the tree defined by <c>open_basedir</c> configuration option.</exception>
-        //       public static bool ResolvePath(ref string path, out StreamWrapper wrapper, CheckAccessMode mode, CheckAccessOptions options)
-        //       {
-        //           // Path will contain the absolute path without file:// or the complete URL; filename is the relative path.
-        //           string filename, scheme = GetSchemeInternal(path, out filename);
-        //           wrapper = StreamWrapper.GetWrapper(scheme, (StreamOptions)options);
-        //           if (wrapper == null) return false;
+                // NOTE: we should let OS & Security configuration to decide
+                //var global_config = Configuration.Global;
 
-        //           if (wrapper.IsUrl)
-        //           {
-        //               // Note: path contains the whole URL, filename the same without the scheme:// portion.
-        //               // What to check more?
-        //           }
-        //           else if (scheme != "php")
-        //           {
-        //               try
-        //               {
-        //                   // Filename contains the original path without the scheme:// portion, check for include path.
-        //                   bool isInclude = false;
-        //                   if ((options & CheckAccessOptions.UseIncludePath) > 0)
-        //                   {
-        //                       isInclude = CheckIncludePath(filename, ref path);
-        //                   }
+                //// Note: extensions check open_basedir too -> double check..
+                //if (!global_config.SafeMode.IsPathAllowed(path))
+                //{
+                //    if ((options & CheckAccessOptions.Quiet) == 0)
+                //        PhpException.Throw(PhpError.Warning, ErrResources.open_basedir_effect, path, global_config.SafeMode.GetAllowedPathPrefixesJoin());
+                //    return false;
+                //}
 
-        //                   // Path will now contain an absolute path (either to an include or actual directory).
-        //                   if (!isInclude)
-        //                   {
-        //                       path = Path.GetFullPath(Path.Combine(ScriptContext.CurrentContext.WorkingDirectory, filename));
-        //                   }
-        //               }
-        //               catch (Exception)
-        //               {
-        //                   if ((options & CheckAccessOptions.Quiet) == 0)
-        //                       PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_filename_invalid",
-        //                           FileSystemUtils.StripPassword(path)));
-        //                   return false;
-        //               }
+                // Replace all '/' with '\'.
+                // path = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                Debug.Assert(
+                    path.IndexOf(Path.AltDirectorySeparatorChar) == -1 ||
+                    (Path.AltDirectorySeparatorChar == Path.DirectorySeparatorChar),    // on Mono, so ignore it
+                    string.Format("'{0}' should not contain '{1}' char.", path, Path.AltDirectorySeparatorChar));
 
-        //               GlobalConfiguration global_config = Configuration.Global;
+                // The file wrapper expects an absolute path w/o the scheme, others expect the scheme://url.
+                if (scheme != "file")
+                {
+                    path = String.Format("{0}://{1}", scheme, path);
+                }
+            }
 
-        //               // Note: extensions check open_basedir too -> double check..
-        //               if (!global_config.SafeMode.IsPathAllowed(path))
-        //               {
-        //                   if ((options & CheckAccessOptions.Quiet) == 0)
-        //                       PhpException.Throw(PhpError.Warning, CoreResources.GetString("open_basedir_effect",
-        //                           path, global_config.SafeMode.GetAllowedPathPrefixesJoin()));
-        //                   return false;
-        //               }
+            return true;
+        }
 
-        //               // Replace all '/' with '\'.
-        //               // path = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-        //               Debug.Assert(
-        //                   path.IndexOf(Path.AltDirectorySeparatorChar) == -1 ||
-        //                   (Path.AltDirectorySeparatorChar == Path.DirectorySeparatorChar),    // on Mono, so ignore it
-        //                   string.Format("'{0}' should not contain '{1}' char.", path, Path.AltDirectorySeparatorChar));
+        /// <summary>
+        /// Check if the path lays inside of the directory tree specified 
+        /// by the <c>open_basedir</c> configuration option and return the resulting <paramref name="absolutePath"/>.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="relativePath">The filename to search for.</param>
+        /// <param name="absolutePath">The combined absolute path (either in the working directory 
+        /// or in an include path wherever it has been found first).</param>
+        /// <returns><c>true</c> if the file was found in an include path.</returns>
+        private static bool CheckIncludePath(Context ctx, string relativePath, ref string absolutePath)
+        {
+            // Note: If the absolutePath exists, it overtakse the include_path search.
+            if (Path.IsPathRooted(relativePath)) return false;
+            if (File.Exists(absolutePath)) return false;
 
-        //               // The file wrapper expects an absolute path w/o the scheme, others expect the scheme://url.
-        //               if (scheme != "file")
-        //               {
-        //                   path = String.Format("{0}://{1}", scheme, path);
-        //               }
-        //           }
+            var paths = ctx.IncludePaths;
+            if (paths == null || paths.Length == 0) return false;
 
-        //           return true;
-        //       }
+            foreach (string s in paths)
+            {
+                if (string.IsNullOrEmpty(s)) continue;
+                string abs = Path.GetFullPath(Path.Combine(s, relativePath));
+                if (File.Exists(abs))
+                {
+                    absolutePath = abs;
+                    return true;
+                }
+            }
+            return false;
+        }
 
-        //       /// <summary>
-        //       /// Check if the path lays inside of the directory tree specified 
-        //       /// by the <c>open_basedir</c> configuration option and return the resulting <paramref name="absolutePath"/>.
-        //       /// </summary>
-        //       /// <param name="relativePath">The filename to search for.</param>
-        //       /// <param name="absolutePath">The combined absolute path (either in the working directory 
-        //       /// or in an include path wherever it has been found first).</param>
-        //       /// <returns><c>true</c> if the file was found in an include path.</returns>
-        //       private static bool CheckIncludePath(string relativePath, ref string absolutePath)
-        //       {
-        //           // Note: If the absolutePath exists, it overtakse the include_path search.
-        //           if (Path.IsPathRooted(relativePath)) return false;
-        //           if (File.Exists(absolutePath)) return false;
+        /// <summary>
+        /// Performs all checks on a path passed to a PHP function.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This method performs a check similar to <c>safe_mode.c: php_checkuid_ex()</c>
+        /// together with <c>open_basedir</c> check.
+        /// </para>
+        /// <para>
+        /// The <paramref name="filename"/> may be one of the following:
+        /// <list type="bullet">
+        /// <item>A relative path. The path is resolved regarding the <c>include_path</c> too if required
+        /// and checking continues as in the next case.</item>
+        /// <item>An absolute path. The file or directory is checked for existence and for access permissions<sup>1</sup>
+        /// according to the given <paramref name="mode"/>.</item>
+        /// </list>
+        /// <sup>1</sup> Regarding the <c>open_basedir</c> configuration option. 
+        /// File access permissions are checked at the time of file manipulation
+        /// (opening, copying etc.).
+        /// </para>
+        /// </remarks>
+        /// <param name="filename">A resolved path. Must be an absolute path to a local file.</param>
+        /// <param name="mode">One of the <see cref="CheckAccessMode"/>.</param>
+        /// <param name="options"><c>true</c> to suppress error messages.</param>
+        /// <returns><c>true</c> if the function may continue with file access,
+        /// <c>false</c>to fail.</returns>
+        /// <exception cref="PhpException">If the file can not be accessed
+        /// and the <see cref="CheckAccessOptions.Quiet"/> is not set.</exception>
+        public static bool CheckAccess(string filename, CheckAccessMode mode, CheckAccessOptions options)
+        {
+            Debug.Assert(Path.IsPathRooted(filename));
+            string url = FileSystemUtils.StripPassword(filename);
+            bool quiet = (options & CheckAccessOptions.Quiet) > 0;
 
-        //           string paths = ScriptContext.CurrentContext.Config.FileSystem.IncludePaths;
-        //           if (paths == null) return false;
+            switch (mode)
+            {
+                case CheckAccessMode.FileMayExist:
+                    break;
 
-        //           foreach (string s in paths.Split(new char[] { Path.PathSeparator }))
-        //           {
-        //               if ((s == null) || (s == string.Empty)) continue;
-        //               string abs = Path.GetFullPath(Path.Combine(s, relativePath));
-        //               if (File.Exists(abs))
-        //               {
-        //                   absolutePath = abs;
-        //                   return true;
-        //               }
-        //           }
-        //           return false;
-        //       }
+                case CheckAccessMode.FileExists:
+                    if (!File.Exists(filename))
+                    {
+                        if (!quiet) PhpException.Throw(PhpError.Warning, ErrResources.stream_file_not_exists, url);
+                        return false;
+                    }
+                    break;
 
-        //       /// <summary>
-        //       /// Performs all checks on a path passed to a PHP function.
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// <para>
-        //       /// This method performs a check similar to <c>safe_mode.c: php_checkuid_ex()</c>
-        //       /// together with <c>open_basedir</c> check.
-        //       /// </para>
-        //       /// <para>
-        //       /// The <paramref name="filename"/> may be one of the following:
-        //       /// <list type="bullet">
-        //       /// <item>A relative path. The path is resolved regarding the <c>include_path</c> too if required
-        //       /// and checking continues as in the next case.</item>
-        //       /// <item>An absolute path. The file or directory is checked for existence and for access permissions<sup>1</sup>
-        //       /// according to the given <paramref name="mode"/>.</item>
-        //       /// </list>
-        //       /// <sup>1</sup> Regarding the <c>open_basedir</c> configuration option. 
-        //       /// File access permissions are checked at the time of file manipulation
-        //       /// (opening, copying etc.).
-        //       /// </para>
-        //       /// </remarks>
-        //       /// <param name="filename">A resolved path. Must be an absolute path to a local file.</param>
-        //       /// <param name="mode">One of the <see cref="CheckAccessMode"/>.</param>
-        //       /// <param name="options"><c>true</c> to suppress error messages.</param>
-        //       /// <returns><c>true</c> if the function may continue with file access,
-        //       /// <c>false</c>to fail.</returns>
-        //       /// <exception cref="PhpException">If the file can not be accessed
-        //       /// and the <see cref="CheckAccessOptions.Quiet"/> is not set.</exception>
-        //       public static bool CheckAccess(string filename, CheckAccessMode mode, CheckAccessOptions options)
-        //       {
-        //           Debug.Assert(Path.IsPathRooted(filename));
-        //           string url = FileSystemUtils.StripPassword(filename);
-        //           bool quiet = (options & CheckAccessOptions.Quiet) > 0;
+                case CheckAccessMode.FileNotExists:
+                    if (File.Exists(filename))
+                    {
+                        if (!quiet) PhpException.Throw(PhpError.Warning, ErrResources.stream_file_exists, url);
+                        return false;
+                    }
+                    break;
 
-        //           switch (mode)
-        //           {
-        //               case CheckAccessMode.FileMayExist:
-        //                   break;
+                case CheckAccessMode.FileOrDirectory:
+                    if ((!Directory.Exists(filename)) && (!File.Exists(filename)))
+                    {
+                        if (!quiet) PhpException.Throw(PhpError.Warning, ErrResources.stream_path_not_exists, url);
+                        return false;
+                    }
+                    break;
 
-        //               case CheckAccessMode.FileExists:
-        //                   if (!File.Exists(filename))
-        //                   {
-        //                       if (!quiet) PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_not_exists", url));
-        //                       return false;
-        //                   }
-        //                   break;
+                case CheckAccessMode.Directory:
+                    if (!Directory.Exists(filename))
+                    {
+                        if (!quiet) PhpException.Throw(PhpError.Warning, ErrResources.stream_directory_not_exists, url);
+                        return false;
+                    }
+                    break;
 
-        //               case CheckAccessMode.FileNotExists:
-        //                   if (File.Exists(filename))
-        //                   {
-        //                       if (!quiet) PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_exists", url));
-        //                       return false;
-        //                   }
-        //                   break;
+                default:
+                    Debug.Assert(false);
+                    return false;
+            }
 
-        //               case CheckAccessMode.FileOrDirectory:
-        //                   if ((!Directory.Exists(filename)) && (!File.Exists(filename)))
-        //                   {
-        //                       if (!quiet) PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_path_not_exists", url));
-        //                       return false;
-        //                   }
-        //                   break;
+            return true;
+        }
 
-        //               case CheckAccessMode.Directory:
-        //                   if (!Directory.Exists(filename))
-        //                   {
-        //                       if (!quiet) PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_directory_not_exists", url));
-        //                       return false;
-        //                   }
-        //                   break;
-
-        //               default:
-        //                   Debug.Assert(false);
-        //                   return false;
-        //           }
-
-        //           return true;
-        //       }
-
-        //       #endregion
+        #endregion
 
         #region PhpResource override methods
 
@@ -413,9 +415,9 @@ namespace Pchp.Library.Streams
         {
             Debug.Assert(context != null);
 
-            //this.context = context;
-            //this.Wrapper = openingWrapper;
-            //this.OpenedPath = openedPath;
+            _context = context;
+            this.Wrapper = openingWrapper;
+            this.OpenedPath = openedPath;
 
             //// Stream modifiers (defined in open-time).
             //this.Options = accessOptions;
@@ -450,11 +452,11 @@ namespace Pchp.Library.Streams
 
             //Flush();
 
-            //if (context != null)
-            //{
-            //    context.Dispose();
-            //    context = null;
-            //}
+            if (_context != null)
+            {
+                _context.Dispose();
+                _context = null;
+            }
 
             //writeBuffer = null;
 
@@ -483,7 +485,8 @@ namespace Pchp.Library.Streams
 
         #endregion
 
-        //       #region Raw byte access (mandatory)
+        #region Raw byte access (mandatory)
+
         //       /// <include file='Doc/Streams.xml' path='docs/method[@name="RawRead"]/*'/>
         //       protected abstract int RawRead(byte[] buffer, int offset, int count);
 
@@ -496,42 +499,42 @@ namespace Pchp.Library.Streams
         //       /// <include file='Doc/Streams.xml' path='docs/property[@name="RawEof"]/*'/>
         //       protected abstract bool RawEof { get; }
 
-        //       #endregion
+        #endregion
 
-        //       #region Seeking (optional)
-        //       /// <include file='Doc/Streams.xml' path='docs/property[@name="CanSeek"]/*'/>
-        //       public virtual bool CanSeek { get { return false; } }
+        #region Seeking (optional)
 
-        //       /// <include file='Doc/Streams.xml' path='docs/method[@name="RawTell"]/*'/>
-        //       protected virtual int RawTell()
-        //       {
-        //           PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Seek"));
-        //           return -1;
-        //       }
+        public virtual bool CanSeek { get { return false; } }
 
-        //       /// <include file='Doc/Streams.xml' path='docs/method[@name="RawSeek"]/*'/>
-        //       protected virtual bool RawSeek(int offset, SeekOrigin whence)
-        //       {
-        //           PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Seek"));
-        //           return false;
-        //       }
+        protected virtual int RawTell()
+        {
+            PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Seek");
+            return -1;
+        }
 
-        //       /// <summary>
-        //       /// Gets the length of the stream.
-        //       /// </summary>
-        //       /// <returns>Count of bytes in the stream or <c>-1</c> if seek is not supported.</returns>
-        //       protected virtual int RawLength()
-        //       {
-        //           if (!CanSeek) return -1;
-        //           int current = RawTell();
-        //           if ((current < 0) || !RawSeek(0, SeekOrigin.End)) return -1;
-        //           int rv = RawTell();
-        //           if ((rv < 0) || !RawSeek(current, SeekOrigin.Begin)) return -1;
-        //           return rv;
-        //       }
-        //       #endregion
+        protected virtual bool RawSeek(int offset, SeekOrigin whence)
+        {
+            PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Seek");
+            return false;
+        }
 
-        //       #region SetParameter (optional)
+        /// <summary>
+        /// Gets the length of the stream.
+        /// </summary>
+        /// <returns>Count of bytes in the stream or <c>-1</c> if seek is not supported.</returns>
+        protected virtual int RawLength()
+        {
+            if (!CanSeek) return -1;
+            int current = RawTell();
+            if ((current < 0) || !RawSeek(0, SeekOrigin.End)) return -1;
+            int rv = RawTell();
+            if ((rv < 0) || !RawSeek(current, SeekOrigin.Begin)) return -1;
+            return rv;
+        }
+
+        #endregion
+
+        #region SetParameter (optional)
+
         //       /// <include file='Doc/Streams.xml' path='docs/method[@name="SetParameter"]/*'/>
         //       public virtual bool SetParameter(StreamParameterOptions option, object value)
         //       {
@@ -593,11 +596,13 @@ namespace Pchp.Library.Streams
         //                   return false;
         //           }
         //       }
-        //       #endregion
 
-        //       #region High-level Stream Access (Buffering and Filtering)
+        #endregion
 
-        //       #region High-level Reading
+        #region High-level Stream Access (Buffering and Filtering)
+
+        #region High-level Reading
+
         //       /// <include file='Doc/Streams.xml' path='docs/property[@name="RawEof"]/*'/>
         //       public bool Eof
         //       {
@@ -619,7 +624,7 @@ namespace Pchp.Library.Streams
         //           }
         //       }
 
-        //       #region Buffered Reading
+        #region Buffered Reading
 
         //       private int ReadBufferScan(out int nlpos)
         //       {
@@ -911,9 +916,9 @@ namespace Pchp.Library.Streams
         //           } // else
         //       }
 
-        //       #endregion
+        #endregion
 
-        //       #region Data Block Conversions
+        #region Data Block Conversions
 
         //       /// <summary>
         //       /// Gets the length of a block of data (either a <see cref="String"/> or <see cref="PhpBytes"/>).
@@ -1012,11 +1017,10 @@ namespace Pchp.Library.Streams
         //           return str.Substring(0, count);
         //       }
 
-        //       #endregion
+        #endregion
 
+        #region Block Reading
 
-
-        //       #region Block Reading
         //       /// <summary>
         //       /// Reads a block of data from the stream up to <paramref name="length"/>
         //       /// characters or up to EOLN if <paramref name="length"/> is negative.
@@ -1257,9 +1261,9 @@ namespace Pchp.Library.Streams
         //           }
         //       }
 
-        //       #endregion
+        #endregion
 
-        //       #region Maximum Block Reading
+        #region Maximum Block Reading
 
         //       /// <summary>
         //       /// Gets the number of bytes or characters in the first read-buffer or next chunk size.
@@ -1326,9 +1330,9 @@ namespace Pchp.Library.Streams
         //           return AsText(ReadMaximumData());
         //       }
 
-        //       #endregion
+        #endregion
 
-        //       #region Entire Stream Reading
+        #region Entire Stream Reading
 
         //       public object ReadContents()
         //       {
@@ -1461,9 +1465,10 @@ namespace Pchp.Library.Streams
         //           return str;
         //       }
 
-        //       #endregion
+        #endregion
 
-        //       #region Filter Chains
+        #region Filter Chains
+
         //       /// <summary>
         //       /// Adds a filter to one of the read or write filter chains.
         //       /// </summary>
@@ -1522,12 +1527,14 @@ namespace Pchp.Library.Streams
         //           }
         //       }
 
-        //       #endregion
+        #endregion
 
-        //       #endregion
+        #endregion
 
-        //       #region High-level Writing
-        //       #region Buffered Writing
+        #region High-level Writing
+
+        #region Buffered Writing
+
         //       /// <summary>
         //       /// Write all the output buffer to the underlying stream and flush it.
         //       /// </summary>
@@ -1579,9 +1586,11 @@ namespace Pchp.Library.Streams
         //           writePosition = 0;
         //           return true;
         //       }
-        //       #endregion
 
-        //       #region Block Writing
+        #endregion
+
+        #region Block Writing
+
         //       /// <summary>
         //       /// Passes the data through output filter-chain to the output buffer. 
         //       /// When the buffer is full or buffering is disabled, passes the data to the low-level stream.
@@ -1740,9 +1749,9 @@ namespace Pchp.Library.Streams
         //               return consumed;
         //           }
         //       }
-        //       #endregion
-        //       #endregion
 
+        #endregion
+        #endregion
 
         //       /// <summary>
         //       /// Sets the read/write pointer in the stream to a new position.
@@ -1941,9 +1950,10 @@ namespace Pchp.Library.Streams
         //                   return WritePosition;
         //           }
         //       }
-        //       #endregion
 
-        //       #region Conversions
+        #endregion
+
+        #region Conversions
 
         //       /// <include file='Doc/Streams.xml' path='docs/property[@name="RawStream"]/*'/>
         //       /// <exception cref="InvalidCastException">When casting is not supported.</exception>
@@ -1991,22 +2001,22 @@ namespace Pchp.Library.Streams
         //           return result;
         //       }
 
-        //       #endregion
+        #endregion
 
-        //       #region Stream properties
+        #region Stream properties
 
-        //       /// <summary>
-        //       /// The stream context options resource.
-        //       /// </summary>
-        //       public StreamContext Context
-        //       {
-        //           get { return context; }
-        //       }
+        /// <summary>
+        /// The stream context options resource.
+        /// </summary>
+        public StreamContext Context
+        {
+            get { return _context; }
+        }
 
-        //       /// <summary>
-        //       /// The stream context options resource.
-        //       /// </summary>
-        //       protected StreamContext context;
+        /// <summary>
+        /// The stream context options resource.
+        /// </summary>
+        protected StreamContext _context;
 
         //       /// <summary>
         //       /// Gets the Auto-remove option of this stream.
@@ -2198,14 +2208,14 @@ namespace Pchp.Library.Streams
         //       /// <summary>The text-mode conversion filter of this stream used for writing.</summary>
         //       protected IFilter textWriteFilter = null;
 
-        //       /// <summary>
-        //       /// The StreamWrapper responsible for opening this stream.
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// Used for example to access the correct section of context
-        //       /// and for wrapper-notifications too.
-        //       /// </remarks>
-        //       public readonly StreamWrapper Wrapper;
+        /// <summary>
+        /// The StreamWrapper responsible for opening this stream.
+        /// </summary>
+        /// <remarks>
+        /// Used for example to access the correct section of context
+        /// and for wrapper-notifications too.
+        /// </remarks>
+        public readonly StreamWrapper Wrapper;
 
         //       /// <summary>
         //       /// PHP wrapper specific data. See GetMetaData, wrapper_data array item.
@@ -2217,55 +2227,55 @@ namespace Pchp.Library.Streams
         //           internal set;
         //       }
 
-        //       /// <summary>
-        //       /// The absolute path to the resource.
-        //       /// </summary>
-        //       public readonly string OpenedPath;
+        /// <summary>
+        /// The absolute path to the resource.
+        /// </summary>
+        public readonly string OpenedPath;
 
-        //       /// <summary>
-        //       /// <c>true</c> if the stream was opened for writing.
-        //       /// </summary>
-        //       public bool CanWrite
-        //       {
-        //           get { return (Options & StreamAccessOptions.Write) > 0; }
-        //       }
+        /// <summary>
+        /// <c>true</c> if the stream was opened for writing.
+        /// </summary>
+        public bool CanWrite
+        {
+            get { return (Options & StreamAccessOptions.Write) > 0; }
+        }
 
-        //       /// <summary>
-        //       /// <c>true</c> if the stream was opened for reading.
-        //       /// </summary>
-        //       public bool CanRead
-        //       {
-        //           get { return (Options & StreamAccessOptions.Read) > 0; }
-        //       }
+        /// <summary>
+        /// <c>true</c> if the stream was opened for reading.
+        /// </summary>
+        public bool CanRead
+        {
+            get { return (Options & StreamAccessOptions.Read) > 0; }
+        }
 
-        //       /// <summary>
-        //       /// <c>true</c> if the stream was opened in the text access-mode.
-        //       /// </summary>
-        //       public bool IsText
-        //       {
-        //           get { return (Options & StreamAccessOptions.UseText) > 0; }
-        //       }
+        /// <summary>
+        /// <c>true</c> if the stream was opened in the text access-mode.
+        /// </summary>
+        public bool IsText
+        {
+            get { return (Options & StreamAccessOptions.UseText) > 0; }
+        }
 
-        //       /// <summary>
-        //       /// <c>true</c> if the stream was opened in the binary access-mode.
-        //       /// </summary>
-        //       public bool IsBinary
-        //       {
-        //           get { return (Options & StreamAccessOptions.UseText) == 0; }
-        //       }
+        /// <summary>
+        /// <c>true</c> if the stream was opened in the binary access-mode.
+        /// </summary>
+        public bool IsBinary
+        {
+            get { return (Options & StreamAccessOptions.UseText) == 0; }
+        }
 
-        //       /// <summary>
-        //       /// <c>true</c> if the stream persists accross multiple scripts.
-        //       /// </summary>
-        //       public bool IsPersistent
-        //       {
-        //           get { return (Options & StreamAccessOptions.Persistent) != 0; }
-        //       }
+        /// <summary>
+        /// <c>true</c> if the stream persists accross multiple scripts.
+        /// </summary>
+        public bool IsPersistent
+        {
+            get { return (Options & StreamAccessOptions.Persistent) != 0; }
+        }
 
-        //       /// <summary>
-        //       /// Additional stream options defined at open-time.
-        //       /// </summary>
-        //       public readonly StreamAccessOptions Options;
+        /// <summary>
+        /// Additional stream options defined at open-time.
+        /// </summary>
+        public readonly StreamAccessOptions Options;
 
         //       /// <summary>
         //       /// Gets the type of last stream access (initialized to FileAccess.ReadWrite if not accessed yet).
@@ -2340,23 +2350,17 @@ namespace Pchp.Library.Streams
         /// </summary>
         public const string PhpStreamTypeName = "stream";
 
-        //       #endregion
+        #endregion
 
-        //       #region Stat (optional)
+        #region Stat (optional)
 
-        //       public virtual StatStruct Stat()
-        //       {
-        //           if (this.Wrapper != null)
-        //           {
-        //               return this.Wrapper.Stat(OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true);
-        //           }
+        public virtual StatStruct Stat()
+        {
+            return (this.Wrapper != null)
+            ? this.Wrapper.Stat(OpenedPath, StreamStatOptions.Empty, StreamContext.Default, true)
+            : StreamWrapper.StatUnsupported();
+        }
 
-        //           PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Stat"));
-        //           StatStruct rv = new StatStruct();
-        //           rv.st_size = -1;
-        //           return rv;
-        //       }
-
-        //       #endregion
+        #endregion
     }
 }

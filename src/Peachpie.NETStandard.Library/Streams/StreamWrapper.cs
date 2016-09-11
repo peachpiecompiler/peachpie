@@ -1,4 +1,6 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Resources;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +16,7 @@ namespace Pchp.Library.Streams
     /// for different stream types.
     /// </summary>
     /// <remarks>
-    /// Each script has its own copy of registeredWrappers stored in the ScriptContext.
+    /// Each script has its own copy of registeredWrappers stored in the context.
     /// <para>
     /// PhpStream is created by a StreamWrapper on a call to fopen().
     /// Wrappers are stateless: they provide an instance of PhpStream
@@ -35,60 +37,69 @@ namespace Pchp.Library.Streams
 
         #endregion
 
-        //#region Optional Wrapper Operations (Warning)
+        #region Optional Wrapper Operations (Warning)
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/method[@name="Unlink"]/*'/>
-        ///// <remarks>
-        ///// <seealso cref="StreamUnlinkOptions"/> for the list of additional options.
-        ///// </remarks>
-        //public virtual bool Unlink(string path, StreamUnlinkOptions options, StreamContext context)
-        //{
-        //    // int (*unlink)(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC); 
-        //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Unlink"));
-        //    return false;
-        //}
+        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="Unlink"]/*'/>
+        /// <remarks>
+        /// <seealso cref="StreamUnlinkOptions"/> for the list of additional options.
+        /// </remarks>
+        public virtual bool Unlink(string path, StreamUnlinkOptions options, StreamContext context)
+        {
+            // int (*unlink)(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC); 
+            PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Unlink");
+            return false;
+        }
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/method[@name="Listing"]/*'/>
-        //public virtual string[] Listing(string path, StreamListingOptions options, StreamContext context)
-        //{
-        //    // php_stream *(*dir_opener)(php_stream_wrapper *wrapper, char *filename, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC);
-        //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Opendir"));
-        //    return null;
-        //}
+        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="Listing"]/*'/>
+        public virtual string[] Listing(string path, StreamListingOptions options, StreamContext context)
+        {
+            // php_stream *(*dir_opener)(php_stream_wrapper *wrapper, char *filename, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC);
+            PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Opendir");
+            return null;
+        }
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/method[@name="Rename"]/*'/>
-        //public virtual bool Rename(string fromPath, string toPath, StreamRenameOptions options, StreamContext context)
-        //{
-        //    // int (*rename)(php_stream_wrapper *wrapper, char *url_from, char *url_to, int options, php_stream_context *context TSRMLS_DC);
-        //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Rename"));
-        //    return false;
-        //}
+        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="Rename"]/*'/>
+        public virtual bool Rename(string fromPath, string toPath, StreamRenameOptions options, StreamContext context)
+        {
+            // int (*rename)(php_stream_wrapper *wrapper, char *url_from, char *url_to, int options, php_stream_context *context TSRMLS_DC);
+            PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Rename");
+            return false;
+        }
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/method[@name="MakeDirectory"]/*'/>
-        ///// <remarks><seealso cref="StreamMakeDirectoryOptions"/> for the list of additional options.</remarks>
-        //public virtual bool MakeDirectory(string path, int accessMode, StreamMakeDirectoryOptions options, StreamContext context)
-        //{
-        //    // int (*stream_mkdir)(php_stream_wrapper *wrapper, char *url, int mode, int options, php_stream_context *context TSRMLS_DC);
-        //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Mkdir"));
-        //    return false;
-        //}
+        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="MakeDirectory"]/*'/>
+        /// <remarks><seealso cref="StreamMakeDirectoryOptions"/> for the list of additional options.</remarks>
+        public virtual bool MakeDirectory(string path, int accessMode, StreamMakeDirectoryOptions options, StreamContext context)
+        {
+            // int (*stream_mkdir)(php_stream_wrapper *wrapper, char *url, int mode, int options, php_stream_context *context TSRMLS_DC);
+            PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Mkdir");
+            return false;
+        }
 
-        ///// <include file='Doc/Wrappers.xml' path='docs/method[@name="RemoveDirectory"]/*'/>
-        //public virtual bool RemoveDirectory(string path, StreamRemoveDirectoryOptions options, StreamContext context)
-        //{
-        //    // int (*stream_rmdir)(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC);    
-        //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Rmdir"));
-        //    return false;
-        //}
+        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="RemoveDirectory"]/*'/>
+        public virtual bool RemoveDirectory(string path, StreamRemoveDirectoryOptions options, StreamContext context)
+        {
+            // int (*stream_rmdir)(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC);    
+            PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Rmdir");
+            return false;
+        }
 
-        //public virtual StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
-        //{
-        //    // int (*url_stat)(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
-        //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Stat"));
-        //    return new StatStruct();
-        //}
+        public virtual StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        {
+            // int (*url_stat)(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
+            return StatUnsupported();
+        }
 
-        //#endregion
+        /// <summary>
+        /// Reports warning and creates invalid stat.
+        /// </summary>
+        internal static StatStruct StatUnsupported()
+        {
+            // int (*url_stat)(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
+            PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Stat");
+            return new StatStruct() { st_size = -1 };
+        }
+
+        #endregion
 
         #region Optional Wrapper Methods (Empty)
 
@@ -108,192 +119,191 @@ namespace Pchp.Library.Streams
 
         #endregion
 
-        //#region Helper methods (ParseMode, FileSystemUtils.StripPassword)
+        #region Helper methods (ParseMode, FileSystemUtils.StripPassword)
 
-        ///// <summary>
-        ///// Parse the <paramref name="mode"/> argument passed to <c>fopen()</c>
-        ///// and make the appropriate <see cref="FileMode"/> and <see cref="FileAccess"/>
-        ///// combination.
-        ///// Integrate the relevant options from <see cref="StreamOpenOptions"/> too.
-        ///// </summary>
-        ///// <param name="mode">Mode as passed to <c>fopen()</c>.</param>
-        ///// <param name="options">The <see cref="StreamOpenOptions"/> passed to <c>fopen()</c>.</param>
-        ///// <param name="fileMode">Resulting <see cref="FileMode"/> specifying opening mode.</param>
-        ///// <param name="fileAccess">Resulting <see cref="FileAccess"/> specifying read/write access options.</param>
-        ///// <param name="accessOptions">Resulting <see cref="StreamAccessOptions"/> giving 
-        ///// additional information to the stream opener.</param>
-        ///// <returns><c>true</c> if the given mode was a valid file opening mode, otherwise <c>false</c>.</returns>
-        //public bool ParseMode(string mode, StreamOpenOptions options, out FileMode fileMode, out FileAccess fileAccess, out StreamAccessOptions accessOptions)
-        //{
-        //    accessOptions = StreamAccessOptions.Empty;
-        //    bool forceBinary = false; // The user requested a text stream
-        //    bool forceText = false; // Use text access to the stream (default is binary)
+        /// <summary>
+        /// Parse the <paramref name="mode"/> argument passed to <c>fopen()</c>
+        /// and make the appropriate <see cref="FileMode"/> and <see cref="FileAccess"/>
+        /// combination.
+        /// Integrate the relevant options from <see cref="StreamOpenOptions"/> too.
+        /// </summary>
+        /// <param name="mode">Mode as passed to <c>fopen()</c>.</param>
+        /// <param name="options">The <see cref="StreamOpenOptions"/> passed to <c>fopen()</c>.</param>
+        /// <param name="fileMode">Resulting <see cref="FileMode"/> specifying opening mode.</param>
+        /// <param name="fileAccess">Resulting <see cref="FileAccess"/> specifying read/write access options.</param>
+        /// <param name="accessOptions">Resulting <see cref="StreamAccessOptions"/> giving 
+        /// additional information to the stream opener.</param>
+        /// <returns><c>true</c> if the given mode was a valid file opening mode, otherwise <c>false</c>.</returns>
+        public bool ParseMode(string mode, StreamOpenOptions options, out FileMode fileMode, out FileAccess fileAccess, out StreamAccessOptions accessOptions)
+        {
+            accessOptions = StreamAccessOptions.Empty;
+            bool forceBinary = false; // The user requested a text stream
+            bool forceText = false; // Use text access to the stream (default is binary)
 
-        //    // First check for relevant options in StreamOpenOptions:
+            // First check for relevant options in StreamOpenOptions:
 
-        //    // Search for the file only if mode=='[ra]*' and use_include_path==true.
-        //    // StreamAccessOptions findFile = 0;
-        //    if ((options & StreamOpenOptions.UseIncludePath) > 0)
-        //    {
-        //        // findFile = StreamAccessOptions.FindFile;
-        //        accessOptions |= StreamAccessOptions.FindFile;
-        //    }
+            // Search for the file only if mode=='[ra]*' and use_include_path==true.
+            // StreamAccessOptions findFile = 0;
+            if ((options & StreamOpenOptions.UseIncludePath) > 0)
+            {
+                // findFile = StreamAccessOptions.FindFile;
+                accessOptions |= StreamAccessOptions.FindFile;
+            }
 
-        //    // Copy the AutoRemove option.
-        //    if ((options & StreamOpenOptions.Temporary) > 0)
-        //    {
-        //        accessOptions |= StreamAccessOptions.Temporary;
-        //    }
+            // Copy the AutoRemove option.
+            if ((options & StreamOpenOptions.Temporary) > 0)
+            {
+                accessOptions |= StreamAccessOptions.Temporary;
+            }
 
-        //    // Now do the actual mode parsing:
-        //    fileMode = FileMode.Open;
-        //    fileAccess = FileAccess.Write;
-        //    if (String.IsNullOrEmpty(mode))
-        //    {
-        //        PhpException.Throw(PhpError.Warning, CoreResources.GetString("empty_file_mode"));
-        //        return false;
-        //    }
+            // Now do the actual mode parsing:
+            fileMode = FileMode.Open;
+            fileAccess = FileAccess.Write;
+            if (String.IsNullOrEmpty(mode))
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.empty_file_mode);
+                return false;
+            }
 
-        //    switch (mode[0])
-        //    {
-        //        case 'r':
-        //            // flags = 0;
-        //            // fileMode is already set to Open
-        //            fileAccess = FileAccess.Read;
-        //            //accessOptions |= findFile;
-        //            break;
+            switch (mode[0])
+            {
+                case 'r':
+                    // flags = 0;
+                    // fileMode is already set to Open
+                    fileAccess = FileAccess.Read;
+                    //accessOptions |= findFile;
+                    break;
 
-        //        case 'w':
-        //            // flags = O_TRUNC|O_CREAT;
-        //            // fileAccess is set to Write
-        //            fileMode = FileMode.Create;
-        //            //accessOptions |= findFile;
-        //            // EX: Note that use_include_path is applicable to all access methods.
-        //            // Create truncates the existing file to zero length
-        //            break;
+                case 'w':
+                    // flags = O_TRUNC|O_CREAT;
+                    // fileAccess is set to Write
+                    fileMode = FileMode.Create;
+                    //accessOptions |= findFile;
+                    // EX: Note that use_include_path is applicable to all access methods.
+                    // Create truncates the existing file to zero length
+                    break;
 
-        //        case 'a':
-        //            // flags = O_CREAT|O_APPEND;
-        //            // fileAccess is set to Write
-        //            fileMode = FileMode.Append;
-        //            //accessOptions |= findFile;
-        //            // Note: .NET does not support the "a+" mode, use "r+" and Seek()
-        //            break;
+                case 'a':
+                    // flags = O_CREAT|O_APPEND;
+                    // fileAccess is set to Write
+                    fileMode = FileMode.Append;
+                    //accessOptions |= findFile;
+                    // Note: .NET does not support the "a+" mode, use "r+" and Seek()
+                    break;
 
-        //        case 'x':
-        //            // flags = O_CREAT|O_EXCL;
-        //            // fileAccess is set to Write
-        //            fileMode = FileMode.CreateNew;
-        //            accessOptions |= StreamAccessOptions.Exclusive;
-        //            break;
+                case 'x':
+                    // flags = O_CREAT|O_EXCL;
+                    // fileAccess is set to Write
+                    fileMode = FileMode.CreateNew;
+                    accessOptions |= StreamAccessOptions.Exclusive;
+                    break;
 
-        //        default:
-        //            PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_file_mode", mode));
-        //            return false;
-        //    }
+                default:
+                    PhpException.Throw(PhpError.Warning, ErrResources.invalid_file_mode, mode);
+                    return false;
+            }
 
-        //    if (mode.IndexOf('+') > -1)
-        //    {
-        //        // flags |= O_RDWR;
-        //        fileAccess = FileAccess.ReadWrite;
-        //    }
+            if (mode.IndexOf('+') > -1)
+            {
+                // flags |= O_RDWR;
+                fileAccess = FileAccess.ReadWrite;
+            }
 
-        //    if ((fileMode == FileMode.Append) && (fileAccess == FileAccess.ReadWrite))
-        //    {
-        //        // Note: .NET does not support the "a+" mode, use "r+" and Seek()
-        //        fileMode = FileMode.OpenOrCreate;
-        //        fileAccess = FileAccess.ReadWrite;
-        //        accessOptions |= StreamAccessOptions.SeekEnd;
-        //    }
+            if ((fileMode == FileMode.Append) && (fileAccess == FileAccess.ReadWrite))
+            {
+                // Note: .NET does not support the "a+" mode, use "r+" and Seek()
+                fileMode = FileMode.OpenOrCreate;
+                fileAccess = FileAccess.ReadWrite;
+                accessOptions |= StreamAccessOptions.SeekEnd;
+            }
 
-        //    if (mode.IndexOf('b') > -1)
-        //    {
-        //        // flags |= O_BINARY;
-        //        forceBinary = true;
-        //    }
-        //    if (mode.IndexOf('t') > -1)
-        //    {
-        //        // flags |= _O_TEXT;
-        //        forceText = true;
-        //    }
+            if (mode.IndexOf('b') > -1)
+            {
+                // flags |= O_BINARY;
+                forceBinary = true;
+            }
+            if (mode.IndexOf('t') > -1)
+            {
+                // flags |= _O_TEXT;
+                forceText = true;
+            }
 
-        //    // Exactly one of these options is required.
-        //    if ((forceBinary && forceText) || (!forceBinary && !forceText))
-        //    {
-        //        LocalConfiguration config = Configuration.Local;
+            // Exactly one of these options is required.
+            if ((forceBinary && forceText) || (!forceBinary && !forceText))
+            {
+                //LocalConfiguration config = Configuration.Local;
 
-        //        // checks whether default mode is applicable:
-        //        if (config.FileSystem.DefaultFileOpenMode == "b")
-        //        {
-        //            forceBinary = true;
-        //        }
-        //        else if (config.FileSystem.DefaultFileOpenMode == "t")
-        //        {
-        //            forceText = true;
-        //        }
-        //        else
-        //        {
-        //            PhpException.Throw(PhpError.Warning, CoreResources.GetString("ambiguous_file_mode", mode));
-        //        }
+                //// checks whether default mode is applicable:
+                //if (config.FileSystem.DefaultFileOpenMode == "b")
+                //{
+                //    forceBinary = true;
+                //}
+                //else if (config.FileSystem.DefaultFileOpenMode == "t")
+                //{
+                //    forceText = true;
+                //}
+                //else
+                //{
+                //    PhpException.Throw(PhpError.Warning, ErrResources.ambiguous_file_mode, mode);
+                //}
+                throw new NotImplementedException("Configuration.FileSystem.DefaultFileOpenMode");
 
-        //        // Binary mode is assumed
-        //    }
-        //    else if (forceText)
-        //    {
-        //        // Default mode is binary (unless the text mode is specified).
-        //        accessOptions |= StreamAccessOptions.UseText;
-        //    }
+                // Binary mode is assumed
+            }
+            else if (forceText)
+            {
+                // Default mode is binary (unless the text mode is specified).
+                accessOptions |= StreamAccessOptions.UseText;
+            }
 
-        //    // Store the two file-access flags into the access options too.
-        //    accessOptions |= (StreamAccessOptions)fileAccess;
+            // Store the two file-access flags into the access options too.
+            accessOptions |= (StreamAccessOptions)fileAccess;
 
-        //    return true;
-        //}
+            return true;
+        }
 
-        ///// <summary>
-        ///// Overload of <see cref="ParseMode"/> without the <c>out</c> arguments.
-        ///// </summary>
-        ///// <param name="mode">Mode as passed to <c>fopen()</c>.</param>
-        ///// <param name="options">The <see cref="StreamOpenOptions"/> passed to <c>fopen()</c>.</param>
-        ///// <param name="accessOptions">Resulting <see cref="StreamAccessOptions"/> giving 
-        ///// additional information to the stream opener.</param>
-        ///// <returns><c>true</c> if the given mode was a valid file opening mode, otherwise <c>false</c>.</returns>
-        ///// <exception cref="ArgumentException">If the <paramref name="mode"/> is not valid.</exception>
-        //internal bool ParseMode(string mode, StreamOpenOptions options, out StreamAccessOptions accessOptions)
-        //{
-        //    FileMode fileMode;
-        //    FileAccess fileAccess;
+        /// <summary>
+        /// Overload of <see cref="ParseMode"/> without the <c>out</c> arguments.
+        /// </summary>
+        /// <param name="mode">Mode as passed to <c>fopen()</c>.</param>
+        /// <param name="options">The <see cref="StreamOpenOptions"/> passed to <c>fopen()</c>.</param>
+        /// <param name="accessOptions">Resulting <see cref="StreamAccessOptions"/> giving 
+        /// additional information to the stream opener.</param>
+        /// <returns><c>true</c> if the given mode was a valid file opening mode, otherwise <c>false</c>.</returns>
+        /// <exception cref="ArgumentException">If the <paramref name="mode"/> is not valid.</exception>
+        internal bool ParseMode(string mode, StreamOpenOptions options, out StreamAccessOptions accessOptions)
+        {
+            FileMode fileMode;
+            FileAccess fileAccess;
 
-        //    return (ParseMode(mode, options, out fileMode, out fileAccess, out accessOptions));
-        //}
+            return (ParseMode(mode, options, out fileMode, out fileAccess, out accessOptions));
+        }
 
-        ///// <summary>
-        ///// Checks whether the supported read/write access matches the reqiured one.
-        ///// </summary>
-        ///// <param name="accessOptions">The access options specified by the user.</param>
-        ///// <param name="supportedAccess">The read/write access options supported by the stream.</param>
-        ///// <param name="path">The path given by user to report errors.</param>
-        ///// <returns><c>false</c> if the stream does not support any of the required modes, <c>true</c> otherwise.</returns>
-        //internal bool CheckOptions(StreamAccessOptions accessOptions, FileAccess supportedAccess, string path)
-        //{
-        //    FileAccess requiredAccess = (FileAccess)accessOptions & FileAccess.ReadWrite;
-        //    FileAccess faultyAccess = requiredAccess & ~supportedAccess;
-        //    if ((faultyAccess & FileAccess.Read) > 0)
-        //    {
-        //        PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_open_read_unsupported",
-        //          FileSystemUtils.StripPassword(path)));
-        //        return false;
-        //    }
-        //    else if ((faultyAccess & FileAccess.Write) > 0)
-        //    {
-        //        PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_open_write_unsupported",
-        //          FileSystemUtils.StripPassword(path)));
-        //        return false;
-        //    }
-        //    return true;
-        //}
+        /// <summary>
+        /// Checks whether the supported read/write access matches the reqiured one.
+        /// </summary>
+        /// <param name="accessOptions">The access options specified by the user.</param>
+        /// <param name="supportedAccess">The read/write access options supported by the stream.</param>
+        /// <param name="path">The path given by user to report errors.</param>
+        /// <returns><c>false</c> if the stream does not support any of the required modes, <c>true</c> otherwise.</returns>
+        internal bool CheckOptions(StreamAccessOptions accessOptions, FileAccess supportedAccess, string path)
+        {
+            FileAccess requiredAccess = (FileAccess)accessOptions & FileAccess.ReadWrite;
+            FileAccess faultyAccess = requiredAccess & ~supportedAccess;
+            if ((faultyAccess & FileAccess.Read) > 0)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_open_read_unsupported, FileSystemUtils.StripPassword(path));
+                return false;
+            }
+            else if ((faultyAccess & FileAccess.Write) > 0)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_open_write_unsupported, FileSystemUtils.StripPassword(path));
+                return false;
+            }
+            return true;
+        }
 
-        //#endregion
+        #endregion
 
         #region Static wrapper-list handling methods
 
@@ -342,42 +352,43 @@ namespace Pchp.Library.Streams
         //    return GetWrapperInternal(scheme) != null;
         //}
 
-        ///// <summary>
-        ///// Retreive the corresponding StreamWrapper respectind the scheme portion 
-        ///// of the given path. If no scheme is specified, an instance of 
-        ///// FileStreamWrapper is returned.
-        ///// </summary>
-        ///// <param name="scheme">The scheme portion of an URL.</param>
-        ///// <param name="options">Additional <see cref="StreamOptions"/> having effect on the wrapper retreival.</param>
-        ///// <returns>An instance of StreamWrapper to be used to open the specified file.</returns>
-        ///// <exception cref="PhpException">In case when the required wrapper can not be found.</exception>
-        //public static StreamWrapper GetWrapper(string scheme, StreamOptions options)
-        //{
-        //    StreamWrapper wrapper = GetWrapperInternal(scheme);
+        /// <summary>
+        /// Retreive the corresponding StreamWrapper respectind the scheme portion 
+        /// of the given path. If no scheme is specified, an instance of 
+        /// FileStreamWrapper is returned.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="scheme">The scheme portion of an URL.</param>
+        /// <param name="options">Additional <see cref="StreamOptions"/> having effect on the wrapper retreival.</param>
+        /// <returns>An instance of StreamWrapper to be used to open the specified file.</returns>
+        /// <exception cref="PhpException">In case when the required wrapper can not be found.</exception>
+        public static StreamWrapper GetWrapper(Context ctx, string scheme, StreamOptions options)
+        {
+            StreamWrapper wrapper = GetWrapperInternal(ctx, scheme);
 
-        //    if (wrapper == null)
-        //    {
-        //        PhpException.Throw(PhpError.Notice, CoreResources.GetString("stream_bad_wrapper", scheme));
-        //        // Notice:  fopen(): Unable to find the wrapper "*" - did you forget to enable it when you configured PHP? in C:\Inetpub\wwwroot\php\index.php on line 23
+            if (wrapper == null)
+            {
+                PhpException.Throw(PhpError.Notice, ErrResources.stream_bad_wrapper, scheme);
+                // Notice:  fopen(): Unable to find the wrapper "*" - did you forget to enable it when you configured PHP? in C:\Inetpub\wwwroot\php\index.php on line 23
 
-        //        wrapper = GetWrapperInternal("file");
-        //        // There should always be the FileStreamWrapper present.
-        //    }
+                wrapper = GetWrapperInternal(ctx, "file");
+                // There should always be the FileStreamWrapper present.
+            }
 
-        //    // EX [GetWrapper]: check for the other StreamOptions here: for example UseUrl, IgnoreUrl
+            // EX [GetWrapper]: check for the other StreamOptions here: for example UseUrl, IgnoreUrl
 
-        //    if (!ScriptContext.CurrentContext.Config.FileSystem.AllowUrlFopen)
-        //    {
-        //        if (wrapper.IsUrl)
-        //        {
-        //            PhpException.Throw(PhpError.Warning, CoreResources.GetString("url_fopen_disabled"));
-        //            return null;
-        //        }
-        //    }
+            //if (!ScriptContext.CurrentContext.Config.FileSystem.AllowUrlFopen)
+            //{
+            //    if (wrapper.IsUrl)
+            //    {
+            //        PhpException.Throw(PhpError.Warning, ErrResources.url_fopen_disabled);
+            //        return null;
+            //    }
+            //}
 
-        //    Debug.Assert(wrapper != null);
-        //    return wrapper;
-        //}
+            Debug.Assert(wrapper != null);
+            return wrapper;
+        }
 
         /// <summary>
         /// Gets the list of built-in stream wrapper schemes.
@@ -402,48 +413,49 @@ namespace Pchp.Library.Streams
         //    return UserWrappers.Keys;
         //}
 
-        ///// <summary>
-        ///// Search the lists of registered StreamWrappers to find the 
-        ///// appropriate wrapper for a given scheme. When the scheme
-        ///// is empty, the FileStreamWrapper is returned.
-        ///// </summary>
-        ///// <param name="scheme">The scheme portion of an URL.</param>
-        ///// <returns>A StreamWrapper associated with the given scheme.</returns>
-        //internal static StreamWrapper GetWrapperInternal(string scheme)
-        //{
-        //    StreamWrapper result;
+        /// <summary>
+        /// Search the lists of registered StreamWrappers to find the 
+        /// appropriate wrapper for a given scheme. When the scheme
+        /// is empty, the FileStreamWrapper is returned.
+        /// </summary>
+        /// <param name="scheme">The scheme portion of an URL.</param>
+        /// <returns>A StreamWrapper associated with the given scheme.</returns>
+        internal static StreamWrapper GetWrapperInternal(Context ctx, string scheme)
+        {
+            //StreamWrapper result;
 
-        //    // Note: FileStreamWrapper is returned both for "file" and for "".
-        //    if (string.IsNullOrEmpty(scheme))
-        //    {
-        //        scheme = FileStreamWrapper.scheme;
-        //    }
+            //// Note: FileStreamWrapper is returned both for "file" and for "".
+            //if (string.IsNullOrEmpty(scheme))
+            //{
+            //    scheme = FileStreamWrapper.scheme;
+            //}
 
-        //    // First search the system wrappers (always at least an empty Hashtable)
-        //    if (!SystemStreamWrappers.TryGetValue(scheme, out result))
-        //    {
+            //// First search the system wrappers (always at least an empty Hashtable)
+            //if (!SystemStreamWrappers.TryGetValue(scheme, out result))
+            //{
 
-        //        // Then look if the wrapper is implemented but not instantiated
-        //        switch (scheme)
-        //        {
-        //            case FileStreamWrapper.scheme:
-        //                return (StreamWrapper)(SystemStreamWrappers[scheme] = new FileStreamWrapper());
-        //            case HttpStreamWrapper.scheme:
-        //                return (StreamWrapper)(SystemStreamWrappers[scheme] = new HttpStreamWrapper());
-        //            case InputOutputStreamWrapper.scheme:
-        //                return (StreamWrapper)(SystemStreamWrappers[scheme] = new InputOutputStreamWrapper());
-        //        }
+            //    // Then look if the wrapper is implemented but not instantiated
+            //    switch (scheme)
+            //    {
+            //        case FileStreamWrapper.scheme:
+            //            return (StreamWrapper)(SystemStreamWrappers[scheme] = new FileStreamWrapper());
+            //        case HttpStreamWrapper.scheme:
+            //            return (StreamWrapper)(SystemStreamWrappers[scheme] = new HttpStreamWrapper());
+            //        case InputOutputStreamWrapper.scheme:
+            //            return (StreamWrapper)(SystemStreamWrappers[scheme] = new InputOutputStreamWrapper());
+            //    }
 
-        //        // Next search the user wrappers (if present)
-        //        if (UserWrappers != null)
-        //        {
-        //            UserWrappers.TryGetValue(scheme, out result);
-        //        }
-        //    }
+            //    // Next search the user wrappers (if present)
+            //    if (UserWrappers != null)
+            //    {
+            //        UserWrappers.TryGetValue(scheme, out result);
+            //    }
+            //}
 
-        //    //
-        //    return result;  // can be null
-        //}
+            ////
+            //return result;  // can be null
+            throw new NotImplementedException();
+        }
 
         ///// <summary>
         ///// Make new instance of Hashtable for the userwrappers

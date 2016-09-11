@@ -56,7 +56,7 @@ namespace Pchp.Core
             sink = Console.Out;
             stream = Console.OpenStandardOutput();
 #endif
-            
+
             return new Context()
             {
                 _textSink = sink,
@@ -76,9 +76,9 @@ namespace Pchp.Core
             return ctx;
         }
 
-#endregion
+        #endregion
 
-#region Symbols
+        #region Symbols
 
         /// <summary>
         /// Map of global functions.
@@ -196,9 +196,9 @@ namespace Pchp.Core
             throw new InvalidOperationException($"Type {type.Name} redeclared!");
         }
 
-#endregion
+        #endregion
 
-#region Inclusions
+        #region Inclusions
 
         /// <summary>
         /// Used by runtime.
@@ -236,7 +236,7 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
         {
-            var script = ScriptsMap.SearchForIncludedFile(path, null, cd, _scripts.GetScript);  // TODO: _scripts.GetScript => make relative path from absolute
+            var script = ScriptsMap.SearchForIncludedFile(path, IncludePaths, cd, _scripts.GetScript);  // TODO: _scripts.GetScript => make relative path from absolute
             if (script.IsValid)
             {
                 if (once && _scripts.IsIncluded(script.Index))
@@ -261,9 +261,9 @@ namespace Pchp.Core
             }
         }
 
-#endregion
+        #endregion
 
-#region Path Resolving
+        #region Path Resolving
 
         /// <summary>
         /// Root directory (web root or console app root) where loaded scripts are relative to.
@@ -271,7 +271,17 @@ namespace Pchp.Core
         /// <remarks>
         /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
         /// </remarks>
-        public virtual string RootPath { get; } = "";
+        public virtual string RootPath { get; } = string.Empty;
+
+        /// <summary>
+        /// Current working directory.
+        /// </summary>
+        public virtual string WorkingDirectory { get; } = string.Empty;
+
+        /// <summary>
+        /// Set of include paths to be used to resolve full file path.
+        /// </summary>
+        public virtual string[] IncludePaths => null;   // TODO:  => this.Config.FileSystem.IncludePaths
 
         /// <summary>
         /// Gets full script path in current context.
@@ -280,9 +290,9 @@ namespace Pchp.Core
         /// <returns>Full script path.</returns>
         public string ScriptPath<TScript>() => RootPath + ScriptsMap.GetScript<TScript>().Path;
 
-#endregion
-        
-#region Superglobals
+        #endregion
+
+        #region Superglobals
 
         /// <summary>
         /// Array of global variables.
@@ -322,9 +332,9 @@ namespace Pchp.Core
         }
         PhpArray _server;
 
-#endregion
+        #endregion
 
-#region Constants
+        #region Constants
 
         /// <summary>
         /// Gets a constant value.
@@ -360,9 +370,9 @@ namespace Pchp.Core
         /// </summary>
         public IEnumerable<KeyValuePair<string, PhpValue>> GetConstants() => _constants;
 
-#endregion
+        #endregion
 
-#region Error Reporting
+        #region Error Reporting
 
         /// <summary>
         /// Whether to throw an exception on soft error (Notice, Warning, Strict).
@@ -393,9 +403,9 @@ namespace Pchp.Core
                 _errorReportingDisabled--;
         }
 
-#endregion
+        #endregion
 
-#region IDisposable
+        #region IDisposable
 
         public void Dispose()
         {
@@ -423,6 +433,6 @@ namespace Pchp.Core
             }
         }
 
-#endregion
+        #endregion
     }
 }
