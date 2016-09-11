@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
-    public static class PhpPath
+    public static partial class PhpPath
     {
         #region Constants
 
@@ -193,14 +193,6 @@ namespace Pchp.Library
         /// <summary>
         /// Returns path component of path.
         /// </summary>
-        /// <param name="path">A <see cref="string"/> containing a path to a file.</param>
-        /// <returns>The path conponent of the given <paramref name="path"/>.</returns>
-        /// <exception cref="ArgumentException">Invalid path.</exception>
-        public static string basename(string path) => basename(path, null);
-
-        /// <summary>
-        /// Returns path component of path.
-        /// </summary>
         /// <remarks>
         /// Given a <see cref="string"/> containing a path to a file, this function will return the base name of the file. 
         /// If the path ends in this will also be cut off. 
@@ -210,9 +202,9 @@ namespace Pchp.Library
         /// <param name="path">A <see cref="string"/> containing a path to a file.</param>
         /// <param name="suffix">A <see cref="string"/> containing suffix to be cut off the path if present.</param>
         /// <returns>The path conponent of the given <paramref name="path"/>.</returns>
-        public static string basename(string path, string suffix)
+        public static string basename(string path, string suffix = null)
         {
-            if (String.IsNullOrEmpty(path)) return string.Empty;
+            if (string.IsNullOrEmpty(path)) return string.Empty;
 
             int end = path.Length - 1;
             while (end >= 0 && path[end].IsDirectorySeparator()) end--;
@@ -239,7 +231,7 @@ namespace Pchp.Library
         /// <returns>The directory portion of the given path.</returns>
         public static string dirname(string path)
         {
-            if (String.IsNullOrEmpty(path)) return null;
+            if (string.IsNullOrEmpty(path)) return null;
 
             int start = 0;
             int end = path.Length - 1;
@@ -283,17 +275,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Extracts parts from a specified path.
-        /// </summary>
-        /// <param name="path">The path to be parsed.</param>
-        /// <returns>Array keyed by <c>"dirname"</c>, <c>"basename"</c>, and <c>"extension"</c>.
-        /// </returns>
-        public static object pathinfo(string path)
-        {
-            return pathinfo(path, PathInfoOptions.All);
-        }
-
-        /// <summary>
         /// Extracts part(s) from a specified path.
         /// </summary>
         /// <param name="path">The path to be parsed.</param>
@@ -303,7 +284,7 @@ namespace Pchp.Library
         /// keyed by <c>"dirname"</c>, <c>"basename"</c>, and <c>"extension"</c>. Otherwise,
         /// it returns string value containing a single part of the path.
         /// </returns>
-        public static object pathinfo(string path, PathInfoOptions options)
+        public static object pathinfo(string path, PathInfoOptions options = PathInfoOptions.All)
         {
             // collect strings
             string dirname = null, basename = null, extension = null, filename = null;

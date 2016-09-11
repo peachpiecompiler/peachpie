@@ -6,7 +6,7 @@ namespace Pchp.Library.Streams
     #region Open-Mode decoded options
 
     /// <summary>
-    /// Flags returned by <see cref="StreamWrapper.ParseMode"/> indicating
+    /// Flags returned by <see cref="StreamWrapper.ParseMode(string, StreamOpenOptions, out FileMode, out FileAccess, out StreamAccessOptions)"/> indicating
     /// additional information to the parsed <see cref="FileMode"/>
     /// and <see cref="FileAccess"/>.
     /// </summary>

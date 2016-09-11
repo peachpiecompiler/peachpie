@@ -39,7 +39,6 @@ namespace Pchp.Library.Streams
 
         #region Optional Wrapper Operations (Warning)
 
-        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="Unlink"]/*'/>
         /// <remarks>
         /// <seealso cref="StreamUnlinkOptions"/> for the list of additional options.
         /// </remarks>
@@ -50,7 +49,6 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="Listing"]/*'/>
         public virtual string[] Listing(string path, StreamListingOptions options, StreamContext context)
         {
             // php_stream *(*dir_opener)(php_stream_wrapper *wrapper, char *filename, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC);
@@ -58,7 +56,6 @@ namespace Pchp.Library.Streams
             return null;
         }
 
-        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="Rename"]/*'/>
         public virtual bool Rename(string fromPath, string toPath, StreamRenameOptions options, StreamContext context)
         {
             // int (*rename)(php_stream_wrapper *wrapper, char *url_from, char *url_to, int options, php_stream_context *context TSRMLS_DC);
@@ -66,7 +63,6 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="MakeDirectory"]/*'/>
         /// <remarks><seealso cref="StreamMakeDirectoryOptions"/> for the list of additional options.</remarks>
         public virtual bool MakeDirectory(string path, int accessMode, StreamMakeDirectoryOptions options, StreamContext context)
         {
@@ -75,7 +71,6 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        /// <include file='Doc/Wrappers.xml' path='docs/method[@name="RemoveDirectory"]/*'/>
         public virtual bool RemoveDirectory(string path, StreamRemoveDirectoryOptions options, StreamContext context)
         {
             // int (*stream_rmdir)(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC);    
@@ -96,7 +91,7 @@ namespace Pchp.Library.Streams
         {
             // int (*url_stat)(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC);
             PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Stat");
-            return new StatStruct() { st_size = -1 };
+            return StatStruct.Invalid;
         }
 
         #endregion
@@ -263,7 +258,7 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
-        /// Overload of <see cref="ParseMode"/> without the <c>out</c> arguments.
+        /// Overload of <see cref="ParseMode(string, StreamOpenOptions, out FileMode, out FileAccess, out StreamAccessOptions)"/> without the <c>out</c> arguments.
         /// </summary>
         /// <param name="mode">Mode as passed to <c>fopen()</c>.</param>
         /// <param name="options">The <see cref="StreamOpenOptions"/> passed to <c>fopen()</c>.</param>
@@ -418,6 +413,7 @@ namespace Pchp.Library.Streams
         /// appropriate wrapper for a given scheme. When the scheme
         /// is empty, the FileStreamWrapper is returned.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="scheme">The scheme portion of an URL.</param>
         /// <returns>A StreamWrapper associated with the given scheme.</returns>
         internal static StreamWrapper GetWrapperInternal(Context ctx, string scheme)

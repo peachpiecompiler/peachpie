@@ -543,21 +543,27 @@ namespace Pchp.Library
         /// <param name="fromBase">The base <paramref name="number"/> is in.</param>
         /// <param name="toBase">The base to convert <paramref name="number"/> to</param>
         /// <returns><paramref name="number"/> converted to base <paramref name="toBase"/>.</returns>
-		//[return: CastToFalse] // TODO
+		[return: CastToFalse]
         public static string base_convert(string number, int fromBase, int toBase)
         {
+            if (number == null)
+            {
+                return "0";
+            }
+
             double value;
-            if (number == null) return "0";
+
             try
             {
                 value = BaseToDouble(number, fromBase);
             }
             catch (ArgumentException)
             {
-                throw new NotImplementedException();
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:invalid_value", "fromBase", fromBase));
                 //return PhpValue.False;
+                throw new NotImplementedException();
             }
+
             try
             {
                 return DoubleToBase(value, toBase);

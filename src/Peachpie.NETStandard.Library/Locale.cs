@@ -220,7 +220,7 @@ namespace Pchp.Library
         /// </para>
         /// </remarks>
         /// <exception cref="PhpException"><paramref name="category"/> has an invalid or unsupported value. (Warning)</exception>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string setlocale(Context ctx, Category category, object locale, params object[] moreLocales)
         {
             //CultureInfo new_culture;

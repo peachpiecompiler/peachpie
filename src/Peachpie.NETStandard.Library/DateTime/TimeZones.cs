@@ -482,7 +482,7 @@ namespace Pchp.Library
         /// <summary>
         /// Alias of new <see cref="DateTimeZone"/>
         /// </summary>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static DateTimeZone timezone_open(Context/*!*/context, string timezone)
         {
             var tz = GetTimeZone(timezone);
@@ -495,13 +495,13 @@ namespace Pchp.Library
         /// <summary>
         /// Alias of <see cref="DateTimeZone.getOffset"/>
         /// </summary>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static int timezone_offset_get(Context context, DateTimeZone timezone, global::DateTime datetime)
         {
             return (timezone != null) ? timezone.getOffset(datetime) : -1;
         }
 
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static PhpArray timezone_transitions_get(DateTimeZone timezone)
         {
             return (timezone != null) ? timezone.getTransitions() : null;

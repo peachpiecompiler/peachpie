@@ -20,5 +20,15 @@ namespace Pchp.Library.Streams
         public long st_atime;
         public long st_mtime;
         public long st_ctime;
+
+        /// <summary>
+        /// An invalid value.
+        /// </summary>
+        internal static StatStruct Invalid => new StatStruct() { st_size = -1 };
+
+        /// <summary>
+        /// 
+        /// </summary>
+        internal bool IsValid => st_size >= 0;
     }
 }

@@ -247,7 +247,7 @@ namespace Pchp.Library
         /// <param name="separator">The substrings separator. Must not be empty.</param>
         /// <param name="str">The string to be split.</param>
         /// <returns>The array of strings.</returns>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static PhpArray explode(string separator, string str) => explode(separator, str, int.MaxValue);
 
         /// <summary>
@@ -265,7 +265,7 @@ namespace Pchp.Library
         /// If <paramref name="limit"/> is zero
         /// </remarks>
         /// <exception cref="PhpException">Thrown if the <paramref name="separator"/> is null or empty or if <paramref name="limit"/>is not positive nor -1.</exception>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static PhpArray explode(string separator, string str, int limit)
         {
             // validate parameters:
@@ -529,7 +529,7 @@ namespace Pchp.Library
         /// <returns>A copy of str, replacing all substrings (looking for the longest possible match).</returns>
         /// <remarks>This function will not try to replace stuff that it has already worked on.</remarks>
         /// <exception cref="PhpException">Thrown if the <paramref name="replacePairs"/> argument is null.</exception>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string strtr(string str, PhpArray replacePairs)
         {
             if (replacePairs == null)
@@ -625,7 +625,7 @@ namespace Pchp.Library
         /// <remarks>
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> where <c>length</c> is infinity.
         /// </remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string substr(string str, int offset) => substr(str, offset, int.MaxValue);
 
         /// <summary>
@@ -638,7 +638,7 @@ namespace Pchp.Library
         /// <remarks>
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
         /// </remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string substr(string str, int offset, int length)
         {
             //PhpBytes binstr = str as PhpBytes;
@@ -1136,7 +1136,7 @@ namespace Pchp.Library
         /// <param name="str">The string to split.</param>
         /// <returns>The splitted string.</returns>
         /// <remarks>"\r\n" is also appended after the last chunk.</remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string chunk_split(string str)
         {
             return chunk_split(str, 76, "\r\n");
@@ -1149,7 +1149,7 @@ namespace Pchp.Library
         /// <param name="chunkLength">The chunk length.</param>
         /// <returns>The splitted string.</returns>
         /// <remarks>"\r\n" is also appended after the last chunk.</remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string chunk_split(string str, int chunkLength)
         {
             return chunk_split(str, chunkLength, "\r\n");
@@ -1162,7 +1162,7 @@ namespace Pchp.Library
         /// <param name="chunkLength">The chunk length.</param>
         /// <param name="endOfChunk">The chunk separator.</param>
         /// <returns><paramref name="endOfChunk"/> is also appended after the last chunk.</returns>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string chunk_split(string str, int chunkLength, string endOfChunk)
         {
             if (str == null) return string.Empty;
@@ -1665,7 +1665,7 @@ namespace Pchp.Library
         /// <returns>The next token or a <B>null</B> reference.</returns>
         /// <remarks>This method implements the behavior introduced with PHP 4.1.0, i.e. empty tokens are
         /// skipped and never returned.</remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string strtok(Context ctx, string delimiters)
         {
             return ctx.GetStatic<TokenizerContext>().Tokenize(delimiters);
@@ -1681,7 +1681,7 @@ namespace Pchp.Library
         /// </returns>
         /// <remarks>This method implements the behavior introduced with PHP 4.1.0, i.e. empty tokens are
         /// skipped and never returned.</remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string strtok(Context ctx, string str, string delimiters)
         {
             if (str == null)
@@ -2199,7 +2199,7 @@ namespace Pchp.Library
         /// <returns>The formatted string.</returns>
         /// <exception cref="ArgumentNullException">Thrown when the <paramref name="arguments"/> parameter is null.</exception>
         /// <exception cref="PhpException">Thrown when there is less arguments than expeceted by formatting string.</exception>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string sprintf(Context ctx, string format, params PhpValue[] arguments)
         {
             if (format == null) return string.Empty;
@@ -2226,7 +2226,7 @@ namespace Pchp.Library
         /// <param name="arguments">The arguments.</param>
         /// <returns>The formatted string.</returns>
         /// <exception cref="PhpException">Thrown when there is less arguments than expeceted by formatting string.</exception>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string vsprintf(Context ctx, string format, PhpArray arguments)
         {
             if (format == null) return string.Empty;
@@ -2264,7 +2264,7 @@ namespace Pchp.Library
         /// <returns>The word-wrapped string.</returns>
         /// <remarks>The only "break-point" character is space (' '). If a word is longer than 75 characers
         /// it will stay uncut.</remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string wordwrap(string str)
         {
             return wordwrap(str, 75, "\n", false);
@@ -2278,7 +2278,7 @@ namespace Pchp.Library
         /// <returns>The word-wrapped string.</returns>
         /// <remarks>The only "break-point" character is space (' '). If a word is longer than <paramref name="width"/> 
         /// characers it will stay uncut.</remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string wordwrap(string str, int width)
         {
             return wordwrap(str, width, "\n", false);
@@ -2293,7 +2293,7 @@ namespace Pchp.Library
         /// <returns>The word-wrapped string.</returns>
         /// <remarks>The only "break-point" character is space (' '). If a word is longer than <paramref name="width"/> 
         /// characers it will stay uncut.</remarks>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string wordwrap(string str, int width, string lineBreak)
         {
             return wordwrap(str, width, lineBreak, false);
@@ -2310,7 +2310,7 @@ namespace Pchp.Library
         /// <returns>The word-wrapped string.</returns>
         /// <remarks>The only "break-point" character is space (' ').</remarks>
         /// <exception cref="PhpException">Thrown if the combination of <paramref name="width"/> and <paramref name="cut"/> is invalid.</exception>
-        //[return: CastToFalse]
+        [return: CastToFalse]
         public static string wordwrap(string str, int width, string lineBreak, bool cut)
         {
             if (width == 0 && cut)

@@ -1965,41 +1965,47 @@ namespace Pchp.Library.Streams
         //           }
         //       }
 
-        //       /// <summary>
-        //       /// Check that the resource handle contains a valid
-        //       /// PhpStream resource and cast the handle to PhpStream.
-        //       /// </summary>
-        //       /// <param name="handle">A PhpResource passed to the PHP function.</param>
-        //       /// <returns>The handle cast to PhpStream.</returns>
-        //       public static PhpStream GetValid(PhpResource handle)
-        //       {
-        //           PhpStream result = handle as PhpStream;
-        //           if (result != null && result.IsValid) return result;
+        /// <summary>
+        /// Check that the resource handle contains a valid
+        /// PhpStream resource and cast the handle to PhpStream.
+        /// </summary>
+        /// <param name="handle">A PhpResource passed to the PHP function.</param>
+        /// <returns>The handle cast to PhpStream.</returns>
+        public static PhpStream GetValid(PhpResource handle)
+        {
+            var result = handle as PhpStream;
+            if (result != null && result.IsValid)
+            {
+                return result;
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.invalid_stream_resource);
+                return null;
+            }
+        }
 
-        //           PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_stream_resource"));
-        //           return null;
-        //       }
+        public static PhpStream GetValid(PhpResource handle, FileAccess desiredAccess)
+        {
+            PhpStream result = GetValid(handle);
 
-        //       public static PhpStream GetValid(PhpResource handle, FileAccess desiredAccess)
-        //       {
-        //           PhpStream result = GetValid(handle);
+            if (result != null)
+            {
+                if ((desiredAccess & FileAccess.Write) != 0 && !result.CanWrite)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_write_off);
+                    return null;
+                }
 
-        //           if (result != null)
-        //           {
-        //               if ((desiredAccess & FileAccess.Write) != 0 && !result.CanWrite)
-        //               {
-        //                   PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_write_off"));
-        //                   return null;
-        //               }
+                if ((desiredAccess & FileAccess.Read) != 0 && !result.CanRead)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_read_off);
+                    return null;
+                }
+            }
 
-        //               if ((desiredAccess & FileAccess.Read) != 0 && !result.CanRead)
-        //               {
-        //                   PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_read_off"));
-        //                   return null;
-        //               }
-        //           }
-        //           return result;
-        //       }
+            return result;
+        }
 
         #endregion
 

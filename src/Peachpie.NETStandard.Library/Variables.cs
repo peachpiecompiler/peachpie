@@ -521,16 +521,13 @@ namespace Pchp.Library
             return false;
         }
 
-        ///// <summary>
-        ///// Returns the type of a resource.
-        ///// </summary>
-        ///// <param name="resource">The resource.</param>
-        ///// <returns>The resource type name or <c>null</c> if <paramref name="resource"/> is <c>null</c>.</returns>
-        ////[return: CastToFalse]
-        //public static string get_resource_type(PhpResource resource)  // TODO: once we implement PhpResource API
-        //{
-        //    return (resource != null ? resource.TypeName : null);
-        //}
+        /// <summary>
+        /// Returns the type of a resource.
+        /// </summary>
+        /// <param name="resource">The resource.</param>
+        /// <returns>The resource type name or <c>null</c> if <paramref name="resource"/> is <c>null</c>.</returns>
+        [return: CastToFalse]
+        public static string get_resource_type(PhpResource resource) => resource?.TypeName;
 
         #endregion
 
