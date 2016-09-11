@@ -355,6 +355,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_double_PhpValue = ct.StrictComparison.Method("Ceq", ct.Double, ct.PhpValue);
                 StrictCeq_PhpValue_PhpValue = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.PhpValue);
                 StrictCeq_PhpValue_bool = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.Boolean);
+
+                BitwiseOr_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseOrOperatorName, ct.PhpValue, ct.PhpValue);
             }
 
             public readonly CoreMethod
@@ -375,7 +377,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value,
 
                 StrictCeq_bool_PhpValue, StrictCeq_long_PhpValue, StrictCeq_double_PhpValue, StrictCeq_PhpValue_PhpValue,
-                StrictCeq_PhpValue_bool;
+                StrictCeq_PhpValue_bool,
+                
+                BitwiseOr_PhpValue_PhpValue;
         }
 
         public struct PhpValueHolder

@@ -247,7 +247,7 @@ namespace Pchp.Library
         /// Generates a pseudo-random number using linear congruential generator in the range of (0,1).
         /// </summary>
         /// <remarks>
-        /// This method uses the Framwork <see cref="rand"/> generator
+        /// This method uses the Framwork <see cref="rand()"/> generator
         /// which may or may not be the same generator as the PHP one (L(CG(2^31 - 85),CG(2^31 - 249))).
         /// </remarks>
         /// <returns></returns>

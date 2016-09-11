@@ -500,7 +500,36 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal static TypeSymbol EmitBitOr(CodeGenerator cg, TypeSymbol xtype, BoundExpression right)
         {
-            throw new NotImplementedException();
+            switch (xtype.SpecialType)
+            {
+                case SpecialType.System_Void:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Boolean:
+                case SpecialType.System_Double:
+                    cg.EmitConvert(xtype, 0, cg.CoreTypes.Long);
+                    goto case SpecialType.System_Int64;
+
+                case SpecialType.System_Int64:
+                    cg.EmitConvert(right, cg.CoreTypes.Long);
+                    cg.Builder.EmitOpCode(ILOpCode.Or);
+                    return cg.CoreTypes.Long;
+
+                case SpecialType.System_String:
+                    throw new NotImplementedException();    // string | string or string | long
+
+                default:
+                    if (right.ResultType != null && right.ResultType.SpecialType != SpecialType.System_String)
+                    {
+                        // value | !string -> long | long -> long
+                        cg.EmitConvert(xtype, 0, cg.CoreTypes.Long);
+                        goto case SpecialType.System_Int64;
+                    }
+
+                    cg.EmitConvert(xtype, 0, cg.CoreTypes.PhpValue);
+                    cg.EmitConvert(right, cg.CoreTypes.PhpValue);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BitwiseOr_PhpValue_PhpValue)
+                        .Expect(cg.CoreTypes.PhpValue);
+            }
         }
 
         /// <summary>

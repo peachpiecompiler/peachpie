@@ -485,7 +485,6 @@ namespace Pchp.Library
         /// <summary>
         /// Verifies that the contents of a variable can be called as a function.
         /// </summary>
-        /// <param name="caller">Current class context.</param>
         /// <param name="variable">The variable.</param>
         /// <param name="syntaxOnly">If <B>true</B>, it is only checked that has <pararef name="variable"/>
         /// a valid structure to be used as a callback. if <B>false</B>, the existence of the function (or
@@ -501,7 +500,6 @@ namespace Pchp.Library
         /// Verifies that the contents of a variable can be called as a function.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="caller">Current class context.</param>
         /// <param name="variable">The variable.</param>
         /// <param name="syntaxOnly">If <B>true</B>, it is only checked that has <pararef name="variable"/>
         /// a valid structure to be used as a callback. if <B>false</B>, the existence of the function (or

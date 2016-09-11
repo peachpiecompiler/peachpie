@@ -1510,7 +1510,6 @@ namespace Pchp.Library
         /// Sorts an array using user comparison callback for comparing values.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="caller">The class context used to bind the callback.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -1538,7 +1537,6 @@ namespace Pchp.Library
         /// Sorts an array user comparison callback method for comparing values preserving key-value associations.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="caller">The class context used to bind the callback.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -1563,7 +1561,6 @@ namespace Pchp.Library
         /// Sorts an array using user comparison callback for comparing keys.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="caller">The class context used to bind the callback.</param>
         /// <param name="array">The array to be sorted.</param>
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
@@ -3038,7 +3035,6 @@ namespace Pchp.Library
         /// Applies a user function or method on each element (value) of a specified dictionary.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="caller">Current class context.</param>
         /// <param name="array">The array (or generic dictionary) to walk through.</param>
         /// <param name="callback">
         /// The callback called for each element of <paramref name="array"/>.
@@ -3089,7 +3085,6 @@ namespace Pchp.Library
         /// Applies a user function or method on each element (value) of a specified dictionary recursively.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="caller">Current class context.</param>
         /// <param name="array">The array to walk through.</param>
         /// <param name="callback">The callback called for each element of <paramref name="array"/>.</param>
         /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
@@ -3210,7 +3205,6 @@ namespace Pchp.Library
         /// Filters an array using a specified callback.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="caller">Current class context.</param>
         /// <param name="array">The array to be filtered.</param>
         /// <param name="callback">
         /// The callback called on each value in the <paramref name="array"/>. 
@@ -3266,9 +3260,7 @@ namespace Pchp.Library
         /// <summary>
         /// Default callback for <see cref="Map"/>.
         /// </summary>
-        /// <param name="instance">Unused.</param>
-        /// <param name="stack">A PHP stack.</param>
-        /// <returns>A <see cref="PhpArray"/> containing items on the stack (passed as arguments).</returns>
+        /// <returns>A delegate returning <see cref="PhpArray"/> containing items on the stack (passed as arguments).</returns>
         private static readonly IPhpCallable _mapIdentity = PhpCallback.Create((ctx, args) =>
         {
             PhpArray result = new PhpArray(args.Length);
@@ -3286,7 +3278,6 @@ namespace Pchp.Library
         /// Applies a callback function on specified tuples one by one storing its results to an array.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="caller">The class context used to resolve given callback.</param>
         /// <param name="map">
         /// A callback to be called on tuples. The number of arguments should be the same as
         /// the number of arrays specified by <pramref name="arrays"/>.
