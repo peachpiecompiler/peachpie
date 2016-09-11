@@ -10,45 +10,32 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library
 {
-    /// <summary>
-	/// The flags indicating which fields the <see cref="PhpPath.GetInfo"/>
-	/// method should fill in the result array.
-	/// </summary>
-	[Flags]
-    public enum PathInfoOptions
+    public static class PhpPath
     {
+        #region Constants
+
         /// <summary>
         /// Fill the "dirname" field in results.
         /// </summary>
-        //[ImplementsConstant("PATHINFO_DIRNAME")]
-        DirName = 1,
+        public const int PATHINFO_DIRNAME = (int)PathInfoOptions.DirName;
 
         /// <summary>
         /// Fill the "basename" field in results.
         /// </summary>
-        //[ImplementsConstant("PATHINFO_BASENAME")]
-        BaseName = 2,
+        public const int PATHINFO_BASENAME = (int)PathInfoOptions.BaseName;
 
         /// <summary>
         /// Fill the "extension" field in results.
         /// </summary>
-        //[ImplementsConstant("PATHINFO_EXTENSION")]
-        Extension = 4,
+        public const int PATHINFO_EXTENSION = (int)PathInfoOptions.Extension;
 
         /// <summary>
         /// Fill the "filename" field in results. Since PHP 5.2.0.
         /// </summary>
-        //[ImplementsConstant("PATHINFO_FILENAME")]
-        FileName = 8,
+        public const int PATHINFO_FILENAME = (int)PathInfoOptions.FileName;
 
-        /// <summary>
-        /// All the four options result in an array returned by <see cref="PhpPath.GetInfo"/>.
-        /// </summary>
-        All = DirName | BaseName | Extension | FileName
-    }
+        #endregion
 
-    public static class PhpPath
-    {
         #region Scheme, Url, Absolute Path
 
         /// <summary>
@@ -169,6 +156,39 @@ namespace Pchp.Library
         #endregion
 
         #region basename, dirname, pathinfo
+
+        /// <summary>
+        /// The flags indicating which fields the <see cref="pathinfo(string, PathInfoOptions)"/>
+        /// method should fill in the result array.
+        /// </summary>
+        [Flags]
+        public enum PathInfoOptions
+        {
+            /// <summary>
+            /// Fill the "dirname" field in results.
+            /// </summary>
+            DirName = 1,
+
+            /// <summary>
+            /// Fill the "basename" field in results.
+            /// </summary>
+            BaseName = 2,
+
+            /// <summary>
+            /// Fill the "extension" field in results.
+            /// </summary>
+            Extension = 4,
+
+            /// <summary>
+            /// Fill the "filename" field in results. Since PHP 5.2.0.
+            /// </summary>
+            FileName = 8,
+
+            /// <summary>
+            /// All the four options result in an array returned by <see cref="PhpPath.GetInfo"/>.
+            /// </summary>
+            All = DirName | BaseName | Extension | FileName
+        }
 
         /// <summary>
         /// Returns path component of path.
