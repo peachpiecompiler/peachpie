@@ -57,6 +57,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="index">Parameter index.</param>
         /// <returns>True if parameter is variadic.</returns>
         bool IsParamVariadic(int index);
+
+        /// <summary>
+        /// Gets value indicating whether <see cref="Core.CastToFalse"/> attribute applies to this routine and
+        /// <c>null</c> reference or negative number must be converted to <c>false</c>.
+        /// </summary>
+        bool CastToFalse { get; }
     }
 
     ///// <summary>

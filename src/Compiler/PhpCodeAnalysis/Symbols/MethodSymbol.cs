@@ -275,7 +275,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual TypeRefMask GetResultType(TypeRefContext ctx)
         {
-            return TypeRefFactory.CreateMask(ctx, this.ReturnType);
+            var treturn = TypeRefFactory.CreateMask(ctx, this.ReturnType);
+
+            if (this.CastToFalse)
+            {
+                treturn |= ctx.GetBooleanTypeMask();    // ISemanticFunction may return FALSE
+            }
+
+            return treturn;
         }
 
         public virtual ImmutableArray<ControlFlowGraph> CFG => ImmutableArray<ControlFlowGraph>.Empty;
@@ -288,6 +295,16 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual bool IsParamVariadic(int index)
         {
             throw new NotImplementedException();
+        }
+
+        public virtual bool CastToFalse
+        {
+            get
+            {
+                // applies only if return type is int, long, double or a reference type
+                //return this.GetReturnTypeAttributes().Any(a => a.AttributeClass.MetadataName == "Pchp.Core.CastToFalse"); // TODO
+                return false;
+            }
         }
 
         #endregion
