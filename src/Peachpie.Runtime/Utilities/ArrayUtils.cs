@@ -11,11 +11,13 @@ namespace Pchp.Core.Utilities
     {
         #region Properties
 
-        public static readonly PhpValue[] EmptyValues = new PhpValue[0];
+        public static readonly PhpValue[] EmptyValues = Empty<PhpValue>();
 
-        public static readonly object[] EmptyObjects = new object[0];
+        public static readonly object[] EmptyObjects = Empty<object>();
 
-        public static string[] EmptyStrings => Empty<string>();
+        public static readonly byte[] EmptyBytes = Empty<byte>();
+
+        public static string[] EmptyStrings = Empty<string>();
 
         public static T[] Empty<T>() => EmptyArray<T>.Instance;
 

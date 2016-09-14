@@ -57,6 +57,7 @@ namespace Pchp.Core
             stream = Console.OpenStandardOutput();
 //#endif
 
+            // TODO: ConsoleContext with RootDir and correct globals
             return new Context()
             {
                 _textSink = sink,

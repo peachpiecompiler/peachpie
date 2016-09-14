@@ -412,7 +412,7 @@ namespace Pchp.Core
 
         public override string ToString() => _string ?? (_string = ToString(Encoding.UTF8));
 
-        string ToString(Encoding encoding)
+        public string ToString(Encoding encoding)
         {
             // TODO: cache the result for current chunks version
 
@@ -420,7 +420,7 @@ namespace Pchp.Core
             if (chunks != null)
             {
                 return (chunks.GetType() == typeof(object[]))
-                    ? ChunkToString(encoding, (object[])chunks, ref _chunksCount)
+                    ? ChunkToString(encoding, (object[])chunks, _chunksCount)
                     : ChunkToString(encoding, chunks);
             }
             else
@@ -429,7 +429,7 @@ namespace Pchp.Core
             }
         }
 
-        static string ChunkToString(Encoding encoding, object[] chunks, ref int count)
+        static string ChunkToString(Encoding encoding, object[] chunks, int count)
         {
             if (count == 1)
             {
@@ -453,10 +453,55 @@ namespace Pchp.Core
             AssertChunkObject(chunk);
 
             if (chunk.GetType() == typeof(string)) return (string)chunk;
-            if (chunk.GetType() == typeof(byte[])) encoding.GetString((byte[])chunk);
-            if (chunk.GetType() == typeof(PhpString)) ((PhpString)chunk).ToString();
-            if (chunk.GetType() == typeof(char[])) new string((char[])chunk);
-            throw new ArgumentException();
+            if (chunk.GetType() == typeof(byte[])) return encoding.GetString((byte[])chunk);
+            if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk).ToString();
+            if (chunk.GetType() == typeof(char[])) return new string((char[])chunk);
+            throw new ArgumentException(chunk.GetType().ToString());
+        }
+
+        public byte[] ToBytes(Encoding encoding)
+        {
+            var chunks = _chunks;
+            if (chunks != null)
+            {
+                return (chunks.GetType() == typeof(object[]))
+                    ? ChunkToBytes(encoding, (object[])chunks, _chunksCount)
+                    : ChunkToBytes(encoding, chunks);
+            }
+            else
+            {
+                return ArrayUtils.EmptyBytes;
+            }
+        }
+
+        static byte[] ChunkToBytes(Encoding encoding, object[] chunks, int count)
+        {
+            if (count == 1)
+            {
+                return ChunkToBytes(encoding, chunks[0]);
+            }
+            else
+            {
+                var buffer = new List<byte>();
+
+                for (int i = 0; i < count; i++)
+                {
+                    buffer.AddRange(ChunkToBytes(encoding, chunks[i]));
+                }
+
+                return buffer.ToArray();
+            }
+        }
+
+        static byte[] ChunkToBytes(Encoding encoding, object chunk)
+        {
+            AssertChunkObject(chunk);
+
+            if (chunk.GetType() == typeof(byte[])) return (byte[])chunk;
+            if (chunk.GetType() == typeof(string)) return encoding.GetBytes((string)chunk);
+            if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk).ToBytes(encoding);
+            if (chunk.GetType() == typeof(char[])) return encoding.GetBytes((char[])chunk);
+            throw new ArgumentException(chunk.GetType().ToString());
         }
     }
 }
