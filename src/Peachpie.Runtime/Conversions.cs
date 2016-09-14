@@ -38,7 +38,7 @@ namespace Pchp.Core
         /// <returns></returns>
         bool ToBoolean();
 
-        //PhpBytes ToBinaryString();
+        //byte[] ToBytes();
 
         /// <summary>
         /// Converts the object to a number.

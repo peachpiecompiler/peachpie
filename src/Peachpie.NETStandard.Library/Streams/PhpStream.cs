@@ -487,17 +487,13 @@ namespace Pchp.Library.Streams
 
         #region Raw byte access (mandatory)
 
-        //       /// <include file='Doc/Streams.xml' path='docs/method[@name="RawRead"]/*'/>
-        //       protected abstract int RawRead(byte[] buffer, int offset, int count);
+        protected abstract int RawRead(byte[] buffer, int offset, int count);
 
-        //       /// <include file='Doc/Streams.xml' path='docs/method[@name="RawWrite"]/*'/>
-        //       protected abstract int RawWrite(byte[] buffer, int offset, int count);
+        protected abstract int RawWrite(byte[] buffer, int offset, int count);
 
-        //       /// <include file='Doc/Streams.xml' path='docs/method[@name="RawFlush"]/*'/>
-        //       protected abstract bool RawFlush();
+        protected abstract bool RawFlush();
 
-        //       /// <include file='Doc/Streams.xml' path='docs/property[@name="RawEof"]/*'/>
-        //       protected abstract bool RawEof { get; }
+        protected abstract bool RawEof { get; }
 
         #endregion
 

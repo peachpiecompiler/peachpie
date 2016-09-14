@@ -4,9 +4,84 @@ using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Pchp.Library.Streams
 {
+    // TODO: move to Runtime
+
+    #region TextElement
+
+    /// <summary>
+    /// Either <see cref="string"/> or <see cref="byte"/>[].
+    /// </summary>
+    public struct TextElement
+    {
+        readonly object _data;
+
+        public bool IsNull => _data == null;
+
+        public bool IsBinary => !IsText;
+
+        public bool IsText => _data.GetType() == typeof(string);
+
+        internal string GetText() => (string)_data;
+
+        internal byte[] GetBytes() => (byte[])_data;
+
+        public string AsText(Encoding enc) => IsNull ? string.Empty : IsText ? GetText() : enc.GetString(GetBytes());
+
+        public byte[] AsBytes(Encoding enc) => IsNull ? Core.Utilities.ArrayUtils.EmptyBytes : IsBinary ? GetBytes() : enc.GetBytes(GetText());
+
+        public override string ToString() => IsText ? GetText() : Encoding.UTF8.GetString(GetBytes());
+
+        public TextElement(byte[] bytes)
+        {
+            Debug.Assert(bytes != null);
+            _data = bytes;
+            Debug.Assert(IsBinary);
+        }
+
+        public TextElement(string text)
+        {
+            Debug.Assert(text != null);
+            _data = text;
+            Debug.Assert(IsText);
+        }
+
+        public TextElement(PhpString str, Encoding encoding)
+        {
+            Debug.Assert(str != null);
+            _data = str.ContainsBinaryData
+                ? (object)str.ToBytes(encoding)
+                : str.ToString(encoding);
+
+            Debug.Assert(IsText ^ IsBinary);
+        }
+
+        public static TextElement FromValue(Context ctx, PhpValue value)
+        {
+            switch(value.TypeCode)
+            {
+                case PhpTypeCode.Object:
+                    if (value.Object is byte[])
+                    {
+                        return new TextElement((byte[])value.Object);
+                    }
+                    goto default;
+
+                case PhpTypeCode.WritableString:
+                    return new TextElement(value.WritableString, ctx.StringEncoding);
+
+                default:
+                    return new TextElement(value.ToStringOrThrow(ctx));
+            }
+        }
+    }
+
+    #endregion
+
     #region Basic Stream Filters
 
     /// <summary>
@@ -15,10 +90,10 @@ namespace Pchp.Library.Streams
     public interface IFilter
     {
         /// <summary>
-        /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="PhpString"/>) 
+        /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
         /// data and returns the filtered data in one of the formats above or <c>null</c>.
         /// </summary>
-        object Filter(object input, bool closing);
+        TextElement Filter(Context ctx, TextElement input, bool closing);
 
         /// <summary>
         /// Called when the filter is attached to a stream.
@@ -31,78 +106,78 @@ namespace Pchp.Library.Streams
         void OnClose();
     }
 
-    ///// <summary>
-    ///// Stream Filter used to convert \r\n to \n when reading a text file.
-    ///// </summary>
-    //public class TextReadFilter : IFilter
-    //{
-    //    /// <summary>
-    //    /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
-    //    /// data and returns the filtered data in one of the formats above or <c>null</c>.
-    //    /// </summary>
-    //    public object Filter(object input, bool closing)
-    //    {
-    //        string str = PhpStream.AsText(input);
+    /// <summary>
+    /// Stream Filter used to convert \r\n to \n when reading a text file.
+    /// </summary>
+    public class TextReadFilter : IFilter
+    {
+        /// <summary>
+        /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
+        /// data and returns the filtered data in one of the formats above or <c>null</c>.
+        /// </summary>
+        public TextElement Filter(Context ctx, TextElement input, bool closing)
+        {
+            string str = input.AsText(ctx.StringEncoding);
 
-    //        if (pending)
-    //        {
-    //            // Both \r\n together make a pair which would consume a pending \r.
-    //            if (str.Length == 0) str = "\r";
-    //            else if (str[0] != '\n') str.Insert(0, "\r");
-    //        }
+            if (pending)
+            {
+                // Both \r\n together make a pair which would consume a pending \r.
+                if (str.Length == 0) str = "\r";
+                else if (str[0] != '\n') str.Insert(0, "\r");
+            }
 
-    //        // Replace the pair.
-    //        str = str.Replace("\r\n", "\n");
-    //        if (str.Length == 0) return string.Empty;
+            // Replace the pair.
+            str = str.Replace("\r\n", "\n");
+            if (str.Length != 0)
+            {
+                // Check for pending \r at the end.
+                pending = str[str.Length - 1] == '\r';
 
-    //        // Check for pending \r at the end.
-    //        pending = str[str.Length - 1] == '\r';
+                // Postpone the resolution of \r\n vs. \r to the next filtering if this is not the last one.
+                if (!closing && pending) str.Remove(str.Length - 1, 1);
+            }
 
-    //        // Postpone the resolution of \r\n vs. \r to the next filtering if this is not the last one.
-    //        if (!closing && pending) str.Remove(str.Length - 1, 1);
+            //
+            return new TextElement(str);
+        }
 
-    //        return str;
-    //    }
+        bool pending = false;
 
-    //    bool pending = false;
+        /// <summary>
+        /// Called when the filter is attached to a stream.
+        /// </summary>
+        public void OnCreate() { }
 
-    //    /// <summary>
-    //    /// Called when the filter is attached to a stream.
-    //    /// </summary>
-    //    public void OnCreate() { }
+        /// <summary>
+        /// Called when the containig stream is being closed.
+        /// </summary>
+        public void OnClose() { }
+    }
 
-    //    /// <summary>
-    //    /// Called when the containig stream is being closed.
-    //    /// </summary>
-    //    public void OnClose() { }
-    //}
+    /// <summary>
+    /// Stream Filter used to convert \n to \r\n when writing to a text file.
+    /// </summary>
+    public class TextWriteFilter : IFilter
+    {
+        /// <summary>
+        /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
+        /// data and returns the filtered data in one of the formats above or <c>null</c>.
+        /// </summary>
+        public TextElement Filter(Context ctx, TextElement input, bool closing)
+        {
+            return new TextElement(input.AsText(ctx.StringEncoding).Replace("\n", "\r\n"));
+        }
 
-    ///// <summary>
-    ///// Stream Filter used to convert \n to \r\n when writing to a text file.
-    ///// </summary>
-    //public class TextWriteFilter : IFilter
-    //{
-    //    /// <summary>
-    //    /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
-    //    /// data and returns the filtered data in one of the formats above or <c>null</c>.
-    //    /// </summary>
-    //    public object Filter(object input, bool closing)
-    //    {
-    //        string str = PhpStream.AsText(input);
-    //        str = str.Replace("\n", "\r\n");
-    //        return str;
-    //    }
+        /// <summary>
+        /// Called when the filter is attached to a stream.
+        /// </summary>
+        public void OnCreate() { }
 
-    //    /// <summary>
-    //    /// Called when the filter is attached to a stream.
-    //    /// </summary>
-    //    public void OnCreate() { }
-
-    //    /// <summary>
-    //    /// Called when the containig stream is being closed.
-    //    /// </summary>
-    //    public void OnClose() { }
-    //}
+        /// <summary>
+        /// Called when the containig stream is being closed.
+        /// </summary>
+        public void OnClose() { }
+    }
 
     #endregion
 
@@ -182,7 +257,7 @@ namespace Pchp.Library.Streams
         /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
         /// data and returns the filtered data in one of the formats above or <c>null</c>.
         /// </summary>
-        public abstract object Filter(object input, bool closing);
+        public abstract TextElement Filter(Context ctx, TextElement input, bool closing);
 
         /// <summary>
         /// Called when the filter is attached to a stream.
