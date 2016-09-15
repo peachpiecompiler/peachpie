@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Pchp.Library.Streams
@@ -476,17 +477,21 @@ namespace Pchp.Library.Streams
         {
             // Note: this method is called after FreeManaged, so the stream is already closed.
             base.FreeUnmanaged();
-            //if (this.IsTemporary)
-            //{
-            //    try
-            //    {
-            //        this.Wrapper.Unlink(OpenedPath, StreamUnlinkOptions.Empty, StreamContext.Default);
-            //        // File.Delete(this.OpenedPath);
-            //    }
-            //    catch (Exception)
-            //    {
-            //    }
-            //}
+            if (this.IsTemporary)
+            {
+                TryUnlink();
+            }
+        }
+
+        private void TryUnlink()
+        {
+            try
+            {
+                this.Wrapper.Unlink(OpenedPath, StreamUnlinkOptions.Empty, StreamContext.Default);  // File.Delete(this.OpenedPath);
+            }
+            catch (Exception)
+            {
+            }
         }
 
         #endregion
@@ -664,64 +669,63 @@ namespace Pchp.Library.Streams
             }
         }
 
+        /// <summary>
+        /// Fills the <see cref="readBuffers"/> with more data from the underlying stream
+        /// passed through all the stream filters. 
+        /// </summary>
+        /// <param name="chunkSize">Maximum number of bytes to be read from the stream.</param>
+        /// <returns>A <see cref="string"/> or <see cref="PhpBytes"/> containing the 
+        /// data as returned from the last stream filter or <b>null</b> in case of an error or <c>EOF</c>.</returns>
+        protected TextElement ReadFiltered(int chunkSize)
+        {
+            byte[] chunk = new byte[chunkSize];
+            var filtered = TextElement.Null;
 
-        //       /// <summary>
-        //       /// Fills the <see cref="readBuffers"/> with more data from the underlying stream
-        //       /// passed through all the stream filters. 
-        //       /// </summary>
-        //       /// <param name="chunkSize">Maximum number of bytes to be read from the stream.</param>
-        //       /// <returns>A <see cref="string"/> or <see cref="PhpBytes"/> containing the 
-        //       /// data as returned from the last stream filter or <b>null</b> in case of an error or <c>EOF</c>.</returns>
-        //       protected object ReadFiltered(int chunkSize)
-        //       {
-        //           byte[] chunk = new byte[chunkSize];
-        //           object filtered = null;
+            while (filtered.IsNull)
+            {
+                // Read data until there is an output or error or EOF.
+                if (RawEof) return TextElement.Null;
+                int read = RawRead(chunk, 0, chunkSize);
+                if (read <= 0)
+                {
+                    // Error or EOF.
+                    return TextElement.Null;
+                }
 
-        //           while (filtered == null)
-        //           {
-        //               // Read data until there is an output or error or EOF.
-        //               if (RawEof) return null;
-        //               int read = RawRead(chunk, 0, chunkSize);
-        //               if (read <= 0)
-        //               {
-        //                   // Error or EOF.
-        //                   return null;
-        //               }
+                if (read < chunkSize)
+                {
+                    byte[] sub = new byte[read];
+                    Array.Copy(chunk, 0, sub, 0, read);
+                    chunk = sub;
+                }
+                filtered = new TextElement(chunk);
 
-        //               if (read < chunkSize)
-        //               {
-        //                   byte[] sub = new byte[read];
-        //                   Array.Copy(chunk, 0, sub, 0, read);
-        //                   chunk = sub;
-        //               }
-        //               filtered = new PhpBytes(chunk);
+                bool closing = RawEof;
 
-        //               bool closing = RawEof;
+                if (textReadFilter != null)
+                {
+                    // First use the text-input filter if any.
+                    filtered = textReadFilter.Filter(_ctx, filtered, closing);
+                }
 
-        //               if (textReadFilter != null)
-        //               {
-        //                   // First use the text-input filter if any.
-        //                   filtered = textReadFilter.Filter(filtered, closing);
-        //               }
+                if (readFilters != null)
+                {
+                    // After that apply the user-filters.
+                    foreach (IFilter f in readFilters)
+                    {
+                        if (filtered.IsNull)
+                        {
+                            // This is the last chance to output something. Give chance to all filters.
+                            if (closing) filtered = TextElement.Empty;
+                            else break; // Continue with next RawRead()
+                        }
+                        filtered = f.Filter(_ctx, filtered, closing);
+                    } // foreach
+                } // if
+            } // while 
 
-        //               if (readFilters != null)
-        //               {
-        //                   // After that apply the user-filters.
-        //                   foreach (IFilter f in readFilters)
-        //                   {
-        //                       if (filtered == null)
-        //                       {
-        //                           // This is the last chance to output something. Give chance to all filters.
-        //                           if (closing) filtered = PhpBytes.Empty;
-        //                           else break; // Continue with next RawRead()
-        //                       }
-        //                       filtered = f.Filter(filtered, closing);
-        //                   } // foreach
-        //               } // if
-        //           } // while 
-
-        //           return filtered;
-        //       }
+            return filtered;
+        }
 
         /// <summary>
         /// Put a buffer at the end of the <see cref="readBuffers"/>.
@@ -761,154 +765,154 @@ namespace Pchp.Library.Streams
         }
 
 
-        //       /// <summary>
-        //       /// Joins the read buffers to get at least <paramref name="length"/> characters
-        //       /// in a <see cref="string"/>. 
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// It is assumed that there already is length bytes in the buffers.
-        //       /// Otherwise an InvalidOperationException is raised.
-        //       /// </remarks>
-        //       /// <param name="length">The desired maximum result length.</param>
-        //       /// <returns>A <see cref="string"/> dequeued from the buffer or <c>null</c> if the buffer is empty.</returns>
-        //       /// <exception cref="InvalidOperationException">If the buffers don't contain enough data.</exception>
-        //       protected string ReadTextBuffer(int length)
-        //       {
-        //           if (length == 0) return string.Empty;
+        /// <summary>
+        /// Joins the read buffers to get at least <paramref name="length"/> characters
+        /// in a <see cref="string"/>. 
+        /// </summary>
+        /// <remarks>
+        /// It is assumed that there already is length bytes in the buffers.
+        /// Otherwise an InvalidOperationException is raised.
+        /// </remarks>
+        /// <param name="length">The desired maximum result length.</param>
+        /// <returns>A <see cref="string"/> dequeued from the buffer or <c>null</c> if the buffer is empty.</returns>
+        /// <exception cref="InvalidOperationException">If the buffers don't contain enough data.</exception>
+        protected string ReadTextBuffer(int length)
+        {
+            if (length == 0) return string.Empty;
 
-        //           string peek = readBuffers.Peek() as string;
-        //           if (peek == null) throw new InvalidOperationException(CoreResources.GetString("buffers_must_not_be_empty"));
-        //           Debug.Assert(peek.Length >= readPosition);
+            string peek = readBuffers.Peek().AsText(_ctx.StringEncoding);
+            if (peek == null) throw new InvalidOperationException(ErrResources.buffers_must_not_be_empty);
+            Debug.Assert(peek.Length >= readPosition);
 
-        //           if (peek.Length - readPosition >= length)
-        //           {
-        //               // Great! We can just take a substring.
-        //               string res = peek.Substring(readPosition, length);
-        //               readPosition += length;
+            if (peek.Length - readPosition >= length)
+            {
+                // Great! We can just take a substring.
+                string res = peek.Substring(readPosition, length);
+                readPosition += length;
 
-        //               if (peek.Length == readPosition)
-        //               {
-        //                   // We just consumed the entire string. Dequeue it.
-        //                   DropReadBuffer();
-        //               }
-        //               return res;
-        //           }
-        //           else
-        //           {
-        //               // Start building the string from the remainder in the buffer.
-        //               StringBuilder sb = new StringBuilder(peek, readPosition, peek.Length - readPosition, length);
-        //               length -= peek.Length - readPosition;
+                if (peek.Length == readPosition)
+                {
+                    // We just consumed the entire string. Dequeue it.
+                    DropReadBuffer();
+                }
+                return res;
+            }
+            else
+            {
+                // Start building the string from the remainder in the buffer.
+                var sb = new StringBuilder(peek, readPosition, peek.Length - readPosition, length);
+                length -= peek.Length - readPosition;
 
-        //               // We just consumed the entire string. Dequeue it.
-        //               DropReadBuffer();
+                // We just consumed the entire string. Dequeue it.
+                DropReadBuffer();
 
-        //               while (length > 0)
-        //               {
-        //                   peek = readBuffers.Peek() as string;
-        //                   if (peek == null) throw new InvalidOperationException(CoreResources.GetString("too_little_data_buffered"));
-        //                   if (peek.Length > length)
-        //                   {
-        //                       // This string is long enough. It is the last one.
-        //                       sb.Append(peek, 0, length);
-        //                       readPosition = length;
-        //                       length = 0;
-        //                       break;
-        //                   }
-        //                   else
-        //                   {
-        //                       // Append just another whole buffer to the StringBuilder.
-        //                       sb.Append(peek);
-        //                       length -= peek.Length;
-        //                       DropReadBuffer();
+                while (length > 0)
+                {
+                    peek = readBuffers.Peek().AsText(_ctx.StringEncoding);
+                    if (peek == null) throw new InvalidOperationException(ErrResources.too_little_data_buffered);
+                    if (peek.Length > length)
+                    {
+                        // This string is long enough. It is the last one.
+                        sb.Append(peek, 0, length);
+                        readPosition = length;
+                        length = 0;
+                        break;
+                    }
+                    else
+                    {
+                        // Append just another whole buffer to the StringBuilder.
+                        sb.Append(peek);
+                        length -= peek.Length;
+                        DropReadBuffer();
 
-        //                       // When this is the last buffer (it's probably an EOF), return.
-        //                       if (readBuffers.Count == 0)
-        //                           break;
-        //                   }
-        //               } // while
+                        // When this is the last buffer (it's probably an EOF), return.
+                        if (readBuffers.Count == 0)
+                            break;
+                    }
+                } // while
 
-        //               Debug.Assert(sb.Length > 0);
-        //               return sb.ToString();
-        //           } // else
-        //       }
+                Debug.Assert(sb.Length > 0);
+                return sb.ToString();
+            } // else
+        }
 
 
-        //       /// <summary>
-        //       /// Joins the read buffers to get at least <paramref name="length"/> bytes
-        //       /// in a <see cref="PhpBytes"/>. 
-        //       /// </summary>
-        //       /// <param name="length">The desired maximum result length.</param>
-        //       /// <returns>A <see cref="PhpBytes"/> dequeued from the buffer or <c>null</c> if the buffer is empty.</returns>
-        //       protected PhpBytes ReadBinaryBuffer(int length)
-        //       {
-        //           if (length == 0) return PhpBytes.Empty;
+        /// <summary>
+        /// Joins the read buffers to get at least <paramref name="length"/> bytes
+        /// in a <see cref="PhpBytes"/>. 
+        /// </summary>
+        /// <param name="length">The desired maximum result length.</param>
+        /// <returns>A <see cref="PhpBytes"/> dequeued from the buffer or <c>null</c> if the buffer is empty.</returns>
+        protected byte[] ReadBinaryBuffer(int length)
+        {
+            if (length == 0) return ArrayUtils.EmptyBytes;
 
-        //           PhpBytes peek = (PhpBytes)readBuffers.Peek();
-        //           Debug.Assert(peek.Length >= readPosition);
+            byte[] peek = readBuffers.Peek().AsBytes(_ctx.StringEncoding);
+            Debug.Assert(peek.Length >= readPosition);
 
-        //           if (peek.Length - readPosition >= length)
-        //           {
-        //               // Great! We can just take a sub-data.
-        //               byte[] data = new byte[length];
-        //               Array.Copy(peek.ReadonlyData, readPosition, data, 0, length);
-        //               PhpBytes res = new PhpBytes(data);
-        //               readPosition += length;
+            if (peek.Length - readPosition >= length)
+            {
+                // Great! We can just take a sub-data.
+                byte[] data = new byte[length];
+                Array.Copy(peek, readPosition, data, 0, length);
+                readPosition += length;
 
-        //               if (peek.Length == readPosition)
-        //               {
-        //                   // We just consumed the entire string. Dequeue it.
-        //                   DropReadBuffer();
-        //               }
-        //               return res;
-        //           }
-        //           else
-        //           {
-        //               // Start building the data from the remainder in the buffer.
-        //               int buffered = this.ReadBufferLength;
-        //               if (buffered < length) length = buffered;
-        //               byte[] data = new byte[length];
-        //               int copied = peek.Length - readPosition;
-        //               Array.Copy(peek.ReadonlyData, readPosition, data, 0, copied); readPosition += copied;
-        //               length -= copied;
+                if (peek.Length == readPosition)
+                {
+                    // We just consumed the entire string. Dequeue it.
+                    DropReadBuffer();
+                }
 
-        //               // We just consumed the entire data. Dequeue it.
-        //               DropReadBuffer();
+                return data;
+            }
+            else
+            {
+                // Start building the data from the remainder in the buffer.
+                int buffered = this.ReadBufferLength;
+                if (buffered < length) length = buffered;
+                byte[] data = new byte[length];
+                int copied = peek.Length - readPosition;
+                Array.Copy(peek, readPosition, data, 0, copied); readPosition += copied;
+                length -= copied;
 
-        //               while (length > 0)
-        //               {
-        //                   peek = readBuffers.Peek() as PhpBytes;
-        //                   if (peek.Length > length)
-        //                   {
-        //                       // This data is long enough. It is the last one.
-        //                       Array.Copy(peek.ReadonlyData, 0, data, copied, length);
-        //                       readPosition = length;
-        //                       length = 0;
-        //                       break;
-        //                   }
-        //                   else
-        //                   {
-        //                       // Append just another whole buffer to the array.
-        //                       Array.Copy(peek.ReadonlyData, 0, data, copied, peek.Length);
-        //                       length -= peek.Length;
-        //                       copied += peek.Length;
-        //                       DropReadBuffer();
+                // We just consumed the entire data. Dequeue it.
+                DropReadBuffer();
 
-        //                       // When this is the last buffer (it's probably an EOF), return.
-        //                       if (readBuffers.Count == 0)
-        //                           break;
-        //                   }
-        //               } // while
+                while (length > 0)
+                {
+                    peek = readBuffers.Peek().AsBytes(_ctx.StringEncoding);
+                    if (peek.Length > length)
+                    {
+                        // This data is long enough. It is the last one.
+                        Array.Copy(peek, 0, data, copied, length);
+                        readPosition = length;
+                        length = 0;
+                        break;
+                    }
+                    else
+                    {
+                        // Append just another whole buffer to the array.
+                        Array.Copy(peek, 0, data, copied, peek.Length);
+                        length -= peek.Length;
+                        copied += peek.Length;
+                        DropReadBuffer();
 
-        //               Debug.Assert(copied > 0);
-        //               if (copied < length)
-        //               {
-        //                   byte[] sub = new byte[copied];
-        //                   Array.Copy(data, 0, sub, 0, copied);
-        //                   return new PhpBytes(sub);
-        //               }
-        //               return new PhpBytes(data);
-        //           } // else
-        //       }
+                        // When this is the last buffer (it's probably an EOF), return.
+                        if (readBuffers.Count == 0)
+                            break;
+                    }
+                } // while
+
+                Debug.Assert(copied > 0);
+                if (copied < length)
+                {
+                    byte[] sub = new byte[copied];
+                    Array.Copy(data, 0, sub, 0, copied);
+                    return sub;
+                }
+                return data;
+            } // else
+        }
 
         #endregion
 
@@ -996,180 +1000,171 @@ namespace Pchp.Library.Streams
 
         #region Block Reading
 
-        //       /// <summary>
-        //       /// Reads a block of data from the stream up to <paramref name="length"/>
-        //       /// characters or up to EOLN if <paramref name="length"/> is negative.
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// ReadData first looks for data into the <see cref="readBuffers"/>. 
-        //       /// While <paramref name="length"/> is not satisfied, new data from the underlying stream are processed.
-        //       /// The data is buffered as either <see cref="string"/> or <see cref="PhpBytes"/>
-        //       /// but consistently. The type of the first buffer thus specifies the return type.
-        //       /// </remarks>
-        //       /// <param name="length">The number of bytes to return, when set to <c>-1</c>
-        //       /// reading carries on up to EOLN or EOF.</param>
-        //       /// <param name="ending">If <c>true</c>, the buffers are first searched for \n.</param>
-        //       /// <returns>A <see cref="string"/> or <see cref="PhpBytes"/> containing the 
-        //       /// data as returned from the last stream filter or <b>null</b> in case of an error or <c>EOF</c>.</returns>
-        //       public object ReadData(int length, bool ending)
-        //       {
-        //           if (length == 0) return null;
+        /// <summary>
+        /// Reads a block of data from the stream up to <paramref name="length"/>
+        /// characters or up to EOLN if <paramref name="length"/> is negative.
+        /// </summary>
+        /// <remarks>
+        /// ReadData first looks for data into the <see cref="readBuffers"/>. 
+        /// While <paramref name="length"/> is not satisfied, new data from the underlying stream are processed.
+        /// The data is buffered as either <see cref="string"/> or <see cref="PhpBytes"/>
+        /// but consistently. The type of the first buffer thus specifies the return type.
+        /// </remarks>
+        /// <param name="length">The number of bytes to return, when set to <c>-1</c>
+        /// reading carries on up to EOLN or EOF.</param>
+        /// <param name="ending">If <c>true</c>, the buffers are first searched for \n.</param>
+        /// <returns>A <see cref="string"/> or <see cref="byte"/>[] containing the 
+        /// data as returned from the last stream filter or <b>null</b> in case of an error or <c>EOF</c>.</returns>
+        public TextElement ReadData(int length, bool ending)
+        {
+            if (length == 0) return TextElement.Null;
 
-        //           // Allow length to be -1 for ReadLine.
-        //           Debug.Assert((length > 0) || ending);
-        //           Debug.Assert(length >= -1);
+            // Allow length to be -1 for ReadLine.
+            Debug.Assert((length > 0) || ending);
+            Debug.Assert(length >= -1);
 
-        //           // Set file access to reading
-        //           CurrentAccess = FileAccess.Read;
-        //           if (!CanRead) return null;
+            // Set file access to reading
+            CurrentAccess = FileAccess.Read;
+            if (!CanRead) return TextElement.Null;
 
-        //           // If (length < 0) read up to \n, otherwise up to length bytes      
-        //           // Unbuffered works only for Read not for ReadLine (blocks).
-        //           if (!IsReadBuffered && (readBuffers == null))
-        //           {
-        //               // The stream is a "pure" unbuffered. Read just the first packet.
-        //               object packet = null;
-        //               bool done = false;
-        //               while (!done)
-        //               {
-        //                   int count = (length > 0) ? length : readChunkSize;
-        //                   packet = ReadFiltered(count);
-        //                   if (packet == null) return null;
+            // If (length < 0) read up to \n, otherwise up to length bytes      
+            // Unbuffered works only for Read not for ReadLine (blocks).
+            if (!IsReadBuffered && (readBuffers == null))
+            {
+                // The stream is a "pure" unbuffered. Read just the first packet.
+                var packet = TextElement.Null;
+                bool done = false;
+                while (!done)
+                {
+                    int count = (length > 0) ? length : readChunkSize;
+                    packet = ReadFiltered(count);
+                    if (packet.IsNull) return TextElement.Null;
 
-        //                   int filteredLength = packet.Length;
-        //                   done = filteredLength > 0;
-        //                   readFilteredCount += filteredLength;
+                    int filteredLength = packet.Length;
+                    done = filteredLength > 0;
+                    readFilteredCount += filteredLength;
 
-        //                   if (length < 0)
-        //                   {
-        //                       // If the data contains the EOLN, store the rest into the buffers, otherwise return the whole packet.
-        //                       int eoln = FindEoln(packet, 0);
-        //                       if (eoln > 0)
-        //                       {
-        //                           object rv, enq;
-        //                           SplitData(packet, eoln, out rv, out enq);
-        //                           if (enq != null) EnqueueReadBuffer(enq);
-        //                           return rv;
-        //                       }
-        //                   }
-        //               }
-        //               return packet;
-        //           }
+                    if (length < 0)
+                    {
+                        // If the data contains the EOLN, store the rest into the buffers, otherwise return the whole packet.
+                        int eoln = FindEoln(packet, 0);
+                        if (eoln > 0)
+                        {
+                            TextElement rv, enq;
+                            SplitData(packet, eoln, out rv, out enq);
+                            if (enq.Length != 0) EnqueueReadBuffer(enq);
+                            return rv;
+                        }
+                    }
+                }
+                return packet;
+            }
 
-        //           // Try to fill the buffers with enough data (to satisfy length).
-        //           int nlpos, buffered = ReadBufferScan(out nlpos), read = 0, newLength = length;
-        //           object data = null;
+            // Try to fill the buffers with enough data (to satisfy length).
+            int nlpos, buffered = ReadBufferScan(out nlpos), read = 0, newLength = length;
+            TextElement data = TextElement.Null;
 
-        //           if (ending && (nlpos >= readPosition))
-        //           {
-        //               // Found a \n in the buffered data (return the line inluding the EOLN).
-        //               // Network-based streams may be satisfied too.
-        //               newLength = nlpos - readPosition + 1;
-        //           }
-        //           else if ((length > 0) && (buffered >= length))
-        //           {
-        //               // Great! Just take some of the data in the buffers.
-        //               // NOP
-        //           }
-        //           else if (!IsReadBuffered && (buffered > 0))
-        //           {
-        //               // Use the first available packet for network-based streams.
-        //               newLength = buffered;
-        //           }
-        //           else
-        //           {
-        //               // There is not enough data in the buffers, read more.
-        //               for (;;)
-        //               {
-        //                   data = ReadFiltered(readChunkSize);
-        //                   if (data == null)
-        //                   {
-        //                       // There is an EOF, return as much data as possible.
-        //                       newLength = buffered;
-        //                       break;
-        //                   }
-        //                   read = data.Length;
-        //                   readFilteredCount += read;
-        //                   if (read > 0) EnqueueReadBuffer(data);
-        //                   buffered += read;
+            if (ending && (nlpos >= readPosition))
+            {
+                // Found a \n in the buffered data (return the line inluding the EOLN).
+                // Network-based streams may be satisfied too.
+                newLength = nlpos - readPosition + 1;
+            }
+            else if ((length > 0) && (buffered >= length))
+            {
+                // Great! Just take some of the data in the buffers.
+                // NOP
+            }
+            else if (!IsReadBuffered && (buffered > 0))
+            {
+                // Use the first available packet for network-based streams.
+                newLength = buffered;
+            }
+            else
+            {
+                // There is not enough data in the buffers, read more.
+                for (;;)
+                {
+                    data = ReadFiltered(readChunkSize);
+                    if (data.IsNull)
+                    {
+                        // There is an EOF, return as much data as possible.
+                        newLength = buffered;
+                        break;
+                    }
+                    read = data.Length;
+                    readFilteredCount += read;
+                    if (read > 0) EnqueueReadBuffer(data);
+                    buffered += read;
 
-        //                   // For unbuffered streams accept the first packet and go check for EOLN.
-        //                   if (!IsReadBuffered) newLength = buffered;
+                    // For unbuffered streams accept the first packet and go check for EOLN.
+                    if (!IsReadBuffered) newLength = buffered;
 
-        //                   // First check for satisfaciton of the ending.
-        //                   if (ending && (data != null))
-        //                   {
-        //                       // Find the EOLN in the most recently read buffer.
-        //                       int eoln = FindEoln(data, 0);
-        //                       if (eoln >= 0)
-        //                       {
-        //                           // Read all the data up to (and including) the EOLN.
-        //                           newLength = buffered - read + eoln + 1;
-        //                           break;
-        //                       }
-        //                   }
+                    // First check for satisfaciton of the ending.
+                    if (ending && !data.IsNull)
+                    {
+                        // Find the EOLN in the most recently read buffer.
+                        int eoln = FindEoln(data, 0);
+                        if (eoln >= 0)
+                        {
+                            // Read all the data up to (and including) the EOLN.
+                            newLength = buffered - read + eoln + 1;
+                            break;
+                        }
+                    }
 
-        //                   // Check if there is enough data in the buffers (first packet etc).
-        //                   if (length > 0)
-        //                   {
-        //                       if (buffered >= length) break;
-        //                   }
-        //               }
-        //           }
+                    // Check if there is enough data in the buffers (first packet etc).
+                    if (length > 0)
+                    {
+                        if (buffered >= length) break;
+                    }
+                }
+            }
 
-        //           // Apply the restriction of available data size or newline position
-        //           if ((newLength < length) || (length == -1)) length = newLength;
+            // Apply the restriction of available data size or newline position
+            if ((newLength < length) || (length == -1)) length = newLength;
 
-        //           // Eof?
-        //           if ((readBuffers == null) || (readBuffers.Count == 0))
-        //               return null;
+            // Eof?
+            if ((readBuffers == null) || (readBuffers.Count == 0))
+                return TextElement.Null;
 
-        //           // Read the rest of the buffered data if no \n is found and there is an EOF.
-        //           if (length < 0) length = buffered;
+            // Read the rest of the buffered data if no \n is found and there is an EOF.
+            if (length < 0) length = buffered;
 
-        //           if (this.IsText)
-        //               return ReadTextBuffer(length);
-        //           else
-        //               return ReadBinaryBuffer(length);
-        //           // Data may only be a string or PhpBytes (and consistently throughout all the buffers).
-        //       }
+            if (this.IsText)
+                return new TextElement(ReadTextBuffer(length));
+            else
+                return new TextElement(ReadBinaryBuffer(length));
+            // Data may only be a string or PhpBytes (and consistently throughout all the buffers).
+        }
 
+        /// <summary>
+        /// Reads binary data from the stream. First looks for data into the 
+        /// <see cref="readBuffers"/>. When <paramref name="length"/> is not
+        /// satisfied, new data from the underlying stream are processed.
+        /// </summary>
+        /// <param name="length">The number of bytes to return.</param>
+        /// <returns><see cref="PhpBytes"/> containing the binary data read from the stream.</returns>
+        public byte[] ReadBytes(int length)
+        {
+            Debug.Assert(this.IsBinary);
+            // Data may only be a string or PhpBytes.
+            return ReadData(length, false).AsBytes(_ctx.StringEncoding);
+        }
 
-        //       /// <summary>
-        //       /// Reads binary data from the stream. First looks for data into the 
-        //       /// <see cref="readBuffers"/>. When <paramref name="length"/> is not
-        //       /// satisfied, new data from the underlying stream are processed.
-        //       /// </summary>
-        //       /// <param name="length">The number of bytes to return.</param>
-        //       /// <returns><see cref="PhpBytes"/> containing the binary data read from the stream.</returns>
-        //       public PhpBytes ReadBytes(int length)
-        //       {
-        //           Debug.Assert(this.IsBinary);
-        //           // Data may only be a string or PhpBytes.
-        //           object data = ReadData(length, false);
-        //           if (data == null)
-        //               return null;
-
-        //           return AsBinary(data);
-        //       }
-
-        //       /// <summary>
-        //       /// Reads text data from the stream. First looks for data into the 
-        //       /// <see cref="readBuffers"/>. When <paramref name="length"/> is not
-        //       /// satisfied, new data from the underlying stream are processed.
-        //       /// </summary>
-        //       /// <param name="length">The number of characters to return.</param>
-        //       /// <returns><see cref="string"/> containing the text data read from the stream.</returns>
-        //       public string ReadString(int length)
-        //       {
-        //           Debug.Assert(this.IsText);
-        //           // Data may only be a string or PhpBytes.
-        //           object data = ReadData(length, false);
-        //           if (data == null)
-        //               return null;
-
-        //           return AsText(data);
-        //       }
+        /// <summary>
+        /// Reads text data from the stream. First looks for data into the 
+        /// <see cref="readBuffers"/>. When <paramref name="length"/> is not
+        /// satisfied, new data from the underlying stream are processed.
+        /// </summary>
+        /// <param name="length">The number of characters to return.</param>
+        /// <returns><see cref="string"/> containing the text data read from the stream.</returns>
+        public string ReadString(int length)
+        {
+            Debug.Assert(this.IsText);
+            // Data may only be a string or PhpBytes.
+            return ReadData(length, false).AsText(_ctx.StringEncoding);
+        }
 
         /// <summary>
         /// Finds the '\n' in a string or PhpBytes and returns its offset or <c>-1</c>
@@ -1193,253 +1188,266 @@ namespace Pchp.Library.Streams
             }
         }
 
-        //       /// <summary>
-        //       /// Split a <see cref="String"/> or <see cref="PhpBytes"/> to "upto" bytes at left and the rest or <c>null</c> at right.
-        //       /// </summary>
-        //       private static void SplitData(object data, int upto, out object left, out object right)
-        //       {
-        //           Debug.Assert(data != null);
-        //           Debug.Assert(upto >= 0);
-        //           //if (this.IsText)
-        //           if (data.GetType() == typeof(string))
-        //           {
-        //               string s = (string)data;
-        //               Debug.Assert(s != null);
-        //               if (upto < s.Length - 1)
-        //               {
-        //                   left = s.Substring(0, upto + 1);
-        //                   right = s.Substring(upto + 2);
-        //               }
-        //               else
-        //               {
-        //                   left = s;
-        //                   right = null;
-        //               }
-        //           }
-        //           else
-        //           {
-        //               Debug.Assert(data is PhpBytes);
-        //               PhpBytes bin = (PhpBytes)data;
-        //               if (upto < bin.Length - 1)
-        //               {
-        //                   byte[] l = new byte[upto + 1], r = new byte[bin.Length - upto - 1];
-        //                   Array.Copy(bin.ReadonlyData, 0, l, 0, upto + 1);
-        //                   Array.Copy(bin.ReadonlyData, upto + 1, r, 0, bin.Length - upto - 1);
-        //                   left = new PhpBytes(l);
-        //                   right = new PhpBytes(r);
-        //               }
-        //               else
-        //               {
-        //                   left = bin;
-        //                   right = null;
-        //               }
-        //           }
-        //       }
+        /// <summary>
+        /// Split a <see cref="String"/> or <see cref="PhpBytes"/> to "upto" bytes at left and the rest or <c>null</c> at right.
+        /// </summary>
+        private static void SplitData(TextElement data, int upto, out TextElement left, out TextElement right)
+        {
+            Debug.Assert(upto >= 0);
+            //if (this.IsText)
+            if (data.IsText)
+            {
+                string s = data.GetText();
+                if (upto < s.Length - 1)
+                {
+                    left = new TextElement(s.Substring(0, upto + 1));
+                    right = new TextElement(s.Substring(upto + 2));
+                }
+                else
+                {
+                    left = data;
+                    right = TextElement.Null;
+                }
+            }
+            else
+            {
+                Debug.Assert(data.IsBinary);
+                var bin = data.GetBytes();
+                if (upto < bin.Length - 1)
+                {
+                    byte[] l = new byte[upto + 1], r = new byte[bin.Length - upto - 1];
+                    Array.Copy(bin, 0, l, 0, upto + 1);
+                    Array.Copy(bin, upto + 1, r, 0, bin.Length - upto - 1);
+                    left = new TextElement(l);
+                    right = new TextElement(r);
+                }
+                else
+                {
+                    left = data;
+                    right = TextElement.Null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Split a <see cref="string"/> to "upto" bytes at left and the rest or <c>null</c> at right.
+        /// </summary>
+        private static void SplitData(string s, int upto, out string left, out string right)
+        {
+            if (upto < s.Length - 1)
+            {
+                left = s.Substring(0, upto + 1);
+                right = s.Substring(upto + 2);
+            }
+            else
+            {
+                left = s;
+                right = null;
+            }
+        }
 
         #endregion
 
         #region Maximum Block Reading
 
-        //       /// <summary>
-        //       /// Gets the number of bytes or characters in the first read-buffer or next chunk size.
-        //       /// </summary>
-        //       /// <returns>The number of bytes or characters the next call to ReadMaximumData would return.</returns>
-        //       public int GetNextDataLength()
-        //       {
-        //           if ((readBuffers != null) && (readBuffers.Count > 0))
-        //           {
-        //               return readBuffers.Peek().Length;
-        //           }
-        //           else return readChunkSize;
-        //       }
+        /// <summary>
+        /// Gets the number of bytes or characters in the first read-buffer or next chunk size.
+        /// </summary>
+        /// <returns>The number of bytes or characters the next call to ReadMaximumData would return.</returns>
+        public int GetNextDataLength()
+        {
+            return ((readBuffers != null) && (readBuffers.Count != 0))
+                ? readBuffers.Peek().Length
+                : readChunkSize;
+        }
 
-        //       /// <summary>
-        //       /// Most effecient access to the buffered stream consuming one whole buffer at a time.
-        //       /// Performs no unnecessary conversions (although attached stream filters may do so).
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// Use the <see cref="readChunkSize"/> member to affect the amount of data returned at a time.
-        //       /// </remarks>
-        //       /// <returns>A <see cref="string"/> or <see cref="PhpBytes"/> containing data read from the stream.</returns>
-        //       public object ReadMaximumData()
-        //       {
-        //           // Set file access to reading
-        //           CurrentAccess = FileAccess.Read;
-        //           if (!CanRead) return null;
+        /// <summary>
+        /// Most effecient access to the buffered stream consuming one whole buffer at a time.
+        /// Performs no unnecessary conversions (although attached stream filters may do so).
+        /// </summary>
+        /// <remarks>
+        /// Use the <see cref="readChunkSize"/> member to affect the amount of data returned at a time.
+        /// </remarks>
+        /// <returns>A <see cref="string"/> or <see cref="PhpBytes"/> containing data read from the stream.</returns>
+        public TextElement ReadMaximumData()
+        {
+            // Set file access to reading
+            CurrentAccess = FileAccess.Read;
+            if (!CanRead) return TextElement.Null;
 
-        //           object data = null;
-        //           if ((readBuffers == null) || (readBuffers.Count == 0))
-        //           {
-        //               // Read one block without storing it in the buffers.
-        //               data = ReadFiltered(readChunkSize);
-        //               int filteredLength = data.Length;
-        //               readFilteredCount += filteredLength;
-        //           }
-        //           else
-        //           {
-        //               // Dequeue one whole buffer.
-        //               data = readBuffers.Peek();
-        //               DropReadBuffer();
-        //           }
+            TextElement data;
 
-        //           if (data == null) return null;
-        //           Debug.Assert((data is string) || (data is PhpBytes));
-        //           return data;
-        //       }
+            //
+            if ((readBuffers == null) || (readBuffers.Count == 0))
+            {
+                // Read one block without storing it in the buffers.
+                data = ReadFiltered(readChunkSize);
+                int filteredLength = data.Length;
+                readFilteredCount += filteredLength;
+            }
+            else
+            {
+                // Dequeue one whole buffer.
+                data = readBuffers.Peek();
+                DropReadBuffer();
+            }
 
-        //       /// <summary>
-        //       /// Effecient access to the buffered and filtered stream consuming one whole buffer at a time.
-        //       /// </summary>
-        //       /// <returns>A <see cref="PhpBytes"/> containing data read from the stream.</returns>
-        //       public PhpBytes ReadMaximumBytes()
-        //       {
-        //           return AsBinary(ReadMaximumData());
-        //       }
+            //
+            return data;
+        }
 
-        //       /// <summary>
-        //       /// Effecient access to the buffered and filtered stream consuming one whole buffer at a time.
-        //       /// </summary>
-        //       /// <returns>A <see cref="string"/> containing data read from the stream.</returns>
-        //       public string ReadMaximumString()
-        //       {
-        //           return AsText(ReadMaximumData());
-        //       }
+        /// <summary>
+        /// Effecient access to the buffered and filtered stream consuming one whole buffer at a time.
+        /// </summary>
+        /// <returns>A <see cref="byte"/>[] containing data read from the stream.</returns>
+        public byte[] ReadMaximumBytes()
+        {
+            return ReadMaximumData().AsBytes(_ctx.StringEncoding);
+        }
+
+        /// <summary>
+        /// Effecient access to the buffered and filtered stream consuming one whole buffer at a time.
+        /// </summary>
+        /// <returns>A <see cref="string"/> containing data read from the stream.</returns>
+        public string ReadMaximumString()
+        {
+            return ReadMaximumData().AsText(_ctx.StringEncoding);
+        }
 
         #endregion
 
         #region Entire Stream Reading
 
-        //       public object ReadContents()
-        //       {
-        //           return ReadContents(-1, -1);
-        //       }
+        public TextElement ReadContents() => ReadContents(-1, -1);
 
-        //       public object ReadContents(int maxLength)
-        //       {
-        //           return ReadContents(maxLength, -1);
-        //       }
+        public TextElement ReadContents(int maxLength) => ReadContents(maxLength, -1);
 
-        //       public object ReadContents(int maxLength, int offset)
-        //       {
-        //           if (offset > -1 && !Seek(offset, SeekOrigin.Begin))
-        //               return null;
+        public TextElement ReadContents(int maxLength, int offset)
+        {
+            if (offset > -1 && !Seek(offset, SeekOrigin.Begin))
+                return TextElement.Null;
 
-        //           if (IsText)
-        //               return ReadStringContents(maxLength);
-        //           else
-        //               return ReadBinaryContents(maxLength);
-        //       }
+            return (IsText)
+                ? new TextElement(ReadStringContents(maxLength))
+                : new TextElement(ReadBinaryContents(maxLength));
+        }
 
-        //       public string ReadStringContents(int maxLength)
-        //       {
-        //           if (!CanRead) return null;
-        //           StringBuilder result = new StringBuilder();
+        public string ReadStringContents(int maxLength)
+        {
+            if (!CanRead) return null;
+            StringBuilder result = new StringBuilder();
 
-        //           if (maxLength >= 0)
-        //           {
-        //               while (maxLength > 0 && !Eof)
-        //               {
-        //                   string data = ReadString(maxLength);
-        //                   if (data == null && data.Length > 0) break; // EOF or error.
-        //                   maxLength -= data.Length;
-        //                   result.Append(data);
-        //               }
-        //           }
-        //           else
-        //           {
-        //               while (!Eof)
-        //               {
-        //                   string data = ReadMaximumString();
-        //                   if (data == null) break; // EOF or error.
-        //                   result.Append(data);
-        //               }
-        //           }
+            if (maxLength >= 0)
+            {
+                while (maxLength > 0 && !Eof)
+                {
+                    string data = ReadString(maxLength);
+                    if (data == null && data.Length > 0) break; // EOF or error.
+                    maxLength -= data.Length;
+                    result.Append(data);
+                }
+            }
+            else
+            {
+                while (!Eof)
+                {
+                    string data = ReadMaximumString();
+                    if (data == null) break; // EOF or error.
+                    result.Append(data);
+                }
+            }
 
-        //           return result.ToString();
-        //       }
+            return result.ToString();
+        }
 
-        //       public PhpBytes ReadBinaryContents(int maxLength)
-        //       {
-        //           if (!CanRead) return null;
-        //           MemoryStream result = new MemoryStream();
+        public byte[] ReadBinaryContents(int maxLength)
+        {
+            if (!CanRead)
+            {
+                return null;
+            }
 
-        //           if (maxLength >= 0)
-        //           {
-        //               while (maxLength > 0 && !Eof)
-        //               {
-        //                   PhpBytes data = ReadBytes(maxLength);
-        //                   if (data == null && data.Length > 0) break; // EOF or error.
-        //                   maxLength -= data.Length;
-        //                   result.Write(data.ReadonlyData, 0, data.Length);
-        //               }
-        //           }
-        //           else
-        //           {
-        //               while (!Eof)
-        //               {
-        //                   PhpBytes data = ReadMaximumBytes();
-        //                   if (data == null) break; // EOF or error.
-        //                   result.Write(data.ReadonlyData, 0, data.Length);
-        //               }
-        //           }
-        //           return new PhpBytes(result.ToArray());
-        //       }
+            var result = new MemoryStream();
+
+            if (maxLength >= 0)
+            {
+                while (maxLength > 0 && !Eof)
+                {
+                    var data = ReadBytes(maxLength);
+                    if (data.Length != 0) break; // EOF or error.
+                    maxLength -= data.Length;
+                    result.Write(data, 0, data.Length);
+                }
+            }
+            else
+            {
+                while (!Eof)
+                {
+                    var data = ReadMaximumBytes();
+                    if (data.Length == 0) break; // EOF or error.
+                    result.Write(data, 0, data.Length);
+                }
+            }
+
+            return result.ToArray();
+        }
 
         #endregion
 
         #region Parsed Reading (ReadLine)
 
-        ///// <summary>
-        ///// Reads one line (text ending with the <paramref name="ending"/> delimiter)
-        ///// from the stream up to <paramref name="length"/> characters long.
-        ///// </summary>
-        ///// <param name="length">Maximum length of the returned <see cref="string"/> or <c>-1</c> for unlimited reslut.</param>
-        ///// <param name="ending">Delimiter of the returned line or <b>null</b> to use the system default.</param>
-        ///// <returns>A <see cref="string"/> containing one line from the input stream.</returns>
-        //public string ReadLine(int length, string ending)
-        //{
-        //    // A length has to be specified if we want to use the delimiter.
-        //    Debug.Assert((length > 0) || (ending == null));
+        /// <summary>
+        /// Reads one line (text ending with the <paramref name="ending"/> delimiter)
+        /// from the stream up to <paramref name="length"/> characters long.
+        /// </summary>
+        /// <param name="length">Maximum length of the returned <see cref="string"/> or <c>-1</c> for unlimited reslut.</param>
+        /// <param name="ending">Delimiter of the returned line or <b>null</b> to use the system default.</param>
+        /// <returns>A <see cref="string"/> containing one line from the input stream.</returns>
+        public string ReadLine(int length, string ending)
+        {
+            // A length has to be specified if we want to use the delimiter.
+            Debug.Assert((length > 0) || (ending == null));
 
-        //    object data = ReadData(length, ending == null); // null ending => use \n
-        //    string str = AsText(data);
+            var str = ReadData(length, ending == null) // null ending => use \n
+                .AsText(_ctx.StringEncoding);
 
-        //    if (ending != null)
-        //    {
-        //        int pos = (ending.Length == 1) ? str.IndexOf(ending[0]) : str.IndexOf(ending);
-        //        if (pos >= 0)
-        //        {
-        //            object left, right;
-        //            SplitData(str, pos + ending.Length - 1, out left, out right);
-        //            Debug.Assert(left is string);
-        //            Debug.Assert(right is string);
-        //            int returnedLength = ((string)right).Length;
-        //            if (this.IsBinary) right = AsBinary(right);
-
-        //            if (readBuffers.Count > 0)
-        //            {
-        //                // EX: Damn. Have to put the data to the front of the queue :((
-        //                // Better first look into the buffers for the ending..
-        //                Queue newBuffers = new Queue(readBuffers.Count + 2);
-        //                newBuffers.Enqueue(right);
-        //                foreach (object o in readBuffers)
-        //                {
-        //                    newBuffers.Enqueue(o);
-        //                }
-        //                readBuffers = newBuffers;
-        //            }
-        //            else
-        //            {
-        //                readBuffers.Enqueue(right);
-        //            }
-        //            // Update the offset as the data gets back.
-        //            readOffset -= returnedLength;
-        //            return (string)left;
-        //        }
-        //    }
-        //    // ReadLine now works on binary files too but only for the \n ending.
-        //    return str;
-        //}
+            if (ending != null)
+            {
+                int pos = (ending.Length == 1) ? str.IndexOf(ending[0]) : str.IndexOf(ending);
+                if (pos >= 0)
+                {
+                    string left, right;
+                    SplitData(str, pos + ending.Length - 1, out left, out right);
+                    Debug.Assert(right != null);
+                    int returnedLength = right.Length;
+                    TextElement rightElement = (this.IsBinary)
+                        ? new TextElement(_ctx.StringEncoding.GetBytes(right))
+                        : new TextElement(right);
+                    
+                    if (readBuffers.Count != 0)
+                    {
+                        // EX: Damn. Have to put the data to the front of the queue :((
+                        // Better first look into the buffers for the ending..
+                        var newBuffers = new Queue<TextElement>(readBuffers.Count + 2);
+                        newBuffers.Enqueue(rightElement);
+                        foreach (var o in readBuffers)
+                        {
+                            newBuffers.Enqueue(o);
+                        }
+                        readBuffers = newBuffers;
+                    }
+                    else
+                    {
+                        readBuffers.Enqueue(rightElement);
+                    }
+                    // Update the offset as the data gets back.
+                    readOffset -= returnedLength;
+                    return left;
+                }
+            }
+            // ReadLine now works on binary files too but only for the \n ending.
+            return str;
+        }
 
         #endregion
 

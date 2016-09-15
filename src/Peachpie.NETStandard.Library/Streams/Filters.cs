@@ -42,9 +42,14 @@ namespace Pchp.Library.Streams
         public int Length => (_data != null) ? (IsText ? GetText().Length : GetBytes().Length) : 0;
 
         /// <summary>
-        /// An empty text.
+        /// An empty byte array.
         /// </summary>
-        public static TextElement Empty => new TextElement(string.Empty);
+        public static TextElement Empty => new TextElement(Core.Utilities.ArrayUtils.EmptyBytes);
+
+        /// <summary>
+        /// Null element (Invalid).
+        /// </summary>
+        public static TextElement Null => default(TextElement);
 
         public TextElement(byte[] bytes)
         {
