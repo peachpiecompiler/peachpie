@@ -36,6 +36,16 @@ namespace Pchp.Library.Streams
 
         public override string ToString() => IsText ? GetText() : Encoding.UTF8.GetString(GetBytes());
 
+        /// <summary>
+        /// Gets length of the string or byytes array.
+        /// </summary>
+        public int Length => (_data != null) ? (IsText ? GetText().Length : GetBytes().Length) : 0;
+
+        /// <summary>
+        /// An empty text.
+        /// </summary>
+        public static TextElement Empty => new TextElement(string.Empty);
+
         public TextElement(byte[] bytes)
         {
             Debug.Assert(bytes != null);
@@ -62,7 +72,7 @@ namespace Pchp.Library.Streams
 
         public static TextElement FromValue(Context ctx, PhpValue value)
         {
-            switch(value.TypeCode)
+            switch (value.TypeCode)
             {
                 case PhpTypeCode.Object:
                     if (value.Object is byte[])
@@ -184,6 +194,7 @@ namespace Pchp.Library.Streams
     #region Stream Filter Base Classes
 
     #region Filter options
+
     /// <summary>
     /// Indicates whether the filter is to be attached to the
     /// input/ouput filter-chain or both.
@@ -202,6 +213,7 @@ namespace Pchp.Library.Streams
         /// <summary>Append the filter to the filter-chain (0x20).</summary>
         Tail = 0x20
     }
+
     #endregion
 
     /// <summary>

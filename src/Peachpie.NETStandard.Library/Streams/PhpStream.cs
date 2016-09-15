@@ -191,6 +191,8 @@ namespace Pchp.Library.Streams
             if (context == null)
                 throw new ArgumentNullException("context");
 
+            Debug.Assert(ctx != null);
+
             StreamWrapper wrapper;
             if (!PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileMayExist, (CheckAccessOptions)options))
                 return null;
@@ -406,36 +408,40 @@ namespace Pchp.Library.Streams
         /// This class newly implements the auto-remove behavior too
         /// (see <see cref="StreamAccessOptions.Temporary"/>).
         /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="openingWrapper">The parent instance.</param>
         /// <param name="accessOptions">The additional options parsed from the <c>fopen()</c> mode.</param>
         /// <param name="openedPath">The absolute path to the opened resource.</param>
         /// <param name="context">The stream context passed to fopen().</param>
-        public PhpStream(StreamWrapper openingWrapper, StreamAccessOptions accessOptions, string openedPath, StreamContext context)
+        public PhpStream(Context ctx, StreamWrapper openingWrapper, StreamAccessOptions accessOptions, string openedPath, StreamContext context)
             : base(PhpStreamTypeName)
         {
+            Debug.Assert(ctx != null);
             Debug.Assert(context != null);
 
+            _ctx = ctx;
             _context = context;
+
             this.Wrapper = openingWrapper;
             this.OpenedPath = openedPath;
 
-            //// Stream modifiers (defined in open-time).
-            //this.Options = accessOptions;
+            // Stream modifiers (defined in open-time).
+            this.Options = accessOptions;
 
-            //// Allocate the text conversion filters for this stream.
-            //if ((accessOptions & StreamAccessOptions.UseText) > 0)
-            //{
-            //    if ((accessOptions & StreamAccessOptions.Read) > 0)
-            //    {
-            //        textReadFilter = new TextReadFilter();
-            //    }
-            //    if ((accessOptions & StreamAccessOptions.Write) > 0)
-            //    {
-            //        textWriteFilter = new TextWriteFilter();
-            //    }
-            //}
+            // Allocate the text conversion filters for this stream.
+            if ((accessOptions & StreamAccessOptions.UseText) > 0)
+            {
+                if ((accessOptions & StreamAccessOptions.Read) > 0)
+                {
+                    textReadFilter = new TextReadFilter();
+                }
+                if ((accessOptions & StreamAccessOptions.Write) > 0)
+                {
+                    textWriteFilter = new TextWriteFilter();
+                }
+            }
 
-            //this.readTimeout = ScriptContext.CurrentContext.Config.FileSystem.DefaultSocketTimeout;
+            // this.readTimeout = ScriptContext.CurrentContext.Config.FileSystem.DefaultSocketTimeout;
         }
 
         /// <summary>
@@ -443,14 +449,14 @@ namespace Pchp.Library.Streams
         /// </summary>
         protected override void FreeManaged()
         {
-            //// Flush the underlying stream before closing.
-            //if ((writeFilters != null) && (writeFilters.Count > 0))
-            //{
-            //    // Pass an empty data with closing == true through all the filters.
-            //    WriteData(PhpBytes.Empty, true);
-            //}
+            // Flush the underlying stream before closing.
+            if ((writeFilters != null) && (writeFilters.Count > 0))
+            {
+                // Pass an empty data with closing == true through all the filters.
+                WriteData(TextElement.Empty, true);
+            }
 
-            //Flush();
+            Flush();
 
             if (_context != null)
             {
@@ -531,67 +537,66 @@ namespace Pchp.Library.Streams
 
         #region SetParameter (optional)
 
-        //       /// <include file='Doc/Streams.xml' path='docs/method[@name="SetParameter"]/*'/>
-        //       public virtual bool SetParameter(StreamParameterOptions option, object value)
-        //       {
-        //           // Do not display error messages here, the caller will.
-        //           // EX: will have to distinguish between failed and unsupported.
-        //           // (use additional message when fails)
+        public virtual bool SetParameter(StreamParameterOptions option, object value)
+        {
+            // Do not display error messages here, the caller will.
+            // EX: will have to distinguish between failed and unsupported.
+            // (use additional message when fails)
 
-        //           // Descendants may call this default implementation for unhandled options
-        //           switch (option)
-        //           {
-        //               case StreamParameterOptions.BlockingMode:
-        //                   // Unimplemented in Win32 PHP.
-        //                   return false;
+            // Descendants may call this default implementation for unhandled options
+            switch (option)
+            {
+                case StreamParameterOptions.BlockingMode:
+                    // Unimplemented in Win32 PHP.
+                    return false;
 
-        //               case StreamParameterOptions.ReadBufferSize:
-        //                   // Unused option (only turns buffering off)
-        //                   return false;
+                case StreamParameterOptions.ReadBufferSize:
+                    // Unused option (only turns buffering off)
+                    return false;
 
-        //               case StreamParameterOptions.WriteBufferSize:
-        //                   if (value is int)
-        //                   {
-        //                       // Let the write buffer reset on next write operation.
-        //                       FlushWriteBuffer();
-        //                       writeBuffer = null;
-        //                       // Set the new size (0 to disable write buffering).
-        //                       writeBufferSize = (int)value;
-        //                       if (writeBufferSize < 0) writeBufferSize = 0;
-        //                       return true;
-        //                   }
-        //                   return false;
+                case StreamParameterOptions.WriteBufferSize:
+                    if (value is int)
+                    {
+                        // Let the write buffer reset on next write operation.
+                        FlushWriteBuffer();
+                        writeBuffer = null;
+                        // Set the new size (0 to disable write buffering).
+                        writeBufferSize = (int)value;
+                        if (writeBufferSize < 0) writeBufferSize = 0;
+                        return true;
+                    }
+                    return false;
 
-        //               case StreamParameterOptions.ReadTimeout:
-        //                   // Set the read timeout for network-based streams (overrides DefaultTimeout).
-        //                   this.readTimeout = (double)value;
-        //                   return false;
+                case StreamParameterOptions.ReadTimeout:
+                    // Set the read timeout for network-based streams (overrides DefaultTimeout).
+                    this.readTimeout = (double)value;
+                    return false;
 
-        //               case StreamParameterOptions.SetChunkSize:
-        //                   if (value is int)
-        //                   {
-        //                       // This setting will affect reading after the buffers are emptied.
-        //                       readChunkSize = (int)value;
-        //                       if (readChunkSize < 1) readChunkSize = 1;
-        //                       return true;
-        //                   }
-        //                   return false;
+                case StreamParameterOptions.SetChunkSize:
+                    if (value is int)
+                    {
+                        // This setting will affect reading after the buffers are emptied.
+                        readChunkSize = (int)value;
+                        if (readChunkSize < 1) readChunkSize = 1;
+                        return true;
+                    }
+                    return false;
 
-        //               case StreamParameterOptions.Locking:
-        //                   return false;
+                case StreamParameterOptions.Locking:
+                    return false;
 
-        //               case StreamParameterOptions.MemoryMap:
-        //                   return false;
+                case StreamParameterOptions.MemoryMap:
+                    return false;
 
-        //               case StreamParameterOptions.Truncate:
-        //                   // EX: [Truncate] Override SetParameter in NativeStream to truncate a local file.
-        //                   return false;
+                case StreamParameterOptions.Truncate:
+                    // EX: [Truncate] Override SetParameter in NativeStream to truncate a local file.
+                    return false;
 
-        //               default:
-        //                   Debug.Assert(false); // invalid option
-        //                   return false;
-        //           }
-        //       }
+                default:
+                    Debug.Assert(false); // invalid option
+                    return false;
+            }
+        }
 
         #endregion
 
@@ -599,72 +604,65 @@ namespace Pchp.Library.Streams
 
         #region High-level Reading
 
-        //       /// <include file='Doc/Streams.xml' path='docs/property[@name="RawEof"]/*'/>
-        //       public bool Eof
-        //       {
-        //           get
-        //           {
-        //               // The raw stream reached EOF and all the data is processed.
-        //               if (RawEof)
-        //               {
-        //                   // Check the buffers as quickly as possible.
-        //                   if ((readBuffers == null) || (readBuffers.Count == 0)) return true;
+        public bool Eof
+        {
+            get
+            {
+                // The raw stream reached EOF and all the data is processed.
+                if (RawEof)
+                {
+                    // Check the buffers as quickly as possible.
+                    if ((readBuffers == null) || (readBuffers.Count == 0)) return true;
 
-        //                   // There is at least one buffer, check position.
-        //                   int firstLength = GetDataLength(readBuffers.Peek());
-        //                   if (firstLength > readPosition) return false;
+                    // There is at least one buffer, check position.
+                    int firstLength = readBuffers.Peek().Length;
+                    if (firstLength > readPosition) return false;
 
-        //                   if (ReadBufferLength == 0) return true;
-        //               }
-        //               return false;
-        //           }
-        //       }
+                    if (ReadBufferLength == 0) return true;
+                }
+                return false;
+            }
+        }
 
         #region Buffered Reading
 
-        //       private int ReadBufferScan(out int nlpos)
-        //       {
-        //           int total = 0;
-        //           nlpos = -1;
-        //           if (readBuffers == null) return 0;
+        private int ReadBufferScan(out int nlpos)
+        {
+            int total = 0;
+            nlpos = -1;
+            if (readBuffers == null) return 0;
 
-        //           // Yields to 0 for empty readBuffers.
-        //           foreach (object o in readBuffers)
-        //           {
-        //               string str = o as String;
-        //               PhpBytes bin = o as PhpBytes;
+            // Yields to 0 for empty readBuffers.
+            foreach (var o in readBuffers)
+            {
+                var read = o.Length;
 
-        //               int read = 0;
-        //               if (str != null) read = str.Length;
-        //               else if (bin != null) read = bin.Length;
-        //               else Debug.Assert(false);
+                if ((nlpos == -1) && (total <= readPosition) && (total + read > readPosition))
+                {
+                    // Find the first occurence of \n.
+                    nlpos = total + FindEoln(o, readPosition - total);
+                }
 
-        //               if ((nlpos == -1) && (total <= readPosition) && (total + read > readPosition))
-        //               {
-        //                   // Find the first occurence of \n.
-        //                   nlpos = total + FindEoln(o, readPosition - total);
-        //               }
+                total += read;
+            }
 
-        //               total += read;
-        //           }
+            // Substract the count of data already processed.
+            total -= readPosition;
+            return total;
+        }
 
-        //           // Substract the count of data already processed.
-        //           total -= readPosition;
-        //           return total;
-        //       }
-
-        //       /// <summary>
-        //       /// Gets the number of <c>byte</c>s or <c>char</c>s available
-        //       /// in the <see cref="readBuffers"/>.
-        //       /// </summary>
-        //       protected int ReadBufferLength
-        //       {
-        //           get
-        //           {
-        //               int nlpos;
-        //               return ReadBufferScan(out nlpos);
-        //           }
-        //       }
+        /// <summary>
+        /// Gets the number of <c>byte</c>s or <c>char</c>s available
+        /// in the <see cref="readBuffers"/>.
+        /// </summary>
+        protected int ReadBufferLength
+        {
+            get
+            {
+                int nlpos;
+                return ReadBufferScan(out nlpos);
+            }
+        }
 
 
         //       /// <summary>
@@ -725,42 +723,42 @@ namespace Pchp.Library.Streams
         //           return filtered;
         //       }
 
-        //       /// <summary>
-        //       /// Put a buffer at the end of the <see cref="readBuffers"/>.
-        //       /// </summary>
-        //       /// <param name="data">The buffer to append.</param>
-        //       internal void EnqueueReadBuffer(object data)
-        //       {
-        //           Debug.Assert((data is string) || (data is PhpBytes));
+        /// <summary>
+        /// Put a buffer at the end of the <see cref="readBuffers"/>.
+        /// </summary>
+        /// <param name="data">The buffer to append.</param>
+        internal void EnqueueReadBuffer(TextElement data)
+        {
+            Debug.Assert(!data.IsNull);
 
-        //           // This may be the first access to the buffers.
-        //           if (readBuffers == null)
-        //               readBuffers = new Queue(2);
+            // This may be the first access to the buffers.
+            if (readBuffers == null)
+                readBuffers = new Queue<TextElement>(2);
 
-        //           // Append the filtered output to the buffers.
-        //           readBuffers.Enqueue(data);
-        //       }
+            // Append the filtered output to the buffers.
+            readBuffers.Enqueue(data);
+        }
 
 
-        //       /// <summary>
-        //       /// Remove the (entirely consumed) read buffer from the head of the read buffer queue.
-        //       /// </summary>
-        //       /// <returns><c>true</c> if there are more buffers in the queue.</returns>
-        //       protected bool DropReadBuffer()
-        //       {
-        //           Debug.Assert(readBuffers != null);
-        //           Debug.Assert(readBuffers.Count > 0);
+        /// <summary>
+        /// Remove the (entirely consumed) read buffer from the head of the read buffer queue.
+        /// </summary>
+        /// <returns><c>true</c> if there are more buffers in the queue.</returns>
+        protected bool DropReadBuffer()
+        {
+            Debug.Assert(readBuffers != null);
+            Debug.Assert(readBuffers.Count > 0);
 
-        //           object data = readBuffers.Dequeue();
-        //           int length = GetDataLength(data);
-        //           Debug.Assert(length > 0);
+            var data = readBuffers.Dequeue();
+            int length = data.Length;
+            Debug.Assert(length > 0);
 
-        //           // Add the new offset to the total one.
-        //           readOffset += length;
+            // Add the new offset to the total one.
+            readOffset += length;
 
-        //           readPosition = 0;
-        //           return readBuffers.Count > 0;
-        //       }
+            readPosition = 0;
+            return readBuffers.Count > 0;
+        }
 
 
         //       /// <summary>
@@ -917,25 +915,6 @@ namespace Pchp.Library.Streams
         #region Data Block Conversions
 
         //       /// <summary>
-        //       /// Gets the length of a block of data (either a <see cref="String"/> or <see cref="PhpBytes"/>).
-        //       /// </summary>
-        //       /// <param name="data">A <see cref="String"/> or <see cref="PhpBytes"/> to be measured.</param>
-        //       /// <returns>The length of the block or <c>-1</c> if the type is neither <see cref="String"/> nor <see cref="PhpBytes"/>.
-        //       /// </returns>
-        //       public static int GetDataLength(object data)
-        //       {
-        //           string str;
-        //           PhpBytes bin;
-
-        //           if ((str = data as string) != null) return str.Length;
-        //           else if ((bin = data as PhpBytes) != null) return bin.Length;
-
-        //           // Must be either 
-        //           Debug.Assert(false);
-        //           return -1;
-        //       }
-
-        //       /// <summary>
         //       /// Casts the input parameter as <see cref="PhpBytes"/>, converting it
         //       /// using the page encoding if necessary.
         //       /// </summary>
@@ -1057,7 +1036,7 @@ namespace Pchp.Library.Streams
         //                   packet = ReadFiltered(count);
         //                   if (packet == null) return null;
 
-        //                   int filteredLength = GetDataLength(packet);
+        //                   int filteredLength = packet.Length;
         //                   done = filteredLength > 0;
         //                   readFilteredCount += filteredLength;
 
@@ -1109,7 +1088,7 @@ namespace Pchp.Library.Streams
         //                       newLength = buffered;
         //                       break;
         //                   }
-        //                   read = GetDataLength(data);
+        //                   read = data.Length;
         //                   readFilteredCount += read;
         //                   if (read > 0) EnqueueReadBuffer(data);
         //                   buffered += read;
@@ -1192,27 +1171,27 @@ namespace Pchp.Library.Streams
         //           return AsText(data);
         //       }
 
-        //       /// <summary>
-        //       /// Finds the '\n' in a string or PhpBytes and returns its offset or <c>-1</c>
-        //       /// if not found.
-        //       /// </summary>
-        //       /// <param name="data">Data to scan.</param>
-        //       /// <param name="from">Index of the first character to scan.</param>
-        //       /// <returns></returns>
-        //       private static int FindEoln(object data, int from)
-        //       {
-        //           Debug.Assert(data != null);
-        //           //if (this.IsText)
-        //           if (data.GetType() == typeof(string))
-        //           {
-        //               return ((string)data).IndexOf('\n', from);
-        //           }
-        //           else
-        //           {
-        //               Debug.Assert(data is PhpBytes);
-        //               return ArrayUtils.IndexOf(((PhpBytes)data).ReadonlyData, (byte)'\n', from);
-        //           }
-        //       }
+        /// <summary>
+        /// Finds the '\n' in a string or PhpBytes and returns its offset or <c>-1</c>
+        /// if not found.
+        /// </summary>
+        /// <param name="data">Data to scan.</param>
+        /// <param name="from">Index of the first character to scan.</param>
+        /// <returns></returns>
+        private static int FindEoln(TextElement data, int from)
+        {
+            Debug.Assert(!data.IsNull);
+
+            if (data.IsText)
+            {
+                return data.GetText().IndexOf('\n', from);
+            }
+            else
+            {
+                Debug.Assert(data.IsBinary);
+                return Array.IndexOf(data.GetBytes(), (byte)'\n', from);
+            }
+        }
 
         //       /// <summary>
         //       /// Split a <see cref="String"/> or <see cref="PhpBytes"/> to "upto" bytes at left and the rest or <c>null</c> at right.
@@ -1269,7 +1248,7 @@ namespace Pchp.Library.Streams
         //       {
         //           if ((readBuffers != null) && (readBuffers.Count > 0))
         //           {
-        //               return GetDataLength(readBuffers.Peek());
+        //               return readBuffers.Peek().Length;
         //           }
         //           else return readChunkSize;
         //       }
@@ -1293,7 +1272,7 @@ namespace Pchp.Library.Streams
         //           {
         //               // Read one block without storing it in the buffers.
         //               data = ReadFiltered(readChunkSize);
-        //               int filteredLength = (data != null) ? GetDataLength(data) : 0;
+        //               int filteredLength = data.Length;
         //               readFilteredCount += filteredLength;
         //           }
         //           else
@@ -1406,122 +1385,126 @@ namespace Pchp.Library.Streams
         //           return new PhpBytes(result.ToArray());
         //       }
 
-        //       #endregion
+        #endregion
 
-        //       #region Parsed Reading (ReadLine)
-        //       /// <summary>
-        //       /// Reads one line (text ending with the <paramref name="ending"/> delimiter)
-        //       /// from the stream up to <paramref name="length"/> characters long.
-        //       /// </summary>
-        //       /// <param name="length">Maximum length of the returned <see cref="string"/> or <c>-1</c> for unlimited reslut.</param>
-        //       /// <param name="ending">Delimiter of the returned line or <b>null</b> to use the system default.</param>
-        //       /// <returns>A <see cref="string"/> containing one line from the input stream.</returns>
-        //       public string ReadLine(int length, string ending)
-        //       {
-        //           // A length has to be specified if we want to use the delimiter.
-        //           Debug.Assert((length > 0) || (ending == null));
+        #region Parsed Reading (ReadLine)
 
-        //           object data = ReadData(length, ending == null); // null ending => use \n
-        //           string str = AsText(data);
+        ///// <summary>
+        ///// Reads one line (text ending with the <paramref name="ending"/> delimiter)
+        ///// from the stream up to <paramref name="length"/> characters long.
+        ///// </summary>
+        ///// <param name="length">Maximum length of the returned <see cref="string"/> or <c>-1</c> for unlimited reslut.</param>
+        ///// <param name="ending">Delimiter of the returned line or <b>null</b> to use the system default.</param>
+        ///// <returns>A <see cref="string"/> containing one line from the input stream.</returns>
+        //public string ReadLine(int length, string ending)
+        //{
+        //    // A length has to be specified if we want to use the delimiter.
+        //    Debug.Assert((length > 0) || (ending == null));
 
-        //           if (ending != null)
-        //           {
-        //               int pos = (ending.Length == 1) ? str.IndexOf(ending[0]) : str.IndexOf(ending);
-        //               if (pos >= 0)
-        //               {
-        //                   object left, right;
-        //                   SplitData(str, pos + ending.Length - 1, out left, out right);
-        //                   Debug.Assert(left is string);
-        //                   Debug.Assert(right is string);
-        //                   int returnedLength = ((string)right).Length;
-        //                   if (this.IsBinary) right = AsBinary(right);
+        //    object data = ReadData(length, ending == null); // null ending => use \n
+        //    string str = AsText(data);
 
-        //                   if (readBuffers.Count > 0)
-        //                   {
-        //                       // EX: Damn. Have to put the data to the front of the queue :((
-        //                       // Better first look into the buffers for the ending..
-        //                       Queue newBuffers = new Queue(readBuffers.Count + 2);
-        //                       newBuffers.Enqueue(right);
-        //                       foreach (object o in readBuffers)
-        //                       {
-        //                           newBuffers.Enqueue(o);
-        //                       }
-        //                       readBuffers = newBuffers;
-        //                   }
-        //                   else
-        //                   {
-        //                       readBuffers.Enqueue(right);
-        //                   }
-        //                   // Update the offset as the data gets back.
-        //                   readOffset -= returnedLength;
-        //                   return (string)left;
-        //               }
-        //           }
-        //           // ReadLine now works on binary files too but only for the \n ending.
-        //           return str;
-        //       }
+        //    if (ending != null)
+        //    {
+        //        int pos = (ending.Length == 1) ? str.IndexOf(ending[0]) : str.IndexOf(ending);
+        //        if (pos >= 0)
+        //        {
+        //            object left, right;
+        //            SplitData(str, pos + ending.Length - 1, out left, out right);
+        //            Debug.Assert(left is string);
+        //            Debug.Assert(right is string);
+        //            int returnedLength = ((string)right).Length;
+        //            if (this.IsBinary) right = AsBinary(right);
+
+        //            if (readBuffers.Count > 0)
+        //            {
+        //                // EX: Damn. Have to put the data to the front of the queue :((
+        //                // Better first look into the buffers for the ending..
+        //                Queue newBuffers = new Queue(readBuffers.Count + 2);
+        //                newBuffers.Enqueue(right);
+        //                foreach (object o in readBuffers)
+        //                {
+        //                    newBuffers.Enqueue(o);
+        //                }
+        //                readBuffers = newBuffers;
+        //            }
+        //            else
+        //            {
+        //                readBuffers.Enqueue(right);
+        //            }
+        //            // Update the offset as the data gets back.
+        //            readOffset -= returnedLength;
+        //            return (string)left;
+        //        }
+        //    }
+        //    // ReadLine now works on binary files too but only for the \n ending.
+        //    return str;
+        //}
 
         #endregion
 
         #region Filter Chains
 
-        //       /// <summary>
-        //       /// Adds a filter to one of the read or write filter chains.
-        //       /// </summary>
-        //       /// <param name="filter">The filter.</param>
-        //       /// <param name="where">The position in the chain.</param>
-        //       public void AddFilter(IFilter filter, FilterChainOptions where)
-        //       {
-        //           Debug.Assert((where & FilterChainOptions.ReadWrite) != FilterChainOptions.ReadWrite);
-        //           ArrayList list = null;
+        /// <summary>
+        /// Adds a filter to one of the read or write filter chains.
+        /// </summary>
+        /// <param name="filter">The filter.</param>
+        /// <param name="where">The position in the chain.</param>
+        public void AddFilter(IFilter filter, FilterChainOptions where)
+        {
+            Debug.Assert((where & FilterChainOptions.ReadWrite) != FilterChainOptions.ReadWrite);
+            List<IFilter> list = null;
 
-        //           // Which chain.
-        //           if ((where & FilterChainOptions.Read) > 0)
-        //           {
-        //               if (readFilters == null) readFilters = new ArrayList();
-        //               list = readFilters;
-        //           }
-        //           else
-        //           {
-        //               if (writeFilters == null) writeFilters = new ArrayList();
-        //               list = writeFilters;
-        //           }
+            // Which chain.
+            if ((where & FilterChainOptions.Read) > 0)
+            {
+                if (readFilters == null) readFilters = new List<IFilter>();
+                list = readFilters;
+            }
+            else
+            {
+                if (writeFilters == null) writeFilters = new List<IFilter>();
+                list = writeFilters;
+            }
 
-        //           // Position in the chain.
-        //           if ((where & FilterChainOptions.Tail) > 0)
-        //           {
-        //               list.Add(filter);
-        //               if ((list == readFilters) && (ReadBufferLength > 0))
-        //               {
-        //                   // Process all the data in the read buffers.
-        //                   Queue q = new Queue();
-        //                   foreach (object o in readBuffers)
-        //                       q.Enqueue(filter.Filter(o, false));
-        //                   readBuffers = q;
-        //               }
-        //           }
-        //           else
-        //           {
-        //               list.Insert(0, filter);
-        //           }
-        //       }
+            // Position in the chain.
+            if ((where & FilterChainOptions.Tail) > 0)
+            {
+                list.Add(filter);
+                if ((list == readFilters) && (ReadBufferLength > 0))
+                {
+                    // Process all the data in the read buffers.
+                    var q = new Queue<TextElement>();
+                    foreach (var o in readBuffers)
+                    {
+                        q.Enqueue(filter.Filter(_ctx, o, false));
+                    }
 
-        //       /// <summary>
-        //       /// Get enumerator of chained read/write filters.
-        //       /// </summary>
-        //       public System.Collections.Generic.IEnumerable<PhpFilter> StreamFilters
-        //       {
-        //           get
-        //           {
-        //               if (readFilters != null)
-        //                   foreach (PhpFilter f in readFilters)
-        //                       yield return f;
+                    readBuffers = q;
+                }
+            }
+            else
+            {
+                list.Insert(0, filter);
+            }
+        }
 
-        //               if (writeFilters != null)
-        //                   foreach (PhpFilter f in writeFilters)
-        //                       yield return f;
-        //           }
-        //       }
+        /// <summary>
+        /// Get enumerator of chained read/write filters.
+        /// </summary>
+        public IEnumerable<PhpFilter> StreamFilters
+        {
+            get
+            {
+                if (readFilters != null)
+                    foreach (PhpFilter f in readFilters)
+                        yield return f;
+
+                if (writeFilters != null)
+                    foreach (PhpFilter f in writeFilters)
+                        yield return f;
+            }
+        }
 
         #endregion
 
@@ -1531,435 +1514,423 @@ namespace Pchp.Library.Streams
 
         #region Buffered Writing
 
-        //       /// <summary>
-        //       /// Write all the output buffer to the underlying stream and flush it.
-        //       /// </summary>
-        //       /// <returns><c>true</c> on success, <c>false</c> on error.</returns>
-        //       public bool Flush()
-        //       {
-        //           return FlushWriteBuffer() && RawFlush();
-        //       }
+        /// <summary>
+        /// Write all the output buffer to the underlying stream and flush it.
+        /// </summary>
+        /// <returns><c>true</c> on success, <c>false</c> on error.</returns>
+        public bool Flush()
+        {
+            return FlushWriteBuffer() && RawFlush();
+        }
 
-        //       /// <summary>
-        //       /// Writes all the output buffer to the underlying stream.
-        //       /// </summary>
-        //       /// <returns><c>true</c> on success, <c>false</c> on error.</returns>
-        //       protected bool FlushWriteBuffer()
-        //       {
-        //           // Stream may not have been used for output yet.
-        //           if ((writeBufferSize == 0) || (writeBuffer == null)) return true;
+        /// <summary>
+        /// Writes all the output buffer to the underlying stream.
+        /// </summary>
+        /// <returns><c>true</c> on success, <c>false</c> on error.</returns>
+        protected bool FlushWriteBuffer()
+        {
+            // Stream may not have been used for output yet.
+            if ((writeBufferSize == 0) || (writeBuffer == null)) return true;
 
-        //           int flushPosition = 0;
-        //           while (flushPosition < writePosition)
-        //           {
-        //               // Send as much data as possible to the underlying stream.
-        //               int written = RawWrite(writeBuffer, flushPosition, writePosition - flushPosition);
+            int flushPosition = 0;
+            while (flushPosition < writePosition)
+            {
+                // Send as much data as possible to the underlying stream.
+                int written = RawWrite(writeBuffer, flushPosition, writePosition - flushPosition);
 
-        //               if (written <= 0)
-        //               {
-        //                   // An error occured. Clear flushed data and return.
-        //                   if (flushPosition > 0)
-        //                   {
-        //                       byte[] buf = new byte[writeBufferSize];
-        //                       Array.Copy(writeBuffer, flushPosition, buf, 0, writePosition - flushPosition);
-        //                       writeBuffer = buf;
-        //                   }
+                if (written <= 0)
+                {
+                    // An error occured. Clear flushed data and return.
+                    if (flushPosition > 0)
+                    {
+                        byte[] buf = new byte[writeBufferSize];
+                        Array.Copy(writeBuffer, flushPosition, buf, 0, writePosition - flushPosition);
+                        writeBuffer = buf;
+                    }
 
-        //                   PhpException.Throw(PhpError.Warning,
-        //                       CoreResources.GetString("stream_write_failed", flushPosition, writePosition));
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_write_failed, flushPosition.ToString(), writePosition.ToString());
 
-        //                   return false;
-        //               }
-        //               else
-        //               {
-        //                   // Move for the next chunk.
-        //                   flushPosition += written;
-        //                   writeOffset += written;
-        //               }
-        //           }
+                    return false;
+                }
+                else
+                {
+                    // Move for the next chunk.
+                    flushPosition += written;
+                    writeOffset += written;
+                }
+            }
 
-        //           // All the data has been successfully flushed.
-        //           writePosition = 0;
-        //           return true;
-        //       }
+            // All the data has been successfully flushed.
+            writePosition = 0;
+            return true;
+        }
 
         #endregion
 
         #region Block Writing
 
-        //       /// <summary>
-        //       /// Passes the data through output filter-chain to the output buffer. 
-        //       /// When the buffer is full or buffering is disabled, passes the data to the low-level stream.
-        //       /// </summary>
-        //       /// <param name="data">The data to store (filters will handle the type themselves).</param>
-        //       /// <returns>Number of character entities successfully written or <c>-1</c> on an error.</returns>
-        //       public int WriteData(object data)
-        //       {
-        //           return WriteData(data, false);
-        //       }
+        /// <summary>
+        /// Apppends the binary data to the output buffer passing through the output filter-chain. 
+        /// When the buffer is full or buffering is disabled, pass the data to the low-level stream.
+        /// </summary>
+        /// <param name="data">The <see cref="PhpBytes"/> to store.</param>
+        /// <returns>Number of bytes successfully written or <c>-1</c> on an error.</returns>
+        public int WriteBytes(byte[] data)
+        {
+            Debug.Assert(this.IsBinary);
+            return WriteData(new TextElement(data), false);
+        }
 
-        //       /// <summary>
-        //       /// Apppends the binary data to the output buffer passing through the output filter-chain. 
-        //       /// When the buffer is full or buffering is disabled, pass the data to the low-level stream.
-        //       /// </summary>
-        //       /// <param name="data">The <see cref="PhpBytes"/> to store.</param>
-        //       /// <returns>Number of bytes successfully written or <c>-1</c> on an error.</returns>
-        //       public int WriteBytes(PhpBytes data)
-        //       {
-        //           Debug.Assert(this.IsBinary);
-        //           return WriteData(data, false);
-        //       }
+        /// <summary>
+        /// Apppends the text data to the output buffer passing through the output filter-chain. 
+        /// When the buffer is full or buffering is disabled, pass the data to the low-level stream.
+        /// </summary>
+        /// <param name="data">The <see cref="string"/> to store.</param>
+        /// <returns>Number of characters successfully written or <c>-1</c> on an error.</returns>
+        public int WriteString(string data)
+        {
+            Debug.Assert(this.IsText);
+            return WriteData(new TextElement(data), false);
+        }
 
-        //       /// <summary>
-        //       /// Apppends the text data to the output buffer passing through the output filter-chain. 
-        //       /// When the buffer is full or buffering is disabled, pass the data to the low-level stream.
-        //       /// </summary>
-        //       /// <param name="data">The <see cref="string"/> to store.</param>
-        //       /// <returns>Number of characters successfully written or <c>-1</c> on an error.</returns>
-        //       public int WriteString(string data)
-        //       {
-        //           Debug.Assert(this.IsText);
-        //           return WriteData(data, false);
-        //       }
+        /// <summary>
+        /// Passes the data through output filter-chain to the output buffer. 
+        /// When the buffer is full or buffering is disabled, passes the data to the low-level stream.
+        /// </summary>
+        /// <param name="data">The data to store (filters will handle the type themselves).</param>
+        /// <param name="closing"><c>true</c> when this method is called from <c>close()</c>
+        /// to prune all the pending filters with closing set to <c>true</c>.</param>
+        /// <returns>Number of character entities successfully written or <c>-1</c> on an error.</returns>
+        protected int WriteData(TextElement data, bool closing = false)
+        {
+            // Set file access to writing
+            CurrentAccess = FileAccess.Write;
+            if (!CanWrite) return -1;
 
-        //       /// <summary>
-        //       /// Passes the data through output filter-chain to the output buffer. 
-        //       /// When the buffer is full or buffering is disabled, passes the data to the low-level stream.
-        //       /// </summary>
-        //       /// <param name="data">The data to store (filters will handle the type themselves).</param>
-        //       /// <param name="closing"><c>true</c> when this method is called from <c>close()</c>
-        //       /// to prune all the pending filters with closing set to <c>true</c>.</param>
-        //       /// <returns>Number of character entities successfully written or <c>-1</c> on an error.</returns>
-        //       protected int WriteData(object data, bool closing)
-        //       {
-        //           // Set file access to writing
-        //           CurrentAccess = FileAccess.Write;
-        //           if (!CanWrite) return -1;
+            Debug.Assert(!data.IsNull);
 
-        //           Debug.Assert((data is string) || (data is PhpBytes));
+            int consumed = data.Length;
+            writeFilteredCount += consumed;
+            if (writeFilters != null)
+            {
+                // Process the data through the custom write filters first.
+                foreach (IFilter f in writeFilters)
+                {
+                    if (data.IsNull)
+                    {
+                        // When closing, feed all the filters with data.
+                        if (closing) data = TextElement.Empty;
+                        else return consumed; // Eaten all
+                    }
+                    data = f.Filter(_ctx, data, closing);
+                    if (closing) f.OnClose();
+                }
+            }
 
-        //           int consumed = GetDataLength(data);
-        //           writeFilteredCount += consumed;
-        //           if (writeFilters != null)
-        //           {
-        //               // Process the data through the custom write filters first.
-        //               foreach (IFilter f in writeFilters)
-        //               {
-        //                   if (data == null)
-        //                   {
-        //                       // When closing, feed all the filters with data.
-        //                       if (closing) data = PhpBytes.Empty;
-        //                       else return consumed; // Eaten all
-        //                   }
-        //                   data = f.Filter(data, closing);
-        //                   if (closing) f.OnClose();
-        //               }
-        //           }
+            if (textWriteFilter != null)
+            {
+                // Then pass it through the text-conversion filter if any.
+                data = textWriteFilter.Filter(_ctx, data, closing);
+            }
 
-        //           if (textWriteFilter != null)
-        //           {
-        //               // Then pass it through the text-conversion filter if any.
-        //               data = textWriteFilter.Filter(data, closing);
-        //           }
+            // From now on, the data is treated just as binary
+            byte[] bin = data.AsBytes(_ctx.StringEncoding);
+            if (bin.Length == 0)
+            {
+                return consumed;
+            }
 
-        //           // From now on, the data is treated just as binary
-        //           byte[] bin = AsBinary(data).ReadonlyData;
-        //           if (bin.Length == 0)
-        //               return consumed;
+            // Append the resulting data to the output buffer if any.
+            if (IsWriteBuffered)
+            {
+                // Is this the first access?
+                if (writeBuffer == null)
+                {
+                    writeBuffer = new byte[writeBufferSize];
+                    writePosition = 0;
+                }
 
-        //           // Append the resulting data to the output buffer if any.
-        //           if (IsWriteBuffered)
-        //           {
-        //               // Is this the first access?
-        //               if (writeBuffer == null)
-        //               {
-        //                   writeBuffer = new byte[writeBufferSize];
-        //                   writePosition = 0;
-        //               }
+                // The whole binary data fits in the buffer, great!
+                if (writeBufferSize - writePosition > bin.Length)
+                {
+                    Array.Copy(bin, 0, writeBuffer, writePosition, bin.Length);
+                    writePosition += bin.Length;
+                    return consumed;
+                }
 
-        //               // The whole binary data fits in the buffer, great!
-        //               if (writeBufferSize - writePosition > bin.Length)
-        //               {
-        //                   Array.Copy(bin, 0, writeBuffer, writePosition, bin.Length);
-        //                   writePosition += bin.Length;
-        //                   return consumed;
-        //               }
+                int copied = 0;
 
-        //               int copied = 0;
+                // Use the buffer for small data only
+                if (writeBufferSize > bin.Length)
+                {
+                    // Otherwise fill the buffer and flush it.
+                    copied = writeBufferSize - writePosition;
+                    Array.Copy(bin, 0, writeBuffer, writePosition, copied);
+                    writePosition += copied;
+                }
 
-        //               // Use the buffer for small data only
-        //               if (writeBufferSize > bin.Length)
-        //               {
-        //                   // Otherwise fill the buffer and flush it.
-        //                   copied = writeBufferSize - writePosition;
-        //                   Array.Copy(bin, 0, writeBuffer, writePosition, copied);
-        //                   writePosition += copied;
-        //               }
+                // Flush the buffer
+                if ((writePosition > 0) && (!FlushWriteBuffer()))
+                    return (copied > 0) ? copied : -1; // It is an error but still some output was written.
 
-        //               // Flush the buffer
-        //               if ((writePosition > 0) && (!FlushWriteBuffer()))
-        //                   return (copied > 0) ? copied : -1; // It is an error but still some output was written.
+                if (bin.Length - copied >= writeBufferSize)
+                {
+                    // If the binary data is really big, write it directly to stream.
+                    while (copied < bin.Length)
+                    {
+                        int written = RawWrite(bin, copied, bin.Length - copied);
+                        if (written <= 0)
+                        {
+                            PhpException.Throw(PhpError.Warning, ErrResources.stream_write_failed, copied.ToString(), bin.Length.ToString());
+                            return (copied > 0) ? copied : -1; // It is an error but still some output was written.
+                        }
+                        copied += written;
+                        writeOffset += written;
+                    }
+                }
+                else
+                {
+                    // Otherwise just start a new buffer with the rest of the data.
+                    Array.Copy(bin, copied, writeBuffer, 0, bin.Length - copied);
+                    writePosition = bin.Length - copied;
+                }
 
-        //               if (bin.Length - copied >= writeBufferSize)
-        //               {
-        //                   // If the binary data is really big, write it directly to stream.
-        //                   while (copied < bin.Length)
-        //                   {
-        //                       int written = RawWrite(bin, copied, bin.Length - copied);
-        //                       if (written <= 0)
-        //                       {
-        //                           PhpException.Throw(PhpError.Warning,
-        //                               CoreResources.GetString("stream_write_failed", copied, bin.Length));
-        //                           return (copied > 0) ? copied : -1; // It is an error but still some output was written.
-        //                       }
-        //                       copied += written;
-        //                       writeOffset += written;
-        //                   }
-        //               }
-        //               else
-        //               {
-        //                   // Otherwise just start a new buffer with the rest of the data.
-        //                   Array.Copy(bin, copied, writeBuffer, 0, bin.Length - copied);
-        //                   writePosition = bin.Length - copied;
-        //               }
+                return consumed;
+            }
+            else
+            {
+                // No write buffer. Write the data directly.
+                int copied = 0;
+                while (copied < bin.Length)
+                {
+                    int written = RawWrite(bin, copied, bin.Length - copied);
+                    if (written <= 0)
+                    {
+                        PhpException.Throw(PhpError.Warning, ErrResources.stream_write_failed, copied.ToString(), bin.Length.ToString());
+                        return (copied > 0) ? copied : -1; // ERROR but maybe some was written.
+                    }
+                    copied += written;
+                    writeOffset += written;
+                }
 
-        //               return consumed;
-        //           }
-        //           else
-        //           {
-        //               // No write buffer. Write the data directly.
-        //               int copied = 0;
-        //               while (copied < bin.Length)
-        //               {
-        //                   int written = RawWrite(bin, copied, bin.Length - copied);
-        //                   if (written <= 0)
-        //                   {
-        //                       PhpException.Throw(PhpError.Warning,
-        //                           CoreResources.GetString("stream_write_failed", copied, bin.Length));
-        //                       return (copied > 0) ? copied : -1; // ERROR but maybe some was written.
-        //                   }
-        //                   copied += written;
-        //                   writeOffset += written;
-        //               }
-
-        //               return consumed;
-        //           }
-        //       }
+                return consumed;
+            }
+        }
 
         #endregion
+
         #endregion
 
-        //       /// <summary>
-        //       /// Sets the read/write pointer in the stream to a new position.
-        //       /// </summary>
-        //       /// <param name="offset">The offset from the position denoted by <paramref name="whence"/>.</param>
-        //       /// <param name="whence">One of the <see cref="SeekOrigin"/> flags.</param>
-        //       /// <returns><c>true</c> if the operation was successful.</returns>
-        //       public bool Seek(int offset, SeekOrigin whence)
-        //       {
-        //           if (!CanSeek)
-        //           {
-        //               PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Seek"));
-        //               return false;
-        //           }
+        /// <summary>
+        /// Sets the read/write pointer in the stream to a new position.
+        /// </summary>
+        /// <param name="offset">The offset from the position denoted by <paramref name="whence"/>.</param>
+        /// <param name="whence">One of the <see cref="SeekOrigin"/> flags.</param>
+        /// <returns><c>true</c> if the operation was successful.</returns>
+        public bool Seek(int offset, SeekOrigin whence)
+        {
+            if (!CanSeek)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Seek");
+                return false;
+            }
 
-        //           // This is supported by any stream.
-        //           int current = Tell();
-        //           int newpos = -1;
-        //           if (whence == SeekOrigin.Begin) newpos = offset;
-        //           else if (whence == SeekOrigin.Current) newpos = current + offset;
-        //           else if (whence == SeekOrigin.End)
-        //           {
-        //               int len = RawLength();
-        //               if (len >= 0) newpos = len + offset;
-        //           }
+            // This is supported by any stream.
+            int current = Tell();
+            int newpos = -1;
+            if (whence == SeekOrigin.Begin) newpos = offset;
+            else if (whence == SeekOrigin.Current) newpos = current + offset;
+            else if (whence == SeekOrigin.End)
+            {
+                int len = RawLength();
+                if (len >= 0) newpos = len + offset;
+            }
 
-        //           switch (CurrentAccess)
-        //           {
-        //               case FileAccess.ReadWrite:
-        //                   // Stream not R/W accessed yet. Prepare location and offset.
-        //                   return SeekInternal(offset, current, whence);
+            switch (CurrentAccess)
+            {
+                case FileAccess.ReadWrite:
+                    // Stream not R/W accessed yet. Prepare location and offset.
+                    return SeekInternal(offset, current, whence);
 
-        //               case FileAccess.Read:
-        //                   // Maybe we will be able to seek inside the buffers.
-        //                   if ((newpos >= readOffset) && (newpos < readOffset + ReadBufferLength))
-        //                   {
-        //                       int streamPosition = readOffset + ReadPosition;
-        //                       if (newpos > streamPosition)
-        //                       {
-        //                           // Seek forward
-        //                           // This asserts that ReadBufferLength > 0.
-        //                           int len = GetDataLength(readBuffers.Peek());
-        //                           while (newpos - readOffset >= len)
-        //                           {
-        //                               DropReadBuffer();
-        //                               len = GetDataLength(readBuffers.Peek());
-        //                           }
-        //                           Debug.Assert(readBuffers.Count > 0);
+                case FileAccess.Read:
+                    // Maybe we will be able to seek inside the buffers.
+                    if ((newpos >= readOffset) && (newpos < readOffset + ReadBufferLength))
+                    {
+                        int streamPosition = readOffset + ReadPosition;
+                        if (newpos > streamPosition)
+                        {
+                            // Seek forward
+                            // This asserts that ReadBufferLength > 0.
+                            int len = readBuffers.Peek().Length;
+                            while (newpos - readOffset >= len)
+                            {
+                                DropReadBuffer();
+                                len = readBuffers.Peek().Length;
+                            }
+                            Debug.Assert(readBuffers.Count > 0);
 
-        //                           // All superfluous buffers are dropped, seek in the head one.
-        //                           readPosition = newpos - readOffset;
-        //                       }
-        //                       else if (newpos < streamPosition)
-        //                       {
-        //                           // The required position is still in the first buffer
-        //                           //. Debug.Assert(streamPosition == readOffset + readPosition);
-        //                           readPosition = newpos - readOffset;
-        //                       }
-        //                   }
-        //                   else
-        //                   {
-        //                       // Drop all the read buffers and proceed to the actual seeking.
-        //                       readBuffers = null;
+                            // All superfluous buffers are dropped, seek in the head one.
+                            readPosition = newpos - readOffset;
+                        }
+                        else if (newpos < streamPosition)
+                        {
+                            // The required position is still in the first buffer
+                            //. Debug.Assert(streamPosition == readOffset + readPosition);
+                            readPosition = newpos - readOffset;
+                        }
+                    }
+                    else
+                    {
+                        // Drop all the read buffers and proceed to the actual seeking.
+                        readBuffers = null;
 
-        //                       // Notice that for a filtered stream, seeking is not a good idea
-        //                       if (IsReadFiltered)
-        //                       {
-        //                           PhpException.Throw(PhpError.Notice,
-        //                               CoreResources.GetString("stream_seek_filtered", (textReadFilter != null) ? "text" : "filtered"));
-        //                       }
-        //                       return SeekInternal(offset, current, whence);
-        //                   }
-        //                   break;
+                        // Notice that for a filtered stream, seeking is not a good idea
+                        if (IsReadFiltered)
+                        {
+                            PhpException.Throw(PhpError.Notice,
+                                ErrResources.stream_seek_filtered, (textReadFilter != null) ? "text" : "filtered");
+                        }
+                        return SeekInternal(offset, current, whence);
+                    }
+                    break;
 
-        //               case FileAccess.Write:
-        //                   // The following does not currently work since other methods do not take unempty writebuffer into account
+                case FileAccess.Write:
+                    // The following does not currently work since other methods do not take unempty writebuffer into account
 
-        //                   //// Maybe we can seek inside of the buffer but we allow only backward skips.
-        //                   //if ((newpos >= writeOffset) && (newpos < writeOffset + writePosition))
-        //                   //{
-        //                   //    // We are inside the current buffer, great.
-        //                   //    writePosition = newpos - writeOffset;
-        //                   //}
-        //                   //else
-        //                   //{
+                    //// Maybe we can seek inside of the buffer but we allow only backward skips.
+                    //if ((newpos >= writeOffset) && (newpos < writeOffset + writePosition))
+                    //{
+                    //    // We are inside the current buffer, great.
+                    //    writePosition = newpos - writeOffset;
+                    //}
+                    //else
+                    //{
 
-        //                   // Flush write buffers and proceed to the default handling.
-        //                   FlushWriteBuffer();
+                    // Flush write buffers and proceed to the default handling.
+                    FlushWriteBuffer();
 
-        //                   // Notice that for a filtered stream, seeking is not a good idea
-        //                   if (IsWriteFiltered)
-        //                   {
-        //                       PhpException.Throw(PhpError.Notice,
-        //                           CoreResources.GetString("stream_seek_filtered", (textWriteFilter != null) ? "text" : "filtered"));
-        //                   }
-        //                   return SeekInternal(offset, current, whence);
-        //           }
-        //           return true;
-        //           // CHECKME: [PhpStream.Seek]
-        //       }
+                    // Notice that for a filtered stream, seeking is not a good idea
+                    if (IsWriteFiltered)
+                    {
+                        PhpException.Throw(PhpError.Notice,
+                            ErrResources.stream_seek_filtered, (textWriteFilter != null) ? "text" : "filtered");
+                    }
+                    return SeekInternal(offset, current, whence);
+            }
+            return true;
+            // CHECKME: [PhpStream.Seek]
+        }
 
-        //       /// <summary>
-        //       /// Perform the actual seek on the stream. Report errors.
-        //       /// </summary>
-        //       /// <param name="offset">New position in the stream.</param>
-        //       /// <param name="current">Current position in the stream.</param>
-        //       /// <param name="whence">Where to count from.</param>
-        //       /// <returns><c>true</c> if successful</returns>
-        //       /// <exception cref="PhpException">In case that Seek is not supported by this stream type.</exception>
-        //       internal bool SeekInternal(int offset, int current, SeekOrigin whence)
-        //       {
-        //           try
-        //           {
-        //               if (!CanSeek)
-        //               {
-        //                   PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Seek"));
-        //                   return false;
-        //               }
+        /// <summary>
+        /// Perform the actual seek on the stream. Report errors.
+        /// </summary>
+        /// <param name="offset">New position in the stream.</param>
+        /// <param name="current">Current position in the stream.</param>
+        /// <param name="whence">Where to count from.</param>
+        /// <returns><c>true</c> if successful</returns>
+        /// <exception cref="PhpException">In case that Seek is not supported by this stream type.</exception>
+        internal bool SeekInternal(int offset, int current, SeekOrigin whence)
+        {
+            try
+            {
+                if (!CanSeek)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Seek");
+                    return false;
+                }
 
-        //               if (!RawSeek(offset, whence)) return false;
-        //               int expectedOffset = 0, absoluteOffset = RawTell();
+                if (!RawSeek(offset, whence)) return false;
+                int expectedOffset = 0, absoluteOffset = RawTell();
 
-        //               switch (whence)
-        //               {
-        //                   case SeekOrigin.Begin:
-        //                       expectedOffset = offset;
-        //                       break;
-        //                   case SeekOrigin.Current:
-        //                       expectedOffset = current + offset;
-        //                       break;
-        //                   case SeekOrigin.End:
-        //                       expectedOffset = RawLength() + offset;
-        //                       break;
-        //                   default:
-        //                       PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_argument_value", "whence", whence));
-        //                       return false;
-        //               }
+                switch (whence)
+                {
+                    case SeekOrigin.Begin:
+                        expectedOffset = offset;
+                        break;
+                    case SeekOrigin.Current:
+                        expectedOffset = current + offset;
+                        break;
+                    case SeekOrigin.End:
+                        expectedOffset = RawLength() + offset;
+                        break;
+                    default:
+                        PhpException.Throw(PhpError.Warning, ErrResources.invalid_argument_value, "whence", whence.ToString());
+                        return false;
+                }
 
-        //               readOffset = writeOffset = absoluteOffset;
+                readOffset = writeOffset = absoluteOffset;
 
-        //               // No data should be buffered when seeking the underlying stream!
-        //               Debug.Assert(readBuffers == null);
-        //               Debug.Assert(writeBuffer == null || writePosition == 0);
-        //               readPosition = writePosition = 0;
+                // No data should be buffered when seeking the underlying stream!
+                Debug.Assert(readBuffers == null);
+                Debug.Assert(writeBuffer == null || writePosition == 0);
+                readPosition = writePosition = 0;
 
-        //               // EX: This is inaccurate, but there is no better information avalable (w/o processing the whole stream)
-        //               readFilteredCount = readOffset;
-        //               writeFilteredCount = readOffset;
+                // EX: This is inaccurate, but there is no better information avalable (w/o processing the whole stream)
+                readFilteredCount = readOffset;
+                writeFilteredCount = readOffset;
 
-        //               return absoluteOffset == expectedOffset;
-        //               // Seek is successful if the two values match.
-        //           }
-        //           catch (Exception)
-        //           {
-        //               PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Seek"));
-        //               return false;
-        //           }
-        //       }
+                return absoluteOffset == expectedOffset;
+                // Seek is successful if the two values match.
+            }
+            catch (Exception)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Seek");
+                return false;
+            }
+        }
 
-        //       /// <summary>
-        //       /// Gets the current position in the stream.
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// <newpara>
-        //       /// The problem with tell() in PHP is that although the write offset 
-        //       /// is calculated in the raw byte stream (just before buffering)
-        //       /// the read one is calculated in the filtered string buffers.
-        //       /// </newpara>
-        //       /// <newpara>
-        //       /// In other words the value returned by tell() for output streams
-        //       /// is the real position in the raw stream but may differ from the
-        //       /// number of characters written. On the other hand the value returned for
-        //       /// input streams corresponds with the number of characters retreived 
-        //       /// but not with the position in the raw stream. It is important
-        //       /// to remember that seeking on a filtered stream (such as a file
-        //       /// opened with a "rt" mode) has undefined behavior.
-        //       /// </newpara>
-        //       /// </remarks>
-        //       /// <returns>The position in the filtered or raw stream depending on last 
-        //       /// read or write access type respectively or -1 if the stream does not support seeking.</returns>
-        //       public int Tell()
-        //       {
-        //           if (!CanSeek)
-        //           {
-        //               PhpException.Throw(PhpError.Warning, CoreResources.GetString("wrapper_op_unsupported", "Seek"));
-        //               return -1;
-        //           }
-        //           switch (currentAccess)
-        //           {
-        //               default:
-        //                   // Stream not yet R/W accessed (but maybe with Seek).
-        //                   return readOffset;
-        //               case FileAccess.Read:
-        //                   return ReadPosition;
-        //               case FileAccess.Write:
-        //                   return WritePosition;
-        //           }
-        //       }
+        /// <summary>
+        /// Gets the current position in the stream.
+        /// </summary>
+        /// <remarks>
+        /// <newpara>
+        /// The problem with tell() in PHP is that although the write offset 
+        /// is calculated in the raw byte stream (just before buffering)
+        /// the read one is calculated in the filtered string buffers.
+        /// </newpara>
+        /// <newpara>
+        /// In other words the value returned by tell() for output streams
+        /// is the real position in the raw stream but may differ from the
+        /// number of characters written. On the other hand the value returned for
+        /// input streams corresponds with the number of characters retreived 
+        /// but not with the position in the raw stream. It is important
+        /// to remember that seeking on a filtered stream (such as a file
+        /// opened with a "rt" mode) has undefined behavior.
+        /// </newpara>
+        /// </remarks>
+        /// <returns>The position in the filtered or raw stream depending on last 
+        /// read or write access type respectively or -1 if the stream does not support seeking.</returns>
+        public int Tell()
+        {
+            if (!CanSeek)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Seek");
+                return -1;
+            }
+            switch (currentAccess)
+            {
+                default:
+                    // Stream not yet R/W accessed (but maybe with Seek).
+                    return readOffset;
+                case FileAccess.Read:
+                    return ReadPosition;
+                case FileAccess.Write:
+                    return WritePosition;
+            }
+        }
 
         #endregion
 
         #region Conversions
 
-        //       /// <include file='Doc/Streams.xml' path='docs/property[@name="RawStream"]/*'/>
-        //       /// <exception cref="InvalidCastException">When casting is not supported.</exception>
-        //       public virtual Stream RawStream
-        //       {
-        //           get
-        //           {
-        //               throw new InvalidCastException(CoreResources.GetString("casting_to_stream_unsupported"));
-        //           }
-        //       }
+        /// <exception cref="InvalidCastException">When casting is not supported.</exception>
+        public virtual Stream RawStream
+        {
+            get
+            {
+                throw new InvalidCastException(ErrResources.casting_to_stream_unsupported);
+            }
+        }
 
         /// <summary>
         /// Check that the resource handle contains a valid
@@ -2020,195 +1991,200 @@ namespace Pchp.Library.Streams
         /// </summary>
         protected StreamContext _context;
 
-        //       /// <summary>
-        //       /// Gets the Auto-remove option of this stream.
-        //       /// </summary>
-        //       public bool IsTemporary
-        //       {
-        //           get
-        //           {
-        //               return (Options & StreamAccessOptions.Temporary) > 0;
-        //           }
-        //       }
+        /// <summary>
+        /// Runtime context.
+        /// </summary>
+        private Context _ctx;
 
-        //       /// <summary>
-        //       /// Gets or sets the read fragmentation behavior.
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// <para>
-        //       /// Network and console input streams return immediately after a nonempty data is read from the underlying stream.
-        //       /// Buffered streams try to fill the whole given buffer while the underlying stream is providing data
-        //       /// to satisfy the caller-specified length or <see cref="readChunkSize"/>.
-        //       /// </para>
-        //       /// <para>
-        //       /// Still the input buffer may contain valid data even for unbuffered streams.
-        //       /// This may happen for example when a <c>fgets</c> has to return unconsumed data
-        //       /// (following the first <c>EOL</c>) back to the stream.
-        //       /// </para>
-        //       /// </remarks>
-        //       public bool IsReadBuffered
-        //       {
-        //           get
-        //           {
-        //               return isReadBuffered;
-        //           }
-        //           set
-        //           {
-        //               isReadBuffered = value;
-        //           }
-        //       }
+        /// <summary>
+        /// Gets the Auto-remove option of this stream.
+        /// </summary>
+        public bool IsTemporary
+        {
+            get
+            {
+                return (Options & StreamAccessOptions.Temporary) != 0;
+            }
+        }
 
-        //       /// <summary>
-        //       /// Gets the write fragmentation behavior.
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// When the write is not buffered then all the fwrite calls
-        //       /// pass the data immediately to the underlying stream.
-        //       /// </remarks>
-        //       public bool IsWriteBuffered
-        //       {
-        //           get
-        //           {
-        //               return writeBufferSize > 0;
-        //           }
-        //           set
-        //           {
-        //               if (value) writeBufferSize = DefaultBufferSize;
-        //               else writeBufferSize = 0;
-        //           }
-        //       }
+        /// <summary>
+        /// Gets or sets the read fragmentation behavior.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Network and console input streams return immediately after a nonempty data is read from the underlying stream.
+        /// Buffered streams try to fill the whole given buffer while the underlying stream is providing data
+        /// to satisfy the caller-specified length or <see cref="readChunkSize"/>.
+        /// </para>
+        /// <para>
+        /// Still the input buffer may contain valid data even for unbuffered streams.
+        /// This may happen for example when a <c>fgets</c> has to return unconsumed data
+        /// (following the first <c>EOL</c>) back to the stream.
+        /// </para>
+        /// </remarks>
+        public bool IsReadBuffered
+        {
+            get
+            {
+                return isReadBuffered;
+            }
+            set
+            {
+                isReadBuffered = value;
+            }
+        }
 
-        //       /// <summary>
-        //       /// Gets the filtering status of this stream. 
-        //       /// <c>true</c> when there is at least one input filter on the stream.
-        //       /// </summary>
-        //       protected bool IsReadFiltered
-        //       {
-        //           get
-        //           {
-        //               return (((readFilters != null) && (readFilters.Count > 0))
-        //                   || (textReadFilter != null));
-        //           }
-        //       }
+        /// <summary>
+        /// Gets the write fragmentation behavior.
+        /// </summary>
+        /// <remarks>
+        /// When the write is not buffered then all the fwrite calls
+        /// pass the data immediately to the underlying stream.
+        /// </remarks>
+        public bool IsWriteBuffered
+        {
+            get
+            {
+                return writeBufferSize > 0;
+            }
+            set
+            {
+                if (value) writeBufferSize = DefaultBufferSize;
+                else writeBufferSize = 0;
+            }
+        }
 
-        //       /// <summary>
-        //       /// Gets the filtering status of this stream. 
-        //       /// <c>true</c> when there is at least one output filter on the stream.
-        //       /// </summary>
-        //       protected bool IsWriteFiltered
-        //       {
-        //           get
-        //           {
-        //               return (((writeFilters != null) && (writeFilters.Count > 0))
-        //                   || (textWriteFilter != null));
-        //           }
-        //       }
+        /// <summary>
+        /// Gets the filtering status of this stream. 
+        /// <c>true</c> when there is at least one input filter on the stream.
+        /// </summary>
+        protected bool IsReadFiltered
+        {
+            get
+            {
+                return (((readFilters != null) && (readFilters.Count != 0))
+                    || (textReadFilter != null));
+            }
+        }
 
-        //       /// <summary>Gets or sets the current Read/Write access mode.</summary>
-        //	protected FileAccess CurrentAccess
-        //       {
-        //           get
-        //           {
-        //               return currentAccess;
-        //           }
-        //           set
-        //           {
-        //               switch (value)
-        //               {
-        //                   case FileAccess.Read:
-        //                       if (!CanRead)
-        //                       {
-        //                           PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_read_off"));
-        //                           break;
-        //                       }
-        //                       if ((currentAccess == FileAccess.Write) && CanSeek)
-        //                       {
-        //                           // Flush the write buffers, switch to reading at the write position
-        //                           int offset = Tell();
-        //                           FlushWriteBuffer();
-        //                           writeOffset = writePosition = 0;
-        //                           currentAccess = value;
-        //                           Seek(offset, SeekOrigin.Begin);
-        //                       }
-        //                       currentAccess = value;
-        //                       break;
+        /// <summary>
+        /// Gets the filtering status of this stream. 
+        /// <c>true</c> when there is at least one output filter on the stream.
+        /// </summary>
+        protected bool IsWriteFiltered
+        {
+            get
+            {
+                return (((writeFilters != null) && (writeFilters.Count != 0))
+                    || (textWriteFilter != null));
+            }
+        }
 
-        //                   case FileAccess.Write:
-        //                       if (!CanWrite)
-        //                       {
-        //                           PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_write_off"));
-        //                           break;
-        //                       }
-        //                       if ((currentAccess == FileAccess.Read) && CanSeek)
-        //                       {
-        //                           // Drop the read buffers, switch to writing at the read position
-        //                           int offset = Tell();
-        //                           //DropReadBuffer();
-        //                           readBuffers = null;
-        //                           readOffset = readPosition = 0;
-        //                           currentAccess = value;
-        //                           Seek(offset, SeekOrigin.Begin);
-        //                       }
-        //                       currentAccess = value;
-        //                       break;
+        /// <summary>Gets or sets the current Read/Write access mode.</summary>
+        protected FileAccess CurrentAccess
+        {
+            get
+            {
+                return currentAccess;
+            }
+            set
+            {
+                switch (value)
+                {
+                    case FileAccess.Read:
+                        if (!CanRead)
+                        {
+                            PhpException.Throw(PhpError.Warning, ErrResources.stream_read_off);
+                            break;
+                        }
+                        if ((currentAccess == FileAccess.Write) && CanSeek)
+                        {
+                            // Flush the write buffers, switch to reading at the write position
+                            int offset = Tell();
+                            FlushWriteBuffer();
+                            writeOffset = writePosition = 0;
+                            currentAccess = value;
+                            Seek(offset, SeekOrigin.Begin);
+                        }
+                        currentAccess = value;
+                        break;
 
-        //                   default:
-        //                       throw new ArgumentException();
-        //               }
-        //           }
+                    case FileAccess.Write:
+                        if (!CanWrite)
+                        {
+                            PhpException.Throw(PhpError.Warning, ErrResources.stream_write_off);
+                            break;
+                        }
+                        if ((currentAccess == FileAccess.Read) && CanSeek)
+                        {
+                            // Drop the read buffers, switch to writing at the read position
+                            int offset = Tell();
+                            //DropReadBuffer();
+                            readBuffers = null;
+                            readOffset = readPosition = 0;
+                            currentAccess = value;
+                            Seek(offset, SeekOrigin.Begin);
+                        }
+                        currentAccess = value;
+                        break;
 
-        //           // CHECKME: [CurrentAccess]
-        //       }
+                    default:
+                        throw new ArgumentException();
+                }
+            }
 
-        //       /// <summary>Gets the writing pointer position in the buffered stream.</summary>
-        //       public int WritePosition
-        //       {
-        //           get
-        //           {
-        //               if (CurrentAccess != FileAccess.Write) return -1;
+            // CHECKME: [CurrentAccess]
+        }
 
-        //               // Data passed via filters to output buffers (not filtered yet!)
-        //               return writeFilteredCount;
-        //               //try
-        //               //{
-        //               //  return RawTell() + this.writePosition;
-        //               //}
-        //               //catch (Exception)
-        //               //{
-        //               //  return this.writeOffset + this.writePosition;
-        //               //}
-        //           }
-        //       }
+        /// <summary>Gets the writing pointer position in the buffered stream.</summary>
+        public int WritePosition
+        {
+            get
+            {
+                if (CurrentAccess != FileAccess.Write) return -1;
 
-        //       /// <summary>Gets the reading pointer position in the buffered stream.</summary>
-        //       public int ReadPosition
-        //       {
-        //           get
-        //           {
-        //               if (CurrentAccess != FileAccess.Read) return -1;
+                // Data passed via filters to output buffers (not filtered yet!)
+                return writeFilteredCount;
+                //try
+                //{
+                //  return RawTell() + this.writePosition;
+                //}
+                //catch (Exception)
+                //{
+                //  return this.writeOffset + this.writePosition;
+                //}
+            }
+        }
 
-        //               // Data physically read - data still in buffers
-        //               return readFilteredCount - ReadBufferLength;
-        //               //try
-        //               //{
-        //               //  return RawTell() - ReadBufferLength;
-        //               //  // The position in the stream minus the data remaining in the buffers
-        //               //}
-        //               //catch (Exception)
-        //               //{
-        //               //  return this.readOffset + this.readPosition;
-        //               //}
-        //           }
-        //       }
+        /// <summary>Gets the reading pointer position in the buffered stream.</summary>
+        public int ReadPosition
+        {
+            get
+            {
+                if (CurrentAccess != FileAccess.Read) return -1;
 
-        //       /// <summary>The lists of StreamFilters associated with this stream.</summary>
-        //       protected ArrayList readFilters = null, writeFilters = null;
+                // Data physically read - data still in buffers
+                return readFilteredCount - ReadBufferLength;
+                //try
+                //{
+                //  return RawTell() - ReadBufferLength;
+                //  // The position in the stream minus the data remaining in the buffers
+                //}
+                //catch (Exception)
+                //{
+                //  return this.readOffset + this.readPosition;
+                //}
+            }
+        }
 
-        //       /// <summary>The text-mode conversion filter of this stream used for reading.</summary>
-        //       protected IFilter textReadFilter = null;
+        /// <summary>The lists of StreamFilters associated with this stream.</summary>
+        protected List<IFilter> readFilters = null, writeFilters = null;
 
-        //       /// <summary>The text-mode conversion filter of this stream used for writing.</summary>
-        //       protected IFilter textWriteFilter = null;
+        /// <summary>The text-mode conversion filter of this stream used for reading.</summary>
+        protected IFilter textReadFilter = null;
+
+        /// <summary>The text-mode conversion filter of this stream used for writing.</summary>
+        protected IFilter textWriteFilter = null;
 
         /// <summary>
         /// The StreamWrapper responsible for opening this stream.
@@ -2279,73 +2255,73 @@ namespace Pchp.Library.Streams
         /// </summary>
         public readonly StreamAccessOptions Options;
 
-        //       /// <summary>
-        //       /// Gets the type of last stream access (initialized to FileAccess.ReadWrite if not accessed yet).
-        //       /// </summary>
-        //       protected FileAccess currentAccess = FileAccess.ReadWrite;
+        /// <summary>
+        /// Gets the type of last stream access (initialized to FileAccess.ReadWrite if not accessed yet).
+        /// </summary>
+        protected FileAccess currentAccess = FileAccess.ReadWrite;
 
-        //       /// <summary>
-        //       /// For <c>fgetss()</c> to handle multiline tags.
-        //       /// </summary>
-        //       public int StripTagsState
-        //       {
-        //           get { return fgetssState; }
-        //           set { fgetssState = value; }
-        //       }
+        /// <summary>
+        /// For <c>fgetss()</c> to handle multiline tags.
+        /// </summary>
+        public int StripTagsState
+        {
+            get { return fgetssState; }
+            set { fgetssState = value; }
+        }
 
-        //       /// <summary>For <c>fgetss()</c> to handle multiline tags.</summary>
-        //       protected int fgetssState = 0;
+        /// <summary>For <c>fgetss()</c> to handle multiline tags.</summary>
+        protected int fgetssState = 0;
 
-        //       /// <summary>For future use. Persistent streams are not implemented so far.</summary>
-        //       protected bool isPersistent = false;
+        /// <summary>For future use. Persistent streams are not implemented so far.</summary>
+        protected bool isPersistent = false;
 
-        //       /// <summary>The default size of read/write buffers.</summary>
-        //       public const int DefaultBufferSize = 8 * 1024;
+        /// <summary>The default size of read/write buffers.</summary>
+        public const int DefaultBufferSize = 8 * 1024;
 
-        //       /// <summary>The default size of a single read chunk in the readBuffers.</summary>
-        //       protected int readChunkSize = DefaultBufferSize;
+        /// <summary>The default size of a single read chunk in the readBuffers.</summary>
+        protected int readChunkSize = DefaultBufferSize;
 
-        //       /// <summary>Whether the read operations are interated for a single <c>fread</c> call.</summary>
-        //       protected bool isReadBuffered = true;
+        /// <summary>Whether the read operations are interated for a single <c>fread</c> call.</summary>
+        protected bool isReadBuffered = true;
 
-        //       /// <summary>The maximum count of buffered output bytes. <c>0</c> to disable buffering.</summary>
-        //       protected int writeBufferSize = DefaultBufferSize;
+        /// <summary>The maximum count of buffered output bytes. <c>0</c> to disable buffering.</summary>
+        protected int writeBufferSize = DefaultBufferSize;
 
-        //       /// <summary>Store the filtered input data queued as either <see cref="String"/>s or <see cref="PhpBytes"/>.</summary>
-        //       protected Queue readBuffers = null;
+        /// <summary>Store the filtered input data queued as either <see cref="string"/>s or <see cref="byte"/>[].</summary>
+        protected Queue<TextElement> readBuffers = null;
 
-        //       /// <summary>Store the filtered output data in a <c>byte[]</c> up to <see cref="writeBufferSize"/> bytes.</summary>
-        //       protected byte[] writeBuffer = null;
+        /// <summary>Store the filtered output data in a <c>byte[]</c> up to <see cref="writeBufferSize"/> bytes.</summary>
+        protected byte[] writeBuffer = null;
 
-        //       /// <summary>The offset from the beginning of the raw stream to the
-        //       /// first byte stored in the <see cref="readBuffers"/>.</summary>
-        //       /// <remarks>This offset is incremented when a consumed buffer is dropped.</remarks>
-        //       protected int readOffset = 0;
+        /// <summary>The offset from the beginning of the raw stream to the
+        /// first byte stored in the <see cref="readBuffers"/>.</summary>
+        /// <remarks>This offset is incremented when a consumed buffer is dropped.</remarks>
+        protected int readOffset = 0;
 
-        //       /// <summary>
-        //       /// The offset from the beginning of the raw stream to the
-        //       /// first byte of the <see cref="writeBuffer"/>.
-        //       /// </summary>
-        //       /// <remarks>
-        //       /// This offset is incremented when the buffer is being flushed
-        //       /// or the data is written to a non-buffered stream.
-        //       /// </remarks>
-        //       protected int writeOffset = 0;
+        /// <summary>
+        /// The offset from the beginning of the raw stream to the
+        /// first byte of the <see cref="writeBuffer"/>.
+        /// </summary>
+        /// <remarks>
+        /// This offset is incremented when the buffer is being flushed
+        /// or the data is written to a non-buffered stream.
+        /// </remarks>
+        protected int writeOffset = 0;
 
-        //       /// <summary>The position in the first buffer in the <see cref="readBuffers"/>.</summary>
-        //       protected int readPosition = 0;
+        /// <summary>The position in the first buffer in the <see cref="readBuffers"/>.</summary>
+        protected int readPosition = 0;
 
-        //       /// <summary>Total bytes passed through the ReadData function (after input filtering)</summary>
-        //       protected int readFilteredCount = 0;
+        /// <summary>Total bytes passed through the ReadData function (after input filtering)</summary>
+        protected int readFilteredCount = 0;
 
-        //       /// <summary>Total bytes passed through the WriteData function (before output filtering)</summary>
-        //       protected int writeFilteredCount = 0;
+        /// <summary>Total bytes passed through the WriteData function (before output filtering)</summary>
+        protected int writeFilteredCount = 0;
 
-        //       /// <summary>The actual write position in the <see cref="writeBuffer"/>.</summary>
-        //       protected int writePosition = 0;
+        /// <summary>The actual write position in the <see cref="writeBuffer"/>.</summary>
+        protected int writePosition = 0;
 
-        //       /// <summary>Timeout for network-based streams in seconds.</summary>
-        //       protected double readTimeout = 0;
+        /// <summary>Timeout for network-based streams in seconds.</summary>
+        protected double readTimeout = 0;
 
         /// <summary>
         /// The type name displayed when printing a variable of type PhpStream.
