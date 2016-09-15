@@ -94,6 +94,18 @@ namespace Pchp.Core
             // TODO: get current Context from execution context
             // TODO: throw error according to configuration
         }
+
+        /// <summary>
+        /// Converts exception message (ending by dot) to error message (not ending by a dot).
+        /// </summary>
+        /// <param name="exceptionMessage">The exception message.</param>
+        /// <returns>The error message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="exceptionMessage"/> is a <B>null</B> reference.</exception>
+        public static string ToErrorMessage(string exceptionMessage)
+        {
+            if (exceptionMessage == null) throw new ArgumentNullException("exceptionMessage");
+            return exceptionMessage.TrimEnd(new char[] { '.' });
+        }
     }
 
     #endregion

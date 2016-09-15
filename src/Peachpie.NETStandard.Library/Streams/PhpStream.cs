@@ -198,7 +198,7 @@ namespace Pchp.Library.Streams
             if (!PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileMayExist, (CheckAccessOptions)options))
                 return null;
 
-            return wrapper.Open(ref path, mode, options, context);
+            return wrapper.Open(ctx, ref path, mode, options, context);
 
         }
 
@@ -542,7 +542,7 @@ namespace Pchp.Library.Streams
 
         #region SetParameter (optional)
 
-        public virtual bool SetParameter(StreamParameterOptions option, object value)
+        public virtual bool SetParameter(StreamParameterOptions option, PhpValue value)
         {
             // Do not display error messages here, the caller will.
             // EX: will have to distinguish between failed and unsupported.
@@ -560,13 +560,13 @@ namespace Pchp.Library.Streams
                     return false;
 
                 case StreamParameterOptions.WriteBufferSize:
-                    if (value is int)
+                    if (value.IsInteger())
                     {
                         // Let the write buffer reset on next write operation.
                         FlushWriteBuffer();
                         writeBuffer = null;
                         // Set the new size (0 to disable write buffering).
-                        writeBufferSize = (int)value;
+                        writeBufferSize = (int)value.ToLong();
                         if (writeBufferSize < 0) writeBufferSize = 0;
                         return true;
                     }
@@ -578,10 +578,10 @@ namespace Pchp.Library.Streams
                     return false;
 
                 case StreamParameterOptions.SetChunkSize:
-                    if (value is int)
+                    if (value.IsInteger())
                     {
                         // This setting will affect reading after the buffers are emptied.
-                        readChunkSize = (int)value;
+                        readChunkSize = (int)value.ToLong();
                         if (readChunkSize < 1) readChunkSize = 1;
                         return true;
                     }
@@ -1728,6 +1728,10 @@ namespace Pchp.Library.Streams
         #endregion
 
         #endregion
+
+        public virtual bool CanReadWithoutLock => true;
+
+        public virtual bool CanWriteWithoutLock => true;
 
         /// <summary>
         /// Sets the read/write pointer in the stream to a new position.

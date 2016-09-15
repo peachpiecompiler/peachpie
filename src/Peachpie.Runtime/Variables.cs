@@ -218,7 +218,7 @@ namespace Pchp.Core
         /// Finds whether a value is a scalar.
         /// </summary>
         /// <remarks>Scalar variables are those containing an integer, float, string or boolean.</remarks>
-        public static bool IsScalar(PhpValue variable)
+        public static bool IsScalar(this PhpValue variable)
         {
             switch (variable.TypeCode)
             {
@@ -232,6 +232,25 @@ namespace Pchp.Core
 
                 case PhpTypeCode.Alias:
                     return IsScalar(variable.Alias.Value);
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the value is <see cref="int"/> or <see cref="long"/>.
+        /// </summary>
+        public static bool IsInteger(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                    return true;
+
+                case PhpTypeCode.Alias:
+                    return IsInteger(value.Alias.Value);
 
                 default:
                     return false;

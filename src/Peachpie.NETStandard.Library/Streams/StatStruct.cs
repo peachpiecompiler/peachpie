@@ -16,7 +16,7 @@ namespace Pchp.Library.Streams
         public short st_uid;
         public short st_gid;
         public uint st_rdev;
-        public int st_size;
+        public long st_size;
         public long st_atime;
         public long st_mtime;
         public long st_ctime;
