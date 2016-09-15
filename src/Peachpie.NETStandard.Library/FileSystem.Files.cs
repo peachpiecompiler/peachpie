@@ -229,53 +229,51 @@ namespace Pchp.Library
         /// the access time is always modified, regardless of the number of parameters. 
         /// If the file does not exist, it is created. 
         /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="path">The file to touch.</param>
         /// <param name="mtime">The new modification time.</param>
         /// <param name="atime">The desired access time.</param>
         /// <returns><c>true</c> on success, <c>false</c> on failure.</returns>
-        public static bool touch(string path, int mtime = 0, int atime = 0)
+        public static bool touch(Context ctx, string path, int mtime = 0, int atime = 0)
         {
-            //// Create the file if it does not already exist (performs all checks).
-            ////PhpStream file = (PhpStream)Open(path, "ab");
-            ////if (file == null) return false;
-            //StreamWrapper wrapper;
-            //if (!PhpStream.ResolvePath(ref path, out wrapper, CheckAccessMode.FileMayExist, CheckAccessOptions.Quiet))
-            //    return false;
+            // Create the file if it does not already exist (performs all checks).
+            //PhpStream file = (PhpStream)Open(path, "ab");
+            //if (file == null) return false;
+            StreamWrapper wrapper;
+            if (!PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileMayExist, CheckAccessOptions.Quiet))
+                return false;
 
-            //if (!Exists(path))
-            //{
-            //    // Open and close => create new.
-            //    Close(wrapper.Open(ref path, "wb", StreamOpenOptions.Empty, StreamContext.Default));
-            //}
+            if (!file_exists(ctx, path))
+            {
+                // Open and close => create new.
+                wrapper.Open(ctx, ref path, "wb", StreamOpenOptions.Empty, StreamContext.Default)
+                    ?.Dispose();
+            }
 
-            //DateTime access_time = (atime > 0) ? DateTimeUtils.UnixTimeStampToUtc(atime) : DateTime.UtcNow;
-            //DateTime modification_time = (mtime > 0) ? DateTimeUtils.UnixTimeStampToUtc(mtime) : DateTime.UtcNow;
+            var access_time = (atime > 0) ? DateTimeUtils.UnixTimeStampToUtc(atime) : System.DateTime.UtcNow;
+            var modification_time = (mtime > 0) ? DateTimeUtils.UnixTimeStampToUtc(mtime) : System.DateTime.UtcNow;
 
-            //access_time -= DateTimeUtils.GetDaylightTimeDifference(access_time, DateTime.UtcNow);
-            //modification_time -= DateTimeUtils.GetDaylightTimeDifference(modification_time, DateTime.UtcNow);
+            //access_time -= DateTimeUtils.GetDaylightTimeDifference(access_time, System.DateTime.UtcNow);
+            //modification_time -= DateTimeUtils.GetDaylightTimeDifference(modification_time, System.DateTime.UtcNow);
 
-            //try
-            //{
-            //    File.SetLastWriteTimeUtc(path, modification_time);
-            //    File.SetLastAccessTimeUtc(path, access_time);
+            try
+            {
+                File.SetLastWriteTimeUtc(path, modification_time);
+                File.SetLastAccessTimeUtc(path, access_time);
 
-            //    // Clear the cached stat values
-            //    ClearStatCache();
-            //    return true;
-            //}
-            //catch (UnauthorizedAccessException)
-            //{
-            //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_access_denied",
-            //        FileSystemUtils.StripPassword(path)));
-            //}
-            //catch (System.Exception e)
-            //{
-            //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_error",
-            //        FileSystemUtils.StripPassword(path), e.Message));
-            //}
-            //return false;
-
-            throw new NotImplementedException();
+                // Clear the cached stat values
+                clearstatcache();
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path)));
+            }
+            catch (Exception e)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message));
+            }
+            return false;
         }
 
         #endregion
