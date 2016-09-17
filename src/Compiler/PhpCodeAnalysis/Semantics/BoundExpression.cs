@@ -659,7 +659,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundExitEx(BoundExpression value = null)
             : base(value != null ? ImmutableArray.Create(new BoundArgument(value)) : ImmutableArray<BoundArgument>.Empty)
         {
-            Debug.Assert(value.Access.IsRead);
+            Debug.Assert(value == null || value.Access.IsRead);
         }
     }
 

@@ -306,7 +306,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                         else
                         {
                             // TODO: class aliasing
-                            Debug.Assert(t != null);
+                            //Debug.Assert(t != null);
+                            if (t == null)
+                            {
+                                Debug.WriteLine($"'tref.QualifiedName' is unknown!");
+                            }
                         }
                     }
                 }
