@@ -949,10 +949,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return x.Operand.TypeRefMask;
 
                 case Operations.BitNegation:
-                    throw new NotImplementedException();
+                    return TypeCtx.GetLongTypeMask();
 
                 case Operations.Clone:
-                    throw new NotImplementedException();
+                    return x.Operand.TypeRefMask;
 
                 case Operations.LogicNegation:
                     return TypeCtx.GetBooleanTypeMask();
@@ -1573,7 +1573,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var elementtype = this.TypeCtx.GetElementType(x.Access.WriteMask);
             Debug.Assert(!elementtype.IsVoid);
 
-            foreach (var v in x.Variables)
+            foreach (var v in x.Variables.WhereNotNull())   // list() may contain NULL implying ignored variable
             {
                 v.Access = v.Access.WithWrite(elementtype);
                 Visit(v);

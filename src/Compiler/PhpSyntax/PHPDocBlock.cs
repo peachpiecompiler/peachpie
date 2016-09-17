@@ -985,7 +985,7 @@ namespace Pchp.Syntax
 
             public TextTag(string/*!*/tagName, string/*!*/line)
             {
-                Debug.Assert(line.StartsWith(tagName));
+                Debug.Assert(line.StartsWith(tagName, StringComparison.OrdinalIgnoreCase));
                 int index = tagName.Length;
 
                 if (index < line.Length)

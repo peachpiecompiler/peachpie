@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             { "float", ctx => ctx.GetDoubleTypeMask()},
             { "double", ctx => ctx.GetDoubleTypeMask()},
             { "array", ctx => ctx.GetArrayTypeMask()},
-            //{ "resource", ctx => ctx.GetTypeMask(Pchp.Core.PhpResource, true)},
+            { "resource", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, true)}, // TODO: Pchp.Core.PhpResource
             { "null", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, false)},
             { "object", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, true)},
             { "void", ctx => 0},
