@@ -1,10 +1,9 @@
 ﻿{
   "version": "1.0.0-*",
-  "description": "Simpliest PHP project for .NET Core, a console app.",
+
   "buildOptions": {
     "compilerName": "php",
     "compile": "**\\*.php",
-    "emitEntryPoint": true,
     "debugType": "portable"
   },
   "dependencies": {

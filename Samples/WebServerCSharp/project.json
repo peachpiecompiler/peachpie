@@ -1,17 +1,18 @@
 ﻿{
   "version": "1.0.0-*",
-  "description": "Simpliest PHP project for .NET Core, a console app.",
+  "description": "Sample Web Server passing requests to *.php files to `website` project.",
   "buildOptions": {
-    "compilerName": "php",
-    "compile": "**\\*.php",
     "emitEntryPoint": true,
     "debugType": "portable"
   },
   "dependencies": {
-    "Peachpie.App": "*"
+    "Microsoft.AspNetCore.Server.Kestrel": "1.0.0",
+    "Microsoft.AspNetCore.StaticFiles": "1.0.0",
+    "Peachpie.NETCore.Web": "*",
+    "website": "1.0.0"
   },
   "tools": {
-    "Peachpie.Compiler.Tools": "0.2.0-*"
+    "Microsoft.DotNet.Watcher.Tools": "1.0.0-*"
   },
   "frameworks": {
     "netcoreapp1.0": {

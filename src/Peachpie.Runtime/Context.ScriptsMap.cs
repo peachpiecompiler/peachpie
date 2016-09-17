@@ -38,6 +38,7 @@ namespace Pchp.Core
         /// <summary>
         /// Script descriptor.
         /// </summary>
+        [DebuggerDisplay("{Index}: {Path,nq}")]
         public struct ScriptInfo
         {
             /// <summary>
