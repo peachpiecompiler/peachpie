@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Peachpie.CodeAnalysis</id>
-    <version>0.1.1</version>
-    <title>Peachpie.CodeAnalysis.</title>
+    <id>Peachpie.Compiler</id>
+    <version>0.2.0</version>
+    <title>Peachpie.Compiler.</title>
     <description>Peachpie code analysis and compiler core.</description>
     <authors>Jakub Misek, Peachpie</authors>
     <owners>iolevel peachpie jmisek</owners>
@@ -11,7 +11,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <tags>php peachpie dotnet compiler</tags>
     <dependencies>
-      <dependency id="Peachpie.NETStandard.App" version="[0.1.1-preview, )" />
+      <dependency id="Peachpie.App" version="[0.2.0, )" />
       <dependency id="Microsoft.DiaSymReader.Native" version="1.3.3" />
       <dependency id="System.Collections.Immutable" version="1.2.0" />
       <dependency id="System.Reflection.Metadata" version="1.4.1-beta" />
@@ -19,8 +19,8 @@
   </metadata>
   <files>
     <!--netstandard1.6-->
-    <file src="Compiler/PhpCodeAnalysis/bin/Release/Microsoft.CodeAnalysis.Private.dll" target="lib/netstandard1.6" />
-    <file src="Compiler/PhpCodeAnalysis/bin/Release/Pchp.Syntax.dll" target="lib/netstandard1.6" />
-    <file src="Compiler/PhpCodeAnalysis/bin/Release/Pchp.CodeAnalysis.dll" target="lib/netstandard1.6" />
+    <file src="Compiler/PhpCodeAnalysis/bin/Debug/Peachpie.Microsoft.CodeAnalysis.dll" target="lib/netstandard1.6" />
+    <file src="Compiler/PhpCodeAnalysis/bin/Debug/Pchp.Syntax.dll" target="lib/netstandard1.6" />
+    <file src="Compiler/PhpCodeAnalysis/bin/Debug/Pchp.CodeAnalysis.dll" target="lib/netstandard1.6" />
   </files>
 </package>

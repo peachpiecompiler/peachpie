@@ -1,6 +1,7 @@
 {
   "projects": [
     "src",
-	"Samples"
+    "src/Dummy",
+    "Samples"
   ]
 }

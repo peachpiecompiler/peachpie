@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0-*",
+
+  "dependencies": {
+    "System.Collections.Immutable": "1.2.0",
+    "System.Reflection.Metadata": "1.4.1-beta-24430-01",
+    "Pchp.Syntax": "*",
+    "Peachpie.Microsoft.CodeAnalysis": "*"
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "bin": {
+        "assembly": "../../Compiler/PhpCodeAnalysis/bin/Debug/Pchp.CodeAnalysis.dll"
+      }
+    },
+    ".NETFramework,Version=v4.6": {
+      "bin": {
+        "assembly": "../../Compiler/PhpCodeAnalysis/bin/Debug/Pchp.CodeAnalysis.dll"
+      }
+    },
+    ".netcoreapp1.0": {
+      "bin": {
+        "assembly": "../../Compiler/PhpCodeAnalysis/bin/Debug/Pchp.CodeAnalysis.dll"
+      }
+    }
+  }
+}

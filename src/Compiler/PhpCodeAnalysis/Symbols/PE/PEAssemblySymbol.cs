@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal static bool IsPchpCor(PEAssembly ass) => ass.Identity.Name == "Peachpie.Runtime" || ass.Identity.Name == "pchpcor";
+        internal static bool IsPchpCor(PEAssembly ass) => ass.Identity.Name == "Peachpie.Runtime";
 
         internal static PEAssemblySymbol Create(PortableExecutableReference reference)
         {

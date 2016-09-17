@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0-*",
+
+  "frameworks": {
+    "netstandard1.6": {
+      "bin": {
+        "assembly": "../../Compiler/PhpCodeAnalysis/bin/Debug/Pchp.Syntax.dll"
+      }
+    },
+    ".NETFramework,Version=v4.6": {
+      "bin": {
+        "assembly": "../../Compiler/PhpCodeAnalysis/bin/Debug/Pchp.Syntax.dll"
+      }
+    },
+    ".netcoreapp1.0": {
+      "bin": {
+        "assembly": "../../Compiler/PhpCodeAnalysis/bin/Debug/Pchp.Syntax.dll"
+      }
+    }
+  }
+}

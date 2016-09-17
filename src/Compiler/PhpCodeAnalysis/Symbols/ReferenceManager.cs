@@ -209,8 +209,8 @@ namespace Pchp.CodeAnalysis
                 SetReferencesOfReferencedModules(compilation.Options.MetadataReferenceResolver, refmodules);
 
                 // set cor types for this compilation
-                if (_lazyPhpCorLibrary == null) throw new DllNotFoundException("pchpcor.dll not found");
-                if (_lazyCorLibrary == null) throw new DllNotFoundException("corlib not found");
+                if (_lazyPhpCorLibrary == null) throw new DllNotFoundException("Peachpie.Runtime not found");
+                if (_lazyCorLibrary == null) throw new DllNotFoundException("A corlib not found");
                 compilation.CoreTypes.Update(_lazyPhpCorLibrary);
                 compilation.CoreTypes.Update(_lazyCorLibrary);
             }

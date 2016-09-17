@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1-*",
+  "version": "0.2.0-*",
 
   "packOptions": {
     "tags": [
@@ -18,7 +18,7 @@
   },
 
   "dependencies": {
-    "System.Reflection.Emit.Lightweight": "4.0.1",
+    "System.Reflection.Emit.Lightweight": "4.0.*",
     "System.Dynamic.Runtime": "4.0.*"
   },
   "frameworks": {
@@ -39,5 +39,7 @@
         }
       }
     }
-  }
+  },
+
+  "scripts": { "postcompile": [ "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration%" ] }
 }

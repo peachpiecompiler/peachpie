@@ -1,5 +1,5 @@
 ﻿{
-  "version": "0.1.1-*",
+  "version": "0.2.0-*",
   "description": "Peachpie platform dependencies.",
   "packOptions": {
     "files": {},
@@ -10,11 +10,13 @@
   "keywords": [ "dotnet", "peachpie", "php", "compiler" ],
   "dependencies": {
     "Peachpie.Runtime": "*",
-    "Peachpie.NETStandard.Library": "*"
+    "Peachpie.Library": "*"
   },
   "frameworks": {
     "netstandard1.6": {},
     ".NETFramework,Version=v4.6": {},
     ".netcoreapp1.0": {}
   }
+
+  // ,"scripts": { "precompile": [ "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration%" ] }
 }

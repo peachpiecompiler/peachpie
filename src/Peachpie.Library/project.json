@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1-*",
+  "version": "0.2.0-*",
 
   "packOptions": {
     "tags": [
@@ -18,16 +18,16 @@
   },
 
   "dependencies": {
-    "NETStandard.Library": "1.6.0",
     "Peachpie.Runtime": "*"
   },
 
   "frameworks": {
     "netstandard1.6": {
-      "imports": "dnxcore50"
+      "imports": "dnxcore50",
+      "dependencies": { "NETStandard.Library": "1.6.0" }
     },
     ".NETFramework,Version=v4.6": {
-      "buildOptions": { "define": [ "NET46" ] }
+      "dependencies": { "NETStandard.Library": "1.6.0" }
     },
     ".netcoreapp1.0": {
       "dependencies": {
@@ -37,5 +37,12 @@
         }
       }
     }
+  },
+
+  "scripts": {
+    "postcompile": [
+      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration%",
+      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration% ../Peachpie.App"
+    ]
   }
 }
