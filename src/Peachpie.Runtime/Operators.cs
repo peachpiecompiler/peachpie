@@ -90,6 +90,11 @@ namespace Pchp.Core
         /// </summary>
         public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;
 
+        /// <summary>
+        /// Implements <c>empty</c> operator.
+        /// </summary>
+        public static bool IsEmpty(PhpValue value) => !value.IsSet || value.IsEmpty;
+
         #endregion
 
         #region Copy

@@ -156,6 +156,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
             if (expr is AST.ConstantUse) return BindConstUse((AST.ConstantUse)expr).WithAccess(access);
             if (expr is AST.ListEx) return BindListEx((AST.ListEx)expr).WithAccess(access);
+            if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -189,6 +190,11 @@ namespace Pchp.CodeAnalysis.Semantics
             return (x.ResulExpr != null)
                 ? new BoundExitEx(BindExpression(x.ResulExpr))
                 : new BoundExitEx();
+        }
+
+        BoundExpression BindIsEmptyEx(AST.EmptyEx x)
+        {
+            return new BoundIsEmptyEx((BoundReferenceExpression)BindExpression(x.Expression, BoundAccess.Read.WithQuiet()));
         }
 
         BoundExpression BindIsSet(AST.IssetEx x)

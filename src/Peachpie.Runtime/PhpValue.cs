@@ -86,6 +86,11 @@ namespace Pchp.Core
         public bool IsNull => _type.IsNull;
 
         /// <summary>
+        /// Gets value indicating whether the value is considered to be empty.
+        /// </summary>
+        public bool IsEmpty => _type.IsEmpty(ref this);
+
+        /// <summary>
         /// Gets value indicating whether the value is set.
         /// </summary>
         public bool IsSet => (_type != null && TypeCode != PhpTypeCode.Undefined);

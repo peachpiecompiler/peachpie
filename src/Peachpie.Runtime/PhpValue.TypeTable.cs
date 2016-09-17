@@ -30,6 +30,7 @@ namespace Pchp.Core
 
             public abstract PhpTypeCode Type { get; }
             public abstract bool IsNull { get; }
+            public virtual bool IsEmpty(ref PhpValue me) => ToBoolean(ref me) == false;
             public abstract object ToClass(ref PhpValue me);
             public abstract string ToString(ref PhpValue me, Context ctx);
             public abstract string ToStringOrThrow(ref PhpValue me, Context ctx);
@@ -133,6 +134,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
             public override bool IsNull => true;
+            public override bool IsEmpty(ref PhpValue me) => true;
             public override object ToClass(ref PhpValue me) => new stdClass();
             public override string ToString(ref PhpValue me, Context ctx) => string.Empty;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => string.Empty;
@@ -378,6 +380,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
             public override bool IsNull => false;
+            public override bool IsEmpty(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => me.Object;
             public override string ToString(ref PhpValue me, Context ctx)
             {
@@ -439,6 +442,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.PhpArray;
             public override bool IsNull => false;
+            public override bool IsEmpty(ref PhpValue me) => me.Array.Count == 0;
             public override object ToClass(ref PhpValue me) => me.Array.ToClass();
             public override string ToString(ref PhpValue me, Context ctx) => me.Array.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
@@ -485,6 +489,7 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.Alias;
             public override bool IsNull => false;
+            public override bool IsEmpty(ref PhpValue me) => me.Alias.Value.IsEmpty;
             public override object ToClass(ref PhpValue me) => me.Alias.ToClass();
             public override string ToString(ref PhpValue me, Context ctx) => me.Alias.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Alias.ToStringOrThrow(ctx);

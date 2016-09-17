@@ -2829,6 +2829,16 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundIsEmptyEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            cg.EmitConvert(this.Variable, cg.CoreTypes.PhpValue);
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsEmpty_PhpValue)
+                .Expect(SpecialType.System_Boolean);
+        }
+    }
+
     partial class BoundIsSetEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

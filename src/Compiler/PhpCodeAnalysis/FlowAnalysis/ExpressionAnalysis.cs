@@ -1525,6 +1525,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitGlobalConst((BoundGlobalConst)operation);
             }
+            else if (operation is BoundIsEmptyEx)
+            {
+                VisitIsEmpty((BoundIsEmptyEx)operation);
+            }
             else if (operation is BoundIsSetEx)
             {
                 VisitsSet((BoundIsSetEx)operation);
@@ -1545,6 +1549,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 throw new NotImplementedException(operation.GetType().Name);
             }
+        }
+
+        private void VisitIsEmpty(BoundIsEmptyEx x)
+        {
+            Visit(x.Variable);
+            x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 
         public virtual void VisitsSet(BoundIsSetEx x)

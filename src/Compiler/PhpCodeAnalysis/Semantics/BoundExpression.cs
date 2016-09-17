@@ -521,7 +521,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override bool IsVirtual => this.TargetMethod == null || this.TargetMethod.IsVirtual;
 
         public BoundInstanceFunctionCall(BoundExpression instance, QualifiedName name, ImmutableArray<BoundArgument> arguments)
-            :this(instance, new BoundRoutineName(name), arguments)
+            : this(instance, new BoundRoutineName(name), arguments)
         {
 
         }
@@ -1267,7 +1267,28 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundIsSetEx, BoundUnsetEx
+    #region BoundIsSetEx, BoundUnsetEx, BoundIsEmptyEx
+
+    public partial class BoundIsEmptyEx : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        /// <summary>
+        /// Reference to be checked if it is set.
+        /// </summary>
+        public BoundReferenceExpression Variable { get; set; }
+
+        public BoundIsEmptyEx(BoundReferenceExpression variable)
+        {
+            this.Variable = variable;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
 
     public partial class BoundIsSetEx : BoundExpression
     {
