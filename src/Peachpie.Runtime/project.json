@@ -41,5 +41,9 @@
     }
   },
 
-  "scripts": { "postcompile": [ "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration%" ] }
+  "scripts": {
+    "postcompile": [
+      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration% --version-suffix beta"
+    ]
+  }
 }

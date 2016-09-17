@@ -4,8 +4,10 @@ Param(
   [string]$suffix = "preview-1"
 )
 
+// TODO: compile CodeAnalysis
+
 $out = "../.nugs"
-$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.App", "Peachpie.NETCore.Compiler.Tools")
+$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.App", "Peachpie.Compiler.Tools")
 $nuspecs = @("Peachpie.Compiler.nuspec")
 
 foreach ($p in $projects) {

@@ -10,7 +10,7 @@
     "Peachpie.App": "*"
   },
   "tools": {
-    "Peachpie.NETCore.Compiler.Tools": "0.2.0-beta"
+    "Peachpie.Compiler.Tools": "0.2.0-*"
   },
   "frameworks": {
     "netcoreapp1.0": {
