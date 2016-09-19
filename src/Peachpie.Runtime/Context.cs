@@ -181,7 +181,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets runtime type information, or <c>null</c> if type with given is not declared.
         /// </summary>
-        internal Reflection.PhpTypeInfo GetDeclaredType(string name) => _types.GetDeclaredType(name);
+        internal PhpTypeInfo GetDeclaredType(string name) => _types.GetDeclaredType(name);
 
         void FunctionRedeclared(RoutineInfo routine)
         {
@@ -189,7 +189,7 @@ namespace Pchp.Core
             throw new InvalidOperationException($"Function {routine.Name} redeclared!");
         }
 
-        void TypeRedeclared(Reflection.PhpTypeInfo type)
+        void TypeRedeclared(PhpTypeInfo type)
         {
             Debug.Assert(type != null);
 

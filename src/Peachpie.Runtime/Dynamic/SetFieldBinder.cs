@@ -45,25 +45,39 @@ namespace Pchp.Core.Dynamic
             var restrictions = BindingRestrictions.Empty;
             
             Expression target_expr;
-            object target_value;
-            BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
+            PhpTypeInfo phptype;
 
+            //
             string fldName;
             Expression value;
 
             ResolveArgs(args, ref restrictions, out fldName, out value);
 
-            var runtime_type = target_value.GetType();
-
-            // 
-            if (target_expr.Type != runtime_type)
+            //
+            if (target.LimitType == typeof(PhpTypeInfo))    // static field
             {
-                restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
-                target_expr = Expression.Convert(target_expr, runtime_type);
+                target_expr = null;
+                phptype = (PhpTypeInfo)target.Value;
+            }
+            else
+            {
+                object target_value;
+                BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
+
+                var runtime_type = target_value.GetType();
+
+                // 
+                if (target_expr.Type != runtime_type)
+                {
+                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
+                    target_expr = Expression.Convert(target_expr, runtime_type);
+                }
+
+                phptype = runtime_type.GetPhpTypeInfo();
             }
 
             //
-            var setter = BinderHelpers.BindField(runtime_type.GetPhpTypeInfo(), _classContext, target_expr, fldName, null, _access, value);
+            var setter = BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, null, _access, value);
             if (setter != null)
             {
                 //

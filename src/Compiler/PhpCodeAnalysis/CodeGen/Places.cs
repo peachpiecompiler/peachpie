@@ -1622,5 +1622,150 @@ namespace Pchp.CodeAnalysis.CodeGen
         #endregion
     }
 
+    /// <summary>
+    /// Indirect static or constant field access using callsites.
+    /// </summary>
+    internal class BoundIndirectStFieldPlace : IBoundReference
+    {
+        public BoundVariableName Name => _name;
+        readonly BoundVariableName _name;
+
+        public BoundTypeRef Type => _type;
+        readonly BoundTypeRef _type;
+
+        public BoundAccess Access => _boundref.Access;
+        readonly BoundFieldRef _boundref;
+
+        public bool IsConstant => _boundref.IsClassConstant;
+
+        public string NameValueOpt => _name.IsDirect ? _name.NameValue.Value : null;
+
+        public BoundIndirectStFieldPlace(BoundTypeRef typeref, BoundVariableName fldname, BoundFieldRef boundref)
+        {
+            _type = typeref;
+            _name = fldname;
+            _boundref = boundref;
+        }
+
+        #region IBoundReference
+
+        DynamicOperationFactory.CallSiteData _lazyLoadCallSite = null;
+        DynamicOperationFactory.CallSiteData _lazyStoreCallSite = null;
+
+        public TypeSymbol TypeOpt => null;
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            if (_lazyLoadCallSite == null)
+                _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameValueOpt);
+
+            // callsite.Target callsite
+            _lazyLoadCallSite.EmitLoadTarget(cg.Builder);
+            _lazyLoadCallSite.Place.EmitLoad(cg.Builder);
+
+            // LOAD PhpTypeInfo
+            _type.EmitLoadTypeInfo(cg);
+        }
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            // resolve actual return type
+            TypeSymbol return_type;
+            if (Access.EnsureObject) return_type = cg.CoreTypes.Object;
+            else if (Access.EnsureArray) return_type = cg.CoreTypes.PhpArray;
+            else if (Access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
+            else return_type = Access.TargetType ?? cg.CoreTypes.PhpValue;
+
+            var args = new List<TypeSymbol>();
+
+            // NameExpression in case of indirect call
+            if (!_name.IsDirect)
+            {
+                cg.EmitConvert(_name.NameExpression, cg.CoreTypes.String);
+                args.Add(cg.CoreTypes.String);
+            }
+
+            // Target()
+            var functype = cg.Factory.GetCallSiteDelegateType(
+                cg.CoreTypes.PhpTypeInfo, RefKind.None,
+                args.AsImmutable(),
+                default(ImmutableArray<RefKind>),
+                null,
+                return_type);
+
+
+            cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
+
+            if (_boundref.IsClassConstant)
+            {
+                throw new NotImplementedException();
+            }
+
+            //
+            _lazyLoadCallSite.Construct(functype, cctor =>
+            {
+                // new GetFieldBinder(field_name, context, return, flags)   // TODO: class constants
+                cctor.Builder.EmitStringConstant(this.NameValueOpt);
+                cctor.EmitLoadToken(cg.Routine.ContainingType, null);
+                cctor.EmitLoadToken(return_type, null);
+                cctor.Builder.EmitIntConstant((int)Access.AccessFlags);
+                cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
+            });
+
+            //
+            return return_type;
+        }
+
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            if (_lazyStoreCallSite == null)
+                _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
+
+            // callsite.Target callsite
+            _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
+            _lazyStoreCallSite.Place.EmitLoad(cg.Builder);
+
+            _type.EmitLoadTypeInfo(cg);
+        }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            Debug.Assert(_lazyStoreCallSite != null);
+            
+            var args = new List<TypeSymbol>();
+
+            // NameExpression in case of indirect call
+            if (!_name.IsDirect)
+            {
+                args.Add(cg.CoreTypes.String);
+            }
+
+            if (valueType != null)
+            {
+                args.Add(valueType);
+            }
+
+            // Target()
+            var functype = cg.Factory.GetCallSiteDelegateType(
+                cg.CoreTypes.PhpTypeInfo, RefKind.None,
+                args.AsImmutable(),
+                default(ImmutableArray<RefKind>),
+                null,
+                cg.CoreTypes.Void);
+
+            cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
+
+            _lazyStoreCallSite.Construct(functype, cctor =>
+            {
+                cctor.Builder.EmitStringConstant(this.NameValueOpt);
+                cctor.EmitLoadToken(cg.Routine.ContainingType, null);
+                cctor.Builder.EmitIntConstant((int)Access.AccessFlags);   // flags
+                cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
+            });
+        }
+
+        #endregion
+    }
+
     #endregion
 }

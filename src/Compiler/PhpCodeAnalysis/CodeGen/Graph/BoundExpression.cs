@@ -1505,17 +1505,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw new NotImplementedException();
 
                 case Operations.ArrayCast:
-                    //Template: "(array)x"   Convert.ObjectToArray(x)
-                    //o_typecode = node.Expr.Emit(codeGenerator);
-                    //if (o_typecode != PhpTypeCode.PhpArray)
-                    //{
-                    //    codeGenerator.EmitBoxing(o_typecode);
-                    //    il.Emit(OpCodes.Call, Methods.Convert.ObjectToPhpArray);
-                    //}
-                    //returned_typecode = PhpTypeCode.PhpArray;
-                    //break;
-                    throw new NotImplementedException();
-
+                    //Template: "(array)x"
+                    cg.EmitConvert(this.Operand, cg.CoreTypes.PhpArray);
+                    returned_type = cg.CoreTypes.PhpArray;
+                    break;
+                    
                 case Operations.UnsetCast:
                     // Template: "(unset)x"  null
 

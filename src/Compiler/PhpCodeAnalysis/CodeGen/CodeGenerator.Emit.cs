@@ -1052,13 +1052,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (value == null)
             {
-                if (targetOpt == CoreTypes.PhpValue)
+                if (targetOpt != null)
                 {
-                    return Emit_PhpValue_Null();
+                    EmitLoadDefaultValue(targetOpt, 0);
+                    return targetOpt;
                 }
-
-                Builder.EmitNullConstant();
-                return CoreTypes.Object;
+                else
+                {
+                    Builder.EmitNullConstant();
+                    return CoreTypes.Object;
+                }
             }
             else
             {

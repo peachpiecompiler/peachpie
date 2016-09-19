@@ -691,6 +691,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
                 GetStatic_T = ct.Context.Method("GetStatic");
+                GetDeclaredType_string = ct.Context.Method("GetDeclaredType", ct.String);
 
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
                 get_Server = ct.Context.Method("get_Server");   // TODO: special name, property
@@ -704,6 +705,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptPath_TScript,
                 GetConstant_string_int32,
                 GetStatic_T,
+                GetDeclaredType_string,
                 Dispose;
 
             public readonly CoreMethod
@@ -719,13 +721,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 CallBinderFactory_StaticFunction = ct.CallBinderFactory.Method("StaticFunction", ct.RuntimeTypeHandle, ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
                 GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
                 SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessFlags);
+
+                GetPhpTypeInfo_T = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo");
             }
 
             public readonly CoreConstructor
                 GetFieldBinder_ctor, SetFieldBinder_ctor;
 
             public readonly CoreMethod
-                CallBinderFactory_Function, CallBinderFactory_InstanceFunction, CallBinderFactory_StaticFunction;
+                CallBinderFactory_Function, CallBinderFactory_InstanceFunction, CallBinderFactory_StaticFunction,
+                GetPhpTypeInfo_T;
         }
 
         public struct ReflectionHolder

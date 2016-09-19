@@ -949,7 +949,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return x.Operand.TypeRefMask;
 
                 case Operations.BitNegation:
-                    return TypeCtx.GetLongTypeMask();
+                    return TypeCtx.GetLongTypeMask();   // TODO: or byte[]
 
                 case Operations.Clone:
                     return x.Operand.TypeRefMask;
@@ -1423,8 +1423,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (ParentType != null && x.FieldName.IsDirect)
                 {
-                    // TODO: CLR properties
-
                     var field = ParentType.ResolveStaticField(x.FieldName.NameValue.Value);
                     if (field != null)
                     {
@@ -1461,13 +1459,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             return;
                         }
                     }
+
+                    // TODO: __getStatic, __setStatic
                 }
 
-                // indirect field access with known class name ...
-                // indirect field access ...
+                // indirect field access:
+                // indirect field access with known class name:
+                x.BoundReference = new BoundIndirectStFieldPlace(x.ParentType, x.FieldName, x);
+                x.TypeRefMask = TypeRefMask.AnyType;
+                return;
             }
-
-            throw new NotImplementedException();
         }
 
         #endregion

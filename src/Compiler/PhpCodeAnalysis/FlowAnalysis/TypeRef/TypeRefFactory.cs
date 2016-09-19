@@ -4,6 +4,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Object: return new ClassTypeRef(Syntax.QualifiedName.SystemObject);
                 case SpecialType.System_DateTime: return new ClassTypeRef(new Syntax.QualifiedName(new Syntax.Name("DateTime"), new[] { new Syntax.Name("System") }));
                 default:
-                    throw new NotImplementedException();
+                    return new ClassTypeRef(((NamedTypeSymbol)t).MakeQualifiedName());
             }
         }
 

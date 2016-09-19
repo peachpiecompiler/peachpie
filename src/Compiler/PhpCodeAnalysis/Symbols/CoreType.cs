@@ -96,6 +96,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ScriptAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetFieldBinder, SetFieldBinder, AccessFlags,
+            PhpTypeInfoExtension, PhpTypeInfo,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, IPhpEnumerable, IPhpCallable,
             IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
@@ -142,6 +143,9 @@ namespace Pchp.CodeAnalysis.Symbols
             GetFieldBinder = Create("Dynamic.GetFieldBinder");
             SetFieldBinder = Create("Dynamic.SetFieldBinder");
             AccessFlags = Create("Dynamic.AccessFlags");
+
+            PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
+            PhpTypeInfo = Create("Reflection.PhpTypeInfo");
         }
 
         #region Table of types

@@ -341,6 +341,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             switch (from.SpecialType)
             {
+                case SpecialType.System_Boolean:
+                    _il.EmitOpCode(ILOpCode.Conv_i8);   // bool -> Int64
+                    return;
+
                 case SpecialType.System_Int32:
                     _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
                     return;
@@ -860,10 +864,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitConvertToPhpNumber(from, fromHint);
                         return;
                     }
-                    else if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpEnumerable)
+                    else if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpEnumerable)    // TODO: merge into IPhpArray
                     {
                         EmitConvertToPhpArray(from, fromHint);
                         return;
+                    }
+                    else if (to == CoreTypes.PhpString)
+                    {
+                        throw new NotImplementedException($"{to}");
                     }
                     else if (to.IsReferenceType)
                     {
@@ -877,7 +885,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        throw new NotImplementedException();
+                        throw new NotImplementedException($"{to}");
                     }
                     return;
             }
