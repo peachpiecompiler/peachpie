@@ -197,6 +197,14 @@ namespace Pchp.Core
 
         public static PhpValue operator |(PhpValue left, PhpValue right) => Operators.BitOr(ref left, ref right);
 
+        /// <summary>
+        /// Division of <paramref name="left"/> and <paramref name="right"/> accorsing to PHP semantics.
+        /// </summary>
+        /// <param name="left">Left operand.</param>
+        /// <param name="right">Right operand.</param>
+        /// <returns>Quotient of <paramref name="left"/> and <paramref name="right"/>.</returns>
+        public static PhpNumber operator /(PhpValue left, PhpValue right) => Operators.Div(ref left, ref right);
+
         public static explicit operator bool(PhpValue value) => value.ToBoolean();
 
         public static explicit operator long(PhpValue value) => value.ToLong();

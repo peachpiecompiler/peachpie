@@ -36,6 +36,34 @@ namespace Pchp.Core
             return PhpValue.Create(x.ToLong() | y.ToLong());
         }
 
+        /// <summary>
+        /// Performs division according to PHP semantics.
+        /// </summary>
+        /// <remarks>The division operator ("/") returns a float value unless the two operands are integers
+        /// (or strings that get converted to integers) and the numbers are evenly divisible,
+        /// in which case an integer value will be returned.</remarks>
+        internal static PhpNumber Div(ref PhpValue x, ref PhpValue y)
+        {
+            PhpNumber nx, ny;
+            var info = x.ToNumber(out nx) | y.ToNumber(out ny);
+
+            if ((info & Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return PhpNumber.Create(0.0);
+                throw new NotImplementedException();     // PhpException
+            }
+
+            // TODO: // division by zero:
+            //if (y == 0)
+            //{
+            //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("division_by_zero"));
+            //    return false;
+            //}
+
+            return nx / ny;
+        }
+
         #endregion
 
         #region Assignment
