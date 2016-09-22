@@ -25,10 +25,10 @@ Besides granting PHP programmers access to cross-platform development, Peachpie 
 Peachpie makes use of Microsoft's Roslyn compiler and years worth of developing Phalanger, where the design for this compiler was established and valuable experience was obtained in the process. This, together with an extensive type analysis, allows us to set the objective of Peachpie to be a significant performance increase of PHP applications and components. 
 
 ## How to build or execute?
-This project is a work in progress. Please be aware that Peachpie is not complete and is therefore not intended to be downloaded and executed at this point, but you are welcome to use it for your inspiration. You can execute Peachpie via the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler or our [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) section.
+This project is a work in progress. Please be aware that Peachpie is not complete and is therefore not intended to run full applications, but you are welcome to use it for your inspiration. You can run Peachpie in Visual Studio Code or on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to our [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) section. The video below shows how Peachpie can be integrated into Visual Studio Code:
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=GVWVInYiYLY
-" target="_blank"><img src="http://img.youtube.com/vi/GVWVInYiYLY/0.jpg" 
+<a href="https://www.youtube.com/watch?v=ESLJtlQ_AxY
+" target="_blank"><img src="http://img.youtube.com/vi/ESLJtlQ_AxY/0.jpg" 
 alt="Peachpie Introduction" width="480" height="360" border="10" /></a>
 
 ## Status
