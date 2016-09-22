@@ -38,7 +38,7 @@
   "scripts": {
     // for development purposes; installs the tool so dotnet-compile-php can be used as a tool
     "postcompile": [
-      "../../tools/nuget pack ../Peachpie.Compiler.nuspec -o ../../.nugs/%compile:Configuration% -version 0.2.0-beta",
+      "../../tools/nuget.exe pack ../Peachpie.Compiler.nuspec -o ../../.nugs/%compile:Configuration% -version 0.2.0-beta",
       "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration% --version-suffix beta"
     ]
   }
