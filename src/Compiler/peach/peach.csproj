@@ -41,8 +41,8 @@
     <StartupObject>Pchp.CodeAnalysis.CommandLine.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Peachpie.NETStandard.Library">
-      <HintPath>..\..\Peachpie.NETStandard.Library\bin\$(Configuration)\net46\Peachpie.NETStandard.Library.dll</HintPath>
+    <Reference Include="Peachpie.Library">
+      <HintPath>..\..\Peachpie.Library\bin\$(Configuration)\net46\Peachpie.Library.dll</HintPath>
     </Reference>
     <Reference Include="Peachpie.Runtime">
       <HintPath>..\..\Peachpie.Runtime\bin\$(Configuration)\net46\Peachpie.Runtime.dll</HintPath>

@@ -77,8 +77,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Peachpie.NETStandard.Library">
-      <HintPath>..\..\Peachpie.NETStandard.Library\bin\$(Configuration)\net46\Peachpie.NETStandard.Library.dll</HintPath>
+    <Reference Include="Peachpie.Library">
+      <HintPath>..\..\Peachpie.Library\bin\$(Configuration)\net46\Peachpie.Library.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

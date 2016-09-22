@@ -266,7 +266,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Peachpie.Runtime">
-      <HintPath>..\..\Peachpie.Runtime\bin\$(Configuration)\portable45-net45+win8\Peachpie.Runtime.dll</HintPath>
+      <HintPath>..\..\Peachpie.Runtime\bin\$(Configuration)\net46\Peachpie.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />

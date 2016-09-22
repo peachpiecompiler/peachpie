@@ -44,7 +44,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Peachpie.Runtime">
-      <HintPath>..\..\Peachpie.Runtime\bin\Debug\portable45-net45+win8\Peachpie.Runtime.dll</HintPath>
+      <HintPath>..\..\Peachpie.Runtime\bin\Debug\net46\Peachpie.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
