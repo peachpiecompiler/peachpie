@@ -118,16 +118,20 @@ namespace Pchp.CodeAnalysis.Symbols
             _modules = modules.AsImmutableOrNull();
             _isLinked = isLinked;
 
-            if (assembly.AssemblyReferences.Length == 0 && assembly.DeclaresTheObjectClass)
-                _specialAssembly = SpecialAssembly.CorLibrary;
-            else if (assembly.Identity.Name == "System.Runtime")
-                _specialAssembly = SpecialAssembly.CorLibrary;
-            else if (IsPchpCor(assembly))
+            if (IsPchpCor(assembly))
             {
                 _specialAssembly = SpecialAssembly.PchpCorLibrary;
 
                 // initialize CoreTypes
                 this.PrimaryModule.GlobalNamespace.GetTypeMembers();
+            }
+            else if (assembly.Identity.Name == "System.Runtime")
+            {
+                _specialAssembly = SpecialAssembly.CorLibrary;
+            }
+            else if (assembly.AssemblyReferences.Length == 0 && assembly.DeclaresTheObjectClass)
+            {
+                _specialAssembly = SpecialAssembly.CorLibrary;
             }
             else
             {

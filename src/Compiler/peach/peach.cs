@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 "/r:" + @"C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Runtime\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Runtime.dll",
                 "/r:" + @"C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Core\v4.0_4.0.0.0__b77a5c561934e089\System.Core.dll",
                 "/r:" + Path.Combine(basedir, "Peachpie.Runtime.dll"),
-                "/r:" + Path.Combine(basedir, "Peachpie.NETStandard.Library.dll")
+                "/r:" + Path.Combine(basedir, "Peachpie.Library.dll")
             };
 
             //

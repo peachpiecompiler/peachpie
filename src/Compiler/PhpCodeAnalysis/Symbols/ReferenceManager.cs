@@ -185,6 +185,10 @@ namespace Pchp.CodeAnalysis
                         // list of modules to initialize later
                         refmodules.AddRange(symbol.Modules.Cast<PEModuleSymbol>());
                     }
+                    else
+                    {
+                        throw new Exception($"symbol '{pe.FilePath}' could not be created!");
+                    }
                 }
 
                 //

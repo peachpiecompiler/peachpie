@@ -18,20 +18,29 @@ namespace Peachpie.NETCore.Compiler.Tools
         /// <param name="args">Arguments passed from <c>dotnet build</c>.</param>
         public static int Main(string[] args)
         {
-            args = ProcessArguments(args);
+            var rspfile = CreateRspFile(args);
 
             // compile
-            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, args, null, Directory.GetCurrentDirectory(), null, null, new SimpleAnalyzerAssemblyLoader(), Console.Out);
+            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, new[] { "@" + rspfile }, null, Directory.GetCurrentDirectory(), null, null, new SimpleAnalyzerAssemblyLoader(), Console.Out);
         }
 
         #region ProcessArguments
 
         // TODO: CommonCompilerOptionsCommandLine:
 
-        static string[] ProcessArguments(string[] args)
+
+        /// <summary>
+        /// Parses given arguments and gets new set of arguments to be passed to our compiler driver.
+        /// </summary>
+        /// <param name="args">Original set of arguments.</param>
+        /// <returns>New set of arguments.</returns>
+        static string CreateRspFile(string[] args)
         {
             var todo = new Queue<string>(args);
-            var newargs = new List<string>(args);
+            var newargs = new List<string>();
+            var sourcefiles = new List<string>();
+
+            string tmpoutput = Directory.GetCurrentDirectory(); // temp output to place new RSP file into
 
             while (todo.Count != 0)
             {
@@ -75,13 +84,31 @@ namespace Peachpie.NETCore.Compiler.Tools
                                     newargs.Insert(0, "/debug+");
                                 }
                                 break;
+                            case "temp-output":
+                                tmpoutput = value;
+                                break;
                         }
+
+                        //
+                        var rspvalue = opt.Value.Value;
+                        if (rspvalue.IndexOfAny(new[] { ' ', '\t' }) >= 0)
+                            rspvalue = "\"" + rspvalue + "\"";  // enclose into quotes so 'ParseResponseLines' won't split it into words
+
+                        //
+                        newargs.Add($"--{opt.Value.Key}:{rspvalue}");
+                    }
+                    else
+                    {
+                        sourcefiles.Add($"\"{arg}\"");
                     }
                 }
             }
 
             //
-            return newargs.ToArray();
+            var alllines = newargs.Concat(sourcefiles);
+            var rspfile = Path.Combine(tmpoutput, "dotnet-compile-php.rsp");
+            File.WriteAllLines(rspfile, alllines);
+            return rspfile;
         }
 
         static KeyValuePair<string, string>? ParseOption(string arg)

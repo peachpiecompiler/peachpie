@@ -28,9 +28,9 @@ namespace Pchp.CodeAnalysis.CommandLine
         {
             // additional support for "--argument:value"
             // TODO: remove once implemented in CodeAnalysis
-            var colon = arg.IndexOf(':');
             if (arg.StartsWith("--"))
             {
+                var colon = arg.IndexOf(':');
                 if (colon > 0)
                 {
                     name = arg.Substring(2, colon - 2).ToLowerInvariant();
