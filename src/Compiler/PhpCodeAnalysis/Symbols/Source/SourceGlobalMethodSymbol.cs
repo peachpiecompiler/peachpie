@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.Syntax.AST;
 using Pchp.Syntax;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -94,7 +95,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.ReturnTypeMask);
+                Debug.Assert(this.ControlFlowGraph != null);
+                return DeclaringCompilation.GetTypeFromTypeRef(this, TargetState.GetReturnType());
             }
         }
 

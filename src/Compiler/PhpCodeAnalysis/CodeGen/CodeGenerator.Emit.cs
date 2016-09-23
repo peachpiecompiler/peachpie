@@ -1192,7 +1192,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         {
                             if (this.Routine != null && typemask.IsSingleType)
                             {
-                                var typectx = this.Routine.ControlFlowGraph.FlowContext.TypeRefContext;
+                                var typectx = this.Routine.FlowContext.TypeRefContext;
 
                                 if (typectx.IsBoolean(typemask))
                                 {
@@ -1279,7 +1279,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var return_type = this.Routine.ReturnType;
 
-            EmitLoadDefaultValue(return_type, this.Routine.ControlFlowGraph.ReturnTypeMask);
+            EmitLoadDefaultValue(return_type, this.Routine.TargetState.GetReturnType());
             EmitRet(return_type.SpecialType == SpecialType.System_Void);
         }
 

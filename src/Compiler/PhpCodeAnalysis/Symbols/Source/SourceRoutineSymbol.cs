@@ -22,7 +22,8 @@ namespace Pchp.CodeAnalysis.Symbols
     internal abstract partial class SourceRoutineSymbol : MethodSymbol
     {
         ControlFlowGraph _cfg;
-
+        FlowState _state;
+        
         /// <summary>
         /// Lazily bound semantic block, equivalent for CFG[0].
         /// Entry point of analysis and emitting.
@@ -32,6 +33,18 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return _cfg; }
             set { _cfg = value; }
         }
+
+        /// <summary>
+        /// Lazily bound flow analysis result state.
+        /// Is not <c>null</c> even in the routine is abstract and has no <see cref="ControlFlowGraph"/>.
+        /// </summary>
+        internal FlowState TargetState
+        {
+            get { return (_cfg != null && _cfg.Exit.FlowState != null) ? _cfg.Exit.FlowState : _state; }
+            set { Debug.Assert(value != null); _state = value; }
+        }
+
+        internal FlowContext FlowContext => this.TargetState?.FlowContext;
 
         #region ISemanticFunction
 
@@ -43,7 +56,9 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 if (_cfg != null)
+                {
                     return ImmutableArray.Create(_cfg);
+                }
 
                 return default(ImmutableArray<ControlFlowGraph>);
             }
@@ -51,8 +66,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override TypeRefMask GetResultType(TypeRefContext ctx)
         {
-            var cfg = this.ControlFlowGraph;
-            return ctx.AddToContext(cfg.FlowContext.TypeRefContext, cfg.ReturnTypeMask);
+            return ctx.AddToContext(this.FlowContext.TypeRefContext, TargetState.GetReturnType());
         }
 
         #endregion

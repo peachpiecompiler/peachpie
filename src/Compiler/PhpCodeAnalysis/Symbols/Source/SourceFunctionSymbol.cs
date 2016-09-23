@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return BuildReturnType(_syntax.Signature, _syntax.PHPDoc, this.ControlFlowGraph.ReturnTypeMask);
+                return BuildReturnType(_syntax.Signature, _syntax.PHPDoc, TargetState.GetReturnType());
             }
         }
 

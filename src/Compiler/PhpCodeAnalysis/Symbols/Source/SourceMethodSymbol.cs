@@ -163,7 +163,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var t = BuildReturnType(_syntax.Signature, _syntax.PHPDoc, this.ControlFlowGraph.ReturnTypeMask);
+                var t = BuildReturnType(_syntax.Signature, _syntax.PHPDoc, (this.ControlFlowGraph != null) ? this.ControlFlowGraph.ReturnTypeMask : TypeRefMask.AnyType);
 
                 //if ((this.IsVirtual || this.IsOverride) && this.DeclaredAccessibility != Accessibility.Private && !this.IsPhpConstructorMethod)
                 //{

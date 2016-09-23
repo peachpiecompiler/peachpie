@@ -466,10 +466,10 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal NamedTypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol routine, TypeRefMask typeMask)
         {
-            if (routine.ControlFlowGraph.HasFlowState)
+            var fctx = routine.FlowContext;
+            if (fctx != null)
             {
-                var ctx = routine.ControlFlowGraph.FlowContext;
-                return this.GetTypeFromTypeRef(ctx.TypeRefContext, typeMask);
+                return this.GetTypeFromTypeRef(fctx.TypeRefContext, typeMask);
             }
 
             throw new InvalidOperationException();

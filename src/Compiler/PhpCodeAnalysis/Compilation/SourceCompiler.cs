@@ -68,19 +68,25 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(routine);
 
-            var cfg = routine.ControlFlowGraph;
-            if (cfg == null)
+            if (routine.TargetState == null)
             {
                 // create initial flow state
                 var state = StateBinder.CreateInitialState(routine);
-                var binder = new SemanticsBinder(routine, state.FlowContext);
+                routine.TargetState = state;
 
-                // create control flow
-                routine.ControlFlowGraph = cfg = new ControlFlowGraph(routine.Statements, binder);
+                //
+                if (routine.Statements != null) // ~ non abstract method
+                {
+                    var binder = new SemanticsBinder(routine, state.FlowContext);
 
-                // enqueue the method for the analysis
-                cfg.Start.FlowState = state;
-                _worklist.Enqueue(cfg.Start);
+                    // build control flow graph
+                    var cfg = new ControlFlowGraph(routine.Statements, binder);
+                    routine.ControlFlowGraph = cfg;
+
+                    // enqueue the method for the analysis
+                    cfg.Start.FlowState = state;
+                    _worklist.Enqueue(cfg.Start);
+                }
             }
         }
 
@@ -144,6 +150,8 @@ namespace Pchp.CodeAnalysis
         void EmitMethodBody(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
+            Debug.Assert(routine.FlowContext != null);
+            Debug.Assert(routine.ControlFlowGraph != null);
             Debug.Assert(routine.ControlFlowGraph.Start.FlowState != null);
 
             var body = MethodGenerator.GenerateMethodBody(_moduleBuilder, routine, 0, null, _diagnostics, _emittingPdb);
