@@ -178,9 +178,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     var value = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
                     if (value == null)
-                        throw new InvalidOperationException();
+                    {
+                        // TODO: non-literal default values (like array()) must be handled by creating a method overload calling this method:
+
+                        // Template:
+                        // foo($a = [], $b = [1, 2, 3]) =>
+                        // + foo($a, $b){ /* this routine */ }
+                        // + foo($a) => foo($a, [1, 2, 3])
+                        // + foo() => foo([], [1, 2, 3)
+                    }
 
                     //
+                    Debug.Assert(value != null, $"Not implemented default value '{_syntax.InitValue.GetType().Name}'");
                     return value;
                 }
 
