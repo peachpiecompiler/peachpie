@@ -41,8 +41,8 @@
 
   "scripts": {
     "postcompile": [
-      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration% --version-suffix beta",
-      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs/%compile:Configuration% --version-suffix beta ../Peachpie.App"
+      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs --version-suffix beta",
+      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs --version-suffix beta ../Peachpie.App"
     ]
   }
 }
