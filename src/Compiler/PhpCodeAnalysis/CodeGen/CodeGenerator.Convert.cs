@@ -121,7 +121,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
                         break;
                     }
-                    else if (from == CoreTypes.PhpArray)
+                    else if (from.IsOfType(CoreTypes.PhpArray))
                     {
                         EmitCall(ILOpCode.Callvirt, CoreMethods.PhpArray.ToBoolean);
                         break;
@@ -628,7 +628,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCastClass(to);
                         return;
                     }
-                    else if (from == CoreTypes.PhpArray)
+                    else if (from.IsOfType(CoreTypes.PhpArray))
                     {
                         // (T)PhpArray.ToClass();
                         EmitCastClass(EmitCall(ILOpCode.Call, CoreMethods.PhpArray.ToClass), to);
@@ -786,7 +786,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         void EmitConvertToEnum(TypeSymbol from, NamedTypeSymbol to)
         {
             Debug.Assert(to.IsEnumType());
-            
+
             switch (from.SpecialType)
             {
                 case SpecialType.System_Int16:
@@ -818,9 +818,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(to);
 
             // conversion is not needed:
-            if (from.IsEqualToOrDerivedFrom(to) ||
-               (from.SpecialType == to.SpecialType && from.SpecialType != SpecialType.None))
+            if (from.SpecialType == to.SpecialType &&
+                (from == to || (to.SpecialType != SpecialType.System_Object && from.IsOfType(to))))
+            {
                 return;
+            }
 
             //
             from = EmitSpecialize(from, fromHint);

@@ -33,17 +33,22 @@ namespace Pchp.CodeAnalysis.Symbols
             return actual;
         }
 
-        //public static bool ImplementsInterface(this TypeSymbol subType, TypeSymbol superInterface, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
-        //{
-        //    foreach (NamedTypeSymbol @interface in subType.AllInterfacesWithDefinitionUseSiteDiagnostics(ref useSiteDiagnostics))
-        //    {
-        //        if (@interface.IsInterface && @interface == superInterface)
-        //        {
-        //            return true;
-        //        }
-        //    }
-        //    return false;
-        //}
+        public static bool ImplementsInterface(this TypeSymbol subType, TypeSymbol superInterface/*, ref HashSet<DiagnosticInfo> useSiteDiagnostics*/)
+        {
+            if (subType == superInterface)
+            {
+                return true;
+            }
+
+            foreach (var @interface in subType.AllInterfaces)
+            {
+                if (@interface.IsInterface && @interface == superInterface)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public static bool CanBeAssignedNull(this TypeSymbol type)
         {

@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpTypeInfoExtension, PhpTypeInfo,
-            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, IPhpEnumerable, IPhpCallable,
+            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, IPhpArray, IPhpEnumerable, IPhpCallable,
             IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
@@ -125,6 +125,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpValue = Create("PhpValue");
             PhpString = Create("PhpString");
             PhpArray = Create("PhpArray");
+            IPhpArray = Create("IPhpArray");
             IPhpEnumerable = Create("IPhpEnumerable");
             IPhpCallable = Create("IPhpCallable");
             IntStringKey = Create("IntStringKey");

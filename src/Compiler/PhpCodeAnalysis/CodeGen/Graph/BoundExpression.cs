@@ -1709,7 +1709,7 @@ namespace Pchp.CodeAnalysis.Semantics
         void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
             var rtype = cg.CoreTypes.PhpArray;
-            cg.EmitConvert(valueType, 0, rtype);    // TODO: to IPhpArrayOperators
+            cg.EmitConvert(valueType, 0, rtype);    // TODO: to IPhpArray
 
             var tmp = cg.GetTemporaryLocal(rtype);
             cg.Builder.EmitLocalStore(tmp);
@@ -1728,7 +1728,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // LOAD Array.GetItemValue(IntStringKey{i})
                 cg.Builder.EmitLocalLoad(tmp);
                 cg.EmitIntStringKey(i);
-                var itemtype = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
+                var itemtype = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
 
                 // STORE vars[i]
                 boundtarget.EmitStore(cg, itemtype);
@@ -2604,7 +2604,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             InstanceCacheHolder.EmitInstance(instanceOpt, cg, Array);
 
-            if (Array.ResultType == cg.CoreTypes.PhpArray)
+            if (Array.ResultType.IsOfType(cg.CoreTypes.IPhpArray))
             {
                 // ok
             }
@@ -2635,23 +2635,25 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             // Template: array[index]
 
+            // OPTIMIZATION: .call instead of .callvirt in case of known sealed array type (e.g. PhpArray instead of IPhpArray)
+
             if (Access.EnsureObject)
             {
                 // <array>.EnsureItemObject(<key>)
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemObject_IntStringKey);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemObject_IntStringKey);
             }
             else if (Access.EnsureArray)
             {
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemArray_IntStringKey);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemArray_IntStringKey);
             }
             else if (Access.IsReadRef)
             {
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemAlias_IntStringKey);
             }
             else
             {
                 Debug.Assert(Access.IsRead);
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
             }
         }
 
@@ -2683,12 +2685,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 // .SetItemAlias(key, alias) or .AddValue(PhpValue.Create(alias))
                 if (this.Index != null)
                 {
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.SetItemAlias_IntStringKey_PhpAlias);
                 }
                 else
                 {
                     cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
                 }
             }
             else if (Access.IsUnset)
@@ -2697,7 +2699,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw new InvalidOperationException();
 
                 // .RemoveKey(key)
-                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.RemoveKey_IntStringKey);
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.RemoveKey_IntStringKey);
             }
             else
             {
@@ -2708,11 +2710,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 // .SetItemValue(key, value) or .AddValue(value)
                 if (this.Index != null)
                 {
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.SetItemValue_IntStringKey_PhpValue);
                 }
                 else
                 {
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
                 }
             }
         }

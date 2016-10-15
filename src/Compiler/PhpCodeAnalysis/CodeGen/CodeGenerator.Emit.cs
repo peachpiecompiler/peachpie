@@ -890,7 +890,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         Emit_PhpAlias_GetValue();
                         method = CoreMethods.Operators.Echo_PhpValue.Symbol;
                     }
-                    else if (type == CoreTypes.PhpArray)
+                    else if (type.IsOfType(CoreTypes.PhpArray))
                     {
                         this.EmitLoadContext();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpArray.ToString_Context).Expect(SpecialType.System_String);

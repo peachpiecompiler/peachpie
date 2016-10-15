@@ -268,6 +268,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly PhpValueHolder PhpValue;
         public readonly PhpAliasHolder PhpAlias;
         public readonly PhpArrayHolder PhpArray;
+        public readonly IPhpArrayHolder IPhpArray;
         public readonly PhpNumberHolder PhpNumber;
         public readonly OperatorsHolder Operators;
         public readonly PhpStringHolder PhpString;
@@ -283,6 +284,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpValue = new PhpValueHolder(types);
             PhpAlias = new PhpAliasHolder(types);
             PhpArray = new PhpArrayHolder(types);
+            IPhpArray = new IPhpArrayHolder(types);
             PhpNumber = new PhpNumberHolder(types);
             PhpString = new PhpStringHolder(types);
             Operators = new OperatorsHolder(types);
@@ -610,6 +612,29 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
                 Append_String, Append_PhpString;
+        }
+
+        public struct IPhpArrayHolder
+        {
+            public IPhpArrayHolder(CoreTypes ct)
+            {
+                var arr = ct.IPhpArray;
+
+                RemoveKey_IntStringKey = arr.Method("RemoveKey", ct.IntStringKey);
+                GetItemValue_IntStringKey = arr.Method("GetItemValue", ct.IntStringKey);
+                SetItemValue_IntStringKey_PhpValue = arr.Method("SetItemValue", ct.IntStringKey, ct.PhpValue);
+                SetItemAlias_IntStringKey_PhpAlias = arr.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
+                AddValue_PhpValue = arr.Method("AddValue", ct.PhpValue);
+                EnsureItemObject_IntStringKey = arr.Method("EnsureItemObject", ct.IntStringKey);
+                EnsureItemArray_IntStringKey = arr.Method("EnsureItemArray", ct.IntStringKey);
+                EnsureItemAlias_IntStringKey = arr.Method("EnsureItemAlias", ct.IntStringKey);
+            }
+
+            public readonly CoreMethod
+                RemoveKey_IntStringKey,
+                GetItemValue_IntStringKey,
+                SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
+                EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey;
         }
 
         public struct PhpArrayHolder

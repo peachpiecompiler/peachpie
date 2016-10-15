@@ -71,6 +71,55 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// The PHP array interface provides operations for an array access.
+    /// </summary>
+    public interface IPhpArray // TODO: : IPhpEnumerable, IPhpConvertible
+    {
+        /// <summary>
+        /// Gets value at given index.
+        /// Gets <c>void</c> value in case the key is not found.
+        /// </summary>
+        PhpValue GetItemValue(IntStringKey key);
+
+        /// <summary>
+        /// Sets value at specific index. Value must not be an alias.
+        /// </summary>
+        void SetItemValue(IntStringKey key, PhpValue value);
+
+        /// <summary>
+        /// Writes aliased value at given index.
+        /// </summary>
+        void SetItemAlias(IntStringKey key, PhpAlias alias);
+
+        /// <summary>
+        /// Add a value to the end of array.
+        /// Value can be an alias.
+        /// </summary>
+        void AddValue(PhpValue value);
+
+        /// <summary>
+        /// Removes a value matching given key.
+        /// In case the value is not found, the method does nothing.
+        /// </summary>
+        void RemoveKey(IntStringKey key);
+
+        /// <summary>
+        /// Ensures the item at given index is alias.
+        /// </summary>
+        PhpAlias EnsureItemAlias(IntStringKey key);
+
+        /// <summary>
+        /// Ensures the item at given index is class object.
+        /// </summary>
+        object EnsureItemObject(IntStringKey key);
+
+        /// <summary>
+        /// Ensures the item at given index is array.
+        /// </summary>
+        PhpArray EnsureItemArray(IntStringKey key);
+    }
+
+    /// <summary>
     /// Visitor implementation for a variable.
     /// </summary>
     /// <remarks>Used for serialization, printing, dumping.</remarks>
