@@ -559,8 +559,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     return cg.CoreTypes.Object;
                 }
-                else if (type == cg.CoreTypes.PhpArray)
+                else if (type.IsOfType(cg.CoreTypes.IPhpArray))
                 {
+                    // PhpArray -> stdClass
+                    // PhpString -> stdClass (?)
+                    // otherwise keep the instance on stack
                     throw new NotImplementedException();
                 }
                 else
@@ -595,7 +598,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // <place>.EnsureArray()
                     _place.EmitLoad(cg.Builder);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray)
-                        .Expect(cg.CoreTypes.PhpArray);
+                        .Expect(cg.CoreTypes.IPhpArray);
                 }
                 else if (type == cg.CoreTypes.PhpValue)
                 {
@@ -612,15 +615,24 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // <place>.EnsureArray()
                         _place.EmitLoadAddress(cg.Builder);
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray)
-                            .Expect(cg.CoreTypes.PhpArray);
+                            .Expect(cg.CoreTypes.IPhpArray);
                     }
                 }
-                else if (type == cg.CoreTypes.PhpArray)
+                else if (type.IsOfType(cg.CoreTypes.IPhpArray))
                 {
                     // Operators.EnsureArray(ref <place>)
                     _place.EmitLoadAddress(cg.Builder);
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpArrayRef)
-                        .Expect(cg.CoreTypes.PhpArray);
+
+                    if (type == cg.CoreTypes.PhpArray)
+                    {
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpArrayRef)
+                            .Expect(cg.CoreTypes.PhpArray);
+                    }
+                    else
+                    {
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_IPhpArrayRef)
+                            .Expect(cg.CoreTypes.IPhpArray);
+                    }
                 }
 
                 throw new NotImplementedException("EnsureArray(" + type.Name + ")");
@@ -1218,19 +1230,27 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     EmitOpCode_Load(cg);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray)
-                        .Expect(cg.CoreTypes.PhpArray);
+                        .Expect(cg.CoreTypes.IPhpArray);
                 }
                 else if (type == cg.CoreTypes.PhpValue)
                 {
                     EmitOpCode_LoadAddress(cg);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray)
-                            .Expect(cg.CoreTypes.PhpArray);
+                            .Expect(cg.CoreTypes.IPhpArray);
                 }
-                else if (type == cg.CoreTypes.PhpArray)
+                else if (type.IsOfType(cg.CoreTypes.IPhpArray))
                 {
                     EmitOpCode_LoadAddress(cg); // ensure value is not null
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpArrayRef)
-                        .Expect(cg.CoreTypes.PhpArray);
+                    if (type == cg.CoreTypes.PhpArray)
+                    {
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_PhpArrayRef)
+                           .Expect(cg.CoreTypes.PhpArray);
+                    }
+                    else
+                    {
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_IPhpArrayRef)
+                            .Expect(cg.CoreTypes.IPhpArray);
+                    }
                 }
 
                 throw new NotImplementedException();
@@ -1524,7 +1544,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // resolve actual return type
             TypeSymbol return_type;
             if (_access.EnsureObject) return_type = cg.CoreTypes.Object;
-            else if (_access.EnsureArray) return_type = cg.CoreTypes.PhpArray;
+            else if (_access.EnsureArray) return_type = cg.CoreTypes.IPhpArray;
             else if (_access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
             else return_type = _access.TargetType ?? cg.CoreTypes.PhpValue;
 
@@ -1672,7 +1692,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // resolve actual return type
             TypeSymbol return_type;
             if (Access.EnsureObject) return_type = cg.CoreTypes.Object;
-            else if (Access.EnsureArray) return_type = cg.CoreTypes.PhpArray;
+            else if (Access.EnsureArray) return_type = cg.CoreTypes.IPhpArray;
             else if (Access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
             else return_type = Access.TargetType ?? cg.CoreTypes.PhpValue;
 

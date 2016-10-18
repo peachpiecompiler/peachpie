@@ -335,6 +335,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);  // TODO: IPhpArray
             }
             // TODO: IPhpEnumerable
+            // TODO: IPhpArray
             // TODO: Iterator
             else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
             {

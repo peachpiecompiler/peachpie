@@ -110,21 +110,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_PhpValue);
                         break;
                     }
-                    else if (from == CoreTypes.PhpString)
-                    {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
-                        break;
-                    }
                     else if (from == CoreTypes.PhpNumber)
                     {
                         EmitPhpNumberAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
                         break;
                     }
-                    else if (from.IsOfType(CoreTypes.PhpArray))
+                    // TODO: IsOfType(IPhpConvertible) -> (IPhpConvertible).ToBoolean()
+                    else if (from == CoreTypes.PhpString)
                     {
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.PhpArray.ToBoolean);
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
                         break;
+                    }
+                    else if (from.IsOfType(CoreTypes.IPhpArray))
+                    {
+                        // IPhpArray.Count != 0
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
+                        _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                        _il.EmitOpCode(negation ? ILOpCode.Ceq : ILOpCode.Cgt_un);
+                        return; // negation handled
                     }
                     else if (from.IsReferenceType)
                     {
@@ -238,10 +242,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
-                    else if (from == compilation.CoreTypes.PhpArray)
+                    else if (from.IsOfType(compilation.CoreTypes.IPhpArray))
                     {
-                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpArray)
-                            .Expect(compilation.CoreTypes.PhpValue);
+                        if (from.IsOfType(compilation.CoreTypes.PhpArray))
+                        {
+                            il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpArray)
+                                .Expect(compilation.CoreTypes.PhpValue);
+                        }
+                        else
+                        {
+                            il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_IPhpArray)
+                                .Expect(compilation.CoreTypes.PhpValue);
+                        }
                         break;
                     }
                     else if (from == compilation.CoreTypes.IntStringKey)
@@ -319,8 +331,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
 
                 default:
-                    EmitConvertToLong(from, 0);
-                    _il.EmitOpCode(ILOpCode.Conv_i4);   // Int64 -> Int32
+
+                    if (from.IsOfType(CoreTypes.IPhpArray))
+                    {
+                        // IPhpArray.Count
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
+                    }
+                    else
+                    {
+                        EmitConvertToLong(from, 0);
+                        _il.EmitOpCode(ILOpCode.Conv_i4);   // Int64 -> Int32
+                    }
                     return;
             }
         }
@@ -362,6 +383,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         EmitPhpNumberAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToLong);
+                        return;
+                    }
+                    else if (from.IsOfType(CoreTypes.IPhpArray))
+                    {
+                        // (long)IPhpArray.Count
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
+                        _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
                         return;
                     }
                     else if (from == CoreTypes.PhpValue)
@@ -406,6 +434,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         EmitPhpNumberAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
+                        return dtype;
+                    }
+                    else if (from.IsOfType(CoreTypes.IPhpArray))
+                    {
+                        // (double)IPhpArray.Count
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
+                        _il.EmitOpCode(ILOpCode.Conv_r8);   // Int32 -> Double
                         return dtype;
                     }
                     else if (from == CoreTypes.PhpValue)
@@ -478,7 +513,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(SpecialType.System_String);
                         break;
                     }
-                    throw new NotImplementedException();
+                    throw new NotImplementedException($"(string){from}");
             }
         }
 
@@ -492,6 +527,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (from == CoreTypes.PhpValue)
             {
+                // TODO: ToArray()
                 EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue);
             }
             else
@@ -517,7 +553,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     throw new NotImplementedException();    // StringArray helper
                 default:
                     var diag = new HashSet<DiagnosticInfo>();
-                    if (type.IsEqualToOrDerivedFrom(CoreTypes.PhpArray, false, ref diag))
+                    if (type.IsOfType(CoreTypes.PhpArray))
                     {
                         return;
                     }
@@ -632,6 +668,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // (T)PhpArray.ToClass();
                         EmitCastClass(EmitCall(ILOpCode.Call, CoreMethods.PhpArray.ToClass), to);
+                        return;
+                    }
+                    else if (from.IsOfType(CoreTypes.IPhpArray))
+                    {
+                        // (T)Convert.ToClass(IPhpArray)
+                        EmitCastClass(EmitCall(ILOpCode.Call, CoreMethods.Operators.ToClass_IPhpArray), to);
                         return;
                     }
                     else if (from.IsReferenceType)
@@ -866,7 +908,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitConvertToPhpNumber(from, fromHint);
                         return;
                     }
-                    else if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpEnumerable)    // TODO: merge into IPhpArray
+                    else if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.IPhpArray)    // TODO: merge into IPhpArray
                     {
                         EmitConvertToPhpArray(from, fromHint);
                         return;

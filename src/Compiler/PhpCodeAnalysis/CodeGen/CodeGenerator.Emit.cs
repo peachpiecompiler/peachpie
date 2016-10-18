@@ -182,12 +182,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                             return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_String)
                                 .Expect(SpecialType.System_String);
                         }
-                        else if (IsArrayOnly(tmask))
-                        {
-                            place.EmitLoadAddress(_il);
-                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Array)
-                                .Expect(CoreTypes.PhpArray);
-                        }
+                        //else if (IsArrayOnly(tmask))
+                        //{
+                        //    place.EmitLoadAddress(_il);
+                        //    return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Array)    NOTE!! PhpValue.Array is PhpArray
+                        //        .Expect(CoreTypes.IPhpArray);
+                        //}
                         else if (IsClassOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
@@ -890,10 +890,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                         Emit_PhpAlias_GetValue();
                         method = CoreMethods.Operators.Echo_PhpValue.Symbol;
                     }
-                    else if (type.IsOfType(CoreTypes.PhpArray))
+                    else if (type.IsOfType(CoreTypes.IPhpArray))
                     {
-                        this.EmitLoadContext();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpArray.ToString_Context).Expect(SpecialType.System_String);
+                        this.EmitConvertToString(type, 0);  // Array -> string
                         method = CoreMethods.Operators.Echo_String.Symbol;
                     }
                     else
@@ -1170,7 +1169,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 default:
                     if (type.IsReferenceType)
                     {
-                        if (type == CoreTypes.PhpArray)
+                        if (type == CoreTypes.PhpArray || type == CoreTypes.IPhpArray)
                         {
                             EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
                         }
@@ -1180,9 +1179,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                             Emit_PhpValue_Void();
                             Emit_PhpValue_MakeAlias();
                         }
-                        else
+                        else if (type == CoreTypes.PhpString)
                         {
                             // TODO: PhpString
+                            throw new NotImplementedException();
+                        }
+                        else
+                        {
                             _il.EmitNullConstant();
                         }
                     }

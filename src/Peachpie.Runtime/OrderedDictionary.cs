@@ -2047,7 +2047,7 @@ namespace Pchp.Core
         /// <param name="key">Index of item to be checked.</param>
         /// <param name="array">Caller. Used to lazy copy if necessary.</param>
         /// <returns><see cref="PhpArray"/> ensured to be at given <paramref name="key"/>.</returns>
-        public PhpArray/*!*/_ensure_item_array(ref IntStringKey key, PhpArray/*!*/array)
+        public IPhpArray/*!*/_ensure_item_array(ref IntStringKey key, PhpArray/*!*/array)
         {
             Debug.Assert(array != null, "array == null");
             Debug.Assert(array.table == this, "array.table != this");

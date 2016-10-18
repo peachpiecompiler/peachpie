@@ -55,6 +55,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(void)) return BindToVoid(arg);
             if (target == typeof(object)) return BindToClass(arg);
             if (target == typeof(PhpArray)) return BindAsArray(arg);
+            if (target == typeof(IPhpArray)) return BindAsArray(arg);   // TODO
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
             if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
 

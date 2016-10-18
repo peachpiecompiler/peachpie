@@ -62,7 +62,7 @@ namespace Pchp.CodeAnalysis.Utilities
                 if (qname == QualifiedName.Boolean)
                     return ct.Boolean;
                 if (qname == QualifiedName.Array)
-                    return ct.PhpArray;
+                    return ct.IPhpArray;
                 if (qname == QualifiedName.Callable)
                     return ct.IPhpCallable;
                 if (qname == QualifiedName.Object)

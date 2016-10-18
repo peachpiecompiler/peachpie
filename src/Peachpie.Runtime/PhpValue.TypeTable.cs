@@ -79,7 +79,7 @@ namespace Pchp.Core
             /// In case current value is empty, replaces current value with newly created array.
             /// </summary>
             /// <returns>Non-null object.</returns>
-            public abstract PhpArray EnsureArray(ref PhpValue me);
+            public abstract IPhpArray EnsureArray(ref PhpValue me);
 
             /// <summary>
             /// Ensures the value as an alias.
@@ -156,7 +156,7 @@ namespace Pchp.Core
                 me = PhpValue.FromClass(obj);
                 return obj;
             }
-            public override PhpArray EnsureArray(ref PhpValue me)
+            public override IPhpArray EnsureArray(ref PhpValue me)
             {
                 var arr = new PhpArray();
                 me = PhpValue.Create(arr);
@@ -193,7 +193,7 @@ namespace Pchp.Core
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Long, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Long && right.Long == me.Long;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
-            public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
+            public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Long);
@@ -219,7 +219,7 @@ namespace Pchp.Core
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Double, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Double && right.Double == me.Double;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
-            public override PhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
+            public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Double);
@@ -254,7 +254,7 @@ namespace Pchp.Core
                 
                 return obj;
             }
-            public override PhpArray EnsureArray(ref PhpValue me)
+            public override IPhpArray EnsureArray(ref PhpValue me)
             {
                 var arr = new PhpArray();
 
@@ -303,7 +303,7 @@ namespace Pchp.Core
 
                 return obj;
             }
-            public override PhpArray EnsureArray(ref PhpValue me)
+            public override IPhpArray EnsureArray(ref PhpValue me)
             {
                 var arr = new PhpArray();
 
@@ -354,7 +354,7 @@ namespace Pchp.Core
                 //return obj;
                 throw new NotImplementedException();
             }
-            public override PhpArray EnsureArray(ref PhpValue me)
+            public override IPhpArray EnsureArray(ref PhpValue me)
             {
                 //var arr = new PhpArray();
 
@@ -420,7 +420,7 @@ namespace Pchp.Core
             }
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Object && right.Object == me.Object;
             public override object EnsureObject(ref PhpValue me) => me.Object;
-            public override PhpArray EnsureArray(ref PhpValue me)
+            public override IPhpArray EnsureArray(ref PhpValue me)
             {
                 throw new NotImplementedException();  // Fatal Error: Cannot use object of type stdClass as array
             }
@@ -458,7 +458,7 @@ namespace Pchp.Core
                 throw new NotImplementedException();
             }
             public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
-            public override PhpArray EnsureArray(ref PhpValue me) => me.Array;
+            public override IPhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
             public override PhpArray AsArray(ref PhpValue me) => me.Array;
             public override IPhpCallable AsCallable(ref PhpValue me)
@@ -502,7 +502,7 @@ namespace Pchp.Core
             public override int Compare(ref PhpValue me, PhpValue right) => me.Alias.Value.Compare(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Alias.Value.StrictEquals(right);
             public override object EnsureObject(ref PhpValue me) => me.Alias.Value.EnsureObject();
-            public override PhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
+            public override IPhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override PhpArray AsArray(ref PhpValue me) => me.Alias.Value.AsArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();

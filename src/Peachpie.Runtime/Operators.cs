@@ -114,6 +114,11 @@ namespace Pchp.Core
         public static PhpArray EnsureArray(ref PhpArray arr) => arr ?? (arr = new PhpArray());
 
         /// <summary>
+        /// Ensures given variable is not <c>null</c>.
+        /// </summary>
+        public static IPhpArray EnsureArray(ref IPhpArray arr) => arr ?? (arr = new PhpArray());
+
+        /// <summary>
         /// Implementation of PHP <c>isset</c> operator.
         /// </summary>
         public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;

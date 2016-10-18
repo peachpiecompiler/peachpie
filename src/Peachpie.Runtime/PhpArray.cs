@@ -316,7 +316,7 @@ namespace Pchp.Core
 
         public object EnsureItemObject(IntStringKey key) => table._ensure_item_object(ref key, this);
 
-        public PhpArray EnsureItemArray(IntStringKey key) => table._ensure_item_array(ref key, this);
+        public IPhpArray EnsureItemArray(IntStringKey key) => table._ensure_item_array(ref key, this);
 
         public void RemoveKey(IntStringKey key) => this.Remove(key);
 

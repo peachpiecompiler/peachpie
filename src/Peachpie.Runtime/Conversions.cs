@@ -132,13 +132,13 @@ namespace Pchp.Core
         /// </summary>
         public static bool ToBoolean(object value)
         {
-            var convertible = value as IPhpConvertible;
-            return value != null && (convertible == null || convertible.ToBoolean());
+            IPhpConvertible convertible;
+            return value != null && ((convertible = value as IPhpConvertible) == null || convertible.ToBoolean());
         }
 
         #endregion
 
-        #region AsObject, AsArray, ToObject, AsCallable
+        #region AsObject, AsArray, ToClass, AsCallable
 
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
@@ -154,6 +154,28 @@ namespace Pchp.Core
         /// Converts given value to a class object.
         /// </summary>
         public static object ToClass(PhpValue value) => value.ToClass();
+
+        /// <summary>
+        /// Converts given array object to <see cref="stdClass"/>.
+        /// </summary>
+        /// <param name="array">Non-null reference to a PHP array.</param>
+        /// <returns>New instance of <see cref="stdClass"/> with runtime fields filled from given array.</returns>
+        public static object ToClass(IPhpArray array)
+        {
+            var convertible = array as IPhpConvertible;
+            if (convertible != null)
+            {
+                return convertible.ToClass();
+            }
+            else
+            {
+                //return new stdClass()
+                //{
+                //    __peach__runtimeFields = new PhpArray(array);
+                //};
+                throw new NotImplementedException();
+            }
+        }
 
         /// <summary>
         /// Gets value as a callable object that can be invoked dynamically.

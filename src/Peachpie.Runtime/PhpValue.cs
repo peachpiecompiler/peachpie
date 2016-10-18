@@ -258,7 +258,11 @@ namespace Pchp.Core
         /// </summary>
         public object AsObject() => _type.AsObject(ref this);
 
-        public PhpArray AsArray() => _type.AsArray(ref this);   // TODO: return IPhpArrayOperators
+        /// <summary>
+        /// <c>as</c> operator returning underlaying <see cref="PhpArray"/> or <c>null</c> reference.
+        /// </summary>
+        /// <returns>Instance of underlaying <see cref="PhpArray"/> or <c>null</c> if underlaying object is not PHP array.</returns>
+        public PhpArray AsArray() => _type.AsArray(ref this);
 
         /// <summary>
         /// Gets callable wrapper for the object dynamic invocation.
@@ -268,7 +272,12 @@ namespace Pchp.Core
 
         public object EnsureObject() => _type.EnsureObject(ref this);
 
-        public PhpArray EnsureArray() => _type.EnsureArray(ref this);
+        /// <summary>
+        /// Converts underlaying value into <see cref="IPhpArray"/>.
+        /// </summary>
+        /// <returns>PHP array instance.</returns>
+        /// <remarks>Used for L-Values accessed as arrays (<code>$lvalue[] = rvalue</code>).</remarks>
+        public IPhpArray EnsureArray() => _type.EnsureArray(ref this);
 
         public PhpAlias EnsureAlias() => _type.EnsureAlias(ref this);
 
@@ -392,6 +401,8 @@ namespace Pchp.Core
 
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 
+        public static PhpValue Create(IPhpArray value) => new PhpValue(value is PhpArray ? TypeTable.ArrayTable : value is PhpString ? TypeTable.WritableStringTable : TypeTable.ClassTable, value);
+
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
 
         /// <summary>
@@ -440,7 +451,9 @@ namespace Pchp.Core
         public static PhpValue[] FromClr(params object[] values)
         {
             if (values == null || values.Length == 0)
+            {
                 return Utilities.ArrayUtils.EmptyValues;
+            }
 
             //
             var result = new PhpValue[values.Length];

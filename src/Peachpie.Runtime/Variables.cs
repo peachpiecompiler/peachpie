@@ -76,6 +76,11 @@ namespace Pchp.Core
     public interface IPhpArray // TODO: : IPhpEnumerable, IPhpConvertible
     {
         /// <summary>
+        /// Gets number of items in the collection.
+        /// </summary>
+        int Count { get; }
+
+        /// <summary>
         /// Gets value at given index.
         /// Gets <c>void</c> value in case the key is not found.
         /// </summary>
@@ -116,7 +121,7 @@ namespace Pchp.Core
         /// <summary>
         /// Ensures the item at given index is array.
         /// </summary>
-        PhpArray EnsureItemArray(IntStringKey key);
+        IPhpArray EnsureItemArray(IntStringKey key);
     }
 
     /// <summary>

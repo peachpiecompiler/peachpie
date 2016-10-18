@@ -78,7 +78,7 @@ namespace Pchp.Core
         /// Ensures the underlaying value is an array and gets its instance.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public PhpArray EnsureArray() => Value.EnsureArray();
+        public IPhpArray EnsureArray() => Value.EnsureArray();
 
         #endregion
 

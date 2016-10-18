@@ -87,14 +87,15 @@ namespace Pchp.CodeAnalysis
 
             // TODO: simple array & PhpArray => PhpArray
 
+            if (first.IsOfType(second)) return second;  // A >> B -> B
+            if (second.IsOfType(first)) return first;   // A << B -> A
+
             if (!IsAString(first) && !IsAString(second) &&
-                first != CoreTypes.PhpArray && second != CoreTypes.PhpArray)
+                !first.IsOfType(CoreTypes.IPhpArray) && !second.IsOfType(CoreTypes.IPhpArray))
             {
                 // unify class types to the common one (lowest)
                 if (first.IsReferenceType && second.IsReferenceType)
                 {
-                    if (first.IsOfType(second)) return second;
-                    if (second.IsOfType(first)) return first;
                     // TODO: find common base
                     // TODO: otherwise find a common interface
 
@@ -102,6 +103,9 @@ namespace Pchp.CodeAnalysis
                 }
             }
 
+            if (first.IsOfType(CoreTypes.IPhpArray) && second.IsOfType(CoreTypes.IPhpArray))
+                return CoreTypes.IPhpArray;
+            
             // most common PHP value type
             return CoreTypes.PhpValue;
         }
@@ -434,7 +438,7 @@ namespace Pchp.CodeAnalysis
             }
             else if (t is ArrayTypeRef)
             {
-                return this.CoreTypes.PhpArray;
+                return this.CoreTypes.IPhpArray;
             }
             else if (t is LambdaTypeRef)
             {
@@ -454,7 +458,7 @@ namespace Pchp.CodeAnalysis
                 case PhpTypeCode.Boolean: return CoreTypes.Boolean;
                 case PhpTypeCode.String: return CoreTypes.String;
                 case PhpTypeCode.WritableString: return CoreTypes.PhpString;
-                case PhpTypeCode.PhpArray: return CoreTypes.PhpArray;
+                case PhpTypeCode.PhpArray: return CoreTypes.IPhpArray;
                 case PhpTypeCode.Callable: return CoreTypes.IPhpCallable;
                 default:
                     throw new NotImplementedException();

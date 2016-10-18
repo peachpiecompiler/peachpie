@@ -815,7 +815,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         ytype.SpecialType == SpecialType.System_Int32 ||
                         ytype.SpecialType == SpecialType.System_Int64 ||
                         ytype.SpecialType == SpecialType.System_String ||
-                        ytype == cg.CoreTypes.PhpArray ||
+                        ytype.IsOfType(cg.CoreTypes.IPhpArray) ||
                         ytype == cg.CoreTypes.PhpString ||
                         ytype == cg.CoreTypes.Object)
                     {
@@ -855,8 +855,8 @@ namespace Pchp.CodeAnalysis.Semantics
                         ytype.SpecialType == SpecialType.System_Boolean ||
                         ytype.SpecialType == SpecialType.System_String ||
                         ytype.SpecialType == SpecialType.System_Double ||
+                        ytype.IsOfType(cg.CoreTypes.IPhpArray) ||
                         ytype == cg.CoreTypes.Object ||
-                        ytype == cg.CoreTypes.PhpArray ||
                         ytype == cg.CoreTypes.PhpString)
                     {
                         // i8 == something else => false
@@ -886,8 +886,8 @@ namespace Pchp.CodeAnalysis.Semantics
                         ytype.SpecialType == SpecialType.System_String ||
                         ytype.SpecialType == SpecialType.System_Int64 ||
                         ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.IsOfType(cg.CoreTypes.IPhpArray) ||
                         ytype == cg.CoreTypes.Object ||
-                        ytype == cg.CoreTypes.PhpArray ||
                         ytype == cg.CoreTypes.PhpString)
                     {
                         // r8 == something else => false
@@ -1519,7 +1519,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.ArrayCast:
                     //Template: "(array)x"
-                    cg.EmitConvert(this.Operand, cg.CoreTypes.PhpArray);
+                    cg.EmitConvert(this.Operand, cg.CoreTypes.PhpArray);    // TODO: EmitArrayCast()
                     returned_type = cg.CoreTypes.PhpArray;
                     break;
                     
@@ -1708,8 +1708,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            var rtype = cg.CoreTypes.PhpArray;
-            cg.EmitConvert(valueType, 0, rtype);    // TODO: to IPhpArray
+            var rtype = cg.CoreTypes.IPhpArray;
+            cg.EmitConvert(valueType, 0, rtype);
 
             var tmp = cg.GetTemporaryLocal(rtype);
             cg.Builder.EmitLocalStore(tmp);
@@ -1725,7 +1725,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var boundtarget = target.BindPlace(cg);
                 boundtarget.EmitStorePrepare(cg);
 
-                // LOAD Array.GetItemValue(IntStringKey{i})
+                // LOAD IPhpArray.GetItemValue(IntStringKey{i})
                 cg.Builder.EmitLocalLoad(tmp);
                 cg.EmitIntStringKey(i);
                 var itemtype = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
@@ -2588,7 +2588,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override IBoundReference BindPlace(CodeGenerator cg)
         {
-            this.Array.Access = this.Array.Access.WithRead(cg.CoreTypes.PhpArray);
+            this.Array.Access = this.Array.Access.WithRead(cg.CoreTypes.IPhpArray);
             _type = Access.IsReadRef ? cg.CoreTypes.PhpAlias : cg.CoreTypes.PhpValue;
             return this;
         }
