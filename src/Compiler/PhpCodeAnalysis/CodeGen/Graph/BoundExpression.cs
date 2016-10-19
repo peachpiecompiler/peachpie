@@ -1997,7 +1997,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // TODO: overload for 2, 3, 4 parameters directly
 
-            // <PhpString>.Add(<expr>)
+            // <PhpString>.Append(<expr>)
             foreach (var x in this.ArgumentsInSourceOrder)
             {
                 var expr = x.Value;
@@ -2010,14 +2010,18 @@ namespace Pchp.CodeAnalysis.Semantics
                 var t = cg.Emit(expr);
                 if (t == cg.CoreTypes.PhpString)
                 {
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_PhpString);
+                }
+                else if (t.SpecialType == SpecialType.System_String)
+                {
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
                 }
                 else
                 {
-                    cg.EmitConvert(t, 0, cg.CoreTypes.String);
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
+                    cg.EmitConvert(t, 0, cg.CoreTypes.PhpValue);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_PhpValue);
                 }
-                
+
                 //
                 cg.Builder.EmitOpCode(ILOpCode.Nop);
             }

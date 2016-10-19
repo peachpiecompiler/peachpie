@@ -425,14 +425,11 @@ namespace Pchp.Core
         /// </summary>
         PhpValue IPhpArray.GetItemValue(IntStringKey key)
         {
-            if (key.IsInteger)
-            {
-                return PhpValue.Create(this[key.Integer].ToString());
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
+            int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
+
+            return (index >= 0 && index < this.Length)
+                ? PhpValue.Create(this[index].ToString())
+                : PhpValue.Create(string.Empty);
         }
 
         /// <summary>
@@ -440,14 +437,31 @@ namespace Pchp.Core
         /// </summary>
         void IPhpArray.SetItemValue(IntStringKey key, PhpValue value)
         {
-            if (key.IsInteger)
+            int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
+
+            char ch;
+
+            switch (value.TypeCode)
             {
-                // this[key.Integer] = value[0]
+                case PhpTypeCode.Long:
+                    ch = (char)value.Long;
+                    break;
+
+                case PhpTypeCode.String:
+                    ch = (value.String.Length != 0) ? value.String[0] : '\0';
+                    break;
+
+                case PhpTypeCode.WritableString:
+                    ch = value.WritableString[0];
+                    break;
+
+                // TODO: other types
+
+                default:
+                    throw new NotSupportedException(value.TypeCode.ToString());
             }
-            else
-            {
-                throw new ArgumentException();
-            }
+
+            this[key.Integer] = ch;
         }
 
         /// <summary>
@@ -521,11 +535,6 @@ namespace Pchp.Core
             }
             set
             {
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException();
-                }
-
                 if (index >= this.Length)
                 {
                     if (index == this.Length)
@@ -537,7 +546,7 @@ namespace Pchp.Core
                         this.Append(new string('\0', index - this.Length) + value.ToString());
                     }
                 }
-                else
+                else if (index >= 0)
                 {
                     // TODO: EnsureWritable
 
@@ -562,6 +571,10 @@ namespace Pchp.Core
                             SetCharInChunk(ref _chunks, index, value);
                         }
                     }
+                }
+                else
+                {
+                    // index < 0, ignored
                 }
             }
         }

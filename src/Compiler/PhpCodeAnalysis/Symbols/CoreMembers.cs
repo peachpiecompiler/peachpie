@@ -610,11 +610,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Append_String = ct.PhpString.Method("Append", ct.String);
                 Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
+                Append_PhpValue = ct.PhpString.Method("Append", ct.PhpValue);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context,
-                Append_String, Append_PhpString;
+                Append_String, Append_PhpString, Append_PhpValue;
         }
 
         public struct IPhpArrayHolder
