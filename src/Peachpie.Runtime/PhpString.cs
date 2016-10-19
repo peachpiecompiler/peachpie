@@ -10,11 +10,11 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     /// <summary>
-    /// String builder providing fast concatenation and character replacements for both unicode and binary strings.
+    /// String builder providing fast concatenation and character replacements for hybrid strings (both unicode and binary).
     /// </summary>
     /// <remarks>Optimized for concatenation and output.</remarks>
     [DebuggerDisplay("{ToString()}", Type = PhpVariable.TypeNameString)]
-    public partial class PhpString : IPhpConvertible // TODO: IPhpArray
+    public partial class PhpString : IPhpConvertible, IPhpArray
     {
         //[StructLayout(LayoutKind.Explicit)]
         //public struct StringChunk
@@ -164,13 +164,15 @@ namespace Pchp.Core
         {
             AssertChunkObject(newchunk);
 
+            // TODO: EnsureWritable
+
             var chunks = _chunks;
             if (chunks != null)
             {
                 Debug.Assert(!this.IsEmpty);
 
                 // TODO: Compact byte[] chunks together
-                
+
                 if (IsArrayOfChunks)
                 {
                     Debug.Assert(chunks.GetType() == typeof(object[]));
@@ -406,6 +408,190 @@ namespace Pchp.Core
         public object ToClass()
         {
             return new stdClass(PhpValue.Create(ToString()));
+        }
+
+        #endregion
+
+        #region IPhpArray
+
+        /// <summary>
+        /// Gets number of items in the collection.
+        /// </summary>
+        int IPhpArray.Count => this.Length;
+
+        /// <summary>
+        /// Gets value at given index.
+        /// Gets <c>void</c> value in case the key is not found.
+        /// </summary>
+        PhpValue IPhpArray.GetItemValue(IntStringKey key)
+        {
+            if (key.IsInteger)
+            {
+                return PhpValue.Create(this[key.Integer].ToString());
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
+        /// <summary>
+        /// Sets value at specific index. Value must not be an alias.
+        /// </summary>
+        void IPhpArray.SetItemValue(IntStringKey key, PhpValue value)
+        {
+            if (key.IsInteger)
+            {
+                // this[key.Integer] = value[0]
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
+        /// <summary>
+        /// Writes aliased value at given index.
+        /// </summary>
+        void IPhpArray.SetItemAlias(IntStringKey key, PhpAlias alias) { throw new NotSupportedException(); }
+
+        /// <summary>
+        /// Add a value to the end of array.
+        /// Value can be an alias.
+        /// </summary>
+        void IPhpArray.AddValue(PhpValue value) { throw new NotSupportedException(); }
+
+        /// <summary>
+        /// Removes a value matching given key.
+        /// In case the value is not found, the method does nothing.
+        /// </summary>
+        void IPhpArray.RemoveKey(IntStringKey key) { throw new NotSupportedException(); }
+
+        /// <summary>
+        /// Ensures the item at given index is alias.
+        /// </summary>
+        PhpAlias IPhpArray.EnsureItemAlias(IntStringKey key) { throw new NotSupportedException(); }
+
+        /// <summary>
+        /// Ensures the item at given index is class object.
+        /// </summary>
+        object IPhpArray.EnsureItemObject(IntStringKey key) { throw new NotSupportedException(); }
+
+        /// <summary>
+        /// Ensures the item at given index is array.
+        /// </summary>
+        IPhpArray IPhpArray.EnsureItemArray(IntStringKey key) { throw new NotSupportedException(); }
+
+        #endregion
+
+        #region this[int]
+
+        /// <summary>
+        /// Gets or sets character at given index according to PHP semantics.
+        /// </summary>
+        /// <param name="index">Character index.</param>
+        /// <returns>Character at given position.</returns>
+        public char this[int index]
+        {
+            get
+            {
+                var chunks = _chunks;
+                if (chunks != null)
+                {
+                    if (chunks.GetType() == typeof(object[]))
+                    {
+                        var arr = (object[])chunks;
+                        foreach (var ch in arr)
+                        {
+                            int ch_length = ChunkLength(ch);
+                            if (index < ch_length)
+                            {
+                                return GetCharInChunk(ch, index);
+                            }
+                            index -= ch_length;
+                        }
+                    }
+                    else
+                    {
+                        return GetCharInChunk(chunks, index);
+                    }
+                }
+
+                throw new ArgumentOutOfRangeException();
+            }
+            set
+            {
+                if (index < 0)
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+
+                if (index >= this.Length)
+                {
+                    if (index == this.Length)
+                    {
+                        this.Append(value.ToString());
+                    }
+                    else
+                    {
+                        this.Append(new string('\0', index - this.Length) + value.ToString());
+                    }
+                }
+                else
+                {
+                    // TODO: EnsureWritable
+
+                    var chunks = _chunks;
+                    if (chunks != null)
+                    {
+                        if (chunks.GetType() == typeof(object[]))
+                        {
+                            var arr = (object[])chunks;
+                            for (int i = 0; i < arr.Length; i++)
+                            {
+                                int ch_length = ChunkLength(arr[i]);
+                                if (index < ch_length)
+                                {
+                                    SetCharInChunk(ref arr[i], index, value);
+                                }
+                                index -= ch_length;
+                            }
+                        }
+                        else
+                        {
+                            SetCharInChunk(ref _chunks, index, value);
+                        }
+                    }
+                }
+            }
+        }
+
+        char GetCharInChunk(object chunk, int index)
+        {
+            AssertChunkObject(chunk);
+
+            if (chunk.GetType() == typeof(string)) return ((string)chunk)[index];
+            if (chunk.GetType() == typeof(byte[])) return (char)((byte[])chunk)[index];
+            if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk)[index];
+            if (chunk.GetType() == typeof(char[])) return ((char[])chunk)[index];
+
+            throw new ArgumentException(chunk.GetType().ToString());
+        }
+
+        void SetCharInChunk(ref object chunk, int index, char ch)
+        {
+            AssertChunkObject(chunk);
+
+            if (chunk.GetType() == typeof(string))
+            {
+                var chars = ((string)chunk).ToCharArray();
+                chars[index] = ch;
+                chunk = chars;
+            }
+            else if (chunk.GetType() == typeof(byte[])) ((byte[])chunk)[index] = (byte)ch;
+            else if (chunk.GetType() == typeof(PhpString)) ((PhpString)chunk)[index] = ch;
+            else if (chunk.GetType() == typeof(char[])) ((char[])chunk)[index] = ch;
+            else throw new ArgumentException(chunk.GetType().ToString());
         }
 
         #endregion

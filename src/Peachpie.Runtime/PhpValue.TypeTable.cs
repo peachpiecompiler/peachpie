@@ -305,7 +305,7 @@ namespace Pchp.Core
             }
             public override IPhpArray EnsureArray(ref PhpValue me)
             {
-                var arr = new PhpArray();
+                var arr = new PhpString(me.String);
 
                 // me is changed if value is empty
                 if (string.IsNullOrEmpty(me.String))
@@ -354,17 +354,7 @@ namespace Pchp.Core
                 //return obj;
                 throw new NotImplementedException();
             }
-            public override IPhpArray EnsureArray(ref PhpValue me)
-            {
-                //var arr = new PhpArray();
-
-                //// me is changed if value is empty
-                //if (me.WritableString.IsEmpty)
-                //    me = PhpValue.Create(arr);
-
-                //return arr;
-                throw new NotImplementedException();
-            }
+            public override IPhpArray EnsureArray(ref PhpValue me) => me.WritableString;
             public override PhpValue DeepCopy(ref PhpValue me)
             {
                 //me.WritableString.DeepCopy()
