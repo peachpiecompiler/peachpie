@@ -2012,14 +2012,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_PhpString);
                 }
-                else if (t.SpecialType == SpecialType.System_String)
-                {
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
-                }
                 else
                 {
-                    cg.EmitConvert(t, 0, cg.CoreTypes.PhpValue);
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_PhpValue);
+                    // TODO: PhpValue -> PhpString (instead of String)
+
+                    cg.EmitConvert(t, 0, cg.CoreTypes.String);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
                 }
 
                 //

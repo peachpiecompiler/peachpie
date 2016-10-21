@@ -401,8 +401,6 @@ namespace Pchp.Core
 
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 
-        public static PhpValue Create(IPhpArray value) => new PhpValue(value is PhpArray ? TypeTable.ArrayTable : value is PhpString ? TypeTable.WritableStringTable : TypeTable.ClassTable, value);
-
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
 
         /// <summary>

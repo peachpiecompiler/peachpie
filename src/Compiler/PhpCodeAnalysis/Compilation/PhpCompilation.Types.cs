@@ -71,11 +71,11 @@ namespace Pchp.CodeAnalysis
             Debug.Assert(first != CoreTypes.PhpAlias && second != CoreTypes.PhpAlias);
 
             // merge is not needed:
-            if (first == second || first == CoreTypes.PhpValue)
+            if (first == second)
                 return first;
 
-            if (second == CoreTypes.PhpValue)
-                return second;
+            if (first == CoreTypes.PhpValue || second == CoreTypes.PhpValue)
+                return CoreTypes.PhpValue;
 
             // a number (int | double)
             if (IsNumber(first) && IsNumber(second))
@@ -91,7 +91,7 @@ namespace Pchp.CodeAnalysis
             if (second.IsOfType(first)) return first;   // A << B -> A
 
             if (!IsAString(first) && !IsAString(second) &&
-                !first.IsOfType(CoreTypes.IPhpArray) && !second.IsOfType(CoreTypes.IPhpArray))
+                !first.IsOfType(CoreTypes.PhpArray) && !second.IsOfType(CoreTypes.PhpArray))
             {
                 // unify class types to the common one (lowest)
                 if (first.IsReferenceType && second.IsReferenceType)
@@ -103,9 +103,6 @@ namespace Pchp.CodeAnalysis
                 }
             }
 
-            if (first.IsOfType(CoreTypes.IPhpArray) && second.IsOfType(CoreTypes.IPhpArray))
-                return CoreTypes.IPhpArray;
-            
             // most common PHP value type
             return CoreTypes.PhpValue;
         }
@@ -438,7 +435,7 @@ namespace Pchp.CodeAnalysis
             }
             else if (t is ArrayTypeRef)
             {
-                return this.CoreTypes.IPhpArray;
+                return this.CoreTypes.PhpArray;
             }
             else if (t is LambdaTypeRef)
             {
@@ -458,7 +455,7 @@ namespace Pchp.CodeAnalysis
                 case PhpTypeCode.Boolean: return CoreTypes.Boolean;
                 case PhpTypeCode.String: return CoreTypes.String;
                 case PhpTypeCode.WritableString: return CoreTypes.PhpString;
-                case PhpTypeCode.PhpArray: return CoreTypes.IPhpArray;
+                case PhpTypeCode.PhpArray: return CoreTypes.PhpArray;
                 case PhpTypeCode.Callable: return CoreTypes.IPhpCallable;
                 default:
                     throw new NotImplementedException();

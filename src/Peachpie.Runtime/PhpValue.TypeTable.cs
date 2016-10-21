@@ -374,8 +374,17 @@ namespace Pchp.Core
             public override object ToClass(ref PhpValue me) => me.Object;
             public override string ToString(ref PhpValue me, Context ctx)
             {
-                if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToString(ctx);
-                throw new NotImplementedException();
+                if (me.Object is IPhpConvertible)
+                {
+                    return ((IPhpConvertible)me.Object).ToString(ctx);
+                }
+                else
+                {
+                    // TODO: magic function __toString()
+
+                    //
+                    return me.Object.ToString();
+                }
             }
             public override string ToStringOrThrow(ref PhpValue me, Context ctx)
             {

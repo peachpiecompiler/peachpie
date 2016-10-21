@@ -242,18 +242,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
-                    else if (from.IsOfType(compilation.CoreTypes.IPhpArray))
+                    else if (from.IsOfType(compilation.CoreTypes.PhpArray))
                     {
-                        if (from.IsOfType(compilation.CoreTypes.PhpArray))
-                        {
-                            il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpArray)
-                                .Expect(compilation.CoreTypes.PhpValue);
-                        }
-                        else
-                        {
-                            il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_IPhpArray)
-                                .Expect(compilation.CoreTypes.PhpValue);
-                        }
+                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpArray)
+                            .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
                     else if (from == compilation.CoreTypes.IntStringKey)
@@ -533,45 +525,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 throw new NotImplementedException($"(array){from.Name}");
-            }
-        }
-
-        public void EmitAsPhpArray(BoundExpression expr)
-        {
-            expr.Access = expr.Access.WithRead(CoreTypes.PhpArray);
-
-            var type = Emit(expr);
-
-            switch (type.SpecialType)
-            {
-                case SpecialType.System_Int32:
-                case SpecialType.System_Int64:
-                case SpecialType.System_Double:
-                case SpecialType.System_Boolean:
-                    throw new InvalidOperationException();
-                case SpecialType.System_String:
-                    throw new NotImplementedException();    // StringArray helper
-                default:
-                    var diag = new HashSet<DiagnosticInfo>();
-                    if (type.IsOfType(CoreTypes.PhpArray))
-                    {
-                        return;
-                    }
-                    else if (type == CoreTypes.PhpAlias)
-                    {
-                        // <PhpAlias>.Value.AsArray()
-                        _il.EmitOpCode(ILOpCode.Ldflda);
-                        EmitSymbolToken(CoreMethods.PhpAlias.Value, null);
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsArray).Expect(CoreTypes.PhpArray);
-                        return;
-                    }
-                    else if (type == CoreTypes.PhpValue)
-                    {
-                        // Convert.AsArray(value)
-                        EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue).Expect(CoreTypes.PhpArray);
-                        return;
-                    }
-                    throw new NotImplementedException();
             }
         }
 
