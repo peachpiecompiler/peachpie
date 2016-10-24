@@ -1,19 +1,24 @@
+<br>
+<p align="left">
+<img src="https://pbs.twimg.com/media/CoXRwvWUAAA7Wwq.png" width="250"/>
+</p>
+
 # Peachpie Compiler
 ### The open-source PHP compiler to .NET
 
 [![Join the chat at https://gitter.im/iolevel/peachpie](https://badges.gitter.im/iolevel/peachpie.svg)](https://gitter.im/iolevel/peachpie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Hex.pm](https://img.shields.io/hexpm/l/plug.svg)](https://github.com/iolevel/peachpie/blob/master/LICENSE.txt)
+[![@pchpcompiler](https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg)](https://twitter.com/pchpcompiler)
+[![Pchpcompiler](https://img.shields.io/badge/FB-pchpcompiler-blue.svg)](https://twitter.com/pchpcompiler)
+[![Peachpie.io](https://img.shields.io/badge/Web-peachpie.io-orange.svg)](http://www.peachpie.io)
 
 [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started)  
 [Documentation](https://github.com/iolevel/peachpie/wiki)
 
- ![Blog](https://raw.githubusercontent.com/paulrobertlloyd/socialmediaicons/master/website-16x16.png) http://www.peachpie.io/blog   
- ![Web] (https://raw.githubusercontent.com/paulrobertlloyd/socialmediaicons/master/website-16x16.png) http://www.peachpie.io  
- ![Twitter](https://raw.githubusercontent.com/paulrobertlloyd/socialmediaicons/master/twitter-16x16.png) https://twitter.com/pchpcompiler  
- ![Facebook](https://raw.githubusercontent.com/paulrobertlloyd/socialmediaicons/master/facebook-16x16.png) https://www.facebook.com/pchpcompiler/  
+> **Note:** If you would like to reward us for our hard work on this project, we will be happy to accept donations of all amounts.
  
-_If you would like to reward us for our hard work on this project, we will be very happy to accept donations of all amounts._ 
-
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E)
+
 
 ## What is Peachpie?
 Peachpie is a modern PHP compiler based on Roslyn by Microsoft and drawing from our popular Phalanger project. It allows PHP to be executed within the .NET framework, thereby opening the door for PHP developers into the world of .NET – and vice versa.
