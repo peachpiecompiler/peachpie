@@ -545,8 +545,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 State.SetVarUsed(name);
                 var vartype = State.GetVarType(name);
 
-                if (vartype.IsVoid)
+                if (vartype.IsVoid || x.Variable is BoundGlobalVariable)
+                {
+                    // in global code or in case of undefined variable,
+                    // assume the type is mixed (unspecified).
+                    // In global code, the type of variable cannot be determined by type analysis, it can change between every two operations (this may be improved by better flow analysis).
                     vartype = TypeRefMask.AnyType;
+                }
 
                 if (x.Access.IsEnsure)
                 {

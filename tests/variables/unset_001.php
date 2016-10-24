@@ -6,4 +6,4 @@ function foo()
 
 $bar = "something";
 foo();
-echo $bar, "Done.";
+echo @$bar, "Done.";

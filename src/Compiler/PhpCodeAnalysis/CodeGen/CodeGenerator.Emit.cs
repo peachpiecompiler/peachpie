@@ -223,9 +223,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
-            bool IsGlobalVariable = expr is BoundVariableRef && ((BoundVariableRef)expr).Variable is BoundGlobalVariable;
-
-            if (expr.Access.IsNone || IsGlobalVariable)
+            if (expr.Access.IsNone) // no need for specializing, the value won't be read anyway
             {
                 return (expr.ResultType = expr.Emit(this));
             }
