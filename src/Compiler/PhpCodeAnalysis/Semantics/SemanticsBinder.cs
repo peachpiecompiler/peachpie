@@ -73,8 +73,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters))) { PhpSyntax = stmt };
             if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, BoundAccess.None)) { PhpSyntax = stmt };
             if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
-            if (stmt is AST.FunctionDecl) return BindFunctionDecl((AST.FunctionDecl)stmt);
-            if (stmt is AST.TypeDecl) return BindTypeDecl((AST.TypeDecl)stmt);
+            if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());  // see SourceDeclarations.PopulatorVisitor
+            if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceNamedTypeSymbol>());  // see SourceDeclarations.PopulatorVisitor
             if (stmt is AST.GlobalStmt) return new BoundEmptyStatement();
             if (stmt is AST.StaticStmt) return new BoundStaticVariableStatement(
                 ((AST.StaticStmt)stmt).StVarList
@@ -104,21 +104,6 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             throw ExceptionUtilities.Unreachable;
-        }
-
-        BoundStatement BindFunctionDecl(AST.FunctionDecl stmt)
-        {
-            Debug.Assert(stmt.IsConditional);
-
-            return new BoundFunctionDeclStatement(stmt.GetProperty<Symbols.SourceFunctionSymbol>());
-        }
-
-        BoundStatement BindTypeDecl(AST.TypeDecl stmt)
-        {
-            Debug.Assert(stmt.IsConditional);
-
-            throw new NotImplementedException();
-            //return new BoundTypeDeclStatement(stmt.GetProperty<Symbols.SourceNamedTypeSymbol>());
         }
 
         public BoundVariableRef BindCatchVariable(AST.CatchItem x)

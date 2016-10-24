@@ -65,9 +65,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.OnInclude_TScript.Symbol.Construct(cg.Routine.ContainingType));
 
                 // <ctx>.DeclareFunction()
-                cg.Routine.ContainingFile.Functions.Where(f => !f.IsConditional).ForEach(cg.EmitDeclareFunction);
+                cg.Routine.ContainingFile.Functions
+                    .Where(f => !f.IsConditional)
+                    .ForEach(cg.EmitDeclareFunction);
                 // <ctx>.DeclareType()
-                cg.DeclaringCompilation.SourceSymbolTables.GetTypes().OfType<Symbols.SourceNamedTypeSymbol>().Where(t => t.ContainingFile == cg.Routine.ContainingFile).ForEach(cg.EmitDeclareType);
+                cg.DeclaringCompilation.SourceSymbolTables.GetTypes()
+                    .OfType<Symbols.SourceNamedTypeSymbol>()
+                    .Where(t => !t.Syntax.IsConditional && t.ContainingFile == cg.Routine.ContainingFile)   // non conditional declaration within this file
+                    .ForEach(cg.EmitDeclareType);
             }
             else
             {

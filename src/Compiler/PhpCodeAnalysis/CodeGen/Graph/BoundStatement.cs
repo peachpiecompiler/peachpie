@@ -119,6 +119,17 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundTypeDeclStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            cg.EmitSequencePoint(Pchp.Syntax.Text.Span.FromBounds(this.TypeDecl.EntireDeclarationSpan.Start, this.TypeDecl.HeadingEndPosition));
+
+            // <ctx>.DeclareType<T>()
+            cg.EmitDeclareType(this.Type);
+        }
+    }
+
     partial class BoundStaticVariableStatement
     {
         internal override void Emit(CodeGenerator cg)

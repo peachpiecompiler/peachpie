@@ -749,7 +749,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                string unsuffixedName = this.Name;
+                string unsuffixedName = this.MetadataName;
 
                 // CLR generally allows names with dots, however some APIs like IMetaDataImport
                 // can only return full type names combined with namespaces. 
@@ -758,9 +758,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 // consumer cannot figure where namespace ends and actual type name starts.
                 // Therefore it is a good practice to avoid type names with dots.
                 // Exception: The EE copies type names from metadata, which may contain dots already.
-                //Debug.Assert(this.IsErrorType() ||
-                //    !unsuffixedName.Contains(".") ||
-                //    this.OriginalDefinition is PENamedTypeSymbol, "type name contains dots: " + unsuffixedName);
+                Debug.Assert(this.IsErrorType() ||
+                    !unsuffixedName.Contains(".") ||
+                    this.OriginalDefinition is PENamedTypeSymbol, "type name contains dots: " + unsuffixedName);
 
                 return unsuffixedName;
             }

@@ -85,7 +85,20 @@ namespace Pchp.Core.Reflection
             _name = t.FullName  // full PHP type name instead of CLR type name
                 .Replace('.', '\\')     // namespace separator
                 .Replace('+', '\\');    // nested type separator
+
+            // remove suffixed indexes (after special metadata character)
+            var idx = _name.IndexOfAny(_indexSeparators);
+            if (idx >= 0)
+            {
+                _name = _name.Remove(idx);
+            }
         }
+
+        /// <summary>
+        /// Array of characters used to separate class name from its metadata indexes (order, generics, etc).
+        /// These characters and suffixed text has to be ignored.
+        /// </summary>
+        private static readonly char[] _indexSeparators = new[] { '#', '@', '`' };
 
         #region Reflection
 

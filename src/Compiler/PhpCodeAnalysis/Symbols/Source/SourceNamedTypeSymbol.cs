@@ -294,6 +294,22 @@ namespace Pchp.CodeAnalysis.Symbols
         public override string NamespaceName
             => (_syntax.Namespace != null) ? _syntax.Namespace.QualifiedName.ClrName() : string.Empty;
 
+        public override string MetadataName
+        {
+            get
+            {
+                var name = base.MetadataName;
+
+                if (_syntax.IsConditional)
+                {
+                    var ambiguities = this.DeclaringCompilation.SourceSymbolTables.GetTypes().Where(t => t.Name == this.Name && t.NamespaceName == this.NamespaceName);
+                    name += "@" + ambiguities.TakeWhile(f => f != this).Count().ToString(); // index within types with the same name
+                }
+
+                return name;
+            }
+        }
+
         public override TypeKind TypeKind
         {
             get

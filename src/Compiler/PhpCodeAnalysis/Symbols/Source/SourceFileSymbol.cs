@@ -110,7 +110,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath, true);//.Replace('.', '_');
+        public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath, true).Replace('.', '_');
 
         public override string NamespaceName
         {

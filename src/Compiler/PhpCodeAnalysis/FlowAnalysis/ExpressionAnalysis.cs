@@ -365,7 +365,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitInvalidStatement(IStatement operation)
         {
-            if (operation is BoundFunctionDeclStatement)
+            if (operation is BoundFunctionDeclStatement ||
+                operation is BoundTypeDeclStatement)
             {
                 return;
             }

@@ -6,8 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
-using Pchp.Syntax.AST;
 using System.Diagnostics;
+using Pchp.Syntax.AST;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -136,6 +136,33 @@ namespace Pchp.CodeAnalysis.Semantics
 
             _function = function;
             this.PhpSyntax = (FunctionDecl)function.Syntax;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitInvalidStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitInvalidStatement(this, argument);
+    }
+    
+    /// <summary>
+    /// Conditionally declared class.
+    /// </summary>
+    public sealed partial class BoundTypeDeclStatement : BoundStatement
+    {
+        public override OperationKind Kind => OperationKind.LocalFunctionStatement;
+
+        internal TypeDecl TypeDecl => (TypeDecl)PhpSyntax;
+
+        internal Symbols.SourceNamedTypeSymbol Type => _type;
+        readonly Symbols.SourceNamedTypeSymbol _type;
+
+        internal BoundTypeDeclStatement(Symbols.SourceNamedTypeSymbol type)
+        {
+            Contract.ThrowIfNull(type);
+
+            _type = type;
+            this.PhpSyntax = type.Syntax;
         }
 
         public override void Accept(OperationVisitor visitor)
