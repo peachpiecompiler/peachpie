@@ -9,7 +9,7 @@
 [![Join the chat at https://gitter.im/iolevel/peachpie](https://badges.gitter.im/iolevel/peachpie.svg)](https://gitter.im/iolevel/peachpie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Hex.pm](https://img.shields.io/hexpm/l/plug.svg)](https://github.com/iolevel/peachpie/blob/master/LICENSE.txt)
 [![@pchpcompiler](https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg)](https://twitter.com/pchpcompiler)
-[![Pchpcompiler](https://img.shields.io/badge/FB-pchpcompiler-blue.svg)](https://twitter.com/pchpcompiler)
+[![Pchpcompiler](https://img.shields.io/badge/FB-pchpcompiler-blue.svg)](https://www.facebook.com/pchpcompiler)
 [![Peachpie.io](https://img.shields.io/badge/Web-peachpie.io-orange.svg)](http://www.peachpie.io)
 
 [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started)  
