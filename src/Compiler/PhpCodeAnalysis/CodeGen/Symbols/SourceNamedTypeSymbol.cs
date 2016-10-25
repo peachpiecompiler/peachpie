@@ -132,7 +132,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.Builder.EmitIntConstant((int)Core.Reflection.TypeMethods.MagicMethods.__invoke);
                 cg.Builder.EmitLoadArgumentOpcode(2);
                 cg.EmitCall(ILOpCode.Call, call_t);
-                cg.EmitRet(false);
+                cg.EmitRet(invoke.ReturnType);
 
             }, null, DiagnosticBag.GetInstance(), false));
         }
@@ -176,7 +176,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.EmitPop(cg.EmitThisCall(basenew, phpnew));
 
                 Debug.Assert(phpnew.ReturnsVoid);
-                cg.EmitRet(true);
+                cg.EmitRet(phpnew.ReturnType);
 
             }, null, DiagnosticBag.GetInstance(), false));
         }
@@ -201,7 +201,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.EmitPop(cg.EmitThisCall(phpctor, ctor));
 
                 Debug.Assert(ctor.ReturnsVoid);
-                cg.EmitRet(true);
+                cg.EmitRet(ctor.ReturnType);
 
             }, null, DiagnosticBag.GetInstance(), false));
         }

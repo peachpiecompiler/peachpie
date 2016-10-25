@@ -2,6 +2,7 @@
 using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -99,13 +100,74 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ExitBlock
     {
+        /// <summary>
+        /// Temporary local variable for return.
+        /// </summary>
+        private Microsoft.CodeAnalysis.CodeGen.LocalDefinition _rettmp;
+
+        /// <summary>
+        /// Return label.
+        /// </summary>
+        private object _retlbl;
+
+        /// <summary>
+        /// Stores value from top of the evaluation stack to a temporary variable which will be returned from the exit block.
+        /// </summary>
+        internal void EmitTmpRet(CodeGenerator cg, Symbols.TypeSymbol stack)
+        {
+            // lazy initialize
+            if (_retlbl == null)
+            {
+                _retlbl = new object();
+            }
+
+            if (_rettmp == null)
+            {
+                var rtype = cg.Routine.ReturnType;
+                if (rtype.SpecialType != SpecialType.System_Void)
+                {
+                    _rettmp = cg.GetTemporaryLocal(rtype);
+                }
+            }
+
+            // <rettmp> = <stack>;
+            if (_rettmp != null)
+            {
+                cg.EmitConvert(stack, 0, (Symbols.TypeSymbol)_rettmp.Type);
+                cg.Builder.EmitLocalStore(_rettmp);
+                cg.Builder.EmitBranch(ILOpCode.Br, _retlbl);
+            }
+            else
+            {
+                cg.EmitPop(stack);
+            }
+        }
+
         internal override void Emit(CodeGenerator cg)
         {
             // note: ILBuider removes eventual unreachable .ret opcode
 
+            if (_retlbl != null && _rettmp == null)
+            {
+                cg.Builder.MarkLabel(_retlbl);
+            }
+
             // return <default>;
             cg.EmitRetDefault();
             cg.Builder.AssertStackEmpty();
+
+            // return <rettemp>;
+            if (_rettmp != null)
+            {
+                Debug.Assert(_retlbl != null);
+                cg.Builder.MarkLabel(_retlbl);
+
+                // note: _rettmp is always initialized since we branch to _retlbl only after storing to _rettmp
+
+                cg.Builder.EmitLocalLoad(_rettmp);
+                cg.Builder.EmitRet(false);
+                cg.Builder.AssertStackEmpty();
+            }
         }
     }
 }

@@ -44,36 +44,38 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             cg.EmitSequencePoint(this.PhpSyntax);
 
+            var rtype = cg.Routine.ReturnType;
+            var rvoid = rtype.SpecialType == SpecialType.System_Void;
+
             //
             if (this.Returned == null)
             {
-                if (cg.Routine.ReturnsVoid)
+                if (rvoid)
                 {
-                    // return;
-                    cg.EmitRet(true);
+                    // <void>
                 }
                 else
                 {
-                    // return <default>;
-                    cg.EmitRetDefault();
+                    // <default>
+                    cg.EmitLoadDefaultValue(rtype, cg.Routine.TargetState.GetReturnType());
                 }
             }
             else
             {
-                if (cg.Routine.ReturnsVoid)
+                if (rvoid)
                 {
                     // <expr>;
-                    // return;
                     cg.EmitPop(this.Returned.Emit(cg));
-                    cg.EmitRet(true);
                 }
                 else
                 {
                     // return (T)<expr>;
-                    cg.EmitConvert(this.Returned, cg.Routine.ReturnType);
-                    cg.EmitRet(false);
+                    cg.EmitConvert(this.Returned, rtype);
                 }
             }
+
+            // .ret
+            cg.EmitRet(rtype);
         }
     }
 

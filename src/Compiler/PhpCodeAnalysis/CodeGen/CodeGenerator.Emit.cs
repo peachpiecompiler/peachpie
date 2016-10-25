@@ -1005,7 +1005,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(t != null);
 
             // <ctx>.DeclareType<T>()
-            EmitLoadContext();            
+            EmitLoadContext();
             EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));
         }
 
@@ -1281,13 +1281,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             var return_type = this.Routine.ReturnType;
 
             EmitLoadDefaultValue(return_type, this.Routine.TargetState.GetReturnType());
-            EmitRet(return_type.SpecialType == SpecialType.System_Void);
+            EmitRet(return_type);
         }
 
         /// <summary>
         /// Emits .ret instruction with sequence point at closing brace.
         /// </summary>
-        public void EmitRet(bool isVoid)
+        public void EmitRet(TypeSymbol stack)
         {
             // sequence point
             var body = AstUtils.BodySpanOrInvalid(Routine?.Syntax);
@@ -1298,7 +1298,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            _il.EmitRet(isVoid);
+            if (_il.InExceptionHandler)
+            {
+                ((ExitBlock)this.Routine.ControlFlowGraph.Exit).EmitTmpRet(this, stack);
+            }
+            else
+            {
+                _il.EmitRet(stack.SpecialType == SpecialType.System_Void);
+            }
         }
 
         /// <summary>
