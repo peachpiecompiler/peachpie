@@ -70,7 +70,7 @@ namespace Pchp.Library.Streams
                 eof = rv == 0;
                 return rv;
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_socket_error, e.Message);
                 return 0;
@@ -100,7 +100,7 @@ namespace Pchp.Library.Streams
                     return rv;
                 }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_socket_error, e.Message);
                 return 0;

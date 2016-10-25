@@ -574,7 +574,7 @@ namespace Pchp.Library.Streams
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
                 return null;
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_file_invalid, FileSystemUtils.StripPassword(path));
                 return null;
@@ -929,7 +929,7 @@ namespace Pchp.Library.Streams
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_unlink_io_error, FileSystemUtils.StripPassword(path), PhpException.ToErrorMessage(e.Message));
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_unlink_error, FileSystemUtils.StripPassword(path));
             }
@@ -973,7 +973,7 @@ namespace Pchp.Library.Streams
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
             }
@@ -995,7 +995,7 @@ namespace Pchp.Library.Streams
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_rename_file_exists, FileSystemUtils.StripPassword(fromPath), FileSystemUtils.StripPassword(toPath));
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(fromPath), e.Message);
             }
@@ -1047,7 +1047,7 @@ namespace Pchp.Library.Streams
                 // The directory specified by path is read-only or is not empty.
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_directory_error, FileSystemUtils.StripPassword(path));
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 // The specified path is invalid, such as being on an unmapped drive ...
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);

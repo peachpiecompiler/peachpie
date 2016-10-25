@@ -145,7 +145,7 @@ namespace Pchp.Library
                 //return Path.GetFullPath(combinedPath);
                 throw new NotImplementedException();
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 //PhpException.Throw(PhpError.Notice, LibResources.GetString("invalid_path", FileSystemUtils.StripPassword(path)));
                 //return null;

@@ -251,7 +251,7 @@ namespace Pchp.Library.Streams
                         path = Path.GetFullPath(Path.Combine(ctx.WorkingDirectory, filename));
                     }
                 }
-                catch (Exception)
+                catch (System.Exception)
                 {
                     if ((options & CheckAccessOptions.Quiet) == 0)
                         PhpException.Throw(PhpError.Warning, ErrResources.stream_filename_invalid, FileSystemUtils.StripPassword(path));
@@ -489,7 +489,7 @@ namespace Pchp.Library.Streams
             {
                 this.Wrapper.Unlink(OpenedPath, StreamUnlinkOptions.Empty, StreamContext.Default);  // File.Delete(this.OpenedPath);
             }
-            catch (Exception)
+            catch (System.Exception)
             {
             }
         }
@@ -1884,7 +1884,7 @@ namespace Pchp.Library.Streams
                 return absoluteOffset == expectedOffset;
                 // Seek is successful if the two values match.
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Seek");
                 return false;

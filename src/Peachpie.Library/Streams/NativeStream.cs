@@ -68,7 +68,7 @@ namespace Pchp.Library.Streams
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_read_io_error, e.Message);
                 return -1;
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 // For example WebException (timeout)
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_read_error, e.Message);
@@ -94,7 +94,7 @@ namespace Pchp.Library.Streams
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_write_io_error, e.Message);
                 return -1;
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_write_error, e.Message);
                 return -1;
@@ -149,7 +149,7 @@ namespace Pchp.Library.Streams
             {
                 return unchecked((int)stream.Length);
             }
-            catch (Exception)
+            catch (System.Exception)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Seek");
                 return -1;

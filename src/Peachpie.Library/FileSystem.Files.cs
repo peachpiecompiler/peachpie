@@ -127,7 +127,7 @@ namespace Pchp.Library
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_stat_invalid_path, FileSystemUtils.StripPassword(path));
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
             }
@@ -269,7 +269,7 @@ namespace Pchp.Library
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
             }
