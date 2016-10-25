@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace Pchp.Core
 {
     [DebuggerDisplay("{GetDebuggerValue,nq}", Type = "{GetDebuggerType,nq}")]
+    [DebuggerNonUserCode, DebuggerStepThrough]
     [StructLayout(LayoutKind.Explicit)]
     public struct PhpNumber : IComparable<PhpNumber>, IPhpConvertible
     {

@@ -9,6 +9,7 @@ namespace Pchp.Core
 {
     [DebuggerDisplay("{DisplayString,nq}", Type = "{DebugTypeName,nq}")]
     [DebuggerTypeProxy(typeof(PhpValueDebugView))]
+    [DebuggerNonUserCode, DebuggerStepThrough]
     partial struct PhpValue
     {
         /// <summary>
