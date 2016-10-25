@@ -53,6 +53,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         protected Worklist<BoundBlock> Worklist => _analysis.Worklist;
 
+        /// <summary>
+        /// Gets value indicating whether we are currently in an exception handler (within try, catch or finally).
+        /// </summary>
+        protected bool InExceptionHandler => _analysis.InExceptionHandler;
+
         #endregion
 
         #region Helpers

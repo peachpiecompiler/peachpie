@@ -46,6 +46,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         internal ExpressionAnalysis OpAnalysis => (ExpressionAnalysis)_opvisitor;
 
+        /// <summary>
+        /// Gets value indicating whether we are currently in an exception handler (within try, catch or finally).
+        /// </summary>
+        internal bool InExceptionHandler => _tryBlocks != null && _tryBlocks.Any(s => s.Contains(CurrentBlock.Ordinal));
+        private HashSet<Span> _tryBlocks = null;
+
         #endregion
 
         #region Construction
@@ -272,8 +278,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitCFGTryCatchEdge(TryCatchEdge x)
         {
+            // remember try/catch/finally location to determine whether we are in an exception handler
+            if (_tryBlocks == null)
+            {
+                _tryBlocks = new HashSet<Span>();
+            }
+
+            _tryBlocks.Add(Span.FromBounds(x.BodyBlock.Ordinal, x.NextBlock.Ordinal));
+
+            //
             var state = _state;
 
+            //
             TraverseToBlock(state, x.BodyBlock);
 
             foreach (var c in x.CatchBlocks)
