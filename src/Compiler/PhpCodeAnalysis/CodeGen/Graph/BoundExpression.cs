@@ -733,6 +733,13 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_string_double)
                             .Expect(SpecialType.System_Boolean);
                     }
+                    else if (ytype.SpecialType == SpecialType.System_String)
+                    {
+                        // compare(string, string) == 0
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_string_string).Expect(SpecialType.System_Int32);
+                        cg.EmitLogicNegation();
+                        return cg.CoreTypes.Boolean;
+                    }
 
                     // value
                     ytype = cg.EmitConvertToPhpValue(ytype, 0);
