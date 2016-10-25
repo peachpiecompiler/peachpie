@@ -391,23 +391,12 @@ namespace Pchp.Library
 
         /// <summary>
         /// Returns array which elements are taken from a specified one in reversed order.
-        /// Integer keys are reindexed starting from zero.
-        /// </summary>
-        /// <param name="array">The array to be reversed.</param>
-        /// <returns>The array <paramref name="array"/> with items in reversed order.</returns>
-        public static PhpArray array_reverse(PhpArray array)
-        {
-            return array_reverse(array, false);
-        }
-
-        /// <summary>
-        /// Returns array which elements are taken from a specified one in reversed order.
         /// </summary>
         /// <param name="array">The array to be reversed.</param>
         /// <param name="preserveKeys">Whether keys should be left untouched. 
         /// If set to <b>false</b> then integer keys are reindexed starting from zero.</param>
         /// <returns>The array <paramref name="array"/> with items in reversed order.</returns>
-        public static PhpArray array_reverse(PhpArray array, bool preserveKeys)
+        public static PhpArray array_reverse(PhpArray array, bool preserveKeys = false)
         {
             if (array == null)
             {
@@ -452,37 +441,6 @@ namespace Pchp.Library
         /// Retrieves a slice of specified array.
         /// </summary>
         /// <param name="array">The array which slice to get.</param>
-        /// <param name="offset">The ordinal number of a first item of the slice.</param>
-        /// <returns>The slice of <paramref name="array"/>.</returns>
-        /// <remarks>
-        /// The same as <see cref="array_slice(PhpArray,int,int)"/> where <c>length</c> is infinity. 
-        /// <seealso cref="PhpMath.AbsolutizeRange"/>. Resets integer keys.
-        /// </remarks>
-        public static PhpArray array_slice(PhpArray array, int offset)
-        {
-            return array_slice(array, offset, int.MaxValue, false);
-        }
-
-        /// <summary>
-        /// Retrieves a slice of specified array.
-        /// </summary>
-        /// <param name="array">The array which slice to get.</param>
-        /// <param name="offset">The relativized offset of the first item of the slice.</param>
-        /// <param name="length">The relativized length of the slice.</param>
-        /// <returns>The slice of <paramref name="array"/>.</returns>
-        /// <remarks>
-        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and 
-        /// <paramref name="length"/>. Resets integer keys.
-        /// </remarks>
-        public static PhpArray array_slice(PhpArray array, int offset, int length)
-        {
-            return array_slice(array, offset, length, false);
-        }
-
-        /// <summary>
-        /// Retrieves a slice of specified array.
-        /// </summary>
-        /// <param name="array">The array which slice to get.</param>
         /// <param name="offset">The relativized offset of the first item of the slice.</param>
         /// <param name="length">The relativized length of the slice.</param>
         /// <param name="preserveKeys">Whether to preserve integer keys. If <B>false</B>, the integer keys are reset.</param>
@@ -490,7 +448,7 @@ namespace Pchp.Library
         /// <remarks>
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
         /// </remarks>
-        public static PhpArray array_slice(PhpArray array, int offset, int length, bool preserveKeys)
+        public static PhpArray array_slice(PhpArray array, int offset, int length = int.MaxValue, bool preserveKeys = false)
         {
             if (array == null)
             {
@@ -694,17 +652,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Returns a key of an entry chosen at random using PhpMath random numbers generator.
-        /// </summary>
-        /// <param name="array">The array which to choose from.</param>
-        /// <returns>The chosen key.</returns>
-        /// <exception cref="System.NullReferenceException"><paramref name="array"/> is a <B>null</B> reference.</exception>
-        public static PhpValue array_rand(PhpArray array)
-        {
-            return array_rand(array, 1);
-        }
-
-        /// <summary>
         /// Chooses specified number of keys from an array at random.
         /// </summary>
         /// <param name="array">The <see cref="PhpArray"/> from which to choose.</param>
@@ -717,7 +664,7 @@ namespace Pchp.Library
         /// <exception cref="NullReferenceException"><paramref name="array"/>  is a <B>null</B> reference.</exception>
         /// <exception cref="PhpException"><paramref name="count"/> is not positive and less 
         /// than the number of items in <paramref name="array"/>. (Warning)</exception>
-        public static PhpValue array_rand(PhpArray array, int count)
+        public static PhpValue array_rand(PhpArray array, int count = 1)
         {
             if (count == 1)
             {
@@ -836,24 +783,10 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="needle">The value to search for.</param>
         /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
-        /// <returns>Whether there is the <paramref name="needle"/> value in the <see cref="PhpArray"/>.</returns>
-        /// <remarks>Regular comparison (<see cref="PhpComparer.CompareEq(object,object)"/>) is used for comparing values.</remarks>
-        /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
-        public static bool in_array(PhpValue needle, PhpArray haystack)
-        {
-            var b = array_search(needle, haystack, false);
-            return !b.IsBoolean || b.Boolean;
-        }
-
-        /// <summary>
-        /// Checks if a value exists in an array.
-        /// </summary>
-        /// <param name="needle">The value to search for.</param>
-        /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
         /// <param name="strict">Whether strict comparison method (operator ===) is used for comparing values.</param>
         /// <returns>Whether there is the <paramref name="needle"/> value in the <see cref="PhpArray"/>.</returns>
         /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
-        public static bool in_array(PhpValue needle, PhpArray haystack, bool strict)
+        public static bool in_array(PhpValue needle, PhpArray haystack, bool strict = false)
         {
             var b = array_search(needle, haystack, strict);
             return !b.IsBoolean || b.Boolean;
@@ -864,23 +797,10 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="needle">The value to search for.</param>
         /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
-        /// <returns>The key associated with the <paramref name="needle"/> or <B>false</B> if there is no such key.</returns>
-        /// <remarks>Regular comparison (<see cref="PhpComparer.CompareEq(object,object)"/>) is used for comparing values.</remarks>
-        /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
-        public static PhpValue array_search(PhpValue needle, PhpArray haystack)
-        {
-            return array_search(needle, haystack, false);
-        }
-
-        /// <summary>
-        /// Searches the array for a given value and returns the corresponding key if successful.
-        /// </summary>
-        /// <param name="needle">The value to search for.</param>
-        /// <param name="haystack">The <see cref="PhpArray"/> where to search.</param>
         /// <param name="strict">Whether strict comparison method (operator ===) is used for comparing values.</param>
         /// <returns>The key associated with the <paramref name="needle"/> or <B>false</B> if there is no such key.</returns>
         /// <exception cref="PhpException"><paramref name="haystack"/> is a <B>null</B> reference (Warning).</exception>
-        public static PhpValue array_search(PhpValue needle, PhpArray haystack, bool strict)
+        public static PhpValue array_search(PhpValue needle, PhpArray haystack, bool strict = false)
         {
             // result needn't to be deeply copied because it is a key of an array //
 
@@ -1289,18 +1209,6 @@ namespace Pchp.Library
         #region sort,asort,ksort,rsort,arsort,krsort
 
         /// <summary>
-        /// Sorts an array using regular comparison method for comparing values.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="array">The array to be sorted.</param>
-        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
-        /// <returns>True on success, False on failure.</returns>
-        public static bool sort(Context ctx, [In, Out]PhpArray array)
-        {
-            return sort(ctx, array, ComparisonMethod.Regular);
-        }
-
-        /// <summary>
         /// Sorts an array using specified comparison method for comparing values.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -1308,7 +1216,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool sort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        public static bool sort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1325,18 +1233,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Sorts an array using regular comparison method for comparing values preserving key-value associations.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="array">The array to be sorted.</param>
-        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
-        /// <returns>True on success, False on failure.</returns>
-        public static bool asort(Context ctx, [In, Out]PhpArray array)
-        {
-            return asort(ctx, array, ComparisonMethod.Regular);
-        }
-
-        /// <summary>
         /// Sorts an array using specified comparison method for comparing values preserving key-value associations.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -1344,7 +1240,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool asort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        public static bool asort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1360,18 +1256,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Sorts an array using regular comparison method for comparing keys.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="array">The array to be sorted.</param>
-        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
-        /// <returns>True on success, False on failure.</returns>
-        public static bool ksort(Context ctx, [In, Out]PhpArray array)
-        {
-            return ksort(ctx, array, ComparisonMethod.Regular);
-        }
-
-        /// <summary>
         /// Sorts an array using specified comparison method for comparing keys.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -1379,7 +1263,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool ksort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        public static bool ksort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1395,18 +1279,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Sorts an array using regular comparison method for comparing values in reverse order.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="array">The array to be sorted.</param>
-        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
-        /// <returns>True on success, False on failure.</returns>
-        public static bool rsort(Context ctx, [In, Out]PhpArray array)
-        {
-            return rsort(ctx, array, ComparisonMethod.Regular);
-        }
-
-        /// <summary>
         /// Sorts an array using specified comparison method for comparing values in reverse order.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -1414,7 +1286,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool rsort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        public static bool rsort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1431,19 +1303,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Sorts an array using regular comparison method for comparing values in reverse order 
-        /// preserving key-value associations.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="array">The array to be sorted.</param>
-        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
-        /// <returns>True on success, False on failure.</returns>
-        public static bool arsort(Context ctx, [In, Out]PhpArray array)
-        {
-            return arsort(ctx, array, ComparisonMethod.Regular);
-        }
-
-        /// <summary>
         /// Sorts an array using specified comparison method for comparing values in reverse order
         /// preserving key-value associations.
         /// </summary>
@@ -1452,7 +1311,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool arsort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod)
+        public static bool arsort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1468,18 +1327,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Sorts an array using regular comparison method for comparing keys in reverse order.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="array">The array to be sorted.</param>
-        /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
-        /// <returns>True on success, False on failure.</returns>
-        public static bool krsort(Context ctx, [In, Out] PhpArray array)
-        {
-            return krsort(ctx, array, ComparisonMethod.Regular);
-        }
-
-        /// <summary>
         /// Sorts an array using specified comparison method for comparing keys in reverse order.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -1487,7 +1334,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool krsort(Context ctx, [In, Out] PhpArray array, ComparisonMethod comparisonMethod)
+        public static bool krsort(Context ctx, [In, Out] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -2426,23 +2273,10 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="array">The array to be split.</param>
         /// <param name="size">The number of items in each chunk (except for the last one where can be lesser items).</param>
-        /// <returns>The array containing chunks indexed by integers starting from zero, 
-        /// all keys in chunks are reindexed starting from zero.</returns>
-        /// <remarks>Chunks will contain deep copies of <paramref name="array"/> items.</remarks>
-        public static PhpArray array_chunk(PhpArray array, int size)
-        {
-            return ChunkInternal(array, size, false, true);
-        }
-
-        /// <summary>
-        /// Splits an array into chunks.
-        /// </summary>
-        /// <param name="array">The array to be split.</param>
-        /// <param name="size">The number of items in each chunk (except for the last one where can be lesser items).</param>
         /// <param name="preserveKeys">Whether to preserve keys in chunks.</param>
         /// <returns>The array containing chunks indexed by integers starting from zero.</returns>
         /// <remarks>Chunks will contain deep copies of <paramref name="array"/> items.</remarks>
-        public static PhpArray array_chunk(PhpArray array, int size, bool preserveKeys)
+        public static PhpArray array_chunk(PhpArray array, int size, bool preserveKeys = false)
         {
             return ChunkInternal(array, size, preserveKeys, true);
         }
@@ -2591,19 +2425,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="array">The array which duplicate values to remove.</param>
-        /// <returns>A copy of <paramref name="array"/> without duplicated values.</returns>
-        /// <remarks>
-        /// Values are compared using string comparison method (<see cref="ValueComparer.String"/>).  
-        /// </remarks>
-        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
-        //[return: PhpDeepCopy]
-        public static PhpArray array_unique(Context ctx, PhpArray array) => array_unique(ctx, array, ComparisonMethod.String);
-
-        /// <summary>
-        /// Removes duplicate values from an array.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="array">The array which duplicate values to remove.</param>
         /// <param name="sortFlags">Specifies how the values are compared to be identical.</param>
         /// <returns>A copy of <paramref name="array"/> without duplicated values.</returns>
         /// <remarks>
@@ -2611,7 +2432,7 @@ namespace Pchp.Library
         /// </remarks>
         /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
         //[return: PhpDeepCopy]
-        public static PhpArray array_unique(Context ctx, PhpArray array, ComparisonMethod sortFlags /*= String*/)
+        public static PhpArray array_unique(Context ctx, PhpArray array, ComparisonMethod sortFlags = ComparisonMethod.String)
         {
             if (array == null)
             {
@@ -2753,25 +2574,11 @@ namespace Pchp.Library
         /// <param name="array">An array which keys to get.</param>
         /// <param name="searchValue">Only the keys for this value are returned. 
         /// Values are compared using regular comparison method (<see cref="PhpComparer.CompareEq"/>).</param>
-        /// <returns>An array of keys being associated with specified value. 
-        /// Keys in returned array are successive integers starting from zero.</returns>
-        /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
-        public static PhpArray array_keys(PhpArray array, PhpValue searchValue)
-        {
-            return array_keys(array, searchValue, false);
-        }
-
-        /// <summary>
-        /// Retrieves an array of some keys contained in a given array.
-        /// </summary>
-        /// <param name="array">An array which keys to get.</param>
-        /// <param name="searchValue">Only the keys for this value are returned. 
-        /// Values are compared using regular comparison method (<see cref="PhpComparer.CompareEq"/>).</param>
         /// <param name="strict">If true, uses strict comparison method (operator "===").</param>
         /// <returns>An array of keys being associated with specified value. 
         /// Keys in returned array are successive integers starting from zero.</returns>
         /// <exception cref="PhpException"><paramref name="array"/> is a <B>null</B> reference.</exception>
-        public static PhpArray array_keys(PhpArray array, PhpValue searchValue, bool strict)
+        public static PhpArray array_keys(PhpArray array, PhpValue searchValue, bool strict = false)
         {
             if (array == null)
             {
