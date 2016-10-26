@@ -1,12 +1,12 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
-using Pchp.Syntax;
-using Pchp.Syntax.AST;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -204,11 +204,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Whether the given class name is equal to <c>Exception</c>.
         /// </summary>
-        private static bool IsExceptionClassName(DirectTypeRef tref)
+        private static bool IsExceptionClassName(INamedTypeRef tref)
         {
-            return
-                tref.GenericParams.Count == 0 &&
-                tref.ClassName == NameUtils.SpecialNames.Exception;
+            return tref.ClassName == NameUtils.SpecialNames.Exception;
         }
 
         internal CatchBlock HandlingCatch(QualifiedName exceptionClassName)

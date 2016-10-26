@@ -1,6 +1,6 @@
-﻿using Pchp.Syntax;
-using Pchp.Syntax.AST;
-using Pchp.Syntax.Text;
+﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -203,7 +203,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private CatchBlock/*!*/NewBlock(CatchItem item)
         {
-            return WithNewOrdinal(new CatchBlock(item.TypeRef, _binder.BindCatchVariable(item)) { PhpSyntax = item });
+            return WithNewOrdinal(new CatchBlock((INamedTypeRef)item.TargetType, _binder.BindCatchVariable(item)) { PhpSyntax = item });
         }
 
         private CaseBlock/*!*/NewBlock(SwitchItem item)
@@ -490,7 +490,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitGotoStmt(GotoStmt x)
         {
-            var/*!*/label = GetLabelBlock(x.LabelName.Value);
+            var/*!*/label = GetLabelBlock(x.LabelName.Name.Value);
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Used;   // label is used
             
             Connect(_current, label.TargetBlock);
@@ -510,8 +510,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else if (x.Type == JumpStmt.Types.Break || x.Type == JumpStmt.Types.Continue)
             {
-                int level = (x.Expression is IntLiteral)
-                    ? ((IntLiteral)x.Expression).Value
+                int level = (x.Expression is LongIntLiteral)
+                    ? (int)((LongIntLiteral)x.Expression).Value
                     : 1;
 
                 var brk = GetBreakScope(level);
@@ -573,7 +573,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitLabelStmt(LabelStmt x)
         {
-            var/*!*/label = GetLabelBlock(x.Name.Value);
+            var/*!*/label = GetLabelBlock(x.Name.Name.Value);
             if ((label.Flags & ControlFlowGraph.LabelBlockFlags.Defined) != 0)
             {
                 label.Flags |= ControlFlowGraph.LabelBlockFlags.Redefined;  // label was defined already
@@ -691,7 +691,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             OpenTryScope(edge);
             OpenScope(body);
             _current = WithNewOrdinal(body);
-            x.Statements.ForEach(VisitElement);
+            VisitElement(x.Body);
             CloseScope();
             CloeTryScope();
             _current = Leave(_current, finallyBlock ?? end);
@@ -700,7 +700,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             for (int i = 0; i < catchBlocks.Length; i++)
             {
                 _current = WithOpenScope(WithNewOrdinal(catchBlocks[i]));
-                x.Catches[i].Statements.ForEach(VisitElement);
+                VisitElement(x.Catches[i].Body);
                 CloseScope();
                 _current = Leave(_current, finallyBlock ?? end);
             }
@@ -709,7 +709,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (finallyBlock != null)
             {
                 _current = WithOpenScope(WithNewOrdinal(finallyBlock));
-                x.FinallyItem.Statements.ForEach(VisitElement);
+                VisitElement(x.FinallyItem.Body);
                 CloseScope();
                 _current = Leave(_current, end);
             }

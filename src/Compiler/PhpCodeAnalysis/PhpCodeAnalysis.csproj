@@ -44,10 +44,6 @@
       <Project>{1ee8cad3-55f9-4d91-96b2-084641da9a6c}</Project>
       <Name>CodeAnalysis</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PhpSyntax\PhpSyntax.csproj">
-      <Project>{3775018b-7f9f-4cb1-8b0a-18cfb589a54b}</Project>
-      <Name>PhpSyntax</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CodeGen\CodeGenerator.Convert.cs" />

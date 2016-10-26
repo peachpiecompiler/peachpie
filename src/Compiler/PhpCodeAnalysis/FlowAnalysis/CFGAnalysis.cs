@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Semantics;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Semantics;
-using Pchp.Syntax.Text;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {

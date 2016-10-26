@@ -1,7 +1,7 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using AST = Pchp.Syntax.AST;
+using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -56,7 +56,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.ActualParam> parameters)
         {
-            if (parameters.Any(p => p.IsVariadic || p.Ampersand))
+            if (parameters.Any(p => p.IsUnpack || p.Ampersand))
                 throw new NotImplementedException();
 
             return BindExpressions(parameters.Select(p => p.Expression))
@@ -78,7 +78,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.GlobalStmt) return new BoundEmptyStatement();
             if (stmt is AST.StaticStmt) return new BoundStaticVariableStatement(
                 ((AST.StaticStmt)stmt).StVarList
-                    .Select(s => (BoundStaticLocal)_flowCtx.GetVar(s.Variable.VarName.Value))
+                    .Select(s => (BoundStaticLocal)_flowCtx.GetVar(s.Variable.Value))
                     .ToImmutableArray())
             { PhpSyntax = stmt };
             if (stmt is AST.UnsetStmt) return new BoundUnset(
@@ -127,6 +127,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(expr != null);
 
             if (expr is AST.Literal) return BindLiteral((AST.Literal)expr).WithAccess(access);
+            if (expr is AST.ConstantUse) return BindConstUse((AST.ConstantUse)expr).WithAccess(access);
             if (expr is AST.VarLikeConstructUse) return BindVarLikeConstructUse((AST.VarLikeConstructUse)expr, access);
             if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
@@ -139,7 +140,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.PseudoConstUse) return BindPseudoConst((AST.PseudoConstUse)expr).WithAccess(access);
             if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
-            if (expr is AST.ConstantUse) return BindConstUse((AST.ConstantUse)expr).WithAccess(access);
             if (expr is AST.ListEx) return BindListEx((AST.ListEx)expr).WithAccess(access);
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
 
@@ -156,13 +156,13 @@ namespace Pchp.CodeAnalysis.Semantics
             if (x is AST.ClassConstUse)
             {
                 var cx = (AST.ClassConstUse)x;
-                var dtype = cx.TypeRef as AST.DirectTypeRef;
+                var dtype = cx.TargetType as AST.INamedTypeRef;
                 if (dtype != null && cx.Name.Equals("class"))   // Type::class ~ "Type"
                 {
                     return new BoundLiteral(dtype.ClassName.ToString());
                 }
 
-                var typeref = BindTypeRef(cx.TypeRef);
+                var typeref = BindTypeRef(cx.TargetType);
 
                 return BoundFieldRef.CreateClassConst(typeref, new BoundVariableName(cx.Name));
             }
@@ -189,7 +189,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindPseudoConst(AST.PseudoConstUse x)
         {
-            var unit = _routine.ContainingFile.Syntax.SourceUnit;
+            var unit = _routine.ContainingFile.Syntax.ContainingSourceUnit;
 
             switch (x.Type)
             {
@@ -231,9 +231,9 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var result = new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read));
 
-            if (x.ClassNameRef is AST.DirectTypeRef)
+            if (x.ClassNameRef is AST.INamedTypeRef)
             {
-                result.IsTypeDirect = ((AST.DirectTypeRef)x.ClassNameRef).ClassName;
+                result.IsTypeDirect = ((AST.INamedTypeRef)x.ClassNameRef).ClassName;
             }
             else
             {
@@ -298,7 +298,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)f).MethodName))
                     : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)f).MethodNameVar), AST.Operations.StringCast));
 
-                return new BoundStaticFunctionCall(BindTypeRef(f.TypeRef), boundname, boundargs)
+                return new BoundStaticFunctionCall(BindTypeRef(f.TargetType), boundname, boundargs)
                     .WithAccess(access);
             }
 
@@ -439,7 +439,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindFieldUse(AST.StaticFieldUse x, BoundAccess access)
         {
-            var typeref = BindTypeRef(x.TypeRef);
+            var typeref = BindTypeRef(x.TargetType);
             BoundVariableName varname;
 
             if (x is AST.DirectStFldUse)
@@ -532,16 +532,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindListEx(AST.ListEx expr)
         {
-            var vars = expr.LValues
-                .Select(lval => (lval != null) ? (BoundReferenceExpression)BindExpression(lval, BoundAccess.Write) : null)
+            var vars = expr.Items
+                .Select(lval => (lval != null) ? (BoundReferenceExpression)BindExpression(((AST.ValueItem)lval).ValueExpr, BoundAccess.Write) : null)
                 .ToArray();
 
-            return new BoundAssignEx(new BoundListEx(vars).WithAccess(BoundAccess.Write), BindExpression(expr.RValue, BoundAccess.Read));
+            return new BoundListEx(vars).WithAccess(BoundAccess.Write);
         }
 
         static BoundExpression BindLiteral(AST.Literal expr)
         {
-            if (expr is AST.IntLiteral) return new BoundLiteral(((AST.IntLiteral)expr).Value);
             if (expr is AST.LongIntLiteral) return new BoundLiteral(((AST.LongIntLiteral)expr).Value);
             if (expr is AST.StringLiteral) return new BoundLiteral(((AST.StringLiteral)expr).Value);
             if (expr is AST.DoubleLiteral) return new BoundLiteral(((AST.DoubleLiteral)expr).Value);
@@ -562,7 +561,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         static ConstantValue CreateConstant(AST.Literal expr)
         {
-            if (expr is AST.IntLiteral) return ConstantValue.Create(((AST.IntLiteral)expr).Value);
             if (expr is AST.LongIntLiteral) return ConstantValue.Create(((AST.LongIntLiteral)expr).Value);
             if (expr is AST.StringLiteral) return ConstantValue.Create(((AST.StringLiteral)expr).Value);
             if (expr is AST.DoubleLiteral) return ConstantValue.Create(((AST.DoubleLiteral)expr).Value);

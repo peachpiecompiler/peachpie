@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using Pchp.Syntax;
 using System.Diagnostics;
-using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Semantics;
 using Roslyn.Utilities;
 using Pchp.CodeAnalysis.Utilities;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

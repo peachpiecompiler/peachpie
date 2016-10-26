@@ -1,6 +1,4 @@
 ﻿using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax;
-using Pchp.Syntax.AST;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.FlowAnalysis.Visitors;
 using System.Collections.Immutable;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {

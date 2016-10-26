@@ -1,13 +1,13 @@
-﻿using AST = Pchp.Syntax.AST;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using Pchp.Syntax;
 using Pchp.CodeAnalysis.Utilities;
 using Pchp.Core;
 using Pchp.CodeAnalysis.Symbols;
+using Devsense.PHP.Syntax;
+using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -316,21 +316,40 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Contract.ThrowIfNull(tref);
 
-            var dtype = tref as AST.DirectTypeRef;
-            if (dtype != null)
+            if (tref != null)
             {
-                return GetTypeMask(dtype.ClassName, includesSubclasses);
-            }
-            else
-            {
-                var itype = tref as AST.IndirectTypeRef;
-                if (itype != null)
+                if (tref is AST.PrimitiveTypeRef)
                 {
-                    return GetTypeMask(itype, includesSubclasses);
+                    switch (((AST.PrimitiveTypeRef)tref).PrimitiveTypeName)
+                    {
+                        case AST.PrimitiveTypeRef.PrimitiveType.@int: return GetLongTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.@float: return GetDoubleTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.@string: return GetStringTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.@bool: return GetBooleanTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.array: return GetArrayTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.callable: return GetCallableTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.@void: return 0;
+                        case AST.PrimitiveTypeRef.PrimitiveType.iterable: return GetArrayTypeMask() | GetTypeMask(NameUtils.SpecialNames.Traversable, true);   // array | Traversable
+                        default: throw new ArgumentException();
+                    }
                 }
+                else if (tref is AST.INamedTypeRef) return GetTypeMask(((AST.INamedTypeRef)tref).ClassName);
+                else if (tref is AST.ReservedTypeRef) return GetTypeMaskOfReservedClassName(((AST.ReservedTypeRef)tref).QualifiedName.Value.Name); // NOTE: should be translated by parser to AliasedTypeRef
+                else if (tref is AST.AnonymousTypeRef) return GetTypeMask(((AST.AnonymousTypeRef)tref).TypeDeclaration.QualifiedName, false);
+                else if (tref is AST.MultipleTypeRef)
+                {
+                    TypeRefMask result = 0;
+                    foreach (var x in ((AST.MultipleTypeRef)tref).MultipleTypes)
+                    {
+                        result |= GetTypeMask(x);
+                    }
+                    return result;
+                }
+                else if (tref is AST.NullableTypeRef) return GetTypeMask(((AST.NullableTypeRef)tref).TargetType) | this.GetNullTypeMask();
+                else if (tref is AST.GenericTypeRef) return GetTypeMask(((AST.GenericTypeRef)tref).TargetType);  // ignoring type args
+                else if (tref is AST.IndirectTypeRef) return GetTypeMask((AST.IndirectTypeRef)tref, true);
             }
 
-            //
             return TypeRefMask.AnyType;
         }
 
@@ -354,27 +373,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         /// <param name="typeHint">Type hint. Can be <c>null</c>, <see cref="GenericQualifiedName"/> or <see cref="PrimitiveTypeName"/>.</param>
         /// <returns>Type mask of type hint if it was provided, otherwise AnyType.</returns>
-        public TypeRefMask GetTypeMaskFromTypeHint(object typeHint)
+        public TypeRefMask GetTypeMaskFromTypeHint(AST.TypeRef typeHint)
         {
             if (typeHint != null)
             {
                 var value = new TypeHintValue(typeHint);
 
-                if (value.IsGenericQualifiedName)
+                if (value.IsQualifiedName)
                 {
-                    return GetTypeMask(value.GenericQualifiedName.QualifiedName);
+                    return GetTypeMask(value.QualifiedName);
                 }
                 
                 if (value.IsPrimitiveType)
                 {
-                    var pname = value.PrimitiveTypeName.Name;
-                    if (pname == QualifiedName.Callable.Name) return GetCallableTypeMask();
-                    if (pname == QualifiedName.Array.Name) return GetArrayTypeMask();
-                    if (pname == QualifiedName.String.Name) return GetStringTypeMask();
-                    if (pname == QualifiedName.Boolean.Name) return GetBooleanTypeMask();
-                    if (pname == QualifiedName.Integer.Name) return GetLongTypeMask();
-                    if (pname == QualifiedName.LongInteger.Name) return GetLongTypeMask();
-                    if (pname == QualifiedName.Double.Name) return GetDoubleTypeMask();
+                    switch (value.PrimitiveTypeName)
+                    {
+                        case AST.PrimitiveTypeRef.PrimitiveType.@int: return GetLongTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.@float: return GetDoubleTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.array: return GetArrayTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.@bool: return GetBooleanTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.@string: return GetStringTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.@void: return 0;
+                        case AST.PrimitiveTypeRef.PrimitiveType.callable: return GetCallableTypeMask();
+                        case AST.PrimitiveTypeRef.PrimitiveType.iterable: return GetArrayTypeMask() | GetTypeMask(NameUtils.SpecialNames.Traversable);  // array | Traversable
+                        default:
+                            break;
+                    }
                 }
             }
 
@@ -386,7 +410,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetSystemObjectTypeMask()
         {
-            return GetTypeMask(QualifiedName.SystemObject, true);
+            return GetTypeMask(NameUtils.SpecialNames.System_Object, true);
         }
 
         /// <summary>
@@ -394,7 +418,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetNullTypeMask()
         {
-            return GetTypeMask(QualifiedName.SystemObject, includesSubclasses: false);
+            return GetTypeMask(NameUtils.SpecialNames.System_Object, false);
         }
 
         /// <summary>
@@ -572,9 +596,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             TypeRefMask result = TypeRefMask.AnyType;
 
-            if (_containingType != null && _containingType.Syntax.BaseClassName.HasValue)
+            if (_containingType != null && _containingType.Syntax.BaseClass != null)
             {
-                result = GetTypeMask(new ClassTypeRef(_containingType.Syntax.BaseClassName.Value.QualifiedName), false);
+                result = GetTypeMask(new ClassTypeRef(_containingType.Syntax.BaseClass.ClassName), false);
             }
             
             return result;

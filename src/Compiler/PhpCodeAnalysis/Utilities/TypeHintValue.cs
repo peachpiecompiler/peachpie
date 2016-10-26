@@ -1,5 +1,6 @@
 ﻿using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +18,7 @@ namespace Pchp.CodeAnalysis.Utilities
         /// <summary>
         /// Hint object.
         /// </summary>
-        private readonly object _obj;
+        private readonly TypeRef _obj;
 
         /// <summary>
         /// Gets value indicating whether the hint does not define any type.
@@ -27,23 +28,21 @@ namespace Pchp.CodeAnalysis.Utilities
         /// <summary>
         /// Gets value indicating whether the value represents a primitive type.
         /// </summary>
-        public bool IsPrimitiveType { get { return _obj is PrimitiveTypeName; } }
+        public bool IsPrimitiveType { get { return _obj is PrimitiveTypeRef; } }
 
         /// <summary>
         /// Gets value indicating whether the value represents a class type.
         /// </summary>
-        public bool IsGenericQualifiedName { get { return _obj is GenericQualifiedName; } }
+        public bool IsGenericQualifiedName { get { return _obj is GenericTypeRef; } }
 
         /// <summary>
         /// Gets value indicating whether the value represents a class type.
         /// </summary>
-        public bool IsQualifiedName { get { return IsGenericQualifiedName; } }
+        public bool IsQualifiedName { get { return _obj != null && _obj.QualifiedName.HasValue; } }
 
-        public PrimitiveTypeName PrimitiveTypeName { get { return (PrimitiveTypeName)_obj; } }
+        public PrimitiveTypeRef.PrimitiveType PrimitiveTypeName { get { return ((PrimitiveTypeRef)_obj).PrimitiveTypeName; } }
 
-        public GenericQualifiedName GenericQualifiedName { get { return (GenericQualifiedName)_obj; } }
-
-        public QualifiedName QualifiedName { get { return this.GenericQualifiedName.QualifiedName; } }
+        public QualifiedName QualifiedName { get { return _obj.QualifiedName.Value; } }
 
         /// <summary>
         /// Gets <see cref="TypeSymbol"/> representing this type hint.
@@ -54,21 +53,20 @@ namespace Pchp.CodeAnalysis.Utilities
             var ct = compilation.CoreTypes;
             if (IsPrimitiveType)
             {
-                var qname = new QualifiedName(PrimitiveTypeName.Name);
-                if (qname == QualifiedName.Integer || qname == QualifiedName.LongInteger)
-                    return ct.Long;
-                if (qname == QualifiedName.String)
-                    return ct.String;
-                if (qname == QualifiedName.Boolean)
-                    return ct.Boolean;
-                if (qname == QualifiedName.Array)
-                    return ct.IPhpArray;
-                if (qname == QualifiedName.Callable)
-                    return ct.IPhpCallable;
-                if (qname == QualifiedName.Object)
-                    return ct.Object;
+                switch (PrimitiveTypeName)
+                {
+                    case PrimitiveTypeRef.PrimitiveType.@int: return ct.Long;
+                    case PrimitiveTypeRef.PrimitiveType.@float:return ct.Double;
+                    case PrimitiveTypeRef.PrimitiveType.array:return ct.PhpArray;
+                    case PrimitiveTypeRef.PrimitiveType.@bool:return ct.Boolean;
+                    case PrimitiveTypeRef.PrimitiveType.@string:return ct.String;
+                    case PrimitiveTypeRef.PrimitiveType.@void:return ct.Void;
+                    case PrimitiveTypeRef.PrimitiveType.iterable:
+                    default:
+                        break;
+                }
 
-                throw new NotImplementedException(qname.ToString() + " AsTypeSymbol");
+                throw new NotImplementedException(PrimitiveTypeName.ToString() + " AsTypeSymbol");
             }
             else if (IsQualifiedName)
             {
@@ -87,7 +85,7 @@ namespace Pchp.CodeAnalysis.Utilities
         {
             if (!this.IsEmpty)
             {
-                if (this.IsPrimitiveType) return this.PrimitiveTypeName.Name.Value;
+                if (this.IsPrimitiveType) return this.PrimitiveTypeName.ToString();
                 if (this.IsQualifiedName) return this.QualifiedName.ToString();
             }
 
@@ -100,23 +98,10 @@ namespace Pchp.CodeAnalysis.Utilities
         /// Wraps type hint object.
         /// </summary>
         /// <param name="hint">Boxed primitive type or generic qualified type.</param>
-        public TypeHintValue(object hint)
+        public TypeHintValue(TypeRef hint)
         {
-            Debug.Assert(hint == null || hint is PrimitiveTypeName || hint is GenericQualifiedName);
             _obj = hint;
         }
-
-        public TypeHintValue(PrimitiveTypeName hint)
-            : this((object)hint)
-        { }
-
-        public TypeHintValue(GenericQualifiedName hint)
-            : this((object)hint)
-        { }
-
-        public TypeHintValue(QualifiedName hint)
-            : this(new GenericQualifiedName(hint))
-        { }
 
         #endregion
     }

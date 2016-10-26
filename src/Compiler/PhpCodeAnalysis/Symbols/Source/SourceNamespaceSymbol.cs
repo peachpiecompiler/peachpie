@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Pchp.Syntax.AST;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public SourceNamespaceSymbol(SourceModuleSymbol module, NamespaceDecl ns)
         {
             _sourceModule = module;
-            _name = ns.QualifiedName.ClrName();
+            _name = ns.QualifiedName.QualifiedName.ClrName();
         }
 
         internal override PhpCompilation DeclaringCompilation => _sourceModule.DeclaringCompilation;

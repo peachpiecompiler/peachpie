@@ -1,6 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;

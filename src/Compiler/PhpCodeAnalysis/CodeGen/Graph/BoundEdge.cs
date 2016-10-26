@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax.AST;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

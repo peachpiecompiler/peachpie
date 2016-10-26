@@ -1,13 +1,13 @@
-﻿using Pchp.Syntax.AST;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
-using Pchp.Syntax;
 using System.Diagnostics;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override NamedTypeSymbol ContainingType => _routine.ContainingType;
 
-        public override string Name => _syntax.Name.Value;
+        public override string Name => _syntax.Name.Name.Value;
 
         public override bool IsThis => false;
 

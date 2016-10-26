@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Pchp.Syntax.AST;
 using Roslyn.Utilities;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Utilities;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -95,7 +95,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _lazyMembers.Add(routine);
         }
 
-        internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntax.SourceUnit.FilePath, _compilation.Options.BaseDirectory);
+        internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntax.ContainingSourceUnit.FilePath, _compilation.Options.BaseDirectory);
 
         /// <summary>
         /// Gets relative path excluding the file name and trailing slashes.
@@ -110,7 +110,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override string Name => PathUtilities.GetFileName(_syntax.SourceUnit.FilePath, true).Replace('.', '_');
+        public override string Name => PathUtilities.GetFileName(_syntax.ContainingSourceUnit.FilePath, true).Replace('.', '_');
 
         public override string NamespaceName
         {

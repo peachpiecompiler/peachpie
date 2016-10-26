@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -35,7 +36,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var body = cg.Routine.Syntax.BodySpanOrInvalid();
             if (body.IsValid && cg.IsDebug)
             {
-                cg.EmitSequencePoint(new Syntax.Text.Span(body.Start, 1));
+                cg.EmitSequencePoint(new Span(body.Start, 1));
                 cg.EmitOpCode(ILOpCode.Nop);
             }
             else

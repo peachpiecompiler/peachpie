@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -114,7 +115,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
-            cg.EmitSequencePoint(Pchp.Syntax.Text.Span.FromBounds(this.FunctionDecl.EntireDeclarationSpan.Start, this.FunctionDecl.HeadingEndPosition));
+            cg.EmitSequencePoint(this.FunctionDecl.HeadingSpan);
 
             // <ctx>.DeclareFunction ...
             cg.EmitDeclareFunction(this.Function);
@@ -125,7 +126,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
-            cg.EmitSequencePoint(Pchp.Syntax.Text.Span.FromBounds(this.TypeDecl.EntireDeclarationSpan.Start, this.TypeDecl.HeadingEndPosition));
+            cg.EmitSequencePoint(this.TypeDecl.HeadingSpan);
 
             // <ctx>.DeclareType<T>()
             cg.EmitDeclareType(this.Type);

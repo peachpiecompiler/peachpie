@@ -1,6 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
-using Pchp.Syntax;
-using Pchp.Syntax.AST;
+﻿using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

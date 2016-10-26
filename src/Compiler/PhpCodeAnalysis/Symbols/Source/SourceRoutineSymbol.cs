@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
-using Pchp.Syntax.AST;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -11,8 +10,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.CodeGen;
-using Pchp.Syntax;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -111,7 +111,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var p in signature.FormalParams)
             {
-                var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Value) : null;
+                var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Name.Value) : null;
 
                 yield return new SourceParameterSymbol(this, p, index++, ptag);
 

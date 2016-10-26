@@ -4,12 +4,12 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
-using Pchp.Syntax;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -112,10 +112,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
     internal class SourceConstSymbol : SourceFieldSymbol
     {
-        readonly Syntax.AST.Expression _value;
+        readonly Expression _value;
         ConstantValue _resolvedValue;
 
-        public SourceConstSymbol(SourceNamedTypeSymbol type, string name, PHPDocBlock phpdoc, Syntax.AST.Expression value)
+        public SourceConstSymbol(SourceNamedTypeSymbol type, string name, PHPDocBlock phpdoc, Expression value)
             : base(type, name, PhpMemberAttributes.Public | PhpMemberAttributes.Static, phpdoc)
         {
             _value = value;

@@ -1,5 +1,5 @@
-﻿using Pchp.CodeAnalysis.CodeGen;
-using Pchp.Syntax.AST;
+﻿using Devsense.PHP.Syntax.Ast;
+using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,19 +24,15 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                Debug.Assert(_typeRef is DirectTypeRef);
-
                 if (_typeRef is PrimitiveTypeRef)
                 {
                     throw new InvalidOperationException();
                 }
-
-                else if (_typeRef is DirectTypeRef)
+                else if (_typeRef is TranslatedTypeRef || _typeRef is ClassTypeRef)
                 {
-                    var classname = ((DirectTypeRef)_typeRef).ClassName;
+                    var classname = ((INamedTypeRef)_typeRef).ClassName;
                     cg.Builder.EmitStringConstant(classname.ToString());
                 }
-
                 else
                 {
                     throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_typeRef);

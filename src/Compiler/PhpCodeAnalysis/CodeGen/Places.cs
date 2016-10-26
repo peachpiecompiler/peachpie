@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
@@ -853,10 +854,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
     internal class BoundSuperglobalPlace : IBoundReference
     {
-        readonly Syntax.VariableName _name;
+        readonly VariableName _name;
         readonly BoundAccess _access;
 
-        public BoundSuperglobalPlace(Syntax.VariableName name, BoundAccess access)
+        public BoundSuperglobalPlace(VariableName name, BoundAccess access)
         {
             Debug.Assert(name.IsAutoGlobal);
             _name = name;
@@ -879,12 +880,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
-            if (_name == Syntax.VariableName.GlobalsName)
+            if (_name == VariableName.GlobalsName)
             {
                 return cg.EmitLoadGlobals();
             }
 
-            if (_name == Syntax.VariableName.ServerName)
+            if (_name == VariableName.ServerName)
             {
                 return cg.EmitLoadServer();
             }

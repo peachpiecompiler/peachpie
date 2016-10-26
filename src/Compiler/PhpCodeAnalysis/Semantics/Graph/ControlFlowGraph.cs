@@ -1,5 +1,5 @@
-﻿using Pchp.Syntax.AST;
-using Pchp.Syntax.Text;
+﻿using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;

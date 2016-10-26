@@ -1,9 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax.AST;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -2059,12 +2060,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// True for <c>include_once</c> or <c>require_once</c>.
         /// </summary>
-        public bool IsOnceSemantic => this.InclusionType == Pchp.Syntax.InclusionTypes.IncludeOnce || this.InclusionType == Pchp.Syntax.InclusionTypes.RequireOnce;
+        public bool IsOnceSemantic => this.InclusionType == InclusionTypes.IncludeOnce || this.InclusionType == InclusionTypes.RequireOnce;
 
         /// <summary>
         /// True for <c>require</c> or <c>require_once</c>.
         /// </summary>
-        public bool IsRequireSemantic => this.InclusionType == Pchp.Syntax.InclusionTypes.Require || this.InclusionType == Pchp.Syntax.InclusionTypes.RequireOnce;
+        public bool IsRequireSemantic => this.InclusionType == InclusionTypes.Require || this.InclusionType == InclusionTypes.RequireOnce;
 
         internal override TypeSymbol Emit(CodeGenerator cg)
         {

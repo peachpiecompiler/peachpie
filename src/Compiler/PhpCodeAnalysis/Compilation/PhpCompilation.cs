@@ -13,12 +13,12 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Threading;
-using Pchp.Syntax;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.Collections;
 using System.Collections.Concurrent;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis
 {

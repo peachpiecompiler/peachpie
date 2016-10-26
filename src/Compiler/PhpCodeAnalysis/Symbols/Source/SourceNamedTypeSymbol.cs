@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Pchp.Syntax;
-using Pchp.Syntax.AST;
 using Roslyn.Utilities;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Semantics;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -114,8 +114,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 foreach (var c in clist.Constants)
                 {
-                    if (runtimestatics.GetMembers(c.Name.Value).IsEmpty)
-                        yield return new SourceConstSymbol(this, c.Name.Value, clist.PHPDoc, c.Initializer);
+                    if (runtimestatics.GetMembers(c.Name.Name.Value).IsEmpty)
+                        yield return new SourceConstSymbol(this, c.Name.Name.Value, clist.PHPDoc, c.Initializer);
                 }
             }
 
@@ -236,7 +236,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (_lazyInvokeSymbol == null)
             {
-                if (GetMembers(Pchp.Syntax.Name.SpecialMethodNames.Invoke.Value).Any(s => s is MethodSymbol))
+                if (GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Invoke.Value).Any(s => s is MethodSymbol))
                 {
                     _lazyInvokeSymbol = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue)
                     {
@@ -258,13 +258,15 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyBaseType == null)
                 {
-                    if (_syntax.BaseClassName.HasValue)
+                    if (_syntax.BaseClass != null)
                     {
-                        if (_syntax.BaseClassName.Value.IsGeneric)
-                            throw new NotImplementedException();
+                        _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(_syntax.BaseClass.ClassName.ClrName())
+                            ?? new MissingMetadataTypeSymbol(_syntax.BaseClass.ClassName.ClrName(), 0, false);
 
-                        _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(_syntax.BaseClassName.Value.QualifiedName.ClrName())
-                            ?? new MissingMetadataTypeSymbol(_syntax.BaseClassName.Value.QualifiedName.ClrName(), 0, false);
+                        if (_lazyBaseType.Arity != 0)
+                        {
+                            throw new NotImplementedException();    // generics
+                        }
                     }
                     else
                     {
@@ -289,10 +291,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
-        public override string Name => _syntax.Name.Value;
+        public override string Name => _syntax.Name.Name.Value;
 
         public override string NamespaceName
-            => (_syntax.Namespace != null) ? _syntax.Namespace.QualifiedName.ClrName() : string.Empty;
+            => (_syntax.ContainingNamespace != null) ? _syntax.ContainingNamespace.QualifiedName.QualifiedName.ClrName() : string.Empty;
 
         public override string MetadataName
         {
@@ -386,11 +388,13 @@ namespace Pchp.CodeAnalysis.Symbols
             var ifaces = new HashSet<NamedTypeSymbol>();
             foreach (var i in _syntax.ImplementsList)
             {
-                if (i.IsGeneric)
-                    throw new NotImplementedException();
+                var t = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(i.ClassName.ClrName())
+                        ?? new MissingMetadataTypeSymbol(i.ClassName.ClrName(), 0, false);
 
-                var t = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(i.QualifiedName.ClrName())
-                        ?? new MissingMetadataTypeSymbol(i.QualifiedName.ClrName(), 0, false);
+                if (t.Arity != 0)
+                {
+                    throw new NotImplementedException();    // generics
+                }
 
                 ifaces.Add(t);
             }

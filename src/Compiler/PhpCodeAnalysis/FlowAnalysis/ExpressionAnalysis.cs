@@ -1,12 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax;
-using Pchp.Syntax.AST;
-using Pchp.Syntax.Text;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -198,7 +196,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Visit(x);
         }
 
-        internal TypeSymbol ResolveType(DirectTypeRef dtype)
+        internal TypeSymbol ResolveType(INamedTypeRef dtype)
         {
             return (TypeSymbol)_model.GetType(dtype.ClassName);
         }
@@ -1227,11 +1225,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (tref == null)
                 return;
 
-            Debug.Assert(tref.TypeRef.GenericParams.Count == 0, "Generics not implemented.");
-
-            if (tref.TypeRef is DirectTypeRef)
+            if (tref.TypeRef is INamedTypeRef)
             {
-                var qname = ((DirectTypeRef)tref.TypeRef).ClassName;
+                var qname = ((INamedTypeRef)tref.TypeRef).ClassName;
                 if (qname.IsReservedClassName)
                 {
                     if (qname.IsSelfClassName)

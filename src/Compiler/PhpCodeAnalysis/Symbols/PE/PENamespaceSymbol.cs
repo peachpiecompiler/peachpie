@@ -8,7 +8,6 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Pchp.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

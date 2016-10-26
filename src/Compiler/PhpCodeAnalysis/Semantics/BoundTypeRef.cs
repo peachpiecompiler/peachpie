@@ -1,5 +1,5 @@
-﻿using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax.AST;
+﻿using Devsense.PHP.Syntax.Ast;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,8 +22,8 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             get
             {
-                if (_typeRef is DirectTypeRef)
-                    return ((DirectTypeRef)_typeRef).ClassName.ToString();
+                if (_typeRef.QualifiedName.HasValue)
+                    return _typeRef.QualifiedName.Value.ToString();
 
                 if (TypeExpression != null)
                     return TypeExpression.ToString();

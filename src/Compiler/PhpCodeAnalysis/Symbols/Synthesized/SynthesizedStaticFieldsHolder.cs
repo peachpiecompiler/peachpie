@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 using System.Threading;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -40,7 +42,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var srcmember in _class.Syntax.Members)
             {
-                var cdecl = srcmember as Syntax.AST.ConstDeclList;
+                var cdecl = srcmember as ConstDeclList;
                 if (cdecl != null)
                 {
                     foreach (var c in cdecl.Constants)
@@ -48,18 +50,18 @@ namespace Pchp.CodeAnalysis.Symbols
                         var cvalue = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, c.Initializer);
                         if (cvalue == null) // constant has to be resolved in runtime
                         {
-                            members.Add(new SourceRuntimeConstantSymbol(_class, c.Name.Value, cdecl.PHPDoc,
+                            members.Add(new SourceRuntimeConstantSymbol(_class, c.Name.Name.Value, cdecl.PHPDoc,
                                 binder.BindExpression(c.Initializer, Semantics.BoundAccess.Read)));
                         }
                     }
                 }
 
-                var fdecl = srcmember as Syntax.AST.FieldDeclList;
+                var fdecl = srcmember as FieldDeclList;
                 if (fdecl != null && fdecl.Modifiers.IsStatic() && !fdecl.IsAppStatic())    // context-static fields has to be contained in the holder
                 {
                     foreach (var f in fdecl.Fields)
                     {
-                        members.Add(new SourceFieldSymbol(_class, f.Name.Value, fdecl.Modifiers & (~Syntax.PhpMemberAttributes.Static), fdecl.PHPDoc,
+                        members.Add(new SourceFieldSymbol(_class, f.Name.Value, fdecl.Modifiers & (~PhpMemberAttributes.Static), fdecl.PHPDoc,
                             f.HasInitVal ? binder.BindExpression(f.Initializer, Semantics.BoundAccess.Read) : null));
                     }
                 }

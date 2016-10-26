@@ -9,8 +9,8 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System.Collections.Immutable;
 using System.IO;
 using Microsoft.CodeAnalysis.Text;
-using Pchp.Syntax;
 using Roslyn.Utilities;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -139,7 +139,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var tree = CodeSourceUnit.ParseCode(content.ToString(), file.Path, new TextErrorSink(consoleOutput));
+            var tree = CodeSourceUnit.ParseCode(content.ToString(), file.Path);
             
             return tree;
         }

@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Pchp.Syntax.AST;
 using Microsoft.CodeAnalysis.Text;
+using Devsense.PHP.Text;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis
 {
@@ -28,31 +30,30 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public static bool HasThisVariable(MethodDecl method)
         {
-            return method != null && (method.Modifiers & Syntax.PhpMemberAttributes.Static) == 0;
+            return method != null && (method.Modifiers & PhpMemberAttributes.Static) == 0;
         }
 
-        public static Syntax.Text.Span BodySpanOrInvalid(this AstNode routine)
+        public static Span BodySpanOrInvalid(this AstNode routine)
         {
             if (routine is FunctionDecl)
             {
-                var node = (FunctionDecl)routine;
-                return Syntax.Text.Span.FromBounds(node.DeclarationBodyPosition, node.EntireDeclarationSpan.End);
+                return ((FunctionDecl)routine).Body.Span;
             }
             if (routine is MethodDecl)
             {
                 var node = (MethodDecl)routine;
-                return Syntax.Text.Span.FromBounds(node.DeclarationBodyPosition, node.EntireDeclarationSpan.End);
+                return (node.Body != null) ? node.Body.Span : Span.Invalid;
             }
             else
             {
-                return Syntax.Text.Span.Invalid;
+                return Span.Invalid;
             }
         }
 
         /// <summary>
         /// Gets <see cref="Microsoft.CodeAnalysis.Text.LinePosition"/> from source position.
         /// </summary>
-        public static LinePosition LinePosition(this Syntax.Text.ILineBreaks lines, int pos)
+        public static LinePosition LinePosition(this ILineBreaks lines, int pos)
         {
             int line, col;
             lines.GetLineColumnFromPosition(pos, out line, out col);
@@ -78,7 +79,7 @@ namespace Pchp.CodeAnalysis
                 if (phpdoc != null)
                 {
                     return phpdoc.Elements
-                        .OfType<Syntax.PHPDocBlock.UnknownTextTag>()
+                        .OfType<PHPDocBlock.UnknownTextTag>()
                         .Any(t => t.TagName.Equals(AppStaticTagName, StringComparison.OrdinalIgnoreCase));
                 }
             }

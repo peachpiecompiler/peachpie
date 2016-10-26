@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -170,9 +171,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundGlobalVariable : BoundVariable
     {
-        private Syntax.VariableName _name;
+        private VariableName _name;
 
-        public BoundGlobalVariable(Syntax.VariableName name)
+        public BoundGlobalVariable(VariableName name)
             : base(VariableKind.GlobalVariable)
         {
             _name = name;

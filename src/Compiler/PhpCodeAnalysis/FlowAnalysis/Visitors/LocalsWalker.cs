@@ -1,6 +1,4 @@
-﻿using Pchp.Syntax;
-using Pchp.Syntax.AST;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +7,9 @@ using Pchp.CodeAnalysis.Symbols;
 using System.Diagnostics;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Semantics;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 {
@@ -58,12 +59,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
 
         #region AddVar
 
-        private void AddVar(VariableName name, Syntax.Text.Span span)
+        private void AddVar(VariableName name, Span span)
         {
             AddVar(name, span, _statementContext, null);
         }
 
-        private void AddVar(VariableName name, Syntax.Text.Span span, VariableKind kind, Expression initializer = null)
+        private void AddVar(VariableName name, Span span, VariableKind kind, Expression initializer = null)
         {
             if (name.IsThisVariableName)
                 kind = VariableKind.ThisParameter;
@@ -117,7 +118,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
                 x.Signature.FormalParams.ForEach(VisitFormalParam);
 
                 // body
-                x.Body.ForEach(VisitElement);
+                VisitElement(x.Body);
             }
         }
 
@@ -175,8 +176,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Visitors
             foreach (var st in x.StVarList)
             {
                 VisitElement(st.Initializer);
-                Debug.Assert(st.Variable.IsMemberOf == null);
-                AddVar(st.Variable.VarName, st.Span, VariableKind.StaticVariable, st.Initializer);
+                AddVar(st.Variable, st.Span, VariableKind.StaticVariable, st.Initializer);
             }
         }
 

@@ -1,5 +1,5 @@
-﻿using Pchp.Syntax;
-using Pchp.Syntax.AST;
+﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,9 +18,9 @@ namespace Pchp.CodeAnalysis
         /// <returns></returns>
         public static QualifiedName MakeQualifiedName(Name name, NamespaceDecl ns)
         {
-            return (ns == null || ns.QualifiedName.Namespaces.Length == 0) ?
-                new QualifiedName(name) :
-                new QualifiedName(name, ns.QualifiedName.Namespaces);
+            return (ns != null && ns.QualifiedName.HasValue)
+                ? new QualifiedName(name, ns.QualifiedName.QualifiedName.Namespaces)
+                : new QualifiedName(name);
         }
 
         /// <summary>
@@ -28,10 +28,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         /// <param name="type">Type, cannot be <c>null</c>.</param>
         /// <returns>Qualified name of the type.</returns>
-        public static QualifiedName MakeQualifiedName(this TypeDecl type)
-        {
-            return MakeQualifiedName(type.Name, type.Namespace);
-        }
+        public static QualifiedName MakeQualifiedName(this TypeDecl type) => type.QualifiedName;
 
         /// <summary>
         /// Make QualifiedName from the string like AAA\BBB\XXX
@@ -82,11 +79,9 @@ namespace Pchp.CodeAnalysis
         /// <param name="ns">Current namespace declaration. In case it is <c>null</c>, context for global code is created.</param>
         /// <param name="ast">Global code used when <paramref name="ns"/> is <c>null</c>.</param>
         /// <returns>Naming context. Cannot be <c>null</c>.</returns>
-        public static NamingContext GetNamingContext(NamespaceDecl ns, GlobalCode ast)
+        public static NamingContext GetNamingContext(NamespaceDecl ns, SourceUnit unit)
         {
-            return (ns != null)
-                ? ns.Naming
-                : ast.SourceUnit.Naming;
+            return (ns != null) ? ns.Naming : unit.Naming;
         }
 
         /// <summary>
@@ -96,7 +91,7 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(type);
 
-            return GetNamingContext(type.Namespace, type.SourceUnit.Ast);
+            return GetNamingContext(type.ContainingNamespace, type.ContainingSourceUnit);
         }
 
         /// <summary>
@@ -233,6 +228,8 @@ namespace Pchp.CodeAnalysis
             public static QualifiedName Closure { get { return new QualifiedName(new Name("Closure")); } }
             public static QualifiedName Exception { get { return new QualifiedName(new Name("Exception")); } }
             public static QualifiedName stdClass { get { return new QualifiedName(new Name("stdClass")); } }
+
+            public static QualifiedName System_Object => new QualifiedName(new Name("Object"), new[] { new Name("System") });
 
             public static Name offsetGet { get { return new Name("offsetGet"); } }
             public static Name offsetSet { get { return new Name("offsetSet"); } }

@@ -75,10 +75,6 @@
       <Project>{1a060993-2fed-42c2-a9bb-1ef9de9cbf83}</Project>
       <Name>PhpCodeAnalysis</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PhpSyntax\PhpSyntax.csproj">
-      <Project>{3775018b-7f9f-4cb1-8b0a-18cfb589a54b}</Project>
-      <Name>PhpSyntax</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

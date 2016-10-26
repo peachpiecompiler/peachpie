@@ -1,11 +1,11 @@
-﻿using Pchp.Core;
-using Pchp.Syntax;
+﻿using Devsense.PHP.Syntax;
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using AST = Pchp.Syntax.AST;
+using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -362,7 +362,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (params1.Length == params2.Length)
             {
                 for (int i = 0; i < params1.Length; i++)
-                    if (params1[i].Name != params2[i].Name)
+                    if (params1[i].Name.Name != params2[i].Name.Name)
                         return false;
 
                 return true;

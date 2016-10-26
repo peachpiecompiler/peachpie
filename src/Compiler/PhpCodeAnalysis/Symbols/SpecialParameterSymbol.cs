@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Diagnostics;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -35,7 +36,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Name of special <c>this</c> parameter.
         /// </summary>
-        public static string ThisName => Syntax.VariableName.ThisVariableName.Value;
+        public static string ThisName => VariableName.ThisVariableName.Value;
 
         readonly MethodSymbol _symbol;
         readonly int _index;

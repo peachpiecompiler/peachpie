@@ -1,6 +1,4 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
-using Pchp.Syntax;
-using Pchp.Syntax.AST;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -11,6 +9,7 @@ using System;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -159,8 +158,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Catch variable type.
         /// </summary>
-        public DirectTypeRef TypeRef { get { return _typeRef; } }
-        private readonly DirectTypeRef _typeRef;
+        public INamedTypeRef TypeRef { get { return _typeRef; } }
+        private readonly INamedTypeRef _typeRef;
 
         /// <summary>
         /// Resolved <see cref="TypeRef"/>.
@@ -174,7 +173,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         readonly BoundVariableRef _variable;
 
-        public CatchBlock(DirectTypeRef typeRef, BoundVariableRef variable)
+        public CatchBlock(INamedTypeRef typeRef, BoundVariableRef variable)
         {
             _typeRef = typeRef;
             _variable = variable;

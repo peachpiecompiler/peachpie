@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using Pchp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Text;
 using System.Threading;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis
 {

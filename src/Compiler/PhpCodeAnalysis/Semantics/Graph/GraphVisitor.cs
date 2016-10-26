@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
-using Pchp.Syntax.AST;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

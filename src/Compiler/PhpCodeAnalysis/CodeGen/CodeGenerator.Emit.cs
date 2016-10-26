@@ -1,4 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
@@ -493,19 +495,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         //    _il.EmitToken(_moduleBuilder.Translate(method, syntaxNode, _diagnostics, null), syntaxNode, _diagnostics);
         //}
 
-        internal void EmitSequencePoint(Syntax.AST.LangElement element)
+        internal void EmitSequencePoint(LangElement element)
         {
             if (element != null)
             {
                 EmitSequencePoint(element.Span);
             }
         }
-        internal void EmitSequencePoint(Syntax.Text.Span span)
+        internal void EmitSequencePoint(Span span)
         {
             if (_emitPdbSequencePoints && span.IsValid)
             {
                 if (_lazySyntaxTree == null)
-                    _lazySyntaxTree = new SyntaxTreeAdapter(_routine.ContainingFile.Syntax.SourceUnit);
+                    _lazySyntaxTree = new SyntaxTreeAdapter(_routine.ContainingFile.Syntax.ContainingSourceUnit);
 
                 _il.DefineSequencePoint(_lazySyntaxTree, new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
             }
@@ -1293,7 +1295,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var body = AstUtils.BodySpanOrInvalid(Routine?.Syntax);
             if (body.IsValid)
             {
-                EmitSequencePoint(new Syntax.Text.Span(body.End - 1, 1));
+                EmitSequencePoint(new Span(body.End - 1, 1));
                 EmitOpCode(ILOpCode.Nop);
             }
 

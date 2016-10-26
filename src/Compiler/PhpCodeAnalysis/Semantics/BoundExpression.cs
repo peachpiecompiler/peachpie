@@ -8,11 +8,11 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using System.Diagnostics;
-using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax;
 using Pchp.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.CodeGen;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics
 {

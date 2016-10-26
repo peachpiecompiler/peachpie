@@ -1,4 +1,4 @@
-﻿using Pchp.Syntax;
+﻿using Devsense.PHP.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,9 +32,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             { "float", ctx => ctx.GetDoubleTypeMask()},
             { "double", ctx => ctx.GetDoubleTypeMask()},
             { "array", ctx => ctx.GetArrayTypeMask()},
-            { "resource", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, true)}, // TODO: Pchp.Core.PhpResource
-            { "null", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, false)},
-            { "object", ctx => ctx.GetTypeMask(QualifiedName.SystemObject, true)},
+            { "resource", ctx => ctx.GetTypeMask(NameUtils.SpecialNames.System_Object, true)}, // TODO: Pchp.Core.PhpResource
+            { "null", ctx => ctx.GetTypeMask(NameUtils.SpecialNames.System_Object, false)},
+            { "object", ctx => ctx.GetTypeMask(NameUtils.SpecialNames.System_Object, true)},
             { "void", ctx => 0},
             //{ "nothing", ctx => 0},
             { "callable", ctx => ctx.GetCallableTypeMask()},

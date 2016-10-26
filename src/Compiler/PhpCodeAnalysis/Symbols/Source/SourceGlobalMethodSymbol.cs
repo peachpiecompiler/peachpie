@@ -6,9 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
-using Pchp.Syntax.AST;
-using Pchp.Syntax;
 using System.Diagnostics;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -108,6 +108,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(new Syntax.NamingContext(null, 0), _file.Syntax.SourceUnit, null);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(new NamingContext(null), _file.Syntax.ContainingSourceUnit, null);
     }
 }

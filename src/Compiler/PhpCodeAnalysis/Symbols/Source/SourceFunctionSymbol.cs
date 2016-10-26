@@ -6,10 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
-using Pchp.Syntax.AST;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
-using Pchp.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -62,16 +62,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
 
-        internal override IList<Statement> Statements => _syntax.Body;
+        internal override IList<Statement> Statements => _syntax.Body.Statements;
 
         internal override SourceFileSymbol ContainingFile => _file;
 
         public override NamedTypeSymbol ContainingType => _file;
 
         protected override TypeRefContext CreateTypeRefContext()
-            => new TypeRefContext(NameUtils.GetNamingContext(_syntax.Namespace, _syntax.SourceUnit.Ast), _syntax.SourceUnit, null);
+            => new TypeRefContext(NameUtils.GetNamingContext(_syntax.ContainingNamespace, _syntax.ContainingSourceUnit), _syntax.ContainingSourceUnit, null);
 
-        internal QualifiedName QualifiedName => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.Namespace);
+        internal QualifiedName QualifiedName => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.ContainingNamespace);
 
         public override string Name => this.QualifiedName.ClrName();
 

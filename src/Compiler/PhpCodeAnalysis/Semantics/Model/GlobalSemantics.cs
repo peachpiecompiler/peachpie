@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
-using Pchp.Syntax;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Semantics.Model
 {

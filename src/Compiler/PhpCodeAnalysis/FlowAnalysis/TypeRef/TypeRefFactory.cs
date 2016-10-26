@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis
 {
@@ -40,8 +41,8 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_String: return StringTypeRef;
                 case SpecialType.System_Double: return DoubleTypeRef;
                 case SpecialType.System_Boolean: return BoolTypeRef;
-                case SpecialType.System_Object: return new ClassTypeRef(Syntax.QualifiedName.SystemObject);
-                case SpecialType.System_DateTime: return new ClassTypeRef(new Syntax.QualifiedName(new Syntax.Name("DateTime"), new[] { new Syntax.Name("System") }));
+                case SpecialType.System_Object: return new ClassTypeRef(NameUtils.SpecialNames.System_Object);
+                case SpecialType.System_DateTime: return new ClassTypeRef(new QualifiedName(new Name("DateTime"), new[] { new Name("System") }));
                 default:
                     return new ClassTypeRef(((NamedTypeSymbol)t).MakeQualifiedName());
             }
@@ -115,7 +116,7 @@ namespace Pchp.CodeAnalysis
             Contract.ThrowIfNull(containingType);
 
             var typeDecl = containingType.Syntax;
-            return new TypeRefContext(NameUtils.GetNamingContext(typeDecl), typeDecl.SourceUnit, containingType);
+            return new TypeRefContext(NameUtils.GetNamingContext(typeDecl), typeDecl.ContainingSourceUnit, containingType);
         }
 
 
