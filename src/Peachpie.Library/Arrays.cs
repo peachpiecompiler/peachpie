@@ -506,28 +506,13 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="array">The array which slice to remove.</param>
         /// <param name="offset">The relativized offset of a first item of the slice.</param>
-        /// <remarks>
-        /// <para>Items from <paramref name="offset"/>-th to the last one are removed from <paramref name="array"/>.</para>
-        /// </remarks>
-        /// <para>See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/>.</para>
-        public static PhpArray array_splice(PhpArray array, int offset)
-        {
-            // Splice would be equivalent to SpliceDc if no replacelent is specified (=> no SpliceDc):
-            return array_splice(array, offset, int.MaxValue, PhpValue.Null);
-        }
-
-        /// <summary>
-        /// Removes a slice of an array.
-        /// </summary>
-        /// <param name="array">The array which slice to remove.</param>
-        /// <param name="offset">The relativized offset of a first item of the slice.</param>
         /// <param name="length">The relativized length of the slice.</param>
         /// <remarks>
         /// <para><paramref name="length"/> items are removed from <paramref name="array"/> 
         /// starting with the <paramref name="offset"/>-th one.</para>
         /// </remarks>
         /// <para>See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/>.</para>
-        public static PhpArray array_splice(PhpArray array, int offset, int length)
+        public static PhpArray array_splice(PhpArray array, int offset, int length = int.MaxValue)
         {
             // Splice would be equivalent to SpliceDc if no replacement is specified (=> no SpliceDc):
             return array_splice(array, offset, length, PhpValue.Null);
@@ -544,30 +529,6 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return null;
-                throw new ArgumentNullException();
-            }
-
-            return SpliceInternal(array, offset, length, replacement, true);
-        }
-
-        /// <summary>
-        /// Replaces a slice of an array with specified item(s).
-        /// </summary>
-        /// <param name="array">The array which slice to replace.</param>
-        /// <param name="offset">The relativized offset of a first item of the slice.</param>
-        /// <param name="length">The relativized length of the slice.</param>
-        /// <param name="replacement"><see cref="PhpArray"/> of items to replace the splice or a single item.</param>
-        /// <returns>The <see cref="PhpArray"/> of replaced items indexed by integers starting from zero.</returns>
-        /// <remarks>
-        /// <para>See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.</para>
-        /// <para>Reindexes all integer keys in resulting array.</para>
-        /// </remarks>
-        internal static PhpArray Splice(PhpArray array, int offset, int length, PhpValue replacement)
-        {
-            if (array == null)
-            {
                 //PhpException.Throw(
                 //    PhpError.Warning,
                 //    string.Format(Strings.unexpected_arg_given, "array", PhpArray.PhpTypeName, PhpVariable.TypeNameNull));
@@ -575,7 +536,7 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            return SpliceInternal(array, offset, length, replacement, false);
+            return SpliceInternal(array, offset, length, replacement, true);
         }
 
         /// <summary>
