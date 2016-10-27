@@ -267,16 +267,18 @@ namespace Pchp.CodeAnalysis.Semantics
             if (x is AST.DirectFcnCall)
             {
                 var f = (AST.DirectFcnCall)x;
+                var fname = f.FullName;
+
                 if (f.IsMemberOf == null)
                 {
-                    return new BoundGlobalFunctionCall(f.QualifiedName, f.FallbackQualifiedName, boundargs)
+                    return new BoundGlobalFunctionCall(fname.Name, fname.FallbackName, boundargs)
                         .WithAccess(access);
                 }
                 else
                 {
-                    Debug.Assert(f.FallbackQualifiedName.HasValue == false);
-                    Debug.Assert(f.QualifiedName.IsSimpleName);
-                    return new BoundInstanceFunctionCall(boundinstance, f.QualifiedName, boundargs)
+                    Debug.Assert(fname.FallbackName.HasValue == false);
+                    Debug.Assert(fname.Name.QualifiedName.IsSimpleName);
+                    return new BoundInstanceFunctionCall(boundinstance, fname.Name, boundargs)
                         .WithAccess(access);
                 }
             }
