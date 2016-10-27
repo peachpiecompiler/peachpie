@@ -1,6 +1,7 @@
 ﻿{
   "dependencies": {
     "Microsoft.DiaSymReader.Native": "1.3.3",
+    "Peachpie.Microsoft.CodeAnalysis": "0.2.0-beta2",
     "System.Collections.Immutable": "1.2.0",
     "System.Dynamic.Runtime": "4.0.11",
     "System.Reflection.Emit.Lightweight": "4.0.1"

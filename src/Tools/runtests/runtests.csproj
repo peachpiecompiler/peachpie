@@ -59,10 +59,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\roslyn %40 33e2491\src\Compilers\Core\Portable\CodeAnalysis.csproj">
-      <Project>{1ee8cad3-55f9-4d91-96b2-084641da9a6c}</Project>
-      <Name>CodeAnalysis</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Compiler\peach\peach.csproj">
       <Project>{5cde7685-f997-4515-86d2-cae834ff3ed3}</Project>
       <Name>peach</Name>

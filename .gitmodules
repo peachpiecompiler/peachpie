@@ -1,3 +1,0 @@
-[submodule "roslyn"]
-	path = roslyn
-	url = git://github.com/dotnet/roslyn.git
