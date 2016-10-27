@@ -898,7 +898,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                 fieldFlags = 0;
                             }
 
-                            if (ModuleExtensions.ShouldImportField(fieldFlags, moduleSymbol.ImportOptions))
+                            if (Microsoft.CodeAnalysis.ModuleExtensions.ShouldImportField(fieldFlags, moduleSymbol.ImportOptions))
                             {
                                 var field = new PEFieldSymbol(moduleSymbol, this, fieldDef);
                                 members.Add(field);
