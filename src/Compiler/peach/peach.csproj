@@ -66,12 +66,6 @@
     <None Include="App.config" />
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj">
-      <Project>{1a060993-2fed-42c2-a9bb-1ef9de9cbf83}</Project>
-      <Name>PhpCodeAnalysis</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

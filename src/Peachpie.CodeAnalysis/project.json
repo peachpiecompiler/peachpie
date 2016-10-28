@@ -1,5 +1,4 @@
 ﻿{
-  "name": "Peachpie.CodeAnalysis",
   "supports": {},
   "dependencies": {
     "Devsense.Php.Parser": "1.1.4",
@@ -21,6 +20,8 @@
   },
   "buildOptions": {
     "publicSign": true,
-    "keyFile": "../../build/StrongKeys/core.snk"
+    "keyFile": "../../build/StrongKeys/core.snk",
+    "xmlDoc": true,
+    "nowarn": [ "1591" ]
   }
 }

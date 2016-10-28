@@ -18,10 +18,10 @@
   "keywords": [ "dotnet", "peachpie", "php", "compiler" ],
   "dependencies": {
     "Peachpie.App": "*",
-    "Pchp.CodeAnalysis" :  "*"
+    "Peachpie.CodeAnalysis" :  "*"
   },
   "frameworks": {
-    "netstandard1.6": {},
+    "netstandard1.6": { "imports": [ "dnxcore50" ] },
     ".NETFramework,Version=v4.6": {},
     ".netcoreapp1.0": {}
   }
