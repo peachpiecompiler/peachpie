@@ -1,0 +1,13 @@
+sudo: required
+dist: trusty
+language: php
+php:
+  - '7.0'
+
+install:
+  - ./build/install_dependencies_ubuntu14.sh
+  - dotnet restore ./src
+  - dotnet build -f .netcoreapp1.0 ./src/Peachpie.Compiler.Tools
+  - dotnet restore ./Samples
+script:
+  - dotnet run -f .netcoreapp1.0 -p ./Samples/ConsoleApplication1
