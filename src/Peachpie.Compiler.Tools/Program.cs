@@ -85,7 +85,8 @@ namespace Peachpie.NETCore.Compiler.Tools
                                 }
                                 break;
                             case "temp-output":
-                                tmpoutput = value;
+                                // We have to keep the correct capital letters in the path, as some operating systems distinguish them
+                                tmpoutput = opt.Value.Value;
                                 break;
                         }
 
