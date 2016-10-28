@@ -4,7 +4,7 @@ function test($x)
 {
 	print_r($x);
 	var_export($x);
-	var_dump($x);
+	//var_dump($x);
 }
 
 $a = 123;
