@@ -1,4 +1,4 @@
-# According to https://www.microsoft.com/net/core#ubuntu
+# Install .NET Core (see https://www.microsoft.com/net/core#ubuntu)
 
 # Add the dotnet apt-get feed
 sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ trusty main" > /etc/apt/sources.list.d/dotnetdev.list'
@@ -9,3 +9,10 @@ sudo apt-get update
 
 # Install .NET Core SDK
 sudo apt-get install dotnet-dev-1.0.0-preview2-003131
+
+
+# Install Python Pip and cdiff
+
+sudo apt-get -y install python-pip
+pip -V
+pip install --upgrade cdiff
