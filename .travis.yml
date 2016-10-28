@@ -8,6 +8,7 @@ install:
   - ./build/install_dependencies_ubuntu14.sh
   - dotnet restore ./src
   - dotnet build -f .netcoreapp1.0 ./src/Peachpie.Compiler.Tools
+  - dotnet pack --no-build -c Debug -o ./.nugs --version-suffix beta ./src/Peachpie.Compiler.Tools/project.json
   - dotnet restore ./Samples
 script:
   - dotnet run -f .netcoreapp1.0 -p ./Samples/ConsoleApplication1
