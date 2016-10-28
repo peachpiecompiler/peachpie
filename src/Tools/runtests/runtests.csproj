@@ -63,7 +63,7 @@
       <Project>{5cde7685-f997-4515-86d2-cae834ff3ed3}</Project>
       <Name>peach</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Compiler\PhpCodeAnalysis\PhpCodeAnalysis.csproj">
+    <ProjectReference Include="..\..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj">
       <Project>{1a060993-2fed-42c2-a9bb-1ef9de9cbf83}</Project>
       <Name>PhpCodeAnalysis</Name>
     </ProjectReference>

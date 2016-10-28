@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compiler", "Compiler", "{0E870B29-09DB-43B4-A1DE-B0754EBED941}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpCodeAnalysis", "src\Compiler\PhpCodeAnalysis\PhpCodeAnalysis.csproj", "{1A060993-2FED-42C2-A9BB-1EF9DE9CBF83}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peachpie.CodeAnalysis", "src\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj", "{1A060993-2FED-42C2-A9BB-1EF9DE9CBF83}"
 	ProjectSection(ProjectDependencies) = postProject
 		{262137A5-BB53-4B82-B7B8-E44A9898AE33} = {262137A5-BB53-4B82-B7B8-E44A9898AE33}
 	EndProjectSection

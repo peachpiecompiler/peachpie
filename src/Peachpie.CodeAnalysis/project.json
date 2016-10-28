@@ -1,0 +1,26 @@
+﻿{
+  "name": "Peachpie.CodeAnalysis",
+  "supports": {},
+  "dependencies": {
+    "Devsense.Php.Parser": "1.1.4",
+    "Peachpie.Microsoft.CodeAnalysis": "0.2.0-beta3",
+    "System.Collections.Immutable": "1.2.0",
+    "System.Reflection.Metadata": "1.4.1-beta-24430-01",
+    "Peachpie.Runtime": "*",
+    "System.Collections.Concurrent": "4.0.12",
+    "System.Threading.Tasks.Parallel": "4.0.1"
+  },
+  "frameworks": {
+    ".NETFramework,Version=v4.6": {
+      "dependencies": {
+        "System.Threading.Tasks": "4.0.11"
+      }
+    },
+    "netstandard1.6": {},
+    ".netcoreapp1.0": {}
+  },
+  "buildOptions": {
+    "publicSign": true,
+    "keyFile": "../../build/StrongKeys/core.snk"
+  }
+}

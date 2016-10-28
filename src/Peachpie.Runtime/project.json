@@ -22,14 +22,14 @@
     "System.Dynamic.Runtime": "4.0.*"
   },
   "frameworks": {
+    ".NETFramework,Version=v4.6": {
+      "buildOptions": { "define": [ "NET46" ] }
+    },
     "netstandard1.6": {
       "imports": "dnxcore50",
       "dependencies": {
         "NETStandard.Library": "1.6.0"
       }
-    },
-    ".NETFramework,Version=v4.6": {
-      "buildOptions": { "define": [ "NET46" ] }
     },
     ".netcoreapp1.0": {
       "dependencies": {
