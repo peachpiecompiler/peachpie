@@ -1,7 +1,6 @@
 {
   "projects": [
     "src",
-    "src/Dummy",
     "Samples"
   ]
 }
