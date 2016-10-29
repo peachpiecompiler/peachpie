@@ -6,7 +6,7 @@
 # Peachpie Compiler
 ### The open-source PHP compiler to .NET
 
-[![Build status](https://api.travis-ci.org/iolevel/peachpie.svg?branch=master)](https://travis-ci.org/iolevel/peachpie)  
+[![Build status](https://api.travis-ci.org/iolevel/peachpie.svg?branch=master)](https://travis-ci.org/iolevel/peachpie)
 [![Join the chat at https://gitter.im/iolevel/peachpie](https://badges.gitter.im/iolevel/peachpie.svg)](https://gitter.im/iolevel/peachpie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![License](https://img.shields.io/hexpm/l/plug.svg)](https://github.com/iolevel/peachpie/blob/master/LICENSE.txt)
 [![Twitter](https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg)](https://twitter.com/pchpcompiler)
