@@ -220,8 +220,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// If possible, based on type analysis, unwraps more specific type from a value currently on stack without a runtime type check.
         /// </summary>
-        /// <param name="stack">Type of value currently on top of evaluationb stack.</param>
-        /// <param name="tmask">Result of analysis what type will be there in runtime.</param>
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
@@ -342,8 +340,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// In case there is <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c> on the top of evaluation stack,
         /// converts it to <c>double</c>.
         /// </summary>
-        /// <param name="stack">New type on top of stack.</param>
-        /// <returns></returns>
         internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
         {
             // emit number literal directly as double
@@ -1325,8 +1321,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits <c>Debug.Assert([stack]) in debug compile mode.</c>
+        /// Emits <c>Debug.Assert([<paramref name="place"/>]) in debug compile mode.</c>
         /// </summary>
+        /// <param name="place">The variable to emit assertion for.</param>
         /// <param name="messageOpt">Optional second argument for assert.</param>
         public void EmitDebugAssertNotNull(IPlace place, string messageOpt = null)
         {
@@ -1381,8 +1378,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits call to given method.
         /// </summary>
-        /// <param name="code">Call op code, Call, Callvirt, Calli.</param>
-        /// <param name="method">Method reference.</param>
         /// <returns>Method return type.</returns>
         public static TypeSymbol EmitCall(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, ILOpCode code, MethodSymbol method)
         {

@@ -60,6 +60,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Creates an instance of <see cref="CFGAnalysis"/> that can analyse a block.
         /// </summary>
         /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
+        /// <param name="opvisitor">Expression visitor.</param>
         /// <returns>New instance of the flow analyzer.</returns>
         internal static CFGAnalysis Create(Worklist<BoundBlock> worklist, ExpressionAnalysis opvisitor)
         {

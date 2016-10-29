@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>
-        /// Resolved <see cref="this.TypeRef"/> if possible.
+        /// Resolved <see cref="TypeRef"/> if possible.
         /// </summary>
         internal TypeSymbol ResolvedType { get; set; }
 

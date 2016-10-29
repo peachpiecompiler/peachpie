@@ -77,7 +77,7 @@ namespace Pchp.CodeAnalysis
         /// Create naming context.
         /// </summary>
         /// <param name="ns">Current namespace declaration. In case it is <c>null</c>, context for global code is created.</param>
-        /// <param name="ast">Global code used when <paramref name="ns"/> is <c>null</c>.</param>
+        /// <param name="unit">Global code used when <paramref name="ns"/> is <c>null</c>.</param>
         /// <returns>Naming context. Cannot be <c>null</c>.</returns>
         public static NamingContext GetNamingContext(NamespaceDecl ns, SourceUnit unit)
         {

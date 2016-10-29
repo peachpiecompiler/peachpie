@@ -287,12 +287,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return result;
         }
 
-        /// <summary>
-        /// Called by <see cref="ConstraintTypesNoUseSiteDiagnostics"/>, <see cref="InterfacesNoUseSiteDiagnostics"/>, <see cref="EffectiveBaseClass"/>, and <see cref="DeducedBaseType"/>.
-        /// to allow derived classes to ensure constraints within the containing
-        /// type or method are resolved in a consistent order, regardless of the
-        /// order the callers query individual type parameters.
-        /// </summary>
         internal abstract void EnsureAllConstraintsAreResolved();
 
         /// <summary>

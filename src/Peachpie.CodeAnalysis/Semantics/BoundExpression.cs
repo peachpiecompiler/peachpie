@@ -1193,7 +1193,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundExpression IsTypeIndirect { get; set; }
 
         /// <summary>
-        /// <see cref="IsType"/> bound to a type symbol if possible.
+        /// <see cref="IsTypeDirect"/> bound to a type symbol if possible.
         /// </summary>
         internal TypeSymbol IsTypeResolved { get; set; }
 

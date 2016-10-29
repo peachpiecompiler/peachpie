@@ -120,7 +120,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         /// <param name="typeCtx">Routine type context.</param>
         /// <param name="paramTag">PHPDoc param tag if available.</param>
-        /// <param name="signature">Call signature.</param>
+        /// <param name="syntax">Call signature parameter.</param>
         /// <param name="call">Call information if called specifically with given context.</param>
         /// <param name="paramIndex">Parameter index.</param>
         /// <returns>Expected type of parameter. Cannot be uninitialized.</returns>

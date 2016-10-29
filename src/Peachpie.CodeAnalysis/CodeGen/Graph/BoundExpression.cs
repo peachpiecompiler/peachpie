@@ -949,8 +949,6 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits comparison operator pushing <c>bool</c> (<c>i4</c> of value <c>0</c> or <c>1</c>) onto the evaluation stack.
         /// </summary>
-        /// <param name="cg">Code generator helper.</param>
-        /// <param name="lt">True for <c>clt</c> (less than) otherwise <c>cgt</c> (greater than).</param>
         /// <returns>Resulting type code pushed onto the top of evaliuation stack.</returns>
         internal static TypeSymbol EmitLtGt(CodeGenerator cg, TypeSymbol xtype, BoundExpression right, bool lt)
         {

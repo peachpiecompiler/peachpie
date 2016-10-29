@@ -56,7 +56,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Returns a <see cref="LocalDefinition"/> previously obtained from <see cref="GetTemporaryLocal"/> to the
+        /// Returns a <see cref="LocalDefinition"/> previously obtained from <see cref="GetTemporaryLocal(TypeSymbol,bool)"/> to the
         /// pool of locals available for reuse.
         /// </summary>
         /// <param name="definition">The <see cref="LocalDefinition"/> to return to the pool.</param>

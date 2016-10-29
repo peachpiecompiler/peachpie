@@ -371,7 +371,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets type mask corresponding to the parameter type hint.
         /// </summary>
-        /// <param name="typeHint">Type hint. Can be <c>null</c>, <see cref="GenericQualifiedName"/> or <see cref="PrimitiveTypeName"/>.</param>
         /// <returns>Type mask of type hint if it was provided, otherwise AnyType.</returns>
         public TypeRefMask GetTypeMaskFromTypeHint(AST.TypeRef typeHint)
         {

@@ -20,13 +20,13 @@
     "System.Collections.Immutable": "1.2.0",
     "System.Reflection.Metadata": "1.4.1-beta-24430-01",
     "Peachpie.Runtime": "*",
-    "System.Collections.Concurrent": "4.0.12",
-    "System.Threading.Tasks.Parallel": "4.0.1"
+    "System.Collections.Concurrent": "4.0.*",
+    "System.Threading.Tasks.Parallel": "4.0.*"
   },
   "frameworks": {
     ".NETFramework,Version=v4.6": {
       "dependencies": {
-        "System.Threading.Tasks": "4.0.11"
+        "System.Threading.Tasks": "4.0.*"
       }
     },
     "netstandard1.6": { "imports": [ "dnxcore50" ] },

@@ -389,7 +389,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits <paramref name="instance"/>, uses cached value if initialized already.
+        /// Emits <see name="_instance"/>, uses cached value if initialized already.
         /// </summary>
         TypeSymbol EmitInstance(CodeGenerator cg, Func<TypeSymbol> emitter)
         {
@@ -477,11 +477,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         /// <summary>
         /// Emits load of value.
-        /// Expects <see cref="EmitPreamble(CodeGenerator)"/> to be called first.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first.
         /// </summary>
-        /// <remarks>
-        /// <paramref name="expected"/> is the target type. It can be <c>array</c> or <c>object</c> or <c>alias</c> in case the expression is ensured to be array or object or to be passed as a reference. 
-        /// </remarks>
         TypeSymbol EmitLoad(CodeGenerator cg);
 
         /// <summary>

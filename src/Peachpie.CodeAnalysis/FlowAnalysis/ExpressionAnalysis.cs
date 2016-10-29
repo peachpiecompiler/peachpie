@@ -124,8 +124,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets value indicating the given type is long or double or both but nothing else.
         /// </summary>
-        /// <param name="tmask"></param>
-        /// <returns></returns>
         bool IsNumberOnly(BoundExpression x) => IsNumberOnly(x.TypeRefMask);
 
         /// <summary>
@@ -140,8 +138,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// In case of a local variable or parameter, sets associated flag determining its value is less than Int64.Max.
         /// </summary>
-        /// <param name="r"></param>
-        /// <param name="lt"></param>
         void LTInt64Max(BoundReferenceExpression r, bool lt)
         {
             var varname = AsVariableName(r);

@@ -180,8 +180,8 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 
         /// <summary>
-        /// virtual = IsVirtual && NewSlot 
-        /// override = IsVirtual && !NewSlot
+        /// virtual = IsVirtual AND NewSlot 
+        /// override = IsVirtual AND !NewSlot
         /// </summary>
         internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && !IsStatic;
 
