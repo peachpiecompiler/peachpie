@@ -65,8 +65,20 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Devsense.PHP.Parser">
+      <HintPath>..\..\Peachpie.CodeAnalysis\bin\$(Configuration)\net46\Devsense.PHP.Parser.dll</HintPath>
+    </Reference>
+    <Reference Include="Peachpie.CodeAnalysis">
+      <HintPath>..\..\Peachpie.CodeAnalysis\bin\$(Configuration)\net46\Peachpie.CodeAnalysis.dll</HintPath>
+    </Reference>
     <Reference Include="Peachpie.Library">
       <HintPath>..\..\Peachpie.Library\bin\$(Configuration)\net46\Peachpie.Library.dll</HintPath>
+    </Reference>
+    <Reference Include="Peachpie.Microsoft.CodeAnalysis">
+      <HintPath>..\..\Peachpie.CodeAnalysis\bin\$(Configuration)\net46\Peachpie.Microsoft.CodeAnalysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Peachpie.Runtime">
+      <HintPath>..\..\Peachpie.Runtime\bin\$(Configuration)\net46\Peachpie.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -41,8 +41,17 @@
     <StartupObject>Pchp.CodeAnalysis.CommandLine.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Devsense.PHP.Parser">
+      <HintPath>..\..\Peachpie.CodeAnalysis\bin\$(Configuration)\net46\Devsense.PHP.Parser.dll</HintPath>
+    </Reference>
+    <Reference Include="Peachpie.CodeAnalysis">
+      <HintPath>..\..\Peachpie.CodeAnalysis\bin\$(Configuration)\net46\Peachpie.CodeAnalysis.dll</HintPath>
+    </Reference>
     <Reference Include="Peachpie.Library">
       <HintPath>..\..\Peachpie.Library\bin\$(Configuration)\net46\Peachpie.Library.dll</HintPath>
+    </Reference>
+    <Reference Include="Peachpie.Microsoft.CodeAnalysis">
+      <HintPath>..\..\Peachpie.CodeAnalysis\bin\$(Configuration)\net46\Peachpie.Microsoft.CodeAnalysis.dll</HintPath>
     </Reference>
     <Reference Include="Peachpie.Runtime">
       <HintPath>..\..\Peachpie.Runtime\bin\$(Configuration)\net46\Peachpie.Runtime.dll</HintPath>
@@ -65,12 +74,6 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="project.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.xproj">
-      <Project>{2b2b4180-5093-4a29-be59-4d672648988d}</Project>
-      <Name>Peachpie.CodeAnalysis</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
