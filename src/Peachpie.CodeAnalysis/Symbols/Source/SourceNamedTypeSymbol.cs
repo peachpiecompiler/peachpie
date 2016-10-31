@@ -16,13 +16,96 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal sealed partial class SourceNamedTypeSymbol : NamedTypeSymbol, IWithSynthesized
+    internal sealed partial class SourceNamedTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, IWithSynthesized
     {
+        #region IPhpTypeSymbol
+
+        /// <summary>
+        /// Gets fully qualified name of the class.
+        /// </summary>
+        public QualifiedName FullName => _syntax.QualifiedName;
+
+        /// <summary>
+        /// Optional.
+        /// A field holding a reference to current runtime context.
+        /// Is of type <see cref="Pchp.Core.Context"/>.
+        /// </summary>
+        public FieldSymbol ContextStore
+        {
+            get
+            {
+                if (_lazyContextField == null && !this.IsStatic)
+                {
+                    // resolve <ctx> field
+                    _lazyContextField = (this.BaseType as IPhpTypeSymbol)?.ContextStore;
+
+                    //
+                    if (_lazyContextField == null)
+                    {
+                        _lazyContextField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Context.Symbol, SpecialParameterSymbol.ContextName, Accessibility.Protected, false, true);
+                    }
+                }
+
+                return _lazyContextField;
+            }
+        }
+
+        /// <summary>
+        /// Optional.
+        /// A field holding array of the class runtime fields.
+        /// Is of type <see cref="Pchp.Core.PhpArray"/>.
+        /// </summary>
+        public FieldSymbol RuntimeFieldsStore
+        {
+            get
+            {
+                if (_lazyRuntimeFieldsField == null && !this.IsStatic)
+                {
+                    const string fldname = "<runtime_fields>";
+
+                    _lazyRuntimeFieldsField = (this.BaseType as IPhpTypeSymbol)?.RuntimeFieldsStore;
+
+                    //
+                    if (_lazyRuntimeFieldsField == null)
+                    {
+                        _lazyRuntimeFieldsField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.PhpArray.Symbol, fldname, Accessibility.Internal, false);
+                    }
+                }
+
+                return _lazyRuntimeFieldsField;
+            }
+        }
+
+        /// <summary>
+        /// Optional.
+        /// A method <c>.phpnew</c> that ensures the initialization of the class without calling the base type constructor.
+        /// </summary>
+        public MethodSymbol InitializeInstanceMethod => this.IsStatic ? null : (_lazyPhpNewMethod ?? (_lazyPhpNewMethod = new SynthesizedPhpNewMethodSymbol(this)));
+
+        /// <summary>
+        /// Optional.
+        /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
+        /// </summary>
+        public NamedTypeSymbol StaticsContainer
+        {
+            get
+            {
+                if (_lazyStaticsContainer == null)
+                {
+                    _lazyStaticsContainer = new SynthesizedStaticFieldsHolder(this);
+                }
+
+                return _lazyStaticsContainer;
+            }
+        }
+
+        #endregion
+
         readonly TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
         ImmutableArray<Symbol> _lazyMembers;
-        
+
         NamedTypeSymbol _lazyBaseType;
         MethodSymbol _lazyCtorMethod, _lazyPhpNewMethod;   // .ctor, .phpnew 
         SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
@@ -32,7 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
         SynthesizedMethodSymbol _lazyInvokeSymbol; // IPhpCallable.Invoke(Context, PhpValue[]);
 
         public SourceFileSymbol ContainingFile => _file;
-        
+
         public SourceNamedTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
             Contract.ThrowIfNull(file);
@@ -48,10 +131,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 var members = new List<Symbol>();
 
                 //
-                var statics = EnsureStaticsContainer();
-                if (!statics.IsEmpty)
+                if (StaticsContainer.GetMembers().Any())
                 {
-                    members.Add(statics);
+                    members.Add(StaticsContainer);
                 }
 
                 //
@@ -80,9 +162,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // .phpnew
-            if (PhpNewMethodSymbol != null)
+            if (InitializeInstanceMethod != null)
             {
-                yield return PhpNewMethodSymbol;
+                yield return InitializeInstanceMethod;
             }
 
             // ..ctor
@@ -94,9 +176,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         IEnumerable<FieldSymbol> LoadFields()
         {
-            Semantics.SemanticsBinder binder = new Semantics.SemanticsBinder(null, null);
+            var binder = new SemanticsBinder(null, null);
 
-            var runtimestatics = EnsureStaticsContainer();
+            var runtimestatics = StaticsContainer;
 
             // source fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
@@ -120,10 +202,10 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // special fields
-            if (ContextField != null && object.ReferenceEquals(ContextField.ContainingType, this))
-                yield return ContextField;
+            if (ContextStore != null && object.ReferenceEquals(ContextStore.ContainingType, this))
+                yield return ContextStore;
 
-            var runtimefld = EnsureRuntimeFieldsField();
+            var runtimefld = RuntimeFieldsStore;
             if (runtimefld != null && object.ReferenceEquals(runtimefld.ContainingType, this))
                 yield return runtimefld;
         }
@@ -132,8 +214,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <c>.ctor</c> synthesized method. Only if type is not static.
         /// </summary>
         internal MethodSymbol PhpCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedPhpCtorSymbol(this)));
-
-        internal override MethodSymbol PhpNewMethodSymbol => this.IsStatic ? null : (_lazyPhpNewMethod ?? (_lazyPhpNewMethod = new SynthesizedPhpNewMethodSymbol(this)));
 
         public override ImmutableArray<MethodSymbol> StaticConstructors
         {
@@ -144,89 +224,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return ImmutableArray<MethodSymbol>.Empty;
             }
-        }
-
-        /// <summary>
-        /// Special field containing reference to current object's context.
-        /// May be a field from base type.
-        /// </summary>
-        internal FieldSymbol ContextField
-        {
-            get
-            {
-                if (_lazyContextField == null && !this.IsStatic)
-                {
-                    // resolve <ctx> field
-                    var types = DeclaringCompilation.CoreTypes;
-                    NamedTypeSymbol t = this.BaseType;
-                    while (t != null && t != types.Object.Symbol)
-                    {
-                        var candidates = t.GetMembers(SpecialParameterSymbol.ContextName)
-                            .OfType<FieldSymbol>()
-                            .Where(f => f.DeclaredAccessibility == Accessibility.Protected && !f.IsStatic && f.Type == types.Context.Symbol)
-                            .ToList();
-
-                        Debug.Assert(candidates.Count <= 1);
-                        if (candidates.Count != 0)
-                        {
-                            _lazyContextField = candidates[0];
-                            break;
-                        }
-
-                        t = t.BaseType;
-                    }
-
-                    //
-                    if (_lazyContextField == null)
-                        _lazyContextField = new SynthesizedFieldSymbol(this, types.Context.Symbol, SpecialParameterSymbol.ContextName, Accessibility.Protected, false, true);
-                }
-
-                return _lazyContextField;
-            }
-        }
-
-        internal FieldSymbol EnsureRuntimeFieldsField()
-        {
-            if (_lazyRuntimeFieldsField == null && !this.IsStatic)
-            {
-                const string fldname = "<runtime_fields>";
-
-                // resolve <ctx> field
-                var types = DeclaringCompilation.CoreTypes;
-                NamedTypeSymbol t = this.BaseType;
-                while (t != null && t != types.Object.Symbol)
-                {
-                    var candidates = t.GetMembers(fldname).Concat(t.GetMembers("__peach__runtimeFields"))
-                        .OfType<FieldSymbol>()
-                        .Where(f => f.DeclaredAccessibility != Accessibility.Public && !f.IsStatic && f.Type == types.PhpArray.Symbol)
-                        .ToList();
-
-                    Debug.Assert(candidates.Count <= 1);
-                    if (candidates.Count != 0)
-                    {
-                        _lazyRuntimeFieldsField = candidates[0];
-                        break;
-                    }
-
-                    t = t.BaseType;
-                }
-
-                //
-                if (_lazyRuntimeFieldsField == null)
-                    _lazyRuntimeFieldsField = new SynthesizedFieldSymbol(this, types.PhpArray.Symbol, fldname, Accessibility.Internal, false);
-            }
-
-            return _lazyRuntimeFieldsField;
-        }
-
-        internal SynthesizedStaticFieldsHolder EnsureStaticsContainer()
-        {
-            if (_lazyStaticsContainer == null)
-            {
-                _lazyStaticsContainer = new SynthesizedStaticFieldsHolder(this);
-            }
-
-            return _lazyStaticsContainer;
         }
 
         /// <summary>

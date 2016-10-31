@@ -16,35 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Gets special <c>_statics</c> nested class holding static fields bound to context.
         /// </summary>
         /// <returns></returns>
-        internal TypeSymbol TryGetStatics()
-            => GetTypeMembers(WellKnownPchpNames.StaticsHolderClassName)
-                .Where(t => t.Arity == 0 && t.DeclaredAccessibility == Accessibility.Public && !t.IsStatic)
-                .SingleOrDefault();
-
-        /// <summary>
-        /// Tries to find field with given name that can be used as a static field.
-        /// Lookups through the class inheritance.
-        /// Does not handle member visibility.
-        /// </summary>
-        internal FieldSymbol ResolveStaticField(string name)
-        {
-            FieldSymbol field = null;
-
-            for (var t = this; t != null && field == null; t = t.BaseType)
-            {
-                field = t.GetMembers(name).OfType<FieldSymbol>().SingleOrDefault();
-                if (field == null)
-                {
-                    var statics = t.TryGetStatics();
-                    if (statics != null)
-                    {
-                        field = statics.GetMembers(name).OfType<FieldSymbol>().SingleOrDefault();
-                    }
-                }
-            }
-
-            return field;
-        }
+        internal TypeSymbol TryGetStatics() => (this as IPhpTypeSymbol)?.StaticsContainer;
 
         /// <summary>
         /// Emits load of statics holder.
@@ -73,7 +45,7 @@ namespace Pchp.CodeAnalysis.Symbols
             EmitFieldsCctor(module);
 
             // __statics.Init
-            var statics = this.EnsureStaticsContainer();
+            var statics = (SynthesizedStaticFieldsHolder)this.StaticsContainer;
             if (statics != null && !statics.IsEmpty)
                 statics.EmitCtors(module);
 
@@ -81,7 +53,7 @@ namespace Pchp.CodeAnalysis.Symbols
             EmitInvoke(EnsureInvokeMethod(), module);
 
             // .phpnew
-            EmitPhpNew((SynthesizedPhpNewMethodSymbol)PhpNewMethodSymbol, module);
+            EmitPhpNew((SynthesizedPhpNewMethodSymbol)InitializeInstanceMethod, module);
 
             // .ctor
             EmitPhpCtor(PhpCtorMethodSymbol, module);
@@ -141,7 +113,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (phpnew == null) return; // static class
 
-            module.SetMethodBody(phpnew, MethodGenerator.GenerateMethodBody(module, phpnew, il =>
+            module.SetMethodBody(phpnew, MethodGenerator.GenerateMethodBody(module, phpnew, (Action<Microsoft.CodeAnalysis.CodeGen.ILBuilder>)(il =>
             {
                 Debug.Assert(SpecialParameterSymbol.IsContextParameter(phpnew.Parameters[0]));
 
@@ -149,10 +121,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 // initialize <ctx> field,
                 // if field is declared within this type
-                var ctxField = this.ContextField;
-                if (ctxField != null && object.ReferenceEquals(ctxField.ContainingType, this))
+                var ctxField = this.ContextStore;
+                if (ctxField != null && object.ReferenceEquals((object)ctxField.ContainingType, this))
                 {
-                    var ctxFieldPlace = new FieldPlace(cg.ThisPlaceOpt, ctxField);
+                    var ctxFieldPlace = new FieldPlace(cg.ThisPlaceOpt, (IFieldSymbol)ctxField);
 
                     // Debug.Assert(<ctx> != null)
                     cg.EmitDebugAssertNotNull(cg.ContextPlaceOpt, "Context cannot be null.");
@@ -178,7 +150,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Debug.Assert(phpnew.ReturnsVoid);
                 cg.EmitRet(phpnew.ReturnType);
 
-            }, null, DiagnosticBag.GetInstance(), false));
+            }), null, DiagnosticBag.GetInstance(), false));
         }
 
         void EmitPhpCtor(MethodSymbol ctor, Emit.PEModuleBuilder module)
@@ -193,7 +165,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0));
 
                 // call .phpnew
-                var phpnew = this.PhpNewMethodSymbol;
+                var phpnew = this.InitializeInstanceMethod;
                 cg.EmitPop(cg.EmitThisCall(phpnew, ctor));
 
                 // call __construct

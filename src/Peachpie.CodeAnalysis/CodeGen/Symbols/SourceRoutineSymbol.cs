@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // <this>.<ctx> in instance methods
                 var t = (SourceNamedTypeSymbol)this.ContainingType;
-                return new FieldPlace(GetThisPlace(), t.ContextField);
+                return new FieldPlace(GetThisPlace(), t.ContextStore);
             }
 
             //

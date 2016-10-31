@@ -55,11 +55,6 @@ namespace Pchp.CodeAnalysis.Symbols
             .Where(m => m.MethodKind == MethodKind.StaticConstructor)
             .ToImmutableArray();
 
-        /// <summary>
-        /// Gets optional <c>.phpnew</c> method.
-        /// </summary>
-        internal virtual MethodSymbol PhpNewMethodSymbol => GetMembers(WellKnownPchpNames.PhpNewMethodName).OfType<MethodSymbol>().SingleOrDefault();
-
         internal abstract ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved);
 
         /// <summary>

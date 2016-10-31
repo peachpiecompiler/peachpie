@@ -1426,7 +1426,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (ParentType != null && x.FieldName.IsDirect)
                 {
-                    var field = ParentType.ResolveStaticField(x.FieldName.NameValue.Value);
+                    var fldname = x.FieldName.NameValue.Value;
+                    var field = x.IsStaticField ? ParentType.ResolveStaticField(fldname) : ParentType.ResolveClassConstant(fldname);
                     if (field != null)
                     {
                         // TODO: visibility -> ErrCode
@@ -1454,8 +1455,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     else if (x.IsStaticField)
                     {
                         // TODO: visibility
-                        var prop = ParentType.LookupMember<PropertySymbol>(x.FieldName.NameValue.Value);
-                        if (prop != null)
+                        var prop = ParentType.LookupMember<PropertySymbol>(fldname);
+                        if (prop != null && prop.IsStatic)
                         {
                             x.BoundReference = new BoundPropertyPlace(null, prop);
                             x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);

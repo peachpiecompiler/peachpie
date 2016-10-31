@@ -11,14 +11,104 @@ using System.Threading.Tasks;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Collections;
 using System.Threading;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// The class to represent all types imported from a PE/module.
     /// </summary>
-    internal abstract class PENamedTypeSymbol : NamedTypeSymbol
+    internal abstract class PENamedTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol
     {
+        #region IPhpTypeSymbol
+
+        /// <summary>
+        /// Gets fully qualified name of the class.
+        /// </summary>
+        public QualifiedName FullName => new QualifiedName(new Name(_name), _ns.Split('.').Select(s => new Name(s)).ToArray(), true);
+
+        /// <summary>
+        /// Optional.
+        /// A field holding a reference to current runtime context.
+        /// Is of type <see cref="Pchp.Core.Context"/>.
+        /// </summary>
+        public FieldSymbol ContextStore
+        {
+            get
+            {
+                if (!this.IsStatic)
+                {
+                    // resolve <ctx> field
+                    var candidates = this.GetMembers(SpecialParameterSymbol.ContextName)
+                        .OfType<FieldSymbol>()
+                        .Where(f => f.DeclaredAccessibility == Accessibility.Protected && !f.IsStatic && f.Type.MetadataName == "Context")
+                        .ToList();
+
+                    Debug.Assert(candidates.Count <= 1);
+                    if (candidates.Count != 0)
+                    {
+                        return candidates[0];
+                    }
+                }
+
+                return (this.BaseType as IPhpTypeSymbol)?.ContextStore;
+            }
+        }
+
+        /// <summary>
+        /// Optional.
+        /// A field holding array of the class runtime fields.
+        /// Is of type <see cref="Pchp.Core.PhpArray"/>.
+        /// </summary>
+        public FieldSymbol RuntimeFieldsStore
+        {
+            get
+            {
+                if (!this.IsStatic)
+                {
+                    const string fldname1 = "<runtime_fields>";
+                    const string fldName2 = "__peach__runtimeFields";
+
+                    // resolve <runtime_fields> field
+                    var candidates = this.GetMembers(fldname1).Concat(this.GetMembers(fldName2))
+                        .OfType<FieldSymbol>()
+                        .Where(f => f.DeclaredAccessibility != Accessibility.Public && !f.IsStatic && f.Type.MetadataName == "PhpArray")
+                        .ToList();
+
+                    Debug.Assert(candidates.Count <= 1);
+                    if (candidates.Count != 0)
+                    {
+                        return candidates[0];
+                    }
+                }
+
+                //
+                return (BaseType as IPhpTypeSymbol)?.RuntimeFieldsStore;
+            }
+        }
+
+        /// <summary>
+        /// Optional.
+        /// A method <c>.phpnew</c> that ensures the initialization of the class without calling the base type constructor.
+        /// </summary>
+        public MethodSymbol InitializeInstanceMethod => GetMembers(WellKnownPchpNames.PhpNewMethodName).OfType<MethodSymbol>().SingleOrDefault();
+
+        /// <summary>
+        /// Optional.
+        /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
+        /// </summary>
+        public NamedTypeSymbol StaticsContainer
+        {
+            get
+            {
+                return this.GetTypeMembers(WellKnownPchpNames.StaticsHolderClassName)
+                    .Where(t => !t.IsStatic && t.DeclaredAccessibility == Accessibility.Public && t.Arity == 0)
+                    .SingleOrDefault();
+            }
+        }
+
+        #endregion
+
         #region PENamedTypeSymbolNonGeneric
 
         /// <summary>
@@ -362,11 +452,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Within groups, members are sorted based on declaration order.
         /// </summary>
         private ImmutableArray<Symbol> _lazyMembersInDeclarationOrder;
-        
+
         /// <summary>
-                                                                      /// A map of members immediately contained within this type 
-                                                                      /// grouped by their name (case-sensitively).
-                                                                      /// </summary>
+        /// A map of members immediately contained within this type 
+        /// grouped by their name (case-sensitively).
+        /// </summary>
         Dictionary<string, ImmutableArray<Symbol>> _lazyMembersByName;
 
         /// <summary>

@@ -123,6 +123,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsInterface => false;
 
+        public override bool IsImplicitlyDeclared => true;
+
         internal override bool IsWindowsRuntimeImport => false;
 
         internal override TypeLayout Layout => default(TypeLayout);

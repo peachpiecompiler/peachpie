@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             var phpctor = this.PhpCtor; // this tells us what parameters are provided to resolve base .ctor that can be called
-            var basephpnew = this.ContainingType.BaseType.PhpNewMethodSymbol;   // base..phpnew() to be called if provided
+            var basephpnew = (this.ContainingType.BaseType as IPhpTypeSymbol)?.InitializeInstanceMethod;   // base..phpnew() to be called if provided
             var basectors = (basephpnew != null)
                 ? ImmutableArray.Create(basephpnew)
                 : this.ContainingType.BaseType.InstanceConstructors
