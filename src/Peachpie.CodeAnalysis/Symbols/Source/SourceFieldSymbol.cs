@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal partial class SourceFieldSymbol : FieldSymbol//, IAttributeTargetSymbol
     {
-        readonly SourceNamedTypeSymbol _type;
+        readonly SourceTypeSymbol _type;
         readonly string _name;
         readonly PhpMemberAttributes _modifiers;
         readonly PHPDocBlock _phpdoc;
@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public BoundExpression Initializer => _initializerOpt;
 
-        public SourceFieldSymbol(SourceNamedTypeSymbol type, string name, PhpMemberAttributes modifiers, PHPDocBlock phpdoc, BoundExpression initializer = null)
+        public SourceFieldSymbol(SourceTypeSymbol type, string name, PhpMemberAttributes modifiers, PHPDocBlock phpdoc, BoundExpression initializer = null)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Expression _value;
         ConstantValue _resolvedValue;
 
-        public SourceConstSymbol(SourceNamedTypeSymbol type, string name, PHPDocBlock phpdoc, Expression value)
+        public SourceConstSymbol(SourceTypeSymbol type, string name, PHPDocBlock phpdoc, Expression value)
             : base(type, name, PhpMemberAttributes.Public | PhpMemberAttributes.Static, phpdoc)
         {
             _value = value;
@@ -142,7 +142,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
     internal class SourceRuntimeConstantSymbol : SourceFieldSymbol
     {
-        public SourceRuntimeConstantSymbol(SourceNamedTypeSymbol type, string name, PHPDocBlock phpdoc, BoundExpression initializer = null)
+        public SourceRuntimeConstantSymbol(SourceTypeSymbol type, string name, PHPDocBlock phpdoc, BoundExpression initializer = null)
             : base(type, name, PhpMemberAttributes.Public, phpdoc, initializer)
         {
 

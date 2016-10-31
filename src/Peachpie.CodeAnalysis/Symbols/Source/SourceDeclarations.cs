@@ -73,7 +73,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public override void VisitTypeDecl(TypeDecl x)
             {
-                var type = new SourceNamedTypeSymbol(_currentFile, x);
+                var type = new SourceTypeSymbol(_currentFile, x);
 
                 x.SetProperty(type);    // remember bound function symbol
 
@@ -93,11 +93,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         // TODO: MultiDictionary
 
-        readonly Dictionary<QualifiedName, SourceNamedTypeSymbol> _types = new Dictionary<QualifiedName, SourceNamedTypeSymbol>();
+        readonly Dictionary<QualifiedName, SourceTypeSymbol> _types = new Dictionary<QualifiedName, SourceTypeSymbol>();
         readonly Dictionary<QualifiedName, SourceRoutineSymbol> _functions = new Dictionary<QualifiedName, SourceRoutineSymbol>();
         readonly Dictionary<string, SourceFileSymbol> _files = new Dictionary<string, SourceFileSymbol>(StringComparer.OrdinalIgnoreCase);
 
-        readonly List<SourceNamedTypeSymbol> _declaredtypes = new List<SourceNamedTypeSymbol>();
+        readonly List<SourceTypeSymbol> _declaredtypes = new List<SourceTypeSymbol>();
 
         string _baseDirectory;
 

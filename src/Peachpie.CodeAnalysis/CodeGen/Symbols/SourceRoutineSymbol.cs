@@ -36,7 +36,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (!IsStatic && this.ThisParameter != null)
             {
                 // <this>.<ctx> in instance methods
-                var t = (SourceNamedTypeSymbol)this.ContainingType;
+                var t = (SourceTypeSymbol)this.ContainingType;
                 return new FieldPlace(GetThisPlace(), t.ContextStore);
             }
 

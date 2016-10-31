@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
     }
 
-    partial class SourceNamedTypeSymbol
+    partial class SourceTypeSymbol
     {
         internal void EmitInit(Emit.PEModuleBuilder module)
         {

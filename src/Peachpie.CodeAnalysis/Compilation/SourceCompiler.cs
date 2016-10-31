@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
             // __statics.Init, .phpnew, .ctor
-            _compilation.SourceSymbolTables.GetTypes().Cast<SourceNamedTypeSymbol>()
+            _compilation.SourceSymbolTables.GetTypes().Cast<SourceTypeSymbol>()
                 .ForEach(t => t.EmitInit(_moduleBuilder));
 
             // realize .cctor if any

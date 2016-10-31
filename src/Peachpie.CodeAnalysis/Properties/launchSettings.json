@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "test.exe": {
+      "executablePath": "test.exe",
+      "workingDirectory": "D:\\Documents\\Projects\\peachpie\\src\\Compiler\\peach\\bin\\Debug"
+    }
+  }
+}

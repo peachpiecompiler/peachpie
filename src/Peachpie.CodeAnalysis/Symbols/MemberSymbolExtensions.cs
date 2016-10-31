@@ -340,7 +340,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
             }
 
-            var container = method.ContainingType as SourceNamedTypeSymbol;
+            var container = method.ContainingType as SourceTypeSymbol;
             if ((object)container == null)
             {
                 // synthesized ctor not from source -> must be default

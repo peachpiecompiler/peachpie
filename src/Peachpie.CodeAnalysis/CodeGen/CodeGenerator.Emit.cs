@@ -998,7 +998,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits declaring type into the context.
         /// </summary>
-        public void EmitDeclareType(SourceNamedTypeSymbol t)
+        public void EmitDeclareType(SourceTypeSymbol t)
         {
             Debug.Assert(t != null);
 

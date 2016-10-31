@@ -18,13 +18,13 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed partial class SourceMethodSymbol : SourceRoutineSymbol
     {
-        readonly SourceNamedTypeSymbol _type;
+        readonly SourceTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;
 
         ParameterSymbol _lazyThisSymbol;
         MethodSymbol _lazyOverridenMethod;
 
-        public SourceMethodSymbol(SourceNamedTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
+        public SourceMethodSymbol(SourceTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(syntax);

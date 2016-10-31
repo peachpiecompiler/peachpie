@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal sealed partial class SourceNamedTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, IWithSynthesized
+    internal sealed partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, IWithSynthesized
     {
         #region IPhpTypeSymbol
 
@@ -86,18 +86,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Optional.
         /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
         /// </summary>
-        public NamedTypeSymbol StaticsContainer
-        {
-            get
-            {
-                if (_lazyStaticsContainer == null)
-                {
-                    _lazyStaticsContainer = new SynthesizedStaticFieldsHolder(this);
-                }
-
-                return _lazyStaticsContainer;
-            }
-        }
+        public NamedTypeSymbol StaticsContainer => _staticsContainer;
 
         #endregion
 
@@ -111,17 +100,20 @@ namespace Pchp.CodeAnalysis.Symbols
         SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
-        SynthesizedStaticFieldsHolder _lazyStaticsContainer; // class __statics { ... }
+        SynthesizedStaticFieldsHolder/*!*/_staticsContainer; // class __statics { ... }
         SynthesizedMethodSymbol _lazyInvokeSymbol; // IPhpCallable.Invoke(Context, PhpValue[]);
 
         public SourceFileSymbol ContainingFile => _file;
 
-        public SourceNamedTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
+        public SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
             Contract.ThrowIfNull(file);
 
             _syntax = syntax;
             _file = file;
+
+            //
+            _staticsContainer = new SynthesizedStaticFieldsHolder(this);
         }
 
         ImmutableArray<Symbol> Members()
@@ -178,16 +170,16 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var binder = new SemanticsBinder(null, null);
 
-            var runtimestatics = StaticsContainer;
-
             // source fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
             {
                 foreach (var f in flist.Fields)
                 {
-                    if (runtimestatics.GetMembers(f.Name.Value).IsEmpty)
+                    if (StaticsContainer.GetMembers(f.Name.Value).OfType<FieldSymbol>().Where(s => !s.IsReadOnly).IsEmpty())
+                    {
                         yield return new SourceFieldSymbol(this, f.Name.Value, flist.Modifiers, flist.PHPDoc,
                             f.HasInitVal ? binder.BindExpression(f.Initializer, BoundAccess.Read) : null);
+                    }
                 }
             }
 
@@ -196,18 +188,23 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 foreach (var c in clist.Constants)
                 {
-                    if (runtimestatics.GetMembers(c.Name.Name.Value).IsEmpty)
+                    if (StaticsContainer.GetMembers(c.Name.Name.Value).OfType<FieldSymbol>().Where(s => s.IsReadOnly).IsEmpty())
+                    {
                         yield return new SourceConstSymbol(this, c.Name.Name.Value, clist.PHPDoc, c.Initializer);
+                    }
                 }
             }
 
             // special fields
-            if (ContextStore != null && object.ReferenceEquals(ContextStore.ContainingType, this))
+            if (ContextStore?.ContainingType == this)
+            {
                 yield return ContextStore;
+            }
 
-            var runtimefld = RuntimeFieldsStore;
-            if (runtimefld != null && object.ReferenceEquals(runtimefld.ContainingType, this))
-                yield return runtimefld;
+            if (RuntimeFieldsStore?.ContainingType == this)
+            {
+                yield return RuntimeFieldsStore;
+            }
         }
 
         /// <summary>

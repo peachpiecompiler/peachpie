@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Contract.ThrowIfNull(routine);
 
-            var containingType = routine.ContainingType as SourceNamedTypeSymbol;
+            var containingType = routine.ContainingType as SourceTypeSymbol;
 
             // collect locals
             var locals = LocalsBinder.BindLocals(routine);

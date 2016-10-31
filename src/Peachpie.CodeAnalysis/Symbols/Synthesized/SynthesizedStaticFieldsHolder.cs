@@ -18,11 +18,11 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal partial class SynthesizedStaticFieldsHolder : NamedTypeSymbol, IWithSynthesized
     {
-        readonly SourceNamedTypeSymbol _class;
+        readonly SourceTypeSymbol _class;
         ImmutableArray<Symbol> _lazyMembers;
         SynthesizedCctorSymbol _lazyCctorSymbol;
 
-        public SynthesizedStaticFieldsHolder(SourceNamedTypeSymbol @class)
+        public SynthesizedStaticFieldsHolder(SourceTypeSymbol @class)
         {
             Contract.ThrowIfNull(@class);
             _class = @class;
@@ -79,7 +79,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 EnsureMembers();
-                return _lazyMembers.OfType<IFieldSymbol>().IsEmpty();
+                return _lazyMembers.IsEmpty;
             }
         }
 

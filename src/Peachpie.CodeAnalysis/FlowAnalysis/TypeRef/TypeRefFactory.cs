@@ -111,7 +111,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Creates type context for a method within given type, determines naming, type context.
         /// </summary>
-        public static TypeRefContext/*!*/CreateTypeRefContext(SourceNamedTypeSymbol/*!*/containingType)
+        public static TypeRefContext/*!*/CreateTypeRefContext(SourceTypeSymbol/*!*/containingType)
         {
             Contract.ThrowIfNull(containingType);
 

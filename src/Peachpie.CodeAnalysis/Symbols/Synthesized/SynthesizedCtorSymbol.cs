@@ -74,7 +74,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         MethodSymbol _lazyBaseCtor;
 
-        public SynthesizedPhpNewMethodSymbol(SourceNamedTypeSymbol container)
+        public SynthesizedPhpNewMethodSymbol(SourceTypeSymbol container)
             : base(container, WellKnownPchpNames.PhpNewMethodName, false, false, container.DeclaringCompilation.CoreTypes.Void, Accessibility.Public)
         {
             Debug.Assert(!container.IsStatic);
@@ -208,7 +208,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         MethodSymbol _lazyPhpCtor;
 
-        public SynthesizedPhpCtorSymbol(SourceNamedTypeSymbol/*!*/container)
+        public SynthesizedPhpCtorSymbol(SourceTypeSymbol/*!*/container)
             : base(container)
         {
             _parameters = default(ImmutableArray<ParameterSymbol>); // lazy initialized

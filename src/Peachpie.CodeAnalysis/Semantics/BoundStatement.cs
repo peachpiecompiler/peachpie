@@ -154,10 +154,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal TypeDecl TypeDecl => (TypeDecl)PhpSyntax;
 
-        internal Symbols.SourceNamedTypeSymbol Type => _type;
-        readonly Symbols.SourceNamedTypeSymbol _type;
+        internal Symbols.SourceTypeSymbol Type => _type;
+        readonly Symbols.SourceTypeSymbol _type;
 
-        internal BoundTypeDeclStatement(Symbols.SourceNamedTypeSymbol type)
+        internal BoundTypeDeclStatement(Symbols.SourceTypeSymbol type)
         {
             Contract.ThrowIfNull(type);
 

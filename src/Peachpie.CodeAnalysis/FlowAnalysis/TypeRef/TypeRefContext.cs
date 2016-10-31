@@ -43,7 +43,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Can be <c>null</c>.
         /// </summary>
         internal NamedTypeSymbol ContainingType => _containingType;
-        private readonly SourceNamedTypeSymbol _containingType;
+        private readonly SourceTypeSymbol _containingType;
 
         /// <summary>
         /// When resolved, contains type mask of <c>static</c> type.
@@ -66,7 +66,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Initialization
 
-        internal TypeRefContext(NamingContext naming, SourceUnit sourceUnit, SourceNamedTypeSymbol containingType)
+        internal TypeRefContext(NamingContext naming, SourceUnit sourceUnit, SourceTypeSymbol containingType)
         {
             _namingCtx = naming;
             _sourceUnit = sourceUnit;
