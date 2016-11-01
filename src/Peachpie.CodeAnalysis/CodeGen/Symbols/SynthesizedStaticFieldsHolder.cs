@@ -14,6 +14,11 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             EnsureMembers();
 
+            if (IsEmpty)
+            {
+                return;
+            }
+
             bool requiresInit = false;
 
             // .ctor()

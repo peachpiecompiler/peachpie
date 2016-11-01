@@ -269,69 +269,46 @@ namespace Pchp.CodeAnalysis.Symbols
 
             PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
 
-            foreach (var member in this.GetMembers())
+            foreach (MethodSymbol method in this.GetMethodsToEmit())
             {
-                if (member.Kind == SymbolKind.Method)
+                Debug.Assert((object)method.PartialDefinitionPart == null); // must be definition
+
+                var explicitImplementations = method.ExplicitInterfaceImplementations;
+                if (explicitImplementations.Length != 0)
                 {
-                    var method = (MethodSymbol)member;
-                    Debug.Assert((object)method.PartialDefinitionPart == null); // must be definition
-
-                    var explicitImplementations = method.ExplicitInterfaceImplementations;
-                    if (explicitImplementations.Length != 0)
+                    foreach (var implemented in explicitImplementations)
                     {
-                        foreach (var implemented in explicitImplementations)
-                        {
-                            yield return new Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(implemented, context.SyntaxNodeOpt, context.Diagnostics));
-                        }
+                        yield return new Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(implemented, context.SyntaxNodeOpt, context.Diagnostics));
                     }
-
-                    //if (method.RequiresExplicitOverride())
-                    //{
-                    //    // If C# and the runtime don't agree on the overridden method, then 
-                    //    // we will mark the method as newslot (see MethodSymbolAdapter) and
-                    //    // specify the override explicitly.
-                    //    // This mostly affects accessors - C# ignores method interactions
-                    //    // between accessors and non-accessors, whereas the runtime does not.
-                    //    yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference((MethodSymbol)method.OverriddenMethod, context.SyntaxNodeOpt, context.Diagnostics));
-                    //}
-                    //else if (method.MethodKind == MethodKind.Destructor && this.SpecialType != SpecialType.System_Object)
-                    //{
-                    //    // New in Roslyn: all destructors explicitly override (or are) System.Object.Finalize so that
-                    //    // they are guaranteed to be runtime finalizers.  As a result, it is no longer possible to create
-                    //    // a destructor that will never be invoked by the runtime.
-                    //    // NOTE: If System.Object doesn't contain a destructor, you're on your own - this destructor may
-                    //    // or not be called by the runtime.
-                    //    TypeSymbol objectType = this.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
-                    //    foreach (Symbol objectMember in objectType.GetMembers(WellKnownMemberNames.DestructorName))
-                    //    {
-                    //        MethodSymbol objectMethod = objectMember as MethodSymbol;
-                    //        if ((object)objectMethod != null && objectMethod.MethodKind == MethodKind.Destructor)
-                    //        {
-                    //            yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(objectMethod, context.SyntaxNodeOpt, context.Diagnostics));
-                    //        }
-                    //    }
-                    //}
                 }
+
+                //if (method.RequiresExplicitOverride())
+                //{
+                //    // If C# and the runtime don't agree on the overridden method, then 
+                //    // we will mark the method as newslot (see MethodSymbolAdapter) and
+                //    // specify the override explicitly.
+                //    // This mostly affects accessors - C# ignores method interactions
+                //    // between accessors and non-accessors, whereas the runtime does not.
+                //    yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference((MethodSymbol)method.OverriddenMethod, context.SyntaxNodeOpt, context.Diagnostics));
+                //}
+                //else if (method.MethodKind == MethodKind.Destructor && this.SpecialType != SpecialType.System_Object)
+                //{
+                //    // New in Roslyn: all destructors explicitly override (or are) System.Object.Finalize so that
+                //    // they are guaranteed to be runtime finalizers.  As a result, it is no longer possible to create
+                //    // a destructor that will never be invoked by the runtime.
+                //    // NOTE: If System.Object doesn't contain a destructor, you're on your own - this destructor may
+                //    // or not be called by the runtime.
+                //    TypeSymbol objectType = this.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
+                //    foreach (Symbol objectMember in objectType.GetMembers(WellKnownMemberNames.DestructorName))
+                //    {
+                //        MethodSymbol objectMethod = objectMember as MethodSymbol;
+                //        if ((object)objectMethod != null && objectMethod.MethodKind == MethodKind.Destructor)
+                //        {
+                //            yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(objectMethod, context.SyntaxNodeOpt, context.Diagnostics));
+                //        }
+                //    }
+                //}
             }
-
-            //var syntheticMethods = moduleBeingBuilt.GetSynthesizedMethods(this);
-            //if (syntheticMethods != null)
-            //{
-            //    foreach (var m in syntheticMethods)
-            //    {
-            //        var method = m as MethodSymbol;
-            //        if ((object)method != null)
-            //        {
-            //            foreach (var implemented in method.ExplicitInterfaceImplementations)
-            //            {
-            //                Debug.Assert((object)method.PartialDefinitionPart == null); // must be definition
-            //                yield return new Microsoft.Cci.MethodImplementation(method, moduleBeingBuilt.TranslateOverriddenMethodReference(implemented, (CSharpSyntaxNode)context.SyntaxNodeOpt, context.Diagnostics));
-            //            }
-
-            //            Debug.Assert(!method.RequiresExplicitOverride());
-            //        }
-            //    }
-            //}
         }
 
         IEnumerable<Cci.IFieldDefinition> Cci.ITypeDefinition.GetFields(EmitContext context)

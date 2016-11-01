@@ -45,9 +45,7 @@ namespace Pchp.CodeAnalysis.Symbols
             EmitFieldsCctor(module);
 
             // __statics.Init
-            var statics = (SynthesizedStaticFieldsHolder)this.StaticsContainer;
-            if (statics != null && !statics.IsEmpty)
-                statics.EmitCtors(module);
+            ((SynthesizedStaticFieldsHolder)this.StaticsContainer)?.EmitCtors(module);
 
             // IPhpCallable.Invoke
             EmitInvoke(EnsureInvokeMethod(), module);

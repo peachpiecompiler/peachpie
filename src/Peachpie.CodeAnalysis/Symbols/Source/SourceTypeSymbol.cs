@@ -93,8 +93,6 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
-        ImmutableArray<Symbol> _lazyMembers;
-
         NamedTypeSymbol _lazyBaseType;
         MethodSymbol _lazyCtorMethod, _lazyPhpNewMethod;   // .ctor, .phpnew 
         SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
@@ -102,6 +100,12 @@ namespace Pchp.CodeAnalysis.Symbols
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
         SynthesizedStaticFieldsHolder/*!*/_staticsContainer; // class __statics { ... }
         SynthesizedMethodSymbol _lazyInvokeSymbol; // IPhpCallable.Invoke(Context, PhpValue[]);
+
+        /// <summary>
+        /// Defined type members, methods, fields and constants.
+        /// Does not include synthesized members.
+        /// </summary>
+        List<Symbol> _lazyMembers;
 
         public SourceFileSymbol ContainingFile => _file;
 
@@ -116,24 +120,18 @@ namespace Pchp.CodeAnalysis.Symbols
             _staticsContainer = new SynthesizedStaticFieldsHolder(this);
         }
 
-        ImmutableArray<Symbol> Members()
+        List<Symbol> EnsureMembers()
         {
-            if (_lazyMembers.IsDefault)
+            if (_lazyMembers == null)
             {
                 var members = new List<Symbol>();
-
-                //
-                if (StaticsContainer.GetMembers().Any())
-                {
-                    members.Add(StaticsContainer);
-                }
 
                 //
                 members.AddRange(LoadMethods());
                 members.AddRange(LoadFields());
 
                 //
-                _lazyMembers = members.AsImmutable();
+                _lazyMembers = members;
             }
 
             return _lazyMembers;
@@ -145,24 +143,6 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var m in _syntax.Members.OfType<MethodDecl>())
             {
                 yield return new SourceMethodSymbol(this, m);
-            }
-
-            // .ctor
-            if (PhpCtorMethodSymbol != null)
-            {
-                yield return PhpCtorMethodSymbol;
-            }
-
-            // .phpnew
-            if (InitializeInstanceMethod != null)
-            {
-                yield return InitializeInstanceMethod;
-            }
-
-            // ..ctor
-            if (_lazyCctorSymbol != null)
-            {
-                yield return _lazyCctorSymbol;
             }
         }
 
@@ -193,17 +173,6 @@ namespace Pchp.CodeAnalysis.Symbols
                         yield return new SourceConstSymbol(this, c.Name.Name.Value, clist.PHPDoc, c.Initializer);
                     }
                 }
-            }
-
-            // special fields
-            if (ContextStore?.ContainingType == this)
-            {
-                yield return ContextStore;
-            }
-
-            if (RuntimeFieldsStore?.ContainingType == this)
-            {
-                yield return RuntimeFieldsStore;
             }
         }
 
@@ -239,8 +208,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     _lazyInvokeSymbol.SetParameters(
                         new SpecialParameterSymbol(_lazyInvokeSymbol, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
                         new SpecialParameterSymbol(_lazyInvokeSymbol, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), "arguments", 1));
-
-                    _lazyMembers = _lazyMembers.Add(_lazyInvokeSymbol);
                 }
             }
             return _lazyInvokeSymbol;
@@ -358,19 +325,26 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> Interfaces => GetDeclaredInterfaces(null);
 
-        public override ImmutableArray<Symbol> GetMembers() => Members();
+        public override ImmutableArray<Symbol> GetMembers() => EnsureMembers().AsImmutable();
 
         public override ImmutableArray<Symbol> GetMembers(string name)
-            => Members().Where(s => s.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable();
+            => EnsureMembers().Where(s => s.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable();
 
-        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => _lazyMembers.OfType<NamedTypeSymbol>().AsImmutable();
-
-        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name) => _lazyMembers.OfType<NamedTypeSymbol>().Where(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).AsImmutable();
-
-        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
-            return Members().OfType<IFieldSymbol>();
+            var result = new List<NamedTypeSymbol>();
+
+            if (!_staticsContainer.IsEmpty)
+            {
+                result.Add(_staticsContainer);
+            }
+
+            //
+            return result.AsImmutable();
         }
+
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
+            => GetTypeMembers().Where(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).AsImmutable();
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
@@ -408,9 +382,6 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyCctorSymbol == null)
             {
                 _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
-
-                if (!_lazyMembers.IsDefault)
-                    _lazyMembers = _lazyMembers.Add(_lazyCctorSymbol);
             }
 
             return _lazyCctorSymbol;
@@ -418,13 +389,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
         SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly)
         {
-            GetMembers();
+            var members = EnsureMembers();
 
-            var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
+            var field = members.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
             if (field == null)
             {
                 field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic, @readonly);
-                _lazyMembers = _lazyMembers.Add(field);
+                members.Add(field);
             }
 
             return field;
@@ -434,7 +405,58 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Contract.ThrowIfNull(nestedType);
 
-            _lazyMembers = _lazyMembers.Add(nestedType);
+            EnsureMembers().Add(nestedType);
+        }
+
+        internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
+        {
+            foreach (var m in EnsureMembers().OfType<IMethodSymbol>())
+            {
+                yield return m;
+            }
+
+            // .ctor
+            if (PhpCtorMethodSymbol != null)
+            {
+                yield return PhpCtorMethodSymbol;
+            }
+
+            // .phpnew
+            if (InitializeInstanceMethod != null)
+            {
+                yield return InitializeInstanceMethod;
+            }
+
+            // ..ctor
+            if (_lazyCctorSymbol != null)
+            {
+                yield return _lazyCctorSymbol;
+            }
+
+            var invokemethod = EnsureInvokeMethod();
+            if (invokemethod != null)
+            {
+                yield return invokemethod;
+            }
+        }
+
+        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
+        {
+            foreach (var f in EnsureMembers().OfType<IFieldSymbol>())
+            {
+                yield return f;
+            }
+
+            // special fields
+            if (ContextStore?.ContainingType == this)
+            {
+                yield return ContextStore;
+            }
+
+            if (RuntimeFieldsStore?.ContainingType == this)
+            {
+                yield return RuntimeFieldsStore;
+            }
         }
     }
 }
