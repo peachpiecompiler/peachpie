@@ -99,7 +99,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         /// <param name="container">Containing type.</param>
         /// <param name="nestedType">Type to be added as nested type.</param>
-        public void AddTypeMember(TypeSymbol container, NamedTypeSymbol nestedType)
+        public void AddNestedType(TypeSymbol container, NamedTypeSymbol nestedType)
         {
             Contract.ThrowIfNull(nestedType);
             Debug.Assert(nestedType.IsImplicitlyDeclared);

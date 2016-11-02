@@ -224,7 +224,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             var holder = new SynthesizedStaticLocHolder(_cg.Routine, locName, locType);
 
-            _cg.Module.SynthesizedManager.AddTypeMember(_container, holder);
+            _cg.Module.SynthesizedManager.AddNestedType(_container, holder);
 
             return holder;
         }
