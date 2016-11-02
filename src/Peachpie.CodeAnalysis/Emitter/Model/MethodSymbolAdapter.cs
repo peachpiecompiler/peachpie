@@ -434,7 +434,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// as newslot (as indicated by the presence of the "newslot" modifier in the
         /// signature).
         /// WARN WARN WARN: We won't have a final value for this until declaration
-        /// diagnostics have been computed for all <see cref="SourceMemberContainerTypeSymbol"/>s, so pass
+        /// diagnostics have been computed for all symbols, so pass
         /// ignoringInterfaceImplementationChanges: true if you need a value sooner
         /// and aren't concerned about tweaks made to satisfy interface implementation 
         /// requirements.
@@ -539,7 +539,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// as virtual (as indicated by the presence of the "virtual" modifier in the
         /// signature).
         /// WARN WARN WARN: We won't have a final value for this until declaration
-        /// diagnostics have been computed for all <see cref="SourceMemberContainerTypeSymbol"/>s, so pass
+        /// diagnostics have been computed for all symbols, so pass
         /// ignoringInterfaceImplementationChanges: true if you need a value sooner
         /// and aren't concerned about tweaks made to satisfy interface implementation 
         /// requirements.

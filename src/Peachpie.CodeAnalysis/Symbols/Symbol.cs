@@ -215,12 +215,6 @@ namespace Pchp.CodeAnalysis
         /// return one or more syntax nodes only if the symbol was declared in source code and also
         /// was not implicitly declared (see the <see cref="IsImplicitlyDeclared"/> property). 
         /// </para>
-        /// <para>
-        /// Note that for namespace symbol, the declaring syntax might be declaring a nested
-        /// namespace. For example, the declaring syntax node for N1 in "namespace N1.N2 {...}" is
-        /// the entire <see cref="NamespaceDeclarationSyntax"/> for N1.N2. For the global namespace, the declaring
-        /// syntax will be the <see cref="CompilationUnitSyntax"/>.
-        /// </para>
         /// </summary>
         /// <returns>
         /// The syntax node(s) that declared the symbol. If the symbol was declared in metadata or
@@ -228,7 +222,7 @@ namespace Pchp.CodeAnalysis
         /// </returns>
         /// <remarks>
         /// To go the opposite direction (from syntax node to symbol), see <see
-        /// cref="CSharpSemanticModel.GetDeclaredSymbol(MemberDeclarationSyntax, CancellationToken)"/>.
+        /// cref="SemanticModel.GetDeclaredSymbolsForNode(SyntaxNode, CancellationToken)"/>.
         /// </remarks>
         public abstract ImmutableArray<SyntaxReference> DeclaringSyntaxReferences { get; }
 
