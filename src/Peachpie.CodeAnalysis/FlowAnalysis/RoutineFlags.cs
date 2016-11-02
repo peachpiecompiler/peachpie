@@ -8,7 +8,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     /// <summary>
     /// Flags describing special routine needs.
-    /// Collected suring flow analysis.
+    /// Collected during flow analysis.
     /// </summary>
     [Flags]
     public enum RoutineFlags

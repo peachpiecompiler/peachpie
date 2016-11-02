@@ -38,12 +38,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Get global function symbol by its name in current context.
         /// Can be <c>null</c> if function could not be found.
         /// </summary>
-        IEnumerable<ISemanticFunction> ResolveFunction(QualifiedName name);
+        IEnumerable<IPhpRoutineSymbol> ResolveFunction(QualifiedName name);
 
         /// <summary>
         /// Resolves single global constant valid in current context.
         /// </summary>
-        ISemanticValue ResolveConstant(string name);
+        IPhpValue ResolveConstant(string name);
 
         /// <summary>
         /// Gets value determining whether <paramref name="qname"/> type can be assigned from <paramref name="from"/>.

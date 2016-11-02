@@ -21,18 +21,12 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         object [Main](){ ... }
     ///     }
     /// }</remarks>
-    sealed class SourceFileSymbol : NamedTypeSymbol
+    sealed partial class SourceFileSymbol : NamedTypeSymbol
     {
         readonly PhpCompilation _compilation;
         readonly GlobalCode _syntax;
 
         readonly SourceGlobalMethodSymbol _mainMethod;
-
-        /// <summary>
-        /// Wrapper of main method getting <c>PhpValue</c> as a result.
-        /// Used by runtime to create generic delegate to scripts main.
-        /// </summary>
-        SynthesizedMethodSymbol _mainMethodWrapper;
 
         BaseAttributeData _lazyScriptAttribute;
 
@@ -61,31 +55,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Special main method representing the script global code.
         /// </summary>
         internal SourceGlobalMethodSymbol MainMethod => _mainMethod;
-
-        /// <summary>
-        /// Main method wrapper in case it does not return PhpValue.
-        /// </summary>
-        /// <returns></returns>
-        internal SynthesizedMethodSymbol EnsureMainMethodWrapper(Emit.PEModuleBuilder module)
-        {
-            if (_mainMethodWrapper == null &&
-                _mainMethod.ControlFlowGraph != null && // => main routine initialized
-                _mainMethod.ReturnType != DeclaringCompilation.CoreTypes.PhpValue)
-            {
-                // PhpValue <Main>`0(parameters)
-                _mainMethodWrapper = new SynthesizedMethodSymbol(
-                    this, WellKnownPchpNames.GlobalRoutineName + "`0", true, false,
-                    DeclaringCompilation.CoreTypes.PhpValue, Accessibility.Public);
-
-                _mainMethodWrapper.SetParameters(_mainMethod.Parameters.Select(p =>
-                    new SpecialParameterSymbol(_mainMethodWrapper, p.Type, p.Name, p.Ordinal)).ToArray());
-
-                //
-                module.SynthesizedManager.AddMethod(this, _mainMethodWrapper);
-            }
-
-            return _mainMethodWrapper;
-        }
 
         /// <summary>
         /// Lazily adds a function into the list of global functions declared within this file.

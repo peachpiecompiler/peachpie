@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// Represents a method or method-like symbol (including constructor,
     /// destructor, operator, or property/event accessor).
     /// </summary>
-    internal abstract partial class MethodSymbol : Symbol, IMethodSymbol, ISemanticFunction
+    internal abstract partial class MethodSymbol : Symbol, IMethodSymbol, IPhpRoutineSymbol
     {
         public virtual int Arity => 0;
 
@@ -266,36 +266,7 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
-        #region ISemanticFunction
-
-        public virtual TypeRefMask GetExpectedParamType(TypeRefContext ctx, int index)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual TypeRefMask GetResultType(TypeRefContext ctx)
-        {
-            var treturn = TypeRefFactory.CreateMask(ctx, this.ReturnType);
-
-            if (this.CastToFalse)
-            {
-                treturn |= ctx.GetBooleanTypeMask();    // ISemanticFunction may return FALSE
-            }
-
-            return treturn;
-        }
-
-        public virtual ImmutableArray<ControlFlowGraph> CFG => ImmutableArray<ControlFlowGraph>.Empty;
-
-        public virtual bool IsParamByRef(int index)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual bool IsParamVariadic(int index)
-        {
-            throw new NotImplementedException();
-        }
+        #region IPhpRoutineSymbol
 
         public virtual bool CastToFalse
         {
@@ -306,6 +277,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
             }
         }
+
+        /// <summary>
+        /// For source routines, gets their control flow graph.
+        /// Can be <c>null</c> for routines from PE or synthesized routines.
+        /// </summary>
+        public virtual ControlFlowGraph ControlFlowGraph => null;
 
         #endregion
     }

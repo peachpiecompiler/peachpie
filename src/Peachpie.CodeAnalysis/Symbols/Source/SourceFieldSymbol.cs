@@ -103,11 +103,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return DeclaringCompilation.CoreTypes.PhpValue;
         }
-
-        public override TypeRefMask GetResultType(TypeRefContext ctx)
-        {
-            return base.GetResultType(ctx); // convert typemask from CLR type
-        }
     }
 
     internal class SourceConstSymbol : SourceFieldSymbol

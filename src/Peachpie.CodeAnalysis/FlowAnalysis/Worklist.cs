@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -62,26 +63,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public void Enqueue(T block)
         {
-            _queue.Enqueue(block);
+            if (block != null)
+            {
+                _queue.Enqueue(block);
+            }
         }
 
-        public bool EnqueueRoutine(ISemanticFunction routine, T caller, ImmutableArray<BoundExpression> args)
+        public bool EnqueueRoutine(IPhpRoutineSymbol routine, T caller, ImmutableArray<BoundExpression> args)
         {
-            var cfgs = routine.CFG;
-            if (cfgs.IsDefaultOrEmpty)
+            Contract.ThrowIfNull(routine);
+
+            if (routine.ControlFlowGraph == null)
             {
                 // library (sourceless) function
                 return false;
             }
 
-            foreach (var cfg in cfgs)   // always one
-            {
-                // ensure caller is subscribed to routine's ExitBlock
-                ((ExitBlock)cfg.Exit).Subscribe(caller);
+            // ensure caller is subscribed to routine's ExitBlock
+            ((ExitBlock)routine.ControlFlowGraph.Exit).Subscribe(caller);
 
-                // check if routine has to be reanalyzed => enqueue routine's StartBlock
-                // TODO
-            }
+            // TODO: check if routine has to be reanalyzed => enqueue routine's StartBlock
 
             //
             return false;

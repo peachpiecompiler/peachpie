@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Represents a field in a class, struct or enum
     /// </summary>
-    internal abstract partial class FieldSymbol : Symbol, IFieldSymbol, ISemanticValue
+    internal abstract partial class FieldSymbol : Symbol, IFieldSymbol, IPhpValue
     {
         internal FieldSymbol()
         {
@@ -308,15 +308,6 @@ namespace Pchp.CodeAnalysis.Symbols
         public override TResult Accept<TResult>(SymbolVisitor<TResult> visitor)
         {
             return visitor.VisitField(this);
-        }
-
-        #endregion
-
-        #region ISemanticValue
-
-        public virtual TypeRefMask GetResultType(TypeRefContext ctx)
-        {
-            return TypeRefFactory.CreateMask(ctx, this.Type);
         }
 
         #endregion

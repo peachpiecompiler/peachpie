@@ -51,11 +51,7 @@ namespace Pchp.CodeAnalysis
         void WalkMethods(Action<SourceRoutineSymbol> action)
         {
             // DEBUG
-            var sourcesymbols = _compilation.SourceSymbolTables;
-            var methods = sourcesymbols.GetFiles().SelectMany(t => t.GetMembers())
-                    .Concat(sourcesymbols.GetTypes().SelectMany(t => t.GetMembers()))
-                    .OfType<SourceRoutineSymbol>();
-            methods.ForEach(action);
+            _compilation.SourceSymbolTables.AllRoutines.ForEach(action);
 
             // TODO: methodsWalker.VisitNamespace(_compilation.SourceModule.GlobalNamespace)
         }
@@ -64,35 +60,14 @@ namespace Pchp.CodeAnalysis
         /// Ensures the routine has flow context.
         /// Otherwise it is created and routine is enqueued for analysis.
         /// </summary>
-        void EnsureRoutine(SourceRoutineSymbol routine)
+        void EnqueueRoutine(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
 
-            if (routine.TargetState == null)
-            {
-                // create initial flow state
-                var state = StateBinder.CreateInitialState(routine);
-                routine.TargetState = state;
+            // lazily binds CFG and
+            // adds their entry block to the worklist
 
-                //
-                if (routine.Statements != null) // ~ non abstract method
-                {
-                    var binder = new SemanticsBinder(routine, state.FlowContext);
-
-                    // build control flow graph
-                    var cfg = new ControlFlowGraph(routine.Statements, binder);
-                    routine.ControlFlowGraph = cfg;
-
-                    // enqueue the method for the analysis
-                    cfg.Start.FlowState = state;
-                    _worklist.Enqueue(cfg.Start);
-                }
-            }
-        }
-
-        internal void BindMethods()
-        {
-            this.WalkMethods(EnsureRoutine);
+            _worklist.Enqueue(routine.ControlFlowGraph?.Start);
         }
 
         internal void ReanalyzeMethods()
@@ -124,12 +99,17 @@ namespace Pchp.CodeAnalysis
         {
             // source routines
             this.WalkMethods(this.EmitMethodBody);
+        }
+
+        internal void EmitSynthesized()
+        {
+            // TODO: Visit every symbol with Synthesize() method and call it instead of following
+
+            // ghost stubs
+            this.WalkMethods(f => f.SynthesizeGhostStubs(_moduleBuilder, _diagnostics));
 
             // <Main>`0
-            _compilation.SourceSymbolTables.GetFiles().ForEach(f =>
-                _moduleBuilder.CreateMainMethodWrapper(f.EnsureMainMethodWrapper(_moduleBuilder), f.MainMethod, _diagnostics));
-
-            // TODO: synthesized manager
+            _compilation.SourceSymbolTables.GetFiles().ForEach(f => f.SynthesizeMainMethodWrapper(_moduleBuilder, _diagnostics));
 
             // initialize RoutineInfo
             _compilation.SourceSymbolTables.GetFiles().SelectMany(f => f.Functions)
@@ -191,28 +171,26 @@ namespace Pchp.CodeAnalysis
         {
             var compiler = new SourceCompiler(compilation, moduleBuilder, emittingPdb, diagnostics);
 
-            // 1. Synthetize magic
-            //   a.inline syntax like traits
-            //   b.synthetize entry point, getters, setters, ctors, dispose, magic methods, …
-            // TODO.
-
-            // 2.Bind Syntax & Symbols to Operations (CFG)
+            // 1.Bind Syntax & Symbols to Operations (CFG)
             //   a.equivalent to building CFG
             //   b.most generic types(and empty type - mask)
-            compiler.BindMethods();
+            compiler.WalkMethods(compiler.EnqueueRoutine);
 
-            // 3.Analyze Operations
+            // 2.Analyze Operations
             //   a.declared variables
             //   b.build global variables/constants table
             //   c.type analysis(converge type - mask), resolve symbols
             //   d.lower semantics, update bound tree, repeat
             compiler.AnalyzeMethods();
 
-            // 4. Emit method bodies
+            // 3. Emit method bodies
+            //   a. declared routines
+            //   b. synthesized symbols
             compiler.EmitMethodBodies();
+            compiler.EmitSynthesized();
             compiler.CompileReflectionEnumerators(cancellationToken);
 
-            // 5. Entry Point (.exe)
+            // 4. Entry Point (.exe)
             compiler.CompileEntryPoint(cancellationToken);
         }
     }

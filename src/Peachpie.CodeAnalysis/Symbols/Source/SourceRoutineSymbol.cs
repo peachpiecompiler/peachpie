@@ -23,15 +23,31 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         ControlFlowGraph _cfg;
         FlowState _state;
-        
+
         /// <summary>
-        /// Lazily bound semantic block, equivalent for CFG[0].
+        /// Lazily bound semantic block.
         /// Entry point of analysis and emitting.
         /// </summary>
-        internal ControlFlowGraph ControlFlowGraph
+        public override ControlFlowGraph ControlFlowGraph
         {
-            get { return _cfg; }
-            set { _cfg = value; }
+            get
+            {
+                if (_cfg == null && this.Statements != null) // ~ Statements => non abstract method
+                {
+                    // create initial flow state
+                    var state = StateBinder.CreateInitialState(this);
+                    this.TargetState = state;
+
+                    //
+                    var binder = new SemanticsBinder(this, state.FlowContext);
+
+                    // build control flow graph
+                    _cfg = new ControlFlowGraph(this.Statements, binder);
+                    _cfg.Start.FlowState = state;
+                }
+
+                return _cfg;
+            }
         }
 
         /// <summary>
@@ -45,31 +61,6 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         internal FlowContext FlowContext => this.TargetState?.FlowContext;
-
-        #region ISemanticFunction
-
-        /// <summary>
-        /// Gets lazily bound block containing method semantics.
-        /// </summary>
-        public override ImmutableArray<ControlFlowGraph> CFG
-        {
-            get
-            {
-                if (_cfg != null)
-                {
-                    return ImmutableArray.Create(_cfg);
-                }
-
-                return default(ImmutableArray<ControlFlowGraph>);
-            }
-        }
-
-        public override TypeRefMask GetResultType(TypeRefContext ctx)
-        {
-            return ctx.AddToContext(this.FlowContext.TypeRefContext, TargetState.GetReturnType());
-        }
-
-        #endregion
 
         internal abstract IList<Statement> Statements { get; }
 

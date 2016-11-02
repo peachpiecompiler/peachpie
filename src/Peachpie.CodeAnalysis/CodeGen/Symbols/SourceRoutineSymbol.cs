@@ -27,6 +27,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 ? new ReadOnlyPlace(new ParamPlace(thisParameter))
                 : null;
         }
+
+        /// <summary>
+        /// Creates ghost stubs,
+        /// i.e. methods with a different signature calling this routine to comply with CLR standards.
+        /// </summary>
+        internal virtual void SynthesizeGhostStubs(Emit.PEModuleBuilder module, DiagnosticBag diagnostic)
+        {
+
+        }
     }
 
     partial class SourceMethodSymbol

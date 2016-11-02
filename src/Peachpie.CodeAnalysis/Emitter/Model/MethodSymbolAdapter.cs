@@ -102,7 +102,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     Debug.Assert(((Cci.IMethodReference)this).GetResolvedMethod(visitor.Context) != null);
                     visitor.Visit((Cci.IMethodDefinition)this);
-                }
+                } 
                 else
                 {
                     visitor.Visit((Cci.IMethodReference)this);

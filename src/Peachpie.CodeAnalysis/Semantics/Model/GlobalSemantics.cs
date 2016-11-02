@@ -107,20 +107,20 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return Next.GetFile(path);
         }
 
-        public IEnumerable<ISemanticFunction> ResolveFunction(QualifiedName name)
+        public IEnumerable<IPhpRoutineSymbol> ResolveFunction(QualifiedName name)
         {
             var result =
                 // library functions, public static methods
-                ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName())).OfType<MethodSymbol>().Where(IsFunction).OfType<ISemanticFunction>()
+                ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName())).OfType<MethodSymbol>().Where(IsFunction).OfType<IPhpRoutineSymbol>()
                 // source functions
                 .Concat(Next.ResolveFunction(name));
 
             return result;
         }
 
-        public ISemanticValue ResolveConstant(string name)
+        public IPhpValue ResolveConstant(string name)
         {
-            var candidates = new List<ISemanticValue>();
+            var candidates = new List<IPhpValue>();
 
             foreach (var container in ExtensionContainers)
             {

@@ -131,14 +131,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         INamedTypeSymbol ISemanticModel.GetType(QualifiedName name) => GetType(name);
 
-        IEnumerable<ISemanticFunction> ISemanticModel.ResolveFunction(QualifiedName name)
+        IEnumerable<IPhpRoutineSymbol> ISemanticModel.ResolveFunction(QualifiedName name)
         {
             var routine = GetFunction(name);
             if (routine != null)
                 yield return routine;
         }
 
-        ISemanticValue ISemanticModel.ResolveConstant(string name)
+        IPhpValue ISemanticModel.ResolveConstant(string name)
         {
             return null;
         }
@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SourceDeclarations()
         {
-            
+
         }
 
         internal void PopulateTables(PhpCompilation compilation, IEnumerable<SourceUnit>/**/trees)
@@ -173,6 +173,25 @@ namespace Pchp.CodeAnalysis.Symbols
         public MethodSymbol GetFunction(QualifiedName name) => _functions.TryGetOrDefault(name);
 
         public IEnumerable<MethodSymbol> GetFunctions() => _functions.Values;
+
+        /// <summary>
+        /// Gets enumeration of all routines (global code, functions and methods) in source code.
+        /// </summary>
+        public IEnumerable<SourceRoutineSymbol> AllRoutines    // all functions + global code + methods
+        {
+            get
+            {
+                var files = _files.Values;
+
+                //
+                var funcs = files.SelectMany(f => f.Functions).OfType<SourceRoutineSymbol>();
+                var mains = files.Select(f => f.MainMethod);
+                var methods = _declaredtypes.SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
+
+                //
+                return funcs.Concat(mains).Concat(methods);
+            }
+        }
 
         public NamedTypeSymbol GetType(QualifiedName name) => _types.TryGetOrDefault(name);
 
