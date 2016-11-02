@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         object [Main](){ ... }
     ///     }
     /// }</remarks>
-    sealed class SourceFileSymbol : NamedTypeSymbol, IWithSynthesized
+    sealed class SourceFileSymbol : NamedTypeSymbol
     {
         readonly PhpCompilation _compilation;
         readonly GlobalCode _syntax;
@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Wrapper of main method getting <c>PhpValue</c> as a result.
         /// Used by runtime to create generic delegate to scripts main.
         /// </summary>
-        SynthesizedMethodSymbol _mainMethodRegularOpt;
+        SynthesizedMethodSymbol _mainMethodWrapper;
 
         BaseAttributeData _lazyScriptAttribute;
 
@@ -43,8 +43,6 @@ namespace Pchp.CodeAnalysis.Symbols
         
         readonly List<Symbol> _lazyMembers = new List<Symbol>();
         
-        SynthesizedCctorSymbol _lazyCctorSymbol;
-
         public GlobalCode Syntax => _syntax;
 
         public SourceModuleSymbol SourceModule => _compilation.SourceModule;
@@ -68,22 +66,25 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Main method wrapper in case it does not return PhpValue.
         /// </summary>
         /// <returns></returns>
-        internal SynthesizedMethodSymbol EnsureMainMethodRegular()
+        internal SynthesizedMethodSymbol EnsureMainMethodWrapper(Emit.PEModuleBuilder module)
         {
-            if (_mainMethodRegularOpt == null &&
+            if (_mainMethodWrapper == null &&
                 _mainMethod.ControlFlowGraph != null && // => main routine initialized
                 _mainMethod.ReturnType != DeclaringCompilation.CoreTypes.PhpValue)
             {
                 // PhpValue <Main>`0(parameters)
-                _mainMethodRegularOpt = new SynthesizedMethodSymbol(
+                _mainMethodWrapper = new SynthesizedMethodSymbol(
                     this, WellKnownPchpNames.GlobalRoutineName + "`0", true, false,
                     DeclaringCompilation.CoreTypes.PhpValue, Accessibility.Public);
 
-                _mainMethodRegularOpt.SetParameters(_mainMethod.Parameters.Select(p =>
-                    new SpecialParameterSymbol(_mainMethodRegularOpt, p.Type, p.Name, p.Ordinal)).ToArray());
+                _mainMethodWrapper.SetParameters(_mainMethod.Parameters.Select(p =>
+                    new SpecialParameterSymbol(_mainMethodWrapper, p.Type, p.Name, p.Ordinal)).ToArray());
+
+                //
+                module.SynthesizedManager.AddMethod(this, _mainMethodWrapper);
             }
 
-            return _mainMethodRegularOpt;
+            return _mainMethodWrapper;
         }
 
         /// <summary>
@@ -196,17 +197,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers()
         {
-            var builder = ImmutableArray.CreateBuilder<Symbol>();
+            var builder = ImmutableArray.CreateBuilder<Symbol>(1 + _lazyMembers.Count);
 
             builder.Add(_mainMethod);
-
-            EnsureMainMethodRegular();
-            if (_mainMethodRegularOpt != null)
-                builder.Add(_mainMethodRegularOpt);
-
-            if (_lazyCctorSymbol != null)
-                builder.Add(_lazyCctorSymbol);
-
             builder.AddRange(_lazyMembers);
 
             return builder.ToImmutable();
@@ -214,16 +207,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers(string name) => GetMembers().Where(x => x.Name == name).ToImmutableArray();
 
-        public override ImmutableArray<MethodSymbol> StaticConstructors
-        {
-            get
-            {
-                if (_lazyCctorSymbol != null)
-                    return ImmutableArray.Create<MethodSymbol>(_lazyCctorSymbol);
-
-                return ImmutableArray<MethodSymbol>.Empty;
-            }
-        }
+        public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => _lazyMembers.OfType<NamedTypeSymbol>().AsImmutable();
 
@@ -232,32 +216,5 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => GetMembers().OfType<FieldSymbol>();
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
-
-        MethodSymbol IWithSynthesized.GetOrCreateStaticCtorSymbol()
-        {
-            if (_lazyCctorSymbol == null)
-                _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
-
-            return _lazyCctorSymbol;
-        }
-
-        SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly)
-        {
-            var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
-            if (field == null)
-            {
-                field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic, @readonly);
-                _lazyMembers.Add(field);
-            }
-
-            return field;
-        }
-
-        void IWithSynthesized.AddTypeMember(NamedTypeSymbol nestedType)
-        {
-            Contract.ThrowIfNull(nestedType);
-
-            _lazyMembers.Add(nestedType);
-        }
     }
 }

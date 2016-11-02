@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// internal static class &lt;Script&gt; { ... }
     /// </summary>
-    class SynthesizedScriptTypeSymbol : NamedTypeSymbol, IWithSynthesized
+    class SynthesizedScriptTypeSymbol : NamedTypeSymbol
     {
         readonly PhpCompilation _compilation;
 
@@ -44,11 +44,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal MethodSymbol EnumerateConstantsSymbol => _enumerateConstantsSymbol ?? (_enumerateConstantsSymbol = CreateEnumerateConstantsSymbol());
         MethodSymbol _enumerateConstantsSymbol;
-
-        /// <summary>
-        /// Optional static ctor if needed.
-        /// </summary>
-        SynthesizedCctorSymbol _lazyCctorSymbol;
 
         /// <summary>
         /// Additional type members.
@@ -123,9 +118,6 @@ namespace Pchp.CodeAnalysis.Symbols
             if (EntryPointSymbol != null)
                 list.Add(EntryPointSymbol);
 
-            if (_lazyCctorSymbol != null)
-                list.Add(_lazyCctorSymbol);
-
             //
             list.AddRange(_lazyMembers);
 
@@ -145,16 +137,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
 
-        public override ImmutableArray<MethodSymbol> StaticConstructors
-        {
-            get
-            {
-                if (_lazyCctorSymbol != null)
-                    return ImmutableArray.Create<MethodSymbol>(_lazyCctorSymbol);
-
-                return ImmutableArray<MethodSymbol>.Empty;
-            }
-        }
+        public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
         /// <summary>
         /// Method that enumerates all referenced global functions.
@@ -206,36 +189,5 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             return method;
         }
-
-        #region IWithSynthesized
-
-        MethodSymbol IWithSynthesized.GetOrCreateStaticCtorSymbol()
-        {
-            if (_lazyCctorSymbol == null)
-                _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
-
-            return _lazyCctorSymbol;
-        }
-
-        SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly)
-        {
-            var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
-            if (field == null)
-            {
-                field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic, @readonly);
-                _lazyMembers.Add(field);
-            }
-
-            return field;
-        }
-
-        void IWithSynthesized.AddTypeMember(NamedTypeSymbol nestedType)
-        {
-            Contract.ThrowIfNull(nestedType);
-
-            _lazyMembers.Add(nestedType);
-        }
-
-        #endregion
     }
 }

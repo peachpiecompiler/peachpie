@@ -16,12 +16,11 @@ namespace Pchp.CodeAnalysis.Symbols
     /// Container for class static and const fields.
     /// Such fields have to be put in a separate container since they are instantiated in context of current request, not the app domain.
     /// </summary>
-    internal partial class SynthesizedStaticFieldsHolder : NamedTypeSymbol, IWithSynthesized
+    internal partial class SynthesizedStaticFieldsHolder : NamedTypeSymbol
     {
         readonly SourceTypeSymbol _class;
         ImmutableArray<Symbol> _lazyMembers;
-        SynthesizedCctorSymbol _lazyCctorSymbol;
-
+        
         public SynthesizedStaticFieldsHolder(SourceTypeSymbol @class)
         {
             Contract.ThrowIfNull(@class);
@@ -165,44 +164,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 return ImmutableArray.Create(DeclaringCompilation.CoreTypes.IStaticInit.Symbol);    // we need Init() method
             else
                 return ImmutableArray<NamedTypeSymbol>.Empty;
-        }
-
-        #endregion
-
-        #region IWithSynthesized
-
-        MethodSymbol IWithSynthesized.GetOrCreateStaticCtorSymbol()
-        {
-            EnsureMembers();
-
-            if (_lazyCctorSymbol == null)
-            {
-                _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
-                _lazyMembers = _lazyMembers.Add(_lazyCctorSymbol);
-            }
-
-            return _lazyCctorSymbol;
-        }
-
-        SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly)
-        {
-            EnsureMembers();
-
-            var field = _lazyMembers.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
-            if (field == null)
-            {
-                field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic, @readonly);
-                _lazyMembers = _lazyMembers.Add(field);
-            }
-
-            return field;
-        }
-
-        void IWithSynthesized.AddTypeMember(NamedTypeSymbol nestedType)
-        {
-            Contract.ThrowIfNull(nestedType);
-
-            throw new NotSupportedException();
         }
 
         #endregion

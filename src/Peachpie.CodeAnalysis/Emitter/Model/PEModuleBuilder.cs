@@ -27,6 +27,12 @@ namespace Pchp.CodeAnalysis.Emit
 
         SynthesizedScriptTypeSymbol _lazyScriptType;
 
+        /// <summary>
+        /// Manages synthesized methods and fields.
+        /// </summary>
+        public SynthesizedManager SynthesizedManager => _synthesized;
+        readonly SynthesizedManager _synthesized;
+
         Cci.ICustomAttribute _debuggableAttribute;
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
@@ -53,7 +59,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Builders for synthesized static constructors.
         /// </summary>
-        readonly ConcurrentDictionary<IMethodSymbol, ILBuilder> _cctorBuilders = new ConcurrentDictionary<IMethodSymbol, ILBuilder>(ReferenceEqualityComparer.Instance);
+        readonly ConcurrentDictionary<TypeSymbol, ILBuilder> _cctorBuilders = new ConcurrentDictionary<TypeSymbol, ILBuilder>(ReferenceEqualityComparer.Instance);
 
         protected PEModuleBuilder(
             PhpCompilation compilation,
@@ -74,6 +80,7 @@ namespace Pchp.CodeAnalysis.Emit
             _emitOptions = emitOptions;
             this.CompilationState = new CommonModuleCompilationState();
             _debugDocuments = new ConcurrentDictionary<string, Cci.DebugSourceDocument>(compilation.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+            _synthesized = new SynthesizedManager(this);
 
             AssemblyOrModuleSymbolToModuleRefMap.Add(sourceModule, this);
         }
@@ -88,6 +95,31 @@ namespace Pchp.CodeAnalysis.Emit
         {
             return new MetadataConstant(Translate(type, syntaxNodeOpt, diagnostics), value);
         }
+
+        #endregion
+
+        #region Synthesized
+
+        /// <summary>
+        /// Gets enumeration of synthesized fields for <paramref name="container"/>.
+        /// </summary>
+        /// <param name="container">Containing type symbol.</param>
+        /// <returns>Enumeration of synthesized fields.</returns>
+        public IEnumerable<FieldSymbol> GetSynthesizedFields(TypeSymbol container) => _synthesized.GetMembers<FieldSymbol>(container);
+
+        /// <summary>
+        /// Gets enumeration of synthesized methods for <paramref name="container"/>.
+        /// </summary>
+        /// <param name="container">Containing type symbol.</param>
+        /// <returns>Enumeration of synthesized methods.</returns>
+        public IEnumerable<MethodSymbol> GetSynthesizedMethods(TypeSymbol container) => _synthesized.GetMembers<MethodSymbol>(container);
+
+        /// <summary>
+        /// Gets enumeration of synthesized nested types for <paramref name="container"/>.
+        /// </summary>
+        /// <param name="container">Containing type symbol.</param>
+        /// <returns>Enumeration of synthesized nested types.</returns>
+        public IEnumerable<TypeSymbol> GetSynthesizedTypes(TypeSymbol container) => _synthesized.GetMembers<TypeSymbol>(container);
 
         #endregion
 
@@ -283,17 +315,11 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         public ILBuilder GetStaticCtorBuilder(NamedTypeSymbol container)
         {
-            var withcctor = container as IWithSynthesized;
-            if (withcctor == null)
-                throw new ArgumentException();
-
-            var method = withcctor.GetOrCreateStaticCtorSymbol();
-            Debug.Assert(method != null);
-
             ILBuilder il;
-            if (!_cctorBuilders.TryGetValue(method, out il))
+            if (!_cctorBuilders.TryGetValue(container, out il))
             {
-                _cctorBuilders[method] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel);
+                var cctor = SynthesizedManager.EnsureStaticCtor(container); // ensure .cctor is declared
+                _cctorBuilders[container] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel);
             }
 
             return il;
@@ -302,23 +328,21 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Any lazily emitted static constructor will be realized and its body saved to method map.
         /// </summary>
-        public void SetStaticCtorBody(NamedTypeSymbol container)
+        public void RealizeStaticCtors()
         {
-            if (container is IWithSynthesized)
-                foreach (var cctor in container.StaticConstructors)
-                {
-                    ILBuilder il;
-                    if (_cctorBuilders.TryGetValue(cctor, out il))
-                    {
-                        //
-                        Debug.Assert(cctor.ReturnsVoid);
-                        il.EmitRet(true);
+            foreach (var pair in _cctorBuilders)
+            {
+                var cctor = SynthesizedManager.EnsureStaticCtor(pair.Key);
+                var il = pair.Value;
 
-                        //
-                        var body = CodeGen.MethodGenerator.CreateSynthesizedBody(this, cctor, il);
-                        SetMethodBody(cctor, body);
-                    }
-                }
+                //
+                Debug.Assert(cctor.ReturnsVoid);
+                il.EmitRet(true);
+
+                //
+                var body = CodeGen.MethodGenerator.CreateSynthesizedBody(this, cctor, il);
+                SetMethodBody(cctor, body);
+            }
         }
 
         #endregion
@@ -883,7 +907,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         internal override ImmutableDictionary<Cci.ITypeDefinition, ImmutableArray<Cci.ITypeDefinitionMember>> GetSynthesizedMembers()
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(); // _synthesized.GetMembers
         }
 
         internal Cci.INamedTypeReference GetSpecialType(SpecialType specialType, SyntaxNode syntaxNodeOpt, DiagnosticBag diagnostics)

@@ -63,6 +63,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsVirtual => _virtual;
 
+        public override bool IsImplicitlyDeclared => true;
+
         public override ImmutableArray<Location> Locations
         {
             get

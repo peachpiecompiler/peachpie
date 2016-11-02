@@ -2834,8 +2834,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 return _boundExpressionOpt.EmitLoad(cg);
             }
 
-            var idxfield = ((IWithSynthesized)cg.Module.ScriptType)
-                .GetOrCreateSynthesizedField(cg.CoreTypes.Int32, $"c<{this.Name}>idx", Accessibility.Internal, true, false);
+            var idxfield = cg.Module.SynthesizedManager
+                .GetOrCreateSynthesizedField(cg.Module.ScriptType, cg.CoreTypes.Int32, $"c<{this.Name}>idx", Accessibility.Internal, true, false);
 
             // <ctx>.GetConstant(<name>, ref <Index of constant>)
             cg.EmitLoadContext();

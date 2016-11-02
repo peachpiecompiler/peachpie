@@ -988,9 +988,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(f != null);
 
+            var field = f.EnsureRoutineInfoField(_moduleBuilder);
+
             // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
-            new FieldPlace(null, f.RoutineInfoField).EmitLoad(_il);
+            new FieldPlace(null, field).EmitLoad(_il);
 
             EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareFunction_RoutineInfo);
         }

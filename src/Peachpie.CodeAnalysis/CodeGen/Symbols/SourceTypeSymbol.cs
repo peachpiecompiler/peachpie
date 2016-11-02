@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ((SynthesizedStaticFieldsHolder)this.StaticsContainer)?.EmitCtors(module);
 
             // IPhpCallable.Invoke
-            EmitInvoke(EnsureInvokeMethod(), module);
+            EmitInvoke(EnsureInvokeMethod(module), module);
 
             // .phpnew
             EmitPhpNew((SynthesizedPhpNewMethodSymbol)InitializeInstanceMethod, module);
@@ -59,8 +59,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
         {
-            var sflds = GetMembers().OfType<SourceFieldSymbol>().Where(f => f.IsStatic).ToArray();
-            if (sflds.Length != 0)
+            var sflds = GetMembers().OfType<SourceFieldSymbol>().Where(f => f.IsStatic).ToList();
+            if (sflds.Count != 0)
             {
                 // emit initialization of app static fields
                 // note, their initializers do not have Context available, since they are not bound to a Context

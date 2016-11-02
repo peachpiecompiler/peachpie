@@ -229,7 +229,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return ((object)baseType != null)
-                ? moduleBeingBuilt.Translate(baseType, null /* (SyntaxNode)context.SyntaxNodeOpt */,  context.Diagnostics)
+                ? moduleBeingBuilt.Translate(baseType, null /* (SyntaxNode)context.SyntaxNodeOpt */, context.Diagnostics)
                 : null;
         }
 
@@ -269,7 +269,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
 
-            foreach (MethodSymbol method in this.GetMethodsToEmit())
+            foreach (var method in this.GetMembers().OfType<MethodSymbol>().Concat(moduleBeingBuilt.GetSynthesizedMethods(this)))
             {
                 Debug.Assert((object)method.PartialDefinitionPart == null); // must be definition
 
@@ -320,15 +320,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return (Cci.IFieldDefinition)f;
             }
 
-            //IEnumerable<Cci.IFieldDefinition> generated = ((PEModuleBuilder)context.Module).GetSynthesizedFields(this);
-
-            //if (generated != null)
-            //{
-            //    foreach (var f in generated)
-            //    {
-            //        yield return f;
-            //    }
-            //}
+            var generated = ((PEModuleBuilder)context.Module).GetSynthesizedFields(this);
+            if (generated != null)
+            {
+                foreach (var f in generated)
+                {
+                    yield return f;
+                }
+            }
         }
 
         internal abstract IEnumerable<IFieldSymbol> GetFieldsToEmit();
@@ -555,15 +554,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return (Cci.IMethodDefinition)method;
             }
 
-            //IEnumerable<Cci.IMethodDefinition> generated = ((PEModuleBuilder)context.Module).GetSynthesizedMethods(this);
-
-            //if (generated != null)
-            //{
-            //    foreach (var m in generated)
-            //    {
-            //        yield return m;
-            //    }
-            //}
+            var generated = ((PEModuleBuilder)context.Module).GetSynthesizedMethods(this);
+            if (generated != null)
+            {
+                foreach (var m in generated)
+                {
+                    yield return m;
+                }
+            }
         }
 
         /// <summary>
@@ -608,15 +606,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return type;
             }
 
-            //IEnumerable<Cci.INestedTypeDefinition> generated = ((PEModuleBuilder)context.Module).GetSynthesizedTypes(this);
-
-            //if (generated != null)
-            //{
-            //    foreach (var t in generated)
-            //    {
-            //        yield return t;
-            //    }
-            //}
+            var generated = ((PEModuleBuilder)context.Module).GetSynthesizedTypes(this).Cast<Cci.INestedTypeDefinition>();
+            foreach (var t in generated)
+            {
+                yield return t;
+            }
         }
 
         IEnumerable<Cci.IPropertyDefinition> Cci.ITypeDefinition.GetProperties(EmitContext context)
@@ -704,7 +698,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                
+
                 return CharSet.Ansi; // this.MarshallingCharSet; //throw new System.NotImplementedException();
             }
         }

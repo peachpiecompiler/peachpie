@@ -41,19 +41,15 @@ namespace Pchp.CodeAnalysis.Symbols
         /// A field representing the function info at runtime.
         /// Lazily associated with index by runtime.
         /// </summary>
-        public FieldSymbol RoutineInfoField
+        internal FieldSymbol EnsureRoutineInfoField(Emit.PEModuleBuilder module)
         {
-            get
+            if (_lazyRoutineInfoField == null)
             {
-                if (_lazyRoutineInfoField == null)
-                {
-                    var synthesized = (IWithSynthesized)_file;
-                    _lazyRoutineInfoField = synthesized
-                        .GetOrCreateSynthesizedField(this.DeclaringCompilation.CoreTypes.RoutineInfo, "!" + this.MetadataName, Accessibility.Internal, true, true);
-                }
-
-                return _lazyRoutineInfoField;
+                _lazyRoutineInfoField = module.SynthesizedManager
+                    .GetOrCreateSynthesizedField(_file, this.DeclaringCompilation.CoreTypes.RoutineInfo, "!" + this.MetadataName, Accessibility.Internal, true, true);
             }
+
+            return _lazyRoutineInfoField;
         }
 
         public override ParameterSymbol ThisParameter => null;

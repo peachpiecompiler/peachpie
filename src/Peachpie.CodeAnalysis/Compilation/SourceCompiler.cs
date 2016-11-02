@@ -127,7 +127,7 @@ namespace Pchp.CodeAnalysis
 
             // <Main>`0
             _compilation.SourceSymbolTables.GetFiles().ForEach(f =>
-                _moduleBuilder.CreateMainMethodWrapper(f.EnsureMainMethodRegular(), f.MainMethod, _diagnostics));
+                _moduleBuilder.CreateMainMethodWrapper(f.EnsureMainMethodWrapper(_moduleBuilder), f.MainMethod, _diagnostics));
 
             // TODO: synthesized manager
 
@@ -140,8 +140,7 @@ namespace Pchp.CodeAnalysis
                 .ForEach(t => t.EmitInit(_moduleBuilder));
 
             // realize .cctor if any
-            _moduleBuilder.GetTopLevelTypes(default(Microsoft.CodeAnalysis.Emit.EmitContext)).OfType<NamedTypeSymbol>()
-                .ForEach(_moduleBuilder.SetStaticCtorBody);
+            _moduleBuilder.RealizeStaticCtors();
         }
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal sealed partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, IWithSynthesized
+    internal sealed partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol
     {
         #region IPhpTypeSymbol
 
@@ -95,7 +95,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         NamedTypeSymbol _lazyBaseType;
         MethodSymbol _lazyCtorMethod, _lazyPhpNewMethod;   // .ctor, .phpnew 
-        SynthesizedCctorSymbol _lazyCctorSymbol;   // .cctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
         SynthesizedStaticFieldsHolder/*!*/_staticsContainer; // class __statics { ... }
@@ -181,25 +180,32 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal MethodSymbol PhpCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedPhpCtorSymbol(this)));
 
-        public override ImmutableArray<MethodSymbol> StaticConstructors
+        public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
+
+        /// <summary>
+        /// Gets value indicating the class can be called (i.e. has <c>__invoke</c> magic method).
+        /// </summary>
+        public bool IsInvokable
         {
             get
             {
-                if (_lazyCctorSymbol != null)
-                    return ImmutableArray.Create<MethodSymbol>(_lazyCctorSymbol);
+                if (_lazyInvokeSymbol != null)
+                {
+                    return true;
+                }
 
-                return ImmutableArray<MethodSymbol>.Empty;
+                return GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Invoke.Value).Any(s => s is MethodSymbol);
             }
         }
 
         /// <summary>
         /// In case the class implements <c>__invoke</c> method, we create special Invoke() method that is compatible with IPhpCallable interface.
         /// </summary>
-        internal SynthesizedMethodSymbol EnsureInvokeMethod()
+        internal SynthesizedMethodSymbol EnsureInvokeMethod(Emit.PEModuleBuilder module)
         {
             if (_lazyInvokeSymbol == null)
             {
-                if (GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Invoke.Value).Any(s => s is MethodSymbol))
+                if (IsInvokable)
                 {
                     _lazyInvokeSymbol = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue)
                     {
@@ -208,6 +214,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     _lazyInvokeSymbol.SetParameters(
                         new SpecialParameterSymbol(_lazyInvokeSymbol, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
                         new SpecialParameterSymbol(_lazyInvokeSymbol, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), "arguments", 1));
+
+                    //
+                    module.SynthesizedManager.AddMethod(this, _lazyInvokeSymbol);
                 }
             }
             return _lazyInvokeSymbol;
@@ -368,44 +377,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // __invoke => IPhpCallable
-            if (EnsureInvokeMethod() != null)
+            if (IsInvokable)
             {
                 ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
             }
 
             //
             return ifaces.AsImmutable();
-        }
-
-        MethodSymbol IWithSynthesized.GetOrCreateStaticCtorSymbol()
-        {
-            if (_lazyCctorSymbol == null)
-            {
-                _lazyCctorSymbol = new SynthesizedCctorSymbol(this);
-            }
-
-            return _lazyCctorSymbol;
-        }
-
-        SynthesizedFieldSymbol IWithSynthesized.GetOrCreateSynthesizedField(TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly)
-        {
-            var members = EnsureMembers();
-
-            var field = members.OfType<SynthesizedFieldSymbol>().FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
-            if (field == null)
-            {
-                field = new SynthesizedFieldSymbol(this, type, name, accessibility, isstatic, @readonly);
-                members.Add(field);
-            }
-
-            return field;
-        }
-
-        void IWithSynthesized.AddTypeMember(NamedTypeSymbol nestedType)
-        {
-            Contract.ThrowIfNull(nestedType);
-
-            EnsureMembers().Add(nestedType);
         }
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
@@ -425,18 +403,6 @@ namespace Pchp.CodeAnalysis.Symbols
             if (InitializeInstanceMethod != null)
             {
                 yield return InitializeInstanceMethod;
-            }
-
-            // ..ctor
-            if (_lazyCctorSymbol != null)
-            {
-                yield return _lazyCctorSymbol;
-            }
-
-            var invokemethod = EnsureInvokeMethod();
-            if (invokemethod != null)
-            {
-                yield return invokemethod;
             }
         }
 
