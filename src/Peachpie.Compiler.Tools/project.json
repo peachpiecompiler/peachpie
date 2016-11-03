@@ -36,9 +36,8 @@
   },
 
   "scripts": {
-    // for development purposes; installs the tool so dotnet-compile-php can be used as a tool
     "postcompile": [
-      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs --version-suffix beta"
+      "powershell -File ../../build/update_package.ps1 %project:Name% %project:Version% %compile:TargetFramework% %compile:Configuration%"
     ]
   }
 }
