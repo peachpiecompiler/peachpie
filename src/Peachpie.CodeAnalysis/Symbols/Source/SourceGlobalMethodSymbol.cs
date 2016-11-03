@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Global code as a static [Main] method.
     /// </summary>
-    sealed class SourceGlobalMethodSymbol : SourceRoutineSymbol
+    sealed partial class SourceGlobalMethodSymbol : SourceRoutineSymbol
     {
         readonly SourceFileSymbol _file;
 

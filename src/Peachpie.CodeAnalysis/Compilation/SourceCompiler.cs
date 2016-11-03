@@ -108,9 +108,6 @@ namespace Pchp.CodeAnalysis
             // ghost stubs
             this.WalkMethods(f => f.SynthesizeGhostStubs(_moduleBuilder, _diagnostics));
 
-            // <Main>`0
-            _compilation.SourceSymbolTables.GetFiles().ForEach(f => f.SynthesizeMainMethodWrapper(_moduleBuilder, _diagnostics));
-
             // initialize RoutineInfo
             _compilation.SourceSymbolTables.GetFiles().SelectMany(f => f.Functions)
                 .ForEach(f => f.EmitInit(_moduleBuilder));

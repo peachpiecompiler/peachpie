@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.Emit;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -35,6 +36,41 @@ namespace Pchp.CodeAnalysis.Symbols
         internal virtual void SynthesizeGhostStubs(Emit.PEModuleBuilder module, DiagnosticBag diagnostic)
         {
 
+        }
+    }
+
+    partial class SourceGlobalMethodSymbol
+    {
+        internal override void SynthesizeGhostStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
+        {
+            // <Main>'0
+            this.SynthesizeMainMethodWrapper(module, diagnostic);
+
+            //
+            base.SynthesizeGhostStubs(module, diagnostic);
+        }
+
+        /// <summary>
+        /// Main method wrapper in case it does not return PhpValue.
+        /// </summary>
+        void SynthesizeMainMethodWrapper(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
+        {
+            if (this.ReturnType != DeclaringCompilation.CoreTypes.PhpValue)
+            {
+                // PhpValue <Main>`0(parameters)
+                var wrapper = new SynthesizedMethodSymbol(
+                    this.ContainingFile, WellKnownPchpNames.GlobalRoutineName + "`0", true, false,
+                    DeclaringCompilation.CoreTypes.PhpValue, Accessibility.Public);
+
+                wrapper.SetParameters(this.Parameters.Select(p =>
+                    new SpecialParameterSymbol(wrapper, p.Type, p.Name, p.Ordinal)).ToArray());
+
+                // save method symbol to module
+                module.SynthesizedManager.AddMethod(this.ContainingFile, wrapper);
+
+                // generate method body
+                module.CreateMainMethodWrapper(wrapper, this, diagnostics);
+            }
         }
     }
 
