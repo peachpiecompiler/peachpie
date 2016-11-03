@@ -53,68 +53,11 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyOverridenMethod == null)
                 {
-                    _lazyOverridenMethod = ResolveOverridenMethod();
+                    _lazyOverridenMethod = this.ResolveOverride();
                 }
 
                 return _lazyOverridenMethod;
             }
-        }
-
-        MethodSymbol ResolveOverridenMethod()
-        {
-            if (this.IsStatic || this.DeclaredAccessibility == Accessibility.Private)
-                return null;    // static or private methods can't be overrides
-
-            // TODO: if overriden method's signature does not match, we have to synthesize ghost stub
-
-            // 
-            //var overriden = new HashSet<MethodSymbol>();
-            var type = ContainingType.BaseType;
-            while (type != null)
-            {
-                var candidate = type.GetMembers(this.Name).OfType<MethodSymbol>().FirstOrDefault(Overrides);
-                if (candidate != null)
-                    return candidate;
-
-                type = type.BaseType;
-            }
-
-            // interfaces
-            var ifaces = this.ContainingType.AllInterfaces;
-            foreach (var t in ifaces)
-            {
-                // TODO: override interface member
-            }
-
-            //
-            return null;
-        }
-
-        bool Overrides(MethodSymbol basem)
-        {
-            if (basem != null && base.IsVirtual && !basem.IsSealed && !basem.IsStatic && basem.DeclaredAccessibility != Accessibility.Private)
-            {
-                if (this.Name.EqualsOrdinalIgnoreCase(basem.Name))
-                {
-                    // TODO: signature does not have to match exactly in PHP, parameters can be added, type can be converted,
-                    // see ghost stubs
-
-                    var p1 = this.ParametersType();
-                    var p2 = basem.ParametersType();
-                    if (p1.Length == p2.Length)
-                    {
-                        for (int i = 0; i < p1.Length; i++)
-                        {
-                            if (p1[i] != p2[i])
-                                return false;
-                        }
-
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         internal override AstNode Syntax => _syntax;
