@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal abstract partial class ParameterSymbol : Symbol, IParameterSymbol
+    internal abstract partial class ParameterSymbol : Symbol, IParameterSymbol, IPhpValue
     {
         public virtual ImmutableArray<CustomModifier> CustomModifiers => ImmutableArray<CustomModifier>.Empty;
 

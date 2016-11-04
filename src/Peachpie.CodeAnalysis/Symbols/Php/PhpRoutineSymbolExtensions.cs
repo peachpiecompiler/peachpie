@@ -45,6 +45,10 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 t = ((PropertySymbol)symbol).Type;
             }
+            else if(symbol is ParameterSymbol)
+            {
+                t = ((ParameterSymbol)symbol).Type;
+            }
             else
             {
                 throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(symbol);
