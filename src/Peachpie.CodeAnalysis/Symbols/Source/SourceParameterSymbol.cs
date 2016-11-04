@@ -92,8 +92,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // 1. specified type hint
-            var typehint = new Utilities.TypeHintValue(_syntax.TypeHint);
-            var result = typehint.AsTypeSymbol(DeclaringCompilation);
+            var result = DeclaringCompilation.GetTypeFromTypeRef(_syntax.TypeHint);
 
             // 2. optionally type specified in PHPDoc
             if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0)

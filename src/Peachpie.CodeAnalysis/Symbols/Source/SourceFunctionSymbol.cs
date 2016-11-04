@@ -118,7 +118,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return BuildReturnType(_syntax.Signature, _syntax.PHPDoc, TargetState.GetReturnType());
+                return BuildReturnType(_syntax.Signature, _syntax.ReturnType, _syntax.PHPDoc, TargetState.GetReturnType());
             }
         }
 

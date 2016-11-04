@@ -110,13 +110,18 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        protected virtual TypeSymbol BuildReturnType(Signature signature, PHPDocBlock phpdocOpt, TypeRefMask return_tmask)
+        protected virtual TypeSymbol BuildReturnType(Signature signature, TypeRef tref, PHPDocBlock phpdocOpt, TypeRefMask return_tmask)
         {
             if (signature.AliasReturn)
+            {
                 return DeclaringCompilation.CoreTypes.PhpAlias;
+            }
 
-            // TODO: PHP7 return type
-            //signature.ReturnTypeHint
+            // PHP7 return type
+            if (tref != null)
+            {
+                return DeclaringCompilation.GetTypeFromTypeRef(tref);
+            }
 
             //
             if (phpdocOpt != null)

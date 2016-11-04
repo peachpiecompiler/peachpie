@@ -142,7 +142,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var hint = syntax.TypeHint;
                 if (hint != null)
                 {
-                    result = typeCtx.GetTypeMaskFromTypeHint(syntax.TypeHint);
+                    result = typeCtx.GetTypeMask(syntax.TypeHint);
 
                     if (isvariadic) // PHP 5.6 variadic parameter (...) // TypeHint -> TypeHint[]
                         result = typeCtx.GetArrayTypeMask(result);

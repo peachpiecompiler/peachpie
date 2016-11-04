@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.RuntimeMembers;
 using Roslyn.Utilities;
 using System.Collections.Immutable;
 using System.Threading;
+using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis
 {
@@ -131,6 +132,55 @@ namespace Pchp.CodeAnalysis
             return
                 type.SpecialType == SpecialType.System_String ||
                 type == CoreTypes.PhpString;
+        }
+
+        #endregion
+
+        #region TypeSymbol From AST.TypeRef
+
+        /// <summary>
+        /// Binds <see cref="AST.TypeRef"/> to a type symbol.
+        /// </summary>
+        /// <param name="tref">Type reference.</param>
+        /// <returns>Resolved symbol.</returns>
+        public TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref)
+        {
+            if (tref != null)
+            {
+                if (tref is AST.PrimitiveTypeRef)
+                {
+                    switch (((AST.PrimitiveTypeRef)tref).PrimitiveTypeName)
+                    {
+                        case AST.PrimitiveTypeRef.PrimitiveType.@int: return CoreTypes.Long;
+                        case AST.PrimitiveTypeRef.PrimitiveType.@float: return CoreTypes.Double;
+                        case AST.PrimitiveTypeRef.PrimitiveType.@string: return CoreTypes.String;   // TODO: PhpString ?
+                        case AST.PrimitiveTypeRef.PrimitiveType.@bool: return CoreTypes.Boolean;
+                        case AST.PrimitiveTypeRef.PrimitiveType.array: return CoreTypes.PhpArray;
+                        case AST.PrimitiveTypeRef.PrimitiveType.callable: return CoreTypes.IPhpCallable;
+                        case AST.PrimitiveTypeRef.PrimitiveType.@void: return CoreTypes.Void;
+                        case AST.PrimitiveTypeRef.PrimitiveType.iterable: return CoreTypes.PhpValue;   // TODO: array | Traversable
+                        default: throw new ArgumentException();
+                    }
+                }
+                else if (tref is AST.INamedTypeRef) return (NamedTypeSymbol)GlobalSemantics.GetType(((AST.INamedTypeRef)tref).ClassName) ?? CoreTypes.Object.Symbol;
+                else if (tref is AST.ReservedTypeRef) throw new ArgumentException(); // NOTE: should be translated by parser to AliasedTypeRef
+                else if (tref is AST.AnonymousTypeRef) throw new ArgumentException(); // ((AST.AnonymousTypeRef)tref).TypeDeclaration.QualifiedName
+                else if (tref is AST.MultipleTypeRef)
+                {
+                    TypeSymbol result = null;
+                    foreach (var x in ((AST.MultipleTypeRef)tref).MultipleTypes)
+                    {
+                        var resolved = GetTypeFromTypeRef(x);
+                        result = (result != null) ? Merge(result, resolved) : resolved;
+                    }
+                    return result;
+                }
+                else if (tref is AST.NullableTypeRef) throw new NotImplementedException(); // ?((AST.NullableTypeRef)tref).TargetType
+                else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
+                else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
+            }
+
+            return null;
         }
 
         #endregion

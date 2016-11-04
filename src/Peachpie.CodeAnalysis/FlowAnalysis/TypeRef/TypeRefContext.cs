@@ -333,7 +333,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         default: throw new ArgumentException();
                     }
                 }
-                else if (tref is AST.INamedTypeRef) return GetTypeMask(((AST.INamedTypeRef)tref).ClassName);
+                else if (tref is AST.INamedTypeRef) return GetTypeMask(((AST.INamedTypeRef)tref).ClassName, includesSubclasses);
                 else if (tref is AST.ReservedTypeRef) return GetTypeMaskOfReservedClassName(((AST.ReservedTypeRef)tref).QualifiedName.Value.Name); // NOTE: should be translated by parser to AliasedTypeRef
                 else if (tref is AST.AnonymousTypeRef) return GetTypeMask(((AST.AnonymousTypeRef)tref).TypeDeclaration.QualifiedName, false);
                 else if (tref is AST.MultipleTypeRef)
@@ -341,12 +341,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     TypeRefMask result = 0;
                     foreach (var x in ((AST.MultipleTypeRef)tref).MultipleTypes)
                     {
-                        result |= GetTypeMask(x);
+                        result |= GetTypeMask(x, includesSubclasses);
                     }
                     return result;
                 }
                 else if (tref is AST.NullableTypeRef) return GetTypeMask(((AST.NullableTypeRef)tref).TargetType) | this.GetNullTypeMask();
-                else if (tref is AST.GenericTypeRef) return GetTypeMask(((AST.GenericTypeRef)tref).TargetType);  // ignoring type args
+                else if (tref is AST.GenericTypeRef) return GetTypeMask(((AST.GenericTypeRef)tref).TargetType, includesSubclasses);  // TODO: now we are ignoring type args
                 else if (tref is AST.IndirectTypeRef) return GetTypeMask((AST.IndirectTypeRef)tref, true);
             }
 
@@ -365,42 +365,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 return GetThisTypeMask();
 
             //
-            return TypeRefMask.AnyType;
-        }
-
-        /// <summary>
-        /// Gets type mask corresponding to the parameter type hint.
-        /// </summary>
-        /// <returns>Type mask of type hint if it was provided, otherwise AnyType.</returns>
-        public TypeRefMask GetTypeMaskFromTypeHint(AST.TypeRef typeHint)
-        {
-            if (typeHint != null)
-            {
-                var value = new TypeHintValue(typeHint);
-
-                if (value.IsQualifiedName)
-                {
-                    return GetTypeMask(value.QualifiedName);
-                }
-                
-                if (value.IsPrimitiveType)
-                {
-                    switch (value.PrimitiveTypeName)
-                    {
-                        case AST.PrimitiveTypeRef.PrimitiveType.@int: return GetLongTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.@float: return GetDoubleTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.array: return GetArrayTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.@bool: return GetBooleanTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.@string: return GetStringTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.@void: return 0;
-                        case AST.PrimitiveTypeRef.PrimitiveType.callable: return GetCallableTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.iterable: return GetArrayTypeMask() | GetTypeMask(NameUtils.SpecialNames.Traversable);  // array | Traversable
-                        default:
-                            break;
-                    }
-                }
-            }
-
             return TypeRefMask.AnyType;
         }
 
