@@ -129,6 +129,7 @@ namespace Pchp.CodeAnalysis.Emit
                     il.EmitRet(false);
                 },
                 null, diagnostic, false);
+
             SetMethodBody(realmethod, body);
 
             //

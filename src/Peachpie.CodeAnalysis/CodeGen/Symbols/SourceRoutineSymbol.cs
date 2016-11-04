@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Emit;
+using System.Reflection.Metadata;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -33,9 +34,67 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Creates ghost stubs,
         /// i.e. methods with a different signature calling this routine to comply with CLR standards.
         /// </summary>
-        internal virtual void SynthesizeGhostStubs(Emit.PEModuleBuilder module, DiagnosticBag diagnostic)
+        internal virtual void SynthesizeGhostStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
+            SynthesizeOverloadsWithOptionalParameters(module, diagnostic);
+        }
 
+        /// <summary>
+        /// Synthesizes method overloads in case there are optional parameters which explicit default value cannot be resolved as a <see cref="ConstantValue"/>.
+        /// </summary>
+        /// <remarks>
+        /// foo($a = [], $b = [1, 2, 3])
+        /// + foo() => foo([], [1, 2, 3)
+        /// + foo($a) => foo($a, [1, 2, 3])
+        /// </remarks>
+        protected void SynthesizeOverloadsWithOptionalParameters(PEModuleBuilder module, DiagnosticBag diagnostic)
+        {
+            var ps = this.Parameters;
+            for (int i = 0; i < ps.Length; i++)
+            {
+                var p = ps[i] as SourceParameterSymbol;
+                if (p != null && p.Syntax.InitValue != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                {
+                    // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
+                    CreateGhostOverload(module, diagnostic, i);
+                }
+            }
+        }
+
+        void CreateGhostOverload(PEModuleBuilder module, DiagnosticBag diagnostic, int pcount)
+        {
+            var ps = this.Parameters;
+
+            var ghost = new SynthesizedMethodSymbol(
+                this.ContainingType, this.Name, this.IsStatic, false, this.ReturnType, this.DeclaredAccessibility);
+
+            ghost.SetParameters(ps.Take(pcount).Select(p =>
+                new SpecialParameterSymbol(ghost, p.Type, p.Name, p.Ordinal)).ToArray());
+
+            // save method symbol to module
+            module.SynthesizedManager.AddMethod(this.ContainingType, ghost);
+
+            // generate method body
+            GenerateGhostBody(module, diagnostic, ghost);
+        }
+
+        /// <summary>
+        /// Generates ghost method body that calls <c>this</c> method.
+        /// </summary>
+        void GenerateGhostBody(PEModuleBuilder module, DiagnosticBag diagnostic, SynthesizedMethodSymbol ghost)
+        {
+            var body = MethodGenerator.GenerateMethodBody(module, ghost,
+                (il) =>
+                {
+                    var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false, this.ContainingType, this.GetContextPlace(), this.GetThisPlace());
+
+                    // return (T){routine}(p0, ..., pN);
+                    cg.EmitConvert(cg.EmitThisCall(this, ghost), 0, ghost.ReturnType);
+                    cg.EmitRet(ghost.ReturnType);
+                },
+                null, diagnostic, false);
+
+            module.SetMethodBody(ghost, body);
         }
     }
 

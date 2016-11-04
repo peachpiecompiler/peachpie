@@ -762,8 +762,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             var targetps = target.Parameters;
             var givenps = thismethod.Parameters;
 
-            Debug.Assert(targetps.Length <= givenps.Length);
-
             int srcp = 0;
             while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared)
             {
@@ -786,8 +784,47 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    var p = givenps[srcp++];
-                    EmitConvert(new ParamPlace(p).EmitLoad(Builder), 0, targetp.Type);
+                    TypeSymbol ptype;
+                    if (srcp < givenps.Length)
+                    {
+                        var p = givenps[srcp];
+                        ptype = new ParamPlace(p).EmitLoad(Builder);
+                        
+                    }
+                    else
+                    {
+                        if (targetp.IsOptional)
+                        {
+                            if (targetp.HasExplicitDefaultValue)
+                            {
+                                ptype = EmitLoadConstant(targetp.ExplicitDefaultValue, targetp.Type);
+                            }
+                            else
+                            {
+                                // TODO: BoundExpression!!! targetp.BoundInitializer
+
+                                var value = ((SourceParameterSymbol)targetp).Syntax.InitValue;
+                                if (value is ArrayEx)
+                                {
+                                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
+                                    ptype = CoreTypes.PhpArray;
+                                }
+                                else
+                                {
+                                    throw new NotImplementedException();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ptype = targetp.Type;
+                            EmitLoadDefaultValue(ptype, 0);
+                        }
+                    }
+
+                    EmitConvert(ptype, 0, targetp.Type);
+
+                    srcp++;
                 }
             }
 

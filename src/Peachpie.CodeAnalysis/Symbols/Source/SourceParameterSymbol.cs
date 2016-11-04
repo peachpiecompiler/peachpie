@@ -138,14 +138,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsParams => _syntax.IsVariadic;
 
-        public override bool IsImplicitlyDeclared
-        {
-            get
-            {
-                return base.IsImplicitlyDeclared;
-            }
-        }
-
         public override int Ordinal => _index;
 
         public override ImmutableArray<Location> Locations
@@ -164,36 +156,33 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override bool IsOptional => _syntax.InitValue != null;
+        public override bool IsOptional => this.HasExplicitDefaultValue;
 
         internal override ConstantValue ExplicitDefaultConstantValue
         {
             get
             {
-                if (IsOptional)
+                ConstantValue value = null;
+
+                if (_syntax.InitValue != null)
                 {
                     // NOTE: the constant does not have to have the exact same type as the parameter, it is up to the caller of the method to process DefaultValue and convert it if necessary
 
-                    // TODO: Bind _syntax.InitValue to BoundExpression
+                    // TODO: Bind _syntax.InitValue to BoundExpression so we can use analysed constant value
 
-                    var value = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
-                    if (value == null)
-                    {
-                        // TODO: non-literal default values (like array()) must be handled by creating a method overload calling this method:
+                    value = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
 
-                        // Template:
-                        // foo($a = [], $b = [1, 2, 3]) =>
-                        // + foo($a, $b){ /* this routine */ }
-                        // + foo($a) => foo($a, [1, 2, 3])
-                        // + foo() => foo([], [1, 2, 3)
-                    }
+                    // NOTE: non-literal default values (like array()) must be handled by creating a method overload calling this method:
 
-                    //
-                    Debug.Assert(value != null, $"Not implemented default value '{_syntax.InitValue.GetType().Name}'");
-                    return value;
+                    // Template:
+                    // foo($a = [], $b = [1, 2, 3]) =>
+                    // + foo($a, $b){ /* this routine */ }
+                    // + foo($a) => foo($a, [1, 2, 3])
+                    // + foo() => foo([], [1, 2, 3)
                 }
 
-                return null;
+                //
+                return value;
             }
         }
     }
