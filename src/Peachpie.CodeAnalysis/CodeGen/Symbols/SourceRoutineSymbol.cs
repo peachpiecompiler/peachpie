@@ -63,12 +63,25 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void CreateGhostOverload(PEModuleBuilder module, DiagnosticBag diagnostic, int pcount)
         {
-            var ps = this.Parameters;
+            Debug.Assert(this.Parameters.Length > pcount);
 
+            CreateGhostOverload(module, diagnostic, this.ReturnType, this.Parameters.Take(pcount), null);
+        }
+
+        /// <summary>
+        /// Creates ghost stub that calls current method.
+        /// </summary>
+        protected void CreateGhostOverload(PEModuleBuilder module, DiagnosticBag diagnostic,
+            TypeSymbol ghostreturn, IEnumerable<ParameterSymbol> ghostparams,
+            MethodSymbol explicitOverride = null)
+        {
             var ghost = new SynthesizedMethodSymbol(
-                this.ContainingType, this.Name, this.IsStatic, false, this.ReturnType, this.DeclaredAccessibility);
+                this.ContainingType, this.Name, this.IsStatic, explicitOverride != null, ghostreturn, this.DeclaredAccessibility)
+            {
+                ExplicitOverride = explicitOverride,
+            };
 
-            ghost.SetParameters(ps.Take(pcount).Select(p =>
+            ghost.SetParameters(ghostparams.Select(p =>
                 new SpecialParameterSymbol(ghost, p.Type, p.Name, p.Ordinal)).ToArray());
 
             // save method symbol to module
@@ -81,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Generates ghost method body that calls <c>this</c> method.
         /// </summary>
-        void GenerateGhostBody(PEModuleBuilder module, DiagnosticBag diagnostic, SynthesizedMethodSymbol ghost)
+        protected void GenerateGhostBody(PEModuleBuilder module, DiagnosticBag diagnostic, SynthesizedMethodSymbol ghost)
         {
             var body = MethodGenerator.GenerateMethodBody(module, ghost,
                 (il) =>
@@ -112,7 +125,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Main method wrapper in case it does not return PhpValue.
         /// </summary>
-        void SynthesizeMainMethodWrapper(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
+        void SynthesizeMainMethodWrapper(PEModuleBuilder module, DiagnosticBag diagnostics)
         {
             if (this.ReturnType != DeclaringCompilation.CoreTypes.PhpValue)
             {
@@ -146,6 +159,30 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             return base.GetContextPlace();
+        }
+
+        internal override void SynthesizeGhostStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
+        {
+            base.SynthesizeGhostStubs(module, diagnostic);
+
+            // not matching override has to have a ghost stub
+            var overriden = (MethodSymbol)this.OverriddenMethod; // OverrideHelper.ResolveOverride(this);
+            if (overriden != null && !this.SignaturesMatch(overriden))
+            {
+                /* 
+                 * class A {
+                 *    TReturn1 foo(A, B);
+                 * }
+                 * class B : A {
+                 *    TReturn2 foo(A2, B2);
+                 *    
+                 *    // SYNTHESIZED GHOST:
+                 *    override TReturn foo(A, B){ return (TReturn)foo((A2)A, (B2)B);
+                 * }
+                 */
+
+                CreateGhostOverload(module, diagnostic, overriden.ReturnType, overriden.Parameters, overriden);
+            }
         }
     }
 

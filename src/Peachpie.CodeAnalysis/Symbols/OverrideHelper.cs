@@ -102,7 +102,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (method.ReturnType != basemethod.ReturnType)
             {
-                return ConversionCost.NoConversion;
+                return ConversionCost.ImplicitCast;
             }
 
             //
@@ -157,6 +157,42 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool CanBeOverride(SourceMethodSymbol method, MethodSymbol basemethod)
         {
             return IsAllowedCost(OverrideCost(method, basemethod));
+        }
+
+        /// <summary>
+        /// Checks whether signatures of two methods match exactly so one can override the second.
+        /// </summary>
+        public static bool SignaturesMatch(this MethodSymbol a, MethodSymbol b)
+        {
+            Contract.ThrowIfNull(a);
+            Contract.ThrowIfNull(b);
+
+            if (a.ReturnType != b.ReturnType)
+            {
+                return false;
+            }
+
+            var ps1 = a.Parameters;
+            var ps2 = b.Parameters;
+
+            if (ps1.Length != ps2.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < ps1.Length; i++)
+            {
+                var p1 = ps1[i];
+                var p2 = ps2[i];
+
+                if (p1.Type != p2.Type || p1.RefKind != p2.RefKind)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
         }
     }
 }

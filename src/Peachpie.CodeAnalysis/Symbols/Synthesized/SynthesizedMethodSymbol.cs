@@ -20,6 +20,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal MethodSymbol ExplicitOverride { get; set; }
 
+        public override IMethodSymbol OverriddenMethod => ExplicitOverride;
+
         public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, params ParameterSymbol[] ps)
         {
             _type = containingType;
@@ -55,7 +57,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsExtern => false;
 
-        public override bool IsOverride => false;
+        public override bool IsOverride => OverriddenMethod != null;
 
         public override bool IsSealed => !IsStatic;
 
@@ -76,7 +78,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations =>
             IsExplicitInterfaceImplementation ? ImmutableArray.Create(ExplicitOverride) : ImmutableArray<MethodSymbol>.Empty;
 
-        internal override bool IsExplicitInterfaceImplementation => ExplicitOverride != null;
+        internal override bool IsExplicitInterfaceImplementation => ExplicitOverride != null && ExplicitOverride.ContainingType.IsInterface;
 
         public override MethodKind MethodKind => MethodKind.Ordinary;
 
@@ -92,7 +94,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool HidesBaseMethodsByName => !IsExplicitInterfaceImplementation && true;
 
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => IsExplicitInterfaceImplementation || false;
+        /// <summary>
+        /// virtual = IsVirtual AND NewSlot 
+        /// override = IsVirtual AND !NewSlot
+        /// </summary>
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && !IsStatic;
 
         internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual;
     }
