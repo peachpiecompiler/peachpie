@@ -172,6 +172,28 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.VisitInvalidStatement(this, argument);
     }
 
+    public sealed partial class BoundGlobalVariableStatement : BoundStatement, IVariableDeclarationStatement
+    {
+        public override OperationKind Kind => OperationKind.VariableDeclarationStatement;
+
+        ImmutableArray<IVariable> IVariableDeclarationStatement.Variables { get { throw new InvalidOperationException(); } }   // global variable does not have a symbol (yet?)
+
+        public ImmutableArray<BoundGlobalVariable> Variables => _variables;
+
+        readonly ImmutableArray<BoundGlobalVariable> _variables;
+
+        public BoundGlobalVariableStatement(ImmutableArray<BoundGlobalVariable> variables)
+        {
+            _variables = variables;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitVariableDeclarationStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitVariableDeclarationStatement(this, argument);
+    }
+
     public sealed partial class BoundStaticVariableStatement : BoundStatement, IVariableDeclarationStatement
     {
         public override OperationKind Kind => OperationKind.VariableDeclarationStatement;

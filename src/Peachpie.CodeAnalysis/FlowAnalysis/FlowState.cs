@@ -1,5 +1,7 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,138 +13,33 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     internal class FlowState : IFlowState<FlowState>
     {
-        #region Nested class: CommonState
-
-        /// <summary>
-        /// Common state shared across different local states (within the same FlowContext).
-        /// </summary>
-        public sealed class CommonState
-        {
-            /// <summary>
-            /// Size of ulong bit array (<c>64</c>).
-            /// </summary>
-            internal const int BitsCount = sizeof(ulong) * 8;
-
-            /// <summary>
-            /// Unknown variable index.
-            /// </summary>
-            public const int UndefinedVarIndex = -1;
-
-            /// <summary>
-            /// Locals table reference.
-            /// </summary>
-            public FlowContext/*!*/FlowContext => _flowcontext;
-
-            readonly FlowContext/*!*/_flowcontext;
-
-            /// <summary>
-            /// Reference to corresponding routine symbol. Cannot be a <c>null</c> reference.
-            /// </summary>
-            public Symbols.SourceRoutineSymbol/*!*/Routine => _routine;
-            readonly Symbols.SourceRoutineSymbol/*!*/_routine;
-
-            /// <summary>
-            /// Map of variables name and their index.
-            /// </summary>
-            readonly Dictionary<string, int>/*!*/_varsIndex;
-
-            /// <summary>
-            /// Bit mask of variables where bit with value <c>1</c> signalizes that variables with index corresponding to the bit number has been used.
-            /// </summary>
-            ulong _usedMask;
-
-            public CommonState(FlowContext/*!*/flowcontext, Symbols.SourceRoutineSymbol/*!*/routine)
-            {
-                Debug.Assert(flowcontext != null);
-                Debug.Assert(routine != null);
-
-                _flowcontext = flowcontext;
-                _routine = routine;
-
-                var locals = flowcontext.Locals;
-                var dict = new Dictionary<string, int>(locals.Length, StringComparer.OrdinalIgnoreCase);
-                for (int i = 0; i < locals.Length; i++)
-                {
-                    dict[locals[i].Name] = i;
-                }
-
-                _varsIndex = dict;
-            }
-
-            /// <summary>
-            /// Gets index of variable within the context.
-            /// </summary>
-            public int GetVarIndex(string name)
-            {
-                int index;
-                if (!_varsIndex.TryGetValue(name, out index))
-                {
-                    index = UndefinedVarIndex;
-                }
-
-                return index;
-            }
-
-            /// <summary>
-            /// Sets specified variable as being used.
-            /// </summary>
-            public void SetUsed(int varindex)
-            {
-                if (varindex >= 0 && varindex < BitsCount)
-                    _usedMask |= (ulong)1 << varindex;
-            }
-
-            /// <summary>
-            /// Marks all local variables as used.
-            /// </summary>
-            public void SetAllUsed()
-            {
-                _usedMask = ~(ulong)0;
-            }
-
-            public bool IsUsed(int varindex)
-            {
-                // anything >= 64 is used
-                return varindex < 0 || varindex >= BitsCount || (_usedMask & (ulong)1 << varindex) != 0;
-            }
-
-            /// <summary>
-            /// Enumerates unused variables.
-            /// </summary>
-            public IEnumerable<BoundVariable>/*!!*/GetUnusedVars()
-            {
-                var locals = _flowcontext.Locals;
-
-                if (_usedMask == ~((ulong)0) || _usedMask == ((ulong)1 << locals.Length) - 1)
-                    yield break;
-
-                for (int i = 0; i < locals.Length; i++)
-                    if ((_usedMask & ((ulong)1 << i)) == 0 && i < BitsCount)
-                        yield return locals[i];
-            }
-        }
-
-        #endregion
-
         #region Fields & Properties
 
         /// <summary>
         /// Gets flow context.
         /// </summary>
-        public FlowContext/*!*/FlowContext => _common.FlowContext;
+        public FlowContext/*!*/FlowContext => _flowCtx;
+        readonly FlowContext _flowCtx;
 
         /// <summary>
         /// Gets type context.
         /// </summary>
-        public TypeRefContext/*!*/TypeRefContext => _common.FlowContext.TypeRefContext;
+        public TypeRefContext/*!*/TypeRefContext => _flowCtx.TypeRefContext;
 
         /// <summary>
-        /// Gets information common across all states within the routine.
+        /// Source routine.
+        /// Can be <c>null</c>.
         /// </summary>
-        public CommonState/*!*/Common => _common;
+        public SourceRoutineSymbol Routine => _flowCtx.Routine;
 
-        readonly CommonState/*!*/_common;
-        readonly TypeRefMask[]/*!*/_varsType;
+        /// <summary>
+        /// Types of variables in this state.
+        /// </summary>
+        TypeRefMask[]/*!*/_varsType;
+
+        /// <summary>
+        /// Mask of initialized variables in this state.
+        /// </summary>
         ulong _initializedMask;
 
         #endregion
@@ -154,13 +51,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public FlowState(FlowState state1, FlowState state2)
         {
-            Contract.ThrowIfNull(state1);
-            Contract.ThrowIfNull(state2);
-            Debug.Assert(state1._common == state2._common);
+            Debug.Assert(state1 != null);
+            Debug.Assert(state2 != null);
+            Debug.Assert(state1.FlowContext == state2.FlowContext);
 
             //
             _varsType = EnumeratorExtension.MixArrays(state1._varsType, state2._varsType, TypeRefMask.Or);
-            _common = state1._common;
+            _flowCtx = state1._flowCtx;
             _initializedMask = state1._initializedMask & state2._initializedMask;
 
             // intersection of other variable flags
@@ -169,51 +66,64 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 _lessThanLongMax = new HashSet<string>(state1._lessThanLongMax);
                 _lessThanLongMax.Intersect(state2._lessThanLongMax);
             }
+
+            //// merge variables kind,
+            //// conflicting kinds are not allowed currently!
+            //if (state1._varKindMap != null || state1._varKindMap != null)
+            //{
+            //    _varKindMap = new Dictionary<VariableName, VariableKind>();
+            //    if (state1._varKindMap != null) state1._varKindMap.Foreach(k => SetVarKind(k.Key, k.Value));
+            //    if (state2._varKindMap != null) state2._varKindMap.Foreach(k => SetVarKind(k.Key, k.Value));
+            //}
         }
 
         /// <summary>
         /// Initial locals state for the Start block.
         /// </summary>
-        public FlowState(FlowContext/*!*/context, Symbols.SourceRoutineSymbol/*!*/routine)
-            : this(context, new CommonState(context, routine))
+        internal FlowState(FlowContext/*!*/flowCtx)
         {
-        }
+            Contract.ThrowIfNull(flowCtx);
 
-        /// <summary>
-        /// Initial locals state for the Start block.
-        /// </summary>
-        internal FlowState(FlowContext/*!*/flowcontext, CommonState/*!*/common)
-        {
-            Contract.ThrowIfNull(flowcontext);
-
-            _common = common;
+            _flowCtx = flowCtx;
             _initializedMask = (ulong)0;
 
-            var count = flowcontext.Locals.Length;
-            _varsType = new TypeRefMask[count];
+            // initial size of the array
+            var countHint = (flowCtx.Routine != null)
+                ? flowCtx.Routine.LocalsTable.Count
+                : 0;
+            _varsType = new TypeRefMask[countHint];
         }
 
         /// <summary>
         /// Copy constructor.
         /// </summary>
         public FlowState(FlowState/*!*/other)
-            : this(other._common, other._varsType)
+            : this(other.FlowContext, other._varsType)
         {
+            // clone internal state
+
             _initializedMask = other._initializedMask;
 
             if (other._lessThanLongMax != null)
+            {
                 _lessThanLongMax = new HashSet<string>(other._lessThanLongMax);
+            }
+
+            //if (other._varKindMap != null)
+            //{
+            //    _varKindMap = new Dictionary<VariableName, VariableKind>(other._varKindMap);
+            //}
         }
 
         /// <summary>
         /// Copy constructor.
         /// </summary>
-        private FlowState(CommonState/*!*/common, TypeRefMask[]/*!*/varsType)
+        private FlowState(FlowContext/*!*/flowCtx, TypeRefMask[]/*!*/varsType)
         {
-            Contract.ThrowIfNull(common);
+            Contract.ThrowIfNull(flowCtx);
             Contract.ThrowIfNull(varsType);
 
-            _common = common;
+            _flowCtx = flowCtx;
             _varsType = (TypeRefMask[])varsType.Clone();
         }
 
@@ -227,18 +137,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 return true;
 
             if (other == null ||
-                other._common != _common ||
+                other._flowCtx != _flowCtx ||
                 other._initializedMask != _initializedMask)
                 return false;
 
-            return EnumeratorExtension.Equals(_varsType, other._varsType);
+            return EnumeratorExtension.EqualEntries(_varsType, other._varsType);
         }
 
         public override int GetHashCode()
         {
             var hash = this.FlowContext.GetHashCode();
             foreach (var t in _varsType)
+            {
                 hash ^= t.GetHashCode();
+            }
 
             return hash;
         }
@@ -257,8 +169,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region IFlowState<FlowState>
 
+        /// <summary>
+        /// Creates copy of this state.
+        /// </summary>
         public FlowState Clone() => new FlowState(this);
 
+        /// <summary>
+        /// Creates new state as a merge of this one and the other.
+        /// </summary>
         public FlowState Merge(FlowState other) => new FlowState(this, other);
 
         /// <summary>
@@ -266,11 +184,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetVarType(string name)
         {
-            var index = _common.GetVarIndex(name);
+            var index = _flowCtx.GetVarIndex(new VariableName(name));
             var types = _varsType;
-            return (index >= 0 && index < types.Length)
-                ? types[index]
-                : TypeRefMask.AnyType;
+            return (index >= 0 && index < types.Length) ? types[index] : 0;
         }
 
         /// <summary>
@@ -278,10 +194,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetReturnType()
         {
-            var index = _common.FlowContext.ReturnVarIndex;
-            return (index >= 0)
-                ? _varsType[index]      // merged return type
-                : default(TypeRefMask); // void
+            return _flowCtx.ReturnType;
         }
         
         public void SetAllInitialized()
@@ -291,25 +204,33 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public void SetVarInitialized(string name)
         {
-            SetVarInitialized(_common.GetVarIndex(name));
+            SetVarInitialized(_flowCtx.GetVarIndex(new VariableName(name)));
         }
 
         internal void SetVarInitialized(int varindex)
         {
-            if (varindex >= 0 && varindex < CommonState.BitsCount)
+            if (varindex >= 0 && varindex < FlowContext.BitsCount)
+            {
                 _initializedMask |= (ulong)1 << varindex;
+            }
         }
 
         public void SetVar(string name, TypeRefMask type)
         {
-            SetVar(_common.GetVarIndex(name), type);
+            SetVar(_flowCtx.GetVarIndex(new VariableName(name)), type);
         }
 
         internal void SetVar(int varindex, TypeRefMask type)
         {
             var types = _varsType;
-            if (varindex >= 0 && varindex < types.Length)
+            if (varindex >= 0)
             {
+                if (varindex >= types.Length)
+                {
+                    Array.Resize(ref _varsType, varindex + 1);
+                    types = _varsType;
+                }
+
                 types[varindex] = type;
                 this.SetVarInitialized(varindex);
                 this.FlowContext.AddVarType(varindex, type);    // TODO: collect merged type information at the end of analysis
@@ -321,7 +242,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public void SetVarRef(string name)
         {
-            SetVarRef(_common.GetVarIndex(name));
+            SetVarRef(_flowCtx.GetVarIndex(new VariableName(name)));
         }
 
         /// <summary>
@@ -331,26 +252,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             this.FlowContext.SetReference(varindex);
             this.SetVarInitialized(varindex);
-            _common.SetUsed(varindex);
+            _flowCtx.SetUsed(varindex);
         }
 
         public void SetVarUsed(string name)
         {
-            SetVarUsed(_common.GetVarIndex(name));
+            SetVarUsed(_flowCtx.GetVarIndex(new VariableName(name)));
         }
 
         internal void SetVarUsed(int varindex)
         {
-            _common.SetUsed(varindex);
+            _flowCtx.SetUsed(varindex);
         }
 
         public void FlowThroughReturn(TypeRefMask type)
         {
-            var index = _common.FlowContext.ReturnVarIndex;
-            if (index < 0)
-                throw new InvalidOperationException();
-
-            SetVar(index, type);
+            _flowCtx.ReturnType |= type;
         }
 
         #endregion
@@ -384,5 +301,52 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsLTInt64Max(string varname) => _lessThanLongMax != null && _lessThanLongMax.Contains(varname);
 
         #endregion
+
+        //#region Variable Kind
+
+        //Dictionary<VariableName, VariableKind> _varKindMap;
+
+        /// <summary>
+        /// Declares variable with a specific kind (static or global).
+        /// </summary>
+        public void SetVarKind(VariableName varname, VariableKind kind)
+        {
+            //if (_varKindMap == null)
+            //{
+            //    _varKindMap = new Dictionary<VariableName, VariableKind>();
+            //}
+            //else
+            //{
+            //    VariableKind old;
+            //    if (_varKindMap.TryGetValue(varname, out old))
+            //    {
+            //        if (old != kind) throw new ArgumentException("redeclaration with a different kind not supported", nameof(kind));
+            //    }
+            //}
+
+            //_varKindMap[varname] = kind;
+        }
+
+        /// <summary>
+        /// Gets kind of variable declaration in this state.
+        /// </summary>
+        public VariableKind GetVarKind(VariableName varname)
+        {
+            //// explicit variable declaration
+            //if (_varKindMap != null)
+            //{
+            //    VariableKind kind = VariableKind.LocalVariable;
+
+            //    if (_varKindMap.TryGetValue(varname, out kind))
+            //    {
+            //        return kind;
+            //    }
+            //}
+
+            // already declared on locals label
+            return Routine.LocalsTable.GetVariableKind(varname);
+        }
+
+        //#endregion
     }
 }

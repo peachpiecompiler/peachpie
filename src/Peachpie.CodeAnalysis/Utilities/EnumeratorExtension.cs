@@ -104,31 +104,60 @@ namespace Pchp.CodeAnalysis
             Contract.ThrowIfNull(arr1);
             Contract.ThrowIfNull(arr2);
             Contract.ThrowIfNull(mixer);
-            if (arr1.Length != arr2.Length)
-                throw new ArgumentException();
 
-            var tmp = new T[arr1.Length];
-            for (int i = 0; i < tmp.Length; i++)
+            // lets arr1 <= arr2
+            if (arr1.Length > arr2.Length)
+            {
+                var h = arr2;
+                arr2 = arr1;
+                arr1 = h;
+            }
+
+            var tmp = new T[arr2.Length];
+            int i = 0;
+            for (; i < arr1.Length; i++)
             {
                 tmp[i] = mixer(arr1[i], arr2[i]);
             }
+
+            for (; i < arr2.Length; i++)
+            {
+                tmp[i] = mixer(default(T), arr2[i]);
+            }
+
+            //
             return tmp;
         }
 
         /// <summary>
-        /// Checks two arrays for equality.
+        /// Checks entries in given arrays for equality.
+        /// If arrays are of a different size, default(T) is used for comparison.
         /// </summary>
-        public static bool Equals<T>(T[]/*!*/arr1, T[]/*!*/arr2)// where T : IEquatable<T>
+        public static bool EqualEntries<T>(T[]/*!*/arr1, T[]/*!*/arr2)// where T : IEquatable<T>
         {
             Contract.ThrowIfNull(arr1);
             Contract.ThrowIfNull(arr2);
 
-            if (arr1.Length != arr2.Length)
-                return false;
+            // lets arr1 <= arr2
+            if (arr1.Length > arr2.Length)
+            {
+                var h = arr2;
+                arr2 = arr1;
+                arr1 = h;
+            }
 
-            for (int i = 0; i < arr1.Length; i++)
+            int i = 0;
+            for (; i < arr1.Length; i++)
+            {
                 if (!arr1[i].Equals(arr2[i]))
                     return false;
+            }
+
+            for (; i < arr2.Length; i++)
+            {
+                if (!arr2[i].Equals(default(T)))
+                    return false;
+            }
 
             return true;
         }

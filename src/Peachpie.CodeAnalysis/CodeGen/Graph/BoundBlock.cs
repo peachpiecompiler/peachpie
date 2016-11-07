@@ -57,7 +57,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             //
-            var locals = cg.Routine.ControlFlowGraph.FlowContext.Locals;
+            var locals = cg.Routine.LocalsTable;
 
             // in case of script, declare the script, functions and types
             if (cg.Routine is Symbols.SourceGlobalMethodSymbol)
@@ -82,14 +82,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 {
                     // <locals> = new PhpArray(HINTCOUNT)
                     cg.LocalsPlaceOpt.EmitStorePrepare(cg.Builder);
-                    cg.Builder.EmitIntConstant(locals.Length);    // HINTCOUNT
+                    cg.Builder.EmitIntConstant(locals.Count);    // HINTCOUNT
                     cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
                     cg.LocalsPlaceOpt.EmitStore(cg.Builder);
                 }
             }
 
             // variables/parameters initialization
-            foreach (var loc in locals)
+            foreach (var loc in locals.Variables)
             {
                 loc.EmitInit(cg);
             }

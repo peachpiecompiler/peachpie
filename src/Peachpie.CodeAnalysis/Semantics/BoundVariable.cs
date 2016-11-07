@@ -140,19 +140,21 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundParameter : BoundVariable, IParameterInitializer
     {
+        private BoundExpression _initializer;
         private ParameterSymbol _symbol;
 
-        internal BoundParameter(ParameterSymbol symbol)
+        internal BoundParameter(ParameterSymbol symbol, BoundExpression initializer)
             : base(VariableKind.Parameter)
         {
             _symbol = symbol;
+            _initializer = initializer;
         }
 
         internal ParameterSymbol Parameter => _symbol;
 
         IParameterSymbol IParameterInitializer.Parameter => _symbol;
 
-        public IExpression Value => null;
+        public IExpression Value => _initializer;
 
         internal override Symbol Symbol => _symbol;
 

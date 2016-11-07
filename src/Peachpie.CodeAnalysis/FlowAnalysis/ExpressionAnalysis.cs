@@ -1,4 +1,5 @@
-﻿using Devsense.PHP.Syntax.Ast;
+﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
@@ -44,7 +45,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Reference to corresponding source routine.
         /// </summary>
-        protected SourceRoutineSymbol Routine => State.Common.Routine;
+        protected SourceRoutineSymbol Routine => State.Routine;
 
         /// <summary>
         /// The worklist to be used to enqueue next blocks.
@@ -379,6 +380,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 VisitStaticVariableStatement((BoundStaticVariableStatement)operation);
             }
+            else if (operation is BoundGlobalVariableStatement)
+            {
+                VisitBoundGlobalVariableStatement((BoundGlobalVariableStatement)operation);
+            }
             else
             {
                 throw ExceptionUtilities.UnexpectedValue(operation);
@@ -390,6 +395,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             foreach (var v in x.Variables)
             {
                 var name = v.Variable.Name;
+
+                State.SetVarKind(new VariableName(name), VariableKind.StaticVariable);
 
                 var oldtype = State.GetVarType(name);
 
@@ -407,6 +414,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     State.LTInt64Max(name, false);
                 }
+            }
+        }
+
+        protected virtual void VisitBoundGlobalVariableStatement(BoundGlobalVariableStatement x)
+        {
+            foreach (var v in x.Variables)
+            {
+                State.SetVarKind(new VariableName(v.Name), VariableKind.GlobalVariable);
+                State.SetVar(v.Name, TypeRefMask.AnyType);
+                State.SetVarInitialized(v.Name);
             }
         }
 
@@ -504,24 +521,106 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitBoundVariableRef(BoundVariableRef x)
         {
-            // bind variable place
-            if (x.Variable == null)
+            if (x.Name.IsDirect)
             {
-                x.Variable = x.Name.IsDirect
-                    ? _analysis.State.FlowContext.GetVar(x.Name.NameValue.Value)
-                    : new BoundIndirectLocal(x.Name.NameExpression);
-            }
+                // direct variable access:
+                var name = x.Name.NameValue.Value;
+                
+                // bind variable place
+                x.Variable = Routine.LocalsTable.BindVariable(x.Name.NameValue, State.GetVarKind(x.Name.NameValue));
 
-            // indirect variable access:
-            if (!x.Name.IsDirect)
+                // update state
+                if (x.Access.IsRead)
+                {
+                    State.SetVarUsed(name);
+                    var vartype = State.GetVarType(name);
+
+                    if (vartype.IsVoid || x.Variable.VariableKind == VariableKind.GlobalVariable)
+                    {
+                        // in global code or in case of undefined variable,
+                        // assume the type is mixed (unspecified).
+                        // In global code, the type of variable cannot be determined by type analysis, it can change between every two operations (this may be improved by better flow analysis).
+                        vartype = TypeRefMask.AnyType;
+                    }
+
+                    if (x.Access.IsEnsure)
+                    {
+                        if (x.Access.IsReadRef)
+                        {
+                            State.SetVarRef(name);
+                            vartype.IsRef = true;
+                        }
+                        if (x.Access.EnsureObject && !IsClassOnly(vartype))
+                        {
+                            vartype |= TypeCtx.GetSystemObjectTypeMask();
+                        }
+                        if (x.Access.EnsureArray && !IsArrayOnly(vartype))
+                        {
+                            vartype |= TypeCtx.GetArrayTypeMask();
+                        }
+
+                        State.SetVarInitialized(name);
+                        State.SetVar(name, vartype);
+                    }
+
+                    x.TypeRefMask = vartype;
+                }
+
+                if (x.Access.IsWrite)
+                {
+                    //
+                    State.SetVarInitialized(name);
+                    State.SetVar(name, x.Access.WriteMask);
+                    State.LTInt64Max(name, false);
+
+                    x.TypeRefMask = x.Access.WriteMask;
+
+                    if (x.Access.IsWriteRef)
+                    {
+                        State.SetVarRef(name);
+                        x.TypeRefMask = x.TypeRefMask.WithRefFlag;
+                    }
+
+                    //
+                    if (x.Variable.VariableKind == VariableKind.StaticVariable)
+                    {
+                        // analysis has to be started over // TODO: start from the block which declares the static local variable
+                        var startBlock = Routine.ControlFlowGraph.Start;
+                        var startState = startBlock.FlowState;
+
+                        var oldVar = startState.GetVarType(name);
+                        if (oldVar != x.TypeRefMask)
+                        {
+                            startState.SetVar(name, x.TypeRefMask);
+                            this.Worklist.Enqueue(startBlock);
+                        }
+                    }
+                }
+
+                if (x.Access.IsUnset)
+                {
+                    State.SetVar(name, 0);
+                    State.LTInt64Max(name, false);
+                    x.TypeRefMask = 0;
+                }
+            }
+            else
             {
+                // indirect variable access:
                 Routine.Flags |= RoutineFlags.HasIndirectVar;
 
                 Visit(x.Name.NameExpression);
 
+                // bind variable place
+                if (x.Variable == null)
+                {
+                    x.Variable = new BoundIndirectLocal(x.Name.NameExpression);
+                }
+
+                // update state
                 if (x.Access.IsRead)
                 {
-                    State.Common.SetAllUsed();
+                    State.FlowContext.SetAllUsed();
                 }
 
                 if (x.Access.IsWrite)
@@ -535,81 +634,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 return;
-            }
-
-            // direct variable access:
-            var name = x.Name.NameValue.Value;
-            if (x.Access.IsRead)
-            {
-                State.SetVarUsed(name);
-                var vartype = State.GetVarType(name);
-
-                if (vartype.IsVoid || x.Variable is BoundGlobalVariable)
-                {
-                    // in global code or in case of undefined variable,
-                    // assume the type is mixed (unspecified).
-                    // In global code, the type of variable cannot be determined by type analysis, it can change between every two operations (this may be improved by better flow analysis).
-                    vartype = TypeRefMask.AnyType;
-                }
-
-                if (x.Access.IsEnsure)
-                {
-                    if (x.Access.IsReadRef)
-                    {
-                        State.SetVarRef(name);
-                        vartype.IsRef = true;
-                    }
-                    if (x.Access.EnsureObject && !IsClassOnly(vartype))
-                    {
-                        vartype |= TypeCtx.GetSystemObjectTypeMask();
-                    }
-                    if (x.Access.EnsureArray && !IsArrayOnly(vartype))
-                    {
-                        vartype |= TypeCtx.GetArrayTypeMask();
-                    }
-
-                    State.SetVarInitialized(name);
-                    State.SetVar(name, vartype);
-                }
-
-                x.TypeRefMask = vartype;
-            }
-
-            if (x.Access.IsWrite)
-            {
-                State.SetVarInitialized(name);
-                State.SetVar(name, x.Access.WriteMask);
-                State.LTInt64Max(name, false);
-
-                x.TypeRefMask = x.Access.WriteMask;
-
-                if (x.Access.IsWriteRef)
-                {
-                    State.SetVarRef(name);
-                    x.TypeRefMask = x.TypeRefMask.WithRefFlag;
-                }
-
-                //
-                if (x.Variable is BoundStaticLocal)
-                {
-                    // analysis has to be started over // TODO: start from the block which declares the static local variable
-                    var startBlock = Routine.ControlFlowGraph.Start;
-                    var startState = startBlock.FlowState;
-
-                    var oldVar = startState.GetVarType(name);
-                    if (oldVar != x.TypeRefMask)
-                    {
-                        startState.SetVar(name, x.TypeRefMask);
-                        this.Worklist.Enqueue(startBlock);
-                    }
-                }
-            }
-
-            if (x.Access.IsUnset)
-            {
-                State.SetVar(name, 0);
-                State.LTInt64Max(name, false);
-                x.TypeRefMask = 0;
             }
         }
 

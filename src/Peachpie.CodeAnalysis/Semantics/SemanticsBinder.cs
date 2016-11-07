@@ -75,10 +75,14 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
             if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());  // see SourceDeclarations.PopulatorVisitor
             if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());  // see SourceDeclarations.PopulatorVisitor
-            if (stmt is AST.GlobalStmt) return new BoundEmptyStatement();
+            if (stmt is AST.GlobalStmt) return new BoundGlobalVariableStatement(
+                ((AST.GlobalStmt)stmt).VarList.Cast<AST.DirectVarUse>()
+                    .Select(s => (BoundGlobalVariable)_routine.LocalsTable.BindVariable(s.VarName, VariableKind.GlobalVariable, null))
+                    .ToImmutableArray());
             if (stmt is AST.StaticStmt) return new BoundStaticVariableStatement(
                 ((AST.StaticStmt)stmt).StVarList
-                    .Select(s => (BoundStaticLocal)_flowCtx.GetVar(s.Variable.Value))
+                    .Select(s => (BoundStaticLocal)_routine.LocalsTable.BindVariable(s.Variable, VariableKind.StaticVariable,
+                        () => (s.Initializer != null ? BindExpression(s.Initializer) : null)))
                     .ToImmutableArray())
             { PhpSyntax = stmt };
             if (stmt is AST.UnsetStmt) return new BoundUnset(

@@ -38,11 +38,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Variable was introduced with <c>static</c> declaration.
         /// </summary>
         StaticVariable,
-
-        /// <summary>
-        /// Symbols represents a return value.
-        /// </summary>
-        ReturnVariable,
     }
 
     internal class SourceLocalSymbol : Symbol, ILocalSymbol, ILocalSymbolInternal
@@ -126,26 +121,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public bool IsFunctionValue => false;
 
-        public virtual ITypeSymbol Type => DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetLocalTypeMask(this));
+        public virtual ITypeSymbol Type => DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetLocalTypeMask(this.Name));
 
         public bool IsImportedFromMetadata => false;
 
         public SynthesizedLocalKind SynthesizedKind => SynthesizedLocalKind.UserDefined;
 
         #endregion
-    }
-
-    internal class SourceReturnSymbol : SourceLocalSymbol
-    {
-        internal const string SpecialName = "<return>";
-
-        public SourceReturnSymbol(SourceRoutineSymbol routine)
-            :base(routine, SpecialName, VariableKind.ReturnVariable)
-        {
-
-        }
-
-        public override ITypeSymbol Type => _routine.ReturnType;
     }
 
     internal class SynthesizedLocalSymbol : SourceLocalSymbol

@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using System;
 using System.Collections.Generic;
@@ -20,16 +21,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public FlowContext FlowContext => this.Start.FlowState.FlowContext;
 
         /// <summary>
-        /// Gets local variable type.
+        /// Gets possible types of a local variable.
         /// </summary>
         /// <remarks>CFG has to be analysed prior to getting this property.</remarks>
-        public TypeRefMask GetLocalTypeMask(ILocalSymbol local) => this.FlowContext.GetVarType(local.Name);
-
-        /// <summary>
-        /// Gets type of a parameter.
-        /// </summary>
-        /// <remarks>CFG has to be analysed prior to getting this property.</remarks>
-        public TypeRefMask GetParamTypeMask(IParameterSymbol parameter) => this.FlowContext.GetVarType(parameter.Name); // TODO: type of parameter in Start state, uninitialized -> AnyType, handle param type is smaller than its local symbol
+        public TypeRefMask GetLocalTypeMask(string varname) => this.FlowContext.GetVarType(new VariableName(varname));
 
         /// <summary>
         /// Gets type of return value within this CFG.

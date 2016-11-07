@@ -115,13 +115,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var targetState = target.FlowState;
             if (targetState != null)
             {
-                Debug.Assert(targetState.Common == state.Common);
+                Debug.Assert(targetState.FlowContext == state.FlowContext);
 
                 // block was visited already,
                 // merge and check whether state changed
                 state = state.Merge(targetState);   // merge states into new one
                 if (state.Equals(targetState))
+                {
                     return; // state convergated, we don't have to analyse target block again
+                }
             }
             else
             {

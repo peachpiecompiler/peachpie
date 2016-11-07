@@ -40,11 +40,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void EmitInit(CodeGenerator cg)
         {
-            if (_symbol is SourceReturnSymbol)  // TODO: remove SourceReturnSymbol
-            {
-                return;
-            }
-
             if (cg.HasUnoptimizedLocals)
             {
                 return;
@@ -204,7 +199,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // create local variable in case of parameter type is not enough for its use within routine
                     if (_symbol.Type != cg.CoreTypes.PhpValue && _symbol.Type != cg.CoreTypes.PhpAlias)
                     {
-                        var tmask = routine.ControlFlowGraph.GetParamTypeMask(srcparam);
+                        var tmask = routine.ControlFlowGraph.GetLocalTypeMask(srcparam.Name);
                         var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
                         if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
                         {

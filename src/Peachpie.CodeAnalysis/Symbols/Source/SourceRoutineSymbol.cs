@@ -23,6 +23,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         ControlFlowGraph _cfg;
         FlowState _state;
+        LocalsTable _locals;
 
         /// <summary>
         /// Lazily bound semantic block.
@@ -47,6 +48,24 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 return _cfg;
+            }
+        }
+
+        /// <summary>
+        /// Gets table of local variables.
+        /// Variables are lazily added to the table.
+        /// </summary>
+        internal LocalsTable LocalsTable
+        {
+            get
+            {
+                var locals = _locals;
+                if (locals == null)
+                {
+                    _locals = locals = new LocalsTable(this);
+                }
+
+                return locals;
             }
         }
 

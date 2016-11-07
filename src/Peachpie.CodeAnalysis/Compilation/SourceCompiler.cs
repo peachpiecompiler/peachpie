@@ -3,7 +3,6 @@ using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.FlowAnalysis;
-using Pchp.CodeAnalysis.FlowAnalysis.Visitors;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Semantics.Model;

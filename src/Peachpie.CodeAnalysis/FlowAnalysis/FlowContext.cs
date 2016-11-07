@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using System;
@@ -21,7 +22,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Size of ulong bit array (<c>64</c>).
         /// </summary>
-        int BitsCount => FlowState.CommonState.BitsCount;
+        internal const int BitsCount = sizeof(ulong) * 8;
 
         #endregion
 
@@ -30,73 +31,84 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Associated type context.
         /// </summary>
-        public TypeRefContext TypeRefContext => _typeRefContext;
-        readonly TypeRefContext/*!*/_typeRefContext;
+        public TypeRefContext TypeRefContext => _typeCtx;
+        readonly TypeRefContext/*!*/_typeCtx;
 
         /// <summary>
-        /// Information variables within the routine.
+        /// Reference to corresponding routine symbol. Can be a <c>null</c> reference.
         /// </summary>
-        readonly ImmutableArray<BoundVariable>/*!*/_locals;
+        internal SourceRoutineSymbol Routine => _routine;
+        readonly SourceRoutineSymbol _routine;
+
+        /// <summary>
+        /// Map of variables name and their index.
+        /// </summary>
+        readonly Dictionary<VariableName, int>/*!*/_varsIndex;
+
+        /// <summary>
+        /// Bit mask of variables where bit with value <c>1</c> signalizes that variables with index corresponding to the bit number has been used.
+        /// </summary>
+        ulong _usedMask;
 
         /// <summary>
         /// Merged local variables type.
         /// </summary>
-        internal TypeRefMask[] LocalsType => _localsType;
-        readonly TypeRefMask[]/*!*/_localsType;
+        internal TypeRefMask[] VarsType => _varsType;
+        TypeRefMask[]/*!*/_varsType = EmptyArray<TypeRefMask>.Instance;
 
         /// <summary>
-        /// Index of return variable. It is <c>-1</c> in case there are no return statements.
+        /// Merged return expressions type.
         /// </summary>
-        public int ReturnVarIndex => _returnVarIndex;
-        readonly int _returnVarIndex;
-        
-        /// <summary>
-        /// Gets array of local variables. Names are indexed by their internal index.
-        /// </summary>
-        internal ImmutableArray<BoundVariable> Locals => _locals;
+        internal TypeRefMask ReturnType { get { return _returnType; } set { _returnType = value; } }
+        TypeRefMask _returnType;
 
-        /// <summary>
-        /// Finds index of variable with given name.
-        /// </summary>
-        int FindVar(string name)
-        {
-            var vars = _locals;
-            for (int i = 0; i < vars.Length; i++)
-            {
-                if (StringComparer.OrdinalIgnoreCase.Equals(vars[i].Name, name))
-                {
-                    return i;
-                }
-            }
-
-            //
-            return -1;
-        }
-        
         #endregion
 
         #region Construction
 
-        internal FlowContext(TypeRefContext typeCtx, ImmutableArray<BoundVariable> locals, int returnIndex)
+        internal FlowContext(TypeRefContext/*!*/typeCtx, SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(typeCtx);
-            Debug.Assert(!locals.IsDefault);
-            Debug.Assert(returnIndex >= -1 && returnIndex < locals.Length);
+            
+            _typeCtx = typeCtx;
+            _routine = routine;
 
-            _locals = locals;
-            _localsType = new TypeRefMask[locals.Length];
-            _returnVarIndex = returnIndex;
-            _typeRefContext = typeCtx;
+            //
+            _varsIndex = new Dictionary<VariableName, int>();
         }
 
         #endregion
 
         #region Public Methods
 
+        /// <summary>
+        /// Gets index of variable within the context.
+        /// </summary>
+        public int GetVarIndex(VariableName name)
+        {
+            Debug.Assert(!name.IsEmpty());
+
+            int index;
+            if (!_varsIndex.TryGetValue(name, out index))
+            {
+                lock (_varsType)
+                {
+                    index = _varsType.Length;
+                    Array.Resize(ref _varsType, index + 1);
+                }
+
+                _varsIndex[name] = index;
+            }
+
+            return index;
+        }
+
         public void SetReference(int varindex)
         {
             if (varindex >= 0 && varindex < BitsCount)
-                _localsType[varindex] |= TypeRefMask.IsRefMask;
+            {
+                _varsType[varindex] |= TypeRefMask.IsRefMask;
+            }
         }
 
         /// <summary>
@@ -105,38 +117,45 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsReference(int varindex)
         {
             // anything >= 64 is reported as a possible reference
-            return varindex < 0 || varindex >= _localsType.Length || _localsType[varindex].IsRef;
-        }
-
-        public BoundVariable GetVar(int index)
-        {
-            return (index >= 0 && index < _locals.Length)
-                ? _locals[index]
-                : null;
-        }
-
-        /// <summary>
-        /// Gets bound variable with given name.
-        /// </summary>
-        public BoundVariable GetVar(string name)
-        {
-            return GetVar(FindVar(name));
+            return varindex < 0 || varindex >= _varsType.Length || _varsType[varindex].IsRef;
         }
 
         public void AddVarType(int varindex, TypeRefMask type)
         {
-            if (varindex >= 0 && varindex < _localsType.Length)
+            if (varindex >= 0 && varindex < _varsType.Length)
             {
-                _localsType[varindex] |= type;
+                _varsType[varindex] |= type;
             }
         }
 
-        public TypeRefMask GetVarType(string name)
+        public TypeRefMask GetVarType(VariableName name)
         {
-            var index = FindVar(name);
-            return (index >= 0)
-                ? _localsType[index]
-                : default(TypeRefMask);
+            return _varsType[GetVarIndex(name)];
+        }
+
+        /// <summary>
+        /// Sets specified variable as being used.
+        /// </summary>
+        public void SetUsed(int varindex)
+        {
+            if (varindex >= 0 && varindex < BitsCount)
+            {
+                _usedMask |= (ulong)1 << varindex;
+            }
+        }
+
+        /// <summary>
+        /// Marks all local variables as used.
+        /// </summary>
+        public void SetAllUsed()
+        {
+            _usedMask = ~(ulong)0;
+        }
+
+        public bool IsUsed(int varindex)
+        {
+            // anything >= 64 is used
+            return varindex < 0 || varindex >= BitsCount || (_usedMask & (ulong)1 << varindex) != 0;
         }
 
         #endregion
