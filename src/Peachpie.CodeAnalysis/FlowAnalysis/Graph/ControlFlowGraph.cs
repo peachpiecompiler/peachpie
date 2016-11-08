@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Gets flow analysis context for this CFG.
         /// </summary>
         /// <remarks>CFG has to be analysed prior to getting this property.</remarks>
-        public FlowContext FlowContext => this.Start.FlowState.FlowContext;
+        public FlowContext FlowContext => this.Start.FlowState?.FlowContext;
 
         /// <summary>
         /// Gets possible types of a local variable.

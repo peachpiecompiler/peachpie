@@ -515,15 +515,10 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Resolves <see cref="INamedTypeSymbol"/> best fitting given type mask.
         /// </summary>
-        internal NamedTypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol routine, TypeRefMask typeMask)
+        internal NamedTypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol/*!*/routine, TypeRefMask typeMask)
         {
-            var fctx = routine.FlowContext;
-            if (fctx != null)
-            {
-                return this.GetTypeFromTypeRef(fctx.TypeRefContext, typeMask);
-            }
-
-            throw new InvalidOperationException();
+            Debug.Assert(routine != null);
+            return this.GetTypeFromTypeRef(routine.TypeRefContext, typeMask);
         }
 
         /// <summary>

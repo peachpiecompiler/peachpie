@@ -66,6 +66,8 @@ namespace Pchp.CodeAnalysis
             // lazily binds CFG and
             // adds their entry block to the worklist
 
+            // TODO: reset LocalsTable, FlowContext and CFG
+
             _worklist.Enqueue(routine.ControlFlowGraph?.Start);
         }
 
@@ -90,6 +92,7 @@ namespace Pchp.CodeAnalysis
             // TODO: pool of CFGAnalysis
             // TODO: async
             // TODO: in parallel
+
             var analysis = CFGAnalysis.Create(_worklist, new ExpressionAnalysis(new GlobalSemantics(_compilation)));
             block.Accept(analysis);
         }
@@ -125,7 +128,6 @@ namespace Pchp.CodeAnalysis
         void EmitMethodBody(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
-            Debug.Assert(routine.FlowContext != null);
             Debug.Assert(routine.ControlFlowGraph != null);
             Debug.Assert(routine.ControlFlowGraph.Start.FlowState != null);
 

@@ -30,13 +30,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 var r = symbol as SourceRoutineSymbol;
                 if (r != null && r.IsStatic)
                 {
-                    var cfg = r.ControlFlowGraph;
-                    if (cfg != null && cfg.HasFlowState)
-                    {
-                        // In case of a static function, we can return expected return type mask exactly.
-                        // Such function cannot be overriden and we know exactly what the return type will be even the CLR type covers more possibilities.
-                        return ctx.AddToContext(r.FlowContext.TypeRefContext, r.TargetState.GetReturnType());
-                    }
+                    // In case of a static function, we can return expected return type mask exactly.
+                    // Such function cannot be overriden and we know exactly what the return type will be even the CLR type covers more possibilities.
+                    return ctx.AddToContext(r.TypeRefContext, r.ResultTypeMask);
                 }
 
                 t = m.ReturnType;

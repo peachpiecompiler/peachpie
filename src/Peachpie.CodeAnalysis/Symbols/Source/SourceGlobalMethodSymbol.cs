@@ -97,8 +97,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                Debug.Assert(this.ControlFlowGraph != null);
-                return DeclaringCompilation.GetTypeFromTypeRef(this, TargetState.GetReturnType());
+                return BuildReturnType(default(Signature), null, null, this.ResultTypeMask);
             }
         }
 

@@ -22,5 +22,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal RoutineFlags Flags { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        internal TypeRefMask ResultTypeMask => this.ControlFlowGraph.FlowContext.ReturnType;
     }
 }

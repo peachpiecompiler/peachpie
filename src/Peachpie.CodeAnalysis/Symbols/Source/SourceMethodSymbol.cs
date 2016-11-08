@@ -106,19 +106,14 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var t = BuildReturnType(_syntax.Signature, _syntax.ReturnType, _syntax.PHPDoc, (this.ControlFlowGraph != null) ? this.ControlFlowGraph.ReturnTypeMask : TypeRefMask.AnyType);
+                // we can use analysed return type in case the method cannot be an override
+                var propagateResultType = this.IsStatic || this.DeclaredAccessibility == Accessibility.Private || (this.IsSealed && !this.IsOverride);
 
-                //if ((this.IsVirtual || this.IsOverride) && this.DeclaredAccessibility != Accessibility.Private && !this.IsPhpConstructorMethod)
-                //{
-                //    // merge the return type with the one of base override,
-                //    // ghost stub will be generated if the signatures won't match
+                // TODO: in case of override, use return type of overriden method // in some cases
 
-                //    var overriden = (MethodSymbol)this.OverriddenMethod;
-                //    if (overriden != null)
-                //    {
-                //        t = this.DeclaringCompilation.Merge(t, overriden.ReturnType);
-                //    }
-                //}
+                //
+                var t = BuildReturnType(_syntax.Signature, _syntax.ReturnType, _syntax.PHPDoc,
+                    propagateResultType ? this.ResultTypeMask : TypeRefMask.AnyType);
 
                 return t;
             }

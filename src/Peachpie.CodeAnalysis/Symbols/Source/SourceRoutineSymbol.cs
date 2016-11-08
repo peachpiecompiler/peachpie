@@ -37,8 +37,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     // create initial flow state
                     var state = StateBinder.CreateInitialState(this);
-                    this.TargetState = state;
-
+                    
                     //
                     var binder = new SemanticsBinder(this.LocalsTable);
 
@@ -68,18 +67,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 return locals;
             }
         }
-
-        /// <summary>
-        /// Lazily bound flow analysis result state.
-        /// Is not <c>null</c> even in the routine is abstract and has no <see cref="ControlFlowGraph"/>.
-        /// </summary>
-        internal FlowState TargetState
-        {
-            get { return (_cfg != null && _cfg.Exit.FlowState != null) ? _cfg.Exit.FlowState : _state; }
-            set { Debug.Assert(value != null); _state = value; }
-        }
-
-        internal FlowContext FlowContext => this.TargetState?.FlowContext;
 
         internal abstract IList<Statement> Statements { get; }
 
@@ -129,7 +116,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        protected virtual TypeSymbol BuildReturnType(Signature signature, TypeRef tref, PHPDocBlock phpdocOpt, TypeRefMask return_tmask)
+        protected virtual TypeSymbol BuildReturnType(Signature signature, TypeRef tref, PHPDocBlock phpdocOpt, TypeRefMask rtype)
         {
             if (signature.AliasReturn)
             {
@@ -143,12 +130,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
+            var typeCtx = this.TypeRefContext;
+
+            //
             if (phpdocOpt != null)
             {
                 var returnTag = phpdocOpt.Returns;
                 if (returnTag != null && returnTag.TypeNames.Length != 0)
                 {
-                    var typeCtx = this.TypeRefContext;
                     var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNamesArray);
                     if (!tmask.IsVoid && !tmask.IsAnyType)
                     {
@@ -158,7 +147,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            return DeclaringCompilation.GetTypeFromTypeRef(this.TypeRefContext, return_tmask);
+            return DeclaringCompilation.GetTypeFromTypeRef(typeCtx, rtype);
         }
 
         public override bool IsExtern => false;

@@ -58,7 +58,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 else
                 {
                     // <default>
-                    cg.EmitLoadDefaultValue(rtype, cg.Routine.TargetState.GetReturnType());
+                    cg.EmitLoadDefaultValue(rtype, cg.Routine.ResultTypeMask);
                 }
             }
             else
