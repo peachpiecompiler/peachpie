@@ -182,6 +182,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
+        public override ImmutableArray<MethodSymbol> InstanceConstructors => ImmutableArray.Create<MethodSymbol>(PhpCtorMethodSymbol);
+
         /// <summary>
         /// Gets value indicating the class can be called (i.e. has <c>__invoke</c> magic method).
         /// </summary>
