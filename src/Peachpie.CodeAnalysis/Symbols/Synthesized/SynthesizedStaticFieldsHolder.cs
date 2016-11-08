@@ -49,7 +49,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         var cvalue = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, c.Initializer);
                         if (cvalue == null) // constant has to be resolved in runtime
                         {
-                            members.Add(new SourceRuntimeConstantSymbol(_class, c.Name.Name.Value, cdecl.PHPDoc,
+                            members.Add(new SourceRuntimeConstantSymbol(_class, c.Name.Name.Value, c.PHPDoc ?? cdecl.PHPDoc,
                                 binder.BindExpression(c.Initializer, Semantics.BoundAccess.Read)));
                         }
                     }
@@ -60,7 +60,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     foreach (var f in fdecl.Fields)
                     {
-                        members.Add(new SourceFieldSymbol(_class, f.Name.Value, fdecl.Modifiers & (~PhpMemberAttributes.Static), fdecl.PHPDoc,
+                        members.Add(new SourceFieldSymbol(_class, f.Name.Value, fdecl.Modifiers & (~PhpMemberAttributes.Static), f.PHPDoc ?? fdecl.PHPDoc,
                             f.HasInitVal ? binder.BindExpression(f.Initializer, Semantics.BoundAccess.Read) : null));
                     }
                 }
