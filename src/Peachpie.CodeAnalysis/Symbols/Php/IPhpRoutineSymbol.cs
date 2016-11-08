@@ -11,7 +11,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// A symbol representing PHP routine (function or method) in CLR.
     /// </summary>
-    interface IPhpRoutineSymbol : IMethodSymbol, IPhpValue
+    public interface IPhpRoutineSymbol : IMethodSymbol, IPhpValue
     {
         /// <summary>
         /// Gets value indicating whether <see cref="Core.CastToFalse"/> attribute applies to this routine and

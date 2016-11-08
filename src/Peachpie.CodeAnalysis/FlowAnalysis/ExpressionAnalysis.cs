@@ -24,8 +24,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     {
         #region Fields
 
-        CFGAnalysis _analysis;
-
+        readonly CFGAnalysis _analysis;
         readonly ISemanticModel _model;
 
         /// <summary>
@@ -51,11 +50,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// The worklist to be used to enqueue next blocks.
         /// </summary>
         protected Worklist<BoundBlock> Worklist => _analysis.Worklist;
-
-        /// <summary>
-        /// Gets value indicating whether we are currently in an exception handler (within try, catch or finally).
-        /// </summary>
-        protected bool InExceptionHandler => _analysis.InExceptionHandler;
 
         #endregion
 
@@ -348,14 +342,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Construction
 
-        public ExpressionAnalysis(ISemanticModel model)
+        public ExpressionAnalysis(ISemanticModel model, CFGAnalysis analysis)
         {
             Contract.ThrowIfNull(model);
             _model = model;
-        }
-
-        internal void SetAnalysis(CFGAnalysis analysis)
-        {
             _analysis = analysis;
         }
 

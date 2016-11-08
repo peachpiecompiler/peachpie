@@ -18,22 +18,41 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         /// <summary>
         /// Visitor for bound operations.
+        /// Cannot be <c>null</c>.
         /// </summary>
-        readonly protected OperationVisitor _opvisitor;
+        public OperationVisitor Visitor
+        {
+            get
+            {
+                var visitor = _visitor;
+                if (visitor == null)
+                {
+                    _visitor = visitor = _opVisitorFactory(this);
+                    Contract.ThrowIfNull(visitor);
+
+                    _opVisitorFactory = null;
+                }
+
+                return visitor;
+            }
+        }
+        OperationVisitor _visitor;
+
+        Func<GraphVisitor, OperationVisitor> _opVisitorFactory;
 
         /// <summary>
         /// Forwards the operation to the <see cref="OperationVisitor"/>.
         /// </summary>
-        protected void Accept(IOperation op) => op?.Accept(_opvisitor);
-
+        protected void Accept(IOperation op) => op?.Accept(Visitor);
+        
         #endregion
 
         #region ControlFlowGraph
 
-        public GraphVisitor(OperationVisitor opvisitor)
+        public GraphVisitor(Func<GraphVisitor, OperationVisitor> opVisitorFactory)
         {
-            Contract.ThrowIfNull(opvisitor);
-            _opvisitor = opvisitor;
+            Contract.ThrowIfNull(opVisitorFactory);
+            _opVisitorFactory = opVisitorFactory;
         }
 
         public virtual void VisitCFG(ControlFlowGraph x) => x.Start.Accept(this);

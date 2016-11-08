@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// Queue of work items to do.
     /// </summary>
     [DebuggerDisplay("WorkList<{T}>, Size={_queue.Count}")]
-    internal class Worklist<T> where T : BoundBlock
+    public class Worklist<T> where T : BoundBlock
     {
         readonly object _syncRoot = new object();
 

@@ -93,8 +93,12 @@ namespace Pchp.CodeAnalysis
             // TODO: async
             // TODO: in parallel
 
-            var analysis = CFGAnalysis.Create(_worklist, new ExpressionAnalysis(new GlobalSemantics(_compilation)));
-            block.Accept(analysis);
+            block.Accept(new CFGAnalysis(_worklist, AnalysisFactory));
+        }
+
+        ExpressionAnalysis AnalysisFactory(GraphVisitor cfgVisitor)
+        {
+            return new ExpressionAnalysis(new GlobalSemantics(_compilation), (CFGAnalysis)cfgVisitor);
         }
 
         internal void EmitMethodBodies()

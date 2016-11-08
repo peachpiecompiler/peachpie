@@ -44,13 +44,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets underlaying <see cref="ExpressionAnalysis"/>.
         /// </summary>
-        internal ExpressionAnalysis OpAnalysis => (ExpressionAnalysis)_opvisitor;
-
-        /// <summary>
-        /// Gets value indicating whether we are currently in an exception handler (within try, catch or finally).
-        /// </summary>
-        internal bool InExceptionHandler => _tryBlocks != null && _tryBlocks.Any(s => s.Contains(CurrentBlock.Ordinal));
-        private HashSet<Span> _tryBlocks = null;
+        internal new ExpressionAnalysis Visitor => (ExpressionAnalysis)base.Visitor;
 
         #endregion
 
@@ -60,21 +54,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Creates an instance of <see cref="CFGAnalysis"/> that can analyse a block.
         /// </summary>
         /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
-        /// <param name="opvisitor">Expression visitor.</param>
-        /// <returns>New instance of the flow analyzer.</returns>
-        internal static CFGAnalysis Create(Worklist<BoundBlock> worklist, ExpressionAnalysis opvisitor)
-        {
-            Contract.ThrowIfNull(worklist);
-
-            var analysis = new CFGAnalysis(worklist, opvisitor);
-            opvisitor.SetAnalysis(analysis);
-
-            //
-            return analysis;
-        }
-
-        private CFGAnalysis(Worklist<BoundBlock> worklist, OperationVisitor opvisitor)
-            : base(opvisitor)
+        /// <param name="opAnalysisFactory">Factory that creates an operation visitor lazily.</param>
+        internal CFGAnalysis(Worklist<BoundBlock> worklist, Func<GraphVisitor, ExpressionAnalysis> opAnalysisFactory)
+            : base(opAnalysisFactory)
         {
             _worklist = worklist;
         }
@@ -196,7 +178,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Accept(x.Variable);
 
             //
-            x.ResolvedType = OpAnalysis.ResolveType(x.TypeRef);// TODO: accept TypeRef and resolve, TODO: resolved type should be of type Exception
+            x.ResolvedType = Visitor.ResolveType(x.TypeRef);// TODO: accept TypeRef and resolve, TODO: resolved type should be of type Exception
             x.Variable.ResultType = x.ResolvedType;
 
             //
@@ -215,12 +197,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // true branch
             _state = state.Clone();
-            OpAnalysis.VisitCondition(x.Condition, ConditionBranch.ToTrue);
+            Visitor.VisitCondition(x.Condition, ConditionBranch.ToTrue);
             TraverseToBlock(_state, x.TrueTarget);
 
             // false branch
             _state = state.Clone();
-            OpAnalysis.VisitCondition(x.Condition, ConditionBranch.ToFalse);
+            Visitor.VisitCondition(x.Condition, ConditionBranch.ToFalse);
             TraverseToBlock(_state, x.FalseTarget);
         }
 
@@ -234,7 +216,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             var state = _state;
             // get type information from Enumeree to determine types value variable
-            var elementType = OpAnalysis.HandleTraversableUse(x.EnumereeEdge.Enumeree);
+            var elementType = Visitor.HandleTraversableUse(x.EnumereeEdge.Enumeree);
             if (elementType.IsVoid) elementType = TypeRefMask.AnyType;
 
             // Body branch
@@ -250,14 +232,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 valueVar.Access = valueVar.Access.WithWrite(elementType);
-                OpAnalysis.Visit(valueVar);
+                Visitor.Visit(valueVar);
 
                 //
                 var keyVar = x.KeyVariable;
                 if (keyVar != null)
                 {
                     keyVar.Access = keyVar.Access.WithWrite(TypeRefMask.AnyType);
-                    OpAnalysis.Visit(keyVar);
+                    Visitor.Visit(keyVar);
                 }
             }
             TraverseToBlock(_state, x.BodyBlock);
@@ -281,15 +263,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitCFGTryCatchEdge(TryCatchEdge x)
         {
-            // remember try/catch/finally location to determine whether we are in an exception handler
-            if (_tryBlocks == null)
-            {
-                _tryBlocks = new HashSet<Span>();
-            }
-
-            _tryBlocks.Add(Span.FromBounds(x.BodyBlock.Ordinal, x.NextBlock.Ordinal));
-
-            //
             var state = _state;
 
             //
