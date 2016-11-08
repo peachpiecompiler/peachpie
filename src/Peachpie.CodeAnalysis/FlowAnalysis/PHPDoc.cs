@@ -103,7 +103,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         var qname = NameUtils.MakeQualifiedName(tname, false);
                         if (!fullyQualified && typeCtx.Naming != null && !qname.IsReservedClassName)
-                            qname = QualifiedName.TranslateAlias(qname, typeCtx.Naming.Aliases, typeCtx.Naming.CurrentNamespace);
+                            qname = QualifiedName.TranslateAlias(qname, AliasKind.Type, typeCtx.Naming.Aliases, typeCtx.Naming.CurrentNamespace);
 
                         if (qname.IsPrimitiveTypeName)
                         {
