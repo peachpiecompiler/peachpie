@@ -35,7 +35,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (!_lazyMembers.IsDefault)
                 return;
 
-            Semantics.SemanticsBinder binder = new Semantics.SemanticsBinder(null, null);
+            var binder = new Semantics.SemanticsBinder(null);
 
             var members = new List<Symbol>();
 

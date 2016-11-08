@@ -1611,25 +1611,55 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public void VisitPseudoConst(BoundPseudoConst x)
         {
+            object value = null;
+
             switch (x.Type)
             {
                 case PseudoConstUse.Types.Line:
-                    x.TypeRefMask = TypeCtx.GetLongTypeMask();
+                    value = TypeCtx.SourceUnit.GetLineFromPosition(x.PhpSyntax.Span.Start) + 1;
                     break;
 
                 case PseudoConstUse.Types.Class:
                 case PseudoConstUse.Types.Trait:
+                    value = (TypeCtx.ContainingType is IPhpTypeSymbol)
+                        ? ((IPhpTypeSymbol)TypeCtx.ContainingType).FullName.ToString()
+                        : string.Empty;
+                    break;
+
                 case PseudoConstUse.Types.Method:
+                    value = Routine != null
+                        ? TypeCtx.ContainingType is IPhpTypeSymbol
+                            ? ((IPhpTypeSymbol)TypeCtx.ContainingType).FullName.ToString(new Name(Routine.Name), false)
+                            : Routine.Name
+                        : string.Empty;
+                    break;
+
                 case PseudoConstUse.Types.Function:
+                    value = Routine != null ? Routine.RoutineName : string.Empty;
+                    break;
+
                 case PseudoConstUse.Types.Namespace:
+                    value = (TypeCtx.Naming != null && TypeCtx.Naming.CurrentNamespace.HasValue)
+                        ? TypeCtx.Naming.CurrentNamespace.Value.NamespacePhpName
+                        : string.Empty;
+                    break;
+
                 case PseudoConstUse.Types.Dir:
                 case PseudoConstUse.Types.File:
                     x.TypeRefMask = TypeCtx.GetStringTypeMask();
-                    break;
+                    return;
 
                 default:
-                    throw new NotImplementedException(x.Type.ToString());
+                    throw ExceptionUtilities.UnexpectedValue(x.Type);
             }
+
+            Debug.Assert(value != null);    // pseudoconstant has been set
+
+            x.ConstantObject = new Optional<object>(value);
+
+            if (value is string) x.TypeRefMask = TypeCtx.GetStringTypeMask();
+            else if (value is int || value is long) x.TypeRefMask = TypeCtx.GetLongTypeMask();
+            else throw ExceptionUtilities.UnexpectedValue(value);
         }
 
         public void VisitGlobalConst(BoundGlobalConst x)

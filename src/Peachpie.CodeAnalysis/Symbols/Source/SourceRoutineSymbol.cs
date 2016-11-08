@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     this.TargetState = state;
 
                     //
-                    var binder = new SemanticsBinder(this, state.FlowContext);
+                    var binder = new SemanticsBinder(this.LocalsTable);
 
                     // build control flow graph
                     _cfg = new ControlFlowGraph(this.Statements, binder);

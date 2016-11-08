@@ -19,16 +19,17 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     internal class SemanticsBinder
     {
-        readonly Symbols.SourceRoutineSymbol _routine;
-
-        readonly FlowAnalysis.FlowContext _flowCtx;
+        /// <summary>
+        /// Optional. Local variables table.
+        /// Can be <c>null</c> for expressions without variable access (field initializers and parameters initializers).
+        /// </summary>
+        readonly LocalsTable _locals;
 
         #region Construction
 
-        public SemanticsBinder(Symbols.SourceRoutineSymbol routine, FlowAnalysis.FlowContext flowCtx = null /*PhpCompilation compilation, AST.GlobalCode ast, bool ignoreAccessibility*/)
+        public SemanticsBinder(LocalsTable locals = null)
         {
-            _routine = routine;
-            _flowCtx = flowCtx;
+            _locals = locals;
         }
 
         #endregion
@@ -77,11 +78,11 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());  // see SourceDeclarations.PopulatorVisitor
             if (stmt is AST.GlobalStmt) return new BoundGlobalVariableStatement(
                 ((AST.GlobalStmt)stmt).VarList.Cast<AST.DirectVarUse>()
-                    .Select(s => (BoundGlobalVariable)_routine.LocalsTable.BindVariable(s.VarName, VariableKind.GlobalVariable, null))
+                    .Select(s => (BoundGlobalVariable)_locals.BindVariable(s.VarName, VariableKind.GlobalVariable, null))
                     .ToImmutableArray());
             if (stmt is AST.StaticStmt) return new BoundStaticVariableStatement(
                 ((AST.StaticStmt)stmt).StVarList
-                    .Select(s => (BoundStaticLocal)_routine.LocalsTable.BindVariable(s.Variable, VariableKind.StaticVariable,
+                    .Select(s => (BoundStaticLocal)_locals.BindVariable(s.Variable, VariableKind.StaticVariable,
                         () => (s.Initializer != null ? BindExpression(s.Initializer) : null)))
                     .ToImmutableArray())
             { PhpSyntax = stmt };
@@ -112,10 +113,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundVariableRef BindCatchVariable(AST.CatchItem x)
         {
-            var tmask = _flowCtx.TypeRefContext.GetTypeMask(x.TypeRef, true);
-
             return new BoundVariableRef(new BoundVariableName(x.Variable.VarName))
-                .WithAccess(BoundAccess.Write.WithWrite(tmask));
+                .WithAccess(BoundAccess.Write);
         }
 
         public BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
@@ -191,45 +190,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundIsSetEx(x.VarList.Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Read.WithQuiet())).ToImmutableArray());
         }
 
-        BoundExpression BindPseudoConst(AST.PseudoConstUse x)
-        {
-            var unit = _routine.ContainingFile.Syntax.ContainingSourceUnit;
-
-            switch (x.Type)
-            {
-                case AST.PseudoConstUse.Types.Line:
-                    return new BoundLiteral(unit.LineBreaks.GetLineFromPosition(x.Span.Start) + 1);
-
-                case AST.PseudoConstUse.Types.Dir:
-                case AST.PseudoConstUse.Types.File:
-                    return new BoundPseudoConst(x.Type);
-
-                case AST.PseudoConstUse.Types.Function:
-                    if (_routine is SourceFunctionSymbol || _routine is SourceMethodSymbol)
-                        return new BoundLiteral(_routine.Name);
-                    if (_routine is SourceGlobalMethodSymbol)
-                        return new BoundLiteral(string.Empty);
-
-                    throw ExceptionUtilities.UnexpectedValue(_routine);
-
-                case AST.PseudoConstUse.Types.Method:
-                    if (_routine is SourceMethodSymbol)
-                        return new BoundLiteral(_routine.ContainingType.MakeQualifiedName().ToString(new Name(_routine.Name), false));
-
-                    goto case AST.PseudoConstUse.Types.Function;
-
-                case AST.PseudoConstUse.Types.Class:
-                    if (_flowCtx.TypeRefContext.ContainingType != null)
-                    {
-                        return new BoundLiteral(_flowCtx.TypeRefContext.ContainingType.MakeQualifiedName().ToString());
-                    }
-
-                    return new BoundLiteral(string.Empty);
-
-                default:
-                    throw new NotImplementedException(x.Type.ToString());    // 
-            }
-        }
+        BoundExpression BindPseudoConst(AST.PseudoConstUse x) => new BoundPseudoConst(x.Type);
 
         BoundExpression BindInstanceOfEx(AST.InstanceOfEx x)
         {

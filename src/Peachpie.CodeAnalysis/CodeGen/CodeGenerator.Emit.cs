@@ -223,6 +223,21 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
+            // load resulting value directly if resolved:
+            if (expr.ConstantObject.HasValue)
+            {
+                if (expr.Access.IsNone)
+                {
+                    return CoreTypes.Void;
+                }
+
+                if (expr.Access.IsRead)
+                {
+                    return EmitLoadConstant(expr.ConstantObject.Value, expr.Access.TargetType);
+                }
+            }
+
+            //
             if (expr.Access.IsNone) // no need for specializing, the value won't be read anyway
             {
                 return (expr.ResultType = expr.Emit(this));

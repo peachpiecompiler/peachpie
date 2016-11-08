@@ -25,5 +25,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Can be <c>null</c> for routines from PE.
         /// </summary>
         ControlFlowGraph ControlFlowGraph { get; }
+
+        /// <summary>
+        /// Gets a global function and a method name,
+        /// otherwise an empty string.
+        /// </summary>
+        string RoutineName { get; }
     }
 }

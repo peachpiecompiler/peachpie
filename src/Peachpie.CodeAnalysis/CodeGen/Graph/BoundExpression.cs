@@ -38,20 +38,6 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(this.Access.IsRead || this.Access.IsNone);
 
-            // load resulting value directly if resolved:
-            if (this.ConstantObject.HasValue)
-            {
-                if (this.Access.IsNone)
-                {
-                    return cg.CoreTypes.Void;
-                }
-
-                if (this.Access.IsRead)
-                {
-                    return cg.EmitLoadConstant(this.ConstantObject.Value);
-                }
-            }
-
             //
             TypeSymbol returned_type;
 
@@ -2807,7 +2793,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Expect(SpecialType.System_String);
 
                 default:
-                    throw new NotImplementedException(Type.ToString());
+
+                    // the other pseudoconstants should be resolved by flow analysis
+                    throw ExceptionUtilities.Unreachable;
             }
         }
     }

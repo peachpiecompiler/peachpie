@@ -59,6 +59,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string Name => WellKnownPchpNames.GlobalRoutineName;
 
+        public override string RoutineName => string.Empty;
+
         public override Symbol ContainingSymbol => _file;
 
         internal override SourceFileSymbol ContainingFile => _file;

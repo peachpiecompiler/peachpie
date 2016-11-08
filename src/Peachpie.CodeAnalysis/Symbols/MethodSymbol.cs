@@ -284,6 +284,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public virtual ControlFlowGraph ControlFlowGraph => null;
 
+        /// <summary>
+        /// Gets the routine name, equivalent to a PHP pseudoconstant <c>__FUNCTION__</c>.
+        /// </summary>
+        public virtual string RoutineName => Name;
+
         #endregion
     }
 }
