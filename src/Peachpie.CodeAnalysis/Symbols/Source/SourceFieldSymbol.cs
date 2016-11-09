@@ -88,7 +88,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
         {
-            throw new ArgumentException();
+            return Initializer.ConstantValue;
         }
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
@@ -110,13 +110,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
     internal class SourceConstSymbol : SourceFieldSymbol
     {
-        readonly Expression _value;
-        ConstantValue _resolvedValue;
-
-        public SourceConstSymbol(SourceTypeSymbol type, string name, PHPDocBlock phpdoc, Expression value)
-            : base(type, name, PhpMemberAttributes.Public | PhpMemberAttributes.Static, phpdoc)
+        public SourceConstSymbol(SourceTypeSymbol type, string name, PHPDocBlock phpdoc, BoundExpression initializer)
+            : base(type, name, PhpMemberAttributes.Public | PhpMemberAttributes.Static, phpdoc, initializer)
         {
-            _value = value;
         }
 
         public override bool IsConst => true;
@@ -130,11 +126,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 return this.DeclaringCompilation.GetSpecialType(SpecialType.System_Object);
 
             return this.DeclaringCompilation.GetSpecialType(cvalue.SpecialType);
-        }
-
-        internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
-        {
-            return _resolvedValue ?? (_resolvedValue = SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _value));
         }
     }
 

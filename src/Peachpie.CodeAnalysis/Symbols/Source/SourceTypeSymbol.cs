@@ -169,7 +169,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (StaticsContainer.GetMembers(c.Name.Name.Value).OfType<FieldSymbol>().Where(s => s.IsReadOnly).IsEmpty())
                     {
-                        yield return new SourceConstSymbol(this, c.Name.Name.Value, c.PHPDoc ?? clist.PHPDoc, c.Initializer);
+                        yield return new SourceConstSymbol(this, c.Name.Name.Value, c.PHPDoc ?? clist.PHPDoc, binder.BindExpression(c.Initializer, BoundAccess.Read));
                     }
                 }
             }
