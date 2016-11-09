@@ -318,6 +318,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override void VisitNamespaceDecl(NamespaceDecl x)
         {
             _naming = x.Naming;
+            _current = Connect(_current, NewBlock());   // create new block with new naming
 
             base.VisitNamespaceDecl(x);
         }

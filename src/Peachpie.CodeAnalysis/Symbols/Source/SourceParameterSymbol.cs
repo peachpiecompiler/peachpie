@@ -173,12 +173,16 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 ConstantValue value = null;
 
-                if (_syntax.InitValue != null)
+                if (Initializer != null)
                 {
                     // NOTE: the constant does not have to have the exact same type as the parameter, it is up to the caller of the method to process DefaultValue and convert it if necessary
 
-                    // TODO: Bind _syntax.InitValue to BoundExpression so we can use analysed constant value
+                    if (Initializer.ConstantValue != null)
+                    {
+                        return Initializer.ConstantValue;
+                    }
 
+                    // old way: // TO BE REMOVED // TODO: analysis of literal expression has to resolve its ConstantValue
                     value = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
 
                     // NOTE: non-literal default values (like array()) must be handled by creating a method overload calling this method:

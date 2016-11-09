@@ -304,7 +304,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(SpecialType.System_String);
                     }
                 }
-                else if (stack.IsReferenceType)
+                else if (stack.IsReferenceType && this.Routine != null)
                 {
                     var tref = this.Routine.TypeRefContext.GetTypes(tmask)[0];
                     if (tref.IsObject)
