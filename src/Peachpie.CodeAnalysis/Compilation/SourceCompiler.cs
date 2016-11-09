@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Emit;
@@ -29,7 +30,7 @@ namespace Pchp.CodeAnalysis
         readonly DiagnosticBag _diagnostics;
 
         readonly Worklist<BoundBlock> _worklist;
-        
+
         private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics)
         {
             Contract.ThrowIfNull(compilation);
@@ -55,9 +56,13 @@ namespace Pchp.CodeAnalysis
             // TODO: methodsWalker.VisitNamespace(_compilation.SourceModule.GlobalNamespace)
         }
 
+        void WalkTypes(Action<SourceTypeSymbol> action)
+        {
+            _compilation.SourceSymbolTables.GetTypes().Cast<SourceTypeSymbol>().Foreach(action);
+        }
+
         /// <summary>
-        /// Ensures the routine has flow context.
-        /// Otherwise it is created and routine is enqueued for analysis.
+        /// Enqueues routine's start block for analysis.
         /// </summary>
         void EnqueueRoutine(SourceRoutineSymbol routine)
         {
@@ -69,6 +74,51 @@ namespace Pchp.CodeAnalysis
             // TODO: reset LocalsTable, FlowContext and CFG
 
             _worklist.Enqueue(routine.ControlFlowGraph?.Start);
+
+            // enqueue routine parameter default values
+            routine.Parameters.OfType<SourceParameterSymbol>().Foreach(p =>
+            {
+                if (p.Initializer != null)
+                {
+                    EnqueueExpression(p.Initializer, routine.TypeRefContext, routine.GetNamingContext());
+                }
+            });
+        }
+
+        /// <summary>
+        /// Enqueues the standalone expression for analysis.
+        /// </summary>
+        void EnqueueExpression(BoundExpression expression, TypeRefContext/*!*/ctx, NamingContext naming)
+        {
+            Contract.ThrowIfNull(expression);
+            Contract.ThrowIfNull(ctx);
+
+            var dummy = new BoundBlock()
+            {
+                FlowState = new FlowState(new FlowContext(ctx, null)),
+                Naming = naming
+            };
+
+            dummy.Add(new BoundExpressionStatement(expression));
+
+            _worklist.Enqueue(dummy);
+        }
+
+        /// <summary>
+        /// Enqueues initializers of a class fields and constants.
+        /// </summary>
+        void EnqueueFieldsInitializer(SourceTypeSymbol type)
+        {
+            type.GetMembers().Concat(type.StaticsContainer.GetMembers()).OfType<SourceFieldSymbol>().Foreach(f =>
+            {
+                if (f.Initializer != null)
+                {
+                    EnqueueExpression(
+                        f.Initializer,
+                        TypeRefFactory.CreateTypeRefContext(type), //the context will be lost, analysis resolves constant values only and types are temporary
+                        NameUtils.GetNamingContext(type.Syntax));
+                }
+            });
         }
 
         internal void ReanalyzeMethods()
@@ -119,8 +169,7 @@ namespace Pchp.CodeAnalysis
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
             // __statics.Init, .phpnew, .ctor
-            _compilation.SourceSymbolTables.GetTypes().Cast<SourceTypeSymbol>()
-                .ForEach(t => t.EmitInit(_moduleBuilder));
+            WalkTypes(t => t.EmitInit(_moduleBuilder));
 
             // realize .cctor if any
             _moduleBuilder.RealizeStaticCtors();
@@ -177,6 +226,7 @@ namespace Pchp.CodeAnalysis
             //   a.equivalent to building CFG
             //   b.most generic types(and empty type - mask)
             compiler.WalkMethods(compiler.EnqueueRoutine);
+            compiler.WalkTypes(compiler.EnqueueFieldsInitializer);
 
             // 2.Analyze Operations
             //   a.declared variables
