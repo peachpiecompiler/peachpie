@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -23,6 +24,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         TypeSymbol _lazyType;
 
+        /// <summary>
+        /// Optional. The parameter initializer expression i.e. bound <see cref="FormalParam.InitValue"/>.
+        /// </summary>
+        public BoundExpression Initializer => _initializer;
+        readonly BoundExpression _initializer;
+
         public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int index, PHPDocBlock.ParamTag ptagOpt)
         {
             Contract.ThrowIfNull(routine);
@@ -33,6 +40,9 @@ namespace Pchp.CodeAnalysis.Symbols
             _syntax = syntax;
             _index = index;
             _ptagOpt = ptagOpt;
+            _initializer = (syntax.InitValue != null)
+                ? new SemanticsBinder(null).BindExpression(syntax.InitValue, BoundAccess.Read)
+                : null;
         }
 
         /// <summary>

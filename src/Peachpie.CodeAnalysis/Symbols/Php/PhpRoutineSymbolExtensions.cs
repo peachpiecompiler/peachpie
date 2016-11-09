@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,7 +42,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 t = ((PropertySymbol)symbol).Type;
             }
-            else if(symbol is ParameterSymbol)
+            else if (symbol is ParameterSymbol)
             {
                 t = ((ParameterSymbol)symbol).Type;
             }
@@ -61,6 +62,43 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             return mask;
+        }
+
+        /// <summary>
+        /// Resolves list of input arguments.
+        /// Implicit parameters passed by compiler are ignored.
+        /// </summary>
+        /// <param name="routine">Routine.</param>
+        /// <param name="ctx">TYpe context to transmer type masks into.</param>
+        /// <returns>List of input PHP arguments.</returns>
+        public static PhpParam[] GetExpectedArguments(this IPhpRoutineSymbol routine, TypeRefContext ctx)
+        {
+            Contract.ThrowIfNull(routine);
+
+            var ps = routine.Parameters;
+            var table = (routine as SourceRoutineSymbol)?.LocalsTable;
+            var result = new List<PhpParam>(ps.Length);
+
+            foreach (ParameterSymbol p in ps)
+            {
+                if (result.Count == 0 && p.IsImplicitlyDeclared)
+                {
+                    continue;
+                }
+
+                // default value (bound expression)
+                ConstantValue cvalue;
+                var psrc = p as SourceParameterSymbol;
+                var defaultexpr = psrc != null
+                    ? psrc.Initializer
+                    : ((cvalue = p.ExplicitDefaultConstantValue) != null ? new BoundLiteral(cvalue.Value) : null);
+
+                //
+                result.Add(new PhpParam(TypeRefFactory.CreateMask(ctx, p.Type), p.IsParams, defaultexpr));
+            }
+
+            //
+            return result.ToArray();
         }
     }
 }

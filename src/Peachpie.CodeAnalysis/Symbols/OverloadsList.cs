@@ -43,23 +43,21 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var m in result)
             {
                 var nmandatory = 0;
-                var nall = 0;
                 var hasoptional = false;
                 var hasparams = false;
 
-                foreach (var p in m.Parameters)
+                var expectedparams = m.GetExpectedArguments(typeCtx);
+
+                foreach (var p in expectedparams)
                 {
-                    if (nmandatory == 0 && p.IsImplicitlyDeclared) continue;
+                    hasoptional |= p.DefaultValue != null;
+                    hasparams |= p.IsVariadic;
+                    if (!hasoptional && !hasparams) nmandatory++;
 
-                    if (p.HasExplicitDefaultValue) hasoptional = true;
-
-                    if (p.IsParams) hasparams = true;
-                    else if (!hasoptional) nmandatory++;
-
-                    nall++;
+                    // TODO: check args[i] is convertible to p.Type
                 }
 
-                if (args.Length >= nmandatory && (hasparams || args.Length <= nall))
+                if (args.Length >= nmandatory && (hasparams || args.Length <= expectedparams.Length))
                 {
                     result2.Add(m);
                 }

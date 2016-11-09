@@ -59,11 +59,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (!p.IsImplicitlyDeclared)
                 {
-                    var value = (p.Syntax.InitValue != null)
-                        ? CreateSemanticsBinder().BindExpression(p.Syntax.InitValue, BoundAccess.Read)
-                        : null;
-
-                    _dict[new VariableName(p.Name)] = new BoundParameter(p, value);
+                    _dict[new VariableName(p.Name)] = new BoundParameter(p, p.Initializer);
                 }
             }
 
@@ -75,14 +71,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     VariableKind = VariableKind.ThisParameter
                 };
             }
-        }
-
-        /// <summary>
-        /// Creates binder to bind parameters initializers to bound expressions.
-        /// </summary>
-        SemanticsBinder CreateSemanticsBinder()
-        {
-            return new SemanticsBinder(null);
         }
 
         BoundVariable CreateVariable(VariableName name, VariableKind kind, Func<BoundExpression> initializer)

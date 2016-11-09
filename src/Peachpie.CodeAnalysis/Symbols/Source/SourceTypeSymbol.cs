@@ -217,7 +217,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     };
                     _lazyInvokeSymbol.SetParameters(
                         new SpecialParameterSymbol(_lazyInvokeSymbol, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
-                        new SpecialParameterSymbol(_lazyInvokeSymbol, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), "arguments", 1));
+                        new SynthesizedParameterSymbol(_lazyInvokeSymbol, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), 1, RefKind.None, "arguments"));
 
                     //
                     module.SynthesizedManager.AddMethod(this, _lazyInvokeSymbol);

@@ -19,9 +19,12 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly string _name;
         readonly PhpMemberAttributes _modifiers;
         readonly PHPDocBlock _phpdoc;
-        readonly BoundExpression _initializerOpt;
 
-        public BoundExpression Initializer => _initializerOpt;
+        /// <summary>
+        /// Optional. The field initializer expression.
+        /// </summary>
+        public BoundExpression Initializer => _initializer;
+        readonly BoundExpression _initializer;
 
         public SourceFieldSymbol(SourceTypeSymbol type, string name, PhpMemberAttributes modifiers, PHPDocBlock phpdoc, BoundExpression initializer = null)
         {
@@ -32,7 +35,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _name = name;
             _modifiers = modifiers;
             _phpdoc = phpdoc;
-            _initializerOpt = initializer;
+            _initializer = initializer;
         }
 
         public override string Name => _name;

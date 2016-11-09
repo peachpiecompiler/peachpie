@@ -53,7 +53,7 @@ namespace Pchp.CodeAnalysis.Symbols
             for (int i = 0; i < ps.Length; i++)
             {
                 var p = ps[i] as SourceParameterSymbol;
-                if (p != null && p.Syntax.InitValue != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                if (p != null && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
                 {
                     // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
                     CreateGhostOverload(module, diagnostic, i);
@@ -82,7 +82,7 @@ namespace Pchp.CodeAnalysis.Symbols
             };
 
             ghost.SetParameters(ghostparams.Select(p =>
-                new SpecialParameterSymbol(ghost, p.Type, p.Name, p.Ordinal)).ToArray());
+                new SynthesizedParameterSymbol(ghost, p.Type, p.Ordinal, p.RefKind, p.Name)).ToArray());
 
             // save method symbol to module
             module.SynthesizedManager.AddMethod(this.ContainingType, ghost);
@@ -135,7 +135,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     DeclaringCompilation.CoreTypes.PhpValue, Accessibility.Public);
 
                 wrapper.SetParameters(this.Parameters.Select(p =>
-                    new SpecialParameterSymbol(wrapper, p.Type, p.Name, p.Ordinal)).ToArray());
+                    new SynthesizedParameterSymbol(wrapper, p.Type, p.Ordinal, p.RefKind, p.Name)).ToArray());
 
                 // save method symbol to module
                 module.SynthesizedManager.AddMethod(this.ContainingFile, wrapper);

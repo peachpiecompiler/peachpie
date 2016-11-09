@@ -732,14 +732,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    if (p.HasExplicitDefaultValue)
-                    {
-                        EmitConvert(EmitLoadConstant(p.ExplicitDefaultValue, p.Type), 0, p.Type);
-                    }
-                    else
-                    {
-                        EmitLoadDefaultValue(p.Type, 0);
-                    }
+                    EmitParameterDefaultValue(p);
                 }
             }
 
@@ -799,45 +792,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    TypeSymbol ptype;
                     if (srcp < givenps.Length)
                     {
                         var p = givenps[srcp];
-                        ptype = new ParamPlace(p).EmitLoad(Builder);
-                        
+                        var ptype = new ParamPlace(p).EmitLoad(Builder);
+                        EmitConvert(ptype, 0, targetp.Type);
                     }
                     else
                     {
-                        if (targetp.IsOptional)
-                        {
-                            if (targetp.HasExplicitDefaultValue)
-                            {
-                                ptype = EmitLoadConstant(targetp.ExplicitDefaultValue, targetp.Type);
-                            }
-                            else
-                            {
-                                // TODO: BoundExpression!!! targetp.BoundInitializer
-
-                                var value = ((SourceParameterSymbol)targetp).Syntax.InitValue;
-                                if (value is ArrayEx)
-                                {
-                                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
-                                    ptype = CoreTypes.PhpArray;
-                                }
-                                else
-                                {
-                                    throw new NotImplementedException();
-                                }
-                            }
-                        }
-                        else
-                        {
-                            ptype = targetp.Type;
-                            EmitLoadDefaultValue(ptype, 0);
-                        }
+                        EmitParameterDefaultValue(targetp);
                     }
-
-                    EmitConvert(ptype, 0, targetp.Type);
 
                     srcp++;
                 }
@@ -845,6 +809,42 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             return this.EmitCall(ILOpCode.Call, target);
+        }
+
+        /// <summary>
+        /// Emits default value of given parameter.
+        /// Puts value of target parameter's type.
+        /// </summary>
+        /// <param name="targetp">Parameter to emit its default value.</param>
+        void EmitParameterDefaultValue(ParameterSymbol targetp)
+        {
+            Contract.ThrowIfNull(targetp);
+
+            //
+            TypeSymbol ptype; // emitted type to be eventually converted to target parameter type
+
+            // emit targetp default value:
+            ConstantValue cvalue;
+
+            // TODO: targetp.IsParams
+
+            var boundinitializer = (targetp as SourceParameterSymbol)?.Initializer;
+            if (boundinitializer != null)
+            {
+                EmitConvert(boundinitializer, ptype = targetp.Type);
+            }
+            else if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
+            {
+                ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
+            }
+            else
+            {
+                ptype = targetp.Type;
+                EmitLoadDefaultValue(ptype, 0);
+            }
+
+            // eventually convert emitted value to target parameter type
+            EmitConvert(ptype, 0, targetp.Type);
         }
 
         internal TypeSymbol EmitGetProperty(IPlace holder, PropertySymbol prop)
@@ -1190,7 +1190,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    throw ExceptionUtilities.UnexpectedValue(value);
                 }
             }
         }
