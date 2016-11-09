@@ -10,6 +10,7 @@ using System.Collections.Immutable;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -32,6 +33,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Associated syntax node.
         /// </summary>
         internal LangElement PhpSyntax { get; set; }
+
+        /// <summary>
+        /// Current naming context.
+        /// Can be a <c>null</c> reference.
+        /// </summary>
+        internal NamingContext Naming { get; set; }
 
         /// <summary>
         /// Gets statements contained in this block.
@@ -67,7 +74,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Adds statement to the block.
         /// </summary>
-        internal void AddStatement(BoundStatement stmt)
+        internal void Add(BoundStatement stmt)
         {
             Contract.ThrowIfNull(stmt);
             _statements.Add(stmt);

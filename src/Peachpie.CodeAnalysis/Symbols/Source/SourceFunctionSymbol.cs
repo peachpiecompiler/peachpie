@@ -65,7 +65,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override NamedTypeSymbol ContainingType => _file;
 
         protected override TypeRefContext CreateTypeRefContext()
-            => new TypeRefContext(NameUtils.GetNamingContext(_syntax.ContainingNamespace, _syntax.ContainingSourceUnit), _syntax.ContainingSourceUnit, null);
+            => new TypeRefContext(_syntax.ContainingSourceUnit, null);
 
         internal QualifiedName QualifiedName => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.ContainingNamespace);
 

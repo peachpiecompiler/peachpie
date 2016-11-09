@@ -1634,8 +1634,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     break;
 
                 case PseudoConstUse.Types.Namespace:
-                    value = (TypeCtx.Naming != null && TypeCtx.Naming.CurrentNamespace.HasValue)
-                        ? TypeCtx.Naming.CurrentNamespace.Value.NamespacePhpName
+                    value = (_analysis.Naming != null && _analysis.Naming.CurrentNamespace.HasValue)
+                        ? _analysis.Naming.CurrentNamespace.Value.NamespacePhpName
                         : string.Empty;
                     break;
 

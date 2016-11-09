@@ -87,6 +87,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("SimpleEdge")]
     public partial class SimpleEdge : Edge
     {
+        /// <summary>
+        /// Target block.
+        /// </summary>
+        public BoundBlock Target => _target;
         private readonly BoundBlock _target;
 
         /// <summary>

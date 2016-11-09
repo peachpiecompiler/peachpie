@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.Semantics;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Semantics;
 using Devsense.PHP.Text;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -25,6 +26,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Gets current type context for type masks resolving.
         /// </summary>
         internal TypeRefContext TypeRefContext => _state.TypeRefContext;
+
+        /// <summary>
+        /// Current naming context. Can be a <c>null</c> reference.
+        /// </summary>
+        public NamingContext Naming => CurrentBlock?.Naming;
 
         /// <summary>
         /// Current flow state.

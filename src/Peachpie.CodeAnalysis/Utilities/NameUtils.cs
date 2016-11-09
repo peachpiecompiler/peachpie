@@ -1,5 +1,6 @@
 ﻿using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,6 +74,15 @@ namespace Pchp.CodeAnalysis
             return new QualifiedName(new Name(name), namespaces, fullyQualified);
         }
 
+        /// <summary>
+        /// Create naming context.
+        /// </summary>
+        public static NamingContext GetNamingContext(this SourceRoutineSymbol routine)
+        {
+            var node = (LangElement)routine.Syntax;
+            return GetNamingContext(node.ContainingNamespace, node.ContainingSourceUnit);
+        }
+        
         /// <summary>
         /// Create naming context.
         /// </summary>

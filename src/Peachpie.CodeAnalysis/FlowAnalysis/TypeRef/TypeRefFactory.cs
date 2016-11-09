@@ -116,7 +116,7 @@ namespace Pchp.CodeAnalysis
             Contract.ThrowIfNull(containingType);
 
             var typeDecl = containingType.Syntax;
-            return new TypeRefContext(NameUtils.GetNamingContext(typeDecl), typeDecl.ContainingSourceUnit, containingType);
+            return new TypeRefContext(typeDecl.ContainingSourceUnit, containingType);
         }
     }
 }

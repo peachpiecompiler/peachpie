@@ -42,7 +42,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     var binder = new SemanticsBinder(this.LocalsTable);
 
                     // build control flow graph
-                    _cfg = new ControlFlowGraph(this.Statements, binder);
+                    _cfg = new ControlFlowGraph(this.Statements, binder, this.GetNamingContext());
                     _cfg.Start.FlowState = state;
                 }
 
@@ -138,7 +138,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var returnTag = phpdocOpt.Returns;
                 if (returnTag != null && returnTag.TypeNames.Length != 0)
                 {
-                    var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNamesArray);
+                    var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNamesArray, this.GetNamingContext());
                     if (!tmask.IsVoid && !tmask.IsAnyType)
                     {
                         return DeclaringCompilation.GetTypeFromTypeRef(typeCtx, tmask);

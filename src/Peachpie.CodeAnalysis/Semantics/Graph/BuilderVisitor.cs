@@ -22,7 +22,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private Stack<TryCatchEdge> _tryTargets;
         private Stack<LocalScopeInfo> _scopes = new Stack<LocalScopeInfo>(1);
         private int _index = 0;
-
+        private NamingContext _naming;
+        
         public BoundBlock/*!*/Start { get; private set; }
         public BoundBlock/*!*/Exit { get; private set; }
         //public BoundBlock Exception { get; private set; }
@@ -137,14 +138,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Construction
 
-        private BuilderVisitor(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder)
+        private BuilderVisitor(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder, NamingContext naming)
         {
             Contract.ThrowIfNull(statements);
             Contract.ThrowIfNull(binder);
 
             _binder = binder;
+            _naming = naming;
 
-            this.Start = new StartBlock();
+            this.Start = new StartBlock() { Naming = _naming };
             this.Exit = new ExitBlock();
 
             _current = WithOpenScope(this.Start);
@@ -162,9 +164,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(_breakTargets == null || _breakTargets.Count == 0);
         }
 
-        public static BuilderVisitor/*!*/Build(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder)
+        public static BuilderVisitor/*!*/Build(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder, NamingContext naming)
         {
-            return new BuilderVisitor(statements, binder);
+            return new BuilderVisitor(statements, binder, naming);
         }
 
         #endregion
@@ -181,12 +183,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void Add(Statement stmt)
         {
-            _current.AddStatement(_binder.BindStatement(stmt));
+            _current.Add(_binder.BindStatement(stmt));
         }
 
         private BoundBlock/*!*/NewBlock()
         {
-            return WithNewOrdinal(new BoundBlock());
+            return WithNewOrdinal(new BoundBlock() { Naming = _naming });
         }
 
         /// <summary>
@@ -195,7 +197,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         private BoundBlock/*!*/NewDeadBlock()
         {
-            var block = new BoundBlock();
+            var block = new BoundBlock() { Naming = _naming };
             block.Ordinal = -1; // unreachable
             _deadBlocks.Add(block);
             return block;
@@ -203,7 +205,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private CatchBlock/*!*/NewBlock(CatchItem item)
         {
-            return WithNewOrdinal(new CatchBlock((INamedTypeRef)item.TargetType, _binder.BindCatchVariable(item)) { PhpSyntax = item });
+            return WithNewOrdinal(new CatchBlock((INamedTypeRef)item.TargetType, _binder.BindCatchVariable(item)) { PhpSyntax = item, Naming = _naming });
         }
 
         private CaseBlock/*!*/NewBlock(SwitchItem item)
@@ -211,7 +213,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var caseitem = item as CaseItem;
             BoundExpression caseValue =  // null => DefaultItem
                 (caseitem != null) ? _binder.BindExpression(caseitem.CaseVal, BoundAccess.Read) : null;
-            return WithNewOrdinal(new CaseBlock(caseValue) { PhpSyntax = item });
+            return WithNewOrdinal(new CaseBlock(caseValue) { PhpSyntax = item, Naming = _naming });
         }
 
         private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition, bool isloop = false)
@@ -311,6 +313,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 Add(x);
             }
             // ignored
+        }
+
+        public override void VisitNamespaceDecl(NamespaceDecl x)
+        {
+            _naming = x.Naming;
+
+            base.VisitNamespaceDecl(x);
         }
 
         #endregion

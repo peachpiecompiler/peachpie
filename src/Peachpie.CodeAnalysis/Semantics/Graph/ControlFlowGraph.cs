@@ -1,4 +1,5 @@
-﻿using Devsense.PHP.Syntax.Ast;
+﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
 using System;
 using System.Collections.Generic;
@@ -113,8 +114,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Construction
 
-        internal ControlFlowGraph(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder)
-            : this(BuilderVisitor.Build(statements, binder))
+        internal ControlFlowGraph(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder, NamingContext naming)
+            : this(BuilderVisitor.Build(statements, binder, naming))
         {
         }
 

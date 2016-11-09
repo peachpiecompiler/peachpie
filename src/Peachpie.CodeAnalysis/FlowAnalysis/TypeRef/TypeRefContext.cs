@@ -51,12 +51,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         private TypeRefMask _staticTypeMask;
 
         /// <summary>
-        /// Current naming context. Used for resolving PHPDoc type names, current namespace name etc. Can be <c>null</c>.
-        /// </summary>
-        public NamingContext Naming { get { return _namingCtx; } }
-        private readonly NamingContext _namingCtx;
-
-        /// <summary>
         /// Current source unit. Used for resolving current file name, elements position etc. Can be <c>null</c>.
         /// </summary>
         public SourceUnit SourceUnit { get { return _sourceUnit; } }
@@ -66,9 +60,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Initialization
 
-        internal TypeRefContext(NamingContext naming, SourceUnit sourceUnit, SourceTypeSymbol containingType)
+        internal TypeRefContext(SourceUnit sourceUnit, SourceTypeSymbol containingType)
         {
-            _namingCtx = naming;
             _sourceUnit = sourceUnit;
             _typeRefs = new List<ITypeRef>();
             _containingType = containingType;

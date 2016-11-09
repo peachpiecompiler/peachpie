@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (vartag != null && vartag.TypeNamesArray.Length != 0)
             {
                 var typectx = TypeRefFactory.CreateTypeRefContext(_type);
-                var tmask = PHPDoc.GetTypeMask(typectx, vartag.TypeNamesArray);
+                var tmask = PHPDoc.GetTypeMask(typectx, vartag.TypeNamesArray, NameUtils.GetNamingContext(_type.Syntax));
                 var t = DeclaringCompilation.GetTypeFromTypeRef(typectx, tmask);
                 return t;
             }

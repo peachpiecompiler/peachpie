@@ -70,7 +70,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets type mask representing given type name.
         /// </summary>
-        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/typeCtx, string tname, bool fullyQualified = false)
+        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/typeCtx, string tname, NamingContext naming, bool fullyQualified = false)
         {
             if (!string.IsNullOrEmpty(tname))
             {
@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // "TName[]"
                     if (tname.EndsWith("[]", StringComparison.Ordinal))
                     {
-                        var elementType = GetTypeMask(typeCtx, tname.Remove(tname.Length - 2), fullyQualified);
+                        var elementType = GetTypeMask(typeCtx, tname.Remove(tname.Length - 2), naming, fullyQualified);
                         return typeCtx.GetArrayTypeMask(elementType);
                     }
 
@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         tname.StartsWith(arrayTypeName, StringComparison.OrdinalIgnoreCase))
                     {
                         var elementTypeName = tname.Substring(arrayTypeName.Length + 1, tname.Length - arrayTypeName.Length - 2);
-                        var elementType = GetTypeMask(typeCtx, elementTypeName, fullyQualified);
+                        var elementType = GetTypeMask(typeCtx, elementTypeName, naming, fullyQualified);
                         return typeCtx.GetArrayTypeMask(elementType);
                     }
 
@@ -102,8 +102,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     if (result.IsUninitialized)
                     {
                         var qname = NameUtils.MakeQualifiedName(tname, false);
-                        if (!fullyQualified && typeCtx.Naming != null && !qname.IsReservedClassName)
-                            qname = QualifiedName.TranslateAlias(qname, AliasKind.Type, typeCtx.Naming.Aliases, typeCtx.Naming.CurrentNamespace);
+                        if (!fullyQualified && naming != null && !qname.IsReservedClassName)
+                            qname = QualifiedName.TranslateAlias(qname, AliasKind.Type, naming.Aliases, naming.CurrentNamespace);
 
                         if (qname.IsPrimitiveTypeName)
                         {
@@ -126,12 +126,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets type mask representing given type name.
         /// </summary>
-        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/typeCtx, string[] tnames, bool fullyQualified = false)
+        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/typeCtx, string[] tnames, NamingContext naming, bool fullyQualified = false)
         {
             TypeRefMask result = 0;
 
             foreach (var tname in tnames)
-                result |= GetTypeMask(typeCtx, tname, fullyQualified);
+                result |= GetTypeMask(typeCtx, tname, naming, fullyQualified);
 
             return result;
         }
@@ -144,18 +144,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Contract.ThrowIfNull(targetCtx);
             Contract.ThrowIfNull(routine);
 
-            return GetTypeMask(targetCtx, routine.TypeRefContext, tnames, fullyQualified);
+            return GetTypeMask(targetCtx, routine.TypeRefContext, tnames, routine.GetNamingContext(), fullyQualified);
         }
 
         /// <summary>
         /// Gets type mask at target type context representing given type names from given routine.
         /// </summary>
-        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/targetCtx, TypeRefContext/*!*/ctx, string[] tnames, bool fullyQualified = false)
+        public static TypeRefMask GetTypeMask(TypeRefContext/*!*/targetCtx, TypeRefContext/*!*/ctx, string[] tnames, NamingContext naming, bool fullyQualified = false)
         {
             Contract.ThrowIfNull(targetCtx);
             Contract.ThrowIfNull(ctx);
 
-            var mask = GetTypeMask(ctx, tnames, fullyQualified);
+            var mask = GetTypeMask(ctx, tnames, naming, fullyQualified);
             return targetCtx.AddToContext(ctx, mask);
         }
 
