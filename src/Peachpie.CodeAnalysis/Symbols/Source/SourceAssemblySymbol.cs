@@ -233,7 +233,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override NamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
         {
-            return SourceModule.SymbolTables.GetType(NameUtils.MakeQualifiedName(fullyQualifiedMetadataName, true));
+            return SourceModule.SymbolTables.GetType(NameUtils.MakeQualifiedName(fullyQualifiedMetadataName.Replace('.', Devsense.PHP.Syntax.QualifiedName.Separator), true));
         }
     }
 }
