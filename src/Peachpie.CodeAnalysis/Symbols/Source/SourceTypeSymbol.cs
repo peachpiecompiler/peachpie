@@ -149,28 +149,27 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var binder = new SemanticsBinder(null);
 
-            // source fields
+            // fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
             {
+                var isstatic = (flist.Modifiers & PhpMemberAttributes.Static) != 0;
+
                 foreach (var f in flist.Fields)
                 {
-                    if (StaticsContainer.GetMembers(f.Name.Value).OfType<FieldSymbol>().Where(s => !s.IsReadOnly).IsEmpty())
-                    {
-                        yield return new SourceFieldSymbol(this, f.Name.Value, flist.Modifiers, f.PHPDoc ?? flist.PHPDoc,
-                            f.HasInitVal ? binder.BindExpression(f.Initializer, BoundAccess.Read) : null);
-                    }
+                    yield return new SourceFieldSymbol(this, f.Name.Value, flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
+                        isstatic ? SourceFieldSymbol.KindEnum.StaticField : SourceFieldSymbol.KindEnum.InstanceField,
+                        (f.Initializer != null) ? binder.BindExpression(f.Initializer, BoundAccess.Read) : null);
                 }
             }
 
-            // source constants
+            // constants
             foreach (var clist in _syntax.Members.OfType<ConstDeclList>())
             {
                 foreach (var c in clist.Constants)
                 {
-                    if (StaticsContainer.GetMembers(c.Name.Name.Value).OfType<FieldSymbol>().Where(s => s.IsReadOnly).IsEmpty())
-                    {
-                        yield return new SourceConstSymbol(this, c.Name.Name.Value, c.PHPDoc ?? clist.PHPDoc, binder.BindExpression(c.Initializer, BoundAccess.Read));
-                    }
+                    yield return new SourceFieldSymbol(this, c.Name.Name.Value, Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
+                        SourceFieldSymbol.KindEnum.ClassConstant,
+                        binder.BindExpression(c.Initializer, BoundAccess.Read));
                 }
             }
         }
@@ -414,6 +413,12 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             foreach (var f in EnsureMembers().OfType<IFieldSymbol>())
             {
+                var srcf = f as SourceFieldSymbol;
+                if (srcf.RequiresHolder)
+                {
+                    continue;   // this field has to be emitted within StaticsContainer
+                }
+
                 yield return f;
             }
 

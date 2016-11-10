@@ -59,7 +59,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
         {
-            var sflds = GetMembers().OfType<SourceFieldSymbol>().Where(f => f.IsStatic).ToList();
+            var sflds = GetMembers().OfType<SourceFieldSymbol>().Where(f => f.IsStatic && !f.RequiresHolder).ToList();
             if (sflds.Count != 0)
             {
                 // emit initialization of app static fields
@@ -133,9 +133,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     ctxFieldPlace.EmitStore(il);
                 }
 
-                // initialize class fields,
-                // default(PhpValue) is not a valid value, its TypeTable must not be null
-                foreach (var fld in this.GetFieldsToEmit().OfType<SourceFieldSymbol>().Where(fld => !fld.IsStatic && !fld.IsConst))
+                // initialize class fields
+                foreach (var fld in this.GetFieldsToEmit().OfType<SourceFieldSymbol>().Where(fld => !fld.RequiresHolder && !fld.IsStatic && !fld.IsConst))
                 {
                     fld.EmitInit(cg);
                 }

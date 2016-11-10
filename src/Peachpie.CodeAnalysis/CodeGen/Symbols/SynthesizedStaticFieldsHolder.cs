@@ -12,13 +12,6 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal void EmitCtors(Emit.PEModuleBuilder module)
         {
-            EnsureMembers();
-
-            if (IsEmpty)
-            {
-                return;
-            }
-
             bool requiresInit = false;
 
             // .ctor()
@@ -27,15 +20,14 @@ namespace Pchp.CodeAnalysis.Symbols
             var diagnostic = DiagnosticBag.GetInstance();
 
             var ctor = new SynthesizedCtorSymbol(this);
-            ctor.SetParameters();// empty params (default ctor)
-
+                        
             var body = MethodGenerator.GenerateMethodBody(module, ctor, (il) =>
             {
                 var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false, this, null, new ArgPlace(this, 0));
 
-                foreach (var fld in GetMembers().OfType<SourceFieldSymbol>())
+                foreach (var fld in this.Fields)
                 {
-                    if (fld.InitializerRequiresContext)
+                    if (fld.RequiresContext)
                     {
                         requiresInit = true;
                     }
@@ -50,9 +42,7 @@ namespace Pchp.CodeAnalysis.Symbols
             },
             null, diagnostic, false);
             module.SetMethodBody(ctor, body);
-
-            //
-            _lazyMembers = _lazyMembers.Add(ctor);
+            module.SynthesizedManager.AddMethod(this, ctor);
 
             //
             if (requiresInit)
@@ -63,8 +53,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitInit(Emit.PEModuleBuilder module)
         {
-            EnsureMembers();
-
             // void Init(Context)
 
             var tt = DeclaringCompilation.CoreTypes;
@@ -79,16 +67,20 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false, this, new ArgPlace(tt.Context, 1), new ArgPlace(this, 0));
 
-                GetMembers().OfType<SourceFieldSymbol>().Where(f => f.InitializerRequiresContext).ForEach(f => f.EmitInit(cg));
+                foreach (var fld in this.Fields)
+                {
+                    if (fld.RequiresContext)
+                    {
+                        fld.EmitInit(cg);
+                    }
+                }
 
                 //
                 il.EmitRet(true);
             },
             null, diagnostic, false);
             module.SetMethodBody(initMethod, body);
-
-            //
-            _lazyMembers = _lazyMembers.Add(initMethod);
+            module.SynthesizedManager.AddMethod(this, initMethod);
         }
     }
 }

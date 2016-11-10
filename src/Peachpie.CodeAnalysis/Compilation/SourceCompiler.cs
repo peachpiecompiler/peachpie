@@ -109,7 +109,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         void EnqueueFieldsInitializer(SourceTypeSymbol type)
         {
-            type.GetMembers().Concat(type.StaticsContainer.GetMembers()).OfType<SourceFieldSymbol>().Foreach(f =>
+            type.GetMembers().OfType<SourceFieldSymbol>().Foreach(f =>
             {
                 if (f.Initializer != null)
                 {

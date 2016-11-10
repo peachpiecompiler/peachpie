@@ -10,43 +10,45 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         static FieldSymbol GetStaticField(INamedTypeSymbol t, string name)
         {
-            // static FIELD
-            var field = t.GetMembers(name).OfType<FieldSymbol>().Where(f => !f.IsConst && f.IsStatic).SingleOrDefault();
-            if (field == null)
+            FieldSymbol field = null;
+
+            var phpt = t as IPhpTypeSymbol;
+            var statics = phpt?.StaticsContainer;
+            if (statics != null)
             {
-                var phpt = t as IPhpTypeSymbol;
-                if (phpt != null)
-                {
-                    var statics = phpt.StaticsContainer;
-                    if (statics != null)
-                    {
-                        // __statics.FIELD
-                        field = statics.GetMembers(name).OfType<FieldSymbol>().Where(f => !f.IsReadOnly).SingleOrDefault();
-                    }
-                }
+                // __statics.FIELD
+                field = statics.GetMembers(name).OfType<FieldSymbol>().Where(f => !f.IsReadOnly).SingleOrDefault();
             }
 
+            // static FIELD
+            if (field == null)
+            {
+                field = t.GetMembers(name).OfType<FieldSymbol>().Where(f => !f.IsConst && f.IsStatic).SingleOrDefault();
+            }
+
+            //
             return field;
         }
 
         static FieldSymbol GetClassConstant(INamedTypeSymbol t, string name)
         {
-            // const CONSTANT
-            var field = t.GetMembers(name).OfType<FieldSymbol>().Where(f => f.IsConst).SingleOrDefault();
-            if (field == null)
+            FieldSymbol field = null;
+
+            var phpt = t as IPhpTypeSymbol;
+            var statics = phpt?.StaticsContainer;
+            if (statics != null)
             {
-                var phpt = t as IPhpTypeSymbol;
-                if (phpt != null)
-                {
-                    var statics = phpt.StaticsContainer;
-                    if (statics != null)
-                    {
-                        // readonly __statics.CONSTANT
-                        field = statics.GetMembers(name).OfType<FieldSymbol>().Where(f => f.IsReadOnly).SingleOrDefault();
-                    }
-                }
+                // readonly __statics.CONSTANT
+                field = statics.GetMembers(name).OfType<FieldSymbol>().Where(f => f.IsReadOnly).SingleOrDefault();
             }
 
+            // const CONSTANT
+            if (field == null)
+            {
+                field = t.GetMembers(name).OfType<FieldSymbol>().Where(f => f.IsConst).SingleOrDefault();
+            }
+            
+            //
             return field;
         }
 

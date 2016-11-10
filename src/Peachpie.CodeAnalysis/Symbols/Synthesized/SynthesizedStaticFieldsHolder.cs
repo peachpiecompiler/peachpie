@@ -19,7 +19,6 @@ namespace Pchp.CodeAnalysis.Symbols
     internal partial class SynthesizedStaticFieldsHolder : NamedTypeSymbol
     {
         readonly SourceTypeSymbol _class;
-        ImmutableArray<Symbol> _lazyMembers;
         
         public SynthesizedStaticFieldsHolder(SourceTypeSymbol @class)
         {
@@ -28,59 +27,14 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Builds symbols from the class declaration.
+        /// Gets enumeration of fields that will be emitted within this holder.
         /// </summary>
-        void EnsureMembers()
-        {
-            if (!_lazyMembers.IsDefault)
-                return;
-
-            var binder = new Semantics.SemanticsBinder(null);
-
-            var members = new List<Symbol>();
-
-            foreach (var srcmember in _class.Syntax.Members)
-            {
-                var cdecl = srcmember as ConstDeclList;
-                if (cdecl != null)
-                {
-                    foreach (var c in cdecl.Constants)
-                    {
-                        var cvalue = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, c.Initializer);
-                        if (cvalue == null) // constant has to be resolved in runtime
-                        {
-                            members.Add(new SourceRuntimeConstantSymbol(_class, c.Name.Name.Value, c.PHPDoc ?? cdecl.PHPDoc,
-                                binder.BindExpression(c.Initializer, Semantics.BoundAccess.Read)));
-                        }
-                    }
-                }
-
-                var fdecl = srcmember as FieldDeclList;
-                if (fdecl != null && fdecl.Modifiers.IsStatic() && !fdecl.IsAppStatic())    // context-static fields has to be contained in the holder
-                {
-                    foreach (var f in fdecl.Fields)
-                    {
-                        members.Add(new SourceFieldSymbol(_class, f.Name.Value, fdecl.Modifiers & (~PhpMemberAttributes.Static), f.PHPDoc ?? fdecl.PHPDoc,
-                            f.HasInitVal ? binder.BindExpression(f.Initializer, Semantics.BoundAccess.Read) : null));
-                    }
-                }
-            }
-
-            //
-            _lazyMembers = members.AsImmutable();
-        }
+        internal IEnumerable<SourceFieldSymbol> Fields => _class.GetMembers().OfType<SourceFieldSymbol>().Where(f => f.RequiresHolder);
 
         /// <summary>
         /// Gets value indicating whether there are fields or constants.
         /// </summary>
-        public bool IsEmpty
-        {
-            get
-            {
-                EnsureMembers();
-                return _lazyMembers.IsEmpty;
-            }
-        }
+        public bool IsEmpty => this.Fields.IsEmpty();
 
         #region NamedTypeSymbol
 
@@ -134,36 +88,29 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool ShouldAddWinRTMembers => false;
 
-        public override ImmutableArray<Symbol> GetMembers()
-        {
-            EnsureMembers();
-            return _lazyMembers;
-        }
+        public override ImmutableArray<Symbol> GetMembers() => Fields.AsImmutable<Symbol>();
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
-        {
-            EnsureMembers();
-            return _lazyMembers.Where(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).AsImmutable();
-        }
-
+        public override ImmutableArray<Symbol> GetMembers(string name) => Fields.Where(f => f.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable<Symbol>();
+        
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => ImmutableArray<NamedTypeSymbol>.Empty;
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name) => GetTypeMembers();
 
         internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved) => GetInterfacesToEmit();
 
-        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
-        {
-            EnsureMembers();
-            return _lazyMembers.OfType<IFieldSymbol>();
-        }
+        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => Fields;
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            if (GetMembers().OfType<SourceFieldSymbol>().Any(f => f.InitializerRequiresContext))
-                return ImmutableArray.Create(DeclaringCompilation.CoreTypes.IStaticInit.Symbol);    // we need Init() method
+            if (Fields.Any(f => f.RequiresContext))
+            {
+                // we need Init(Context) method
+                return ImmutableArray.Create(DeclaringCompilation.CoreTypes.IStaticInit.Symbol);
+            }
             else
+            {
                 return ImmutableArray<NamedTypeSymbol>.Empty;
+            }
         }
 
         #endregion
