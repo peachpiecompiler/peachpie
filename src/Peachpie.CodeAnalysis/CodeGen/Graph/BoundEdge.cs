@@ -471,8 +471,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 // CIL Switch:
-                bool allconsts = this.CaseBlocks.All(c => c.IsDefault || c.CaseValue.ConstantObject.HasValue);
-                bool allconstints = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsInt32(c.CaseValue.ConstantObject.Value));
+                bool allconsts = this.CaseBlocks.All(c => c.IsDefault || c.CaseValue.ConstantValue.HasValue);
+                bool allconstints = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsInt32(c.CaseValue.ConstantValue.Value));
                 //bool allconststrings = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsString(c.CaseValue.ConstantValue.Value));
 
                 var default_block = this.DefaultBlock;
@@ -559,7 +559,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
                 else
                 {
-                    labelsBuilder.Add(new KeyValuePair<ConstantValue, object>(Int32Constant(section.CaseValue.ConstantObject.Value), section));
+                    labelsBuilder.Add(new KeyValuePair<ConstantValue, object>(Int32Constant(section.CaseValue.ConstantValue.Value), section));
                 }
             }
 

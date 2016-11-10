@@ -152,12 +152,13 @@ namespace Pchp.CodeAnalysis.Symbols
             // fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
             {
-                var isstatic = (flist.Modifiers & PhpMemberAttributes.Static) != 0;
+                var fkind = (flist.Modifiers & PhpMemberAttributes.Static) == 0
+                    ? SourceFieldSymbol.KindEnum.InstanceField
+                    : SourceFieldSymbol.KindEnum.StaticField;
 
                 foreach (var f in flist.Fields)
                 {
-                    yield return new SourceFieldSymbol(this, f.Name.Value, flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
-                        isstatic ? SourceFieldSymbol.KindEnum.StaticField : SourceFieldSymbol.KindEnum.InstanceField,
+                    yield return new SourceFieldSymbol(this, f.Name.Value, flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc, fkind,
                         (f.Initializer != null) ? binder.BindExpression(f.Initializer, BoundAccess.Read) : null);
                 }
             }

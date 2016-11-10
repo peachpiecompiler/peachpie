@@ -108,7 +108,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
         {
-            return _initializer?.ConstantObject.ToConstantValueOrNull();
+            return (_fieldKind == KindEnum.ClassConstant) ? Initializer?.ConstantValue.ToConstantValueOrNull() : null;
         }
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
@@ -125,7 +125,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 // resolved value type if possible
-                var cvalue = Initializer.ConstantObject;
+                var cvalue = Initializer.ConstantValue;
                 if (cvalue.HasValue)
                 {
                     var specialType = (cvalue.Value != null)

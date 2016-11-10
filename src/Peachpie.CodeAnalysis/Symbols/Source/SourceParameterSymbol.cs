@@ -177,13 +177,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     // NOTE: the constant does not have to have the exact same type as the parameter, it is up to the caller of the method to process DefaultValue and convert it if necessary
 
-                    if (Initializer.ConstantValue != null)
+                    value = Initializer.ConstantValue.ToConstantValueOrNull();
+                    if (value != null)
                     {
-                        return Initializer.ConstantValue;
+                        return value;
                     }
 
                     // old way: // TO BE REMOVED // TODO: analysis of literal expression has to resolve its ConstantValue
-                    value = Semantics.SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
+                    value = SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
 
                     // NOTE: non-literal default values (like array()) must be handled by creating a method overload calling this method:
 

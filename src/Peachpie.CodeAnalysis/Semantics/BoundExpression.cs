@@ -298,8 +298,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundAccess Access { get; internal set; }
 
-        Optional<object> IExpression.ConstantValue => ConstantObject;
-
         public virtual bool IsInvalid => false;
 
         public abstract OperationKind Kind { get; }
@@ -323,39 +321,15 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual bool RequiresContext => true;
 
         /// <summary>
-        /// Optional. Resolved primitive constant value.
-        /// </summary>
-        internal ConstantValue ConstantValue
-        {
-            get
-            {
-                if (ConstantObject.HasValue)
-                {
-                    var value = ConstantObject.Value;
-                    if (value == null) return ConstantValue.Null;
-                    if (value is int) return ConstantValue.Create((int)value);
-                    if (value is long) return ConstantValue.Create((long)value);
-                    if (value is string) return ConstantValue.Create((string)value);
-                    if (value is bool) return ConstantValue.Create((bool)value);
-                    if (value is double) return ConstantValue.Create((double)value);
-                }
-
-                return null;
-            }
-            set
-            {
-                ConstantObject = value != null ? new Optional<object>(value.Value) : default(Optional<object>);
-            }
-        }
-
-        /// <summary>
         /// Resolved value of the expression.
         /// </summary>
-        internal virtual Optional<object> ConstantObject { get; set; }
+        public virtual Optional<object> ConstantValue { get; set; }
 
         public abstract void Accept(OperationVisitor visitor);
 
         public abstract TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument);
+
+        public void Accept(PhpOperationVisitor visitor) { } // TODO: abstract
     }
 
     #endregion
@@ -669,7 +643,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundLiteral : BoundExpression, ILiteralExpression
     {
-        public string Spelling => this.ConstantObject.Value?.ToString() ?? "NULL";
+        public string Spelling => this.ConstantValue.Value?.ToString() ?? "NULL";
 
         public override OperationKind Kind => OperationKind.LiteralExpression;
 
@@ -677,7 +651,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundLiteral(object value)
         {
-            this.ConstantObject = value;
+            this.ConstantValue = value;
         }
 
         public override void Accept(OperationVisitor visitor)

@@ -155,10 +155,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         bool IsLongConstant(BoundExpression expr, long value)
         {
-            if (expr.ConstantObject.HasValue)
+            if (expr.ConstantValue.HasValue)
             {
-                if (expr.ConstantObject.Value is long) return ((long)expr.ConstantObject.Value) == value;
-                if (expr.ConstantObject.Value is int) return ((int)expr.ConstantObject.Value) == value;
+                if (expr.ConstantValue.Value is long) return ((long)expr.ConstantValue.Value) == value;
+                if (expr.ConstantValue.Value is int) return ((int)expr.ConstantValue.Value) == value;
             }
             return false;
         }
@@ -167,7 +167,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (symbol != null && symbol.IsConst)
             {
-                target.ConstantValue = symbol.GetConstantValue(false);
+                var cvalue = symbol.GetConstantValue(false);
+                target.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
                 target.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, symbol.Type);
 
                 return true;
@@ -911,9 +912,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.BitOr:
                 case Operations.BitXor:
 
-                    if (x.Left.ConstantObject.HasValue && x.Right.ConstantObject.HasValue)
+                    if (x.Left.ConstantValue.HasValue && x.Right.ConstantValue.HasValue)
                     {
-                        x.ConstantObject = ResolveBitOperation(x.Left.ConstantObject.Value, x.Right.ConstantObject.Value, x.Operation);
+                        x.ConstantValue = ResolveBitOperation(x.Left.ConstantValue.Value, x.Right.ConstantValue.Value, x.Operation);
                     }
 
                     return GetBitOperationType(x.Left.TypeRefMask, x.Right.TypeRefMask);    // int or string
@@ -1309,9 +1310,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             x.Target = null;
 
-            if (targetExpr.ConstantObject.HasValue)
+            if (targetExpr.ConstantValue.HasValue)
             {
-                var value = targetExpr.ConstantObject.Value as string;
+                var value = targetExpr.ConstantValue.Value as string;
                 if (value != null)
                 {
                     var targetFile = _model.GetFile(value);
@@ -1650,7 +1651,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             Debug.Assert(value != null);    // pseudoconstant has been set
 
-            x.ConstantObject = new Optional<object>(value);
+            x.ConstantValue = new Optional<object>(value);
 
             if (value is string) x.TypeRefMask = TypeCtx.GetStringTypeMask();
             else if (value is int || value is long) x.TypeRefMask = TypeCtx.GetLongTypeMask();

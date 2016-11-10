@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (this.Initializer != null && !this.Initializer.ConstantObject.HasValue)
+                if (this.Initializer != null && !this.Initializer.ConstantValue.HasValue)
                 {
                     return this.Initializer.RequiresContext;
                 }

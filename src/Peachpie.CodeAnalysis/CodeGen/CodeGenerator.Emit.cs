@@ -224,7 +224,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
             // load resulting value directly if resolved:
-            if (expr.ConstantObject.HasValue)
+            if (expr.ConstantValue.HasValue)
             {
                 if (expr.Access.IsNone)
                 {
@@ -233,7 +233,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (expr.Access.IsRead)
                 {
-                    return EmitLoadConstant(expr.ConstantObject.Value, expr.Access.TargetType);
+                    return EmitLoadConstant(expr.ConstantValue.Value, expr.Access.TargetType);
                 }
             }
 
@@ -358,7 +358,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
         {
             // emit number literal directly as double
-            var constant = expr.ConstantObject;
+            var constant = expr.ConstantValue;
             if (constant.HasValue)
             {
                 if (constant.Value is long)
@@ -1022,7 +1022,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(expr);
 
-            var constant = expr.ConstantObject;
+            var constant = expr.ConstantValue;
             if (constant.HasValue)
             {
                 if (constant.Value is string)

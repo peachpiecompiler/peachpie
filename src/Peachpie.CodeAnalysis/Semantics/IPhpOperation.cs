@@ -8,10 +8,19 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
+    public interface IPhpOperation : IOperation
+    {
+        /// <summary>
+        /// Visitor implementation.
+        /// </summary>
+        /// <param name="visitor">A reference to <see cref="PhpOperationVisitor"/> instance.</param>
+        void Accept(PhpOperationVisitor visitor);
+    }
+
     /// <summary>
     /// Abstract PHP expression semantic.
     /// </summary>
-    public interface IPhpExpression : IExpression
+    public interface IPhpExpression : IPhpOperation, IExpression
     {
         /// <summary>
         /// Analysed type information.
