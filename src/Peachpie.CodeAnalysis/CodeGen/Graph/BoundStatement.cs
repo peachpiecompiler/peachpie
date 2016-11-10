@@ -58,7 +58,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 else
                 {
                     // <default>
-                    cg.EmitLoadDefaultValue(rtype, cg.Routine.ResultTypeMask);
+                    cg.EmitLoadDefault(rtype, cg.Routine.ResultTypeMask);
                 }
             }
             else
@@ -207,7 +207,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else
                     {
-                        cg.EmitLoadDefaultValue(valuePlace.TypeOpt, 0);
+                        cg.EmitLoadDefault(valuePlace.TypeOpt, 0);
                     }
                     valuePlace.EmitStore(il);
                 }

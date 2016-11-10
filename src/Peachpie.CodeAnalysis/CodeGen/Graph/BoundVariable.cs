@@ -66,27 +66,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // TODO: only if the local will be used uninitialized
 
-            if (_place.TypeOpt == cg.CoreTypes.PhpValue)
-            {
-                _place.EmitStorePrepare(cg.Builder);
-                cg.Emit_PhpValue_Void();
-                _place.EmitStore(cg.Builder);
-            }
-            else if (_place.TypeOpt == cg.CoreTypes.PhpNumber)
-            {
-                // <place> = PhpNumber(0)
-                _place.EmitStorePrepare(cg.Builder);
-                cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
-                cg.EmitSymbolToken(cg.CoreMethods.PhpNumber.Default, null);
-                _place.EmitStore(cg.Builder);
-            }
-            else if (_place.TypeOpt == cg.CoreTypes.PhpAlias)
-            {
-                _place.EmitStorePrepare(cg.Builder);
-                cg.Emit_PhpValue_Void();
-                cg.Emit_PhpValue_MakeAlias();
-                _place.EmitStore(cg.Builder);
-            }
+            cg.EmitInitializePlace(_place);
         }
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)

@@ -11,46 +11,36 @@ namespace Pchp.CodeAnalysis.Symbols
     partial class SourceFieldSymbol
     {
         /// <summary>
-        /// Whteher the field initializer requires Context.
+        /// Whteher the field initializer requires a reference to current <see cref="Pchp.Core.Context"/>.
         /// </summary>
         internal bool InitializerRequiresContext
         {
             get
             {
-                return (this.Initializer != null && !(this.Initializer is BoundLiteral));
+                if (this.Initializer != null && !this.Initializer.ConstantObject.HasValue)
+                {
+                    return this.Initializer.RequiresContext;
+                }
+
+                return false;
             }
         }
 
         internal void EmitInit(CodeGenerator cg)
         {
             var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(_type, 0), this);
-            var type = fldplace.TypeOpt;
-
+            
             if (this.Initializer != null)
             {
                 // fld = <initializer>
                 fldplace.EmitStorePrepare(cg.Builder);
-                cg.EmitConvert(this.Initializer, type);
+                cg.EmitConvert(this.Initializer, this.Type);
                 fldplace.EmitStore(cg.Builder);
             }
             else
             {
-                switch (type.SpecialType)
-                {
-                    case Microsoft.CodeAnalysis.SpecialType.System_Boolean:
-                    case Microsoft.CodeAnalysis.SpecialType.System_Int32:
-                    case Microsoft.CodeAnalysis.SpecialType.System_Int64:
-                    case Microsoft.CodeAnalysis.SpecialType.System_Double:
-                    case Microsoft.CodeAnalysis.SpecialType.System_Object:
-                        break;
-
-                    default:
-                        // fld = default(T)
-                        fldplace.EmitStorePrepare(cg.Builder);
-                        cg.EmitLoadDefaultValue(type, 0);
-                        fldplace.EmitStore(cg.Builder);
-                        break;
-                }
+                // fld = default(type)
+                cg.EmitInitializePlace(fldplace);
             }
         }
     }

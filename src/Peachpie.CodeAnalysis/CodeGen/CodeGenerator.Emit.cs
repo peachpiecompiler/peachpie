@@ -812,6 +812,38 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Initializes place with a default value.
+        /// This applies to structs without default ctor that won't work properly when uninitialized.
+        /// </summary>
+        internal void EmitInitializePlace(IPlace place)
+        {
+            Contract.ThrowIfNull(place);
+            var t = place.TypeOpt;
+            Contract.ThrowIfNull(t);
+
+            switch (t.SpecialType)
+            {
+                // we don't have to initialize those:
+                case SpecialType.System_Boolean:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_Double:
+                case SpecialType.System_Object:
+                    break;
+
+                default:
+                    if (t.IsValueType || t == CoreTypes.PhpAlias)   // PhpValue, PhpNumber, PhpAlias
+                    {
+                        // fld = default(T)
+                        place.EmitStorePrepare(_il);
+                        EmitLoadDefault(t, 0);
+                        place.EmitStore(_il);
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
         /// Emits default value of given parameter.
         /// Puts value of target parameter's type.
         /// </summary>
@@ -840,7 +872,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 ptype = targetp.Type;
-                EmitLoadDefaultValue(ptype, 0);
+                EmitLoadDefault(ptype, 0);
             }
 
             // eventually convert emitted value to target parameter type
@@ -1103,7 +1135,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (targetOpt != null)
                 {
-                    EmitLoadDefaultValue(targetOpt, 0);
+                    EmitLoadDefault(targetOpt, 0);
                     return targetOpt;
                 }
                 else
@@ -1195,7 +1227,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public void EmitLoadDefaultValue(TypeSymbol type, TypeRefMask typemask)
+        public void EmitLoadDefault(TypeSymbol type, TypeRefMask typemask)
         {
             switch (type.SpecialType)
             {
@@ -1231,8 +1263,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                         else if (type == CoreTypes.PhpString)
                         {
-                            // TODO: PhpString
-                            throw new NotImplementedException();
+                            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString);
                         }
                         else
                         {
@@ -1243,7 +1274,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         if (type == CoreTypes.PhpValue)
                         {
-                            if (this.Routine != null && typemask.IsSingleType)
+                            if (typemask.IsSingleType && this.Routine != null)
                             {
                                 var typectx = this.Routine.TypeRefContext;
 
@@ -1278,15 +1309,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                                     EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_PhpArray);
                                     break;
                                 }
-                                // default:
                             }
+                        }
 
-                            Emit_PhpValue_Null();   // TODO: or void ?
-                        }
-                        else
-                        {
-                            EmitLoadDefaultOfValueType(type);
-                        }
+                        //
+                        EmitLoadDefaultOfValueType(type);
                     }
                     break;
             }
@@ -1294,6 +1321,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         /// <summary>
         /// Emits <c>default(valuetype)</c>.
+        /// Handles special types with a default ctor.
         /// </summary>
         public void EmitLoadDefaultOfValueType(TypeSymbol valuetype)
         {
@@ -1301,9 +1329,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (valuetype == CoreTypes.PhpNumber)
             {
-                // PhpNumber.Create(0L)
-                _il.EmitLongConstant(0L);
-                EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Long);
+                // PhpNumber.Default ~ 0L
+                _il.EmitOpCode(ILOpCode.Ldsfld);
+                EmitSymbolToken(CoreMethods.PhpNumber.Default, null);
             }
             else if (valuetype == CoreTypes.PhpValue)
             {
@@ -1332,7 +1360,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var return_type = this.Routine.ReturnType;
 
-            EmitLoadDefaultValue(return_type, this.Routine.ResultTypeMask);
+            EmitLoadDefault(return_type, this.Routine.ResultTypeMask);
             EmitRet(return_type);
         }
 
