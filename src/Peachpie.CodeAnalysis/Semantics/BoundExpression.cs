@@ -292,7 +292,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundExpression
 
-    public abstract partial class BoundExpression : IExpression
+    public abstract partial class BoundExpression : IPhpExpression
     {
         public TypeRefMask TypeRefMask { get; set; } = default(TypeRefMask);
 
@@ -314,13 +314,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public SyntaxNode Syntax => null;
 
-        internal LangElement PhpSyntax { get; set; }
+        public LangElement PhpSyntax { get; set; }
 
         /// <summary>
         /// Whether the expression needs current <c>Pchp.Core.Context</c> to be evaluated.
         /// Otherwise, the expression can be evaluated in app context or in compile time.
         /// </summary>
-        internal virtual bool RequiresContext => true;
+        public virtual bool RequiresContext => true;
 
         /// <summary>
         /// Optional. Resolved primitive constant value.
@@ -673,7 +673,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.LiteralExpression;
 
-        internal override bool RequiresContext => false;
+        public override bool RequiresContext => false;
 
         public BoundLiteral(object value)
         {
@@ -697,7 +697,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.BinaryOperatorExpression;
 
-        internal override bool RequiresContext => Left.RequiresContext || Right.RequiresContext;
+        public override bool RequiresContext => Left.RequiresContext || Right.RequiresContext;
 
         public Operations Operation { get; private set; }
 
@@ -738,7 +738,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.UnaryOperatorExpression;
 
-        internal override bool RequiresContext => Operation == Operations.StringCast || Operation == Operations.Print || Operand.RequiresContext;
+        public override bool RequiresContext => Operation == Operations.StringCast || Operation == Operations.Print || Operand.RequiresContext;
 
         IExpression IUnaryOperatorExpression.Operand => Operand;
 
@@ -807,7 +807,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.ConditionalChoiceExpression;
 
-        internal override bool RequiresContext => Condition.RequiresContext || IfTrue.RequiresContext || IfFalse.RequiresContext;
+        public override bool RequiresContext => Condition.RequiresContext || IfTrue.RequiresContext || IfFalse.RequiresContext;
 
         public BoundConditionalEx(BoundExpression condition, BoundExpression iftrue, BoundExpression iffalse)
         {
@@ -1085,7 +1085,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.ArrayCreationExpression;
 
-        internal override bool RequiresContext => _items.Any(x => (x.Key != null && x.Key.RequiresContext) || x.Value.RequiresContext);
+        public override bool RequiresContext => _items.Any(x => (x.Key != null && x.Key.RequiresContext) || x.Value.RequiresContext);
 
         ITypeSymbol IArrayCreationExpression.ElementType
         {
