@@ -113,7 +113,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
         {
-            var typectx = TypeRefFactory.CreateTypeRefContext(_containingType);
+            // TODO: HHVM TypeHint
 
             //
             if ((IsConst || IsReadOnly) && Initializer != null)
@@ -139,17 +139,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 //
-                return DeclaringCompilation.GetTypeFromTypeRef(typectx, Initializer.TypeRefMask);
+                //return DeclaringCompilation.GetTypeFromTypeRef(typectx, Initializer.TypeRefMask);
             }
-
-            // TODO: HHVM TypeHint
 
             // PHPDoc @var type
             var vartag = _phpDoc?.GetElement<PHPDocBlock.VarTag>();
             if (vartag != null && vartag.TypeNamesArray.Length != 0)
             {
-                var tmask = PHPDoc.GetTypeMask(typectx, vartag.TypeNamesArray, NameUtils.GetNamingContext(_containingType.Syntax));
-                return DeclaringCompilation.GetTypeFromTypeRef(typectx, tmask);
+                var dummyctx = TypeRefFactory.CreateTypeRefContext(_containingType);
+                var tmask = PHPDoc.GetTypeMask(dummyctx, vartag.TypeNamesArray, NameUtils.GetNamingContext(_containingType.Syntax));
+                return DeclaringCompilation.GetTypeFromTypeRef(dummyctx, tmask);
             }
 
             // default
