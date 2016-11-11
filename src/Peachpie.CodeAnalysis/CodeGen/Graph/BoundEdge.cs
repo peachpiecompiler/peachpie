@@ -164,12 +164,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Debug.Assert(catchBlock.Variable.Variable != null);
 
-            if (catchBlock.ResolvedType == null)
+            if (catchBlock.TypeRef.ResolvedType == null)
             {
                 throw new NotImplementedException("handle exception type dynamically"); // TODO: if (ex is ctx.ResolveType(ExceptionTypeName)) { ... }
             }
 
-            var extype = catchBlock.ResolvedType;
+            var extype = catchBlock.TypeRef.ResolvedType;
 
             cg.Builder.AdjustStack(1); // Account for exception on the stack.
 

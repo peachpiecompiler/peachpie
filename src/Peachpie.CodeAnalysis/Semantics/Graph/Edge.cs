@@ -204,24 +204,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Try block.
         /// </summary>
         public BoundBlock BodyBlock => _body;
-
-        /// <summary>
-        /// Whether the given class name is equal to <c>Exception</c>.
-        /// </summary>
-        private static bool IsExceptionClassName(INamedTypeRef tref)
-        {
-            return tref.ClassName == NameUtils.SpecialNames.Exception;
-        }
-
-        internal CatchBlock HandlingCatch(QualifiedName exceptionClassName)
-        {
-            foreach (var block in _catchBlocks)
-                if (block.TypeRef.ClassName == exceptionClassName || IsExceptionClassName(block.TypeRef))
-                    return block;
-
-            return null;
-        }
-
+        
         internal TryCatchEdge(BoundBlock source, BoundBlock body, CatchBlock[] catchBlocks, BoundBlock finallyBlock, BoundBlock endBlock)
             : base(source)
         {

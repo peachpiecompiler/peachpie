@@ -165,13 +165,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Catch variable type.
         /// </summary>
-        public INamedTypeRef TypeRef { get { return _typeRef; } }
-        private readonly INamedTypeRef _typeRef;
-
-        /// <summary>
-        /// Resolved <see cref="TypeRef"/>.
-        /// </summary>
-        internal TypeSymbol ResolvedType { get; set; }
+        public BoundTypeRef TypeRef { get { return _typeRef; } }
+        private readonly BoundTypeRef _typeRef;
 
         /// <summary>
         /// A variable where an exception is assigned in.
@@ -180,7 +175,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         readonly BoundVariableRef _variable;
 
-        public CatchBlock(INamedTypeRef typeRef, BoundVariableRef variable)
+        public CatchBlock(BoundTypeRef typeRef, BoundVariableRef variable)
         {
             _typeRef = typeRef;
             _variable = variable;

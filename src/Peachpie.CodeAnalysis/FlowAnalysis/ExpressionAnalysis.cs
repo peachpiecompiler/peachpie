@@ -20,36 +20,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Visits single expressions and project transformations to flow state.
     /// </summary>
-    internal class ExpressionAnalysis : OperationVisitor
+    internal class ExpressionAnalysis : AnalysisVisitor
     {
         #region Fields
 
-        readonly CFGAnalysis _analysis;
         readonly ISemanticModel _model;
-
-        /// <summary>
-        /// Gets current type context for type masks resolving.
-        /// </summary>
-        protected TypeRefContext TypeCtx => _analysis.TypeRefContext;
-
-        /// <summary>
-        /// Current flow state.
-        /// </summary>
-        protected FlowState State
-        {
-            get { return _analysis.State; }
-            set { _analysis.State = value; }
-        }
 
         /// <summary>
         /// Reference to corresponding source routine.
         /// </summary>
         protected SourceRoutineSymbol Routine => State.Routine;
-
-        /// <summary>
-        /// The worklist to be used to enqueue next blocks.
-        /// </summary>
-        protected Worklist<BoundBlock> Worklist => _analysis.Worklist;
 
         #endregion
 
@@ -185,7 +165,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         void Visit(BoundExpression x, BoundAccess access)
         {
             x.Access = access;
-            Visit(x);
+            Accept(x);
         }
 
         internal TypeSymbol ResolveType(INamedTypeRef dtype)
@@ -195,193 +175,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Short-Circuit Evaluation
-
-        /// <summary>
-        /// Visits condition used to branch execution to true or false branch.
-        /// </summary>
-        /// <remarks>
-        /// Because of minimal evaluation there is different TFlowState for true and false branches,
-        /// AND and OR operators have to take this into account.
-        /// 
-        /// Also some other constructs may have side-effect for known branch,
-        /// eg. <c>($x instanceof X)</c> implies ($x is X) in True branch.
-        /// </remarks>
-        internal void VisitCondition(BoundExpression condition, ConditionBranch branch)
-        {
-            Contract.ThrowIfNull(condition);
-
-            if (branch != ConditionBranch.AnyResult)
-            {
-                if (condition is BoundBinaryEx)
-                {
-                    VisitBinaryOperatorExpression((BoundBinaryEx)condition, branch);
-                    return;
-                }
-                //if (condition is BoundUnaryEx)
-                //{
-                //    VisitUnaryEx((UnaryEx)condition, branch);
-                //    return;
-                //}
-                //if (condition is DirectFcnCall)
-                //{
-                //    VisitDirectFcnCall((DirectFcnCall)condition, branch);
-                //    return;
-                //}
-                if (condition is BoundInstanceOfEx)
-                {
-                    VisitInstanceOf((BoundInstanceOfEx)condition, branch);
-                    return;
-                }
-                //if (condition is IssetEx)
-                //{
-                //    VisitIssetEx((IssetEx)condition, branch);
-                //    return;
-                //}
-                //if (condition is EmptyEx)
-                //{
-                //    VisitEmptyEx((EmptyEx)condition, branch);
-                //    return;
-                //}
-            }
-
-            // no effect
-            condition.Accept(this);
-        }
-
-        //protected virtual void VisitBinaryEx(BinaryEx x, ConditionBranch branch)
-        //{
-        //    // to be overriden in derived class
-        //    base.VisitBinaryEx(x);
-        //}
-
-        //protected virtual void VisitUnaryEx(UnaryEx x, ConditionBranch branch)
-        //{
-        //    // to be overriden in derived class
-        //    base.VisitUnaryEx(x);
-        //}
-
-        //protected virtual void VisitInstanceOfEx(InstanceOfEx x, ConditionBranch branch)
-        //{
-        //    // to be overriden in derived class
-        //    base.VisitInstanceOfEx(x);
-        //}
-
-        //protected virtual void VisitDirectFcnCall(DirectFcnCall x, ConditionBranch branch)
-        //{
-        //    // to be overriden in derived class
-        //    base.VisitDirectFcnCall(x);
-        //}
-        //public virtual void VisitIssetEx(IssetEx x, ConditionBranch branch)
-        //{
-        //    base.VisitIssetEx(x);
-        //}
-
-        //public virtual void VisitEmptyEx(EmptyEx x, ConditionBranch branch)
-        //{
-        //    base.VisitEmptyEx(x);
-        //}
-
-        ///// <summary>
-        ///// Explicitly given R-Value for the list. Used when traversing <c>foreach</c> and nested <c>list</c>.
-        ///// Standard <c>list() = expr;</c> fallbacks to this one as well.
-        ///// </summary>
-        //protected virtual void VisitListEx(ListEx list, TypeRefMask rValueType)
-        //{
-        //    // to be overriden in derived class            
-        //}
-
-        //public sealed override void VisitListEx(ListEx x)
-        //{
-        //    // standard list expression, not foreach or nested one
-        //    Contract.ThrowIfNull(x.RValue);
-        //    VisitElement(x.RValue);
-        //    VisitListEx(x, (x.RValue != null) ? (TypeRefMask)x.RValue.TypeInfoValue : TypeRefMask.AnyType);
-        //}
-
-        //public sealed override void VisitUnaryEx(UnaryEx x)
-        //{
-        //    VisitUnaryEx(x, ConditionBranch.Default);
-        //}
-
-        //public sealed override void VisitBinaryEx(BinaryEx x)
-        //{
-        //    VisitBinaryEx(x, ConditionBranch.Default);
-        //}
-
-        //public sealed override void VisitInstanceOfEx(InstanceOfEx x)
-        //{
-        //    VisitInstanceOfEx(x, ConditionBranch.AnyResult);
-        //}
-
-        //public sealed override void VisitDirectFcnCall(DirectFcnCall x)
-        //{
-        //    VisitDirectFcnCall(x, ConditionBranch.AnyResult);
-        //}
-
-        //public sealed override void VisitIssetEx(IssetEx x)
-        //{
-        //    VisitIssetEx(x, ConditionBranch.AnyResult);
-        //}
-
-        //public sealed override void VisitEmptyEx(EmptyEx x)
-        //{
-        //    VisitEmptyEx(x, ConditionBranch.AnyResult);
-        //}
-
-        /// <summary>
-        /// Handles use of variable as foreach iterator value.
-        /// </summary>
-        /// <param name="varuse"></param>
-        /// <returns>Derivate type of iterated values.</returns>
-        internal virtual TypeRefMask HandleTraversableUse(BoundExpression/*!*/varuse)
-        {
-            return TypeRefMask.AnyType;
-        }
-
-        #endregion
-
         #region Construction
 
-        public ExpressionAnalysis(ISemanticModel model, CFGAnalysis analysis)
+        public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISemanticModel model)
+            : base(worklist)
         {
             Contract.ThrowIfNull(model);
             _model = model;
-            _analysis = analysis;
         }
 
         #endregion
 
         #region Declaration Statements
 
-        public override void VisitInvalidStatement(IStatement operation)
-        {
-            if (operation is BoundFunctionDeclStatement ||
-                operation is BoundTypeDeclStatement)
-            {
-                return;
-            }
-
-            base.VisitInvalidStatement(operation);
-        }
-
-        public sealed override void VisitVariableDeclarationStatement(IVariableDeclarationStatement operation)
-        {
-            if (operation is BoundStaticVariableStatement)
-            {
-                VisitStaticVariableStatement((BoundStaticVariableStatement)operation);
-            }
-            else if (operation is BoundGlobalVariableStatement)
-            {
-                VisitBoundGlobalVariableStatement((BoundGlobalVariableStatement)operation);
-            }
-            else
-            {
-                throw ExceptionUtilities.UnexpectedValue(operation);
-            }
-        }
-
-        protected virtual void VisitStaticVariableStatement(BoundStaticVariableStatement x)
+        public override void VisitStaticStatement(BoundStaticVariableStatement x)
         {
             foreach (var v in x.Variables)
             {
@@ -395,7 +202,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (v.InitialValue != null)
                 {
                     // analyse initializer
-                    Visit(v.InitialValue);
+                    Accept((IPhpOperation)v.InitialValue);
 
                     State.SetVarInitialized(name);
                     State.LTInt64Max(name, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
@@ -408,7 +215,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        protected virtual void VisitBoundGlobalVariableStatement(BoundGlobalVariableStatement x)
+        public override void VisitGlobalStatement(BoundGlobalVariableStatement x)
         {
             foreach (var v in x.Variables)
             {
@@ -422,22 +229,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Visit Literals
 
-        public sealed override void VisitLiteralExpression(ILiteralExpression operation)
-            => ((BoundExpression)operation).TypeRefMask = ((BoundLiteral)operation).ResolveTypeMask(TypeCtx);
+        public override void VisitLiteral(BoundLiteral x)
+        {
+            x.TypeRefMask = x.ResolveTypeMask(TypeCtx);
+        }
 
         #endregion
 
         #region Visit Assignments
 
-        public sealed override void VisitAssignmentExpression(IAssignmentExpression operation)
-            => ((BoundExpression)operation).TypeRefMask = VisitAssignmentExpression((BoundAssignEx)operation);
-
-        protected virtual TypeRefMask VisitAssignmentExpression(BoundAssignEx x)
+        public override void VisitAssign(BoundAssignEx x)
         {
             Debug.Assert(x.Target.Access.IsWrite);
             Debug.Assert(x.Value.Access.IsRead);
 
-            Visit(x.Value);
+            Accept(x.Value);
 
             // keep WriteRef flag
             var targetaccess = BoundAccess.Write;
@@ -445,11 +251,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 targetaccess = targetaccess.WithWriteRef(0);
 
             // new target access with resolved target type
-            x.Target.Access = targetaccess.WithWrite(x.Value.TypeRefMask);
-            Visit(x.Target);
+            Visit(x.Target, targetaccess.WithWrite(x.Value.TypeRefMask));
 
             //
-            return x.Value.TypeRefMask;
+            x.TypeRefMask = x.Value.TypeRefMask;
         }
 
         static Operations CompoundOpToBinaryOp(Operations op)
@@ -474,49 +279,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        protected virtual TypeRefMask VisitCompoundAssignmentExpression(BoundCompoundAssignEx x)
+        public override void VisitCompoundAssign(BoundCompoundAssignEx x)
         {
             Debug.Assert(x.Target.Access.IsRead && x.Target.Access.IsWrite);
             Debug.Assert(x.Value.Access.IsRead);
 
             // Target X Value
-            var result = VisitBinaryOperatorExpression(new BoundBinaryEx(x.Target.WithAccess(BoundAccess.Read), x.Value, CompoundOpToBinaryOp(x.Operation)), ConditionBranch.AnyResult);
+            var tmp = new BoundBinaryEx(x.Target.WithAccess(BoundAccess.Read), x.Value, CompoundOpToBinaryOp(x.Operation));
+            Visit(tmp, ConditionBranch.AnyResult);
 
             // Target =
-            x.Target.Access = BoundAccess.Write.WithWrite(result);
-            Visit(x.Target);
+            Visit(x.Target, BoundAccess.Write.WithWrite(tmp.TypeRefMask));
 
             // put read access back
             x.Target.Access = x.Target.Access.WithRead();
 
             //
-            return result;
+            x.TypeRefMask = tmp.TypeRefMask;
         }
 
-        public override void VisitCompoundAssignmentExpression(ICompoundAssignmentExpression operation)
-            => ((BoundExpression)operation).TypeRefMask = VisitCompoundAssignmentExpression((BoundCompoundAssignEx)operation);
-
-        public override void VisitLocalReferenceExpression(ILocalReferenceExpression operation)
-        {
-            var expr = (BoundExpression)operation;
-
-            if (expr is BoundVariableRef)
-            {
-                VisitBoundVariableRef((BoundVariableRef)expr);
-            }
-            else
-            {
-                throw ExceptionUtilities.UnexpectedValue(expr);
-            }
-        }
-
-        protected virtual void VisitBoundVariableRef(BoundVariableRef x)
+        public override void VisitVariableRef(BoundVariableRef x)
         {
             if (x.Name.IsDirect)
             {
                 // direct variable access:
                 var name = x.Name.NameValue.Value;
-                
+
                 // bind variable place
                 x.Variable = Routine.LocalsTable.BindVariable(x.Name.NameValue, State.GetVarKind(x.Name.NameValue));
 
@@ -600,7 +388,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // indirect variable access:
                 Routine.Flags |= RoutineFlags.HasIndirectVar;
 
-                Visit(x.Name.NameExpression);
+                Accept(x.Name.NameExpression);
 
                 // bind variable place
                 if (x.Variable == null)
@@ -628,10 +416,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public sealed override void VisitIncrementExpression(IIncrementExpression operation)
-            => VisitIncrementExpression((BoundIncDecEx)operation);
-
-        protected virtual void VisitIncrementExpression(BoundIncDecEx x)
+        public override void VisitIncDec(BoundIncDecEx x)
         {
             // <target> = <target> +/- 1L
 
@@ -862,10 +647,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return type;
         }
 
-        public sealed override void VisitBinaryOperatorExpression(IBinaryOperatorExpression operation)
-            => ((BoundExpression)operation).TypeRefMask = VisitBinaryOperatorExpression((BoundBinaryEx)operation, ConditionBranch.AnyResult);
+        protected override void Visit(BoundBinaryEx x, ConditionBranch branch)
+        {
+            x.TypeRefMask = ResolveBinaryEx(x, branch);
+        }
 
-        protected virtual TypeRefMask VisitBinaryOperatorExpression(BoundBinaryEx x, ConditionBranch branch)
+        TypeRefMask ResolveBinaryEx(BoundBinaryEx x, ConditionBranch branch)
         {
             if (x.Operation == Operations.And || x.Operation == Operations.Or)
             {
@@ -873,8 +660,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                Visit(x.Left);
-                Visit(x.Right);
+                Accept(x.Left);
+                Accept(x.Right);
             }
 
             switch (x.Operation)
@@ -954,13 +741,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Visit UnaryEx
 
-        public sealed override void VisitUnaryOperatorExpression(IUnaryOperatorExpression operation)
-            => ((BoundExpression)operation).TypeRefMask = ResolveUnaryOperatorExpression((BoundUnaryEx)operation);
+        protected override void Visit(BoundUnaryEx x, ConditionBranch branch)
+        {
+            x.TypeRefMask = ResolveUnaryOperatorExpression(x, branch);
+        }
 
-        protected virtual TypeRefMask ResolveUnaryOperatorExpression(BoundUnaryEx x)
+        TypeRefMask ResolveUnaryOperatorExpression(BoundUnaryEx x, ConditionBranch branch)
         {
             //
-            Visit(x.Operand);
+            Accept(x.Operand);
 
             //
             switch (x.Operation)
@@ -1037,28 +826,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Visit InstanceOf
 
-        public sealed override void VisitIsExpression(IIsExpression operation)
-            => VisitInstanceOf((BoundInstanceOfEx)operation, ConditionBranch.AnyResult);
-
-        protected virtual void VisitInstanceOf(BoundInstanceOfEx x, ConditionBranch branch)
+        protected override void Visit(BoundInstanceOfEx x, ConditionBranch branch)
         {
-            Visit(x.Operand);
+            Accept(x.Operand);
+            VisitTypeRef(x.AsType);
 
-            //
-            if (!x.IsTypeDirect.IsEmpty())
+            // TOOD: x.ConstantValue // in case we know and the operand is a local variable (we can ignore the expression and emit result immediatelly)
+
+            if (branch == ConditionBranch.ToTrue && x.Operand is BoundVariableRef)
             {
-                x.IsTypeResolved = (NamedTypeSymbol)_model.GetType(x.IsTypeDirect);
-
-                // TOOD: x.ConstantValue // in case we know and the operand is a local variable (we can ignore the expression and emit result immediatelly)
-
-                if (branch == ConditionBranch.ToTrue && x.Operand is BoundVariableRef)
+                var vref = (BoundVariableRef)x.Operand;
+                if (vref.Name.IsDirect)
                 {
-                    var vref = (BoundVariableRef)x.Operand;
-                    if (vref.Name.IsDirect)
-                    {
-                        // if (Variable is T) => variable is T in True branch state
-                        State.SetVar(vref.Name.NameValue.Value, TypeCtx.GetTypeMask(x.IsTypeDirect));
-                    }
+                    // if (Variable is T) => variable is T in True branch state
+                    State.SetVar(vref.Name.NameValue.Value, TypeCtx.GetTypeMask(x.AsType.TypeRef, true));
                 }
             }
 
@@ -1070,58 +851,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Visit Function Call
 
-        public override void VisitInvocationExpression(IInvocationExpression operation)
+        protected override void VisitRoutineCall(BoundRoutineCall x)
         {
-            var x = (BoundRoutineCall)operation;
-
             x.TypeRefMask = TypeRefMask.AnyType;
 
             // TODO: write arguments Access
             // TODO: visit invocation member of
             // TODO: 2 pass, analyze arguments -> resolve method -> assign argument to parameter -> write arguments access -> analyze arguments again
 
-            // analyze arguments
-            operation.ArgumentsInSourceOrder.ForEach(VisitArgument);
+            // visit arguments:
+            base.VisitRoutineCall(x);
+        }
 
-            // resolve invocation
-            if (operation is BoundEcho)
-            {
-                VisitEcho((BoundEcho)operation);
-            }
-            else if (operation is BoundConcatEx)
-            {
-                VisitConcat((BoundConcatEx)operation);
-            }
-            else if (operation is BoundGlobalFunctionCall)
-            {
-                VisitFunctionCall((BoundGlobalFunctionCall)operation);
-            }
-            else if (operation is BoundInstanceFunctionCall)
-            {
-                VisitFunctionCall((BoundInstanceFunctionCall)operation);
-            }
-            else if (operation is BoundStaticFunctionCall)
-            {
-                VisitFunctionCall((BoundStaticFunctionCall)operation);
-            }
-            else if (operation is BoundNewEx)
-            {
-                VisitNewEx((BoundNewEx)operation);
-                return;
-            }
-            else if (operation is BoundIncludeEx)
-            {
-                VisitIncludeEx((BoundIncludeEx)operation);
-            }
-            else if (operation is BoundExitEx)
-            {
-                VisitExit((BoundExitEx)operation);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
+        void VisitRoutineCallEpilogue(BoundRoutineCall x)
+        {
             //
             if (x.TargetMethod != null)
             {
@@ -1134,7 +877,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     // analyze TargetMethod with x.Arguments
                     // require method result type if access != none
-                    var enqueued = this.Worklist.EnqueueRoutine(m, _analysis.CurrentBlock, args);
+                    var enqueued = this.Worklist.EnqueueRoutine(m, CurrentBlock, args);
                     if (enqueued)   // => target has to be reanalysed
                     {
                         // note: continuing current block may be waste of time
@@ -1153,24 +896,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        protected virtual void VisitExit(BoundExitEx x)
+        public override void VisitExit(BoundExitEx x)
         {
-            //
+            VisitRoutineCall(x);
+            VisitRoutineCallEpilogue(x);
         }
 
-        protected virtual void VisitEcho(BoundEcho x)
+        public override void VisitEcho(BoundEcho x)
         {
+            VisitRoutineCall(x);
             x.TypeRefMask = 0;
+            VisitRoutineCallEpilogue(x);
         }
 
-        protected virtual void VisitConcat(BoundConcatEx x)
+        public override void VisitConcat(BoundConcatEx x)
         {
+            VisitRoutineCall(x);
             x.TypeRefMask = TypeCtx.GetWritableStringTypeMask();
+            VisitRoutineCallEpilogue(x);
         }
 
-        protected virtual void VisitFunctionCall(BoundGlobalFunctionCall x)
+        public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
-            Visit(x.Name.NameExpression);
+            Accept(x.Name.NameExpression);
+
+            VisitRoutineCall(x);
 
             if (x.Name.IsDirect)
             {
@@ -1183,12 +933,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, args, null);
             }
+
+            VisitRoutineCallEpilogue(x);
         }
 
-        protected virtual void VisitFunctionCall(BoundInstanceFunctionCall x)
+        public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
-            Visit(x.Instance);
-            Visit(x.Name.NameExpression);
+
+            Accept(x.Instance);
+            Accept(x.Name.NameExpression);
+
+            VisitRoutineCall(x);
 
             if (x.Name.IsDirect)
             {
@@ -1213,12 +968,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                 }
             }
+
+            VisitRoutineCallEpilogue(x);
         }
 
-        protected virtual void VisitFunctionCall(BoundStaticFunctionCall x)
+        public override void VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
             VisitTypeRef(x.TypeRef);
-            Visit(x.Name.NameExpression);
+
+            VisitRoutineCall(x);
+
+            Accept(x.Name.NameExpression);
 
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {
@@ -1229,9 +989,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
                 x.TargetMethod = new OverloadsList(candidates.ToArray()).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
             }
+
+            VisitRoutineCallEpilogue(x);
         }
 
-        protected virtual void VisitTypeRef(BoundTypeRef tref)
+        public override void VisitTypeRef(BoundTypeRef tref)
         {
             if (tref == null)
                 return;
@@ -1262,10 +1024,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            Visit(tref.TypeExpression);
+            Accept(tref.TypeExpression);
         }
 
-        protected virtual void VisitNewEx(BoundNewEx x)
+        public override void VisitNew(BoundNewEx x)
         {
             VisitTypeRef(x.TypeRef);
 
@@ -1290,7 +1052,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 foreach (var c in candidates)
                 {
                     // analyze TargetMethod with x.Arguments
-                    this.Worklist.EnqueueRoutine(c, _analysis.CurrentBlock, args);
+                    this.Worklist.EnqueueRoutine(c, CurrentBlock, args);
                 }
 
                 x.ResultType = type;
@@ -1299,7 +1061,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeRef.TypeRef, false);
         }
 
-        protected virtual void VisitIncludeEx(BoundIncludeEx x)
+        public override void VisitInclude(BoundIncludeEx x)
         {
             this.Routine.Flags |= RoutineFlags.HasInclude;
 
@@ -1349,36 +1111,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public override void VisitArgument(IArgument operation)
+        public override void VisitArgument(BoundArgument x)
         {
-            if (operation.Parameter != null)
+            if (x.Parameter != null)
             {
                 // TODO: write arguments access
                 // TODO: conversion by simplifier visitor
             }
 
-            VisitArgument((BoundArgument)operation);
-        }
-
-        protected virtual void VisitArgument(BoundArgument x)
-        {
-            Visit(x.Value);
+            Accept(x.Value);
         }
 
         #endregion
 
         #region Visit FieldRef
 
-        public sealed override void VisitFieldReferenceExpression(IFieldReferenceExpression operation)
+        public override void VisitFieldRef(BoundFieldRef x)
         {
-            VisitFieldRef((BoundFieldRef)operation);
-        }
-
-        protected void VisitFieldRef(BoundFieldRef x)
-        {
-            Visit(x.Instance);
+            Accept(x.Instance);
             VisitTypeRef(x.ParentType);
-            Visit(x.FieldName.NameExpression);
+            Accept(x.FieldName.NameExpression);
 
             if (x.IsInstanceField)  // {Instance}->FieldName
             {
@@ -1499,10 +1251,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Visit ArrayEx, ArrayItemEx
 
-        public sealed override void VisitArrayCreationExpression(IArrayCreationExpression operation)
-            => VisitArrayEx((BoundArrayEx)operation);
-
-        protected void VisitArrayEx(BoundArrayEx x)
+        public override void VisitArray(BoundArrayEx x)
         {
             var items = x.Items;
             TypeRefMask elementType = 0;
@@ -1510,8 +1259,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // analyse elements
             foreach (var i in items)
             {
-                Visit(i.Key);
-                Visit(i.Value);
+                Accept(i.Key);
+                Accept(i.Value);
 
                 elementType |= i.Value.TypeRefMask;
             }
@@ -1522,13 +1271,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 : TypeCtx.GetArrayTypeMask(elementType);
         }
 
-        public sealed override void VisitArrayElementReferenceExpression(IArrayElementReferenceExpression operation)
-            => VisitArrayItemEx((BoundArrayItemEx)operation);
-
-        protected void VisitArrayItemEx(BoundArrayItemEx x)
+        public override void VisitArrayItem(BoundArrayItemEx x)
         {
-            Visit(x.Array);
-            Visit(x.Index);
+            Accept(x.Array);
+            Accept(x.Index);
 
             //
             x.TypeRefMask = x.Access.IsReadRef
@@ -1540,72 +1286,35 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Visit
 
-        public override void DefaultVisit(IOperation operation)
+        public override void VisitIsEmpty(BoundIsEmptyEx x)
         {
-            if (operation is BoundPseudoConst)
-            {
-                VisitPseudoConst((BoundPseudoConst)operation);
-            }
-            else if (operation is BoundGlobalConst)
-            {
-                VisitGlobalConst((BoundGlobalConst)operation);
-            }
-            else if (operation is BoundIsEmptyEx)
-            {
-                VisitIsEmpty((BoundIsEmptyEx)operation);
-            }
-            else if (operation is BoundIsSetEx)
-            {
-                VisitsSet((BoundIsSetEx)operation);
-            }
-            else if (operation is BoundUnset)
-            {
-                VisitUnset((BoundUnset)operation);
-            }
-            else if (operation is BoundListEx)
-            {
-                VisitList((BoundListEx)operation);
-            }
-            else if (operation is BoundEmptyStatement)
-            {
-                // nop
-            }
-            else
-            {
-                throw new NotImplementedException(operation.GetType().Name);
-            }
-        }
-
-        private void VisitIsEmpty(BoundIsEmptyEx x)
-        {
-            Visit(x.Variable);
+            Accept(x.Variable);
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 
-        public virtual void VisitsSet(BoundIsSetEx x)
+        public override void VisitIsSet(BoundIsSetEx x)
         {
-            x.VarReferences.ForEach(Visit);
+            x.VarReferences.ForEach(Accept);
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 
-        public virtual void VisitUnset(BoundUnset x)
+        public override void VisitUnset(BoundUnset x)
         {
-            x.VarReferences.ForEach(Visit);
+            x.VarReferences.ForEach(Accept);
         }
 
-        public virtual void VisitList(BoundListEx x)
+        public override void VisitList(BoundListEx x)
         {
             var elementtype = this.TypeCtx.GetElementType(x.Access.WriteMask);
             Debug.Assert(!elementtype.IsVoid);
 
             foreach (var v in x.Variables.WhereNotNull())   // list() may contain NULL implying ignored variable
             {
-                v.Access = v.Access.WithWrite(elementtype);
-                Visit(v);
+                Visit(v, v.Access.WithWrite(elementtype));
             }
         }
 
-        public void VisitPseudoConst(BoundPseudoConst x)
+        public override void VisitPseudoConstUse(BoundPseudoConst x)
         {
             object value = null;
 
@@ -1635,8 +1344,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     break;
 
                 case PseudoConstUse.Types.Namespace:
-                    value = (_analysis.Naming != null && _analysis.Naming.CurrentNamespace.HasValue)
-                        ? _analysis.Naming.CurrentNamespace.Value.NamespacePhpName
+                    value = (Naming != null && Naming.CurrentNamespace.HasValue)
+                        ? Naming.CurrentNamespace.Value.NamespacePhpName
                         : string.Empty;
                     break;
 
@@ -1658,7 +1367,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else throw ExceptionUtilities.UnexpectedValue(value);
         }
 
-        public void VisitGlobalConst(BoundGlobalConst x)
+        public override void VisitGlobalConstUse(BoundGlobalConst x)
         {
             // TODO: check constant name
 
@@ -1678,10 +1387,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public override void VisitConditionalChoiceExpression(IConditionalChoiceExpression operation)
-            => VisitConditionalChoiceExpression((BoundConditionalEx)operation);
-
-        protected virtual void VisitConditionalChoiceExpression(BoundConditionalEx x)
+        public override void VisitConditional(BoundConditionalEx x)
         {
             var state = State;
             var trueExpr = x.IfTrue ?? x.Condition;
@@ -1689,12 +1395,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // true branch
             var trueState = State = state.Clone();
             VisitCondition(x.Condition, ConditionBranch.ToTrue);
-            Visit(trueExpr);
+            Accept(trueExpr);
 
             // false branch
             var falseState = State = state.Clone();
             VisitCondition(x.Condition, ConditionBranch.ToFalse);
-            Visit(x.IfFalse);
+            Accept(x.IfFalse);
 
             // merge both states
             State = trueState.Merge(falseState);
@@ -1703,27 +1409,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = trueExpr.TypeRefMask | x.IfFalse.TypeRefMask;
         }
 
-        public override void VisitExpressionStatement(IExpressionStatement operation)
-            => Visit(operation.Expression);
+        public override void VisitExpressionStatement(BoundExpressionStatement x)
+        {
+            Accept(x.Expression);
+        }
 
-        public sealed override void VisitReturnStatement(IReturnStatement operation)
-            => VisitReturnStatement((BoundReturnStatement)operation);
-
-        protected virtual void VisitReturnStatement(BoundReturnStatement x)
+        public override void VisitReturn(BoundReturnStatement x)
         {
             if (x.Returned != null)
             {
-                Visit(x.Returned);
+                Accept(x.Returned);
                 State.FlowThroughReturn(x.Returned.TypeRefMask);
             }
         }
 
-        public sealed override void VisitThrowStatement(IThrowStatement operation)
-            => VisitThrowStatement((BoundThrowStatement)operation);
-
-        protected virtual void VisitThrowStatement(BoundThrowStatement x)
+        public override void VisitThrow(BoundThrowStatement x)
         {
-            Visit(x.Thrown);
+            Accept(x.Thrown);
         }
 
         #endregion

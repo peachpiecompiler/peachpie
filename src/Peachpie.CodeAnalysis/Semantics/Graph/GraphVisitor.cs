@@ -12,48 +12,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Control flow graph visitor.
     /// </summary>
     /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
-    public class GraphVisitor
+    public class GraphVisitor : PhpOperationVisitor
     {
-        #region Bound
-
-        /// <summary>
-        /// Visitor for bound operations.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public OperationVisitor Visitor
-        {
-            get
-            {
-                var visitor = _visitor;
-                if (visitor == null)
-                {
-                    _visitor = visitor = _opVisitorFactory(this);
-                    Contract.ThrowIfNull(visitor);
-
-                    _opVisitorFactory = null;
-                }
-
-                return visitor;
-            }
-        }
-        OperationVisitor _visitor;
-
-        Func<GraphVisitor, OperationVisitor> _opVisitorFactory;
-
-        /// <summary>
-        /// Forwards the operation to the <see cref="OperationVisitor"/>.
-        /// </summary>
-        protected void Accept(IOperation op) => op?.Accept(Visitor);
-        
-        #endregion
-
         #region ControlFlowGraph
-
-        public GraphVisitor(Func<GraphVisitor, OperationVisitor> opVisitorFactory)
-        {
-            Contract.ThrowIfNull(opVisitorFactory);
-            _opVisitorFactory = opVisitorFactory;
-        }
 
         public virtual void VisitCFG(ControlFlowGraph x) => x.Start.Accept(this);
 

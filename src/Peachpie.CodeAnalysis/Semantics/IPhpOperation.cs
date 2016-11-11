@@ -11,6 +11,11 @@ namespace Pchp.CodeAnalysis.Semantics
     public interface IPhpOperation : IOperation
     {
         /// <summary>
+        /// Corresponding syntax node.
+        /// </summary>
+        LangElement PhpSyntax { get; }
+
+        /// <summary>
         /// Visitor implementation.
         /// </summary>
         /// <param name="visitor">A reference to <see cref="PhpOperationVisitor"/> instance.</param>
@@ -34,14 +39,14 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundAccess Access { get; }
 
         /// <summary>
-        /// Corresponding syntax node.
-        /// </summary>
-        LangElement PhpSyntax { get; }
-
-        /// <summary>
         /// Whether the expression needs current <see cref="Pchp.Core.Context"/> to be evaluated.
         /// If not, the expression can be evaluated in compile time or in app context.
         /// </summary>
         bool RequiresContext { get; }
+    }
+
+    public interface IPhpStatement : IPhpOperation, IStatement
+    {
+
     }
 }

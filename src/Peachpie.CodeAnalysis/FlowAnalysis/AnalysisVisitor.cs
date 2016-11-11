@@ -12,7 +12,7 @@ using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    public partial class CFGAnalysis : GraphVisitor
+    public partial class AnalysisVisitor : GraphVisitor
     {
         #region Fields
 
@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets current type context for type masks resolving.
         /// </summary>
-        internal TypeRefContext TypeRefContext => _state.TypeRefContext;
+        internal TypeRefContext TypeCtx => _state.TypeRefContext;
 
         /// <summary>
         /// Current naming context. Can be a <c>null</c> reference.
@@ -47,22 +47,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         internal BoundBlock CurrentBlock { get; private set; }
 
-        /// <summary>
-        /// Gets underlaying <see cref="ExpressionAnalysis"/>.
-        /// </summary>
-        internal new ExpressionAnalysis Visitor => (ExpressionAnalysis)base.Visitor;
-
         #endregion
 
         #region Construction
 
         /// <summary>
-        /// Creates an instance of <see cref="CFGAnalysis"/> that can analyse a block.
+        /// Creates an instance of <see cref="AnalysisVisitor"/> that can analyse a block.
         /// </summary>
         /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
-        /// <param name="opAnalysisFactory">Factory that creates an operation visitor lazily.</param>
-        internal CFGAnalysis(Worklist<BoundBlock> worklist, Func<GraphVisitor, ExpressionAnalysis> opAnalysisFactory)
-            : base(opAnalysisFactory)
+        internal AnalysisVisitor(Worklist<BoundBlock> worklist)
         {
             _worklist = worklist;
         }
@@ -140,6 +133,97 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region Short-Circuit Evaluation
+
+        /// <summary>
+        /// Visits condition used to branch execution to true or false branch.
+        /// </summary>
+        /// <remarks>
+        /// Because of minimal evaluation there is different FlowState for true and false branches,
+        /// AND and OR operators have to take this into account.
+        /// 
+        /// Also some other constructs may have side-effect for known branch,
+        /// eg. <c>($x instanceof X)</c> implies ($x is X) in True branch.
+        /// </remarks>
+        internal void VisitCondition(BoundExpression condition, ConditionBranch branch)
+        {
+            Contract.ThrowIfNull(condition);
+
+            if (branch != ConditionBranch.AnyResult)
+            {
+                if (condition is BoundBinaryEx)
+                {
+                    Visit((BoundBinaryEx)condition, branch);
+                    return;
+                }
+                if (condition is BoundUnaryEx)
+                {
+                    Visit((BoundUnaryEx)condition, branch);
+                    return;
+                }
+                //if (condition is DirectFcnCall)
+                //{
+                //    VisitDirectFcnCall((DirectFcnCall)condition, branch);
+                //    return;
+                //}
+                if (condition is BoundInstanceOfEx)
+                {
+                    Visit((BoundInstanceOfEx)condition, branch);
+                    return;
+                }
+                //if (condition is IssetEx)
+                //{
+                //    VisitIssetEx((IssetEx)condition, branch);
+                //    return;
+                //}
+                //if (condition is EmptyEx)
+                //{
+                //    VisitEmptyEx((EmptyEx)condition, branch);
+                //    return;
+                //}
+            }
+
+            // no effect
+            condition.Accept(this);
+        }
+
+        public sealed override void VisitBinaryExpression(BoundBinaryEx x) => Visit(x, ConditionBranch.Default);
+
+        protected virtual void Visit(BoundBinaryEx x, ConditionBranch branch)
+        {
+            base.VisitBinaryExpression(x);
+        }
+
+        public sealed override void VisitUnaryExpression(BoundUnaryEx x) => Visit(x, ConditionBranch.Default);
+
+        protected virtual void Visit(BoundUnaryEx x, ConditionBranch branch)
+        {
+            base.VisitUnaryExpression(x);
+        }
+
+        public sealed override void VisitInstanceOf(BoundInstanceOfEx x) => Visit(x, ConditionBranch.Default);
+
+        protected virtual void Visit(BoundInstanceOfEx x, ConditionBranch branch)
+        {
+            base.VisitInstanceOf(x);
+        }
+
+        #endregion
+
+        #region Specific
+
+        /// <summary>
+        /// Handles use of variable as foreach iterator value.
+        /// </summary>
+        /// <param name="varuse"></param>
+        /// <returns>Derivate type of iterated values.</returns>
+        protected virtual TypeRefMask HandleTraversableUse(BoundExpression/*!*/varuse)
+        {
+            return TypeRefMask.AnyType;
+        }
+
+        #endregion
+
         #region GraphVisitor Members
 
         public override void VisitCFG(ControlFlowGraph x)
@@ -182,10 +266,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // add catch control variable to the state
             Accept(x.Variable);
+            VisitTypeRef(x.TypeRef);
 
             //
-            x.ResolvedType = Visitor.ResolveType(x.TypeRef);// TODO: accept TypeRef and resolve, TODO: resolved type should be of type Exception
-            x.Variable.ResultType = x.ResolvedType;
+            x.Variable.ResultType = x.TypeRef.ResolvedType;
 
             //
             VisitCFGBlockInternal(x);
@@ -203,12 +287,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // true branch
             _state = state.Clone();
-            Visitor.VisitCondition(x.Condition, ConditionBranch.ToTrue);
+            VisitCondition(x.Condition, ConditionBranch.ToTrue);
             TraverseToBlock(_state, x.TrueTarget);
 
             // false branch
             _state = state.Clone();
-            Visitor.VisitCondition(x.Condition, ConditionBranch.ToFalse);
+            VisitCondition(x.Condition, ConditionBranch.ToFalse);
             TraverseToBlock(_state, x.FalseTarget);
         }
 
@@ -222,7 +306,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             var state = _state;
             // get type information from Enumeree to determine types value variable
-            var elementType = Visitor.HandleTraversableUse(x.EnumereeEdge.Enumeree);
+            var elementType = HandleTraversableUse(x.EnumereeEdge.Enumeree);
             if (elementType.IsVoid) elementType = TypeRefMask.AnyType;
 
             // Body branch
@@ -238,14 +322,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 valueVar.Access = valueVar.Access.WithWrite(elementType);
-                Visitor.Visit(valueVar);
+                Accept(valueVar);
 
                 //
                 var keyVar = x.KeyVariable;
                 if (keyVar != null)
                 {
                     keyVar.Access = keyVar.Access.WithWrite(TypeRefMask.AnyType);
-                    Visitor.Visit(keyVar);
+                    Accept(keyVar);
                 }
             }
             TraverseToBlock(_state, x.BodyBlock);

@@ -205,7 +205,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private CatchBlock/*!*/NewBlock(CatchItem item)
         {
-            return WithNewOrdinal(new CatchBlock((INamedTypeRef)item.TargetType, _binder.BindCatchVariable(item)) { PhpSyntax = item, Naming = _naming });
+            return WithNewOrdinal(new CatchBlock(_binder.BindTypeRef(item.TargetType), _binder.BindCatchVariable(item)) { PhpSyntax = item, Naming = _naming });
         }
 
         private CaseBlock/*!*/NewBlock(SwitchItem item)

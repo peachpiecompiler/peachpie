@@ -65,5 +65,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.GetDeclaredType_string);
             }
         }
+
+        public void Accept(PhpOperationVisitor visitor) => visitor.VisitTypeRef(this);
     }
 }
