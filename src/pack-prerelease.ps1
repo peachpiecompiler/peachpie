@@ -1,5 +1,5 @@
 Param(
-  [string]$version = "0.2.0",
+  [string]$version = "0.3.0",
   [string]$config = "Release",
   [string]$suffix = "preview"
 )

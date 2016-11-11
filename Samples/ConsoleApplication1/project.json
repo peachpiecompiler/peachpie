@@ -11,7 +11,7 @@
     "Peachpie.App": "*"
   },
   "tools": {
-    "Peachpie.Compiler.Tools": "0.2.0-*"
+    "Peachpie.Compiler.Tools": "0.3.0-*"
   },
   "frameworks": {
     "netcoreapp1.0": {
