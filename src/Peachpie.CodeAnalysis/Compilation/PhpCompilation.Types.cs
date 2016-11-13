@@ -88,9 +88,6 @@ namespace Pchp.CodeAnalysis
 
             // TODO: simple array & PhpArray => PhpArray
 
-            if (first.IsOfType(second)) return second;  // A >> B -> B
-            if (second.IsOfType(first)) return first;   // A << B -> A
-
             if (!IsAString(first) && !IsAString(second) &&
                 !first.IsOfType(CoreTypes.PhpArray) && !second.IsOfType(CoreTypes.PhpArray))
             {
@@ -99,6 +96,9 @@ namespace Pchp.CodeAnalysis
                 {
                     // TODO: find common base
                     // TODO: otherwise find a common interface
+
+                    if (first.IsOfType(second)) return second;  // A >> B -> B
+                    if (second.IsOfType(first)) return first;   // A << B -> A
 
                     return CoreTypes.Object;
                 }

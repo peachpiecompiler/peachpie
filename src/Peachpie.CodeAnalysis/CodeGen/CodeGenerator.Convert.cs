@@ -296,9 +296,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // nop
                         return;
                     }
+                    else if (from == CoreTypes.PhpValue)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToNumber_PhpValue);
+                        break;
+                    }
                     else
                     {
-                        throw new NotImplementedException();
+                        throw new NotImplementedException($"{from} -> PhpNumber");
                     }
             }
         }
@@ -509,6 +514,31 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Emits conversion to <see cref="Pchp.Core.PhpString"/> (aka writable string).
+        /// </summary>
+        public void EmitConvertToPhpString(TypeSymbol from, TypeRefMask fromHint)
+        {
+            Contract.ThrowIfNull(from);
+
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            from = EmitSpecialize(from, fromHint);
+
+            if (from == CoreTypes.PhpString)
+            {
+                return;
+            }
+
+            // new PhpString(string)
+            EmitConvertToString(from, fromHint);
+            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+        }
         /// <summary>
         /// Emits conversion to <c>PhpArray</c>.
         /// </summary>
@@ -868,7 +898,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (to == CoreTypes.PhpString)
                     {
-                        throw new NotImplementedException($"{to}");
+                        EmitConvertToPhpString(from, fromHint);
                     }
                     else if (to.IsReferenceType)
                     {

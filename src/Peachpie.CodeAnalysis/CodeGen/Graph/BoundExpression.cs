@@ -1582,7 +1582,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
 
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Negation)
-                        .Expect(t);
+                        .Expect(cg.CoreTypes.PhpNumber);
             }
         }
 
@@ -2606,6 +2606,17 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // Convert.AsArray()
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.AsArray_PhpValue);
+            }
+            else if (Array.ResultType == cg.CoreTypes.String)
+            {
+                // new PhpString(string)
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_string);
+            }
+            else if (Array.ResultType == cg.CoreTypes.Void)
+            {
+                // TODO: uninitialized value, report error
+                Debug.WriteLine("Use of uninitialized value.");
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString);
             }
             else
             {

@@ -887,6 +887,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return cg.EmitLoadServer();
             }
 
+            if (_name == VariableName.RequestName)
+            {
+                return cg.EmitLoadRequest();
+            }
+
             throw new NotImplementedException($"Superglobal ${_name.Value}");
         }
 

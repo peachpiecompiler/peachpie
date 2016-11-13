@@ -34,6 +34,7 @@ namespace Pchp.Core
 
             _globals = new PhpArray();
             _server = new PhpArray();   // TODO: virtual initialization method, reuse server static information with request context
+            _request = new PhpArray();
             // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
         }
 
@@ -321,17 +322,36 @@ namespace Pchp.Core
         public PhpArray Server
         {
             get { return _server; }
-            //set
-            //{
-            //    if (value == null)
-            //    {
-            //        throw new ArgumentNullException();
-            //    }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
 
-            //    _server = value;
-            //}
+                _server = value;
+            }
         }
         PhpArray _server;
+
+        /// <summary>
+        /// Array of server and execution environment information.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Request
+        {
+            get { return _request; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _request = value;
+            }
+        }
+        PhpArray _request;
 
         #endregion
 

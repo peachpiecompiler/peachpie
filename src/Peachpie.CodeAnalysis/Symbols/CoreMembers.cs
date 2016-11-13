@@ -315,6 +315,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBoolean_Object = ct.Convert.Method("ToBoolean", ct.Object);
                 ToLong_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Long);
                 ToDouble_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Double);
+                ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
                 AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
@@ -371,6 +372,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
                 ToLong_PhpValue, ToDouble_PhpValue,
+                ToNumber_PhpValue,
                 AsObject_PhpValue, AsArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
                 ToIntStringKey_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
@@ -684,6 +686,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
                 PhpString = ct.PhpString.Ctor();
+                PhpString_string = ct.PhpString.Ctor(ct.String);
                 PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
@@ -699,7 +702,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
-                PhpString, PhpString_string_string,
+                PhpString, PhpString_string, PhpString_string_string,
                 IntStringKey_int, IntStringKey_string,
                 ScriptAttribute_string,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;
@@ -731,6 +734,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
                 get_Server = ct.Context.Method("get_Server");   // TODO: special name, property
+                get_Request = ct.Context.Method("get_Request");   // TODO: special name, property
             }
 
             public readonly CoreMethod
@@ -745,7 +749,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Dispose;
 
             public readonly CoreMethod
-                get_Globals, get_Server;
+                get_Globals, get_Server, get_Request;
         }
 
         public struct DynamicHolder

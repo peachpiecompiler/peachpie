@@ -200,6 +200,21 @@ namespace Pchp.Core
             return info;
         }
 
+        /// <summary>
+        /// Performs conversion of a value to a number.
+        /// Additional conversion warnings may be thrown.
+        /// </summary>
+        public static PhpNumber ToNumber(PhpValue value)
+        {
+            PhpNumber n;
+            if ((value.ToNumber(out n) & NumberInfo.IsNumber) == 0)
+            {
+                // TODO: Err
+            }
+
+            return n;
+        }
+
         #endregion
 
         #region ToIntStringKey
