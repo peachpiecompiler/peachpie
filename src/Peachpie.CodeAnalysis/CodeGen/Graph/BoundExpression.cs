@@ -129,9 +129,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.BitAnd:
-                    //returned_type = EmitBitAnd(cg, Left, Right);
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = EmitBitAnd(cg, Left, Right);
+                    break;
 
                 case Operations.BitOr:
                     returned_type = EmitBitOr(cg, Left, Right);
@@ -472,6 +471,56 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
 
                     throw new NotImplementedException($"Sub({xtype.Name},...)");
+            }
+        }
+
+        internal static TypeSymbol EmitBitAnd(CodeGenerator cg, BoundExpression left, BoundExpression right)
+        {
+            // most common cases:
+            if (cg.IsLongOnly(left.TypeRefMask) || cg.IsLongOnly(right.TypeRefMask))
+            {
+                // i64 | i64 : i64
+                cg.EmitConvert(left, cg.CoreTypes.Long);
+                cg.EmitConvert(right, cg.CoreTypes.Long);
+                cg.Builder.EmitOpCode(ILOpCode.And);
+                return cg.CoreTypes.Long;
+            }
+
+            //
+            return EmitBitAnd(cg, cg.Emit(left), right);
+        }
+
+        internal static TypeSymbol EmitBitAnd(CodeGenerator cg, TypeSymbol xtype, BoundExpression right)
+        {
+            switch (xtype.SpecialType)
+            {
+                case SpecialType.System_Void:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Boolean:
+                case SpecialType.System_Double:
+                    cg.EmitConvert(xtype, 0, cg.CoreTypes.Long);
+                    goto case SpecialType.System_Int64;
+
+                case SpecialType.System_Int64:
+                    cg.EmitConvert(right, cg.CoreTypes.Long);
+                    cg.Builder.EmitOpCode(ILOpCode.And);
+                    return cg.CoreTypes.Long;
+
+                case SpecialType.System_String:
+                    throw new NotImplementedException();    // string | string or string | long
+
+                default:
+                    if (right.ResultType != null && right.ResultType.SpecialType != SpecialType.System_String)
+                    {
+                        // value | !string -> long | long -> long
+                        cg.EmitConvert(xtype, 0, cg.CoreTypes.Long);
+                        goto case SpecialType.System_Int64;
+                    }
+
+                    cg.EmitConvert(xtype, 0, cg.CoreTypes.PhpValue);
+                    cg.EmitConvert(right, cg.CoreTypes.PhpValue);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BitwiseAnd_PhpValue_PhpValue)
+                        .Expect(cg.CoreTypes.PhpValue);
             }
         }
 

@@ -195,6 +195,8 @@ namespace Pchp.Core
 
         public static bool operator >(PhpValue left, PhpValue right) => left.Compare(right) > 0;
 
+        public static PhpValue operator &(PhpValue left, PhpValue right) => Operators.BitAnd(ref left, ref right);
+
         public static PhpValue operator |(PhpValue left, PhpValue right) => Operators.BitOr(ref left, ref right);
 
         /// <summary>
