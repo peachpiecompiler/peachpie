@@ -121,7 +121,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public bool IsFunctionValue => false;
 
-        public virtual ITypeSymbol Type => DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetLocalTypeMask(this.Name));
+        public virtual ITypeSymbol Type
+        {
+            get
+            {
+                var tsymbol = DeclaringCompilation.GetTypeFromTypeRef(_routine, _routine.ControlFlowGraph.GetLocalTypeMask(this.Name));
+                if (tsymbol.SpecialType == SpecialType.System_Void)
+                {
+                    tsymbol = DeclaringCompilation.CoreTypes.PhpValue;  // temporary workaround for uninitialized variables
+                }
+                return tsymbol;
+            }
+        }
 
         public bool IsImportedFromMetadata => false;
 
