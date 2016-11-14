@@ -54,42 +54,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits reference to <c>$GLOBALS</c>.
-        /// </summary>
-        /// <returns>Type of <c>PhpArray</c></returns>
-        public TypeSymbol EmitLoadGlobals()
-        {
-            // <ctx>.Globals
-            EmitLoadContext();
-            return EmitCall(ILOpCode.Call, CoreMethods.Context.get_Globals)
-                .Expect(CoreTypes.PhpArray);
-        }
-
-        /// <summary>
-        /// Emits reference to <c>$_SERVER</c>.
-        /// </summary>
-        /// <returns>Type of <c>PhpArray</c></returns>
-        public TypeSymbol EmitLoadServer()
-        {
-            // <ctx>.Server
-            EmitLoadContext();
-            return EmitCall(ILOpCode.Call, CoreMethods.Context.get_Server)
-                .Expect(CoreTypes.PhpArray);
-        }
-
-        /// <summary>
-        /// Emits reference to <c>$_REQUEST</c>.
-        /// </summary>
-        /// <returns>Type of <c>PhpArray</c></returns>
-        public TypeSymbol EmitLoadRequest()
-        {
-            // <ctx>.Request
-            EmitLoadContext();
-            return EmitCall(ILOpCode.Call, CoreMethods.Context.get_Request)
-                .Expect(CoreTypes.PhpArray);
-        }
-
-        /// <summary>
         /// Gets place referring to array of unoptimized local variables.
         /// Always valid in context of global scope.
         /// </summary>

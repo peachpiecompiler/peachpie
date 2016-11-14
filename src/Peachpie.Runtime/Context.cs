@@ -32,10 +32,18 @@ namespace Pchp.Core
             _types = new TypesTable(TypesAppContext.NameToIndex, TypesAppContext.AppTypes, TypesAppContext.ContextTypesCounter, TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
 
+            // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
+            // TODO: wrap into a struct Superglobals
+
             _globals = new PhpArray();
             _server = new PhpArray();   // TODO: virtual initialization method, reuse server static information with request context
+            _env = new PhpArray();
             _request = new PhpArray();
-            // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
+            _get = new PhpArray();
+            _post = new PhpArray();
+            _files = new PhpArray();
+            _session = new PhpArray();
+            _cookie = new PhpArray();            
         }
 
         /// <summary>
@@ -335,7 +343,26 @@ namespace Pchp.Core
         PhpArray _server;
 
         /// <summary>
-        /// Array of server and execution environment information.
+        /// An associative array of variables passed to the current script via the environment method.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Env
+        {
+            get { return _env; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _env = value;
+            }
+        }
+        PhpArray _env;
+
+        /// <summary>
+        /// An array that by default contains the contents of $_GET, $_POST and $_COOKIE.
         /// Cannot be <c>null</c>.
         /// </summary>
         public PhpArray Request
@@ -352,6 +379,101 @@ namespace Pchp.Core
             }
         }
         PhpArray _request;
+
+        /// <summary>
+        /// An associative array of variables passed to the current script via the URL parameters.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Get
+        {
+            get { return _get; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _get = value;
+            }
+        }
+        PhpArray _get;
+
+        /// <summary>
+        /// An associative array of variables passed to the current script via the HTTP POST method.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Post
+        {
+            get { return _post; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _post = value;
+            }
+        }
+        PhpArray _post;
+
+        /// <summary>
+        /// An associative array of items uploaded to the current script via the HTTP POST method.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Files
+        {
+            get { return _files; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _files = value;
+            }
+        }
+        PhpArray _files;
+
+        /// <summary>
+        /// An associative array containing session variables available to the current script.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Session
+        {
+            get { return _session; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _session = value;
+            }
+        }
+        PhpArray _session;
+
+        /// <summary>
+        /// An associative array of variables passed to the current script via the HTTP POST method.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Cookie
+        {
+            get { return _cookie; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _cookie = value;
+            }
+        }
+        PhpArray _cookie;
 
         #endregion
 

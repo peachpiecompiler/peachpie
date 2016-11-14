@@ -1312,7 +1312,10 @@ namespace Pchp.CodeAnalysis.Semantics
                         return xtype;   // r8
                     }
 
-                    throw new NotImplementedException();
+                    // double / value : double
+                    cg.EmitConvertToPhpValue(ytype, 0);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Div_double_PhpValue);
+
                 case SpecialType.System_Int64:
                     ytype = cg.EmitConvertIntToLong(cg.Emit(right));  // bool|int -> long
                     if (ytype == cg.CoreTypes.PhpNumber)
@@ -1321,7 +1324,11 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Division_long_number)
                             .Expect(cg.CoreTypes.PhpNumber);
                     }
-                    throw new NotImplementedException();
+
+                    // long / value : number
+                    cg.EmitConvertToPhpValue(ytype, 0);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Div_long_PhpValue);
+
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {

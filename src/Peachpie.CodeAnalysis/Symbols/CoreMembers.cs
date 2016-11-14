@@ -183,6 +183,84 @@ namespace Pchp.CodeAnalysis.Symbols
         #endregion
     }
 
+    class CoreProperty
+    {
+        #region Fields
+
+        /// <summary>
+        /// Lazily associated symbol.
+        /// </summary>
+        PropertySymbol _lazySymbol;
+
+        /// <summary>
+        /// Declaring class. Cannot be <c>null</c>.
+        /// </summary>
+        public readonly CoreType DeclaringClass;
+
+        /// <summary>
+        /// The field name.
+        /// </summary>
+        public readonly string PropertyName;
+
+        #endregion
+
+        public CoreProperty(CoreType declaringClass, string propertyName)
+        {
+            Contract.ThrowIfNull(declaringClass);
+            Contract.ThrowIfNull(propertyName);
+
+            this.DeclaringClass = declaringClass;
+            this.PropertyName = propertyName;
+        }
+
+        /// <summary>
+        /// Gets associated symbol.
+        /// </summary>
+        public PropertySymbol Symbol
+        {
+            get
+            {
+                var symbol = _lazySymbol;
+                if (symbol == null)
+                {
+                    symbol = ResolveSymbol();
+                    Contract.ThrowIfNull(symbol);
+
+                    Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
+                }
+                return symbol;
+            }
+        }
+
+        public MethodSymbol Getter => Symbol.GetMethod;
+
+        public MethodSymbol Setter => Symbol.SetMethod;
+
+        string DebuggerDisplay => DeclaringClass.FullName + "." + PropertyName;
+
+        /// <summary>
+        /// Implicit cast to field symbol.
+        /// </summary>
+        public static implicit operator PropertySymbol(CoreProperty m) => m.Symbol;
+
+        #region ResolveSymbol
+
+        /// <summary>
+        /// Resolves <see cref="FieldSymbol"/> of this descriptor.
+        /// </summary>
+        protected virtual PropertySymbol ResolveSymbol()
+        {
+            var type = this.DeclaringClass.Symbol;
+            if (type == null)
+                throw new InvalidOperationException();
+
+            var fields = type.GetMembers(PropertyName);
+            return fields.OfType<PropertySymbol>().First();
+        }
+
+        #endregion
+    }
+
     /// <summary>
     /// Descriptor of a well-known constructor.
     /// </summary>
@@ -364,6 +442,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_PhpValue_bool = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.Boolean);
 
                 Div_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.PhpValue, ct.PhpValue);
+                Div_long_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.Long, ct.PhpValue);
+                Div_double_PhpValue = ct.PhpNumber.Method(WellKnownMemberNames.DivisionOperatorName, ct.Double, ct.PhpValue);
                 BitwiseOr_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseOrOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseAnd_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseAndOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseNot_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.OnesComplementOperatorName, ct.PhpValue);
@@ -391,7 +471,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_bool_PhpValue, StrictCeq_long_PhpValue, StrictCeq_double_PhpValue, StrictCeq_PhpValue_PhpValue,
                 StrictCeq_PhpValue_bool,
 
-                Div_PhpValue_PhpValue,
+                Div_PhpValue_PhpValue, Div_long_PhpValue, Div_double_PhpValue,
                 BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseNot_PhpValue;
         }
 
@@ -739,9 +819,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetStatic_T = ct.Context.Method("GetStatic");
                 GetDeclaredType_string = ct.Context.Method("GetDeclaredType", ct.String);
 
-                get_Globals = ct.Context.Method("get_Globals");   // TODO: special name, property
-                get_Server = ct.Context.Method("get_Server");   // TODO: special name, property
-                get_Request = ct.Context.Method("get_Request");   // TODO: special name, property
+                // properties
+                Globals = ct.Context.Property("Globals");
+                Server = ct.Context.Property("Server");
+                Request = ct.Context.Property("Request");
+                Get = ct.Context.Property("Get");
+                Post = ct.Context.Property("Post");
+                Cookie = ct.Context.Property("Cookie");
+                Env = ct.Context.Property("Env");
+                Files = ct.Context.Property("Files");
+                Session = ct.Context.Property("Session");
             }
 
             public readonly CoreMethod
@@ -755,8 +842,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetDeclaredType_string,
                 Dispose;
 
-            public readonly CoreMethod
-                get_Globals, get_Server, get_Request;
+            public readonly CoreProperty
+                Globals, Server, Request, Get, Post, Cookie, Env, Files, Session;
         }
 
         public struct DynamicHolder

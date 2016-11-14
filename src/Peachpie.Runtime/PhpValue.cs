@@ -209,6 +209,32 @@ namespace Pchp.Core
         /// <returns>Quotient of <paramref name="left"/> and <paramref name="right"/>.</returns>
         public static PhpNumber operator /(PhpValue left, PhpValue right) => Operators.Div(ref left, ref right);
 
+        public static PhpNumber operator /(long lx, PhpValue y)
+        {
+            PhpNumber ny;
+            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return PhpNumber.Create(0.0);
+                throw new NotImplementedException();     // PhpException
+            }
+
+            return lx / ny;
+        }
+
+        public static double operator /(double dx, PhpValue y)
+        {
+            PhpNumber ny;
+            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return PhpNumber.Create(0.0);
+                throw new NotImplementedException();     // PhpException
+            }
+
+            return dx / ny.ToDouble();
+        }
+
         public static explicit operator bool(PhpValue value) => value.ToBoolean();
 
         public static explicit operator long(PhpValue value) => value.ToLong();
