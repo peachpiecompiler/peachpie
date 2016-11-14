@@ -668,6 +668,23 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Subtract operator.
+        /// </summary>
+        public static PhpNumber Sub(long lx, PhpValue y)
+        {
+            PhpNumber ynumber;
+
+            // converts x and y to numbers:
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.Unconvertible)) != 0)
+            {
+                throw new ArgumentException();
+            }
+
+            //
+            return lx - ynumber;
+        }
+
+        /// <summary>
         /// Unary minus operator for int64.
         /// </summary>
         public static PhpNumber Minus(long lx)

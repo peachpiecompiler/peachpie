@@ -403,7 +403,14 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_long_number)
                             .Expect(cg.CoreTypes.PhpNumber);
                     }
-                    throw new NotImplementedException($"Sub(long, {ytype.Name})");
+                    else
+                    {
+                        ytype = cg.EmitConvertToPhpValue(ytype, 0);
+                        // i8 - value : value
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_long_value)
+                            .Expect(cg.CoreTypes.PhpNumber);
+                    }
+                    
                 case SpecialType.System_Double:
                     ytype = cg.EmitConvertNumberToDouble(right); // bool|int|long|number -> double
                     if (ytype.SpecialType == SpecialType.System_Double)

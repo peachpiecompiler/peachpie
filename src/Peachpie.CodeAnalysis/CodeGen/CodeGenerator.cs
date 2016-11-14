@@ -220,6 +220,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public SourceRoutineSymbol Routine => _routine;
 
+        /// <summary>
+        /// Type context of currently emitted expressions.
+        /// Can be nested since we are emitting expressions analysed in context of another routine (like parameter default value).
+        /// </summary>
+        internal TypeRefContext TypeRefContext => (_emitTypeRefContext.Count == 0) ? this.Routine?.TypeRefContext : _emitTypeRefContext.Peek();
+        Stack<TypeRefContext> _emitTypeRefContext = new Stack<TypeRefContext>();
+
         public DiagnosticBag Diagnostics => _diagnostics;
 
         /// <summary>

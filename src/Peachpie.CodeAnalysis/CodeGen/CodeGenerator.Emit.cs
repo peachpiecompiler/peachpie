@@ -175,7 +175,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // DEBUG:
                             //if (tmask.IsSingleType)
                             //{
-                            //    var tref = this.Routine.TypeRefContext.GetTypes(tmask)[0];
+                            //    var tref = this.TypeRefContext.GetTypes(tmask)[0];
                             //    var clrtype = (TypeSymbol)this.DeclaringCompilation.GlobalSemantics.GetType(tref.QualifiedName);
                             //    if (clrtype != null && !clrtype.IsErrorType())
                             //    {
@@ -282,7 +282,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (stack.IsReferenceType && this.Routine != null)
                 {
-                    var tref = this.Routine.TypeRefContext.GetTypes(tmask)[0];
+                    var tref = this.TypeRefContext.GetTypes(tmask)[0];
                     if (tref.IsObject)
                     {
                         HashSet<DiagnosticInfo> useSiteDiagnostic = null;
@@ -839,7 +839,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             var boundinitializer = (targetp as SourceParameterSymbol)?.Initializer;
             if (boundinitializer != null)
             {
+                _emitTypeRefContext.Push((targetp as SourceParameterSymbol).Routine.TypeRefContext);
                 EmitConvert(boundinitializer, ptype = targetp.Type);
+                _emitTypeRefContext.Pop();
             }
             else if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
@@ -1237,7 +1239,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         {
                             if (typemask.IsSingleType && this.Routine != null)
                             {
-                                var typectx = this.Routine.TypeRefContext;
+                                var typectx = this.TypeRefContext;
 
                                 if (typectx.IsBoolean(typemask))
                                 {
