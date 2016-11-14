@@ -284,7 +284,7 @@ namespace Pchp.Library
         /// keyed by <c>"dirname"</c>, <c>"basename"</c>, and <c>"extension"</c>. Otherwise,
         /// it returns string value containing a single part of the path.
         /// </returns>
-        public static object pathinfo(string path, PathInfoOptions options = PathInfoOptions.All)
+        public static PhpValue pathinfo(string path, PathInfoOptions options = PathInfoOptions.All)
         {
             // collect strings
             string dirname = null, basename = null, extension = null, filename = null;
@@ -321,22 +321,22 @@ namespace Pchp.Library
                 result.Add("basename", basename);
                 result.Add("extension", extension);
                 result.Add("filename", filename);
-                return result;
+                return PhpValue.Create(result);
             }
 
             if ((options & PathInfoOptions.DirName) != 0)
-                return dirname;
+                return PhpValue.Create(dirname);
 
             if ((options & PathInfoOptions.BaseName) != 0)
-                return basename;
+                return PhpValue.Create(basename);
 
             if ((options & PathInfoOptions.Extension) != 0)
-                return extension;
+                return PhpValue.Create(extension);
 
             if ((options & PathInfoOptions.FileName) != 0)
-                return filename;
+                return PhpValue.Create(filename);
 
-            return null;
+            return PhpValue.Null;
         }
 
         #endregion
