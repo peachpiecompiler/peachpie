@@ -1031,6 +1031,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             VisitTypeRef(x.TypeRef);
 
+            VisitRoutineCall(x);    // analyse arguments
+
             // resolve target type
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
             if (type != null)

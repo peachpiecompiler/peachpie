@@ -1059,22 +1059,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             var t = Emit(expr); // TODO: ConvertToArrayKey
-            switch (t.SpecialType)
-            {
-                case SpecialType.System_Int64:
-                    _il.EmitOpCode(ILOpCode.Conv_i4);   // i8 -> i4
-                    goto case SpecialType.System_Int32;
-                case SpecialType.System_Int32:
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
-                    break;
-                case SpecialType.System_String:
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
-                    break;
-                default:
-                    EmitConvertToPhpValue(t, 0);
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToIntStringKey_PhpValue);
-                    break;
-            }
+            EmitConvertToIntStringKey(t, 0);
         }
 
         /// <summary>

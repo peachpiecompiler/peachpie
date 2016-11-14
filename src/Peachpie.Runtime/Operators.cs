@@ -41,7 +41,7 @@ namespace Pchp.Core
         /// </summary>
         internal static PhpValue BitOr(ref PhpValue x, ref PhpValue y)
         {
-            var xtype = x.TypeCode;            
+            var xtype = x.TypeCode;
             if (xtype == PhpTypeCode.String || xtype == PhpTypeCode.WritableString)
             {
                 var ytype = y.TypeCode;
@@ -53,6 +53,36 @@ namespace Pchp.Core
 
             //
             return PhpValue.Create(x.ToLong() | y.ToLong());
+        }
+
+        /// <summary>
+        /// Performs bitwise negation.
+        /// </summary>
+        internal static PhpValue BitNot(ref PhpValue x)
+        {
+            switch (x.TypeCode)
+            {
+                case PhpTypeCode.Long: return PhpValue.Create(~x.Long);
+
+                case PhpTypeCode.Int32: return PhpValue.Create(~x.ToLong());
+
+                case PhpTypeCode.Alias: return BitNot(ref x.Alias.Value);
+
+                case PhpTypeCode.String:
+                case PhpTypeCode.WritableString:
+                    throw new NotImplementedException();    // bitwise negation of each character in string
+
+                case PhpTypeCode.Object:
+                    if (x.Object == null)
+                    {
+                        return PhpValue.Null;
+                    }
+                    goto default;
+
+                default:
+                    // TODO: Err UnsupportedOperandTypes
+                    return PhpValue.Null;
+            }
         }
 
         /// <summary>

@@ -1459,11 +1459,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.BitNegation:
                     //Template: "~x" Operators.BitNot(x)                                     
-                    //codeGenerator.EmitBoxing(node.Expr.Emit(codeGenerator));
-                    //il.Emit(OpCodes.Call, Methods.Operators.BitNot);
-                    //returned_typecode = PhpTypeCode.Object;
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = EmitBitNot(cg);
+                    break;
 
                 case Operations.Clone:
                     // Template: clone x        Operators.Clone(x,DTypeDesc,ScriptContext)
@@ -1662,6 +1659,37 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
 
                     return cg.CoreTypes.PhpNumber;
+            }
+        }
+
+        TypeSymbol EmitBitNot(CodeGenerator cg)
+        {
+            var il = cg.Builder;
+            var t = cg.Emit(this.Operand);
+
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Double:
+                case SpecialType.System_Int32:
+                    // r8|i4 -> i8
+                    il.EmitOpCode(ILOpCode.Conv_i8);
+                    goto case SpecialType.System_Int64;
+
+                case SpecialType.System_Int64:
+                    il.EmitOpCode(ILOpCode.Not);    // ~i64 : i64
+                    return cg.CoreTypes.Long;
+
+                case SpecialType.System_Boolean:
+                    throw new NotImplementedException();    // Err
+                default:
+                    if (t == cg.CoreTypes.PhpArray)
+                    {
+                        // ERR
+                    }
+
+                    // ~ PhpValue
+                    cg.EmitConvert(t, Operand.TypeRefMask, cg.CoreTypes.PhpValue);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BitwiseNot_PhpValue);
             }
         }
     }
@@ -2832,7 +2860,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                // Template: Operators.IsA(value, type);
+                AsType.EmitLoadTypeInfo(cg, false);
+
+                // Template: Operators.IsInstanceOf(value, type);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsInstanceOf_Object_PhpTypeInfo);
             }
 
             throw new NotImplementedException();

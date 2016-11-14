@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -186,6 +187,22 @@ namespace Pchp.Core
         /// Creates a callable object from string value.
         /// </summary>
         public static IPhpCallable AsCallable(string value) => PhpCallback.Create(value);
+
+        /// <summary>
+        /// Resolves whether given instance <paramref name="value"/> is of given type <paramref name="tinfo"/>.
+        /// </summary>
+        /// <param name="value">Value to be checked.</param>
+        /// <param name="tinfo">Type descriptor.</param>
+        /// <returns>Whether <paramref name="value"/> is of type <paramref name="tinfo"/>.</returns>
+        public static bool IsInstanceOf(object value, Reflection.PhpTypeInfo tinfo)
+        {
+            if (tinfo == null)
+            {
+                throw new ArgumentNullException(nameof(tinfo));
+            }
+
+            return tinfo.Type.GetTypeInfo().IsInstanceOfType(value);
+        }
 
         #endregion
 

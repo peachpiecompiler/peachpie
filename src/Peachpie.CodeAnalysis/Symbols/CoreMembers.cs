@@ -323,6 +323,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToClass_IPhpArray = ct.Convert.Method("ToClass", ct.IPhpArray);
                 AsCallable_PhpValue = ct.Convert.Method("AsCallable", ct.PhpValue);
                 AsCallable_String = ct.Convert.Method("AsCallable", ct.String);
+                IsInstanceOf_Object_PhpTypeInfo = ct.Convert.Method("IsInstanceOf", ct.Object, ct.PhpTypeInfo);
                 ToIntStringKey_PhpValue = ct.Convert.Method("ToIntStringKey", ct.PhpValue);
 
                 Echo_String = ct.Context.Method("Echo", ct.String);
@@ -365,6 +366,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Div_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseOr_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseOrOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseAnd_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseAndOperatorName, ct.PhpValue, ct.PhpValue);
+                BitwiseNot_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.OnesComplementOperatorName, ct.PhpValue);
             }
 
             public readonly CoreMethod
@@ -375,6 +377,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong_PhpValue, ToDouble_PhpValue,
                 ToNumber_PhpValue,
                 AsObject_PhpValue, AsArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
+                IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
 
@@ -389,7 +392,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_PhpValue_bool,
 
                 Div_PhpValue_PhpValue,
-                BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue;
+                BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseNot_PhpValue;
         }
 
         public struct PhpValueHolder
