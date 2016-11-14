@@ -22,8 +22,8 @@ sudo dpkg -i powershell_6.0.0-alpha.11-1ubuntu1.14.04.1_amd64.deb
 rm -f powershell_6.0.0-alpha.11-1ubuntu1.14.04.1_amd64.deb
 
 
-# Install Python Pip and cdiff
+# Install Python Pip and icdiff (http://www.jefftk.com/icdiff)
 
 sudo apt-get -y install python-pip
 pip -V
-pip install --upgrade cdiff
+pip install --upgrade icdiff
