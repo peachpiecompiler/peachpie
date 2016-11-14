@@ -394,6 +394,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Long);
                 ToDouble_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Double);
                 ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
+                ToLong_String = ct.Convert.Method("StringToLongInteger", ct.String);
+                ToDouble_String = ct.Convert.Method("StringToDouble", ct.String);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
                 AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
@@ -454,7 +456,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsSet_PhpValue, IsEmpty_PhpValue,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
-                ToLong_PhpValue, ToDouble_PhpValue,
+                ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
                 ToNumber_PhpValue,
                 AsObject_PhpValue, AsArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
                 IsInstanceOf_Object_PhpTypeInfo,
@@ -757,6 +759,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemObject_IntStringKey = t.Method("EnsureItemObject", ct.IntStringKey);
                 EnsureItemArray_IntStringKey = t.Method("EnsureItemArray", ct.IntStringKey);
                 EnsureItemAlias_IntStringKey = t.Method("EnsureItemAlias", ct.IntStringKey);
+
+                New_PhpValue = t.Method("New", ct.PhpValue);
             }
 
             public readonly CoreMethod
@@ -765,7 +769,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
-                DeepCopy, GetForeachEnumerator_Boolean;
+                DeepCopy, GetForeachEnumerator_Boolean,
+
+                New_PhpValue;
         }
 
         public struct ConstructorsHolder

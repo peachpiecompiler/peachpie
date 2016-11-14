@@ -401,6 +401,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitOpCode(ILOpCode.Conv_i8);   // double -> int64
                     break;
 
+                case SpecialType.System_String:
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToLong_String)
+                        .Expect(SpecialType.System_Int64);
+                    break;
+
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
@@ -446,12 +451,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Int32:
                     _il.EmitOpCode(ILOpCode.Conv_r8);   // Int32 -> Double
                     return dtype;
+
                 case SpecialType.System_Int64:
                     _il.EmitOpCode(ILOpCode.Conv_r8);   // Int64 -> Double
                     return dtype;
+
                 case SpecialType.System_Double:
                     // nop
                     return dtype;
+
+                case SpecialType.System_String:
+                    return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToDouble_String)
+                        .Expect(SpecialType.System_Double);
+
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
@@ -574,16 +586,24 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public void EmitConvertToPhpArray(TypeSymbol from, TypeRefMask fromHint)
         {
-            if (from == CoreTypes.PhpArray)
-                return;
-
-            if (from == CoreTypes.PhpValue)
+            if (from.IsOfType(CoreTypes.PhpArray))
             {
-                // TODO: ToArray()
-                EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue);
+                return;
+            }
+            else if (from == CoreTypes.PhpValue)
+            {
+                EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue);        // TODO: ToArray(), not AsArray()
+            }
+            else if (   // TODO: helper method for builtin types
+                from.SpecialType != SpecialType.None ||
+                from.IsOfType(CoreTypes.PhpResource) || from == CoreTypes.PhpNumber || from == CoreTypes.PhpString)
+            {
+                EmitConvertToPhpValue(from, fromHint);
+                EmitCall(ILOpCode.Call, CoreMethods.PhpArray.New_PhpValue);
             }
             else
             {
+                // TODO: object to array (copy its fields to new instance)
                 throw new NotImplementedException($"(array){from.Name}");
             }
         }

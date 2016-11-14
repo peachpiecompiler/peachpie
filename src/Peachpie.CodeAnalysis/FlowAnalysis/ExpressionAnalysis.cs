@@ -1067,6 +1067,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             this.Routine.Flags |= RoutineFlags.HasInclude;
 
+            VisitRoutineCall(x);
+
             // resolve target script
             Debug.Assert(x.ArgumentsInSourceOrder.Length == 1);
             var targetExpr = x.ArgumentsInSourceOrder[0].Value;
@@ -1111,6 +1113,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = 0;
             }
+
+            //
+            VisitRoutineCallEpilogue(x);
         }
 
         public override void VisitArgument(BoundArgument x)

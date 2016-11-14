@@ -1480,14 +1480,10 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.Clone:
-                    // Template: clone x        Operators.Clone(x,DTypeDesc,ScriptContext)
-                    //codeGenerator.EmitBoxing(node.Expr.Emit(codeGenerator));
-                    //codeGenerator.EmitLoadClassContext();
-                    //codeGenerator.EmitLoadScriptContext();
-                    //il.Emit(OpCodes.Call, Methods.Operators.Clone);
-                    //returned_typecode = PhpTypeCode.Object;
-                    //break;
-                    throw new NotImplementedException();
+                    // Template: clone x
+                    Debug.WriteLine("TODO: clone(object)");
+                    returned_type = cg.Emit(Operand);   // TODO: clone
+                    break;
 
                 case Operations.LogicNegation:
                     //Template: !(bool)(x);                              
