@@ -37,12 +37,5 @@
         }
       }
     }
-  },
-
-  "scripts": {
-    "postcompile": [
-      "powershell -File ../../build/update_package.ps1 %project:Name% %project:Version% %compile:TargetFramework% %compile:Configuration%",
-      "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs --version-suffix beta ../Peachpie.App"
-    ]
   }
 }

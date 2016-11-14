@@ -37,7 +37,7 @@
 
   "scripts": {
     "postcompile": [
-      "powershell -File ../../build/update_package.ps1 %project:Name% %project:Version% %compile:TargetFramework% %compile:Configuration%"
+      "powershell -File ../../build/update_packages.ps1 ../../ %project:Version% %compile:TargetFramework% %compile:Configuration%"
     ]
   }
 }
