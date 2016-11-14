@@ -813,7 +813,10 @@ namespace Pchp.CodeAnalysis.Semantics
                         }
                         else
                         {
-                            throw new NotImplementedException($"PhpNumber == {ytype}");
+                            ytype = cg.EmitConvertToPhpValue(ytype, 0);
+                            // number == value
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_number_PhpValue)
+                                .Expect(SpecialType.System_Boolean);
                         }
                     }
                     else

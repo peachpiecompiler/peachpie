@@ -505,6 +505,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 get_Long = ct.PhpNumber.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpNumber.Method("get_Double");   // TODO: special name, property
 
+                Eq_number_PhpValue = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpNumber, ct.PhpValue);
+                Ineq_number_PhpValue = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpNumber, ct.PhpValue);
                 Eq_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Ineq_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Eq_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpNumber, ct.Long);
@@ -589,6 +591,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Create_Long, Create_Double;
 
             public readonly CoreOperator
+                Eq_number_PhpValue, Ineq_number_PhpValue,
                 Eq_number_number, Ineq_number_number,
                 Eq_number_long, Ineq_number_long,
                 Eq_number_double, Ineq_number_double,

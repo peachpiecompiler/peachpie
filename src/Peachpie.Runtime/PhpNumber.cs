@@ -169,6 +169,16 @@ namespace Pchp.Core
         /// <summary>
         /// Non strict equality operator.
         /// </summary>
+        public static bool operator ==(PhpNumber a, PhpValue b) => Comparison.Compare(a, b) == 0;
+
+        /// <summary>
+        /// Non strict inequality operator.
+        /// </summary>
+        public static bool operator !=(PhpNumber a, PhpValue b) => Comparison.Compare(a, b) != 0;
+
+        /// <summary>
+        /// Non strict equality operator.
+        /// </summary>
         public static bool operator ==(PhpNumber a, PhpNumber b)
         {
             a.AssertTypeCode();
