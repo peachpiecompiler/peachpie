@@ -228,10 +228,20 @@ namespace Pchp.Library
         /// Returns directory name component of path.
         /// </summary>
         /// <param name="path">The full path.</param>
+        /// <param name="levels">The number of parent directories to go up. Must be greater than zero.</param>
         /// <returns>The directory portion of the given path.</returns>
-        public static string dirname(string path)
+        public static string dirname(string path, int levels = 1)
         {
-            if (string.IsNullOrEmpty(path)) return null;
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+
+            if (levels != 1)
+            {
+                // added in php 7.0
+                throw new NotImplementedException();
+            }
 
             int start = 0;
             int end = path.Length - 1;
@@ -260,18 +270,6 @@ namespace Pchp.Library
                 return path.Substring(0, end + 1) + PathUtils.AltDirectorySeparator;
 
             return path.Substring(0, end + 1);
-        }
-
-        /// <summary>
-        /// Returns directory name component of path.
-        /// </summary>
-        /// <param name="path">The full path.</param>
-        /// <param name="levels">The number of parent directories to go up. Must be greater than zero.</param>
-        /// <returns>The directory portion of the given path.</returns>
-        public static string dirname(string path, int levels = 1)
-        {
-            // added in php 7.0
-            throw new NotImplementedException();
         }
 
         /// <summary>
