@@ -53,31 +53,6 @@ namespace Pchp.Library
         #region ob_start
 
         /// <summary>
-        /// Increases the level of buffering and enables output buffering if disabled.
-        /// </summary>
-        /// <returns>Always true.</returns>
-        public static bool ob_start(Context ctx) => ob_start(ctx, null, 0, true);
-
-        /// <summary>
-        /// Increases the level of buffering, enables output buffering if disabled and assignes the filtering callback
-        /// to the new level of buffering.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="filter">The filtering callback. Ignores invalid callbacks.</param>
-        /// <returns>Whether the filter is empty or a valid callback.</returns>
-        public static bool ob_start(Context ctx, Delegate filter) => ob_start(ctx, filter, 0, true);
-
-        /// <summary>
-        /// Increases the level of buffering, enables output buffering if disabled and assignes the filtering callback
-        /// to the new level of buffering.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="filter">The filtering callback. Ignores invalid callbacks.</param>
-        /// <param name="chunkSize">Not supported.</param>
-        /// <returns>Whether the filter is empty or a valid callback.</returns>
-        public static bool ob_start(Context ctx, Delegate filter, int chunkSize) => ob_start(ctx, filter, chunkSize, true);
-
-        /// <summary>
         /// Increases the level of buffering, enables output buffering if disabled and assignes the filtering callback
         /// to the new level of buffering.
         /// </summary>
@@ -86,7 +61,7 @@ namespace Pchp.Library
         /// <param name="chunkSize">Not supported.</param>
         /// <param name="erase">Not supported.</param>
         /// <returns>Whether the filter is valid callback.</returns>
-        public static bool ob_start(Context ctx, Delegate filter, int chunkSize, bool erase)
+        public static bool ob_start(Context ctx, Delegate filter = null, int chunkSize = 0, bool erase = true)
         {
             if (chunkSize != 0)
                 //PhpException.ArgumentValueNotSupported("chunkSize", "!= 0");

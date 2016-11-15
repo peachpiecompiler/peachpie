@@ -633,25 +633,13 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The source string (unicode or binary).</param>
         /// <param name="offset">The relativized offset of the first item of the slice.</param>
-        /// <returns>The substring of the <paramref name="str"/>.</returns>
-        /// <remarks>
-        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> where <c>length</c> is infinity.
-        /// </remarks>
-        [return: CastToFalse]
-        public static string substr(string str, int offset) => substr(str, offset, int.MaxValue);
-
-        /// <summary>
-        /// Retrieves a substring from the given string.
-        /// </summary>
-        /// <param name="str">The source string (unicode or binary).</param>
-        /// <param name="offset">The relativized offset of the first item of the slice.</param>
         /// <param name="length">The relativized length of the slice.</param>
         /// <returns>The substring of the <paramref name="str"/>.</returns>
         /// <remarks>
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
         /// </remarks>
         [return: CastToFalse]
-        public static string substr(string str, int offset, int length)
+        public static string substr(string str, int offset, int length = int.MaxValue)
         {
             //PhpBytes binstr = str as PhpBytes;
             //if (binstr != null)
@@ -1450,31 +1438,6 @@ namespace Pchp.Library
         #region chunk_split
 
         /// <summary>
-        /// Splits a string into chunks 76 characters long separated by "\r\n".
-        /// </summary>
-        /// <param name="str">The string to split.</param>
-        /// <returns>The splitted string.</returns>
-        /// <remarks>"\r\n" is also appended after the last chunk.</remarks>
-        [return: CastToFalse]
-        public static string chunk_split(string str)
-        {
-            return chunk_split(str, 76, "\r\n");
-        }
-
-        /// <summary>
-        /// Splits a string into chunks of a specified length separated by "\r\n".
-        /// </summary>
-        /// <param name="str">The string to split.</param>
-        /// <param name="chunkLength">The chunk length.</param>
-        /// <returns>The splitted string.</returns>
-        /// <remarks>"\r\n" is also appended after the last chunk.</remarks>
-        [return: CastToFalse]
-        public static string chunk_split(string str, int chunkLength)
-        {
-            return chunk_split(str, chunkLength, "\r\n");
-        }
-
-        /// <summary>
         /// Splits a string into chunks of a specified length separated by a specified string.
         /// </summary>
         /// <param name="str">The string to split.</param>
@@ -1482,7 +1445,7 @@ namespace Pchp.Library
         /// <param name="endOfChunk">The chunk separator.</param>
         /// <returns><paramref name="endOfChunk"/> is also appended after the last chunk.</returns>
         [return: CastToFalse]
-        public static string chunk_split(string str, int chunkLength, string endOfChunk)
+        public static string chunk_split(string str, int chunkLength = 76, string endOfChunk = "\r\n")
         {
             if (str == null) return string.Empty;
 
@@ -1770,15 +1733,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Calculates the Levenshtein distance between two strings.
-        /// </summary>
-        /// <param name="src">The first string.</param>
-        /// <param name="dst">The second string.</param>
-        /// <returns>The Levenshtein distance between <paramref name="src"/> and <paramref name="dst"/> or -1 if any of the
-        /// strings is longer than 255 characters.</returns>
-        public static int levenshtein(string src, string dst) => levenshtein(src, dst, 1, 1, 1);
-
-        /// <summary>
         /// Calculates the Levenshtein distance between two strings given the cost of insert, replace
         /// and delete operations.
         /// </summary>
@@ -1790,7 +1744,7 @@ namespace Pchp.Library
         /// <returns>The Levenshtein distance between <paramref name="src"/> and <paramref name="dst"/> or -1 if any of the
         /// strings is longer than 255 characters.</returns>
         /// <remarks>See <A href="http://www.merriampark.com/ld.htm">http://www.merriampark.com/ld.htm</A> for description of the algorithm.</remarks>
-        public static int levenshtein(string src, string dst, int insertCost, int replaceCost, int deleteCost)
+        public static int levenshtein(string src, string dst, int insertCost = 1, int replaceCost = 1, int deleteCost = 1)
         {
             if (src == null) src = String.Empty;
             if (dst == null) dst = String.Empty;
@@ -2577,48 +2531,6 @@ namespace Pchp.Library
         #region wordwrap
 
         /// <summary>
-        /// Wraps a string to 75 characters using new line as the break character.
-        /// </summary>
-        /// <param name="str">The string to word-wrap.</param>
-        /// <returns>The word-wrapped string.</returns>
-        /// <remarks>The only "break-point" character is space (' '). If a word is longer than 75 characers
-        /// it will stay uncut.</remarks>
-        [return: CastToFalse]
-        public static string wordwrap(string str)
-        {
-            return wordwrap(str, 75, "\n", false);
-        }
-
-        /// <summary>
-        /// Wraps a string to a specified number of characters using new line as the break character.
-        /// </summary>
-        /// <param name="str">The string to word-wrap.</param>
-        /// <param name="width">The desired line length.</param>
-        /// <returns>The word-wrapped string.</returns>
-        /// <remarks>The only "break-point" character is space (' '). If a word is longer than <paramref name="width"/> 
-        /// characers it will stay uncut.</remarks>
-        [return: CastToFalse]
-        public static string wordwrap(string str, int width)
-        {
-            return wordwrap(str, width, "\n", false);
-        }
-
-        /// <summary>
-        /// Wraps a string to a specified number of characters using a specified string as the break string.
-        /// </summary>
-        /// <param name="str">The string to word-wrap.</param>
-        /// <param name="width">The desired line length.</param>
-        /// <param name="lineBreak">The break string.</param>
-        /// <returns>The word-wrapped string.</returns>
-        /// <remarks>The only "break-point" character is space (' '). If a word is longer than <paramref name="width"/> 
-        /// characers it will stay uncut.</remarks>
-        [return: CastToFalse]
-        public static string wordwrap(string str, int width, string lineBreak)
-        {
-            return wordwrap(str, width, lineBreak, false);
-        }
-
-        /// <summary>
         /// Wraps a string to a specified number of characters using a specified string as the break string.
         /// </summary>
         /// <param name="str">The string to word-wrap.</param>
@@ -2630,7 +2542,7 @@ namespace Pchp.Library
         /// <remarks>The only "break-point" character is space (' ').</remarks>
         /// <exception cref="PhpException">Thrown if the combination of <paramref name="width"/> and <paramref name="cut"/> is invalid.</exception>
         [return: CastToFalse]
-        public static string wordwrap(string str, int width, string lineBreak, bool cut)
+        public static string wordwrap(string str, int width = 75, string lineBreak = "\n", bool cut = false)
         {
             if (width == 0 && cut)
             {
@@ -3242,39 +3154,25 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Splits a string into words.
+        /// Counts the number of words inside a string.
         /// </summary>
-        /// <param name="str">The string to split.</param>
-        /// <param name="format">If <see cref="WordCountResult.WordsArray"/>, the method returns an array containing all
-        /// the words found inside the string. If <see cref="WordCountResult.PositionsToWordsMapping"/>, the method returns 
-        /// an array, where the key is the numeric position of the word inside the string and the value is the 
-        /// actual word itself.</param>
-        /// <returns>Array of words. Keys are just numbers starting with 0 (when <paramref name="format"/> is 
-        /// WordCountResult.WordsArray) or positions of the words inside <paramref name="str"/> (when
-        /// <paramref name="format"/> is <see cref="WordCountResult.PositionsToWordsMapping"/>).</returns>
-        /// <exception cref="PhpException">Thrown if <paramref name="format"/> is invalid.</exception>
-        public static object str_word_count(string str, WordCountResult format)
-        {
-            return str_word_count(str, format, null);
-        }
-
-        public static object str_word_count(string str, WordCountResult format, string addWordChars)
+        public static PhpValue str_word_count(string str, WordCountResult format = WordCountResult.WordCount, string addWordChars = null)
         {
             PhpArray words = (format != WordCountResult.WordCount) ? new PhpArray() : null;
 
             int count = CountWords(str, format, addWordChars, words);
 
             if (count == -1)
-                return false;
+                return PhpValue.False;
 
             if (format == WordCountResult.WordCount)
-                return count;
+                return PhpValue.Create(count);
             else
             {
                 if (words != null)
-                    return words;
+                    return PhpValue.Create(words);
                 else
-                    return false;
+                    return PhpValue.False;
             }
         }
 
@@ -3420,8 +3318,6 @@ namespace Pchp.Library
 
         #region strpos, strrpos, stripos, strripos
 
-        #region Stubs
-
         /// <summary>
         /// Retrieves the index of the first occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>.
         /// The search starts at the specified character position.
@@ -3486,8 +3382,6 @@ namespace Pchp.Library
         {
             return Strrpos(haystack, needle, offset, StringComparison.OrdinalIgnoreCase);
         }
-
-        #endregion
 
         /// <summary>
         /// Implementation of <c>str[i]pos</c> functions.
@@ -3741,7 +3635,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns the length of a string.
         /// </summary>
-        public static int strlen(string x) => (x ?? string.Empty).Length;
+        public static int strlen(string x) => (x != null) ? x.Length : 0;
 
         /// <summary>
         /// Returns the length of a string.
