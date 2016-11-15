@@ -246,6 +246,12 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
         {
+            path = path.Replace('/', '\\'); // normalize slashes
+            if (path.StartsWith(this.RootPath))
+            {
+                path = path.Substring(this.RootPath.Length);
+            }
+
             var script = ScriptsMap.SearchForIncludedFile(path, IncludePaths, cd, _scripts.GetScript);  // TODO: _scripts.GetScript => make relative path from absolute
             if (script.IsValid)
             {
