@@ -814,6 +814,184 @@ namespace Pchp.Library
 
         #endregion
 
+        #region substr_count, substr_replace, substr_compare
+
+        /// <summary>
+        /// See <see cref="substr_count(string,string,int,int)"/>.
+        /// </summary>
+        [return: CastToFalse]
+        public static int substr_count(string haystack, string needle, int offset = 0)
+        {
+            if (String.IsNullOrEmpty(haystack)) return 0;
+            if (!SubstringCountInternalCheck(needle)) return -1;
+            if (!SubstringCountInternalCheck(haystack, offset)) return -1;
+
+            return SubstringCountInternal(haystack, needle, offset, haystack.Length);
+        }
+
+        /// <summary>
+        /// Count the number of substring occurrences.
+        /// </summary>
+        /// <param name="haystack">The string.</param>
+        /// <param name="needle">The substring.</param>
+        /// <param name="offset">The relativized offset of the first item of the slice. Zero if missing in overloads</param>
+        /// <param name="length">The relativized length of the slice. Infinity if missing in overloads.</param>
+        /// <returns>The number of <paramref name="needle"/> occurences in <paramref name="haystack"/>.</returns>
+        /// <example>"aba" has one occurence in "ababa".</example>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
+        /// </remarks>
+        /// <exception cref="PhpException">Thrown if <paramref name="needle"/> is null.</exception>
+        [return: CastToFalse]
+        public static int substr_count(string haystack, string needle, int offset, int length)
+        {
+            if (String.IsNullOrEmpty(haystack)) return 0;
+            if (!SubstringCountInternalCheck(needle)) return -1;
+            if (!SubstringCountInternalCheck(haystack, offset, length)) return -1;
+
+            return SubstringCountInternal(haystack, needle, offset, offset + length);
+        }
+
+        /// <summary>
+        /// See <see cref="substr_replace(PhpValue, PhpValue, PhpValue, PhpValue)"/>.
+        /// </summary>
+        public static string substr_replace(string subject, string replacement, int offset)
+        {
+            return SubstringReplace(subject, replacement, offset, int.MaxValue);
+        }
+
+        /// <summary>
+        /// Replaces a portion of a string or multiple strings with another string.
+        /// </summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
+        /// <param name="subject">The subject of replacement (can be an array of subjects).</param>
+        /// <param name="replacement">The replacement string (can be array of replacements).</param>
+        /// <param name="offset">The relativized offset of the first item of the slice (can be array of offsets).</param>
+        /// <param name="length">The relativized length of the slice (can be array of lengths).</param>
+        /// <returns>
+        /// Either the <paramref name="subject"/> with a substring replaced by <paramref name="replacement"/> if it is a string
+        /// or an array containing items of the <paramref name="subject"/> with substrings replaced by <paramref name="replacement"/>
+        /// and indexed by integer keys starting from 0. If <paramref name="replacement"/> is an array, multiple replacements take place.
+        /// </returns>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
+        /// Missing <paramref name="length"/> is considered to be infinity.
+        /// If <paramref name="offset"/> and <paramref name="length"/> conversion results in position
+        /// less than or equal to zero and greater than or equal to string length, the replacement is prepended and appended, respectively.
+        /// </remarks>
+        public static PhpValue substr_replace(Context ctx, PhpValue subject, PhpValue replacement, PhpValue offset, PhpValue length)
+        {
+            IList<PhpValue> subject_list, replacement_list, offset_list, length_list;
+            string[] replacements = null, subjects = null;
+            int[] offsets = null, lengths = null;
+            int int_offset = 0, int_length = 0;
+            string str_replacement = null;
+
+            // prepares string array of subjects:
+            if ((subject_list = subject.Object as IList<PhpValue>) != null)
+            {
+                subjects = new string[subject_list.Count];
+                int i = 0;
+                foreach (var item in subject_list)
+                {
+                    subjects[i++] = item.ToString(ctx);
+                }
+            }
+            else
+            {
+                subjects = new string[] { subject.ToString(ctx) };
+            }
+
+            // prepares string array of replacements:
+            if ((replacement_list = replacement.Object as IList<PhpValue>) != null)
+            {
+                replacements = new string[replacement_list.Count];
+                int i = 0;
+                foreach (var item in replacement_list)
+                {
+                    replacements[i++] = item.ToString(ctx);
+                }
+            }
+            else
+            {
+                str_replacement = replacement.ToString(ctx);
+            }
+
+            // prepares integer array of offsets:
+            if ((offset_list = offset.Object as IList<PhpValue>) != null)
+            {
+                offsets = new int[offset_list.Count];
+                int i = 0;
+                foreach (var item in offset_list)
+                {
+                    offsets[i++] = (int)item.ToLong();
+                }
+            }
+            else
+            {
+                int_offset = (int)offset.ToLong();
+            }
+
+            // prepares integer array of lengths:
+            if ((length_list = length.Object as IList<PhpValue>) != null)
+            {
+                lengths = new int[length_list.Count];
+                int i = 0;
+                foreach (var item in length_list)
+                {
+                    lengths[i++] = (int)item.ToLong();
+                }
+            }
+            else
+            {
+                int_length = (int)length.ToLong();
+            }
+
+            for (int i = 0; i < subjects.Length; i++)
+            {
+                if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
+                if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subjects[i].Length;
+                if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
+
+                subjects[i] = SubstringReplace(subjects[i], str_replacement, int_offset, int_length);
+            }
+
+            if (subject_list != null)
+                return PhpValue.Create(new PhpArray(subjects));
+            else
+                return PhpValue.Create(subjects[0]);
+        }
+
+        /// <summary>
+        /// Performs substring replacements on subject.
+        /// </summary>
+        static string SubstringReplace(string subject, string replacement, int offset, int length)
+        {
+            PhpMath.AbsolutizeRange(ref offset, ref length, subject.Length);
+            return new StringBuilder(subject).Remove(offset, length).Insert(offset, replacement).ToString();
+        }
+
+        /// <summary>
+        /// Compares substrings.
+        /// </summary>
+        /// <param name="mainStr">A string whose substring to compare with <paramref name="str"/>.</param>
+        /// <param name="str">The second operand of the comparison.</param>
+        /// <param name="offset">An offset in <paramref name="mainStr"/> where to start. Negative value means zero. Offsets beyond <paramref name="mainStr"/> means its length.</param>
+        /// <param name="length">A maximal number of characters to compare. Non-positive values means infinity.</param>
+        /// <param name="ignoreCase">Whether to ignore case.</param>
+        public static int substr_compare(string mainStr, string str, int offset, int length = Int32.MaxValue, bool ignoreCase = false)
+        {
+            if (mainStr == null) mainStr = string.Empty;
+            if (str == null) str = string.Empty;
+            if (length <= 0) length = int.MaxValue;
+            if (offset < 0) offset = 0;
+            if (offset > mainStr.Length) offset = mainStr.Length;
+
+            return string.Compare(mainStr, offset, str, 0, length, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        }
+
+        #endregion
+
         #region strip_tags, nl2br
 
         /// <summary>
@@ -3136,8 +3314,7 @@ namespace Pchp.Library
         }
 
         #endregion
-
-
+        
         #region strpos, strrpos, stripos, strripos
 
         #region Stubs
@@ -3284,8 +3461,7 @@ namespace Pchp.Library
         }
 
         #endregion
-
-
+        
         #region strstr, stristr, strchr, strrchr
 
         #region Stubs
@@ -3405,8 +3581,7 @@ namespace Pchp.Library
         }
 
         #endregion
-
-
+        
         #region strpbrk
 
         /// <summary>
