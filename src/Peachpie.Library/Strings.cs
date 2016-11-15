@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Pchp.Library
@@ -988,6 +989,135 @@ namespace Pchp.Library
             if (offset > mainStr.Length) offset = mainStr.Length;
 
             return string.Compare(mainStr, offset, str, 0, length, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        }
+
+        #endregion
+
+        #region str_shuffle, str_split
+
+        /// <summary>
+        /// Randomly shuffles a string.
+        /// </summary>
+        /// <param name="str">The string to shuffle.</param>
+        /// <returns>One random permutation of <paramref name="str"/>.</returns>
+        public static string str_shuffle(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
+            int count = str.Length;
+            if (count <= 1)
+            {
+                return str;
+            }
+
+            var generator = PhpMath.Generator;
+            var newstr = new StringBuilder(str);
+
+            // Takes n-th character from the string at random with probability 1/i
+            // and exchanges it with the one on the i-th position.
+            // Thus a random permutation is formed in the second part of the string (from i to count)
+            // and the set of remaining characters is stored in the first part.
+            for (int i = count - 1; i > 0; i--)
+            {
+                int n = generator.Next(i + 1);
+                char ch = newstr[i];
+                newstr[i] = newstr[n];
+                newstr[n] = ch;
+            }
+
+            //
+            return newstr.ToString();
+        }
+
+        /// <summary>
+        /// Converts a string to an array.
+        /// </summary>
+        /// <param name="str">The string to split.</param>
+        /// <returns>An array with keys being character indeces and values being characters.</returns>
+        [return: CastToFalse]
+        public static PhpArray str_split(string str)
+        {
+            return Split(str, 1);
+        }
+
+        /// <summary>
+        /// Converts a string to an array.
+        /// </summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
+        /// <param name="obj">The string to split.</param>
+        /// <param name="splitLength">Length of chunks <paramref name="obj"/> should be split into.</param>
+        /// <returns>An array with keys being chunk indeces and values being chunks of <paramref name="splitLength"/>
+        /// length.</returns>
+        /// <exception cref="PhpException">The <paramref name="splitLength"/> parameter is not positive (Warning).</exception>
+        [return: CastToFalse]
+        public static PhpArray str_split(Context ctx, PhpValue obj, int splitLength)
+        {
+            if (splitLength < 1)
+            {
+                throw new ArgumentOutOfRangeException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("segment_length_not_positive"));
+                //return null;
+            }
+            if (obj == null)
+            {
+                return new PhpArray();
+            }
+
+            var phpstr = obj.Object as PhpString;
+            if (phpstr != null && phpstr.ContainsBinaryData)
+            {
+                return Split(phpstr.ToBytes(ctx.StringEncoding), splitLength);
+            }
+            else
+            {
+                return Split(obj.ToString(ctx), splitLength);
+            }
+        }
+
+        static PhpArray Split(string str, int splitLength)
+        {
+            int length = str.Length;
+            PhpArray result = new PhpArray(length / splitLength + 1, 0);
+
+            // add items of length splitLength
+            int i;
+            for (i = 0; i < (length - splitLength + 1); i += splitLength)
+            {
+                result.Add(str.Substring(i, splitLength));
+            }
+
+            // add the last item
+            if (i < length) result.Add(str.Substring(i));
+
+            return result;
+        }
+
+        static PhpArray Split(byte[] str, int splitLength)
+        {
+            int length = str.Length;
+            PhpArray result = new PhpArray(length / splitLength + 1, 0);
+
+            // add items of length splitLength
+            int i;
+            for (i = 0; i < (length - splitLength + 1); i += splitLength)
+            {
+                byte[] chunk = new byte[splitLength];
+                Array.Copy(str, i, chunk, 0, chunk.Length);
+                result.Add(PhpValue.Create(new PhpString(chunk)));
+            }
+
+            // add the last item
+            if (i < length)
+            {
+                byte[] chunk = new byte[length - i];
+                Array.Copy(str, i, chunk, 0, chunk.Length);
+                result.Add(PhpValue.Create(new PhpString(chunk)));
+            }
+
+            return result;
         }
 
         #endregion
@@ -3314,7 +3444,7 @@ namespace Pchp.Library
         }
 
         #endregion
-        
+
         #region strpos, strrpos, stripos, strripos
 
         #region Stubs
@@ -3461,7 +3591,7 @@ namespace Pchp.Library
         }
 
         #endregion
-        
+
         #region strstr, stristr, strchr, strrchr
 
         #region Stubs
@@ -3581,7 +3711,7 @@ namespace Pchp.Library
         }
 
         #endregion
-        
+
         #region strpbrk
 
         /// <summary>
