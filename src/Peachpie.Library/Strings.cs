@@ -40,7 +40,7 @@ namespace Pchp.Library
         /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
         /// </summary>
         public static int ord(string str) => string.IsNullOrEmpty(str) ? 0 : (int)str[0];
-        
+
         /// <summary>
         /// Converts ordinal number of character to a binary string containing that character.
         /// </summary>
@@ -48,6 +48,17 @@ namespace Pchp.Library
         /// <returns>The character with <paramref name="charCode"/> ASCIT code.</returns>
         /// <remarks>Current code-page is determined by the <see cref="ApplicationConfiguration.GlobalizationSection.PageEncoding"/> property.</remarks>
         public static string chr(int charCode) => unchecked((char)charCode).ToString();
+
+        /// <summary>
+        /// Converts ordinal number of Unicode character to a string containing that character.
+        /// </summary>
+        /// <param name="charCode">The ordinal number of character.</param>
+        /// <returns>The character with <paramref name="charCode"/> ordnial number.</returns>
+        /*public*/
+        static string chr_unicode(int charCode)
+        {
+            return unchecked((char)charCode).ToString();
+        }
 
         ///// <summary>
         ///// Converts a string of bytes into hexadecimal representation.
@@ -3053,6 +3064,374 @@ namespace Pchp.Library
                 else pos++;
             }
             return word_count;
+        }
+
+        #endregion
+
+        #region strcmp, strcasecmp, strncmp, strncasecmp
+
+        /// <summary>
+        /// Compares two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static int strcmp(string str1, string str2) => string.CompareOrdinal(str1, str2);
+
+        /// <summary>
+        /// Compares two specified strings, ignoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static int strcasecmp(string str1, string str2)
+        {
+            return System.Globalization.CultureInfo.InvariantCulture.CompareInfo
+                .Compare(str1, str2, System.Globalization.CompareOptions.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">The lesser string.</param>
+        /// <param name="str2">The greater string.</param>
+        /// <param name="length">The upper limit of the length of parts to be compared.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static PhpValue strncmp(string str1, string str2, int length)
+        {
+            if (length < 0)
+            {
+                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
+                //return PhpValue.False;
+            }
+
+            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, length));
+        }
+
+        /// <summary>
+        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <param name="length">The upper limit of the length of parts to be compared.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static PhpValue strncasecmp(string str1, string str2, int length)
+        {
+            if (length < 0)
+            {
+                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
+                //return PhpValue.False;
+            }
+
+            length = Math.Max(Math.Max(length, str1.Length), str2.Length);
+
+            return PhpValue.Create(System.Globalization.CultureInfo.InvariantCulture.CompareInfo
+                .Compare(str1, 0, length, str2, 0, length, System.Globalization.CompareOptions.OrdinalIgnoreCase));
+        }
+
+        #endregion
+
+
+        #region strpos, strrpos, stripos, strripos
+
+        #region Stubs
+
+        /// <summary>
+        /// Retrieves the index of the first occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>.
+        /// The search starts at the specified character position.
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="needle">
+        /// The string or the ordinal value of character to search for. 
+        /// If non-string is passed as a needle then it is converted to an integer (modulo 256) and the character
+        /// with such ordinal value (relatively to the current encoding set in the configuration) is searched.</param>
+        /// <param name="offset">
+        /// The position where to start searching. Should be between 0 and a length of the <paramref name="haystack"/> including.
+        /// </param>
+        /// <returns>Non-negative integer on success, -1 otherwise.</returns>
+        /// <exception cref="PhpException"><paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
+        [return: CastToFalse]
+        public static int strpos(string haystack, PhpValue needle, int offset = 0)
+        {
+            return Strpos(haystack, needle, offset, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Retrieves the index of the first occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>
+        /// (case insensitive).
+        /// </summary>
+        /// <remarks>See <see cref="Strpos(string,object,int)"/> for details.</remarks>
+        /// <exception cref="PhpException">Thrown if <paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
+        [return: CastToFalse]
+        public static int stripos(string haystack, PhpValue needle, int offset = 0)
+        {
+            return Strpos(haystack, needle, offset, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Retrieves the index of the last occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>.
+        /// The search starts at the specified character position.
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="needle">The string or the ordinal value of character to search for. 
+        /// If non-string is passed as a needle then it is converted to an integer (modulo 256) and the character
+        /// with such ordinal value (relatively to the current encoding set in the configuration) is searched.</param>
+        /// <param name="offset">
+        /// The position where to start searching (is non-negative) or a negative number of characters
+        /// prior the end where to stop searching (if negative).
+        /// </param>
+        /// <returns>Non-negative integer on success, -1 otherwise.</returns>
+        /// <exception cref="PhpException">Thrown if <paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
+        [return: CastToFalse]
+        public static int strrpos(string haystack, PhpValue needle, int offset = 0)
+        {
+            return Strrpos(haystack, needle, offset, StringComparison.Ordinal);
+        }
+
+
+        /// <summary>
+        /// Retrieves the index of the last occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>
+        /// (case insensitive).
+        /// </summary>
+        /// <remarks>See <see cref="Strrpos(string,object,int)"/> for details.</remarks>
+        /// <exception cref="PhpException">Thrown if <paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
+        [return: CastToFalse]
+        public static int strripos(string haystack, PhpValue needle, int offset = 0)
+        {
+            return Strrpos(haystack, needle, offset, StringComparison.OrdinalIgnoreCase);
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Implementation of <c>str[i]pos</c> functions.
+        /// </summary>
+        static int Strpos(string haystack, PhpValue needle, int offset, StringComparison comparisonType)
+        {
+            if (String.IsNullOrEmpty(haystack)) return -1;
+
+            if (offset < 0 || offset >= haystack.Length)
+            {
+                if (offset != haystack.Length)
+                {
+                    throw new ArgumentOutOfRangeException();
+                    //PhpException.InvalidArgument("offset", LibResources.GetString("arg:out_of_bounds"));
+                }
+                return -1;
+            }
+
+            var str_needle = PhpVariable.StringOrNull(needle);
+            if (str_needle != null)
+            {
+                if (str_needle == String.Empty)
+                {
+                    throw new ArgumentException();
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //return -1;
+                }
+
+                return haystack.IndexOf(str_needle, offset, comparisonType);
+            }
+            else
+            {
+                return haystack.IndexOf(chr_unicode((int)(needle.ToLong() % 256)), offset, comparisonType);
+            }
+        }
+
+        /// <summary>
+        /// Implementation of <c>strr[i]pos</c> functions.
+        /// </summary>
+        static int Strrpos(string haystack, PhpValue needle, int offset, StringComparison comparisonType)
+        {
+            if (String.IsNullOrEmpty(haystack)) return -1;
+
+            int end = haystack.Length - 1;
+            if (offset > end || offset < -end - 1)
+            {
+                throw new ArgumentOutOfRangeException();
+                //PhpException.InvalidArgument("offset", LibResources.GetString("arg:out_of_bounds"));
+                //return -1;
+            }
+
+            var str_needle = PhpVariable.StringOrNull(needle);
+            if (offset < 0)
+            {
+                end += offset + (str_needle != null ? str_needle.Length : 1);
+                offset = 0;
+            }
+
+            if (str_needle != null)
+            {
+                if (str_needle.Length == 0)
+                {
+                    throw new ArgumentException();
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //return -1;
+                }
+
+                return haystack.LastIndexOf(str_needle, end, end - offset + 1, comparisonType);
+            }
+            else
+            {
+                return haystack.LastIndexOf(chr_unicode((int)(needle.ToLong() % 256)), end, end - offset + 1, comparisonType);
+            }
+        }
+
+        #endregion
+
+
+        #region strstr, stristr, strchr, strrchr
+
+        #region Stubs
+
+        /// <summary>
+        /// Finds first occurrence of a string.
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="needle">The substring to search for.</param>
+        /// <param name="beforeNeedle">If TRUE, strstr() returns the part of the haystack before the first occurrence of the needle. </param>
+        /// <returns>Part of <paramref name="haystack"/> string from the first occurrence of <paramref name="needle"/> to the end 
+        /// of <paramref name="haystack"/> or null if <paramref name="needle"/> is not found.</returns>
+        /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
+        [return: CastToFalse]
+        public static string strstr(string haystack, PhpValue needle, bool beforeNeedle = false)
+        {
+            return StrstrImpl(haystack, needle, StringComparison.Ordinal, beforeNeedle);
+        }
+
+        /// <summary>
+        /// Finds first occurrence of a string. Alias of <see cref="strstr(string,PhpValue,bool)"/>.
+        /// </summary>
+        /// <remarks>See <see cref="Strstr(string,object)"/> for details.</remarks>
+        /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
+        public static string strchr(string haystack, PhpValue needle) => strstr(haystack, needle);
+
+        /// <summary>
+        /// Case insensitive version of <see cref="Strstr(string,object)"/>.
+        /// </summary>
+        /// <param name="haystack"></param>
+        /// <param name="needle"></param>
+        /// <param name="beforeNeedle">If TRUE, strstr() returns the part of the haystack before the first occurrence of the needle. </param>
+        /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
+        [return: CastToFalse]
+        public static string stristr(string haystack, PhpValue needle, bool beforeNeedle = false)
+        {
+            return StrstrImpl(haystack, needle, StringComparison.OrdinalIgnoreCase, beforeNeedle);
+        }
+
+        #endregion
+
+        /// <summary>
+        /// This function returns the portion of haystack  which starts at the last occurrence of needle  and goes until the end of haystack . 
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="needle">
+        /// If needle contains more than one character, only the first is used. This behavior is different from that of strstr().
+        /// If needle is not a string, it is converted to an integer and applied as the ordinal value of a character.
+        /// </param>
+        /// <returns>This function returns the portion of string, or FALSE  if needle  is not found.</returns>
+        /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
+        [return: CastToFalse]
+        public static string strrchr(string haystack, PhpValue needle)
+        {
+            if (haystack == null)
+                return null;
+
+            char charToFind;
+            string str_needle;
+
+            if ((str_needle = PhpVariable.AsString(needle)) != null)
+            {
+                if (str_needle.Length == 0)
+                {
+                    throw new ArgumentException();
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //return null;
+                }
+
+                charToFind = str_needle[0];
+            }
+            else
+            {
+                charToFind = chr_unicode((int)(needle.ToLong() % 256))[0];
+            }
+
+            int index = haystack.LastIndexOf(charToFind);
+            if (index < 0)
+                return null;
+
+            return haystack.Substring(index);
+        }
+
+        /// <summary>
+        /// Implementation of <c>str[i]{chr|str}</c> functions.
+        /// </summary>
+        internal static string StrstrImpl(string haystack, PhpValue needle, StringComparison comparisonType, bool beforeNeedle)
+        {
+            if (haystack == null) return null;
+
+            int index;
+            var str_needle = PhpVariable.StringOrNull(needle);
+            if (str_needle != null)
+            {
+                if (str_needle == String.Empty)
+                {
+                    throw new ArgumentException();
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //return null;
+                }
+
+                index = haystack.IndexOf(str_needle, comparisonType);
+            }
+            else
+            {
+                if (comparisonType == StringComparison.Ordinal)
+                {
+                    index = haystack.IndexOf((char)(needle.ToLong() % 256));
+                }
+                else
+                {
+                    index = haystack.IndexOf(chr_unicode((int)(needle.ToLong() % 256)), comparisonType);
+                }
+            }
+
+            return (index == -1) ? null : (beforeNeedle ? haystack.Substring(0, index) : haystack.Substring(index));
+        }
+
+        #endregion
+
+
+        #region strpbrk
+
+        /// <summary>
+        /// Finds first occurence of any of given characters.
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="charList">The characters to search for given as a string.</param>
+        /// <returns>Part of <paramref name="haystack"/> string from the first occurrence of any of characters contained
+        /// in <paramref name="charList"/> to the end of <paramref name="haystack"/> or <B>null</B> if no character is
+        /// found.</returns>
+        /// <exception cref="PhpException">Thrown when <paramref name="charList"/> is empty.</exception>
+        [return: CastToFalse]
+        public static string strpbrk(string haystack, string charList)
+        {
+            if (charList == null)
+            {
+                throw new ArgumentException();
+                //PhpException.InvalidArgument("charList", LibResources.GetString("arg:empty"));
+                //return null;
+            }
+
+            if (haystack == null) return null;
+
+            int index = haystack.IndexOfAny(charList.ToCharArray());
+            return (index >= 0 ? haystack.Substring(index) : null);
         }
 
         #endregion
