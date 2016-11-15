@@ -3048,34 +3048,7 @@ namespace Pchp.Library
         public const int STR_PAD_LEFT = (int)PaddingType.Left;
         public const int STR_PAD_RIGHT = (int)PaddingType.Right;
         public const int STR_PAD_BOTH = (int)PaddingType.Both;
-
-        /// <summary>
-        /// Pads a string to a certain length with spaces.
-        /// </summary>
-        /// <param name="str">The string to pad.</param>
-        /// <param name="totalWidth">Desired length of the returned string.</param>
-        /// <returns><paramref name="str"/> padded on the right with spaces.</returns>
-        public static string str_pad(string str, int totalWidth)
-        {
-            //if (str is PhpBytes)
-            //    return Pad(str, totalWidth, new PhpBytes(32));
-            //else
-            return str_pad(str, totalWidth, " ");
-        }
-
-        /// <summary>
-        /// Pads a string to certain length with another string.
-        /// </summary>
-        /// <param name="str">The string to pad.</param>
-        /// <param name="totalWidth">Desired length of the returned string.</param>
-        /// <param name="paddingString">The string to use as the pad.</param>
-        /// <returns><paramref name="str"/> padded on the right with <paramref name="paddingString"/>.</returns>
-        /// <exception cref="PhpException">Thrown if <paramref name="paddingString"/> is null or empty.</exception>
-        public static string str_pad(string str, int totalWidth, string paddingString)
-        {
-            return str_pad(str, totalWidth, paddingString, PaddingType.Right);
-        }
-
+        
         /// <summary>
         /// Pads a string to certain length with another string.
         /// </summary>
@@ -3086,7 +3059,7 @@ namespace Pchp.Library
         /// or on both sides of <paramref name="str"/>.</param>
         /// <returns><paramref name="str"/> padded with <paramref name="paddingString"/>.</returns>
         /// <exception cref="PhpException">Thrown if <paramref name="paddingType"/> is invalid or <paramref name="paddingString"/> is null or empty.</exception>
-        public static string str_pad(string str, int totalWidth, string paddingString, PaddingType paddingType)
+        public static string str_pad(string str, int totalWidth, string paddingString = " ", PaddingType paddingType = PaddingType.Right)
         {
             //PhpBytes binstr = str as PhpBytes;
             //if (str is PhpBytes)
