@@ -19,10 +19,13 @@ namespace Peachpie.Web
                 var script = RequestContextCore.ResolveScript(context.Request);
                 if (script.IsValid)
                 {
-                    using (var phpctx = new RequestContextCore(context))
+                    await Task.Run(() =>
                     {
-                        await Task.Run(() => script.MainMethod(phpctx, phpctx.Globals, null));
-                    }
+                        using (var phpctx = new RequestContextCore(context))
+                        {
+                            script.MainMethod(phpctx, phpctx.Globals, null);
+                        }
+                    });
                 }
                 else
                 {
