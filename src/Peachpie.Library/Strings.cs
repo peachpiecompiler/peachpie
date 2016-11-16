@@ -981,6 +981,175 @@ namespace Pchp.Library
 
         #endregion
 
+        #region str_replace, str_ireplace
+
+        static PhpValue str_replace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject, ref long count, StringComparison compareType)
+        {
+            var subjectArr = subject.Object as PhpArray;
+            if (subjectArr == null)
+            {
+                // string
+                return PhpValue.Create(str_replace(ctx, search, replace, subject.ToStringOrThrow(ctx), ref count, compareType));
+            }
+            else
+            {
+                // array
+                return PhpValue.Create(str_replace(ctx, search, replace, subjectArr, ref count, compareType));
+            }
+        }
+
+        static PhpArray str_replace(Context ctx, PhpValue search, PhpValue replace, PhpArray subject, ref long count, StringComparison compareType)
+        {
+            var result = new PhpArray(subject.Count);
+            var enumerator = subject.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                result.AddValue(PhpValue.Create(str_replace(ctx, search, replace, enumerator.CurrentValue.ToStringOrThrow(ctx), ref count, compareType)));
+            }
+
+            return result;
+        }
+
+        static string str_replace(Context ctx, PhpValue search, PhpValue replace, string subject, ref long count, StringComparison compareType)
+        {
+            if (string.IsNullOrEmpty(subject))
+            {
+                return string.Empty;
+            }
+
+            //
+            var searchArr = search.Object as PhpArray;
+            if (searchArr == null)
+            {
+                // string -> string
+                subject = str_replace(search.ToStringOrThrow(ctx), replace.ToStringOrThrow(ctx), subject, ref count, compareType);
+            }
+            else
+            {
+                var searchEnum = searchArr.GetFastEnumerator();
+
+                var replaceArr = replace.Object as PhpArray;
+                if (replaceArr != null)
+                {
+                    // array -> array
+                    var replaceEnum = replaceArr.GetFastEnumerator();
+                    while (searchEnum.MoveNext())
+                    {
+                        var searchStr = searchEnum.CurrentValue.ToStringOrThrow(ctx);
+                        var replaceStr = replaceEnum.MoveNext() ? replaceEnum.CurrentValue.ToStringOrThrow(ctx) : string.Empty;
+                        subject = str_replace(searchStr, replaceStr, subject, ref count, compareType);
+                    }
+                }
+                else
+                {
+                    // array -> string
+                    var replaceStr = replace.ToStringOrThrow(ctx);
+                    while (searchEnum.MoveNext())
+                    {
+                        var searchStr = searchEnum.CurrentValue.ToStringOrThrow(ctx);
+                        subject = str_replace(searchStr, replaceStr, subject, ref count, compareType);
+                    }
+                }
+            }
+
+            //
+            return subject;
+        }
+
+        static string str_replace(string search, string replace, string subject, ref long count, StringComparison compareType)
+        {
+            if (string.IsNullOrEmpty(search))
+            {
+                return subject;
+            }
+
+            //if (replace == null)
+            //{
+            //    replace = string.Empty;
+            //}
+            Debug.Assert(replace != null);
+
+            // temporary result instantiated lazily
+            StringBuilder result = null;
+
+            // elementary replace
+            int index, from = 0;
+            while ((index = subject.IndexOf(search, from, compareType)) >= 0)
+            {
+                if (result == null)
+                {
+                    result = new StringBuilder(subject.Length);
+                }
+
+                result.Append(subject, from, index - from);
+                result.Append(replace);
+                from = index + search.Length;
+                count++;
+            }
+
+            if (result == null)
+            {
+                return subject;
+            }
+            else
+            {
+                result.Append(subject, from, subject.Length - from);
+                return result.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Replaces all occurrences of the <paramref name="search"/> string 
+        /// with the <paramref name="replace"/> string.
+        /// </summary>
+        public static PhpValue str_replace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject)
+        {
+            long count = 0;
+            return str_replace(ctx, search, replace, subject, ref count, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Replaces all occurrences of the <paramref name="search"/> string 
+        /// with the <paramref name="replace"/> string counting the number of occurrences.
+        /// </summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
+        /// <param name="search">
+        /// The substring(s) to replace. Can be <see cref="string"/> or <see cref="PhpArray"/> of strings.
+        /// </param>
+        /// <param name="replace">
+        /// The string(s) to replace <paramref name="search"/>. Can be <see cref="string"/> or <see cref="PhpArray"/> containing strings.
+        /// </param>
+        /// <param name="subject">
+        /// The <see cref="string"/> or <see cref="PhpArray"/> of strings to perform the search and replace with.
+        /// </param>
+        /// <param name="count">
+        /// The number of matched and replaced occurrences.
+        /// </param>
+        /// <returns>
+        /// A <see cref="string"/> or <see cref="PhpArray"/> with
+        /// all occurrences of <paramref name="search"/> in <paramref name="subject"/>
+        /// replaced with the given <paramref name="replace"/> value.
+        /// </returns>
+        public static PhpValue str_replace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject, out long count)
+        {
+            count = 0;
+            return str_replace(ctx, search, replace, subject, ref count, StringComparison.Ordinal);
+        }
+
+        public static PhpValue str_ireplace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject)
+        {
+            long count = 0;
+            return str_replace(ctx, search, replace, subject, ref count, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static PhpValue str_ireplace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject, out long count)
+        {
+            count = 0;
+            return str_replace(ctx, search, replace, subject, ref count, StringComparison.OrdinalIgnoreCase);
+        }
+
+        #endregion
+
         #region str_shuffle, str_split
 
         /// <summary>
