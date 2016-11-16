@@ -672,6 +672,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var parameters = method.Parameters;
             int arg_index = 0;      // next argument to be emitted from <arguments>
             var param_index = 0;    // loaded parameters
+            var writebacks = new List<WriteBackInfo>();
 
             for (; param_index < parameters.Length; param_index++)
             {
@@ -704,7 +705,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (arg_index < arguments.Length)
                 {
-                    EmitLoadArgument(p, arguments[arg_index++]);
+                    EmitLoadArgument(p, arguments[arg_index++], writebacks);
                 }
                 else
                 {
@@ -719,7 +720,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // call the method
-            return EmitCall(code, method);
+            var result = EmitCall(code, method);
+
+            //
+            WriteBackInfo.WriteBackAndFree(this, writebacks);
+
+            //
+            return result;
         }
 
         /// <summary>
@@ -745,6 +752,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var targetps = target.Parameters;
             var givenps = thismethod.Parameters;
+            var writebacks = new List<WriteBackInfo>();
 
             int srcp = 0;
             while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared)
@@ -777,7 +785,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                             {
                                 Variable = new BoundParameter(p, null),
                                 Access = BoundAccess.Read
-                            });
+                            },
+                            writebacks);
                     }
                     else
                     {
@@ -789,7 +798,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            return this.EmitCall(ILOpCode.Call, target);
+            var result = this.EmitCall(ILOpCode.Call, target);
+
+            //
+            WriteBackInfo.WriteBackAndFree(this, writebacks);
+
+            //
+            return result;
         }
 
         /// <summary>
@@ -825,11 +840,102 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Temporary data used to call routines that expect ref or out parameters when given variable can't be passed by ref.
+        /// </summary>
+        struct WriteBackInfo
+        {
+            /// <summary>
+            /// The temporary local passed by reference to a function call.
+            /// After the call, it's value has to be written back to <see cref="Target"/>.
+            /// </summary>
+            public LocalDefinition TmpLocal;
+
+            /// <summary>
+            /// Original variable passed to the function call.
+            /// Target of the write-back routine.
+            /// </summary>
+            public BoundReferenceExpression Target;
+
+            /// <summary>
+            /// Loads temporary local variable as an argument to <paramref name="targetp"/>.
+            /// </summary>
+            /// <param name="cg"></param>
+            /// <param name="targetp">Target parameter.</param>
+            /// <param name="expr">Value to be passed as its argument.</param>
+            /// <returns><see cref="WriteBackInfo"/> which has to be finalized with <see cref="WriteBackAndFree(CodeGenerator)"/> once the routine call ends.</returns>
+            public static WriteBackInfo CreateAndLoad(CodeGenerator cg, ParameterSymbol targetp, BoundReferenceExpression expr)
+            {
+                var writeback =  new WriteBackInfo()
+                {
+                    TmpLocal = cg.GetTemporaryLocal(targetp.Type),
+                    Target = expr,
+                };
+
+                //
+                writeback.EmitLoadArgument(cg, targetp);
+
+                //
+                return writeback;
+            }
+
+            void EmitLoadArgument(CodeGenerator cg, ParameterSymbol targetp)
+            {
+                Debug.Assert(TmpLocal != null);
+                Debug.Assert(targetp.Type == (Symbol)TmpLocal.Type);
+
+                if (targetp.RefKind != RefKind.Out)
+                {
+                    // copy Target to TmpLocal
+                    // Template: TmpLocal = Target;
+                    cg.EmitConvert(Target, (TypeSymbol)TmpLocal.Type);
+                    cg.Builder.EmitLocalStore(TmpLocal);
+                }
+
+                if (targetp.RefKind != RefKind.None)
+                {
+                    // LOAD_REF TmpLocal
+                    cg.Builder.EmitLocalAddress(TmpLocal);
+                }
+                else
+                {
+                    // unreachable
+                    // LOAD TmpLocal
+                    cg.Builder.EmitLocalLoad(TmpLocal);
+                }
+            }
+
+            /// <summary>
+            /// Writes the value back to <see cref="Target"/> and free resources.
+            /// </summary>
+            public void WriteBackAndFree(CodeGenerator cg)
+            {
+                // Template: <Target> = <TmpLocal>;
+                var place = Target.BindPlace(cg);
+                place.EmitStorePrepare(cg, null);
+                cg.Builder.EmitLocalLoad(TmpLocal);
+                place.EmitStore(cg, (TypeSymbol)TmpLocal.Type);
+
+                // free <TmpLocal>
+                cg.ReturnTemporaryLocal(TmpLocal);
+                TmpLocal = null;
+            }
+
+            public static void WriteBackAndFree(CodeGenerator cg, IList<WriteBackInfo> writebacks)
+            {
+                if (writebacks != null && writebacks.Count != 0)
+                {
+                    foreach (var w in writebacks)
+                    {
+                        w.WriteBackAndFree(cg);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Loads argument 
         /// </summary>
-        /// <param name="targetp"></param>
-        /// <param name="expr"></param>
-        void EmitLoadArgument(ParameterSymbol targetp, BoundExpression expr)
+        void EmitLoadArgument(ParameterSymbol targetp, BoundExpression expr, List<WriteBackInfo> writebacks)
         {
             if (targetp.RefKind == RefKind.None)
             {
@@ -841,22 +947,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (refexpr != null)
                 {
                     var place = refexpr.Place(_il);
-                    if (place != null)
+                    if (place != null && place.HasAddress && place.TypeOpt == targetp.Type)
                     {
-                        if (place.TypeOpt == targetp.Type)
-                        {
-                            // ref place
-                            place.EmitLoadAddress(_il);
-                            return;
-                        }
+                        // ref place directly
+                        place.EmitLoadAddress(_il);
+                        return;
                     }
+
+                    // write-back
+                    writebacks.Add(WriteBackInfo.CreateAndLoad(this, targetp, refexpr));
+                    return;
                 }
                 else
                 {
                     throw new ArgumentException("Argument must be passed as a variable.");
                 }
-
-                throw new NotImplementedException();
             }
         }
 

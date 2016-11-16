@@ -712,8 +712,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                Debug.Assert(_access.IsWrite || _access.IsUnset);
-
                 //
                 if (type == cg.CoreTypes.PhpAlias)
                 {
@@ -800,8 +798,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                Debug.Assert(_access.IsWrite);
-
                 //
                 if (type == cg.CoreTypes.PhpAlias)
                 {
