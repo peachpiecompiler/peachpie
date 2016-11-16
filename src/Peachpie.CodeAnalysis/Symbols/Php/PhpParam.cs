@@ -11,14 +11,24 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         public TypeRefMask Type;
         public bool IsVariadic;
-        public bool IsByRef => Type.IsRef;
+
+        /// <summary>
+        /// Whether the parameter is passed as a PHP alias (<see cref="Core.PhpAlias"/>)..
+        /// </summary>
+        public bool IsAlias => Type.IsRef;
         public BoundExpression DefaultValue;
 
-        public PhpParam(TypeRefMask tmask, bool isVariadic, BoundExpression defaultValue)
+        /// <summary>
+        /// Whether the parameter is passed as CLR <c>ref</c> or <c>out</c>.
+        /// </summary>
+        public bool IsByRef;
+
+        public PhpParam(TypeRefMask tmask, bool isByRef, bool isVariadic, BoundExpression defaultValue)
         {
             this.Type = tmask;
             this.IsVariadic = isVariadic;
             this.DefaultValue = defaultValue;
+            this.IsByRef = isByRef;
         }
     }
 }

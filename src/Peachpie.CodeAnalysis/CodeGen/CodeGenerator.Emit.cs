@@ -704,7 +704,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (arg_index < arguments.Length)
                 {
-                    EmitConvert(arguments[arg_index++], p.Type); // load argument
+                    EmitLoadArgument(p, arguments[arg_index++]);
                 }
                 else
                 {
@@ -771,8 +771,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     if (srcp < givenps.Length)
                     {
                         var p = givenps[srcp];
-                        var ptype = new ParamPlace(p).EmitLoad(Builder);
-                        EmitConvert(ptype, 0, targetp.Type);
+                        EmitLoadArgument(
+                            targetp,
+                            new BoundVariableRef(new BoundVariableName(new Devsense.PHP.Syntax.VariableName(p.MetadataName)))
+                            {
+                                Variable = new BoundParameter(p, null),
+                                Access = BoundAccess.Read
+                            });
                     }
                     else
                     {
@@ -816,6 +821,42 @@ namespace Pchp.CodeAnalysis.CodeGen
                         place.EmitStore(_il);
                     }
                     break;
+            }
+        }
+
+        /// <summary>
+        /// Loads argument 
+        /// </summary>
+        /// <param name="targetp"></param>
+        /// <param name="expr"></param>
+        void EmitLoadArgument(ParameterSymbol targetp, BoundExpression expr)
+        {
+            if (targetp.RefKind == RefKind.None)
+            {
+                EmitConvert(expr, targetp.Type); // load argument
+            }
+            else
+            {
+                var refexpr = expr as BoundReferenceExpression;
+                if (refexpr != null)
+                {
+                    var place = refexpr.Place(_il);
+                    if (place != null)
+                    {
+                        if (place.TypeOpt == targetp.Type)
+                        {
+                            // ref place
+                            place.EmitLoadAddress(_il);
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException("Argument must be passed as a variable.");
+                }
+
+                throw new NotImplementedException();
             }
         }
 
