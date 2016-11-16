@@ -14,16 +14,6 @@ namespace Pchp.Library
     public static class Constants
     {
         /// <summary>
-		/// Defines a constant.
-		/// </summary>
-		/// <param name="ctx">Current runtime context.</param>
-        /// <param name="name">The name of the constant. Can be arbitrary string.</param>
-		/// <param name="value">The value of the constant.  Can be <B>null</B> or a scalar or array.</param>
-		/// <returns>Whether the new constant has been defined.</returns>
-        public static bool define(Context ctx, string name, PhpValue value)
-            => ctx.DefineConstant(name, value);
-
-        /// <summary>
         /// Defines a constant.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -31,7 +21,7 @@ namespace Pchp.Library
         /// <param name="value">The value of the constant. Can be <B>null</B> or a scalar or array.</param>
         /// <param name="caseInsensitive">Whether the name is case insensitive.</param>
         /// <returns>Whether the new constant has been defined.</returns>
-        public static bool define(Context ctx, string name, PhpValue value, bool caseInsensitive)
+        public static bool define(Context ctx, string name, PhpValue value, bool caseInsensitive = false)
             => ctx.DefineConstant(name, value, caseInsensitive);
 
         /// <summary>
@@ -53,32 +43,29 @@ namespace Pchp.Library
             => ctx.GetConstant(name);
 
         /// <summary>
-		/// Retrieves defined constants.
-		/// </summary>
-		/// <returns>The array which contains pairs (constant name,constant value).</returns>
-        public static PhpArray get_defined_constants(Context ctx)
-        {   
-            PhpArray result = new PhpArray();
-            
-            foreach (var c in ctx.GetConstants())
-            {
-                result.Add(c.Key, c.Value);
-            }
-
-            return result;
-        }
-
-        /// <summary>
         /// Retrieves defined constants.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="categorize">Returns a multi-dimensional array with categories in the keys of the first dimension and constants and their values in the second dimension. </param>
         /// <returns>Retrives the names and values of all the constants currently defined.</returns>
-        public static PhpArray get_defined_constants(Context ctx, bool categorize)
+        public static PhpArray get_defined_constants(Context ctx, bool categorize = false)
         {
-            if (!categorize) return get_defined_constants(ctx);
+            var result = new PhpArray();
 
-            throw new NotImplementedException();
+            if (categorize)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                foreach (var c in ctx.GetConstants())
+                {
+                    result.Add(c.Key, c.Value);
+                }
+            }
+
+            //
+            return result;
         }
     }
 }
