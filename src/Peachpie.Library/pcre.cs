@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Pchp.Library
@@ -141,7 +142,45 @@ namespace Pchp.Library
         /// This is useful for escaping the delimiter that is required by the PCRE functions. The / is the most commonly used delimiter.</param>
         public static string preg_quote(string str, string delimiter = null)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(str))
+            {
+                return str;
+            }
+
+            char delimiterChar = string.IsNullOrEmpty(delimiter)
+                ? char.MaxValue // unused (?)
+                : delimiter[0];
+
+            StringBuilder result = null;
+            int lastEscape = 0;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                char ch = str[i];
+                bool escape = ch == delimiterChar || PerlRegex.Utils.IsDelimiterChar(ch);
+
+                if (escape)
+                {
+                    if (result == null)
+                    {
+                        result = new StringBuilder(str.Length + 4);
+                    }
+
+                    result.Append(str, lastEscape, i - lastEscape);
+                    result.Append('\\');
+                    lastEscape = i;
+                }
+            }
+
+            if (result != null)
+            {
+                result.Append(str, lastEscape, str.Length - lastEscape);
+                return result.ToString();
+            }
+            else
+            {
+                return str;
+            }
         }
 
         /// <summary>
