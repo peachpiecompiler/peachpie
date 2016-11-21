@@ -99,6 +99,36 @@ namespace Pchp.Library.PerlRegex
             return new RegexReplacement(rep, root, caps);
         }
 
+        public static bool IsDelimiterChar(char ch)
+        {
+            switch (ch)
+            {
+                case '\\':
+                case '+':
+                case '*':
+                case '?':
+                case '[':
+                case '^':
+                case ']':
+                case '$':
+                case '(':
+                case ')':
+                case '{':
+                case '}':
+                case '=':
+                case '!':
+                case '<':
+                case '>':
+                case '|':
+                case ':':
+                case '.':
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
         /*
          * Escapes all metacharacters (including |,(,),[,{,|,^,$,*,+,?,\, spaces and #)
          */

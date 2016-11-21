@@ -107,7 +107,7 @@ namespace Pchp.Library.PerlRegex
         /// expression.
         /// </summary>
         public Regex(string pattern)
-            : this(pattern, RegexOptions.None, DefaultMatchTimeout, false)
+            : this(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant, DefaultMatchTimeout, false)
         {
         }
 

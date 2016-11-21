@@ -61,6 +61,10 @@ namespace Pchp.Library
         /// </summary>
         public const int PREG_SPLIT_OFFSET_CAPTURE = 4;
 
+        public const int PREG_REPLACE_EVAL = 1;
+
+        public const int PREG_GREP_INVERT = 1;
+
         public const int PREG_NO_ERROR = 0;
         public const int PREG_INTERNAL_ERROR = 1;
         public const int PREG_BACKTRACK_LIMIT_ERROR = 2;
@@ -75,6 +79,51 @@ namespace Pchp.Library
         #endregion
 
         #region Function stubs
+
+        public static int preg_last_error()
+        {
+            return 0;
+        }
+
+        /// <summary>
+        /// Return array entries that match the pattern.
+        /// </summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
+        /// <param name="pattern">The pattern to search for.</param>
+        /// <param name="input">The input array.</param>
+        /// <param name="flags">If set to <see cref="PREG_GREP_INVERT"/>, this function returns the elements of the input array that do not match the given pattern.</param>
+        /// <returns>Returns an array indexed using the keys from the input array.</returns>
+        public static PhpArray preg_grep(Context ctx, string pattern, PhpArray input, int flags = 0)
+        {
+            if (input == null)
+            {
+                return null;
+            }
+
+            var result = new PhpArray(input.Count);
+
+            if (input.Count != 0)
+            {
+                var regex = new PerlRegex.Regex(pattern);
+
+                var enumerator = input.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    var str = enumerator.CurrentValue.ToStringOrThrow(ctx);
+                    var m = regex.Match(str);
+
+                    // move a copy to return array if success and not invert or
+                    // not success and invert
+                    if (m.Success ^ (flags & PREG_GREP_INVERT) != 0)
+                    {
+                        result.Add(enumerator.CurrentKey, enumerator.CurrentValue.DeepCopy());
+                    }
+                }
+            }
+
+            //
+            return result;
+        }
 
         public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit = -1)
         {
@@ -116,10 +165,13 @@ namespace Pchp.Library
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Perform a regular expression match.
+        /// </summary>
         public static int preg_match(Context ctx, string pattern, string subject)
         {
-            PhpArray matches;
-            return preg_match(ctx, pattern, subject, out matches);
+            var regex = new PerlRegex.Regex(pattern);
+            return regex.Match(subject).Success ? 1 : 0;
         }
 
         /// <summary>
@@ -157,7 +209,7 @@ namespace Pchp.Library
             for (int i = 0; i < str.Length; i++)
             {
                 char ch = str[i];
-                bool escape = ch == delimiterChar || PerlRegex.Utils.IsDelimiterChar(ch);
+                bool escape = ch == delimiterChar || PerlRegex.RegexParser.IsDelimiterChar(ch);
 
                 if (escape)
                 {
