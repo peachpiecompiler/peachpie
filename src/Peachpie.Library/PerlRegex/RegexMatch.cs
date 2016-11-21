@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace Pchp.Library.PerlRegex
@@ -404,12 +405,12 @@ namespace Pchp.Library.PerlRegex
     internal class MatchSparse : Match
     {
         // the lookup hashtable
-        new internal Hashtable _caps;
+        new internal Dictionary<int, int> _caps;
 
         /*
          * Nonpublic constructor
          */
-        internal MatchSparse(Regex regex, Hashtable caps, int capcount,
+        internal MatchSparse(Regex regex, Dictionary<int, int> caps, int capcount,
                              string text, int begpos, int len, int startpos)
 
         : base(regex, capcount, text, begpos, len, startpos)
@@ -433,7 +434,7 @@ namespace Pchp.Library.PerlRegex
         {
             if (_caps != null)
             {
-                foreach (DictionaryEntry kvp in _caps)
+                foreach (var kvp in _caps)
                 {
                     System.Diagnostics.Debug.WriteLine("Slot " + kvp.Key.ToString() + " -> " + kvp.Value.ToString());
                 }

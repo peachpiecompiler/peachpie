@@ -30,7 +30,7 @@ namespace Pchp.Library.PerlRegex
         private bool _counting;
         private int _count;
         private int _trackcount;
-        private Hashtable _caps;
+        private Dictionary<int, int> _caps;
 
         private const int BeforeChild = 64;
         private const int AfterChild = 128;

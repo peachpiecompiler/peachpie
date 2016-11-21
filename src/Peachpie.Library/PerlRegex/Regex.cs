@@ -50,13 +50,13 @@ namespace Pchp.Library.PerlRegex
 
         protected internal RegexRunnerFactory factory;
 
-        protected internal Hashtable caps;          // if captures are sparse, this is the hashtable capnum->index
-        protected internal Hashtable capnames;      // if named captures are used, this maps names->index
+        protected internal Dictionary<int, int> caps;          // if captures are sparse, this is the hashtable capnum->index
+        protected internal Dictionary<string, int> capnames;      // if named captures are used, this maps names->index
 
         protected internal string[] capslist;              // if captures are sparse or named captures are used, this is the sorted list of names
         protected internal int capsize;                    // the size of the capture array
 
-        protected IDictionary Caps
+        protected Dictionary<int, int> Caps
         {
             get
             {
@@ -67,15 +67,11 @@ namespace Pchp.Library.PerlRegex
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                caps = value as Hashtable;
-                if (caps == null)
-                {
-                    caps = new Hashtable(value);
-                }
+                caps = new Dictionary<int, int>(value);
             }
         }
 
-        protected IDictionary CapNames
+        protected Dictionary<string, int> CapNames
         {
             get
             {
@@ -86,11 +82,7 @@ namespace Pchp.Library.PerlRegex
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                capnames = value as Hashtable;
-                if (capnames == null)
-                {
-                    capnames = new Hashtable(value);
-                }
+                capnames = new Dictionary<string, int>(value);
             }
         }
 
@@ -1049,14 +1041,14 @@ namespace Pchp.Library.PerlRegex
     {
         internal CachedCodeEntryKey _key;
         internal RegexCode _code;
-        internal Hashtable _caps;
-        internal Hashtable _capnames;
+        internal Dictionary<int, int> _caps;
+        internal Dictionary<string, int> _capnames;
         internal string[] _capslist;
         internal int _capsize;
         internal ExclusiveReference _runnerref;
         internal SharedReference _replref;
 
-        internal CachedCodeEntry(CachedCodeEntryKey key, Hashtable capnames, string[] capslist, RegexCode code, Hashtable caps, int capsize, ExclusiveReference runner, SharedReference repl)
+        internal CachedCodeEntry(CachedCodeEntryKey key, Dictionary<string, int> capnames, string[] capslist, RegexCode code, Dictionary<int, int> caps, int capsize, ExclusiveReference runner, SharedReference repl)
         {
             _key = key;
             _capnames = capnames;

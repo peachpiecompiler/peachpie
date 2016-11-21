@@ -32,7 +32,7 @@ namespace Pchp.Library.PerlRegex
         /// the constructor takes a RegexNode which is a concatenation
         /// of constant strings and backreferences.
         /// </summary>
-        internal RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
+        internal RegexReplacement(string rep, RegexNode concat, Dictionary<int, int> _caps)
         {
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);

@@ -36,8 +36,8 @@ namespace Pchp.Library.PerlRegex
         internal int _captop;
         internal int _capsize;
 
-        internal Hashtable _caps;
-        internal Hashtable _capnames;
+        internal Dictionary<int, int> _caps;
+        internal Dictionary<string, int> _capnames;
 
         internal int[] _capnumlist;
         internal List<string> _capnamelist;
@@ -83,7 +83,7 @@ namespace Pchp.Library.PerlRegex
          * This static call constructs a flat concatenation node given
          * a replacement pattern.
          */
-        internal static RegexReplacement ParseReplacement(string rep, Hashtable caps, int capsize, Hashtable capnames, RegexOptions op)
+        internal static RegexReplacement ParseReplacement(string rep, Dictionary<int, int> caps, int capsize, Dictionary<string, int> capnames, RegexOptions op)
         {
             RegexParser p;
             RegexNode root;
@@ -196,7 +196,7 @@ namespace Pchp.Library.PerlRegex
         {
             _culture = culture;
             _optionsStack = new List<RegexOptions>();
-            _caps = new Hashtable();
+            _caps = new Dictionary<int, int>();
         }
 
         /*
@@ -1767,7 +1767,7 @@ namespace Pchp.Library.PerlRegex
         {
             if (_capnames == null)
             {
-                _capnames = new Hashtable();
+                _capnames = new Dictionary<string, int>();
                 _capnamelist = new List<string>();
             }
 
@@ -1781,7 +1781,7 @@ namespace Pchp.Library.PerlRegex
         /*
          * For when all the used captures are known: note them all at once
          */
-        internal void NoteCaptures(Hashtable caps, int capsize, Hashtable capnames)
+        internal void NoteCaptures(Dictionary<int, int> caps, int capsize, Dictionary<string, int> capnames)
         {
             _caps = caps;
             _capsize = capsize;
@@ -1836,7 +1836,7 @@ namespace Pchp.Library.PerlRegex
                 if (_capnames == null)
                 {
                     oldcapnamelist = null;
-                    _capnames = new Hashtable();
+                    _capnames = new Dictionary<string, int>();
                     _capnamelist = new List<string>();
                     next = -1;
                 }

@@ -94,7 +94,7 @@ namespace Pchp.Library.PerlRegex
         internal readonly int[] _codes;                     // the code
         internal readonly string[] _strings;                // the string/set table
         internal readonly int _trackcount;                  // how many instructions use backtracking
-        internal readonly Hashtable _caps;                  // mapping of user group numbers -> impl group slots
+        internal readonly Dictionary<int, int> _caps;                  // mapping of user group numbers -> impl group slots
         internal readonly int _capsize;                     // number of impl group slots
         internal readonly RegexPrefix _fcPrefix;            // the set of candidate first characters (may be null)
         internal readonly RegexBoyerMoore _bmPrefix;        // the fixed prefix string as a Boyer-Moore machine (may be null)
@@ -102,7 +102,7 @@ namespace Pchp.Library.PerlRegex
         internal readonly bool _rightToLeft;                // true if right to left
 
         internal RegexCode(int[] codes, List<string> stringlist, int trackcount,
-                           Hashtable caps, int capsize,
+                           Dictionary<int, int> caps, int capsize,
                            RegexBoyerMoore bmPrefix, RegexPrefix fcPrefix,
                            int anchors, bool rightToLeft)
         {
