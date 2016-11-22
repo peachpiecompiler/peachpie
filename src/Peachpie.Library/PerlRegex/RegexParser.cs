@@ -13,6 +13,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -58,6 +59,10 @@ namespace Pchp.Library.PerlRegex
          */
         internal static RegexTree Parse(string re, RegexOptions op)
         {
+            int end;
+            var pcreOptions = TrimPcreRegexOption(re, out end);
+            var pattern = TrimDelimiters(re, end);
+
             RegexParser p;
             RegexNode root;
             string[] capnamelist;
@@ -66,7 +71,7 @@ namespace Pchp.Library.PerlRegex
 
             p._options = op;
 
-            p.SetPattern(re);
+            p.SetPattern(pattern);
             p.CountCaptures();
             p.Reset(op);
             root = p.ScanRegex();
@@ -78,6 +83,142 @@ namespace Pchp.Library.PerlRegex
 
             return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op);
         }
+
+        /// <summary>
+        /// Matches end and start delimiters and returns enclosed pattern.
+        /// </summary>
+        private static string TrimDelimiters(string re, int end)
+        {
+            Debug.Assert(re != null);
+            Debug.Assert(end <= re.Length);
+            Debug.Assert(re.Length != 0);
+
+            if (end > 0)
+            {
+                var end_delimiter = re[end - 1];   // last char
+
+                if (char.IsLetterOrDigit(end_delimiter) || end_delimiter == '\\')
+                {
+                    throw new ArgumentException("delimiter_alnum_backslash");
+                }
+
+                char start_delimiter;
+                if (end_delimiter == ']') start_delimiter = '[';
+                else if (end_delimiter == ')') start_delimiter = '(';
+                else if (end_delimiter == '}') start_delimiter = '{';
+                else if (end_delimiter == '>') start_delimiter = '<';
+                else start_delimiter = end_delimiter;
+
+                // skip trailing whitespaces
+                int i = 0;
+                while (i < re.Length && char.IsWhiteSpace(re[i]))
+                {
+                    i++;
+                }
+                
+                if (i < end)
+                {
+                    if (re[i] == start_delimiter)
+                    {
+                        return re.Substring(i + 1, end - i - 2);
+                    }
+                    else
+                    {
+                        throw new ArgumentException("preg_no_end_delimiter");
+                    }
+                }
+            }
+
+            throw new ArgumentException("regular_expression_empty");
+        }
+
+        #region Options
+
+        /// <summary>
+        /// Trims PCRE options and gets new pattern end.
+        /// The remaining string is the pattern enclosed in PCRE delimiters.
+        /// </summary>
+        /// <param name="pattern">Input pattern.</param>
+        /// <param name="end">New pattern length.</param>
+        /// <returns>PCRE options.</returns>
+        private static PerlRegexOptions TrimPcreRegexOption(string pattern, out int end)
+        {
+            // letters on right are PCRE options,
+            // parse them and return new pattern end.
+
+            // The remaining string is enclosed in delimiters.
+
+            Debug.Assert(pattern != null);
+            end = pattern.Length;
+
+            PerlRegexOptions result = PerlRegexOptions.None;
+
+            for (int i = pattern.Length - 1; i >= 0; i--)
+            {
+                var ch = pattern[i];
+                if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
+                {
+                    result |= ParsePcreRegexOption(ch);
+                }
+                else
+                {
+                    // reached a delimiter
+                    end = i + 1;
+                    return result;
+                }
+            }
+
+            // invalid regex, we didn't reach a delimiter
+            return PerlRegexOptions.None;
+        }
+
+        /// <summary>
+        /// Gets PCRE option value.
+        /// </summary>
+        public static PerlRegexOptions ParsePcreRegexOption(char option)
+        {
+            Debug.Assert(char.IsLetter(option));
+            switch (option)
+            {
+                case 'i': // PCRE_CASELESS
+                    return PerlRegexOptions.PCRE_CASELESS;
+
+                case 'm': // PCRE_MULTILINE
+                    return PerlRegexOptions.PCRE_MULTILINE;
+
+                case 's': // PCRE_DOTALL
+                    return PerlRegexOptions.PCRE_DOTALL;
+
+                case 'x': // PCRE_EXTENDED
+                    return PerlRegexOptions.PCRE_EXTENDED;
+
+                //case 'e': // PREG_REPLACE_EVAL // deprecated as of PHP 7.0
+                //    return PerlRegexOptions.PREG_REPLACE_EVAL;
+
+                case 'A': // PCRE_ANCHORED
+                    return PerlRegexOptions.PCRE_ANCHORED;
+
+                case 'D': // PCRE_DOLLAR_ENDONLY
+                    return PerlRegexOptions.PCRE_DOLLAR_ENDONLY;
+
+                case 'S': // spend more time studying the pattern - ignore
+                    return PerlRegexOptions.PCRE_S;
+
+                case 'U': // PCRE_UNGREEDY
+                    return PerlRegexOptions.PCRE_UNGREEDY;
+
+                case 'u': // PCRE_UTF8
+                    return PerlRegexOptions.PCRE_UTF8;
+
+                case 'X': // PCRE_EXTRA
+                    return PerlRegexOptions.PCRE_EXTRA;
+
+                default:
+                    return PerlRegexOptions.Unknown;
+            }
+        }
+
+        #endregion
 
         /*
          * This static call constructs a flat concatenation node given
@@ -471,11 +612,11 @@ namespace Pchp.Library.PerlRegex
                     AddConcatenate(lazy, min, max);
                 }
 
-            ContinueOuterScan:
+                ContinueOuterScan:
                 ;
             }
 
-        BreakOuterScan:
+            BreakOuterScan:
             ;
 
             if (!EmptyStack())
@@ -496,7 +637,7 @@ namespace Pchp.Library.PerlRegex
 
             _concatenation = new RegexNode(RegexNode.Concatenate, _options);
 
-            for (; ;)
+            for (;;)
             {
                 c = CharsRight();
                 if (c == 0)
@@ -740,7 +881,7 @@ namespace Pchp.Library.PerlRegex
 
             MoveRight();
 
-            for (; ;)
+            for (;;)
             {
                 if (CharsRight() == 0)
                     break;
@@ -957,7 +1098,7 @@ namespace Pchp.Library.PerlRegex
                 return new RegexNode(NodeType, _options);
             }
 
-        BreakRecognize:
+            BreakRecognize:
             ;
             // break Recognize comes here
 
@@ -971,7 +1112,7 @@ namespace Pchp.Library.PerlRegex
         {
             if (UseOptionX())
             {
-                for (; ;)
+                for (;;)
                 {
                     while (CharsRight() > 0 && IsSpace(RightChar()))
                         MoveRight();
@@ -999,7 +1140,7 @@ namespace Pchp.Library.PerlRegex
             }
             else
             {
-                for (; ;)
+                for (;;)
                 {
                     if (CharsRight() < 3 || RightChar(2) != '#' ||
                         RightChar(1) != '?' || RightChar() != '(')
