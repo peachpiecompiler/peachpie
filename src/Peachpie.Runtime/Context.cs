@@ -171,7 +171,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets declared function with given name. In case of more items they are considered as overloads.
         /// </summary>
-        internal RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
+        public RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
 
         /// <summary>
         /// Declare a runtime user type.
