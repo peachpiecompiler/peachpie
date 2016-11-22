@@ -341,5 +341,19 @@ namespace Pchp.Core
                 default: return null;
             }
         }
+
+        /// <summary>
+        /// In case given value contains an array (<see cref="PhpArray"/>),
+        /// it is returned. Otherwise <c>null</c>.
+        /// </summary>
+        public static PhpArray AsArray(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.PhpArray: return value.Array;
+                case PhpTypeCode.Alias: return AsArray(value.Alias.Value);
+                default: return null;
+            }
+        }
     }
 }

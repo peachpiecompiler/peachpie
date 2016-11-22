@@ -93,6 +93,7 @@ namespace Pchp.Library
         /// <param name="input">The input array.</param>
         /// <param name="flags">If set to <see cref="PREG_GREP_INVERT"/>, this function returns the elements of the input array that do not match the given pattern.</param>
         /// <returns>Returns an array indexed using the keys from the input array.</returns>
+        [return: CastToFalse]
         public static PhpArray preg_grep(Context ctx, string pattern, PhpArray input, int flags = 0)
         {
             if (input == null)
@@ -148,9 +149,75 @@ namespace Pchp.Library
         /// <returns></returns>
         public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit, out long count)
         {
+            count = 0;
+
+            // PHP's behaviour for undocumented limit range
+            if (limit < -1)
+            {
+                limit = 0;
+            }
+
+            //
+            var replacement_array = replacement.AsArray();
+            var pattern_array = pattern.AsArray();
+
+            if (pattern_array == null)
+            {
+                if (replacement_array == null)
+                {
+                    // string pattern
+                    // string replacement
+
+                    return preg_replace(ctx, pattern.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx), null, subject, limit, ref count);
+                }
+                else
+                {
+                    // string pattern and array replacement not allowed:
+                    throw new ArgumentException("replacement_array_pattern_not", nameof(replacement));
+                    // return PhpValue.Null;
+                }
+            }
+            else if (replacement_array == null)
+            {
+                // array  pattern
+                // string replacement
+            }
+            else
+            {
+                // array pattern
+                // array replacement
+            }
+
             throw new NotImplementedException();
         }
 
+        static PhpValue preg_replace(Context ctx, string pattern, string replacement, PhpCallable callback, PhpValue subject, int limit, ref long count)
+        {
+            var regex = new PerlRegex.Regex(pattern);
+
+            // TODO: count
+            // TODO: callback
+
+            var subject_array = subject.AsArray();
+            if (subject_array == null)
+            {
+                return PhpValue.Create(regex.Replace(subject.ToStringOrThrow(ctx), replacement, limit));
+            }
+            else
+            {
+                var arr = new PhpArray(subject_array, false);
+                var enumerator = arr.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    var newvalue = regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit);
+                    enumerator.CurrentValue = PhpValue.Create(newvalue);
+                }
+
+                return PhpValue.Create(arr);
+            }
+        }
+
+        [return: CastToFalse]
         public static int preg_match_all(Context ctx, string pattern, string subject)
         {
             PhpArray matches;
@@ -160,6 +227,7 @@ namespace Pchp.Library
         /// <summary>
         /// Perform a global regular expression match.
         /// </summary>
+        [return: CastToFalse]
         public static int preg_match_all(Context ctx, string pattern, string subject, out PhpArray matches, int flags = PREG_PATTERN_ORDER, int offset = 0)
         {
             throw new NotImplementedException();
@@ -168,6 +236,7 @@ namespace Pchp.Library
         /// <summary>
         /// Perform a regular expression match.
         /// </summary>
+        [return: CastToFalse]
         public static int preg_match(Context ctx, string pattern, string subject)
         {
             var regex = new PerlRegex.Regex(pattern);
@@ -177,6 +246,7 @@ namespace Pchp.Library
         /// <summary>
         /// Perform a regular expression match.
         /// </summary>
+        [return: CastToFalse]
         public static int preg_match(Context ctx, string pattern, string subject, out PhpArray matches, int flags = 0, long offset = 0)
         {
             throw new NotImplementedException();
@@ -238,6 +308,7 @@ namespace Pchp.Library
         /// <summary>
         /// Split string by a regular expression.
         /// </summary>
+        [return: CastToFalse]
         public static PhpArray preg_split(string pattern, string subject, int limit = -1, int flags = 0)
         {
             throw new NotImplementedException();
@@ -246,6 +317,7 @@ namespace Pchp.Library
         /// <summary>
         /// Return array entries that match the pattern.
         /// </summary>
+        [return: CastToFalse]
         public static PhpArray preg_grep(string pattern, PhpArray input, int flags = 0)
         {
             throw new NotImplementedException();

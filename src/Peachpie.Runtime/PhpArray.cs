@@ -173,7 +173,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates copy of this instance using shared underlaying hashtable.
         /// </summary>
-        public PhpArray DeepCopy() => new PhpArray(this);
+        public PhpArray DeepCopy() => new PhpArray(this, true);
 
         /// <summary>
         /// Gets PHP enumerator for this array.

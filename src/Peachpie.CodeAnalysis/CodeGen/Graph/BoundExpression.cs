@@ -2694,8 +2694,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (Array.ResultType == cg.CoreTypes.PhpValue)
             {
-                // Convert.AsArray()
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.AsArray_PhpValue);
+                // Convert.ToArray()
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ToArray_PhpValue);
             }
             else if (Array.ResultType == cg.CoreTypes.String)
             {

@@ -95,9 +95,9 @@ namespace Pchp.Core
             }
 
             /// <summary>
-            /// Gets object representing array access to the value.
+            /// Converts value to an array.
             /// </summary>
-            public abstract PhpArray AsArray(ref PhpValue me);
+            public abstract PhpArray ToArray(ref PhpValue me);
 
             /// <summary>
             /// Gets underlaying class instance or <c>null</c>.
@@ -162,7 +162,7 @@ namespace Pchp.Core
                 me = PhpValue.Create(arr);
                 return arr;
             }
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
+            public override PhpArray ToArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptNull();
         }
@@ -194,7 +194,7 @@ namespace Pchp.Core
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Long && right.Long == me.Long;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
+            public override PhpArray ToArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Long);
         }
@@ -220,7 +220,7 @@ namespace Pchp.Core
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Double && right.Double == me.Double;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
+            public override PhpArray ToArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Double);
         }
@@ -264,7 +264,7 @@ namespace Pchp.Core
 
                 return arr;
             }
-            public override PhpArray AsArray(ref PhpValue me) { throw new InvalidCastException(); }
+            public override PhpArray ToArray(ref PhpValue me) { throw new InvalidCastException(); }
             public override string DisplayString(ref PhpValue me) => me.Boolean ? PhpVariable.True : PhpVariable.False;
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Boolean);
         }
@@ -313,7 +313,7 @@ namespace Pchp.Core
 
                 return arr;
             }
-            public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
+            public override PhpArray ToArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.String);
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.String);
@@ -360,7 +360,7 @@ namespace Pchp.Core
                 //me.WritableString.DeepCopy()
                 throw new NotImplementedException();
             }
-            public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
+            public override PhpArray ToArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.WritableString.ToString());
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.WritableString);
@@ -423,7 +423,7 @@ namespace Pchp.Core
             {
                 throw new NotImplementedException();  // Fatal Error: Cannot use object of type stdClass as array
             }
-            public override PhpArray AsArray(ref PhpValue me) { throw new NotImplementedException(); }
+            public override PhpArray ToArray(ref PhpValue me) { throw new NotImplementedException(); }
             public override object AsObject(ref PhpValue me) => me.Object;
             public override IPhpCallable AsCallable(ref PhpValue me)
             {
@@ -459,7 +459,7 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
-            public override PhpArray AsArray(ref PhpValue me) => me.Array;
+            public override PhpArray ToArray(ref PhpValue me) => me.Array;
             public override IPhpCallable AsCallable(ref PhpValue me)
             {
                 if (me.Array.Count == 2)
@@ -503,7 +503,7 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me) => me.Alias.Value.EnsureObject();
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
-            public override PhpArray AsArray(ref PhpValue me) => me.Alias.Value.AsArray();
+            public override PhpArray ToArray(ref PhpValue me) => me.Alias.Value.AsArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
             public override IPhpCallable AsCallable(ref PhpValue me) => me.Alias.Value.AsCallable();
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;

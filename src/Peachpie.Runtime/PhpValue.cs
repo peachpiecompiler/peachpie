@@ -289,10 +289,9 @@ namespace Pchp.Core
         public object AsObject() => _type.AsObject(ref this);
 
         /// <summary>
-        /// <c>as</c> operator returning underlaying <see cref="PhpArray"/> or <c>null</c> reference.
+        /// Converts value to an array.
         /// </summary>
-        /// <returns>Instance of underlaying <see cref="PhpArray"/> or <c>null</c> if underlaying object is not PHP array.</returns>
-        public PhpArray AsArray() => _type.AsArray(ref this);
+        public PhpArray ToArray() => _type.ToArray(ref this);
 
         /// <summary>
         /// Gets callable wrapper for the object dynamic invocation.

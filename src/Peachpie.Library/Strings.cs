@@ -985,7 +985,7 @@ namespace Pchp.Library
 
         static PhpValue str_replace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject, ref long count, StringComparison compareType)
         {
-            var subjectArr = subject.Object as PhpArray;
+            var subjectArr = subject.AsArray();
             if (subjectArr == null)
             {
                 // string
@@ -1018,7 +1018,7 @@ namespace Pchp.Library
             }
 
             //
-            var searchArr = search.Object as PhpArray;
+            var searchArr = search.AsArray();
             if (searchArr == null)
             {
                 // string -> string
@@ -1028,7 +1028,7 @@ namespace Pchp.Library
             {
                 var searchEnum = searchArr.GetFastEnumerator();
 
-                var replaceArr = replace.Object as PhpArray;
+                var replaceArr = replace.AsArray();
                 if (replaceArr != null)
                 {
                     // array -> array

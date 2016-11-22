@@ -398,7 +398,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble_String = ct.Convert.Method("StringToDouble", ct.String);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
-                AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
+                ToArray_PhpValue = ct.Convert.Method("ToArray", ct.PhpValue);
                 ToClass_PhpValue = ct.Convert.Method("ToClass", ct.PhpValue);
                 ToClass_IPhpArray = ct.Convert.Method("ToClass", ct.IPhpArray);
                 AsCallable_PhpValue = ct.Convert.Method("AsCallable", ct.PhpValue);
@@ -458,7 +458,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
                 ToNumber_PhpValue,
-                AsObject_PhpValue, AsArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
+                AsObject_PhpValue, ToArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
@@ -493,7 +493,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
-                AsArray = ct.PhpValue.Method("AsArray");
+                ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
 
                 get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
@@ -521,8 +521,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias,
-                AsArray, AsObject,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
+                AsObject,
                 DeepCopy,
                 Eq_PhpValue_PhpValue,
                 get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,

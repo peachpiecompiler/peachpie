@@ -672,10 +672,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     if (_access.TargetType == cg.CoreTypes.PhpArray)
                     {
-                        // <place>.Value.AsArray()
+                        // <place>.Value.ToArray()
                         cg.Builder.EmitOpCode(ILOpCode.Ldflda);
                         cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray)
                             .Expect(cg.CoreTypes.PhpArray);
                     }
 
@@ -685,9 +685,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (_access.TargetType == cg.CoreTypes.PhpArray)
                     {
-                        // <place>.AsArray()
+                        // <place>.ToArray()
                         _place.EmitLoadAddress(cg.Builder);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray)
                             .Expect(cg.CoreTypes.PhpArray);
                     }
 
@@ -1304,10 +1304,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                             default:
                                 if (Access.TargetType == cg.CoreTypes.PhpArray)
                                 {
-                                    // <PhpAlias>.Value.AsArray()
+                                    // <PhpAlias>.Value.ToArray()
                                     cg.Builder.EmitOpCode(ILOpCode.Ldflda);
                                     cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
-                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
                                 }
                                 break;
                         }
@@ -1341,8 +1341,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                             default:
                                 if (Access.TargetType == cg.CoreTypes.PhpArray)
                                 {
-                                    EmitOpCode_LoadAddress(cg); // &PhpValue.AsArray()
-                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToArray()
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
                                 }
                                 break;
                         }
