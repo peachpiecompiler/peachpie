@@ -979,19 +979,27 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // emit targetp default value:
             ConstantValue cvalue;
+            BoundExpression boundinitializer;
 
             // TODO: targetp.IsParams
 
-            var boundinitializer = (targetp as SourceParameterSymbol)?.Initializer;
-            if (boundinitializer != null)
+            if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
+            {
+                // keep NULL if parameter is a reference type
+                if (cvalue.IsNull && targetp.Type.IsReferenceType)
+                {
+                    _il.EmitNullConstant();
+                    return;
+                }
+
+                //
+                ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
+            }
+            else if ((boundinitializer = (targetp as SourceParameterSymbol)?.Initializer) != null)
             {
                 _emitTypeRefContext.Push((targetp as SourceParameterSymbol).Routine.TypeRefContext);
                 EmitConvert(boundinitializer, ptype = targetp.Type);
                 _emitTypeRefContext.Pop();
-            }
-            else if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
-            {
-                ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
             }
             else
             {
