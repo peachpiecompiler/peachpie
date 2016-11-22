@@ -99,6 +99,9 @@ namespace Pchp.Library
 
         #endregion
 
+        /// <summary>
+        /// Compares two "PHP-standardized" version number strings.
+        /// </summary>
         public static int version_compare(string version1, string version2)
         {
             string[] v1 = VersionToArray(version1);
@@ -128,6 +131,9 @@ namespace Pchp.Library
             return 0;
         }
 
+        /// <summary>
+        /// Compares two "PHP-standardized" version number strings.
+        /// </summary>
         public static bool version_compare(string version1, string version2, string op)
         {
             var compare = version_compare(version1, version2);
@@ -156,6 +162,34 @@ namespace Pchp.Library
             }
 
             throw new ArgumentException();  // TODO: return NULL
+        }
+
+        /// <summary>
+        /// Find out whether an extension is loaded.
+        /// </summary>
+        /// <param name="name">The extension name.</param>
+        /// <returns>Returns <c>TRUE</c> if the extension identified by name is loaded, <c>FALSE</c> otherwise.</returns>
+        public static bool extension_loaded(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Returns an array with names of all loaded native extensions.
+        /// </summary>
+        public static PhpArray get_loaded_extensions()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+		/// Returns an array with names of the functions of a native extension.
+		/// </summary>
+        /// <param name="extension">Internal extension name (e.g. <c>sockets</c>).</param>
+        /// <returns>The array of function names or <c>null</c> if the <paramref name="extension"/> is not loaded.</returns>
+        public static PhpArray get_extension_funcs(string extension)
+        {
+            throw new NotImplementedException();
         }
     }
 }
