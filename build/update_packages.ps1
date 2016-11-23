@@ -39,13 +39,14 @@ if ($IsWindowsHlp) {
 # We suppose the global package source is in the default location 
 $packagesSource = (Resolve-Path "~/.nuget/packages").Path
 
-# Create the Nuget packages and overwrite those currently installed
+# Create the Nuget packages and delete those currently installed
 foreach ($project in $projects) {
     dotnet pack --no-build -c $configuration -o "$rootDir/.nugs" --version-suffix beta "$rootDir/src/$project"
 
     if ($nugetCommand) {
-        # TODO: Solve the problem with the lowercase names on Linux
         & $nugetCommand $prependArgs delete $project "$version-beta" -Source $packagesSource -Noninteractive
-        & $nugetCommand $prependArgs add "$rootDir/.nugs/$project.$version-beta.nupkg" -Source $packagesSource -Expand -Noninteractive
     }
 }
+
+# Reinstall the packages by restoring a dummy project that depends on them
+dotnet restore "$rootDir/build/dummy"
