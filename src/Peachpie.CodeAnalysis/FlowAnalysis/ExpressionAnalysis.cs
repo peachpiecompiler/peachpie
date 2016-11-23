@@ -1463,6 +1463,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 Accept(x.Returned);
                 State.FlowThroughReturn(x.Returned.TypeRefMask);
+
+                // reanalyse blocks depending on this routine return type
+                EnqueueSubscribers((ExitBlock)this.Routine?.ControlFlowGraph.Exit);
             }
         }
 
