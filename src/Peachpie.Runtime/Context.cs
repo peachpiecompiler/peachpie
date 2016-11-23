@@ -190,7 +190,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets runtime type information, or <c>null</c> if type with given is not declared.
         /// </summary>
-        internal PhpTypeInfo GetDeclaredType(string name) => _types.GetDeclaredType(name);
+        public PhpTypeInfo GetDeclaredType(string name) => _types.GetDeclaredType(name);
 
         void FunctionRedeclared(RoutineInfo routine)
         {
