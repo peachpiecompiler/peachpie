@@ -83,17 +83,13 @@ namespace Pchp.Core
         public static bool IsExtensionLoaded(string extension) => ExtensionsAppContext.ExtensionsTable.ContainsExtension(extension);
 
         /// <summary>
-        /// Gets routines associated with specified extension if any.
+        /// Gets routines associated with specified extension.
         /// </summary>
         /// <param name="extension">Extension name.</param>
-        /// <returns>Enumeration of routine names associated with given extension.
-        /// Gets <c>null</c> if <paramref name="extension"/> is not loaded.</returns>
-        public static IEnumerable<string> GetRoutinesByExtensionOrNull(string extension)
+        /// <returns>Enumeration of routine names associated with given extension.</returns>
+        public static IEnumerable<string> GetRoutinesByExtension(string extension)
         {
-            var routines = ExtensionsAppContext.ExtensionsTable.GetRoutinesByExtensionOrNull(extension);
-            return (routines != null)
-                ? routines.Select(r => r.Name)
-                : null;
+            return ExtensionsAppContext.ExtensionsTable.GetRoutinesByExtension(extension).Select(r => r.Name);
         }
     }
 }

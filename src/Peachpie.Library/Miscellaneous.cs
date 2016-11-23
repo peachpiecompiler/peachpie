@@ -201,21 +201,14 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray get_extension_funcs(string extension)
         {
-            var funcs = Context.GetRoutinesByExtensionOrNull(extension);
-            if (funcs != null)
+            var result = new PhpArray();
+            foreach (var e in Context.GetRoutinesByExtension(extension))
             {
-                var result = new PhpArray();
-                foreach (var e in funcs)
-                {
-                    result.Add(PhpValue.Create(e));
-                }
+                result.Add(PhpValue.Create(e));
+            }
 
-                return result;
-            }
-            else
-            {
-                return null;
-            }
+            // gets NULL (FALSE) if there are no functions
+            return result.Count != 0 ? result : null;
         }
     }
 }

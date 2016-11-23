@@ -37,8 +37,8 @@ namespace Pchp.Core.Reflection
         /// Gets routines associated with specified extension.
         /// </summary>
         /// <param name="extension">Extension name.</param>
-        /// <returns>Enumeration of routines associated with given extension. Gets <c>null</c> if <paramref name="extension"/> was not loaded.</returns>
-        public ICollection<ClrRoutineInfo> GetRoutinesByExtensionOrNull(string extension)
+        /// <returns>Enumeration of routines associated with given extension.</returns>
+        public ICollection<ClrRoutineInfo> GetRoutinesByExtension(string extension)
         {
             ICollection<ClrRoutineInfo> routines;
             if (extension != null && _routinesByExtension.TryGetValue(extension, out routines))
@@ -47,7 +47,7 @@ namespace Pchp.Core.Reflection
             }
             else
             {
-                return null;
+                return Array.Empty<ClrRoutineInfo>();
             }
         }
 
@@ -154,6 +154,6 @@ namespace Pchp.Core.Reflection
             return routines;
         }
 
-        
+
     }
 }
