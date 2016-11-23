@@ -215,7 +215,7 @@ namespace Pchp.Library
                 var countable = variable.Object as Countable;
                 if (countable != null)
                 {
-                    return countable.count().ToLong();
+                    return countable.count();
                 }
 
                 // CLR ICollection

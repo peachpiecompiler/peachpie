@@ -149,7 +149,7 @@ namespace Pchp.Core
         /// <summary>
         /// COnverts value to an array.
         /// </summary>
-        public static object ToArray(PhpValue value) => value.ToArray();
+        public static PhpArray ToArray(PhpValue value) => value.ToArray();
 
         /// <summary>
         /// Converts given value to a class object.
