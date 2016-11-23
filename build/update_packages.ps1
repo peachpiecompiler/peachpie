@@ -48,5 +48,11 @@ foreach ($project in $projects) {
     }
 }
 
+# Clean up the installed tool settings so that no old dependencies hang in there 
+$toolFolder = "$packagesSource/.tools/Peachpie.Compiler.Tools/$version-beta"
+if (Test-Path $toolFolder) {
+    Remove-Item -Recurse -Force $toolFolder
+}
+
 # Reinstall the packages by restoring a dummy project that depends on them
 dotnet restore "$rootDir/build/dummy"
