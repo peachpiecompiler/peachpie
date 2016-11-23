@@ -153,6 +153,19 @@ namespace Pchp.Core
             return result;
         }
 
+        /// <summary>
+        /// Creates an instance of <see cref="PhpArray"/> filled by given values.
+        /// </summary>
+        /// <param name="value">Value to be added to the new instance. 
+        /// Keys will correspond order of values in the array.</param>
+        public static PhpArray New(PhpValue value)
+        {
+            return new PhpArray(1, 0)
+            {
+                value
+            };
+        }
+
         #endregion
 
         #region Operators
@@ -160,7 +173,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates copy of this instance using shared underlaying hashtable.
         /// </summary>
-        public PhpArray DeepCopy() => new PhpArray(this);
+        public PhpArray DeepCopy() => new PhpArray(this, true);
 
         /// <summary>
         /// Gets PHP enumerator for this array.

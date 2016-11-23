@@ -270,6 +270,32 @@ namespace Pchp.CodeAnalysis.CodeGen
             return compilation.CoreTypes.PhpValue;
         }
 
+        public void EmitConvertToIntStringKey(TypeSymbol from, TypeRefMask fromHint)
+        {
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            switch (from.SpecialType)
+            {
+                case SpecialType.System_Int64:
+                    _il.EmitOpCode(ILOpCode.Conv_i4);   // i8 -> i4
+                    goto case SpecialType.System_Int32;
+                case SpecialType.System_Int32:
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
+                    break;
+                case SpecialType.System_String:
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
+                    break;
+                default:
+                    EmitConvertToPhpValue(from, 0);
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToIntStringKey_PhpValue);
+                    break;
+            }
+        }
+
         public void EmitConvertToPhpNumber(TypeSymbol from, TypeRefMask fromHint)
         {
             // dereference
@@ -296,9 +322,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // nop
                         return;
                     }
+                    else if (from == CoreTypes.PhpValue)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToNumber_PhpValue);
+                        break;
+                    }
                     else
                     {
-                        throw new NotImplementedException();
+                        throw new NotImplementedException($"{from} -> PhpNumber");
                     }
             }
         }
@@ -370,6 +401,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitOpCode(ILOpCode.Conv_i8);   // double -> int64
                     break;
 
+                case SpecialType.System_String:
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToLong_String)
+                        .Expect(SpecialType.System_Int64);
+                    break;
+
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
@@ -415,12 +451,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Int32:
                     _il.EmitOpCode(ILOpCode.Conv_r8);   // Int32 -> Double
                     return dtype;
+
                 case SpecialType.System_Int64:
                     _il.EmitOpCode(ILOpCode.Conv_r8);   // Int64 -> Double
                     return dtype;
+
                 case SpecialType.System_Double:
                     // nop
                     return dtype;
+
+                case SpecialType.System_String:
+                    return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToDouble_String)
+                        .Expect(SpecialType.System_Double);
+
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
@@ -481,6 +524,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitLoadContext();
                     EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Double_Context);
                     break;
+                case SpecialType.System_Object:
+                    // PhpValue.Create(object)
+                    from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object);
+                    goto default;
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
@@ -510,20 +557,53 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits conversion to <see cref="Pchp.Core.PhpString"/> (aka writable string).
+        /// </summary>
+        public void EmitConvertToPhpString(TypeSymbol from, TypeRefMask fromHint)
+        {
+            Contract.ThrowIfNull(from);
+
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                Emit_PhpAlias_GetValue();
+                from = CoreTypes.PhpValue;
+            }
+
+            from = EmitSpecialize(from, fromHint);
+
+            if (from == CoreTypes.PhpString)
+            {
+                return;
+            }
+
+            // new PhpString(string)
+            EmitConvertToString(from, fromHint);
+            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+        }
+        /// <summary>
         /// Emits conversion to <c>PhpArray</c>.
         /// </summary>
         public void EmitConvertToPhpArray(TypeSymbol from, TypeRefMask fromHint)
         {
-            if (from == CoreTypes.PhpArray)
-                return;
-
-            if (from == CoreTypes.PhpValue)
+            if (from.IsOfType(CoreTypes.PhpArray))
             {
-                // TODO: ToArray()
-                EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue);
+                return;
+            }
+            else if (from == CoreTypes.PhpValue)
+            {
+                EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArray_PhpValue);        // TODO: ToArray(), not AsArray()
+            }
+            else if (   // TODO: helper method for builtin types
+                from.SpecialType != SpecialType.None ||
+                from.IsOfType(CoreTypes.PhpResource) || from == CoreTypes.PhpNumber || from == CoreTypes.PhpString)
+            {
+                EmitConvertToPhpValue(from, fromHint);
+                EmitCall(ILOpCode.Call, CoreMethods.PhpArray.New_PhpValue);
             }
             else
             {
+                // TODO: object to array (copy its fields to new instance)
                 throw new NotImplementedException($"(array){from.Name}");
             }
         }
@@ -859,36 +939,36 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (to == CoreTypes.PhpNumber)
                     {
                         EmitConvertToPhpNumber(from, fromHint);
-                        return;
                     }
                     else if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.IPhpArray)    // TODO: merge into IPhpArray
                     {
                         EmitConvertToPhpArray(from, fromHint);
-                        return;
                     }
                     else if (to == CoreTypes.PhpString)
                     {
-                        throw new NotImplementedException($"{to}");
+                        EmitConvertToPhpString(from, fromHint);
                     }
                     else if (to.IsReferenceType)
                     {
                         EmitConvertToClass(from, fromHint, to);
-                        return;
                     }
                     else if (to.IsEnumType())
                     {
                         EmitConvertToEnum(from, (NamedTypeSymbol)to);
-                        return;
+                    }
+                    else if (to == CoreTypes.IntStringKey)
+                    {
+                        EmitConvertToIntStringKey(from, fromHint);
                     }
                     else
                     {
-                        throw new NotImplementedException($"{to}");
+                        break;
                     }
                     return;
             }
 
             //
-            throw new NotImplementedException();
+            throw new NotImplementedException($"{to}");
         }
     }
 }

@@ -9,5 +9,6 @@ public interface Countable
     /// Count elements of an object.
     /// </summary>
     /// <returns>The custom count as an integer.</returns>
-    PhpValue count();
+    /// <remarks>This method is executed when using the count() function on an object implementing <see cref="Countable"/>.</remarks>
+    long count();
 }

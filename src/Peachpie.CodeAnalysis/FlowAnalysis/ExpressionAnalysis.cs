@@ -883,6 +883,42 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         // note: continuing current block may be waste of time
                     }
 
+                    // process arguments by ref
+                    var expectedparams = m.GetExpectedArguments(this.TypeCtx);
+                    for (int i = 0; i < expectedparams.Length; i ++)
+                    {
+                        if (i < args.Length)
+                        {
+                            var ep = expectedparams[i];
+                            if (ep.IsAlias || ep.IsByRef)  // args[i] must be a variable
+                            {
+                                var refexpr = args[i] as BoundReferenceExpression;
+                                if (refexpr != null)
+                                {
+                                    var refvar = refexpr as BoundVariableRef;
+                                    if (refvar.Name.IsDirect)
+                                    {
+                                        State.SetVar(refvar.Name.NameValue.Value, expectedparams[i].Type);
+                                        if (ep.IsAlias)
+                                        {
+                                            State.SetVarRef(refvar.Name.NameValue.Value);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // TODO: indirect variable -> all may be aliases of any type
+                                    }
+                                }
+                                else
+                                {
+                                    // TODO: Err, variable or field must be passed into byref argument. foo("hello") where function foo(&$x){}
+                                    Debug.Fail($"TODO: Err. Argument {i} must be passed as a variable.");
+                                }
+                            }
+                        }
+                    }
+
+                    //
                     result_type |= m.GetResultType(TypeCtx);
                 }
 
@@ -1031,6 +1067,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             VisitTypeRef(x.TypeRef);
 
+            VisitRoutineCall(x);    // analyse arguments
+
             // resolve target type
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
             if (type != null)
@@ -1064,6 +1102,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitInclude(BoundIncludeEx x)
         {
             this.Routine.Flags |= RoutineFlags.HasInclude;
+
+            VisitRoutineCall(x);
 
             // resolve target script
             Debug.Assert(x.ArgumentsInSourceOrder.Length == 1);
@@ -1109,6 +1149,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = 0;
             }
+
+            //
+            VisitRoutineCallEpilogue(x);
         }
 
         public override void VisitArgument(BoundArgument x)
@@ -1420,6 +1463,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 Accept(x.Returned);
                 State.FlowThroughReturn(x.Returned.TypeRefMask);
+
+                // reanalyse blocks depending on this routine return type
+                EnqueueSubscribers((ExitBlock)this.Routine?.ControlFlowGraph.Exit);
             }
         }
 

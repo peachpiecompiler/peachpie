@@ -195,6 +195,10 @@ namespace Pchp.Core
 
         public static bool operator >(PhpValue left, PhpValue right) => left.Compare(right) > 0;
 
+        public static PhpValue operator ~(PhpValue x) => Operators.BitNot(ref x);
+
+        public static PhpValue operator &(PhpValue left, PhpValue right) => Operators.BitAnd(ref left, ref right);
+
         public static PhpValue operator |(PhpValue left, PhpValue right) => Operators.BitOr(ref left, ref right);
 
         /// <summary>
@@ -204,6 +208,32 @@ namespace Pchp.Core
         /// <param name="right">Right operand.</param>
         /// <returns>Quotient of <paramref name="left"/> and <paramref name="right"/>.</returns>
         public static PhpNumber operator /(PhpValue left, PhpValue right) => Operators.Div(ref left, ref right);
+
+        public static PhpNumber operator /(long lx, PhpValue y)
+        {
+            PhpNumber ny;
+            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return PhpNumber.Create(0.0);
+                throw new NotImplementedException();     // PhpException
+            }
+
+            return lx / ny;
+        }
+
+        public static double operator /(double dx, PhpValue y)
+        {
+            PhpNumber ny;
+            if ((y.ToNumber(out ny) & Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return PhpNumber.Create(0.0);
+                throw new NotImplementedException();     // PhpException
+            }
+
+            return dx / ny.ToDouble();
+        }
 
         public static explicit operator bool(PhpValue value) => value.ToBoolean();
 
@@ -259,10 +289,9 @@ namespace Pchp.Core
         public object AsObject() => _type.AsObject(ref this);
 
         /// <summary>
-        /// <c>as</c> operator returning underlaying <see cref="PhpArray"/> or <c>null</c> reference.
+        /// Converts value to an array.
         /// </summary>
-        /// <returns>Instance of underlaying <see cref="PhpArray"/> or <c>null</c> if underlaying object is not PHP array.</returns>
-        public PhpArray AsArray() => _type.AsArray(ref this);
+        public PhpArray ToArray() => _type.ToArray(ref this);
 
         /// <summary>
         /// Gets callable wrapper for the object dynamic invocation.

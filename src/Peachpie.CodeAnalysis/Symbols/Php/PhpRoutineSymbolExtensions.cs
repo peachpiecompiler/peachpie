@@ -3,6 +3,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -94,7 +95,13 @@ namespace Pchp.CodeAnalysis.Symbols
                     : ((cvalue = p.ExplicitDefaultConstantValue) != null ? new BoundLiteral(cvalue.Value) : null);
 
                 //
-                result.Add(new PhpParam(TypeRefFactory.CreateMask(ctx, p.Type), p.IsParams, defaultexpr));
+                var phpparam = new PhpParam(
+                    TypeRefFactory.CreateMask(ctx, p.Type),
+                    p.RefKind != RefKind.None,
+                    p.IsParams,
+                    defaultexpr);
+
+                result.Add(phpparam);
             }
 
             //

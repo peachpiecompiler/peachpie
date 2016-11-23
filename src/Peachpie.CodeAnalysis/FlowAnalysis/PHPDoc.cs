@@ -35,7 +35,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             { "resource", ctx => ctx.GetTypeMask(NameUtils.SpecialNames.System_Object, true)}, // TODO: Pchp.Core.PhpResource
             { "null", ctx => ctx.GetTypeMask(NameUtils.SpecialNames.System_Object, false)},
             { "object", ctx => ctx.GetTypeMask(NameUtils.SpecialNames.System_Object, true)},
-            { "void", ctx => 0},
+            { "void", ctx => default(TypeRefMask).WithIncludesSubclasses},  // avoid being 0 (which means uninitialized)
             //{ "nothing", ctx => 0},
             { "callable", ctx => ctx.GetCallableTypeMask()},
             { "mixed", ctx => TypeRefMask.AnyType},

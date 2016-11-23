@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Pchp.Library
@@ -40,7 +41,7 @@ namespace Pchp.Library
         /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
         /// </summary>
         public static int ord(string str) => string.IsNullOrEmpty(str) ? 0 : (int)str[0];
-        
+
         /// <summary>
         /// Converts ordinal number of character to a binary string containing that character.
         /// </summary>
@@ -48,6 +49,17 @@ namespace Pchp.Library
         /// <returns>The character with <paramref name="charCode"/> ASCIT code.</returns>
         /// <remarks>Current code-page is determined by the <see cref="ApplicationConfiguration.GlobalizationSection.PageEncoding"/> property.</remarks>
         public static string chr(int charCode) => unchecked((char)charCode).ToString();
+
+        /// <summary>
+        /// Converts ordinal number of Unicode character to a string containing that character.
+        /// </summary>
+        /// <param name="charCode">The ordinal number of character.</param>
+        /// <returns>The character with <paramref name="charCode"/> ordnial number.</returns>
+        /*public*/
+        static string chr_unicode(int charCode)
+        {
+            return unchecked((char)charCode).ToString();
+        }
 
         ///// <summary>
         ///// Converts a string of bytes into hexadecimal representation.
@@ -621,25 +633,13 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The source string (unicode or binary).</param>
         /// <param name="offset">The relativized offset of the first item of the slice.</param>
-        /// <returns>The substring of the <paramref name="str"/>.</returns>
-        /// <remarks>
-        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> where <c>length</c> is infinity.
-        /// </remarks>
-        [return: CastToFalse]
-        public static string substr(string str, int offset) => substr(str, offset, int.MaxValue);
-
-        /// <summary>
-        /// Retrieves a substring from the given string.
-        /// </summary>
-        /// <param name="str">The source string (unicode or binary).</param>
-        /// <param name="offset">The relativized offset of the first item of the slice.</param>
         /// <param name="length">The relativized length of the slice.</param>
         /// <returns>The substring of the <paramref name="str"/>.</returns>
         /// <remarks>
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
         /// </remarks>
         [return: CastToFalse]
-        public static string substr(string str, int offset, int length)
+        public static string substr(string str, int offset, int length = int.MaxValue)
         {
             //PhpBytes binstr = str as PhpBytes;
             //if (binstr != null)
@@ -798,6 +798,482 @@ namespace Pchp.Library
                     result++;
                 }
             }
+            return result;
+        }
+
+        #endregion
+
+        #region substr_count, substr_replace, substr_compare
+
+        /// <summary>
+        /// See <see cref="substr_count(string,string,int,int)"/>.
+        /// </summary>
+        [return: CastToFalse]
+        public static int substr_count(string haystack, string needle, int offset = 0)
+        {
+            if (String.IsNullOrEmpty(haystack)) return 0;
+            if (!SubstringCountInternalCheck(needle)) return -1;
+            if (!SubstringCountInternalCheck(haystack, offset)) return -1;
+
+            return SubstringCountInternal(haystack, needle, offset, haystack.Length);
+        }
+
+        /// <summary>
+        /// Count the number of substring occurrences.
+        /// </summary>
+        /// <param name="haystack">The string.</param>
+        /// <param name="needle">The substring.</param>
+        /// <param name="offset">The relativized offset of the first item of the slice. Zero if missing in overloads</param>
+        /// <param name="length">The relativized length of the slice. Infinity if missing in overloads.</param>
+        /// <returns>The number of <paramref name="needle"/> occurences in <paramref name="haystack"/>.</returns>
+        /// <example>"aba" has one occurence in "ababa".</example>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
+        /// </remarks>
+        /// <exception cref="PhpException">Thrown if <paramref name="needle"/> is null.</exception>
+        [return: CastToFalse]
+        public static int substr_count(string haystack, string needle, int offset, int length)
+        {
+            if (String.IsNullOrEmpty(haystack)) return 0;
+            if (!SubstringCountInternalCheck(needle)) return -1;
+            if (!SubstringCountInternalCheck(haystack, offset, length)) return -1;
+
+            return SubstringCountInternal(haystack, needle, offset, offset + length);
+        }
+
+        /// <summary>
+        /// See <see cref="substr_replace(PhpValue, PhpValue, PhpValue, PhpValue)"/>.
+        /// </summary>
+        public static string substr_replace(string subject, string replacement, int offset)
+        {
+            return SubstringReplace(subject, replacement, offset, int.MaxValue);
+        }
+
+        /// <summary>
+        /// Replaces a portion of a string or multiple strings with another string.
+        /// </summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
+        /// <param name="subject">The subject of replacement (can be an array of subjects).</param>
+        /// <param name="replacement">The replacement string (can be array of replacements).</param>
+        /// <param name="offset">The relativized offset of the first item of the slice (can be array of offsets).</param>
+        /// <param name="length">The relativized length of the slice (can be array of lengths).</param>
+        /// <returns>
+        /// Either the <paramref name="subject"/> with a substring replaced by <paramref name="replacement"/> if it is a string
+        /// or an array containing items of the <paramref name="subject"/> with substrings replaced by <paramref name="replacement"/>
+        /// and indexed by integer keys starting from 0. If <paramref name="replacement"/> is an array, multiple replacements take place.
+        /// </returns>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
+        /// Missing <paramref name="length"/> is considered to be infinity.
+        /// If <paramref name="offset"/> and <paramref name="length"/> conversion results in position
+        /// less than or equal to zero and greater than or equal to string length, the replacement is prepended and appended, respectively.
+        /// </remarks>
+        public static PhpValue substr_replace(Context ctx, PhpValue subject, PhpValue replacement, PhpValue offset, PhpValue length)
+        {
+            IList<PhpValue> subject_list, replacement_list, offset_list, length_list;
+            string[] replacements = null, subjects = null;
+            int[] offsets = null, lengths = null;
+            int int_offset = 0, int_length = 0;
+            string str_replacement = null;
+
+            // prepares string array of subjects:
+            if ((subject_list = subject.Object as IList<PhpValue>) != null)
+            {
+                subjects = new string[subject_list.Count];
+                int i = 0;
+                foreach (var item in subject_list)
+                {
+                    subjects[i++] = item.ToString(ctx);
+                }
+            }
+            else
+            {
+                subjects = new string[] { subject.ToString(ctx) };
+            }
+
+            // prepares string array of replacements:
+            if ((replacement_list = replacement.Object as IList<PhpValue>) != null)
+            {
+                replacements = new string[replacement_list.Count];
+                int i = 0;
+                foreach (var item in replacement_list)
+                {
+                    replacements[i++] = item.ToString(ctx);
+                }
+            }
+            else
+            {
+                str_replacement = replacement.ToString(ctx);
+            }
+
+            // prepares integer array of offsets:
+            if ((offset_list = offset.Object as IList<PhpValue>) != null)
+            {
+                offsets = new int[offset_list.Count];
+                int i = 0;
+                foreach (var item in offset_list)
+                {
+                    offsets[i++] = (int)item.ToLong();
+                }
+            }
+            else
+            {
+                int_offset = (int)offset.ToLong();
+            }
+
+            // prepares integer array of lengths:
+            if ((length_list = length.Object as IList<PhpValue>) != null)
+            {
+                lengths = new int[length_list.Count];
+                int i = 0;
+                foreach (var item in length_list)
+                {
+                    lengths[i++] = (int)item.ToLong();
+                }
+            }
+            else
+            {
+                int_length = (int)length.ToLong();
+            }
+
+            for (int i = 0; i < subjects.Length; i++)
+            {
+                if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
+                if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subjects[i].Length;
+                if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
+
+                subjects[i] = SubstringReplace(subjects[i], str_replacement, int_offset, int_length);
+            }
+
+            if (subject_list != null)
+                return PhpValue.Create(new PhpArray(subjects));
+            else
+                return PhpValue.Create(subjects[0]);
+        }
+
+        /// <summary>
+        /// Performs substring replacements on subject.
+        /// </summary>
+        static string SubstringReplace(string subject, string replacement, int offset, int length)
+        {
+            PhpMath.AbsolutizeRange(ref offset, ref length, subject.Length);
+            return new StringBuilder(subject).Remove(offset, length).Insert(offset, replacement).ToString();
+        }
+
+        /// <summary>
+        /// Compares substrings.
+        /// </summary>
+        /// <param name="mainStr">A string whose substring to compare with <paramref name="str"/>.</param>
+        /// <param name="str">The second operand of the comparison.</param>
+        /// <param name="offset">An offset in <paramref name="mainStr"/> where to start. Negative value means zero. Offsets beyond <paramref name="mainStr"/> means its length.</param>
+        /// <param name="length">A maximal number of characters to compare. Non-positive values means infinity.</param>
+        /// <param name="ignoreCase">Whether to ignore case.</param>
+        public static int substr_compare(string mainStr, string str, int offset, int length = Int32.MaxValue, bool ignoreCase = false)
+        {
+            if (mainStr == null) mainStr = string.Empty;
+            if (str == null) str = string.Empty;
+            if (length <= 0) length = int.MaxValue;
+            if (offset < 0) offset = 0;
+            if (offset > mainStr.Length) offset = mainStr.Length;
+
+            return string.Compare(mainStr, offset, str, 0, length, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        }
+
+        #endregion
+
+        #region str_replace, str_ireplace
+
+        static PhpValue str_replace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject, ref long count, StringComparison compareType)
+        {
+            var subjectArr = subject.AsArray();
+            if (subjectArr == null)
+            {
+                // string
+                return PhpValue.Create(str_replace(ctx, search, replace, subject.ToStringOrThrow(ctx), ref count, compareType));
+            }
+            else
+            {
+                // array
+                return PhpValue.Create(str_replace(ctx, search, replace, subjectArr, ref count, compareType));
+            }
+        }
+
+        static PhpArray str_replace(Context ctx, PhpValue search, PhpValue replace, PhpArray subject, ref long count, StringComparison compareType)
+        {
+            var result = new PhpArray(subject.Count);
+            var enumerator = subject.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                result.AddValue(PhpValue.Create(str_replace(ctx, search, replace, enumerator.CurrentValue.ToStringOrThrow(ctx), ref count, compareType)));
+            }
+
+            return result;
+        }
+
+        static string str_replace(Context ctx, PhpValue search, PhpValue replace, string subject, ref long count, StringComparison compareType)
+        {
+            if (string.IsNullOrEmpty(subject))
+            {
+                return string.Empty;
+            }
+
+            //
+            var searchArr = search.AsArray();
+            if (searchArr == null)
+            {
+                // string -> string
+                subject = str_replace(search.ToStringOrThrow(ctx), replace.ToStringOrThrow(ctx), subject, ref count, compareType);
+            }
+            else
+            {
+                var searchEnum = searchArr.GetFastEnumerator();
+
+                var replaceArr = replace.AsArray();
+                if (replaceArr != null)
+                {
+                    // array -> array
+                    var replaceEnum = replaceArr.GetFastEnumerator();
+                    while (searchEnum.MoveNext())
+                    {
+                        var searchStr = searchEnum.CurrentValue.ToStringOrThrow(ctx);
+                        var replaceStr = replaceEnum.MoveNext() ? replaceEnum.CurrentValue.ToStringOrThrow(ctx) : string.Empty;
+                        subject = str_replace(searchStr, replaceStr, subject, ref count, compareType);
+                    }
+                }
+                else
+                {
+                    // array -> string
+                    var replaceStr = replace.ToStringOrThrow(ctx);
+                    while (searchEnum.MoveNext())
+                    {
+                        var searchStr = searchEnum.CurrentValue.ToStringOrThrow(ctx);
+                        subject = str_replace(searchStr, replaceStr, subject, ref count, compareType);
+                    }
+                }
+            }
+
+            //
+            return subject;
+        }
+
+        static string str_replace(string search, string replace, string subject, ref long count, StringComparison compareType)
+        {
+            if (string.IsNullOrEmpty(search))
+            {
+                return subject;
+            }
+
+            //if (replace == null)
+            //{
+            //    replace = string.Empty;
+            //}
+            Debug.Assert(replace != null);
+
+            // temporary result instantiated lazily
+            StringBuilder result = null;
+
+            // elementary replace
+            int index, from = 0;
+            while ((index = subject.IndexOf(search, from, compareType)) >= 0)
+            {
+                if (result == null)
+                {
+                    result = new StringBuilder(subject.Length);
+                }
+
+                result.Append(subject, from, index - from);
+                result.Append(replace);
+                from = index + search.Length;
+                count++;
+            }
+
+            if (result == null)
+            {
+                return subject;
+            }
+            else
+            {
+                result.Append(subject, from, subject.Length - from);
+                return result.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Replaces all occurrences of the <paramref name="search"/> string 
+        /// with the <paramref name="replace"/> string.
+        /// </summary>
+        public static PhpValue str_replace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject)
+        {
+            long count = 0;
+            return str_replace(ctx, search, replace, subject, ref count, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Replaces all occurrences of the <paramref name="search"/> string 
+        /// with the <paramref name="replace"/> string counting the number of occurrences.
+        /// </summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
+        /// <param name="search">
+        /// The substring(s) to replace. Can be <see cref="string"/> or <see cref="PhpArray"/> of strings.
+        /// </param>
+        /// <param name="replace">
+        /// The string(s) to replace <paramref name="search"/>. Can be <see cref="string"/> or <see cref="PhpArray"/> containing strings.
+        /// </param>
+        /// <param name="subject">
+        /// The <see cref="string"/> or <see cref="PhpArray"/> of strings to perform the search and replace with.
+        /// </param>
+        /// <param name="count">
+        /// The number of matched and replaced occurrences.
+        /// </param>
+        /// <returns>
+        /// A <see cref="string"/> or <see cref="PhpArray"/> with
+        /// all occurrences of <paramref name="search"/> in <paramref name="subject"/>
+        /// replaced with the given <paramref name="replace"/> value.
+        /// </returns>
+        public static PhpValue str_replace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject, out long count)
+        {
+            count = 0;
+            return str_replace(ctx, search, replace, subject, ref count, StringComparison.Ordinal);
+        }
+
+        public static PhpValue str_ireplace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject)
+        {
+            long count = 0;
+            return str_replace(ctx, search, replace, subject, ref count, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static PhpValue str_ireplace(Context ctx, PhpValue search, PhpValue replace, PhpValue subject, out long count)
+        {
+            count = 0;
+            return str_replace(ctx, search, replace, subject, ref count, StringComparison.OrdinalIgnoreCase);
+        }
+
+        #endregion
+
+        #region str_shuffle, str_split
+
+        /// <summary>
+        /// Randomly shuffles a string.
+        /// </summary>
+        /// <param name="str">The string to shuffle.</param>
+        /// <returns>One random permutation of <paramref name="str"/>.</returns>
+        public static string str_shuffle(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
+            int count = str.Length;
+            if (count <= 1)
+            {
+                return str;
+            }
+
+            var generator = PhpMath.Generator;
+            var newstr = new StringBuilder(str);
+
+            // Takes n-th character from the string at random with probability 1/i
+            // and exchanges it with the one on the i-th position.
+            // Thus a random permutation is formed in the second part of the string (from i to count)
+            // and the set of remaining characters is stored in the first part.
+            for (int i = count - 1; i > 0; i--)
+            {
+                int n = generator.Next(i + 1);
+                char ch = newstr[i];
+                newstr[i] = newstr[n];
+                newstr[n] = ch;
+            }
+
+            //
+            return newstr.ToString();
+        }
+
+        /// <summary>
+        /// Converts a string to an array.
+        /// </summary>
+        /// <param name="str">The string to split.</param>
+        /// <returns>An array with keys being character indeces and values being characters.</returns>
+        [return: CastToFalse]
+        public static PhpArray str_split(string str)
+        {
+            return Split(str, 1);
+        }
+
+        /// <summary>
+        /// Converts a string to an array.
+        /// </summary>
+        /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
+        /// <param name="obj">The string to split.</param>
+        /// <param name="splitLength">Length of chunks <paramref name="obj"/> should be split into.</param>
+        /// <returns>An array with keys being chunk indeces and values being chunks of <paramref name="splitLength"/>
+        /// length.</returns>
+        /// <exception cref="PhpException">The <paramref name="splitLength"/> parameter is not positive (Warning).</exception>
+        [return: CastToFalse]
+        public static PhpArray str_split(Context ctx, PhpValue obj, int splitLength)
+        {
+            if (splitLength < 1)
+            {
+                throw new ArgumentOutOfRangeException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("segment_length_not_positive"));
+                //return null;
+            }
+            if (obj == null)
+            {
+                return new PhpArray();
+            }
+
+            var phpstr = obj.Object as PhpString;
+            if (phpstr != null && phpstr.ContainsBinaryData)
+            {
+                return Split(phpstr.ToBytes(ctx.StringEncoding), splitLength);
+            }
+            else
+            {
+                return Split(obj.ToString(ctx), splitLength);
+            }
+        }
+
+        static PhpArray Split(string str, int splitLength)
+        {
+            int length = str.Length;
+            PhpArray result = new PhpArray(length / splitLength + 1, 0);
+
+            // add items of length splitLength
+            int i;
+            for (i = 0; i < (length - splitLength + 1); i += splitLength)
+            {
+                result.Add(str.Substring(i, splitLength));
+            }
+
+            // add the last item
+            if (i < length) result.Add(str.Substring(i));
+
+            return result;
+        }
+
+        static PhpArray Split(byte[] str, int splitLength)
+        {
+            int length = str.Length;
+            PhpArray result = new PhpArray(length / splitLength + 1, 0);
+
+            // add items of length splitLength
+            int i;
+            for (i = 0; i < (length - splitLength + 1); i += splitLength)
+            {
+                byte[] chunk = new byte[splitLength];
+                Array.Copy(str, i, chunk, 0, chunk.Length);
+                result.Add(PhpValue.Create(new PhpString(chunk)));
+            }
+
+            // add the last item
+            if (i < length)
+            {
+                byte[] chunk = new byte[length - i];
+                Array.Copy(str, i, chunk, 0, chunk.Length);
+                result.Add(PhpValue.Create(new PhpString(chunk)));
+            }
+
             return result;
         }
 
@@ -1131,31 +1607,6 @@ namespace Pchp.Library
         #region chunk_split
 
         /// <summary>
-        /// Splits a string into chunks 76 characters long separated by "\r\n".
-        /// </summary>
-        /// <param name="str">The string to split.</param>
-        /// <returns>The splitted string.</returns>
-        /// <remarks>"\r\n" is also appended after the last chunk.</remarks>
-        [return: CastToFalse]
-        public static string chunk_split(string str)
-        {
-            return chunk_split(str, 76, "\r\n");
-        }
-
-        /// <summary>
-        /// Splits a string into chunks of a specified length separated by "\r\n".
-        /// </summary>
-        /// <param name="str">The string to split.</param>
-        /// <param name="chunkLength">The chunk length.</param>
-        /// <returns>The splitted string.</returns>
-        /// <remarks>"\r\n" is also appended after the last chunk.</remarks>
-        [return: CastToFalse]
-        public static string chunk_split(string str, int chunkLength)
-        {
-            return chunk_split(str, chunkLength, "\r\n");
-        }
-
-        /// <summary>
         /// Splits a string into chunks of a specified length separated by a specified string.
         /// </summary>
         /// <param name="str">The string to split.</param>
@@ -1163,7 +1614,7 @@ namespace Pchp.Library
         /// <param name="endOfChunk">The chunk separator.</param>
         /// <returns><paramref name="endOfChunk"/> is also appended after the last chunk.</returns>
         [return: CastToFalse]
-        public static string chunk_split(string str, int chunkLength, string endOfChunk)
+        public static string chunk_split(string str, int chunkLength = 76, string endOfChunk = "\r\n")
         {
             if (str == null) return string.Empty;
 
@@ -1451,15 +1902,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Calculates the Levenshtein distance between two strings.
-        /// </summary>
-        /// <param name="src">The first string.</param>
-        /// <param name="dst">The second string.</param>
-        /// <returns>The Levenshtein distance between <paramref name="src"/> and <paramref name="dst"/> or -1 if any of the
-        /// strings is longer than 255 characters.</returns>
-        public static int levenshtein(string src, string dst) => levenshtein(src, dst, 1, 1, 1);
-
-        /// <summary>
         /// Calculates the Levenshtein distance between two strings given the cost of insert, replace
         /// and delete operations.
         /// </summary>
@@ -1471,7 +1913,7 @@ namespace Pchp.Library
         /// <returns>The Levenshtein distance between <paramref name="src"/> and <paramref name="dst"/> or -1 if any of the
         /// strings is longer than 255 characters.</returns>
         /// <remarks>See <A href="http://www.merriampark.com/ld.htm">http://www.merriampark.com/ld.htm</A> for description of the algorithm.</remarks>
-        public static int levenshtein(string src, string dst, int insertCost, int replaceCost, int deleteCost)
+        public static int levenshtein(string src, string dst, int insertCost = 1, int replaceCost = 1, int deleteCost = 1)
         {
             if (src == null) src = String.Empty;
             if (dst == null) dst = String.Empty;
@@ -2258,48 +2700,6 @@ namespace Pchp.Library
         #region wordwrap
 
         /// <summary>
-        /// Wraps a string to 75 characters using new line as the break character.
-        /// </summary>
-        /// <param name="str">The string to word-wrap.</param>
-        /// <returns>The word-wrapped string.</returns>
-        /// <remarks>The only "break-point" character is space (' '). If a word is longer than 75 characers
-        /// it will stay uncut.</remarks>
-        [return: CastToFalse]
-        public static string wordwrap(string str)
-        {
-            return wordwrap(str, 75, "\n", false);
-        }
-
-        /// <summary>
-        /// Wraps a string to a specified number of characters using new line as the break character.
-        /// </summary>
-        /// <param name="str">The string to word-wrap.</param>
-        /// <param name="width">The desired line length.</param>
-        /// <returns>The word-wrapped string.</returns>
-        /// <remarks>The only "break-point" character is space (' '). If a word is longer than <paramref name="width"/> 
-        /// characers it will stay uncut.</remarks>
-        [return: CastToFalse]
-        public static string wordwrap(string str, int width)
-        {
-            return wordwrap(str, width, "\n", false);
-        }
-
-        /// <summary>
-        /// Wraps a string to a specified number of characters using a specified string as the break string.
-        /// </summary>
-        /// <param name="str">The string to word-wrap.</param>
-        /// <param name="width">The desired line length.</param>
-        /// <param name="lineBreak">The break string.</param>
-        /// <returns>The word-wrapped string.</returns>
-        /// <remarks>The only "break-point" character is space (' '). If a word is longer than <paramref name="width"/> 
-        /// characers it will stay uncut.</remarks>
-        [return: CastToFalse]
-        public static string wordwrap(string str, int width, string lineBreak)
-        {
-            return wordwrap(str, width, lineBreak, false);
-        }
-
-        /// <summary>
         /// Wraps a string to a specified number of characters using a specified string as the break string.
         /// </summary>
         /// <param name="str">The string to word-wrap.</param>
@@ -2311,7 +2711,7 @@ namespace Pchp.Library
         /// <remarks>The only "break-point" character is space (' ').</remarks>
         /// <exception cref="PhpException">Thrown if the combination of <paramref name="width"/> and <paramref name="cut"/> is invalid.</exception>
         [return: CastToFalse]
-        public static string wordwrap(string str, int width, string lineBreak, bool cut)
+        public static string wordwrap(string str, int width = 75, string lineBreak = "\n", bool cut = false)
         {
             if (width == 0 && cut)
             {
@@ -2729,34 +3129,7 @@ namespace Pchp.Library
         public const int STR_PAD_LEFT = (int)PaddingType.Left;
         public const int STR_PAD_RIGHT = (int)PaddingType.Right;
         public const int STR_PAD_BOTH = (int)PaddingType.Both;
-
-        /// <summary>
-        /// Pads a string to a certain length with spaces.
-        /// </summary>
-        /// <param name="str">The string to pad.</param>
-        /// <param name="totalWidth">Desired length of the returned string.</param>
-        /// <returns><paramref name="str"/> padded on the right with spaces.</returns>
-        public static string str_pad(string str, int totalWidth)
-        {
-            //if (str is PhpBytes)
-            //    return Pad(str, totalWidth, new PhpBytes(32));
-            //else
-            return str_pad(str, totalWidth, " ");
-        }
-
-        /// <summary>
-        /// Pads a string to certain length with another string.
-        /// </summary>
-        /// <param name="str">The string to pad.</param>
-        /// <param name="totalWidth">Desired length of the returned string.</param>
-        /// <param name="paddingString">The string to use as the pad.</param>
-        /// <returns><paramref name="str"/> padded on the right with <paramref name="paddingString"/>.</returns>
-        /// <exception cref="PhpException">Thrown if <paramref name="paddingString"/> is null or empty.</exception>
-        public static string str_pad(string str, int totalWidth, string paddingString)
-        {
-            return str_pad(str, totalWidth, paddingString, PaddingType.Right);
-        }
-
+        
         /// <summary>
         /// Pads a string to certain length with another string.
         /// </summary>
@@ -2767,7 +3140,7 @@ namespace Pchp.Library
         /// or on both sides of <paramref name="str"/>.</param>
         /// <returns><paramref name="str"/> padded with <paramref name="paddingString"/>.</returns>
         /// <exception cref="PhpException">Thrown if <paramref name="paddingType"/> is invalid or <paramref name="paddingString"/> is null or empty.</exception>
-        public static string str_pad(string str, int totalWidth, string paddingString, PaddingType paddingType)
+        public static string str_pad(string str, int totalWidth, string paddingString = " ", PaddingType paddingType = PaddingType.Right)
         {
             //PhpBytes binstr = str as PhpBytes;
             //if (str is PhpBytes)
@@ -2950,39 +3323,25 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Splits a string into words.
+        /// Counts the number of words inside a string.
         /// </summary>
-        /// <param name="str">The string to split.</param>
-        /// <param name="format">If <see cref="WordCountResult.WordsArray"/>, the method returns an array containing all
-        /// the words found inside the string. If <see cref="WordCountResult.PositionsToWordsMapping"/>, the method returns 
-        /// an array, where the key is the numeric position of the word inside the string and the value is the 
-        /// actual word itself.</param>
-        /// <returns>Array of words. Keys are just numbers starting with 0 (when <paramref name="format"/> is 
-        /// WordCountResult.WordsArray) or positions of the words inside <paramref name="str"/> (when
-        /// <paramref name="format"/> is <see cref="WordCountResult.PositionsToWordsMapping"/>).</returns>
-        /// <exception cref="PhpException">Thrown if <paramref name="format"/> is invalid.</exception>
-        public static object str_word_count(string str, WordCountResult format)
-        {
-            return str_word_count(str, format, null);
-        }
-
-        public static object str_word_count(string str, WordCountResult format, string addWordChars)
+        public static PhpValue str_word_count(string str, WordCountResult format = WordCountResult.WordCount, string addWordChars = null)
         {
             PhpArray words = (format != WordCountResult.WordCount) ? new PhpArray() : null;
 
             int count = CountWords(str, format, addWordChars, words);
 
             if (count == -1)
-                return false;
+                return PhpValue.False;
 
             if (format == WordCountResult.WordCount)
-                return count;
+                return PhpValue.Create(count);
             else
             {
                 if (words != null)
-                    return words;
+                    return PhpValue.Create(words);
                 else
-                    return false;
+                    return PhpValue.False;
             }
         }
 
@@ -3057,6 +3416,367 @@ namespace Pchp.Library
 
         #endregion
 
+        #region strcmp, strcasecmp, strncmp, strncasecmp
+
+        /// <summary>
+        /// Compares two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static int strcmp(string str1, string str2) => string.CompareOrdinal(str1, str2);
+
+        /// <summary>
+        /// Compares two specified strings, ignoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static int strcasecmp(string str1, string str2)
+        {
+            return System.Globalization.CultureInfo.InvariantCulture.CompareInfo
+                .Compare(str1, str2, System.Globalization.CompareOptions.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">The lesser string.</param>
+        /// <param name="str2">The greater string.</param>
+        /// <param name="length">The upper limit of the length of parts to be compared.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static PhpValue strncmp(string str1, string str2, int length)
+        {
+            if (length < 0)
+            {
+                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
+                //return PhpValue.False;
+            }
+
+            return PhpValue.Create(string.CompareOrdinal(str1, 0, str2, 0, length));
+        }
+
+        /// <summary>
+        /// Compares parts of two specified strings, honoring their case, using culture invariant comparison.
+        /// </summary>
+        /// <param name="str1">A string.</param>
+        /// <param name="str2">A string.</param>
+        /// <param name="length">The upper limit of the length of parts to be compared.</param>
+        /// <returns>Returns -1 if <paramref name="str1"/> is less than <paramref name="str2"/>; +1 if <paramref name="str1"/> is greater than <paramref name="str2"/>,
+        /// and 0 if they are equal.</returns>
+        public static PhpValue strncasecmp(string str1, string str2, int length)
+        {
+            if (length < 0)
+            {
+                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("must_be_positive", "Length"));
+                //return PhpValue.False;
+            }
+
+            length = Math.Max(Math.Max(length, str1.Length), str2.Length);
+
+            return PhpValue.Create(System.Globalization.CultureInfo.InvariantCulture.CompareInfo
+                .Compare(str1, 0, length, str2, 0, length, System.Globalization.CompareOptions.OrdinalIgnoreCase));
+        }
+
+        #endregion
+
+        #region strpos, strrpos, stripos, strripos
+
+        /// <summary>
+        /// Retrieves the index of the first occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>.
+        /// The search starts at the specified character position.
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="needle">
+        /// The string or the ordinal value of character to search for. 
+        /// If non-string is passed as a needle then it is converted to an integer (modulo 256) and the character
+        /// with such ordinal value (relatively to the current encoding set in the configuration) is searched.</param>
+        /// <param name="offset">
+        /// The position where to start searching. Should be between 0 and a length of the <paramref name="haystack"/> including.
+        /// </param>
+        /// <returns>Non-negative integer on success, -1 otherwise.</returns>
+        /// <exception cref="PhpException"><paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
+        [return: CastToFalse]
+        public static int strpos(string haystack, PhpValue needle, int offset = 0)
+        {
+            return Strpos(haystack, needle, offset, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Retrieves the index of the first occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>
+        /// (case insensitive).
+        /// </summary>
+        /// <remarks>See <see cref="Strpos(string,object,int)"/> for details.</remarks>
+        /// <exception cref="PhpException">Thrown if <paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
+        [return: CastToFalse]
+        public static int stripos(string haystack, PhpValue needle, int offset = 0)
+        {
+            return Strpos(haystack, needle, offset, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Retrieves the index of the last occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>.
+        /// The search starts at the specified character position.
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="needle">The string or the ordinal value of character to search for. 
+        /// If non-string is passed as a needle then it is converted to an integer (modulo 256) and the character
+        /// with such ordinal value (relatively to the current encoding set in the configuration) is searched.</param>
+        /// <param name="offset">
+        /// The position where to start searching (is non-negative) or a negative number of characters
+        /// prior the end where to stop searching (if negative).
+        /// </param>
+        /// <returns>Non-negative integer on success, -1 otherwise.</returns>
+        /// <exception cref="PhpException">Thrown if <paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
+        [return: CastToFalse]
+        public static int strrpos(string haystack, PhpValue needle, int offset = 0)
+        {
+            return Strrpos(haystack, needle, offset, StringComparison.Ordinal);
+        }
+
+
+        /// <summary>
+        /// Retrieves the index of the last occurrence of the <paramref name="needle"/> in the <paramref name="haystack"/>
+        /// (case insensitive).
+        /// </summary>
+        /// <remarks>See <see cref="Strrpos(string,object,int)"/> for details.</remarks>
+        /// <exception cref="PhpException">Thrown if <paramref name="offset"/> is out of bounds or <paramref name="needle"/> is empty string.</exception>
+        [return: CastToFalse]
+        public static int strripos(string haystack, PhpValue needle, int offset = 0)
+        {
+            return Strrpos(haystack, needle, offset, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Implementation of <c>str[i]pos</c> functions.
+        /// </summary>
+        static int Strpos(string haystack, PhpValue needle, int offset, StringComparison comparisonType)
+        {
+            if (String.IsNullOrEmpty(haystack)) return -1;
+
+            if (offset < 0 || offset >= haystack.Length)
+            {
+                if (offset != haystack.Length)
+                {
+                    throw new ArgumentOutOfRangeException();
+                    //PhpException.InvalidArgument("offset", LibResources.GetString("arg:out_of_bounds"));
+                }
+                return -1;
+            }
+
+            var str_needle = PhpVariable.StringOrNull(needle);
+            if (str_needle != null)
+            {
+                if (str_needle == String.Empty)
+                {
+                    throw new ArgumentException();
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //return -1;
+                }
+
+                return haystack.IndexOf(str_needle, offset, comparisonType);
+            }
+            else
+            {
+                return haystack.IndexOf(chr_unicode((int)(needle.ToLong() % 256)), offset, comparisonType);
+            }
+        }
+
+        /// <summary>
+        /// Implementation of <c>strr[i]pos</c> functions.
+        /// </summary>
+        static int Strrpos(string haystack, PhpValue needle, int offset, StringComparison comparisonType)
+        {
+            if (String.IsNullOrEmpty(haystack)) return -1;
+
+            int end = haystack.Length - 1;
+            if (offset > end || offset < -end - 1)
+            {
+                throw new ArgumentOutOfRangeException();
+                //PhpException.InvalidArgument("offset", LibResources.GetString("arg:out_of_bounds"));
+                //return -1;
+            }
+
+            var str_needle = PhpVariable.StringOrNull(needle);
+            if (offset < 0)
+            {
+                end += offset + (str_needle != null ? str_needle.Length : 1);
+                offset = 0;
+            }
+
+            if (str_needle != null)
+            {
+                if (str_needle.Length == 0)
+                {
+                    throw new ArgumentException();
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //return -1;
+                }
+
+                return haystack.LastIndexOf(str_needle, end, end - offset + 1, comparisonType);
+            }
+            else
+            {
+                return haystack.LastIndexOf(chr_unicode((int)(needle.ToLong() % 256)), end, end - offset + 1, comparisonType);
+            }
+        }
+
+        #endregion
+
+        #region strstr, stristr, strchr, strrchr
+
+        #region Stubs
+
+        /// <summary>
+        /// Finds first occurrence of a string.
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="needle">The substring to search for.</param>
+        /// <param name="beforeNeedle">If TRUE, strstr() returns the part of the haystack before the first occurrence of the needle. </param>
+        /// <returns>Part of <paramref name="haystack"/> string from the first occurrence of <paramref name="needle"/> to the end 
+        /// of <paramref name="haystack"/> or null if <paramref name="needle"/> is not found.</returns>
+        /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
+        [return: CastToFalse]
+        public static string strstr(string haystack, PhpValue needle, bool beforeNeedle = false)
+        {
+            return StrstrImpl(haystack, needle, StringComparison.Ordinal, beforeNeedle);
+        }
+
+        /// <summary>
+        /// Finds first occurrence of a string. Alias of <see cref="strstr(string,PhpValue,bool)"/>.
+        /// </summary>
+        /// <remarks>See <see cref="Strstr(string,object)"/> for details.</remarks>
+        /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
+        public static string strchr(string haystack, PhpValue needle) => strstr(haystack, needle);
+
+        /// <summary>
+        /// Case insensitive version of <see cref="Strstr(string,object)"/>.
+        /// </summary>
+        /// <param name="haystack"></param>
+        /// <param name="needle"></param>
+        /// <param name="beforeNeedle">If TRUE, strstr() returns the part of the haystack before the first occurrence of the needle. </param>
+        /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
+        [return: CastToFalse]
+        public static string stristr(string haystack, PhpValue needle, bool beforeNeedle = false)
+        {
+            return StrstrImpl(haystack, needle, StringComparison.OrdinalIgnoreCase, beforeNeedle);
+        }
+
+        #endregion
+
+        /// <summary>
+        /// This function returns the portion of haystack  which starts at the last occurrence of needle  and goes until the end of haystack . 
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="needle">
+        /// If needle contains more than one character, only the first is used. This behavior is different from that of strstr().
+        /// If needle is not a string, it is converted to an integer and applied as the ordinal value of a character.
+        /// </param>
+        /// <returns>This function returns the portion of string, or FALSE  if needle  is not found.</returns>
+        /// <exception cref="PhpException">Thrown when <paramref name="needle"/> is empty.</exception>
+        [return: CastToFalse]
+        public static string strrchr(string haystack, PhpValue needle)
+        {
+            if (haystack == null)
+                return null;
+
+            char charToFind;
+            string str_needle;
+
+            if ((str_needle = PhpVariable.AsString(needle)) != null)
+            {
+                if (str_needle.Length == 0)
+                {
+                    throw new ArgumentException();
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //return null;
+                }
+
+                charToFind = str_needle[0];
+            }
+            else
+            {
+                charToFind = chr_unicode((int)(needle.ToLong() % 256))[0];
+            }
+
+            int index = haystack.LastIndexOf(charToFind);
+            if (index < 0)
+                return null;
+
+            return haystack.Substring(index);
+        }
+
+        /// <summary>
+        /// Implementation of <c>str[i]{chr|str}</c> functions.
+        /// </summary>
+        internal static string StrstrImpl(string haystack, PhpValue needle, StringComparison comparisonType, bool beforeNeedle)
+        {
+            if (haystack == null) return null;
+
+            int index;
+            var str_needle = PhpVariable.StringOrNull(needle);
+            if (str_needle != null)
+            {
+                if (str_needle == String.Empty)
+                {
+                    throw new ArgumentException();
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //return null;
+                }
+
+                index = haystack.IndexOf(str_needle, comparisonType);
+            }
+            else
+            {
+                if (comparisonType == StringComparison.Ordinal)
+                {
+                    index = haystack.IndexOf((char)(needle.ToLong() % 256));
+                }
+                else
+                {
+                    index = haystack.IndexOf(chr_unicode((int)(needle.ToLong() % 256)), comparisonType);
+                }
+            }
+
+            return (index == -1) ? null : (beforeNeedle ? haystack.Substring(0, index) : haystack.Substring(index));
+        }
+
+        #endregion
+
+        #region strpbrk
+
+        /// <summary>
+        /// Finds first occurence of any of given characters.
+        /// </summary>
+        /// <param name="haystack">The string to search in.</param>
+        /// <param name="charList">The characters to search for given as a string.</param>
+        /// <returns>Part of <paramref name="haystack"/> string from the first occurrence of any of characters contained
+        /// in <paramref name="charList"/> to the end of <paramref name="haystack"/> or <B>null</B> if no character is
+        /// found.</returns>
+        /// <exception cref="PhpException">Thrown when <paramref name="charList"/> is empty.</exception>
+        [return: CastToFalse]
+        public static string strpbrk(string haystack, string charList)
+        {
+            if (charList == null)
+            {
+                throw new ArgumentException();
+                //PhpException.InvalidArgument("charList", LibResources.GetString("arg:empty"));
+                //return null;
+            }
+
+            if (haystack == null) return null;
+
+            int index = haystack.IndexOfAny(charList.ToCharArray());
+            return (index >= 0 ? haystack.Substring(index) : null);
+        }
+
+        #endregion
+
         #region strtolower, strtoupper, strlen
 
         /// <summary>
@@ -3084,7 +3804,7 @@ namespace Pchp.Library
         /// <summary>
         /// Returns the length of a string.
         /// </summary>
-        public static int strlen(string x) => (x ?? string.Empty).Length;
+        public static int strlen(string x) => (x != null) ? x.Length : 0;
 
         /// <summary>
         /// Returns the length of a string.

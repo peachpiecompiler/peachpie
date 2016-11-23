@@ -672,10 +672,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     if (_access.TargetType == cg.CoreTypes.PhpArray)
                     {
-                        // <place>.Value.AsArray()
+                        // <place>.Value.ToArray()
                         cg.Builder.EmitOpCode(ILOpCode.Ldflda);
                         cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray)
                             .Expect(cg.CoreTypes.PhpArray);
                     }
 
@@ -685,9 +685,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (_access.TargetType == cg.CoreTypes.PhpArray)
                     {
-                        // <place>.AsArray()
+                        // <place>.ToArray()
                         _place.EmitLoadAddress(cg.Builder);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray)
                             .Expect(cg.CoreTypes.PhpArray);
                     }
 
@@ -712,8 +712,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                Debug.Assert(_access.IsWrite || _access.IsUnset);
-
                 //
                 if (type == cg.CoreTypes.PhpAlias)
                 {
@@ -800,8 +798,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                Debug.Assert(_access.IsWrite);
-
                 //
                 if (type == cg.CoreTypes.PhpAlias)
                 {
@@ -872,30 +868,43 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
         {
-            // nothing
+            // Context
+            cg.EmitLoadContext();
         }
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
-            if (_name == VariableName.GlobalsName)
-            {
-                return cg.EmitLoadGlobals();
-            }
-
-            if (_name == VariableName.ServerName)
-            {
-                return cg.EmitLoadServer();
-            }
-
-            throw new NotImplementedException($"Superglobal ${_name.Value}");
+            cg.EmitLoadContext();
+            return cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).GetMethod);
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            throw new NotImplementedException($"Superglobal ${_name.Value}");
+            cg.EmitConvertToPhpArray(valueType, 0);
+            cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).SetMethod);
         }
 
         #endregion
+
+        PropertySymbol ResolveSuperglobalProperty(CodeGenerator cg)
+        {
+            PropertySymbol prop;
+
+            var c = cg.CoreMethods.Context;
+            
+            if (_name == VariableName.GlobalsName) prop = c.Globals;
+            else if (_name == VariableName.ServerName) prop = c.Server;
+            else if (_name == VariableName.RequestName) prop = c.Request;
+            else if (_name == VariableName.GetName) prop = c.Get;
+            else if (_name == VariableName.PostName) prop = c.Post;
+            else if (_name == VariableName.CookieName) prop = c.Cookie;
+            else if (_name == VariableName.EnvName) prop = c.Env;
+            else if (_name == VariableName.FilesName) prop = c.Files;
+            else if (_name == VariableName.SessionName) prop = c.Session;
+            else throw new NotImplementedException($"Superglobal ${_name.Value}");
+
+            return prop;
+        }
     }
 
     internal class BoundIndirectVariablePlace : IBoundReference
@@ -1027,7 +1036,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 // $GLOBALS
-                return cg.EmitLoadGlobals();
+                cg.EmitLoadContext();
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.Globals.Getter);   // <ctx>.Globals
             }
         }
     }
@@ -1294,10 +1304,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                             default:
                                 if (Access.TargetType == cg.CoreTypes.PhpArray)
                                 {
-                                    // <PhpAlias>.Value.AsArray()
+                                    // <PhpAlias>.Value.ToArray()
                                     cg.Builder.EmitOpCode(ILOpCode.Ldflda);
                                     cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
-                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
                                 }
                                 break;
                         }
@@ -1331,8 +1341,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                             default:
                                 if (Access.TargetType == cg.CoreTypes.PhpArray)
                                 {
-                                    EmitOpCode_LoadAddress(cg); // &PhpValue.AsArray()
-                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsArray);
+                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToArray()
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
                                 }
                                 break;
                         }

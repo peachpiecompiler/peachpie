@@ -32,9 +32,18 @@ namespace Pchp.Core
             _types = new TypesTable(TypesAppContext.NameToIndex, TypesAppContext.AppTypes, TypesAppContext.ContextTypesCounter, TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
 
+            // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
+            // TODO: wrap into a struct Superglobals
+
             _globals = new PhpArray();
             _server = new PhpArray();   // TODO: virtual initialization method, reuse server static information with request context
-            // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
+            _env = new PhpArray();
+            _request = new PhpArray();
+            _get = new PhpArray();
+            _post = new PhpArray();
+            _files = new PhpArray();
+            _session = new PhpArray();
+            _cookie = new PhpArray();            
         }
 
         /// <summary>
@@ -162,7 +171,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets declared function with given name. In case of more items they are considered as overloads.
         /// </summary>
-        internal RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
+        public RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
 
         /// <summary>
         /// Declare a runtime user type.
@@ -181,7 +190,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets runtime type information, or <c>null</c> if type with given is not declared.
         /// </summary>
-        internal PhpTypeInfo GetDeclaredType(string name) => _types.GetDeclaredType(name);
+        public PhpTypeInfo GetDeclaredType(string name) => _types.GetDeclaredType(name);
 
         void FunctionRedeclared(RoutineInfo routine)
         {
@@ -237,7 +246,17 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
         {
-            var script = ScriptsMap.SearchForIncludedFile(path, IncludePaths, cd, _scripts.GetScript);  // TODO: _scripts.GetScript => make relative path from absolute
+            ScriptInfo script;
+
+            path = path.Replace('/', '\\'); // normalize slashes
+            if (path.StartsWith(this.RootPath, StringComparison.Ordinal)) // rooted
+            {
+                script = _scripts.GetScript(path.Substring(this.RootPath.Length));
+            }
+            else
+            {
+                script = ScriptsMap.SearchForIncludedFile(path, IncludePaths, cd, _scripts.GetScript);
+            }
             if (script.IsValid)
             {
                 if (once && _scripts.IsIncluded(script.Index))
@@ -321,17 +340,150 @@ namespace Pchp.Core
         public PhpArray Server
         {
             get { return _server; }
-            //set
-            //{
-            //    if (value == null)
-            //    {
-            //        throw new ArgumentNullException();
-            //    }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
 
-            //    _server = value;
-            //}
+                _server = value;
+            }
         }
         PhpArray _server;
+
+        /// <summary>
+        /// An associative array of variables passed to the current script via the environment method.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Env
+        {
+            get { return _env; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _env = value;
+            }
+        }
+        PhpArray _env;
+
+        /// <summary>
+        /// An array that by default contains the contents of $_GET, $_POST and $_COOKIE.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Request
+        {
+            get { return _request; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _request = value;
+            }
+        }
+        PhpArray _request;
+
+        /// <summary>
+        /// An associative array of variables passed to the current script via the URL parameters.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Get
+        {
+            get { return _get; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _get = value;
+            }
+        }
+        PhpArray _get;
+
+        /// <summary>
+        /// An associative array of variables passed to the current script via the HTTP POST method.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Post
+        {
+            get { return _post; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _post = value;
+            }
+        }
+        PhpArray _post;
+
+        /// <summary>
+        /// An associative array of items uploaded to the current script via the HTTP POST method.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Files
+        {
+            get { return _files; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _files = value;
+            }
+        }
+        PhpArray _files;
+
+        /// <summary>
+        /// An associative array containing session variables available to the current script.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Session
+        {
+            get { return _session; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _session = value;
+            }
+        }
+        PhpArray _session;
+
+        /// <summary>
+        /// An associative array of variables passed to the current script via the HTTP POST method.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public PhpArray Cookie
+        {
+            get { return _cookie; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                _cookie = value;
+            }
+        }
+        PhpArray _cookie;
 
         #endregion
 

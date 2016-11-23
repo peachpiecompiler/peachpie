@@ -26,7 +26,7 @@ namespace Pchp.Core.Reflection
             {
                 Debug.Assert(index != 0);
 
-                if (index > 0)
+                if (index > 0)  // already taken by user routine
                 {
                     throw new InvalidOperationException();
                 }
@@ -36,8 +36,12 @@ namespace Pchp.Core.Reflection
             else
             {
                 index = -AppRoutines.Count - 1;
-                AppRoutines.Add(new ClrRoutineInfo(index, name, handle));
+                var routine = new ClrRoutineInfo(index, name, handle);
+                AppRoutines.Add(routine);
                 NameToIndex[name] = index;
+
+                // register the routine within the extensions table
+                ExtensionsAppContext.ExtensionsTable.AddRoutine(routine);
             }
         }
     }

@@ -25,20 +25,28 @@ namespace Pchp.Core
 
     /// <summary>
     /// Assembly attribute indicating the assembly represents an extension.
-    /// When this attribute is used, declared types and methods are not visible to compiler as they are,
+    /// When this attribute is used on an assembly, declared types and methods are not visible to compiler as they are,
     /// instead, only public static members are visible as global declarations.
+    /// 
+    /// When used on the class, the attribute also annotates extension name and its set of functions.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = true)]
     public class PhpExtensionAttribute : Attribute
     {
         /// <summary>
-        /// Extension name.
+        /// Extensions name.
         /// </summary>
-        readonly string _name;
+        public string[] Extensions => _extensions;
+        readonly string[] _extensions;
 
-        public PhpExtensionAttribute(string name)
+        public PhpExtensionAttribute(params string[] extensions)
         {
-            _name = name;
+            _extensions = extensions;
+        }
+
+        public override string ToString()
+        {
+            return $"Extension: {string.Join(", ", _extensions)}";
         }
     }
 

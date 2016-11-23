@@ -245,11 +245,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             VisitCFGBlock(x);
 
             // TODO: EdgeToCallers:
-            var rtype = _state.GetReturnType();
-            if (rtype != x._lastReturnTypeMask)
+            EnqueueSubscribers(x);
+        }
+
+        protected void EnqueueSubscribers(ExitBlock exit)
+        {
+            if (exit != null)
             {
-                x._lastReturnTypeMask = rtype;
-                x.Subscribers.ForEach(_worklist.Enqueue);
+                var rtype = _state.GetReturnType();
+                if (rtype != exit._lastReturnTypeMask)
+                {
+                    exit._lastReturnTypeMask = rtype;
+                    exit.Subscribers.ForEach(_worklist.Enqueue);
+                }
             }
         }
 

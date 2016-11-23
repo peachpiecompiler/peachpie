@@ -228,10 +228,20 @@ namespace Pchp.Library
         /// Returns directory name component of path.
         /// </summary>
         /// <param name="path">The full path.</param>
+        /// <param name="levels">The number of parent directories to go up. Must be greater than zero.</param>
         /// <returns>The directory portion of the given path.</returns>
-        public static string dirname(string path)
+        public static string dirname(string path, int levels = 1)
         {
-            if (string.IsNullOrEmpty(path)) return null;
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+
+            if (levels != 1)
+            {
+                // added in php 7.0
+                throw new NotImplementedException();
+            }
 
             int start = 0;
             int end = path.Length - 1;
@@ -263,18 +273,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Returns directory name component of path.
-        /// </summary>
-        /// <param name="path">The full path.</param>
-        /// <param name="levels">The number of parent directories to go up. Must be greater than zero.</param>
-        /// <returns>The directory portion of the given path.</returns>
-        public static string dirname(string path, int levels = 1)
-        {
-            // added in php 7.0
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Extracts part(s) from a specified path.
         /// </summary>
         /// <param name="path">The path to be parsed.</param>
@@ -284,7 +282,7 @@ namespace Pchp.Library
         /// keyed by <c>"dirname"</c>, <c>"basename"</c>, and <c>"extension"</c>. Otherwise,
         /// it returns string value containing a single part of the path.
         /// </returns>
-        public static object pathinfo(string path, PathInfoOptions options = PathInfoOptions.All)
+        public static PhpValue pathinfo(string path, PathInfoOptions options = PathInfoOptions.All)
         {
             // collect strings
             string dirname = null, basename = null, extension = null, filename = null;
@@ -321,22 +319,22 @@ namespace Pchp.Library
                 result.Add("basename", basename);
                 result.Add("extension", extension);
                 result.Add("filename", filename);
-                return result;
+                return PhpValue.Create(result);
             }
 
             if ((options & PathInfoOptions.DirName) != 0)
-                return dirname;
+                return PhpValue.Create(dirname);
 
             if ((options & PathInfoOptions.BaseName) != 0)
-                return basename;
+                return PhpValue.Create(basename);
 
             if ((options & PathInfoOptions.Extension) != 0)
-                return extension;
+                return PhpValue.Create(extension);
 
             if ((options & PathInfoOptions.FileName) != 0)
-                return filename;
+                return PhpValue.Create(filename);
 
-            return null;
+            return PhpValue.Null;
         }
 
         #endregion

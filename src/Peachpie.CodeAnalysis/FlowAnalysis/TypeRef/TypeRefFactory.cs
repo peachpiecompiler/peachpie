@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Converts CLR type symbol to TypeRef used by flow analysis.
         /// </summary>
-        public static ITypeRef Create(TypeSymbol t)
+        public static ITypeRef CreateTypeRef(TypeRefContext ctx, TypeSymbol t)
         {
             Contract.ThrowIfNull(t);
 
@@ -44,7 +44,24 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Object: return new ClassTypeRef(NameUtils.SpecialNames.System_Object);
                 case SpecialType.System_DateTime: return new ClassTypeRef(new QualifiedName(new Name("DateTime"), new[] { new Name("System") }));
                 default:
-                    return new ClassTypeRef(((NamedTypeSymbol)t).MakeQualifiedName());
+                    if (t is NamedTypeSymbol)
+                    {
+                        return new ClassTypeRef(((NamedTypeSymbol)t).MakeQualifiedName());
+                    }
+                    else if (t is ArrayTypeSymbol)
+                    {
+                        var arr = (ArrayTypeSymbol)t;
+                        if (!arr.IsSZArray)
+                        {
+                            throw new NotImplementedException();
+                        }
+
+                        return new ArrayTypeRef(null, CreateMask(ctx, arr.ElementType));
+                    }
+                    else
+                    {
+                        throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(t);
+                    }
             }
         }
 
@@ -76,7 +93,8 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Double: return ctx.GetDoubleTypeMask();
                 case SpecialType.System_Boolean: return ctx.GetBooleanTypeMask();
                 case SpecialType.None:
-                    if (t.ContainingAssembly.IsPchpCorLibrary)
+                    var containing = t.ContainingAssembly;
+                    if (containing != null && containing.IsPchpCorLibrary)
                     {
                         if (t.Name == "PhpValue") return TypeRefMask.AnyType;
                         if (t.Name == "PhpAlias") return TypeRefMask.AnyType.WithRefFlag;
@@ -89,7 +107,7 @@ namespace Pchp.CodeAnalysis
                     break;
             }
 
-            return CreateMask(ctx, Create(t));
+            return CreateMask(ctx, CreateTypeRef(ctx, t));
         }
 
         public static TypeRefMask CreateMask(TypeRefContext ctx, ITypeRef tref)

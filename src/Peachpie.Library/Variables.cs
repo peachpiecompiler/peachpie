@@ -215,7 +215,7 @@ namespace Pchp.Library
                 var countable = variable.Object as Countable;
                 if (countable != null)
                 {
-                    return countable.count().ToLong();
+                    return countable.count();
                 }
 
                 // CLR ICollection
@@ -491,7 +491,7 @@ namespace Pchp.Library
         /// method) is also verified.</param>
         /// <returns><B>true</B> if <paramref name="variable"/> denotes a function, <B>false</B>
         /// otherwise.</returns>
-        public static bool IsCallable(PhpValue variable, bool syntaxOnly = false)
+        public static bool is_callable(PhpValue variable, bool syntaxOnly = false)
         {
             return PhpVariable.IsValidCallback(variable.AsCallable());  // TODO: check syntaxOnly || can be bound
         }

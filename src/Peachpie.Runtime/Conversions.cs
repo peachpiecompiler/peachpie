@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -138,7 +139,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region AsObject, AsArray, ToClass, AsCallable
+        #region AsObject, ToArray, ToClass, AsCallable
 
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
@@ -146,9 +147,9 @@ namespace Pchp.Core
         public static object AsObject(PhpValue value) => value.AsObject();
 
         /// <summary>
-        /// Gets the array access object.
+        /// COnverts value to an array.
         /// </summary>
-        public static object AsArray(PhpValue value) => value.AsArray();
+        public static PhpArray ToArray(PhpValue value) => value.ToArray();
 
         /// <summary>
         /// Converts given value to a class object.
@@ -187,6 +188,22 @@ namespace Pchp.Core
         /// </summary>
         public static IPhpCallable AsCallable(string value) => PhpCallback.Create(value);
 
+        /// <summary>
+        /// Resolves whether given instance <paramref name="value"/> is of given type <paramref name="tinfo"/>.
+        /// </summary>
+        /// <param name="value">Value to be checked.</param>
+        /// <param name="tinfo">Type descriptor.</param>
+        /// <returns>Whether <paramref name="value"/> is of type <paramref name="tinfo"/>.</returns>
+        public static bool IsInstanceOf(object value, Reflection.PhpTypeInfo tinfo)
+        {
+            if (tinfo == null)
+            {
+                throw new ArgumentNullException(nameof(tinfo));
+            }
+
+            return tinfo.Type.GetTypeInfo().IsInstanceOfType(value);
+        }
+
         #endregion
 
         #region ToNumber
@@ -198,6 +215,21 @@ namespace Pchp.Core
             var info = StringToNumber(str, out l, out d);
             number = ((info & NumberInfo.Double) != 0) ? PhpNumber.Create(d) : PhpNumber.Create(l);
             return info;
+        }
+
+        /// <summary>
+        /// Performs conversion of a value to a number.
+        /// Additional conversion warnings may be thrown.
+        /// </summary>
+        public static PhpNumber ToNumber(PhpValue value)
+        {
+            PhpNumber n;
+            if ((value.ToNumber(out n) & NumberInfo.IsNumber) == 0)
+            {
+                // TODO: Err
+            }
+
+            return n;
         }
 
         #endregion

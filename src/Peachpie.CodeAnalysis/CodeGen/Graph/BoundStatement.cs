@@ -133,6 +133,14 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundGlobalVariableStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            // global variables declared in LocalsTable
+        }
+    }
+
     partial class BoundStaticVariableStatement
     {
         internal override void Emit(CodeGenerator cg)

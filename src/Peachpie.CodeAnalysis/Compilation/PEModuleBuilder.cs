@@ -29,10 +29,11 @@ namespace Pchp.CodeAnalysis.Emit
                 (il) =>
                 {
                     var types = this.Compilation.CoreTypes;
+                    var methods = this.Compilation.CoreMethods;
                     var args_place = new ParamPlace(realmethod.Parameters[0]);
 
                     // AddScriptReference<Script>()
-                    var AddScriptReferenceMethod = (MethodSymbol)this.Compilation.CoreMethods.Context.AddScriptReference_TScript.Symbol.Construct(this.ScriptType);
+                    var AddScriptReferenceMethod = (MethodSymbol)methods.Context.AddScriptReference_TScript.Symbol.Construct(this.ScriptType);
                     il.EmitCall(this, diagnostic, ILOpCode.Call, AddScriptReferenceMethod);
 
                     // int exitcode = 0;
@@ -82,7 +83,7 @@ namespace Pchp.CodeAnalysis.Emit
                                 {
                                     // <ctx>.Globals
                                     il.EmitLocalLoad(ctx_loc);
-                                    il.EmitCall(this, diagnostic, ILOpCode.Call, this.Compilation.CoreMethods.Context.get_Globals)
+                                    il.EmitCall(this, diagnostic, ILOpCode.Call, methods.Context.Globals.Getter)
                                         .Expect(p.Type);
                                 }
                                 else if (p.Type == types.Object && p.Name == SpecialParameterSymbol.ThisName)
@@ -119,7 +120,7 @@ namespace Pchp.CodeAnalysis.Emit
                         // ctx.Dispose
                         il.EmitLocalLoad(ctx_loc);
                         il.EmitOpCode(ILOpCode.Call, -1);
-                        il.EmitToken(this.Compilation.CoreMethods.Context.Dispose.Symbol, null, diagnostic);
+                        il.EmitToken(methods.Context.Dispose.Symbol, null, diagnostic);
                     }
                     il.CloseLocalScope();   // /Finally
                     il.CloseLocalScope();   // /TryCatch

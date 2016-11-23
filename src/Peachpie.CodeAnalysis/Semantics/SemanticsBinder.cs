@@ -143,7 +143,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.PseudoConstUse) return BindPseudoConst((AST.PseudoConstUse)expr).WithAccess(access);
             if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
-            if (expr is AST.ListEx) return BindListEx((AST.ListEx)expr).WithAccess(access);
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
@@ -305,6 +304,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ArrayEx) return BindArrayEx((AST.ArrayEx)expr, access);
             if (expr is AST.ItemUse) return BindItemUse((AST.ItemUse)expr, access);
             if (expr is AST.StaticFieldUse) return BindFieldUse((AST.StaticFieldUse)expr, access);
+            if (expr is AST.ListEx) return BindListEx((AST.ListEx)expr).WithAccess(access);
+
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -430,10 +431,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindBinaryEx(AST.BinaryEx expr)
         {
-            return new BoundBinaryEx(
-                BindExpression(expr.LeftExpr, BoundAccess.Read),
-                BindExpression(expr.RightExpr, BoundAccess.Read),
-                expr.Operation);
+            if (expr.Operation == AST.Operations.Concat)
+            {
+                return new BoundConcatEx(BindArguments(new[] { expr.LeftExpr, expr.RightExpr }));
+            }
+            else
+            {
+                return new BoundBinaryEx(
+                    BindExpression(expr.LeftExpr, BoundAccess.Read),
+                    BindExpression(expr.RightExpr, BoundAccess.Read),
+                    expr.Operation);
+            }
         }
 
         BoundExpression BindUnaryEx(AST.UnaryEx expr, BoundAccess access)

@@ -55,7 +55,7 @@ namespace Peachpie.Web
         /// <summary>
         /// Application physical root directory including trailing slash.
         /// </summary>
-        public override string RootPath => "";
+        public override string RootPath => System.IO.Directory.GetCurrentDirectory() + "\\";
 
         public RequestContextCore(HttpContext context)
             : base()

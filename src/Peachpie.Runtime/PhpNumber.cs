@@ -169,6 +169,16 @@ namespace Pchp.Core
         /// <summary>
         /// Non strict equality operator.
         /// </summary>
+        public static bool operator ==(PhpNumber a, PhpValue b) => Comparison.Compare(a, b) == 0;
+
+        /// <summary>
+        /// Non strict inequality operator.
+        /// </summary>
+        public static bool operator !=(PhpNumber a, PhpValue b) => Comparison.Compare(a, b) != 0;
+
+        /// <summary>
+        /// Non strict equality operator.
+        /// </summary>
         public static bool operator ==(PhpNumber a, PhpNumber b)
         {
             a.AssertTypeCode();
@@ -396,6 +406,21 @@ namespace Pchp.Core
             }
 
             return x_number.ToDouble() + y;
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
+        public static PhpNumber Add(PhpValue x, string sy)
+        {
+            PhpNumber x_number, y_number;
+
+            if (((x.ToNumber(out x_number) | Convert.ToNumber(sy, out y_number)) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                throw new ArgumentException();
+            }
+
+            return x_number + y_number;
         }
 
         /// <summary>
@@ -655,6 +680,23 @@ namespace Pchp.Core
 
             //
             return xnumber - ynumber;
+        }
+
+        /// <summary>
+        /// Subtract operator.
+        /// </summary>
+        public static PhpNumber Sub(long lx, PhpValue y)
+        {
+            PhpNumber ynumber;
+
+            // converts x and y to numbers:
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.Unconvertible)) != 0)
+            {
+                throw new ArgumentException();
+            }
+
+            //
+            return lx - ynumber;
         }
 
         /// <summary>

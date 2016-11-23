@@ -11,6 +11,8 @@ using System.IO;
 using Microsoft.CodeAnalysis.Text;
 using Roslyn.Utilities;
 using Devsense.PHP.Syntax;
+using Devsense.PHP.Errors;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -113,19 +115,40 @@ namespace Pchp.CodeAnalysis.CommandLine
             CommandLineSourceFile file,
             ErrorLogger errorLogger)
         {
-            var fileReadDiagnostics = new List<DiagnosticInfo>();
-            var content = ReadFileContent(file, fileReadDiagnostics);
+            var diagnostics = new List<DiagnosticInfo>();
+            var content = ReadFileContent(file, diagnostics);
+            SourceUnit result = null;
 
-            if (content == null)
+            if (content != null)
             {
-                ReportErrors(fileReadDiagnostics, consoleOutput, errorLogger);
-                fileReadDiagnostics.Clear();
-                hadErrors = true;
-                return null;
+                result = ParseFile(consoleOutput, parseOptions, scriptParseOptions, content, file, diagnostics);
             }
-            else
+
+            if (diagnostics.Count != 0)
             {
-                return ParseFile(consoleOutput, parseOptions, scriptParseOptions, content, file);
+                ReportErrors(diagnostics, consoleOutput, errorLogger);
+                hadErrors = true;
+                diagnostics.Clear();
+            }
+
+            //
+            return result;
+        }
+
+        class ErrorSink : IErrorSink<Span>
+        {
+            readonly List<DiagnosticInfo> _diagnostics;
+
+            public ErrorSink(List<DiagnosticInfo> diagnostics)
+            {
+                Contract.ThrowIfNull(diagnostics);
+                _diagnostics = diagnostics;
+            }
+
+            public void Error(Span span, ErrorInfo info, params string[] argsOpt)
+            {
+                throw new Exception("Error: " + string.Format(info.FormatString, argsOpt));
+                // _diagnostics.Add(new DiagnosticInfo(null, info.Severity == ErrorSeverity.WarningAsError, info.Id, argsOpt)); // TODO: location, message provider
             }
         }
 
@@ -134,12 +157,13 @@ namespace Pchp.CodeAnalysis.CommandLine
             PhpParseOptions parseOptions,
             PhpParseOptions scriptParseOptions,
             SourceText content,
-            CommandLineSourceFile file)
+            CommandLineSourceFile file,
+            List<DiagnosticInfo> diagnostics)
         {
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var tree = CodeSourceUnit.ParseCode(content.ToString(), file.Path);
+            var tree = CodeSourceUnit.ParseCode(content.ToString(), file.Path, null, new ErrorSink(diagnostics));
             
             return tree;
         }

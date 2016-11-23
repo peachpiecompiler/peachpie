@@ -16,6 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     sealed class CoreType : IEquatable<CoreType>, IEquatable<TypeSymbol>
     {
         internal CoreMethod Method(string name, params CoreType[] ptypes) => new CoreMethod(this, name, ptypes);
+        internal CoreProperty Property(string name) => new CoreProperty(this, name);
         internal CoreField Field(string name) => new CoreField(this, name);
         internal CoreOperator Operator(string name, params CoreType[] ptypes) => new CoreOperator(this, name, ptypes);
         internal CoreConstructor Ctor(params CoreType[] ptypes) => new CoreConstructor(this, ptypes);
@@ -97,7 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpTypeInfoExtension, PhpTypeInfo,
-            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, IPhpArray, IPhpEnumerable, IPhpCallable,
+            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable,
             IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
@@ -125,6 +126,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpValue = Create("PhpValue");
             PhpString = Create("PhpString");
             PhpArray = Create("PhpArray");
+            PhpResource = Create("PhpResource");
             IPhpArray = Create("IPhpArray");
             IPhpEnumerable = Create("IPhpEnumerable");
             IPhpCallable = Create("IPhpCallable");

@@ -54,30 +54,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits reference to <c>$GLOBALS</c>.
-        /// </summary>
-        /// <returns>Type of <c>PhpArray</c></returns>
-        public TypeSymbol EmitLoadGlobals()
-        {
-            // <ctx>.Globals
-            EmitLoadContext();
-            return EmitCall(ILOpCode.Call, CoreMethods.Context.get_Globals)
-                .Expect(CoreTypes.PhpArray);
-        }
-
-        /// <summary>
-        /// Emits reference to <c>$_SERVER</c>.
-        /// </summary>
-        /// <returns>Type of <c>PhpArray</c></returns>
-        public TypeSymbol EmitLoadServer()
-        {
-            // <ctx>.Server
-            EmitLoadContext();
-            return EmitCall(ILOpCode.Call, CoreMethods.Context.get_Server)
-                .Expect(CoreTypes.PhpArray);
-        }
-
-        /// <summary>
         /// Gets place referring to array of unoptimized local variables.
         /// Always valid in context of global scope.
         /// </summary>
@@ -199,7 +175,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // DEBUG:
                             //if (tmask.IsSingleType)
                             //{
-                            //    var tref = this.Routine.TypeRefContext.GetTypes(tmask)[0];
+                            //    var tref = this.TypeRefContext.GetTypes(tmask)[0];
                             //    var clrtype = (TypeSymbol)this.DeclaringCompilation.GlobalSemantics.GetType(tref.QualifiedName);
                             //    if (clrtype != null && !clrtype.IsErrorType())
                             //    {
@@ -306,7 +282,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (stack.IsReferenceType && this.Routine != null)
                 {
-                    var tref = this.Routine.TypeRefContext.GetTypes(tmask)[0];
+                    var tref = this.TypeRefContext.GetTypes(tmask)[0];
                     if (tref.IsObject)
                     {
                         HashSet<DiagnosticInfo> useSiteDiagnostic = null;
@@ -696,6 +672,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var parameters = method.Parameters;
             int arg_index = 0;      // next argument to be emitted from <arguments>
             var param_index = 0;    // loaded parameters
+            var writebacks = new List<WriteBackInfo>();
 
             for (; param_index < parameters.Length; param_index++)
             {
@@ -728,7 +705,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (arg_index < arguments.Length)
                 {
-                    EmitConvert(arguments[arg_index++], p.Type); // load argument
+                    EmitLoadArgument(p, arguments[arg_index++], writebacks);
                 }
                 else
                 {
@@ -743,7 +720,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // call the method
-            return EmitCall(code, method);
+            var result = EmitCall(code, method);
+
+            //
+            WriteBackInfo.WriteBackAndFree(this, writebacks);
+
+            //
+            return result;
         }
 
         /// <summary>
@@ -769,6 +752,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var targetps = target.Parameters;
             var givenps = thismethod.Parameters;
+            var writebacks = new List<WriteBackInfo>();
 
             int srcp = 0;
             while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared)
@@ -795,8 +779,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                     if (srcp < givenps.Length)
                     {
                         var p = givenps[srcp];
-                        var ptype = new ParamPlace(p).EmitLoad(Builder);
-                        EmitConvert(ptype, 0, targetp.Type);
+                        EmitLoadArgument(
+                            targetp,
+                            new BoundVariableRef(new BoundVariableName(new Devsense.PHP.Syntax.VariableName(p.MetadataName)))
+                            {
+                                Variable = new BoundParameter(p, null),
+                                Access = BoundAccess.Read
+                            },
+                            writebacks);
                     }
                     else
                     {
@@ -808,7 +798,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            return this.EmitCall(ILOpCode.Call, target);
+            var result = this.EmitCall(ILOpCode.Call, target);
+
+            //
+            WriteBackInfo.WriteBackAndFree(this, writebacks);
+
+            //
+            return result;
         }
 
         /// <summary>
@@ -844,6 +840,132 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Temporary data used to call routines that expect ref or out parameters when given variable can't be passed by ref.
+        /// </summary>
+        struct WriteBackInfo
+        {
+            /// <summary>
+            /// The temporary local passed by reference to a function call.
+            /// After the call, it's value has to be written back to <see cref="Target"/>.
+            /// </summary>
+            public LocalDefinition TmpLocal;
+
+            /// <summary>
+            /// Original variable passed to the function call.
+            /// Target of the write-back routine.
+            /// </summary>
+            public BoundReferenceExpression Target;
+
+            /// <summary>
+            /// Loads temporary local variable as an argument to <paramref name="targetp"/>.
+            /// </summary>
+            /// <param name="cg"></param>
+            /// <param name="targetp">Target parameter.</param>
+            /// <param name="expr">Value to be passed as its argument.</param>
+            /// <returns><see cref="WriteBackInfo"/> which has to be finalized with <see cref="WriteBackAndFree(CodeGenerator)"/> once the routine call ends.</returns>
+            public static WriteBackInfo CreateAndLoad(CodeGenerator cg, ParameterSymbol targetp, BoundReferenceExpression expr)
+            {
+                var writeback =  new WriteBackInfo()
+                {
+                    TmpLocal = cg.GetTemporaryLocal(targetp.Type),
+                    Target = expr,
+                };
+
+                //
+                writeback.EmitLoadArgument(cg, targetp);
+
+                //
+                return writeback;
+            }
+
+            void EmitLoadArgument(CodeGenerator cg, ParameterSymbol targetp)
+            {
+                Debug.Assert(TmpLocal != null);
+                Debug.Assert(targetp.Type == (Symbol)TmpLocal.Type);
+
+                if (targetp.RefKind != RefKind.Out)
+                {
+                    // copy Target to TmpLocal
+                    // Template: TmpLocal = Target;
+                    cg.EmitConvert(Target, (TypeSymbol)TmpLocal.Type);
+                    cg.Builder.EmitLocalStore(TmpLocal);
+                }
+
+                if (targetp.RefKind != RefKind.None)
+                {
+                    // LOAD_REF TmpLocal
+                    cg.Builder.EmitLocalAddress(TmpLocal);
+                }
+                else
+                {
+                    // unreachable
+                    // LOAD TmpLocal
+                    cg.Builder.EmitLocalLoad(TmpLocal);
+                }
+            }
+
+            /// <summary>
+            /// Writes the value back to <see cref="Target"/> and free resources.
+            /// </summary>
+            public void WriteBackAndFree(CodeGenerator cg)
+            {
+                // Template: <Target> = <TmpLocal>;
+                var place = Target.BindPlace(cg);
+                place.EmitStorePrepare(cg, null);
+                cg.Builder.EmitLocalLoad(TmpLocal);
+                place.EmitStore(cg, (TypeSymbol)TmpLocal.Type);
+
+                // free <TmpLocal>
+                cg.ReturnTemporaryLocal(TmpLocal);
+                TmpLocal = null;
+            }
+
+            public static void WriteBackAndFree(CodeGenerator cg, IList<WriteBackInfo> writebacks)
+            {
+                if (writebacks != null && writebacks.Count != 0)
+                {
+                    foreach (var w in writebacks)
+                    {
+                        w.WriteBackAndFree(cg);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Loads argument 
+        /// </summary>
+        void EmitLoadArgument(ParameterSymbol targetp, BoundExpression expr, List<WriteBackInfo> writebacks)
+        {
+            if (targetp.RefKind == RefKind.None)
+            {
+                EmitConvert(expr, targetp.Type); // load argument
+            }
+            else
+            {
+                var refexpr = expr as BoundReferenceExpression;
+                if (refexpr != null)
+                {
+                    var place = refexpr.Place(_il);
+                    if (place != null && place.HasAddress && place.TypeOpt == targetp.Type)
+                    {
+                        // ref place directly
+                        place.EmitLoadAddress(_il);
+                        return;
+                    }
+
+                    // write-back
+                    writebacks.Add(WriteBackInfo.CreateAndLoad(this, targetp, refexpr));
+                    return;
+                }
+                else
+                {
+                    throw new ArgumentException("Argument must be passed as a variable.");
+                }
+            }
+        }
+
+        /// <summary>
         /// Emits default value of given parameter.
         /// Puts value of target parameter's type.
         /// </summary>
@@ -857,17 +979,27 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // emit targetp default value:
             ConstantValue cvalue;
+            BoundExpression boundinitializer;
 
             // TODO: targetp.IsParams
 
-            var boundinitializer = (targetp as SourceParameterSymbol)?.Initializer;
-            if (boundinitializer != null)
+            if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
-                EmitConvert(boundinitializer, ptype = targetp.Type);
-            }
-            else if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
-            {
+                // keep NULL if parameter is a reference type
+                if (cvalue.IsNull && targetp.Type.IsReferenceType)
+                {
+                    _il.EmitNullConstant();
+                    return;
+                }
+
+                //
                 ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
+            }
+            else if ((boundinitializer = (targetp as SourceParameterSymbol)?.Initializer) != null)
+            {
+                _emitTypeRefContext.Push((targetp as SourceParameterSymbol).Routine.TypeRefContext);
+                EmitConvert(boundinitializer, ptype = targetp.Type);
+                _emitTypeRefContext.Pop();
             }
             else
             {
@@ -1047,22 +1179,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             var t = Emit(expr); // TODO: ConvertToArrayKey
-            switch (t.SpecialType)
-            {
-                case SpecialType.System_Int64:
-                    _il.EmitOpCode(ILOpCode.Conv_i4);   // i8 -> i4
-                    goto case SpecialType.System_Int32;
-                case SpecialType.System_Int32:
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
-                    break;
-                case SpecialType.System_String:
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
-                    break;
-                default:
-                    EmitConvertToPhpValue(t, 0);
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToIntStringKey_PhpValue);
-                    break;
-            }
+            EmitConvertToIntStringKey(t, 0);
         }
 
         /// <summary>
@@ -1276,7 +1393,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         {
                             if (typemask.IsSingleType && this.Routine != null)
                             {
-                                var typectx = this.Routine.TypeRefContext;
+                                var typectx = this.TypeRefContext;
 
                                 if (typectx.IsBoolean(typemask))
                                 {
@@ -1335,8 +1452,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (valuetype == CoreTypes.PhpValue)
             {
-                // PhpValue.Void
-                Emit_PhpValue_Void();
+                // PhpValue.Null
+                Emit_PhpValue_Null();
             }
             else
             {

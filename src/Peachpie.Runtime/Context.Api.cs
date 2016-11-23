@@ -71,5 +71,25 @@ namespace Pchp.Core
                 return null;
             }
         }
+
+        /// <summary>
+        /// Gets collection of extension names loaded into the application context.
+        /// </summary>
+        public static ICollection<string> GetLoadedExtensions() => ExtensionsAppContext.ExtensionsTable.GetExtensions();
+
+        /// <summary>
+        /// Gets value indicating that given extension was loaded.
+        /// </summary>
+        public static bool IsExtensionLoaded(string extension) => ExtensionsAppContext.ExtensionsTable.ContainsExtension(extension);
+
+        /// <summary>
+        /// Gets routines associated with specified extension.
+        /// </summary>
+        /// <param name="extension">Extension name.</param>
+        /// <returns>Enumeration of routine names associated with given extension.</returns>
+        public static IEnumerable<string> GetRoutinesByExtension(string extension)
+        {
+            return ExtensionsAppContext.ExtensionsTable.GetRoutinesByExtension(extension).Select(r => r.Name);
+        }
     }
 }

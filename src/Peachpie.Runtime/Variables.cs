@@ -320,5 +320,40 @@ namespace Pchp.Core
         {
             return (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpArray;
         }
+
+        /// <summary>
+        /// Alias to <see cref="StringOrNull(PhpValue)"/>.
+        /// </summary>
+        public static string AsString(this PhpValue value) => StringOrNull(value);
+
+        /// <summary>
+        /// In case given value contains a string (<see cref="string"/> or <see cref="PhpString"/>),
+        /// its string representation is returned.
+        /// Otherwise <c>null</c>.
+        /// </summary>
+        public static string StringOrNull(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String: return value.String;
+                case PhpTypeCode.WritableString: return value.WritableString.ToString();
+                case PhpTypeCode.Alias: return StringOrNull(value.Alias.Value);
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// In case given value contains an array (<see cref="PhpArray"/>),
+        /// it is returned. Otherwise <c>null</c>.
+        /// </summary>
+        public static PhpArray AsArray(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.PhpArray: return value.Array;
+                case PhpTypeCode.Alias: return AsArray(value.Alias.Value);
+                default: return null;
+            }
+        }
     }
 }

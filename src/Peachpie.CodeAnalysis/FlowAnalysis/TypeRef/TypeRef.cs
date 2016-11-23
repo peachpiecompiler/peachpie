@@ -9,8 +9,6 @@ using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    #region ITypeRef Implementation
-
     /// <summary>
     /// Represents a direct type reference.
     /// </summary>
@@ -373,6 +371,4 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
     }
-
-    #endregion
 }

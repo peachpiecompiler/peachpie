@@ -59,5 +59,14 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        /// <summary>
+        /// Checks the list of defined functions, both built-in and user-defined.
+        /// </summary>
+        /// <returns>Whether the function is declared.</returns>
+        public static bool function_exists(Context ctx, string name)
+        {
+            return ctx.GetDeclaredFunction(name) != null;
+        }
     }
 }
