@@ -20,4 +20,4 @@ using System.Runtime.InteropServices;
 
 // annotates this library as a php extension,
 // all its public static methods with compatible signatures will be seen as global functions to php scope
-[assembly: Pchp.Core.PhpExtension("standard")]
+[assembly: Pchp.Core.PhpExtension("standard", "Core", "session", "ctype", "tokenizer", "date", "pcre", "ereg", "json", "hash", "SPL", "filter")]

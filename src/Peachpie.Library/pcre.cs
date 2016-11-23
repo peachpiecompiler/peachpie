@@ -14,6 +14,7 @@ namespace Pchp.Library
     /// You should be aware of limitations of this implementation.
     /// The .NET implementation of PCRE does not provide the same behavior, the notes will be updated.
     /// </remarks>
+    [PhpExtension("pcre")]
     public static class PCRE
     {
         #region Constants

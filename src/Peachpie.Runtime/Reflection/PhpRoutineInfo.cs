@@ -44,6 +44,12 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public abstract RuntimeMethodHandle[] Handles { get; }
 
+        /// <summary>
+        /// Gets methods representing the routine.
+        /// See <see cref="Handles"/> for more details.
+        /// </summary>
+        public IEnumerable<MethodBase> Methods => Handles.Select(MethodBase.GetMethodFromHandle);
+
         protected RoutineInfo(int index, string name)
         {
             _index = index;
@@ -98,7 +104,7 @@ namespace Pchp.Core.Reflection
 
         PhpCallable BindDelegate()
         {
-            return _lazyDelegate = Dynamic.BinderHelpers.BindToPhpCallable(Handles.Select(MethodBase.GetMethodFromHandle).ToArray());
+            return _lazyDelegate = Dynamic.BinderHelpers.BindToPhpCallable(Methods.ToArray());
         }
 
         public ClrRoutineInfo(int index, string name, RuntimeMethodHandle handle)

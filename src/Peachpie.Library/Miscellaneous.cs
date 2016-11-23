@@ -169,17 +169,28 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="name">The extension name.</param>
         /// <returns>Returns <c>TRUE</c> if the extension identified by name is loaded, <c>FALSE</c> otherwise.</returns>
-        public static bool extension_loaded(string name)
-        {
-            throw new NotImplementedException();
-        }
+        public static bool extension_loaded(string name) => Context.IsExtensionLoaded(name);
 
         /// <summary>
         /// Returns an array with names of all loaded native extensions.
         /// </summary>
-        public static PhpArray get_loaded_extensions()
+        /// <param name="zend_extensions">Only return Zend extensions.</param>
+        public static PhpArray get_loaded_extensions(bool zend_extensions = false)
         {
-            throw new NotImplementedException();
+            if (zend_extensions)
+            {
+                throw new NotImplementedException(nameof(zend_extensions));
+            }
+
+            var extensions = Context.GetLoadedExtensions();
+            var result = new PhpArray(extensions.Count);
+
+            foreach (var e in extensions)
+            {
+                result.Add(PhpValue.Create(e));
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -187,9 +198,24 @@ namespace Pchp.Library
 		/// </summary>
         /// <param name="extension">Internal extension name (e.g. <c>sockets</c>).</param>
         /// <returns>The array of function names or <c>null</c> if the <paramref name="extension"/> is not loaded.</returns>
+        [return: CastToFalse]
         public static PhpArray get_extension_funcs(string extension)
         {
-            throw new NotImplementedException();
+            var funcs = Context.GetRoutinesByExtensionOrNull(extension);
+            if (funcs != null)
+            {
+                var result = new PhpArray();
+                foreach (var e in funcs)
+                {
+                    result.Add(PhpValue.Create(e));
+                }
+
+                return result;
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }
