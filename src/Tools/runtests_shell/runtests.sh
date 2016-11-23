@@ -1,6 +1,3 @@
-# WARNING: This script file manipulates with /bin/less command (see below), it is recommended to run it in a virtual sandbox 
-#          in order not to harm anything. The script was written for automated tests in Travis CI.
-
 # Prepare the files needed to compile and run the tests
 
 TOOL_DIR="./src/Tools/runtests_shell"
@@ -45,8 +42,7 @@ do
       echo $HR
       echo "$PHP_OUTPUT" > $PHP_TMP_FILE
       echo "$PEACH_OUTPUT" > $PEACH_TMP_FILE
-      # TODO: Hide the whole comparison header (tail after the cdiff won't work)
-      git diff --no-index -- $PHP_TMP_FILE $PEACH_TMP_FILE | tail -n +3 | colordiff -s
+      icdiff --line-numbers --cols=160 --no-headers --show-all-spaces $PHP_TMP_FILE $PEACH_TMP_FILE
       echo $HR
       FAILURE="FAILURE"
     fi

@@ -38,11 +38,5 @@
     "keyFile": "../../build/StrongKeys/core.snk",
     "xmlDoc": true,
     "nowarn": [ "1591" ]
-  },
-
-  "scripts": {
-    "postcompile": [
-      "powershell -File ../../build/update_package.ps1 %project:Name% %project:Version% %compile:TargetFramework% %compile:Configuration%"
-    ]
   }
 }
