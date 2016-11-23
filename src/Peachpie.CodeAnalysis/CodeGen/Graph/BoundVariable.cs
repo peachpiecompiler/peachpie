@@ -149,6 +149,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void EmitInit(CodeGenerator cg)
         {
+            // TODO: check callable, iterable
+            
             // TODO: ? if (cg.HasUnoptimizedLocals && $this) <locals>["this"] = ...
 
             var srcparam = _symbol as SourceParameterSymbol;
