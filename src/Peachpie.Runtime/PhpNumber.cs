@@ -411,6 +411,21 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>+</c> operator on numbers.
         /// </summary>
+        public static PhpNumber Add(PhpValue x, string sy)
+        {
+            PhpNumber x_number, y_number;
+
+            if (((x.ToNumber(out x_number) | Convert.ToNumber(sy, out y_number)) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                throw new ArgumentException();
+            }
+
+            return x_number + y_number;
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
         public static PhpNumber Add(PhpValue x, PhpNumber y)
         {
             PhpNumber x_number;

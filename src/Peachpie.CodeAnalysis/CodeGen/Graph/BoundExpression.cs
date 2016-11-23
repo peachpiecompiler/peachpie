@@ -330,6 +330,13 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 var ytype = cg.EmitConvertIntToLong(cg.Emit(Right));    // int|bool -> long
 
+                // PhpString -> String
+                if (ytype == cg.CoreTypes.PhpString)
+                {
+                    cg.EmitConvertToString(ytype, 0);
+                    // continue ...
+                }
+
                 if (ytype.SpecialType == SpecialType.System_Int64)
                 {
                     // value + i8 : number
@@ -341,6 +348,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     // value + r8 : r8
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_double)
                         .Expect(SpecialType.System_Double);
+                }
+                else if (ytype == cg.CoreTypes.String)
+                {
+                    // value + string : number
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_string)
+                        .Expect(cg.CoreTypes.PhpNumber);
                 }
                 else if (ytype == cg.CoreTypes.PhpNumber)
                 {
