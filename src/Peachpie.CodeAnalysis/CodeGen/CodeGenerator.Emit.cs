@@ -1452,8 +1452,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (valuetype == CoreTypes.PhpValue)
             {
-                // PhpValue.Void
-                Emit_PhpValue_Void();
+                // PhpValue.Null
+                Emit_PhpValue_Null();
             }
             else
             {
