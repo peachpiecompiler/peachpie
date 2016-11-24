@@ -17,6 +17,4 @@
     ".NETFramework,Version=v4.6": {},
     ".netcoreapp1.0": {}
   }
-
-  // ,"scripts": { "precompile": [ "dotnet pack --no-build -c %compile:Configuration% -o ../../.nugs" ] }
 }

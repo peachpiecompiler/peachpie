@@ -9,6 +9,7 @@ install:
   - dotnet restore ./src
   - dotnet build -f .netcoreapp1.0 ./src/Peachpie.Compiler.Tools
   - dotnet pack --no-build -c Debug -o ./.nugs --version-suffix beta ./src/Peachpie.Compiler.Tools/project.json
+  - rm -rf ~/.nuget/packages/Peachpie.Compiler.Tools
   - dotnet restore ./Samples
   - dotnet run -f .netcoreapp1.0 -p ./Samples/ConsoleApplication1
 script:
