@@ -88,6 +88,9 @@ namespace Peachpie.NETCore.Compiler.Tools
                                 // We have to keep the correct capital letters in the path, as some operating systems distinguish them
                                 tmpoutput = opt.Value.Value;
                                 break;
+                            case "generate-xml-documentation":
+                                newargs.Add($"/doc");
+                                break;
                         }
 
                         //

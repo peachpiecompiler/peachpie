@@ -19,6 +19,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.Collections;
 using System.Collections.Concurrent;
 using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.DocGen;
 
 namespace Pchp.CodeAnalysis
 {
@@ -574,9 +575,9 @@ namespace Pchp.CodeAnalysis
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
             DiagnosticBag xmlDiagnostics = DiagnosticBag.GetInstance();
 
-            //string assemblyName = FileNameUtilities.ChangeExtension(moduleBeingBuilt.EmitOptions.OutputNameOverride, extension: null);
-            //DocumentationCommentCompiler.WriteDocumentationCommentXml(this, assemblyName, xmlDocStream, xmlDiagnostics, cancellationToken);
-
+            string assemblyName = FileNameUtilities.ChangeExtension(moduleBeingBuilt.EmitOptions.OutputNameOverride, extension: null);
+            DocumentationCommentCompiler.WriteDocumentationCommentXml(this, assemblyName, xmlDocStream, xmlDiagnostics, cancellationToken);
+            
             if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref xmlDiagnostics))
             {
                 return false;

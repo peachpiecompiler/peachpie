@@ -62,6 +62,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var managedResources = new List<ResourceDescription>();
             string outputDirectory = baseDirectory;
             string outputFileName = null;
+            string documentationPath = null;
             string moduleName = null;
             string runtimeMetadataVersion = null; // will be read from cor library if not specified in cmd
             string compilationName = null;
@@ -101,7 +102,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                     case "debug":
                         emitPdb = true;
-                        
+
                         // unused, parsed for backward compat only
                         if (!string.IsNullOrEmpty(value))
                         {
@@ -222,6 +223,11 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         continue;
 
+                    case "xmldoc":
+                    case "doc":
+                        documentationPath = value ?? string.Empty;
+                        break;
+
                     case "modulename":
                         var unquotedModuleName = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(unquotedModuleName))
@@ -256,11 +262,24 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             GetCompilationAndModuleNames(diagnostics, outputKind, sourceFiles, sourceFiles.Count != 0, /*moduleAssemblyName*/null, ref outputFileName, ref moduleName, out compilationName);
 
+            // XML Documentation path
+            if (documentationPath != null)
+            {
+                if (documentationPath.Length == 0)
+                {
+                    // default xmldoc file name
+                    documentationPath = compilationName + ".xml";
+                }
+
+                // resolve path
+                documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(outputDirectory, documentationPath);
+            }
+
             var parseOptions = new PhpParseOptions
             (
                 //languageVersion: languageVersion,
                 //preprocessorSymbols: defines.ToImmutableAndFree(),
-                //documentationMode: parseDocumentationComments ? DocumentationMode.Diagnose : DocumentationMode.None,
+                documentationMode: DocumentationMode.Diagnose, // always diagnose
                 kind: SourceCodeKind.Regular//,
                                             //features: parsedFeatures
             );
@@ -327,7 +346,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 PdbPath = pdbPath,
                 EmitPdb = emitPdb,
                 OutputDirectory = outputDirectory,
-                //DocumentationPath = documentationPath,
+                DocumentationPath = documentationPath,
                 //ErrorLogPath = errorLogPath,
                 //AppConfigPath = appConfigPath,
                 SourceFiles = sourceFiles.AsImmutable(),
