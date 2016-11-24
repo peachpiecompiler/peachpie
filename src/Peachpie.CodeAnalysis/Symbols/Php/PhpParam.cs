@@ -9,6 +9,7 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     public struct PhpParam
     {
+        public int Index;
         public TypeRefMask Type;
         public bool IsVariadic;
 
@@ -23,8 +24,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public bool IsByRef;
 
-        public PhpParam(TypeRefMask tmask, bool isByRef, bool isVariadic, BoundExpression defaultValue)
+        public PhpParam(int index, TypeRefMask tmask, bool isByRef, bool isVariadic, BoundExpression defaultValue)
         {
+            this.Index = index;
             this.Type = tmask;
             this.IsVariadic = isVariadic;
             this.DefaultValue = defaultValue;

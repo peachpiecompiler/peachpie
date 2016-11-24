@@ -45,6 +45,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var nmandatory = 0;
                 var hasoptional = false;
                 var hasparams = false;
+                var match = true;
 
                 var expectedparams = m.GetExpectedArguments(typeCtx);
 
@@ -55,10 +56,23 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (!hasoptional && !hasparams) nmandatory++;
 
                     // TODO: check args[i] is convertible to p.Type
+                    if (p.Index < args.Length)
+                    {
+                        match &= args[p.Index] == p.Type;
+                    }
                 }
 
+                //
                 if (args.Length >= nmandatory && (hasparams || args.Length <= expectedparams.Length))
                 {
+                    // TODO: this is naive implementation of overload resolution,
+                    // make it properly using Conversion Cost
+                    if (match && !hasparams)
+                    {
+                        return m;   // perfect match
+                    }
+
+                    //
                     result2.Add(m);
                 }
             }

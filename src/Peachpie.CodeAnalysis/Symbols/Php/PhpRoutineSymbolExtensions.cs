@@ -80,6 +80,8 @@ namespace Pchp.CodeAnalysis.Symbols
             var table = (routine as SourceRoutineSymbol)?.LocalsTable;
             var result = new List<PhpParam>(ps.Length);
 
+            int index = 0;
+
             foreach (ParameterSymbol p in ps)
             {
                 if (result.Count == 0 && p.IsImplicitlyDeclared)
@@ -96,6 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 //
                 var phpparam = new PhpParam(
+                    index++,
                     TypeRefFactory.CreateMask(ctx, p.Type),
                     p.RefKind != RefKind.None,
                     p.IsParams,
