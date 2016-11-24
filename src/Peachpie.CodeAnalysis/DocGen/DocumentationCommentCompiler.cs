@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System.Text;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.DocGen
 {
@@ -93,16 +94,43 @@ namespace Pchp.CodeAnalysis.DocGen
             _writer.Dispose();
         }
 
+        void WriteSummary(string summary)
+        {
+            if (summary == null) return;
+
+            summary = summary.Trim();
+
+            if (summary.Length == 0) return;
+
+            bool ismultiline = summary.IndexOfAny(new char[] { '\n', '\r' }) >= 0;
+
+            _writer.Write("\n<summary>");
+            if (ismultiline) _writer.Write('\n');
+            _writer.Write(XmlEncode(summary));
+            if (ismultiline) _writer.Write('\n');
+            _writer.Write("</summary>\n");
+        }
+
         void WriteRoutine(SourceRoutineSymbol routine)
         {
             _writer.Write($"<member name=\"{CommentIdResolver.GetId(routine)}\">");
             var phpdoc = routine.PHPDocBlock;
             if (phpdoc != null)
             {
-                _writer.Write("<summary>");
-                _writer.Write(XmlEncode(phpdoc.Summary));
-                _writer.Write("</summary>");
-                // TODO: @param, @return
+                WriteSummary(phpdoc.Summary);
+                
+                foreach (var p in phpdoc.Params)
+                {
+                    if (p.VariableName != null)
+                    {
+                        _writer.Write("<param name=\"{0}\">{1}</param>\n", p.VariableName.TrimStart('$'), XmlEncode(p.Description));
+                    }
+                }
+                var rtag = phpdoc.Returns;
+                if (rtag != null)
+                {
+                    _writer.Write("<returns>{0}</returns>\n", XmlEncode(rtag.Description));
+                }
             }
             _writer.Write("</member>");
 
@@ -113,10 +141,8 @@ namespace Pchp.CodeAnalysis.DocGen
             _writer.Write($"<member name=\"{CommentIdResolver.GetId(type)}\">");
             var phpdoc = type.Syntax?.PHPDoc;
             if (phpdoc != null)
-            {                
-                _writer.Write("<summary>");
-                _writer.Write(XmlEncode(phpdoc.Summary));
-                _writer.Write("</summary>");
+            {
+                WriteSummary(phpdoc.Summary);
             }
             _writer.Write("</member>");
         }
