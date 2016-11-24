@@ -159,7 +159,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitIsEmpty(BoundIsEmptyEx x)
         {
-            Accept(x.Variable);
+            Accept(x.Operand);
         }
 
         public virtual void VisitIsSet(BoundIsSetEx x)

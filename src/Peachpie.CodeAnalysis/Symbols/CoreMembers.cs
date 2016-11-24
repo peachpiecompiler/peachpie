@@ -382,6 +382,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureArray_IPhpArrayRef = ct.Operators.Method("EnsureArray", ct.IPhpArray);
                 IsSet_PhpValue = ct.Operators.Method("IsSet", ct.PhpValue);
                 IsEmpty_PhpValue = ct.Operators.Method("IsEmpty", ct.PhpValue);
+                IsNullOrEmpty_String = ct.String.Method("IsNullOrEmpty", ct.String);
 
                 ToString_Bool = ct.Convert.Method("ToString", ct.Boolean);
                 ToString_Int32 = ct.Convert.Method("ToString", ct.Int32);
@@ -453,7 +454,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef,
-                IsSet_PhpValue, IsEmpty_PhpValue,
+                IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
@@ -491,6 +492,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
 
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
+
+                IsEmpty = ct.PhpValue.Property("IsEmpty");
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
                 ToArray = ct.PhpValue.Method("ToArray");
@@ -531,6 +534,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreField
                 Void, Null;
+
+            public readonly CoreProperty
+                IsEmpty;
+                
         }
 
         public struct PhpAliasHolder

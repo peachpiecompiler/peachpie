@@ -1340,11 +1340,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Reference to be checked if it is set.
         /// </summary>
-        public BoundReferenceExpression Variable { get; set; }
+        public BoundExpression Operand { get; set; }
 
-        public BoundIsEmptyEx(BoundReferenceExpression variable)
+        public BoundIsEmptyEx(BoundExpression expression)
         {
-            this.Variable = variable;
+            this.Operand = expression;
         }
 
         public override void Accept(OperationVisitor visitor)

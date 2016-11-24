@@ -181,7 +181,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindIsEmptyEx(AST.EmptyEx x)
         {
-            return new BoundIsEmptyEx((BoundReferenceExpression)BindExpression(x.Expression, BoundAccess.Read.WithQuiet()));
+            return new BoundIsEmptyEx(BindExpression(x.Expression, BoundAccess.Read.WithQuiet()));
         }
 
         BoundExpression BindIsSet(AST.IssetEx x)

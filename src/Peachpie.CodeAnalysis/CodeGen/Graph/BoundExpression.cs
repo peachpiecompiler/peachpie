@@ -135,7 +135,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.BitOr:
                     returned_type = EmitBitOr(cg, Left, Right);
                     break;
-                    
+
                 case Operations.BitXor:
                     //returned_typecode = EmitBitOperation(node, codeGenerator, Operators.BitOp.Xor);
                     //break;
@@ -423,7 +423,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_long_value)
                             .Expect(cg.CoreTypes.PhpNumber);
                     }
-                    
+
                 case SpecialType.System_Double:
                     ytype = cg.EmitConvertNumberToDouble(right); // bool|int|long|number -> double
                     if (ytype.SpecialType == SpecialType.System_Double)
@@ -555,7 +555,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.Builder.EmitOpCode(ILOpCode.Or);
                 return cg.CoreTypes.Long;
             }
-            
+
             //
             return EmitBitOr(cg, cg.Emit(left), right);
         }
@@ -1586,7 +1586,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitConvert(this.Operand, cg.CoreTypes.PhpArray);    // TODO: EmitArrayCast()
                     returned_type = cg.CoreTypes.PhpArray;
                     break;
-                    
+
                 case Operations.UnsetCast:
                     // Template: "(unset)x"  null
 
@@ -1888,7 +1888,7 @@ namespace Pchp.CodeAnalysis.Semantics
         protected virtual BoundExpression RoutineNameExpr => null;
         protected virtual BoundExpression TypeNameExpr => null;
         protected virtual bool IsVirtualCall => true;
-        
+
         internal virtual TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
             // callsite
@@ -1998,7 +1998,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
-        
+
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
             cg.Builder.EmitStringConstant(CallsiteName);        // name
@@ -2981,9 +2981,61 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            cg.EmitConvert(this.Variable, cg.CoreTypes.PhpValue);
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsEmpty_PhpValue)
-                .Expect(SpecialType.System_Boolean);
+            var il = cg.Builder;
+            var t = cg.Emit(this.Operand);
+
+            //
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Object:
+                    // object == null
+                    il.EmitNullConstant();
+                    il.EmitOpCode(ILOpCode.Ceq);
+                    return cg.CoreTypes.Boolean;
+
+                case SpecialType.System_Double:
+                    // r8 == 0
+                    il.EmitDoubleConstant(0.0);
+                    il.EmitOpCode(ILOpCode.Ceq);
+                    return cg.CoreTypes.Boolean;
+
+                case SpecialType.System_Int32:
+                    // i4 == 0
+                    cg.EmitLogicNegation();
+                    return cg.CoreTypes.Boolean;
+
+                case SpecialType.System_Int64:
+                    // i8 == 0
+                    il.EmitLongConstant(0);
+                    il.EmitOpCode(ILOpCode.Ceq);
+                    return cg.CoreTypes.Boolean;
+
+                //case SpecialType.System_String:
+                //    // string.IsNullOrEmpty(string) && string != "0"
+                //    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsNullOrEmpty_String)    // TODO:  && != "0"
+                //        .Expect(SpecialType.System_Boolean);
+
+                default:
+                    if (t == cg.CoreTypes.PhpNumber)
+                    {
+                        // number == 0L
+                        il.EmitLongConstant(0);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_number_long)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+                    else if (t == cg.CoreTypes.PhpAlias)
+                    {
+                        // <PhpAlias>.Value.get_IsEmpty()
+                        cg.Emit_PhpAlias_GetValueRef();
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.IsEmpty.Getter)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+
+                    // (value).IsEmpty
+                    cg.EmitConvert(t, 0, cg.CoreTypes.PhpValue);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsEmpty_PhpValue)
+                        .Expect(SpecialType.System_Boolean);
+            }
         }
     }
 

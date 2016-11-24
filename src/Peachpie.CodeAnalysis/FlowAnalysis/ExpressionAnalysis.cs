@@ -1331,7 +1331,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitIsEmpty(BoundIsEmptyEx x)
         {
-            Accept(x.Variable);
+            Accept(x.Operand);
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 
