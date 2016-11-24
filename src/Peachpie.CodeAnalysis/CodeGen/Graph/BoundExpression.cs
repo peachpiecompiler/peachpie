@@ -3010,10 +3010,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     il.EmitOpCode(ILOpCode.Ceq);
                     return cg.CoreTypes.Boolean;
 
-                //case SpecialType.System_String:
-                //    // string.IsNullOrEmpty(string) && string != "0"
-                //    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsNullOrEmpty_String)    // TODO:  && != "0"
-                //        .Expect(SpecialType.System_Boolean);
+                case SpecialType.System_String:
+                    // !ToBoolean(string)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ToBoolean_String);
+                    cg.EmitLogicNegation();
+                    return cg.CoreTypes.Boolean;
 
                 default:
                     if (t == cg.CoreTypes.PhpNumber)
