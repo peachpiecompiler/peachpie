@@ -179,6 +179,35 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Array Access
+
+        /// <summary>
+        /// Implements <c>[]</c> operator on <see cref="string"/>.
+        /// </summary>
+        /// <param name="value">String to be accessed as array.</param>
+        /// <param name="index">Index.</param>
+        /// <returns>Character on index or empty string if index is our of range.</returns>
+        public static string GetItemValue(string value, int index)
+        {
+            return (value != null && index >= 0 && index < value.Length)
+                ? value[index].ToString()
+                : string.Empty;
+        }
+
+        /// <summary>
+        /// Implements <c>[]</c> operator on <see cref="string"/>.
+        /// </summary>
+        public static string GetItemValue(string value, IntStringKey key)
+        {
+            int index = key.IsInteger
+                ? key.Integer
+                : (int)Convert.StringToLongInteger(key.String);
+
+            return GetItemValue(value, index);
+        }
+
+        #endregion
+
         #region Copy
 
         /// <summary>

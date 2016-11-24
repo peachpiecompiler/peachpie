@@ -174,8 +174,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool EnsureObject => (_flags & AccessMask.EnsureObject) == AccessMask.EnsureObject;
 
         /// <summary>
-        /// In case the expression has to read as an array to allow accessing its elements.
-        /// In case of a variable, created array has to be written back.
+        /// In case variable will be accessed as array in manner of setting its entries.
+        /// <code>VARIABLE[] = ...</code>
         /// </summary>
         public bool EnsureArray => (_flags & AccessMask.EnsureArray) == AccessMask.EnsureArray;
 

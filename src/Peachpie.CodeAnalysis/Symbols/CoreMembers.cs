@@ -380,6 +380,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureObject_ObjectRef = ct.Operators.Method("EnsureObject", ct.Object);
                 EnsureArray_PhpArrayRef = ct.Operators.Method("EnsureArray", ct.PhpArray);
                 EnsureArray_IPhpArrayRef = ct.Operators.Method("EnsureArray", ct.IPhpArray);
+                GetItemValue_String_IntStringKey = ct.Operators.Method("GetItemValue", ct.String, ct.IntStringKey);
+                GetItemValue_String_Int = ct.Operators.Method("GetItemValue", ct.String, ct.Int32);
                 IsSet_PhpValue = ct.Operators.Method("IsSet", ct.PhpValue);
                 IsEmpty_PhpValue = ct.Operators.Method("IsEmpty", ct.PhpValue);
                 IsNullOrEmpty_String = ct.String.Method("IsNullOrEmpty", ct.String);
@@ -454,6 +456,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef,
+                GetItemValue_String_IntStringKey, GetItemValue_String_Int,
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
