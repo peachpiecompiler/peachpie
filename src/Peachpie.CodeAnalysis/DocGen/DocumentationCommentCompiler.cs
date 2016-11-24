@@ -95,7 +95,17 @@ namespace Pchp.CodeAnalysis.DocGen
 
         void WriteRoutine(SourceRoutineSymbol routine)
         {
-            // TODO: summary, @param, @return
+            _writer.Write($"<member name=\"{CommentIdResolver.GetId(routine)}\">");
+            var phpdoc = routine.PHPDocBlock;
+            if (phpdoc != null)
+            {
+                _writer.Write("<summary>");
+                _writer.Write(XmlEncode(phpdoc.Summary));
+                _writer.Write("</summary>");
+                // TODO: @param, @return
+            }
+            _writer.Write("</member>");
+
         }
 
         void WriteType(SourceTypeSymbol type)
