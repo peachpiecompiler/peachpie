@@ -155,5 +155,83 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region headers_sent, headers_list
+
+        /// <summary>
+        /// Checks whether all headers has been sent.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <returns>Whether headers has already been sent.</returns>
+        public static bool headers_sent(Context ctx)
+        {
+            var webctx = ctx.HttpContext;
+            return webctx != null && webctx.HeadersSent;
+        }
+
+        /// <summary>
+        /// Checks whether all headers has been sent.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="file">The name of a source file which has sent headers or an empty string 
+        /// headers has not been sent yet. Not supported.</param>
+        /// <returns>Whether headers has already been sent.</returns>
+        /// <exception cref="PhpException">Web server variables are not available (Warning).</exception>
+        /// <exception cref="PhpException">Function is not supported in this version (Warning).</exception>
+        public static bool headers_sent(Context ctx, out string file)
+        {
+            // TODO: Err // PhpException.FunctionNotSupported();
+            file = string.Empty;
+            return headers_sent(ctx);
+        }
+
+        /// <summary>
+        /// Checks whether all headers has been sent.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="file">The name of a source file which has sent headers or an empty string  if
+        /// headers has not been sent yet. Not supported.</param>
+        /// <param name="line">The line in a source file where headers has been sent or 0 if 
+        /// headers has not been sent yet. Not supported.</param>
+        /// <returns>Whether headers has already been sent.</returns>
+        public static bool headers_sent(Context ctx, out string file, out long line)
+        {
+            // TODO: Err // PhpException.FunctionNotSupported();
+            file = string.Empty;
+            line = 0;
+            return headers_sent(ctx);
+        }
+
+        /// <summary>
+        /// headers_list() will return a list of headers to be sent to the browser / client.
+        /// To determine whether or not these headers have been sent yet, use headers_sent(). 
+        /// </summary>
+        public static PhpArray headers_list(Context ctx)
+        {
+            var webctx = ctx.HttpContext;
+            if (webctx == null)
+            {
+                return null;
+            }
+
+            var list = new PhpArray();
+
+            //foreach (var x in ScriptContext.CurrentContext.Headers)
+            //{
+            //    list.Add(x.Key + ": " + x.Value);
+            //}
+
+            /*foreach (var x in context.Response.Cookies.AllKeys)
+            {
+                var cookie = context.Response.Cookies[x];
+                list.Add("set-cookie: " + cookie.Name + "=" + cookie.Value);    // TODO: full cookie spec
+            }*/
+
+            // TODO: cookies, session
+
+            return list;
+        }
+
+        #endregion
     }
 }
