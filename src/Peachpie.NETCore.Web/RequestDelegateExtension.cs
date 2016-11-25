@@ -23,7 +23,16 @@ namespace Peachpie.Web
                     {
                         using (var phpctx = new RequestContextCore(context))
                         {
-                            script.MainMethod(phpctx, phpctx.Globals, null);
+                            // TODO: move following into a ProcessScript() routine
+
+                            try
+                            {
+                                script.MainMethod(phpctx, phpctx.Globals, null);
+                            }
+                            catch (Pchp.Core.ScriptDiedException died)
+                            {
+                                died.ProcessStatus(phpctx);
+                            }
                         }
                     });
                 }
