@@ -2720,7 +2720,7 @@ namespace Pchp.CodeAnalysis.Semantics
         void PushEmittedArray(TypeSymbol t)
         {
             Debug.Assert(t != null);
-            
+
             if (_emittedArrays == null)
             {
                 _emittedArrays = new Stack<TypeSymbol>();
@@ -2765,8 +2765,11 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (t == cg.CoreTypes.PhpValue)
             {
-                // Convert.ToArray()    // TODO: Err access scalar as array & return DummyArray singleton
-                t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ToArray_PhpValue);
+                // ok
+            }
+            else if (t == cg.CoreTypes.PhpAlias)
+            {
+                t = cg.Emit_PhpAlias_GetValue();
             }
             else if (t == cg.CoreTypes.String)
             {
@@ -2785,7 +2788,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotImplementedException($"LOAD {t.Name}[]");    // TODO: emit convert as PhpArray
             }
 
-            Debug.Assert(t.IsOfType(cg.CoreTypes.IPhpArray) || t.SpecialType == SpecialType.System_String || t.IsArray());
+            Debug.Assert(t.IsOfType(cg.CoreTypes.IPhpArray) || t.SpecialType == SpecialType.System_String || t.IsArray() || t == cg.CoreTypes.PhpValue);
             PushEmittedArray(t);
 
             //
@@ -2845,6 +2848,28 @@ namespace Pchp.CodeAnalysis.Semantics
                     Debug.Assert(Access.IsRead);
                     // GetItemValue(string, IntStringKey)
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_String_IntStringKey);
+                }
+            }
+            else if (arrtype == cg.CoreTypes.PhpValue)
+            {
+                if (Access.EnsureObject || Access.EnsureArray)
+                {
+                    // null
+                    throw new InvalidOperationException();
+                }
+                else if (Access.IsReadRef)
+                {
+                    Debug.WriteLine("TODO: we need reference to PhpValue so we can modifiy its content! This is not compatible with behavior of = &$null[0].");
+                    // PhpValue.GetItemRef(IntStringKey, bool)
+                    cg.Builder.EmitBoolConstant(Access.IsQuiet);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_PhpValue_IntStringKey_Bool);
+                }
+                else
+                {
+                    Debug.Assert(Access.IsRead);
+                    // PhpValue.GetItemValue(IntStringKey, bool)
+                    cg.Builder.EmitBoolConstant(Access.IsQuiet);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_IntStringKey_Bool);
                 }
             }
             else if (arrtype.SpecialType == SpecialType.System_Void)

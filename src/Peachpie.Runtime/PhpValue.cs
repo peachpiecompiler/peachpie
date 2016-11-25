@@ -255,6 +255,16 @@ namespace Pchp.Core
 
         public static explicit operator PhpArray(PhpValue value) => value.AsArray();
 
+        /// <summary>
+        /// Accesses the value as an array and gets item at given index.
+        /// Gets <c>void</c> value in case the key is not found.
+        /// Raises PHP exception in case the value cannot be accessed as an array.
+        /// </summary>
+        public PhpValue this[IntStringKey key]
+        {
+            get { return GetArrayItem(key, false); }
+        }
+
         public override bool Equals(object obj) => Equals((obj is PhpValue) ? (PhpValue)obj : FromClr(obj));
 
         public override int GetHashCode() => _obj.GetHashCode() ^ (int)_value.Long;
@@ -315,6 +325,17 @@ namespace Pchp.Core
         /// </summary>
         /// <returns>Not aliased value.</returns>
         public PhpValue GetValue() => IsAlias ? Alias.Value : this;
+
+        /// <summary>
+        /// Accesses the value as an array and gets item at given index.
+        /// Gets <c>void</c> value in case the key is not found.
+        /// </summary>
+        public PhpValue GetArrayItem(IntStringKey key, bool quiet = false) => _type.GetArrayItem(ref this, key, quiet);
+
+        /// <summary>
+        /// Accesses the value as an array and ensures the item at given index as alias.
+        /// </summary>
+        public PhpAlias EnsureItemAlias(IntStringKey key, bool quiet = false) => _type.EnsureItemAlias(ref this, key, quiet);
 
         /// <summary>
         /// Creates a deep copy of PHP value.

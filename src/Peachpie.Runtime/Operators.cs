@@ -206,6 +206,16 @@ namespace Pchp.Core
             return GetItemValue(value, index);
         }
 
+        /// <summary>
+        /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
+        /// </summary>
+        public static PhpValue GetItemValue(PhpValue value, IntStringKey key, bool quiet = false) => value.GetArrayItem(key, quiet);
+        
+        /// <summary>
+        /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
+        /// </summary>
+        public static PhpAlias EnsureItemAlias(PhpValue value, IntStringKey key, bool quiet = false) => value.EnsureItemAlias(key, quiet);
+
         #endregion
 
         #region Copy
