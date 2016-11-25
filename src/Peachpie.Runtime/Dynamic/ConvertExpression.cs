@@ -138,6 +138,19 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpNumber))
                 return Expression.Call(expr, Cache.Operators.PhpNumber_ToString_Context, ctx);
 
+            if (source == typeof(object))
+            {
+                // NULL
+                if (expr is ConstantExpression && ((ConstantExpression)expr).Value == null)
+                {
+                    // (string)null
+                    return Expression.Constant("null", typeof(string));
+                }
+
+                // __toString
+
+            }
+
             throw new NotImplementedException(source.FullName);
         }
 
