@@ -189,19 +189,19 @@ namespace Pchp.Core
         public static IPhpCallable AsCallable(string value) => PhpCallback.Create(value);
 
         /// <summary>
-        /// Resolves whether given instance <paramref name="value"/> is of given type <paramref name="tinfo"/>.
+        /// Resolves whether given instance <paramref name="obj"/> is of given type <paramref name="tinfo"/>.
         /// </summary>
-        /// <param name="value">Value to be checked.</param>
+        /// <param name="obj">Value to be checked.</param>
         /// <param name="tinfo">Type descriptor.</param>
-        /// <returns>Whether <paramref name="value"/> is of type <paramref name="tinfo"/>.</returns>
-        public static bool IsInstanceOf(object value, Reflection.PhpTypeInfo tinfo)
+        /// <returns>Whether <paramref name="obj"/> is of type <paramref name="tinfo"/>.</returns>
+        public static bool IsInstanceOf(object obj, Reflection.PhpTypeInfo tinfo)
         {
             // note: if tinfo is null =>
             // type was not declared =>
             // value cannot be its instance because there is no way how to instantiate it
             // ignoring the case when object is passed from CLR
 
-            return tinfo != null && value != null && tinfo.Type.GetTypeInfo().IsInstanceOfType(value);
+            return obj != null && tinfo != null && tinfo.Type.GetTypeInfo().IsInstanceOfType(obj);
         }
 
         #endregion

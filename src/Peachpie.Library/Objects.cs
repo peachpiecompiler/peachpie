@@ -91,15 +91,7 @@ namespace Pchp.Library
 		/// a class which is a subclass of <paramref name="class_name"/>, <B>false</B> otherwise.</returns>
         public static bool is_a(Context ctx, object obj, string class_name)
         {
-            if (obj != null)
-            {
-                var tinfo = ctx.GetDeclaredType(class_name);
-                return tinfo != null && tinfo.Type.GetTypeInfo().IsInstanceOfType(obj);
-            }
-            else
-            {
-                return false;
-            }
+            return obj != null && Core.Convert.IsInstanceOf(obj, ctx.GetDeclaredType(class_name));  // double check (obj!=null) for performance reasons
         }
 
         /// <summary>
