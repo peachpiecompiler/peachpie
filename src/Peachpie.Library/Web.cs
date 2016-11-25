@@ -9,6 +9,58 @@ namespace Pchp.Library
 {
     public static class Web
     {
+        #region Constants
+
+        public const int PHP_URL_SCHEME = 0;
+        public const int PHP_URL_HOST = 1;
+        public const int PHP_URL_PORT = 2;
+        public const int PHP_URL_USER = 3;
+        public const int PHP_URL_PASS = 4;
+        public const int PHP_URL_PATH = 5;
+        public const int PHP_URL_QUERY = 6;
+        public const int PHP_URL_FRAGMENT = 7;
+
+        public const int CONNECTION_NORMAL = 0;
+        public const int CONNECTION_ABORTED = 1;
+        public const int CONNECTION_TIMEOUT = 2;
+
+        #endregion
+
+        #region base64_decode, base64_encode
+
+        [return: CastToFalse]
+        public static PhpString base64_decode(string encoded_data, bool strict = false)
+        {
+            if (encoded_data == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return new PhpString(System.Convert.FromBase64String(encoded_data));
+            }
+            catch (FormatException)
+            {
+                // TODO: Err
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_base64_encoded_data"));
+                throw new ArgumentException();
+            }
+        }
+
+        [return: CastToFalse]
+        public static string base64_encode(Context ctx, PhpString data_to_encode)
+        {
+            if (data_to_encode == null)
+            {
+                return null;
+            }
+
+            return System.Convert.ToBase64String(data_to_encode.ToBytes(ctx.StringEncoding));
+        }
+
+        #endregion
+
         #region header, header_remove
 
         /// <summary>
