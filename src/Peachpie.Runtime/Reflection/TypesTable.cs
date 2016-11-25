@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -171,6 +172,11 @@ namespace Pchp.Core.Reflection
 
             return null;
         }
+
+        /// <summary>
+        /// Gets enumeration of types wisible in current context.
+        /// </summary>
+        public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => _appTypes.Concat(_contextTypes).WhereNotNull();
 
         internal bool IsDeclared(PhpTypeInfo type)
         {

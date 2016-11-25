@@ -163,6 +163,11 @@ namespace Pchp.Core
         /// </summary>
         public PhpTypeInfo GetDeclaredType(string name) => _types.GetDeclaredType(name);
 
+        /// <summary>
+        /// Gets enumeration of all types declared in current context.
+        /// </summary>
+        public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => _types.GetDeclaredTypes();
+
         void FunctionRedeclared(RoutineInfo routine)
         {
             // TODO: ErrCode & throw

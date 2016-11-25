@@ -29,7 +29,12 @@ namespace Pchp.Core.Reflection
         internal bool IsInAppContext => _index < 0;
 
         /// <summary>
-        /// Gets the type name in PHP synytax, cannot be <c>null</c> or empty.
+        /// Gets value indicating the type is an interface.
+        /// </summary>
+        public bool IsInterface => _type.GetTypeInfo().IsInterface;
+
+        /// <summary>
+        /// Gets the full type name in PHP syntax, cannot be <c>null</c> or empty.
         /// </summary>
         public string Name => _name;
         protected readonly string _name;

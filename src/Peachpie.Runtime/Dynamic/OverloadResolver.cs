@@ -70,7 +70,7 @@ namespace Pchp.Core.Dynamic
         {
             if (methods.Length == 1)
             {
-                return methods[0].IsVisible(classCtx) ? methods : EmptyArray<MethodInfo>.Instance;
+                return methods[0].IsVisible(classCtx) ? methods : Array.Empty<MethodInfo>();
             }
 
             var result = new List<MethodInfo>(methods.Length);

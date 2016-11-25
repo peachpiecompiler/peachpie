@@ -46,8 +46,40 @@ namespace Pchp.Library
             }
 
             //
-            return info != null && info.Type.GetTypeInfo().IsInterface;
+            return info != null && info.IsInterface;
         }
+
+        /// <summary>
+        /// Helper getting declared classes or interfaces.
+        /// </summary>
+        /// <param name="ctx">Runtime context with declared types.</param>
+        /// <param name="interfaces">Whether to list interfaces or classes.</param>
+        static PhpArray get_declared_types(Context ctx, bool interfaces)
+        {
+            var result = new PhpArray();
+
+            foreach (var t in ctx.GetDeclaredTypes())
+            {
+                if (t.IsInterface == interfaces)
+                {
+                    result.Add(t.Name);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+		/// Returns a <see cref="PhpArray"/> with names of all defined classes (system and user).
+		/// </summary>
+		/// <returns><see cref="PhpArray"/> of class names.</returns>
+		public static PhpArray get_declared_classes(Context ctx) => get_declared_types(ctx, false);
+
+        /// <summary>
+        /// Returns a <see cref="PhpArray"/> with names of all defined interfaces (system and user).
+        /// </summary>
+        /// <returns><see cref="PhpArray"/> of interface names.</returns>
+        public static PhpArray get_declared_interfaces(Context ctx) => get_declared_types(ctx, true);
 
         /// <summary>
 		/// Tests whether <paramref name="obj"/>'s class is derived from a class given by <paramref name="class_name"/>.
