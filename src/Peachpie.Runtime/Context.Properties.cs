@@ -22,6 +22,14 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the application is a web application.
         /// </summary>
-        public virtual bool IsWebApplication => false;
+        public bool IsWebApplication => this.HttpContext != null;
+
+        /// <summary>
+        /// In case of a context providing web features,
+        /// gets instance of <see cref="IHttpPhpContext"/> for HTTP request manipulation.
+        /// 
+        /// If it is a console context or a class library context, the property gets a <c>null</c> reference.
+        /// </summary>
+        public virtual IHttpPhpContext HttpContext => null;
     }
 }

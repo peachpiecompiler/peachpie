@@ -298,7 +298,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             //Debug.Assert(t != null);
                             if (t == null)
                             {
-                                Debug.WriteLine($"'tref.QualifiedName' is unknown!");
+                                Debug.WriteLine($"'{tref.QualifiedName}' is unknown!");
                             }
                         }
                     }

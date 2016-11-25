@@ -11,7 +11,7 @@ namespace Peachpie.Web
     /// <summary>
     /// Runtime context for ASP.NET Core request.
     /// </summary>
-    sealed class RequestContextCore : Context
+    sealed class RequestContextCore : Context // , IHttpPhpContext
     {
         #region .cctor
 
@@ -46,6 +46,12 @@ namespace Peachpie.Web
 
         #endregion
 
+        #region IHttpPhpContext
+
+        // TODO
+
+        #endregion
+
         public static ScriptInfo ResolveScript(HttpRequest req)
         {
             var path = req.Path.Value.Replace('/', '\\').Trim('\\');    // TODO: normalized form
@@ -65,7 +71,7 @@ namespace Peachpie.Web
             // TODO: server variables
         }
 
-        public override bool IsWebApplication => true;
+        public override IHttpPhpContext HttpContext => null;    // TODO
 
         public override Encoding StringEncoding => Encoding.UTF8;
     }

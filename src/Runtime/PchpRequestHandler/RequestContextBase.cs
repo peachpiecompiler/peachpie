@@ -13,7 +13,7 @@ namespace Pchp.Core
     /// <summary>
     /// Script context for web requests.
     /// </summary>
-    class RequestContextBase : Context
+    class RequestContextBase : Context // , IHttpPhpContext
     {
         #region .cctor
 
@@ -56,9 +56,12 @@ namespace Pchp.Core
 
         #endregion
 
-        /// <summary>
-        /// Web application.
-        /// </summary>
-        public override bool IsWebApplication => true;
+        #region IHttpPhpContext
+
+        // TODO
+
+        #endregion
+
+        public override IHttpPhpContext HttpContext => null; // TODO
     }
 }
