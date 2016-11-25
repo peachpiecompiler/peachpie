@@ -43,36 +43,7 @@ namespace Pchp.Core
             _post = new PhpArray();
             _files = new PhpArray();
             _session = new PhpArray();
-            _cookie = new PhpArray();            
-        }
-
-        /// <summary>
-        /// Creates context to be used within a console application.
-        /// </summary>
-        public static Context CreateConsole(params string[] args)
-        {
-            Stream stream = Stream.Null;
-            TextWriter sink = TextWriter.Null;
-
-//#if NET45 // .NET Portable
-//            var tconsole = Type.GetType("System.Console", false)?.GetTypeInfo();
-//            if (tconsole != null)
-//            {
-//                sink = (TextWriter)tconsole?.GetDeclaredProperty("Out")?.GetMethod?.Invoke(null, new object[0]) ?? sink;
-//                stream = (Stream)tconsole.GetDeclaredMethods("OpenStandardOutput").FirstOrDefault(m => m.GetParameters().Length == 0)?.Invoke(null, new object[0]) ?? stream;
-//            }
-//#else
-            sink = Console.Out;
-            stream = Console.OpenStandardOutput();
-//#endif
-
-            // TODO: ConsoleContext with RootDir and correct globals
-            return new Context()
-            {
-                _textSink = sink,
-                _streamSink = stream,
-                IsOutputBuffered = false,
-            };
+            _cookie = new PhpArray();
         }
 
         /// <summary>
