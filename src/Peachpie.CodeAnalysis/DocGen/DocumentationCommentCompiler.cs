@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.DocGen
         readonly StreamWriter _writer;
         readonly DiagnosticBag _xmlDiagnostics;
         readonly CancellationToken _cancellationToken;
-        
+
         private DocumentationCommentCompiler(Stream xmlDocStream, DiagnosticBag xmlDiagnostics, CancellationToken cancellationToken)
         {
             _writer = new StreamWriter(xmlDocStream);
@@ -69,18 +69,21 @@ namespace Pchp.CodeAnalysis.DocGen
 
         DocumentationCommentCompiler WriteCompilation(PhpCompilation compilation, string assemblyName)
         {
-            _writer.Write("<?xml version=\"1.0\"?>");
-            _writer.Write("<doc>");
-            _writer.Write("<assembly><name>{0}</name></assembly>", assemblyName);
-            _writer.Write("<members>");
+            _writer.WriteLine("<?xml version=\"1.0\"?>");
+            _writer.WriteLine("<doc>");
+            _writer.WriteLine("<assembly><name>{0}</name></assembly>", assemblyName);
+            _writer.WriteLine("<members>");
+
+            // TODO: implement Symbol.GetDocumentationCommentId
+            // TODO: implement Symbol.GetDocumentationCommentXml
 
             var tables = compilation.SourceSymbolTables;
             tables.GetFiles().ForEach(WriteFile);
             tables.GetTypes().OfType<SourceTypeSymbol>().ForEach(WriteType);
             tables.AllRoutines.ForEach(WriteRoutine);
 
-            _writer.Write("</members>");
-            _writer.Write("</doc>");
+            _writer.WriteLine("</members>");
+            _writer.WriteLine("</doc>");
 
             // TODO: analyse PHPDoc and report into xmlDiagnostics
 
@@ -102,54 +105,80 @@ namespace Pchp.CodeAnalysis.DocGen
 
             if (summary.Length == 0) return;
 
-            bool ismultiline = summary.IndexOfAny(new char[] { '\n', '\r' }) >= 0;
-
-            _writer.Write("\n<summary>");
-            if (ismultiline) _writer.Write('\n');
+            _writer.WriteLine("<summary>");
             _writer.Write(XmlEncode(summary));
-            if (ismultiline) _writer.Write('\n');
-            _writer.Write("</summary>\n");
+            _writer.WriteLine("</summary>");
+        }
+
+        void WriteParam(string pname, string pdesc)
+        {
+            _writer.WriteLine("<param name=\"{0}\">{1}</param>", XmlEncode(pname), XmlEncode(pdesc));
         }
 
         void WriteRoutine(SourceRoutineSymbol routine)
         {
-            _writer.Write($"<member name=\"{CommentIdResolver.GetId(routine)}\">");
+            var ps = routine.Parameters;
+
+            //
+            _writer.WriteLine($"<member name=\"{CommentIdResolver.GetId(routine)}\">");
+
+            // PHPDoc
             var phpdoc = routine.PHPDocBlock;
             if (phpdoc != null)
             {
                 WriteSummary(phpdoc.Summary);
-                
+
+                // user parameters
                 foreach (var p in phpdoc.Params)
                 {
-                    if (p.VariableName != null)
+                    // TODO: note the parameter type into Doc comment
+
+                    if (p.VariableName != null && !string.IsNullOrEmpty(p.Description))
                     {
-                        _writer.Write("<param name=\"{0}\">{1}</param>\n", p.VariableName.TrimStart('$'), XmlEncode(p.Description));
+                        WriteParam(p.VariableName.TrimStart('$'), p.Description);
                     }
                 }
                 var rtag = phpdoc.Returns;
-                if (rtag != null)
+                if (rtag != null && !string.IsNullOrEmpty(rtag.Description))
                 {
-                    _writer.Write("<returns>{0}</returns>\n", XmlEncode(rtag.Description));
+                    _writer.WriteLine("<returns>{0}</returns>", XmlEncode(rtag.Description));
                 }
             }
-            _writer.Write("</member>");
+
+            // implicit parameters
+            foreach (var p in ps)
+            {
+                if (p.IsImplicitlyDeclared)
+                {
+                    if (SpecialParameterSymbol.IsContextParameter(p))
+                    {
+                        WriteParam(p.MetadataName, PhpResources.XmlDoc_ContextParamDescription);
+                    }
+                }
+                else
+                {
+                    break;  // implicit parameters are always at begining
+                }
+            }
+
+            _writer.WriteLine("</member>");
 
         }
 
         void WriteType(SourceTypeSymbol type)
         {
-            _writer.Write($"<member name=\"{CommentIdResolver.GetId(type)}\">");
+            _writer.WriteLine($"<member name=\"{CommentIdResolver.GetId(type)}\">");
             var phpdoc = type.Syntax?.PHPDoc;
             if (phpdoc != null)
             {
                 WriteSummary(phpdoc.Summary);
             }
-            _writer.Write("</member>");
+            _writer.WriteLine("</member>");
         }
 
         void WriteFile(SourceFileSymbol file)
         {
-
+            
         }
     }
 }
