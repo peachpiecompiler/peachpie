@@ -196,12 +196,12 @@ namespace Pchp.Core
         /// <returns>Whether <paramref name="value"/> is of type <paramref name="tinfo"/>.</returns>
         public static bool IsInstanceOf(object value, Reflection.PhpTypeInfo tinfo)
         {
-            if (tinfo == null)
-            {
-                throw new ArgumentNullException(nameof(tinfo));
-            }
+            // note: if tinfo is null =>
+            // type was not declared =>
+            // value cannot be its instance because there is no way how to instantiate it
+            // ignoring the case when object is passed from CLR
 
-            return tinfo.Type.GetTypeInfo().IsInstanceOfType(value);
+            return tinfo != null && value != null && tinfo.Type.GetTypeInfo().IsInstanceOfType(value);
         }
 
         #endregion
