@@ -1,0 +1,43 @@
+﻿{
+  "version": "0.3.0-*",
+
+  "packOptions": {
+    "tags": [
+      "peachpie",
+      "library",
+      "mysql"
+    ],
+    "summary": "Peachpie library containing MySql function set.",
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+
+  "buildOptions": {
+    "xmlDoc": true,
+    "keyFile": "../../build/StrongKeys/core.snk"
+  },
+
+  "dependencies": {
+    "System.Collections": "4.0.*",
+    "Peachpie.Runtime": "*",
+    "MySql.Data": "7.0.6-IR31"
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50",
+      "dependencies": { "NETStandard.Library": "1.6.0" }
+    },
+    ".NETFramework,Version=v4.6": {
+      "dependencies": { "NETStandard.Library": "1.6.0" }
+    },
+    ".netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.0"
+        }
+      }
+    }
+  }
+}

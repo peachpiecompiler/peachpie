@@ -12,7 +12,7 @@ if ($framework -ne "netcoreapp1.0") {
 }
 
 # The list of projects to process
-$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.Compiler.Tools")
+$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.MySql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.Compiler.Tools")
 
 # Distinguish between Windows and other OSs (variable $IsWindows is not present in Desktop version)
 $IsWindowsHlp = $true

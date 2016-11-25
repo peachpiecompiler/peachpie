@@ -10,7 +10,8 @@
   "keywords": [ "dotnet", "peachpie", "php", "compiler" ],
   "dependencies": {
     "Peachpie.Runtime": "*",
-    "Peachpie.Library": "*"
+    "Peachpie.Library": "*",
+    "Peachpie.Library.MySql": "*"
   },
   "frameworks": {
     "netstandard1.6": {},
