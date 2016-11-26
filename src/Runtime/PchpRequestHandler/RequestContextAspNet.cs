@@ -69,6 +69,7 @@ namespace Pchp.Core
             _httpctx = httpcontext;
 
             this.InitOutput(httpcontext.Response.OutputStream);
+            this.InitializeSuperglobals();
 
             // TODO: start session if AutoStart is On
         }

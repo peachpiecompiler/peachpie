@@ -32,9 +32,6 @@ namespace Pchp.Core
             _functions = new RoutinesTable(RoutinesAppContext.NameToIndex, RoutinesAppContext.AppRoutines, RoutinesAppContext.ContextRoutinesCounter, FunctionRedeclared);
             _types = new TypesTable(TypesAppContext.NameToIndex, TypesAppContext.AppTypes, TypesAppContext.ContextTypesCounter, TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
-
-            //
-            InitializeSuperglobals(ref _superglobals);
         }
 
         /// <summary>
@@ -44,7 +41,9 @@ namespace Pchp.Core
         {
             var ctx = new Context();
             ctx.InitOutput(null);
+            ctx.InitializeSuperglobals();
 
+            //
             return ctx;
         }
 

@@ -92,7 +92,7 @@ namespace Pchp.Library
 		/// </remarks>
 		public static void header(Context ctx, string str, bool replace = true, int http_response_code = 0)
         {
-            var webctx = ctx.HttpContext;
+            var webctx = ctx.HttpPhpContext;
             if (webctx == null || string.IsNullOrEmpty(str) || webctx.HeadersSent)
             {
                 return;
@@ -138,7 +138,7 @@ namespace Pchp.Library
         /// <remarks>Caution: This function will remove all headers set by PHP, including cookies, session and the X-Powered-By headers.</remarks>
         public static void header_remove(Context ctx, string name = null)
         {
-            var webctx = ctx.HttpContext;
+            var webctx = ctx.HttpPhpContext;
             if (webctx != null)
             {
                 if (name != null)
@@ -165,7 +165,7 @@ namespace Pchp.Library
         /// <returns>Whether headers has already been sent.</returns>
         public static bool headers_sent(Context ctx)
         {
-            var webctx = ctx.HttpContext;
+            var webctx = ctx.HttpPhpContext;
             return webctx != null && webctx.HeadersSent;
         }
 
@@ -208,7 +208,7 @@ namespace Pchp.Library
         /// </summary>
         public static PhpArray headers_list(Context ctx)
         {
-            var webctx = ctx.HttpContext;
+            var webctx = ctx.HttpPhpContext;
             if (webctx == null)
             {
                 return null;

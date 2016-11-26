@@ -220,13 +220,13 @@ namespace Pchp.Core
         Superglobals _superglobals;
 
         /// <summary>
-        /// Called by <see cref="Context"/> constructor to initialize content of superglobal variables.
+        /// Must be called by derived constructor to initialize content of superglobal variables.
         /// </summary>
-        /// <param name="superglobals">Reference to supergobals holder to be initialized.</param>
+        protected void InitializeSuperglobals() => InitializeSuperglobals(ref _superglobals);
+
         void InitializeSuperglobals(ref Superglobals superglobals)
         {
-            // TODO: _globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
-            superglobals.env = new PhpArray(Superglobals.StaticEnv);
+            superglobals.env = Superglobals.StaticEnv.DeepCopy();
             superglobals.server = InitializeServerVariable();
             superglobals.request = InitializeRequestVariable();
             superglobals.get = new PhpArray();
@@ -240,7 +240,6 @@ namespace Pchp.Core
         /// <summary>
         /// Initializes <c>_GLOBALS</c> array.
         /// </summary>
-        /// <param name="superglobals">Superglobals, the same as <see cref=_superglobals"/>.</param>
         /// <param name="registering_order"><c>EGPCS</c> or <c>null</c> if register globals is disabled (default).</param>
         protected virtual PhpArray InitializeGlobals(string registering_order = null)
         {
@@ -260,7 +259,7 @@ namespace Pchp.Core
             }
 
             // adds auto-global variables (overwrites potential existing variables in $GLOBALS):
-            globals["GLOBALS"] = PhpValue.Create(globals);
+            globals["GLOBALS"] = PhpValue.Create(new PhpAlias(PhpValue.Create(globals)));   // &$_GLOBALS
             globals["_ENV"] = PhpValue.Create(_superglobals.env);
             globals["_GET"] = PhpValue.Create(_superglobals.get);
             globals["_POST"] = PhpValue.Create(_superglobals.post);
