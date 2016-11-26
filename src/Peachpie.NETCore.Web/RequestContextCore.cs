@@ -68,7 +68,13 @@ namespace Peachpie.Web
         {
             this.InitOutput(context.Response.Body);
 
-            // TODO: server variables
+            // TODO: start session if AutoStart is On
+        }
+
+        protected override PhpArray InitializeServerVariable()
+        {
+            // TODO: init $_SERVER array as expected within a web server
+            return base.InitializeServerVariable();
         }
 
         public override IHttpPhpContext HttpContext => null;    // TODO
