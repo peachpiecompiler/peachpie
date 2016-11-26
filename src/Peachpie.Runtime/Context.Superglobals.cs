@@ -166,7 +166,6 @@ namespace Pchp.Core
                 }
             }
 
-
             public static void InitializeEGPCSForWeb(ref Superglobals superglobals, string registering_order = null)
             {
                 // adds EGPCS variables as globals:

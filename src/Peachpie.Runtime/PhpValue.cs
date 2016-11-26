@@ -185,6 +185,17 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Conversions
+
+        public static explicit operator PhpValue(int value) => Create(value);
+        public static explicit operator PhpValue(long value) => Create(value);
+        public static explicit operator PhpValue(double value) => Create(value);
+        public static explicit operator PhpValue(string value) => Create(value);
+        public static explicit operator PhpValue(PhpArray value) => Create(value);
+        public static explicit operator PhpValue(bool value) => Create(value);
+
+        #endregion
+
         #region Operators
 
         public static bool operator ==(PhpValue left, PhpValue right) => left.Compare(right) == 0;
