@@ -263,8 +263,8 @@ namespace Pchp.Core
             globals["_ENV"] = PhpValue.Create(_superglobals.env);
             globals["_GET"] = PhpValue.Create(_superglobals.get);
             globals["_POST"] = PhpValue.Create(_superglobals.post);
-            globals["_COOKIE"] = PhpValue.Create(_superglobals.request);
-            globals["_REQUEST"] = PhpValue.Create(_superglobals.globals);
+            globals["_COOKIE"] = PhpValue.Create(_superglobals.cookie);
+            globals["_REQUEST"] = PhpValue.Create(_superglobals.request);
             globals["_SERVER"] = PhpValue.Create(_superglobals.server);
             globals["_FILES"] = PhpValue.Create(_superglobals.files);
             globals["_SESSION"] = PhpValue.Create(_superglobals.session);
