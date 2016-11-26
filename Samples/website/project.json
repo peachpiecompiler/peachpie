@@ -4,7 +4,8 @@
   "buildOptions": {
     "compilerName": "php",
     "compile": "**\\*.php",
-    "debugType": "portable"
+    "debugType": "portable",
+    "xmlDoc": true
   },
   "dependencies": {
     "Peachpie.App": "*"

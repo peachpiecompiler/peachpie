@@ -5,7 +5,8 @@
     "compilerName": "php",
     "compile": "**\\*.php",
     "emitEntryPoint": true,
-    "debugType": "portable"
+    "debugType": "portable",
+    "xmlDoc": true
   },
   "dependencies": {
     "Peachpie.App": "*"
