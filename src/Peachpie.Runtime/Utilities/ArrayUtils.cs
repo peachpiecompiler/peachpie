@@ -23,16 +23,23 @@ namespace Pchp.Core.Utilities
 
         #endregion
 
+        /// <summary>
+        /// Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.
+        /// </summary>
         public static void Write(this Stream stream, byte[] bytes) => stream.Write(bytes, 0, bytes.Length);
 
+        /// <summary>
+        /// Decodes a sequence of bytes from the specified byte array into a string.
+        /// </summary>
         public static string GetString(this Encoding encoding, byte[] bytes) => encoding.GetString(bytes, 0, bytes.Length);
 
+        /// <summary>Cached <see cref="Func{T, TResult}"/> instance.</summary>
         static readonly Func<object, bool> _not_null = new Func<object, bool>((obj) => obj != null);
 
-        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T> e) where T : class
-        {
-            return (IEnumerable<T>)e.Where(_not_null);
-        }
+        /// <summary>
+        /// Filters a sequence of values that are not a <c>null</c> reference.
+        /// </summary>
+        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T> e) where T : class => e.Where<T>(_not_null);
     }
 
 }
