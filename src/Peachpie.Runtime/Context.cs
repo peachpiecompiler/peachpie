@@ -28,22 +28,13 @@ namespace Pchp.Core
 
         protected Context()
         {
+            // Context tables
             _functions = new RoutinesTable(RoutinesAppContext.NameToIndex, RoutinesAppContext.AppRoutines, RoutinesAppContext.ContextRoutinesCounter, FunctionRedeclared);
             _types = new TypesTable(TypesAppContext.NameToIndex, TypesAppContext.AppTypes, TypesAppContext.ContextTypesCounter, TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
 
-            // TODO: InitGlobalVariables(); //_globals.SetItemAlias(new IntStringKey("GLOBALS"), new PhpAlias(PhpValue.Create(_globals)));
-            // TODO: wrap into a struct Superglobals
-
-            _globals = new PhpArray();
-            _server = new PhpArray();   // TODO: virtual initialization method, reuse server static information with request context
-            _env = new PhpArray();
-            _request = new PhpArray();
-            _get = new PhpArray();
-            _post = new PhpArray();
-            _files = new PhpArray();
-            _session = new PhpArray();
-            _cookie = new PhpArray();
+            //
+            InitializeSuperglobals(ref _superglobals);
         }
 
         /// <summary>
@@ -208,7 +199,7 @@ namespace Pchp.Core
         /// <param name="throwOnError">Whether to include according to require semantics.</param>
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string dir, string path, bool once = false, bool throwOnError = false)
-            => Include(dir, path, _globals, null, once, throwOnError);
+            => Include(dir, path, Globals, null, once, throwOnError);
 
         /// <summary>
         /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method.
@@ -285,181 +276,6 @@ namespace Pchp.Core
         /// <typeparam name="TScript">Script type.</typeparam>
         /// <returns>Full script path.</returns>
         public string ScriptPath<TScript>() => RootPath + ScriptsMap.GetScript<TScript>().Path;
-
-        #endregion
-
-        #region Superglobals
-
-        /// <summary>
-        /// Array of global variables.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Globals
-        {
-            get { return _globals; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();  // TODO: ErrCode
-                }
-
-                _globals = value;
-            }
-        }
-        PhpArray _globals;
-
-        /// <summary>
-        /// Array of server and execution environment information.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Server
-        {
-            get { return _server; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _server = value;
-            }
-        }
-        PhpArray _server;
-
-        /// <summary>
-        /// An associative array of variables passed to the current script via the environment method.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Env
-        {
-            get { return _env; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _env = value;
-            }
-        }
-        PhpArray _env;
-
-        /// <summary>
-        /// An array that by default contains the contents of $_GET, $_POST and $_COOKIE.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Request
-        {
-            get { return _request; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _request = value;
-            }
-        }
-        PhpArray _request;
-
-        /// <summary>
-        /// An associative array of variables passed to the current script via the URL parameters.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Get
-        {
-            get { return _get; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _get = value;
-            }
-        }
-        PhpArray _get;
-
-        /// <summary>
-        /// An associative array of variables passed to the current script via the HTTP POST method.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Post
-        {
-            get { return _post; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _post = value;
-            }
-        }
-        PhpArray _post;
-
-        /// <summary>
-        /// An associative array of items uploaded to the current script via the HTTP POST method.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Files
-        {
-            get { return _files; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _files = value;
-            }
-        }
-        PhpArray _files;
-
-        /// <summary>
-        /// An associative array containing session variables available to the current script.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Session
-        {
-            get { return _session; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _session = value;
-            }
-        }
-        PhpArray _session;
-
-        /// <summary>
-        /// An associative array of variables passed to the current script via the HTTP POST method.
-        /// Cannot be <c>null</c>.
-        /// </summary>
-        public PhpArray Cookie
-        {
-            get { return _cookie; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _cookie = value;
-            }
-        }
-        PhpArray _cookie;
 
         #endregion
 
