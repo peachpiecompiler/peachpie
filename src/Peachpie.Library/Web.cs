@@ -1,7 +1,9 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -61,6 +63,226 @@ namespace Pchp.Library
 
         #endregion
 
+        #region parse_url, parse_str
+
+        #region Helper parse_url() methods
+
+        internal static class ParseUrlMethods
+        {
+            /// <summary>
+            /// Regular expression for parsing URLs (via parse_url())
+            /// </summary>
+            public static Regex ParseUrlRegEx
+            {
+                get
+                {
+                    return
+                        (_parseUrlRegEx) ??
+                        (_parseUrlRegEx = new Regex(@"^((?<scheme>[^:]+):(?<scheme_separator>/{0,2}))?((?<user>[^:@/?#\[\]]*)(:(?<pass>[^@/?#\[\]]*))?@)?(?<host>([^/:?#\[\]]+)|(\[[^\[\]]+\]))?(:(?<port>[0-9]*))?(?<path>/[^\?#]*)?(\?(?<query>[^#]+)?)?(#(?<fragment>.*))?$",
+                            RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase));
+                }
+            }
+            private static Regex _parseUrlRegEx = null;
+
+            /// <summary>
+            /// Determines matched group value or null if the group was not matched.
+            /// </summary>
+            /// <param name="g"></param>
+            /// <returns></returns>
+            public static string MatchedString(Group/*!*/g)
+            {
+                Debug.Assert(g != null);
+
+                return (g.Success && g.Value.Length > 0) ? g.Value : null;
+            }
+
+            /// <summary>
+            /// Replace all the occurrences of control characters (see iscntrl() C++ function) with the specified character.
+            /// </summary>
+            public static string ReplaceControlCharset(string/*!*/str, char newChar)
+            {
+                Debug.Assert(str != null);
+
+                StringBuilder sb = null;
+                int last = 0;
+                for (int i = 0; i < str.Length; i++)
+                {
+                    if (char.IsControl(str[i]))
+                    {
+                        if (sb == null) sb = new StringBuilder(str.Length);
+                        sb.Append(str, last, i - last);
+                        sb.Append(newChar);
+                        last = i + 1;
+                    }
+                }
+
+                if (sb != null)
+                {
+                    sb.Append(str, last, str.Length - last);
+                    return sb.ToString();
+                }
+                else
+                {
+                    return str;
+                }
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+		/// Parses an URL and returns its components.
+		/// </summary>
+		/// <param name="url">
+		/// The URL string with format 
+        /// <c>{scheme}://{user}:{pass}@{host}:{port}{path}?{query}#{fragment}</c>
+		/// or <c>{schema}:{path}?{query}#{fragment}</c>.
+		/// </param>
+        /// <returns>
+		/// An array which keys are names of components (stated in URL string format in curly braces, e.g."schema")
+		/// and values are components themselves.
+		/// </returns>
+        [return: CastToFalse]
+        public static PhpArray parse_url(string url)
+        {
+            var match = ParseUrlMethods.ParseUrlRegEx.Match(url ?? string.Empty);
+
+            if (match == null || !match.Success || match.Groups["port"].Value.Length > 5)   // not matching or port number too long
+            {
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_url", FileSystemUtils.StripPassword(url)));
+                //return null;
+                // TODO: Err
+                throw new ArgumentException();
+            }
+
+            string scheme = ParseUrlMethods.MatchedString(match.Groups["scheme"]);
+            string user = ParseUrlMethods.MatchedString(match.Groups["user"]);
+            string pass = ParseUrlMethods.MatchedString(match.Groups["pass"]);
+            string host = ParseUrlMethods.MatchedString(match.Groups["host"]);
+            string port = ParseUrlMethods.MatchedString(match.Groups["port"]);
+            string path = ParseUrlMethods.MatchedString(match.Groups["path"]);
+            string query = ParseUrlMethods.MatchedString(match.Groups["query"]);
+            string fragment = ParseUrlMethods.MatchedString(match.Groups["fragment"]);
+
+            string scheme_separator = match.Groups["scheme_separator"].Value;   // cannot be null
+
+            int tmp;
+
+            // some exceptions
+            if (host != null && scheme != null && scheme_separator.Length == 0 && int.TryParse(host, out tmp))
+            {   // domain:port/path
+                port = host;
+                host = scheme;
+                scheme = null;
+            }
+            else if (scheme_separator.Length != 2 && host != null)
+            {   // mailto:user@host
+                // st:xx/zzz
+                // mydomain.com/path
+                // mydomain.com:port/path
+
+                // dismiss user and pass
+                if (user != null || pass != null)
+                {
+                    if (pass != null) user = user + ":" + pass;
+                    host = user + "@" + host;
+
+                    user = null;
+                    pass = null;
+                }
+
+                // dismiss port
+                if (port != null)
+                {
+                    host += ":" + port;
+                    port = null;
+                }
+
+                // everything as a path
+                path = scheme_separator + host + path;
+                host = null;
+            }
+
+            PhpArray result = new PhpArray(0, 8);
+
+            const char neutralChar = '_';
+
+            // store segments into the array (same order as it is in PHP)
+            if (scheme != null) result["scheme"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(scheme, neutralChar);
+            if (host != null) result["host"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(host, neutralChar);
+            if (port != null) result["port"] = (PhpValue)unchecked((ushort)uint.Parse(port)); // PHP overflows in this way
+            if (user != null) result["user"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(user, neutralChar);
+            if (pass != null) result["pass"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(pass, neutralChar);
+            if (path != null) result["path"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(path, neutralChar);
+            if (query != null) result["query"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(query, neutralChar);
+            if (fragment != null) result["fragment"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(fragment, neutralChar);
+
+            return result;
+        }
+
+        /// <summary>
+		/// Parses an URL and returns its components.
+		/// </summary>
+		/// <param name="url">
+		/// The URL string with format 
+        /// <c>{scheme}://{user}:{pass}@{host}:{port}{path}?{query}#{fragment}</c>
+		/// or <c>{schema}:{path}?{query}#{fragment}</c>.
+		/// </param>
+        /// <param name="component">Specify one of PHP_URL_SCHEME, PHP_URL_HOST, PHP_URL_PORT, PHP_URL_USER, PHP_URL_PASS, PHP_URL_PATH, PHP_URL_QUERY or PHP_URL_FRAGMENT to retrieve just a specific URL component as a string (except when PHP_URL_PORT is given, in which case the return value will be an integer).</param>
+		public static string parse_url(string url, int component)
+        {
+            var array = parse_url(url);
+            if (array != null)
+            {
+                switch (component)
+                {
+                    case PHP_URL_FRAGMENT: return array["fragment"].AsString();
+                    case PHP_URL_HOST: return array["host"].AsString();
+                    case PHP_URL_PASS: return array["pass"].AsString();
+                    case PHP_URL_PATH: return array["path"].AsString();
+                    case PHP_URL_PORT: return array["port"].AsString(); // might be null
+                    case PHP_URL_QUERY: return array["query"].AsString();
+                    case PHP_URL_SCHEME: return array["scheme"].AsString();
+                    case PHP_URL_USER: return array["user"].AsString();
+
+                    default:
+                        //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:invalid_value", "component", component));                        
+                        throw new ArgumentException(nameof(component));
+                }
+            }
+
+            //
+            return null;
+        }
+
+        /// <summary>
+        /// Parses a string as if it were the query string passed via an URL.
+        /// </summary>
+        /// <param name="str">The string to parse.</param>
+        /// <param name="result">The array to store the variable found in <paramref name="str"/> to.</param>
+        public static void parse_str(string str, out PhpArray result)
+        {
+            result = new PhpArray();
+            //AutoGlobals.LoadFromCollection(result, HttpUtility.ParseQueryString(str));
+            throw new NotImplementedException();    // see Microsoft.AspNetCore.WebUtilities/QueryHelpers.cs, ParseNullableQuery
+        }
+
+        /// <summary>
+        /// Parses a string as if it were the query string passed via an URL and sets variables in the
+        /// current scope.
+        /// </summary>
+        /// <param name="str">The string to parse.</param>
+        public static void parse_str(string str)
+        {
+            if (str == null) return;
+
+            //PhpArray globals = (localVariables != null) ? null : ScriptContext.CurrentContext.GlobalVariables;
+            //AutoGlobals.LoadFromCollection(globals, HttpUtility.ParseQueryString(str));
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
         #region header, header_remove
 
         /// <summary>
@@ -97,7 +319,7 @@ namespace Pchp.Library
             {
                 return;
             }
-            
+
             // response code is not forced => checks for initial HTTP/ and the status code in "str":  
             if (http_response_code <= 0)
             {
@@ -149,7 +371,7 @@ namespace Pchp.Library
                 {
                     webctx.RemoveHeaders();
                 }
-                
+
                 // TODO: cookies, session
             }
         }
