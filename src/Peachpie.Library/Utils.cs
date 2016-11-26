@@ -65,7 +65,7 @@ namespace Pchp.Library
         /// <summary>
         /// Time 0 in terms of Unix TimeStamp.
         /// </summary>
-        public static readonly System_DateTime/*!*/UtcStartOfUnixEpoch = new System_DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        public static System_DateTime/*!*/UtcStartOfUnixEpoch => Core.Utilities.DateTimeUtils.UtcStartOfUnixEpoch;
 
         /// <summary>
         /// UTC time zone.
@@ -77,17 +77,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="dt">Time.</param>
         /// <returns>Unix timestamp.</returns>
-        internal static int UtcToUnixTimeStamp(System_DateTime dt)
-        {
-            double seconds = (dt - UtcStartOfUnixEpoch).TotalSeconds;
-
-            if (seconds < Int32.MinValue)
-                return Int32.MinValue;
-            if (seconds > Int32.MaxValue)
-                return Int32.MaxValue;
-
-            return (int)seconds;
-        }
+        internal static int UtcToUnixTimeStamp(System_DateTime dt) => Core.Utilities.DateTimeUtils.UtcToUnixTimeStamp(dt);
 
         /// <summary>
         /// Converts UNIX timestamp (number of seconds from 1.1.1970) to <see cref="System_DateTime"/>.
