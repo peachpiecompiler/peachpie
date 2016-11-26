@@ -84,7 +84,7 @@ namespace Peachpie.Web
             _httpctx = httpcontext;
 
             this.InitOutput(httpcontext.Response.Body);
-            this.InitializeSuperglobals();
+            this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On
         }
@@ -92,7 +92,7 @@ namespace Peachpie.Web
         /// <summary>
         /// Loads $_SERVER from <see cref="_httpctx"/>.
         /// </summary>
-        protected override PhpArray InitializeServerVariable()
+        protected override PhpArray InitServerVariable()
         {
             var array = new PhpArray(32);
 

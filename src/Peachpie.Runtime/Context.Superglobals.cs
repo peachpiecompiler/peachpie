@@ -151,7 +151,7 @@ namespace Pchp.Core
             /// </summary>
             /// <param name="globals">$GLOBALS array.</param>
             /// <param name="files">$_FILES array.</param>
-            internal static void AddFileVariablesToGlobals(PhpArray/*!*/ globals, PhpArray/*!*/ files)
+            public static void AddFileVariablesToGlobals(PhpArray/*!*/ globals, PhpArray/*!*/ files)
             {
                 var e = files.GetFastEnumerator();
                 while (e.MoveNext())
@@ -175,23 +175,23 @@ namespace Pchp.Core
                 {
                     switch (registering_order[i])
                     {
-                        case 'E': Superglobals.AddVariables(globals, superglobals.env); break;
-                        case 'G': Superglobals.AddVariables(globals, superglobals.get); break;
+                        case 'E': AddVariables(globals, superglobals.env); break;
+                        case 'G': AddVariables(globals, superglobals.get); break;
 
                         case 'P':
-                            Superglobals.AddVariables(globals, superglobals.post);
-                            Superglobals.AddFileVariablesToGlobals(globals, superglobals.files);
+                            AddVariables(globals, superglobals.post);
+                            AddFileVariablesToGlobals(globals, superglobals.files);
                             break;
 
-                        case 'C': Superglobals.AddVariables(globals, superglobals.cookie); break;
-                        case 'S': Superglobals.AddVariables(globals, superglobals.server); break;
+                        case 'C': AddVariables(globals, superglobals.cookie); break;
+                        case 'S': AddVariables(globals, superglobals.server); break;
                     }
                 }
             }
 
             public static void InitializeEGPCSForConsole(ref Superglobals superglobals)
             {
-                Superglobals.AddVariables(superglobals.globals, superglobals.env);
+                AddVariables(superglobals.globals, superglobals.env);
             }
 
             #endregion
@@ -199,9 +199,9 @@ namespace Pchp.Core
             /// <summary>
             /// Application wide $_ENV array.
             /// </summary>
-            public static PhpArray StaticEnv => static_env ?? (static_env = InitializeEnv());
+            public static PhpArray StaticEnv => static_env ?? (static_env = InitEnv());
 
-            static PhpArray InitializeEnv()
+            static PhpArray InitEnv()
             {
                 var env_vars = Environment.GetEnvironmentVariables();
                 var array = new PhpArray(env_vars.Count);
@@ -222,26 +222,26 @@ namespace Pchp.Core
         /// <summary>
         /// Must be called by derived constructor to initialize content of superglobal variables.
         /// </summary>
-        protected void InitializeSuperglobals() => InitializeSuperglobals(ref _superglobals);
+        protected void InitSuperglobals() => InitSuperglobals(ref _superglobals);
 
-        void InitializeSuperglobals(ref Superglobals superglobals)
+        void InitSuperglobals(ref Superglobals superglobals)
         {
             superglobals.env = Superglobals.StaticEnv.DeepCopy();
-            superglobals.server = InitializeServerVariable();
-            superglobals.request = InitializeRequestVariable();
+            superglobals.server = InitServerVariable();
+            superglobals.request = InitRequestVariable();
             superglobals.get = new PhpArray();
             superglobals.post = new PhpArray();
             superglobals.files = new PhpArray();
             superglobals.session = new PhpArray();
             superglobals.cookie = new PhpArray();
-            superglobals.globals = InitializeGlobals(null); // TODO: Configuration/EGPCS
+            superglobals.globals = InitGlobals(null); // TODO: Configuration/EGPCS
         }
 
         /// <summary>
         /// Initializes <c>_GLOBALS</c> array.
         /// </summary>
         /// <param name="registering_order"><c>EGPCS</c> or <c>null</c> if register globals is disabled (default).</param>
-        protected virtual PhpArray InitializeGlobals(string registering_order = null)
+        protected virtual PhpArray InitGlobals(string registering_order = null)
         {
             Debug.Assert(_superglobals.request != null && _superglobals.env != null && _superglobals.server != null && _superglobals.files != null);
 
@@ -289,10 +289,10 @@ namespace Pchp.Core
         }
 
         /// <summary>Initialize $_SERVER global variable.</summary>
-        protected virtual PhpArray InitializeServerVariable() => new PhpArray();
+        protected virtual PhpArray InitServerVariable() => new PhpArray();
 
         /// <summary>Initialize $_REQUEST global variable.</summary>
-        protected virtual PhpArray InitializeRequestVariable() => new PhpArray();
+        protected virtual PhpArray InitRequestVariable() => new PhpArray();
 
         #region Properties
 

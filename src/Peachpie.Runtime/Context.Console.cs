@@ -24,7 +24,7 @@ namespace Pchp.Core
                 IsOutputBuffered = false;   // initializes Output
 
                 // Globals
-                InitializeSuperglobals();
+                InitSuperglobals();
                 IntializeArgvArgc(args);
             }
 

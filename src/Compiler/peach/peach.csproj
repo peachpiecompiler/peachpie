@@ -56,6 +56,9 @@
     <Reference Include="Peachpie.Runtime">
       <HintPath>..\..\Peachpie.Runtime\bin\$(Configuration)\net46\Peachpie.Runtime.dll</HintPath>
     </Reference>
+	<Reference Include="Peachpie.Library.MySql">
+      <HintPath>..\..\Peachpie.Library.MySql\bin\$(Configuration)\net46\Peachpie.Library.MySql.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />

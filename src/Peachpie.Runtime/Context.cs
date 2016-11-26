@@ -41,7 +41,7 @@ namespace Pchp.Core
         {
             var ctx = new Context();
             ctx.InitOutput(null);
-            ctx.InitializeSuperglobals();
+            ctx.InitSuperglobals();
 
             //
             return ctx;
