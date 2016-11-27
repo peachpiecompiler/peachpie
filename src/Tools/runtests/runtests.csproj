@@ -74,6 +74,9 @@
     <Reference Include="Peachpie.Library">
       <HintPath>..\..\Peachpie.Library\bin\$(Configuration)\net46\Peachpie.Library.dll</HintPath>
     </Reference>
+	<Reference Include="Peachpie.Library.MySql">
+      <HintPath>..\..\Peachpie.Library.MySql\bin\$(Configuration)\net46\Peachpie.Library.MySql.dll</HintPath>
+    </Reference>
     <Reference Include="Peachpie.Microsoft.CodeAnalysis">
       <HintPath>..\..\Peachpie.CodeAnalysis\bin\$(Configuration)\net46\Peachpie.Microsoft.CodeAnalysis.dll</HintPath>
     </Reference>
