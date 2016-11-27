@@ -533,16 +533,63 @@ namespace Pchp.Library
 
         #region print_r, var_export, var_dump
 
+        abstract class FormatterVisitor : PhpVariableVisitor, IPhpVariableFormatter
+        {
+            readonly protected Context _ctx;
+            readonly protected string _nl;
+
+            protected PhpString _output;
+            protected int _indent;
+
+            protected FormatterVisitor(Context ctx, string newline)
+            {
+                Debug.Assert(ctx != null);
+                _ctx = ctx;
+                _nl = newline;
+            }
+
+            public virtual PhpString Serialize(PhpValue value)
+            {
+                _output = new PhpString();
+                _indent = 0;
+
+                //
+                Accept(value);
+                
+                return _output;
+            }
+
+            /// <summary>
+            /// Lazily initialized set of visited objects.
+            /// </summary>
+            HashSet<object> _visited;
+
+            /// <summary>
+            /// Remembers the object was visited and gets value indicating the object was not visited before.
+            /// </summary>
+            protected bool Enter(object obj)
+            {
+                var visited = _visited;
+                if (visited == null)
+                {
+                    _visited = visited = new HashSet<object>();
+                }
+
+                return visited.Add(obj);
+            }
+
+            protected void Leave(object obj)
+            {
+                Debug.Assert(_visited != null);
+                var removed = _visited.Remove(obj);
+                Debug.Assert(removed);
+            }
+        }
+
         #region PrintFormatter (print_r)
 
-        class PrintFormatter : PhpVariableVisitor, IPhpVariableFormatter
+        class PrintFormatter : FormatterVisitor
         {
-            readonly Context _ctx;
-            readonly string _nl;
-
-            PhpString _output;
-            int _indent;
-
             const int IndentSize = 4;
 
             void OutputIndent()
@@ -554,22 +601,15 @@ namespace Pchp.Library
             }
 
             public PrintFormatter(Context ctx, string newline)
-            {
-                Debug.Assert(ctx != null);
-                _ctx = ctx;
-                _nl = newline;
+                :base(ctx, newline)
+            {   
             }
 
-            public PhpString Serialize(PhpValue value)
+            public override PhpString Serialize(PhpValue value)
             {
-                _output = new PhpString();
-                _indent = 0;
-
-                //
-                Accept(value);
-                _output.Append(_nl);
-
-                return _output;
+                var output = base.Serialize(value);
+                output.Append(_nl);
+                return output;
             }
 
             public override void Accept(bool obj) => _output.Append(obj ? "1" : string.Empty);
@@ -587,20 +627,31 @@ namespace Pchp.Library
             public override void Accept(PhpArray obj)
             {
                 // Array
-                // (
                 _output.Append(PhpArray.PrintablePhpTypeName);
                 _output.Append(_nl);
-                OutputIndent();
-                _output.Append("(");
-                _output.Append(_nl);
 
-                _indent++;
+                if (Enter(obj))
+                {
+                    // (
+                    OutputIndent();
+                    _output.Append("(");
+                    _output.Append(_nl);
 
-                base.Accept(obj);
+                    _indent++;
 
-                _indent--;
-                OutputIndent();
-                _output.Append(")");
+                    base.Accept(obj);
+
+                    _indent--;
+                    OutputIndent();
+                    _output.Append(")");
+
+                    //
+                    Leave(obj);
+                }
+                else
+                {
+                    _output.Append(" *RECURSION*");
+                }
             }
 
             public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
@@ -644,14 +695,8 @@ namespace Pchp.Library
 
         #region ExportFormatter (var_export)
 
-        class ExportFormatter : PhpVariableVisitor, IPhpVariableFormatter
+        class ExportFormatter : FormatterVisitor
         {
-            readonly Context _ctx;
-            readonly string _nl;
-
-            PhpString _output;
-            int _indent;
-
             const int IndentSize = 2;
 
             void OutputIndent()
@@ -663,20 +708,13 @@ namespace Pchp.Library
             }
 
             public ExportFormatter(Context ctx, string newline)
+                :base(ctx, newline)
             {
-                Debug.Assert(ctx != null);
-                _ctx = ctx;
-                _nl = newline;
             }
 
-            public PhpString Serialize(PhpValue value)
+            public override PhpString Serialize(PhpValue value)
             {
-                _output = new PhpString();
-                _indent = 0;
-
-                //
-                Accept(value);
-                return _output;
+                return base.Serialize(value);
             }
 
             public override void Accept(bool obj) => _output.Append(obj ? PhpVariable.True : PhpVariable.False);
@@ -698,18 +736,29 @@ namespace Pchp.Library
 
             public override void Accept(PhpArray obj)
             {
-                // array (
-                _output.Append(PhpArray.PhpTypeName);
-                _output.Append(" (");
-                _output.Append(_nl);
-                
-                _indent++;
+                if (Enter(obj))
+                {
+                    // array (
+                    _output.Append(PhpArray.PhpTypeName);
+                    _output.Append(" (");
+                    _output.Append(_nl);
 
-                base.Accept(obj);
+                    _indent++;
 
-                _indent--;
-                OutputIndent();
-                _output.Append(")");
+                    base.Accept(obj);
+
+                    _indent--;
+                    OutputIndent();
+                    _output.Append(")");
+
+                    //
+                    Leave(obj);
+                }
+                else
+                {
+                    // NULL
+                    _output.Append(PhpVariable.TypeNameNull);
+                }
             }
 
             public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
@@ -740,14 +789,8 @@ namespace Pchp.Library
 
         #region DumpFormatter (var_dump)
 
-        class DumpFormatter : PhpVariableVisitor, IPhpVariableFormatter
+        class DumpFormatter : FormatterVisitor
         {
-            readonly Context _ctx;
-            readonly string _nl;
-
-            PhpString _output;
-            int _indent;
-
             const int IndentSize = 2;
 
             void OutputIndent()
@@ -759,22 +802,15 @@ namespace Pchp.Library
             }
 
             public DumpFormatter(Context ctx, string newline)
+                :base(ctx, newline)
             {
-                Debug.Assert(ctx != null);
-                _ctx = ctx;
-                _nl = newline;
             }
 
-            public PhpString Serialize(PhpValue value)
+            public override PhpString Serialize(PhpValue value)
             {
-                _output = new PhpString();
-                _indent = 0;
-
-                //
-                Accept(value);
-                _output.Append(_nl);
-
-                return _output;
+                var output = base.Serialize(value);
+                output.Append(_nl);
+                return output;
             }
 
             public override void Accept(bool obj)
@@ -827,18 +863,34 @@ namespace Pchp.Library
 
             public override void Accept(PhpArray obj)
             {
-                // array (size=COUNT)
+                // array
                 _output.Append(PhpArray.PhpTypeName);
-                _output.Append($"({obj.Count}) {{");
-                _output.Append(_nl);
 
-                _indent++;
+                if (Enter(obj))
+                {
+                    // (size=COUNT)
+                    // {
+                    _output.Append($"({obj.Count}) {{");
+                    _output.Append(_nl);
 
-                base.Accept(obj);
+                    _indent++;
 
-                _indent--;
-                OutputIndent();
-                _output.Append("}");
+                    base.Accept(obj);
+
+                    _indent--;
+
+                    // }
+                    OutputIndent();
+                    _output.Append("}");
+
+                    //
+                    Leave(obj);
+                }
+                else
+                {
+                    // <
+                    _output.Append("<");
+                }
             }
 
             public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
