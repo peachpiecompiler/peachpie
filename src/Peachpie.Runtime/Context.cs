@@ -223,6 +223,7 @@ namespace Pchp.Core
             {
                 script = ScriptsMap.SearchForIncludedFile(path, IncludePaths, cd, _scripts.GetScript);
             }
+
             if (script.IsValid)
             {
                 if (once && _scripts.IsIncluded(script.Index))
