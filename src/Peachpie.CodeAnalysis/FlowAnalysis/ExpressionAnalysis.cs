@@ -895,6 +895,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 var refexpr = args[i] as BoundReferenceExpression;
                                 if (refexpr != null)
                                 {
+                                    if (ep.IsByRef && !refexpr.Access.IsWrite)
+                                    {
+                                        refexpr.Access = refexpr.Access.WithWrite(expectedparams[i].Type);
+                                        Worklist.Enqueue(CurrentBlock);
+                                    }
+
                                     var refvar = refexpr as BoundVariableRef;
                                     if (refvar.Name.IsDirect)
                                     {
