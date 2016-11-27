@@ -82,7 +82,8 @@ namespace Pchp.Library
         /// Retrieves an array of configuration entries of a specified extension.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="extension">The PHP internal extension name.</param>
+        /// <param name="extension">Optional. The PHP internal extension name.</param>
+        /// <param name="details">Retrieve details settings or only the current value for each setting. Default is TRUE.</param>
         /// <remarks>
         /// For each supported configuration option an entry is added to the resulting array.
         /// The key is the name of the option and the value is an array having three entries: 
@@ -92,7 +93,7 @@ namespace Pchp.Library
         ///   <item><c>access</c> - 7 (PHP_INI_ALL), 6 (PHP_INI_PERDIR | PHP_INI_SYSTEM) or 4 (PHP_INI_SYSTEM)</item>
         /// </list>
         /// </remarks>
-        public static PhpArray ini_get_all(Context ctx, string extension = null)
+        public static PhpArray ini_get_all(Context ctx, string extension = null, bool details = true)
         {
             PhpArray result = new PhpArray();
 
