@@ -189,7 +189,11 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override int GetWarningLevel(int code)
         {
-            throw new NotImplementedException();
+            switch ((ErrorCode)code)
+            {
+                default:
+                    return 0;
+            }
         }
 
         public override string LoadMessage(int code, CultureInfo language)
