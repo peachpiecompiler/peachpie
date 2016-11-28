@@ -370,7 +370,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         var oldVar = startState.GetVarType(name);
                         if (oldVar != x.TypeRefMask)
                         {
-                            startState.SetVar(name, x.TypeRefMask);
+                            startState.SetVar(name, oldVar | x.TypeRefMask);
                             this.Worklist.Enqueue(startBlock);
                         }
                     }
