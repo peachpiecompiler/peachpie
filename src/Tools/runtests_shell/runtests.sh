@@ -3,8 +3,10 @@
 TOOL_DIR="./src/Tools/runtests_shell"
 OUTPUT_DIR="$TOOL_DIR/bin"
 
+# Peachpie.App
 cp src/Peachpie.Runtime/bin/Debug/netcoreapp1.0/Peachpie.Runtime.dll $OUTPUT_DIR
 cp src/Peachpie.Library/bin/Debug/netcoreapp1.0/Peachpie.Library.dll $OUTPUT_DIR
+cp src/Peachpie.Library.MySql/bin/Debug/netcoreapp1.0/Peachpie.Library.MySql.dll $OUTPUT_DIR
 
 # The location of the referenced libraries may differ and the compiler works properly only with absolute addresses
 NUGET_DIR="$(readlink -f ~/.nuget/packages)"
