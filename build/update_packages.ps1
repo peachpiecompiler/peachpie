@@ -13,6 +13,7 @@ if ($framework -ne "netcoreapp1.0") {
 
 # The list of projects to process
 $projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.MySql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.Compiler.Tools")
+$suffix = "dev"
 
 # Distinguish between Windows and other OSs (variable $IsWindows is not present in Desktop version)
 $IsWindowsHlp = $true
@@ -41,15 +42,15 @@ $packagesSource = (Resolve-Path "~/.nuget/packages").Path
 
 # Create the Nuget packages and delete those currently installed
 foreach ($project in $projects) {
-    dotnet pack --no-build -c $configuration -o "$rootDir/.nugs" --version-suffix beta "$rootDir/src/$project"
+    dotnet pack --no-build -c $configuration -o "$rootDir/.nugs" --version-suffix $suffix "$rootDir/src/$project"
 
     if ($nugetCommand) {
-        & $nugetCommand $prependArgs delete $project "$version-beta" -Source $packagesSource -Noninteractive
+        & $nugetCommand $prependArgs delete $project "$version-$suffix" -Source $packagesSource -Noninteractive
     }
 }
 
 # Clean up the installed tool settings so that no old dependencies hang in there 
-$toolFolder = "$packagesSource/.tools/Peachpie.Compiler.Tools/$version-beta"
+$toolFolder = "$packagesSource/.tools/Peachpie.Compiler.Tools/$version-$suffix"
 if (Test-Path $toolFolder) {
     Remove-Item -Recurse -Force $toolFolder
 }
