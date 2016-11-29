@@ -137,9 +137,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.BitXor:
-                    //returned_typecode = EmitBitOperation(node, codeGenerator, Operators.BitOp.Xor);
-                    //break;
-                    throw new NotImplementedException();
+                    returned_type = EmitBitXor(cg, Left, Right);
+                    break;
 
                 #endregion
 
@@ -506,6 +505,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Long;
             }
 
+            // TODO: IF cg.IsStringOnly(left.TypeRefMask) && cg.IsStringOnly(Right.TypeRefMask)
+
             //
             return EmitBitAnd(cg, cg.Emit(left), right);
         }
@@ -525,9 +526,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitConvert(right, cg.CoreTypes.Long);
                     cg.Builder.EmitOpCode(ILOpCode.And);
                     return cg.CoreTypes.Long;
-
-                case SpecialType.System_String:
-                    throw new NotImplementedException();    // string | string or string | long
 
                 default:
                     if (right.ResultType != null && right.ResultType.SpecialType != SpecialType.System_String)
@@ -556,6 +554,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Long;
             }
 
+            // TODO: IF cg.IsStringOnly(left.TypeRefMask) && cg.IsStringOnly(Right.TypeRefMask)
+
             //
             return EmitBitOr(cg, cg.Emit(left), right);
         }
@@ -576,9 +576,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.Builder.EmitOpCode(ILOpCode.Or);
                     return cg.CoreTypes.Long;
 
-                case SpecialType.System_String:
-                    throw new NotImplementedException();    // string | string or string | long
-
                 default:
                     if (right.ResultType != null && right.ResultType.SpecialType != SpecialType.System_String)
                     {
@@ -590,6 +587,55 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitConvert(xtype, 0, cg.CoreTypes.PhpValue);
                     cg.EmitConvert(right, cg.CoreTypes.PhpValue);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BitwiseOr_PhpValue_PhpValue)
+                        .Expect(cg.CoreTypes.PhpValue);
+            }
+        }
+
+        internal static TypeSymbol EmitBitXor(CodeGenerator cg, BoundExpression left, BoundExpression right)
+        {
+            // most common cases:
+            if (cg.IsLongOnly(left.TypeRefMask) || cg.IsLongOnly(right.TypeRefMask))
+            {
+                // i64 | i64 : i64
+                cg.EmitConvert(left, cg.CoreTypes.Long);
+                cg.EmitConvert(right, cg.CoreTypes.Long);
+                cg.Builder.EmitOpCode(ILOpCode.Xor);
+                return cg.CoreTypes.Long;
+            }
+
+             // TODO: IF cg.IsStringOnly(left.TypeRefMask) && cg.IsStringOnly(Right.TypeRefMask)
+
+            //
+            return EmitBitXor(cg, cg.Emit(left), right);
+        }
+
+        internal static TypeSymbol EmitBitXor(CodeGenerator cg, TypeSymbol xtype, BoundExpression right)
+        {
+            switch (xtype.SpecialType)
+            {
+                case SpecialType.System_Void:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Boolean:
+                case SpecialType.System_Double:
+                    cg.EmitConvert(xtype, 0, cg.CoreTypes.Long);
+                    goto case SpecialType.System_Int64;
+
+                case SpecialType.System_Int64:
+                    cg.EmitConvert(right, cg.CoreTypes.Long);
+                    cg.Builder.EmitOpCode(ILOpCode.Xor);
+                    return cg.CoreTypes.Long;
+
+                default:
+                    if (right.ResultType != null && right.ResultType.SpecialType != SpecialType.System_String)
+                    {
+                        // value | !string -> long | long -> long
+                        cg.EmitConvert(xtype, 0, cg.CoreTypes.Long);
+                        goto case SpecialType.System_Int64;
+                    }
+
+                    cg.EmitConvert(xtype, 0, cg.CoreTypes.PhpValue);
+                    cg.EmitConvert(right, cg.CoreTypes.PhpValue);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BitwiseXor_PhpValue_PhpValue)
                         .Expect(cg.CoreTypes.PhpValue);
             }
         }
@@ -2372,9 +2418,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.AssignAdd:
                     result_type = BoundBinaryEx.EmitAdd(cg, xtype, Value, target_place.TypeOpt);
                     break;
-                //case Operations.AssignAnd:
-                //    binaryop = Operations.And;
-                //    break;
                 case Operations.AssignAppend:
                     result_type = EmitAppend(cg, xtype, Value);
                     break;
@@ -2389,8 +2432,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.AssignMul:
                     result_type = BoundBinaryEx.EmitMul(cg, xtype, Value, target_place.TypeOpt);
                     break;
-                //case Operations.AssignOr:
-                //    binaryop = Operations.Or;
+                //case Operations.AssignAnd:
+                //    binaryop = Operations.And;
+                //    break;
+                case Operations.AssignOr:
+                    result_type = BoundBinaryEx.EmitBitOr(cg, xtype, Value);
+                    break;
+                //case Operations.AssignXor:
+                //    binaryop = Operations.Xor;
                 //    break;
                 case Operations.AssignPow:
                     result_type = BoundBinaryEx.EmitPow(cg, xtype, /*this.Target.TypeRefMask*/0, Value);
@@ -2404,9 +2453,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.AssignSub:
                     result_type = BoundBinaryEx.EmitSub(cg, xtype, Value, target_place.TypeOpt);
                     break;
-                //case Operations.AssignXor:
-                //    binaryop = Operations.Xor;
-                //    break;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(this.Operation);
             }

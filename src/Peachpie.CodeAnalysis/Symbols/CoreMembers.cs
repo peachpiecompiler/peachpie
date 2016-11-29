@@ -453,6 +453,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Div_double_PhpValue = ct.PhpNumber.Method(WellKnownMemberNames.DivisionOperatorName, ct.Double, ct.PhpValue);
                 BitwiseOr_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseOrOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseAnd_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseAndOperatorName, ct.PhpValue, ct.PhpValue);
+                BitwiseXor_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.ExclusiveOrOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseNot_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.OnesComplementOperatorName, ct.PhpValue);
             }
 
@@ -481,7 +482,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_PhpValue_bool,
 
                 Div_PhpValue_PhpValue, Div_long_PhpValue, Div_double_PhpValue,
-                BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseNot_PhpValue;
+                BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue;
         }
 
         public struct PhpValueHolder

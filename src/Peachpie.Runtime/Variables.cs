@@ -343,6 +343,22 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// In case given value contains a string (<see cref="string"/> or <see cref="PhpString"/>),
+        /// its string representation is returned.
+        /// Otherwise <c>null</c>.
+        /// </summary>
+        public static byte[] BytesOrNull(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String: return Encoding.UTF8.GetBytes(value.String);
+                case PhpTypeCode.WritableString: return value.WritableString.ToBytes(Encoding.UTF8);
+                case PhpTypeCode.Alias: return BytesOrNull(value.Alias.Value);
+                default: return null;
+            }
+        }
+
+        /// <summary>
         /// In case given value contains an array (<see cref="PhpArray"/>),
         /// it is returned. Otherwise <c>null</c>.
         /// </summary>

@@ -22,11 +22,11 @@ namespace Pchp.Core
         /// </summary>
         internal static PhpValue BitAnd(ref PhpValue x, ref PhpValue y)
         {
-            var xtype = x.TypeCode;
-            if (xtype == PhpTypeCode.String || xtype == PhpTypeCode.WritableString)
+            var bx = x.BytesOrNull();
+            if (bx != null)
             {
-                var ytype = y.TypeCode;
-                if (ytype == PhpTypeCode.String || ytype == PhpTypeCode.WritableString)
+                var by = y.BytesOrNull();
+                if (by != null)
                 {
                     throw new NotImplementedException();
                 }
@@ -41,11 +41,11 @@ namespace Pchp.Core
         /// </summary>
         internal static PhpValue BitOr(ref PhpValue x, ref PhpValue y)
         {
-            var xtype = x.TypeCode;
-            if (xtype == PhpTypeCode.String || xtype == PhpTypeCode.WritableString)
+            var bx = x.BytesOrNull();
+            if (bx != null)
             {
-                var ytype = y.TypeCode;
-                if (ytype == PhpTypeCode.String || ytype == PhpTypeCode.WritableString)
+                var by = y.BytesOrNull();
+                if (by != null)
                 {
                     throw new NotImplementedException();
                 }
@@ -53,6 +53,53 @@ namespace Pchp.Core
 
             //
             return PhpValue.Create(x.ToLong() | y.ToLong());
+        }
+
+        /// <summary>
+        /// Performs exclusive or operation.
+        /// </summary>
+        internal static PhpValue BitXor(ref PhpValue x, ref PhpValue y)
+        {
+            var bx = x.BytesOrNull();
+            if (bx != null)
+            {
+                var by = y.BytesOrNull();
+                if (by != null)
+                {
+                    return PhpValue.Create(new PhpString(BitXor(bx, by)));
+                }
+            }
+
+            //
+            return PhpValue.Create(x.ToLong() ^ y.ToLong());
+        }
+
+        static byte[] BitXor(byte[] bx, byte[] by)
+        {
+            int length = Math.Min(bx.Length, by.Length);
+            byte[] result = new byte[length];
+
+            return BitXor(result, bx, by);
+        }
+
+        /// <summary>
+        /// Performs specified binary operation on arrays of bytes.
+        /// </summary>
+        /// <param name="result">An array where to store the result. Data previously stored here will be overwritten.</param>
+        /// <param name="x">The first operand.</param>
+        /// <param name="y">The second operand</param>
+        /// <returns>The reference to the the <paramref name="result"/> array.</returns>
+        static byte[] BitXor(byte[]/*!*/ result, byte[]/*!*/ x, byte[]/*!*/ y)
+        {
+            Debug.Assert(result != null && x != null && y != null && result.Length <= x.Length && result.Length <= y.Length);
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = unchecked((byte)(x[i] ^ y[i]));
+            }
+
+            // remaining bytes are ignored //
+            return result;
         }
 
         /// <summary>
@@ -210,7 +257,7 @@ namespace Pchp.Core
         /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
         public static PhpValue GetItemValue(PhpValue value, IntStringKey key, bool quiet = false) => value.GetArrayItem(key, quiet);
-        
+
         /// <summary>
         /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
