@@ -83,7 +83,7 @@ namespace Pchp.Library
         /// <param name="quiet">Wheter to suppress warning message if argument is empty.</param>
         /// <param name="wrapper">If passed, it will contain valid StremWrapper to the given <paramref name="path"/>.</param>
         /// <returns>True if check passed.</returns>
-        static bool ResolvePath(Context ctx, ref string path, bool quiet, out StreamWrapper wrapper)
+        internal static bool ResolvePath(Context ctx, ref string path, bool quiet, out StreamWrapper wrapper)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -96,7 +96,7 @@ namespace Pchp.Library
             return PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileOrDirectory, quiet ? CheckAccessOptions.Quiet : CheckAccessOptions.Empty);
         }
 
-        static StatStruct ResolveStat(Context ctx, string path, bool quiet)
+        internal static StatStruct ResolveStat(Context ctx, string path, bool quiet)
         {
             StreamWrapper wrapper;
 
@@ -322,5 +322,460 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region Stat Values (file* functions)
+
+        /// <summary>
+        /// Gets file type.
+        /// </summary>
+        /// <remarks>
+        /// Returns the type of the file. Possible values are <c>fifo</c>, <c>char</c>, 
+        /// <c>dir</c>, <c>block</c>, <c>link</c>, <c>file</c>, and <c>unknown</c>. 
+        /// Returns <B>null</B> if an error occurs. 
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        [return: CastToFalse]
+        public static string filetype(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            if (stat.IsValid)
+            {
+                return null;
+            }
+
+            var mode = (FileModeFlags)stat.st_mode & FileModeFlags.FileTypeMask;
+
+            switch (mode)
+            {
+                case FileModeFlags.Directory:
+                    return "dir";
+
+                case FileModeFlags.File:
+                    return "file";
+
+                default:
+                    //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_file_type"));
+                    // TODO: Err unknown_file_type
+                    return "unknown";
+            }
+        }
+
+        /// <summary>
+        /// Returns the time the file was last accessed, or <c>false</c> in case 
+        /// of an error. The time is returned as a Unix timestamp.
+        /// </summary>
+        /// <remarks>
+        /// The results of this call are cached.
+        /// See <see cref="ClearStatCache"/> for more details.
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The file to be probed.</param>
+        /// <returns>The file access time or -1 in case of failure.</returns>
+        [return: CastToFalse]
+        public static int fileatime(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            return stat.IsValid ? (int)stat.st_atime : -1;
+        }
+
+        /// <summary>
+        /// Returns the time the file was created, or <c>false</c> in case 
+        /// of an error. The time is returned as a Unix timestamp.
+        /// </summary>
+        /// <remarks>
+        /// The results of this call are cached.
+        /// See <see cref="ClearStatCache"/> for more details.
+        /// <para>
+        /// On UNIX systems the <c>filectime</c> value represents 
+        /// the last change of the I-node.
+        /// </para>
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The file to be <c>stat()</c>ed.</param>
+        /// <returns>The file size or -1 in case of failure.</returns>
+        [return: CastToFalse]
+        public static int filectime(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            return stat.IsValid ? (int)stat.st_ctime : -1;
+        }
+
+        /// <summary>
+        /// Gets file group.
+        /// </summary>
+        /// <remarks>
+        /// Always returns <c>0</c> for Windows filesystem files.
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The file to be <c>stat()</c>ed.</param>
+        /// <returns>The file size or <c>false</c> in case of failure.</returns>
+        [return: CastToFalse]
+        public static int filegroup(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            return stat.IsValid ? (int)stat.st_gid : -1;
+        }
+
+        /// <summary>
+        /// Gets file inode.
+        /// </summary>
+        /// <remarks>
+        /// Always returns <c>0</c> for Windows filesystem files.
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The file to be <c>stat()</c>ed.</param>
+        /// <returns>The file size or <c>false</c> in case of failure.</returns>
+        [return: CastToFalse]
+        public static int fileinode(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            return stat.IsValid ? (int)stat.st_ino : -1;
+        }
+
+        /// <summary>
+        /// Returns the time the file was last modified, or <c>false</c> in case 
+        /// of an error. The time is returned as a Unix timestamp.
+        /// </summary>
+        /// <remarks>
+        /// The results of this call are cached.
+        /// See <see cref="ClearStatCache"/> for more details.
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The file to be <c>stat()</c>ed.</param>
+        /// <returns>The file modification time or <c>false</c> in case of failure.</returns>
+        [return: CastToFalse]
+        public static int filemtime(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            return stat.IsValid ? (int)stat.st_mtime : -1;
+        }
+
+        /// <summary>
+        /// Gets file owner.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The file to be <c>stat()</c>ed.</param>
+        /// <returns>The user ID of the owner of the file, or <c>false</c> in case of an error. </returns>
+        [return: CastToFalse]
+        public static int fileowner(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            return stat.IsValid ? (int)stat.st_uid : -1;
+        }
+
+        /// <summary>
+        /// Gets file permissions.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The file to be <c>stat()</c>ed.</param>
+        /// <returns>Returns the permissions on the file, or <c>false</c> in case of an error. </returns>
+        [return: CastToFalse]
+        public static int fileperms(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            return stat.IsValid ? (int)stat.st_mode : -1;
+        }
+
+        /// <summary>
+        /// Gets the file size.
+        /// </summary>
+        /// <remarks>
+        /// The results of this call are cached.
+        /// See <see cref="ClearStatCache"/> for more details.
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The file to be probed.</param>
+        /// <returns>The file size or false in case of failure.</returns>
+        [return: CastToFalse]
+        public static long filesize(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, false);
+            return stat.st_size;    // -1 on invalid stat
+
+            // return HandleFileSystemInfo<long>(-1, path, (p) => FileSystemUtils.FileSize(new FileInfo(p)));
+        }
+
+        #endregion
+
+        #region Stat Flags (is_* functions)
+        /// <summary>
+        /// Tells whether the path is a directory.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static bool is_dir(Context ctx, string path)
+        {
+            StreamWrapper wrapper;
+
+            if (!string.IsNullOrEmpty(path) && ResolvePath(ctx, ref path, false, out wrapper)) // do not throw warning if path is null or empty
+            {
+                //string url;
+                //if (StatInternalTryCache(path, out url))
+                //    return ((FileModeFlags)statCache.st_mode & FileModeFlags.Directory) != 0;
+
+                // we can't just call Directory.Exists since we have to throw warnings
+                // also we are not calling full stat(), it is slow
+                return HandleFileSystemInfo(false, path, (p) => new DirectoryInfo(p).Exists);
+            }
+
+            return false;
+
+            //bool ok = !string.IsNullOrEmpty(path) && StatInternal(path, false); // do not throw warning if path is null or empty
+            //if (!ok) return false;
+
+            //return ((FileModeFlags)statCache.st_mode & FileModeFlags.Directory) > 0;
+        }
+
+        /// <summary>
+        /// Tells whether the path is executable.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static bool is_executable(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, true);
+            return ((FileModeFlags)stat.st_mode & FileModeFlags.Execute) > 0;
+        }
+
+        /// <summary>
+        /// Tells whether the path is a regular file and if it exists.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static bool is_file(Context ctx, string path)
+        {
+            StreamWrapper wrapper;
+
+            if (ResolvePath(ctx, ref path, false, out wrapper))
+            {
+                //string url;
+                //if (StatInternalTryCache(path, out url))
+                //    return ((FileModeFlags)statCache.st_mode & FileModeFlags.File) != 0;
+
+                // we can't just call File.Exists since we have to throw warnings
+                // also we are not calling full stat(), it is slow
+                return HandleFileSystemInfo(false, path, (p) => new FileInfo(p).Exists);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Tells whether the path is a symbolic link.
+        /// </summary>
+        /// <remarks>
+        /// Returns always <c>false</c>.
+        /// </remarks>
+        /// <param name="path"></param>
+        /// <returns>Always <c>false</c></returns>
+        public static bool is_link(string path)
+        {
+            return false; // OK
+        }
+
+        /// <summary>
+        /// Tells whether the path is readable.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static bool is_readable(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, true);
+            return ((FileModeFlags)stat.st_mode & FileModeFlags.Read) > 0;
+        }
+
+        /// <summary>
+        /// Tells whether the path is writable.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The path argument may be a directory name allowing you to check if a directory is writeable. </param>
+        /// <returns>Returns TRUE if the path exists and is writable. </returns>
+        public static bool is_writeable(Context ctx, string path) => is_writable(ctx, path);
+
+        /// <summary>
+        /// Tells whether the path is writable.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The path argument may be a directory name allowing you to check if a directory is writeable. </param>
+        /// <returns>Returns TRUE if the path exists and is writable. </returns>
+        public static bool is_writable(Context ctx, string path)
+        {
+            var stat = ResolveStat(ctx, path, true);
+            return ((FileModeFlags)stat.st_mode & FileModeFlags.Write) > 0;
+        }
+
+        #endregion
+
     }
+
+    #region NS: Unix Functions
+
+    /// <summary>
+    /// Unix-specific PHP functions.
+    /// Not supported. Implementations may be empty.
+    /// </summary>
+    /// <threadsafety static="true"/>
+    public static class UnixFile
+    {
+        #region Owners, Mode (chgrp, chmod, chown, umask)
+
+        /// <summary>
+        /// Changes a group. Not supported.
+        /// </summary>
+        /// <param name="path">Path to the file to change group.</param>
+        /// <param name="group">A <see cref="string"/> or <see cref="int"/>
+        /// identifier of the target group.</param>
+        /// <returns>Always <B>false</B>.</returns>
+        public static bool chgrp(string path, object group)
+        {
+            throw new NotSupportedException();
+            //return false;
+        }
+
+        /// <summary>
+        /// Changes file permissions. 
+        /// </summary>
+        /// <remarks>
+        /// On Windows platform this function supports only the 
+        /// <c>_S_IREAD (0400)</c> and <c>_S_IWRITE (0200)</c>
+        /// options (set read / write permissions for the file owner).
+        /// Note that the constants are octal numbers.
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">Path to the file to change group.</param>
+        /// <param name="mode">New file permissions (see remarks).</param>
+        /// <returns><c>true</c> on success, <c>false</c> on failure.</returns>
+        public static bool chmod(Context ctx, string path, int mode)
+        {
+            StreamWrapper wrapper;
+            if (!PhpPath.ResolvePath(ctx, ref path, false, out wrapper))
+            {
+                return false;
+            }
+
+            bool isDir = PhpPath.is_dir(ctx, path);
+            FileSystemInfo fInfo = isDir
+                ? (FileSystemInfo)new DirectoryInfo(path)
+                : new FileInfo(path);
+
+            if (!fInfo.Exists)
+            {
+                //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_path", path));
+                // TODO: Err invalid_path
+                return false;
+            }
+
+            //Directories has no equivalent of a readonly flag,
+            //instead, their content permission should be adjusted accordingly
+            //[http://msdn.microsoft.com/en-us/library/system.security.accesscontrol.directorysecurity.aspx]
+            if (isDir)
+            {
+                return false;
+            }
+            else
+            {
+                // according to <io.h> and <chmod.c> from C libraries in Visual Studio 2008
+                // and PHP 5.3 source codes, which are using standard _chmod() function in C
+                // on Windows it only changes the ReadOnly flag of the file
+                //
+                // see <chmod.c> for more details
+                /*
+				#define _S_IREAD        0x0100          // read permission, owner
+				#define _S_IWRITE       0x0080          // write permission, owner
+				#define _S_IEXEC        0x0040          // execute/search permission, owner
+				*/
+
+                ((FileInfo)fInfo).IsReadOnly = ((mode & 0x0080) == 0);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Unix-specific function. Not supported.
+        /// </summary>
+        /// <param name="path">Path to the file to change owner.</param>
+        /// <param name="user">A <see cref="string"/> or <see cref="int"/>
+        /// identifier of the target group.</param>
+        /// <returns>Always <c>false</c>.</returns>
+        public static bool chown(string path, object user)
+        {
+            throw new NotSupportedException();
+            //return false;
+        }
+
+        /// <summary>
+        /// Unix-specific function. Not supported.
+        /// </summary>
+        /// <param name="mask"></param>
+        /// <returns></returns>
+        public static int umask(int mask = 0)
+        {
+            return 0;
+        }
+
+        #endregion
+
+        #region Links (link, symlink, readlink, linkinfo)
+
+        /// <summary>
+        /// Unix-specific function. Not supported.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="link"></param>
+        /// <returns></returns>
+        public static bool link(string target, string link)
+        {
+            // Creates a hard link.
+            throw new NotSupportedException();
+            //return false;
+        }
+
+        /// <summary>
+        /// Unix-specific function. Not supported.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="link"></param>
+        /// <returns></returns>
+        public static bool symlink(string target, string link)
+        {
+            // Creates a symbolic link.
+            throw new NotSupportedException();
+            //return false;
+        }
+
+        /// <summary>
+        /// Unix-specific function. Not supported.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static string readlink(string path)
+        {
+            // Returns the target of a symbolic link.
+            throw new NotSupportedException();
+            //return null;
+        }
+
+        /// <summary>
+        /// Unix-specific function. Not supported.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static int linkinfo(string path)
+        {
+            // Gets information about a link.
+            throw new NotSupportedException();
+            //return 0;
+        }
+
+        #endregion
+    }
+
+    #endregion
 }
