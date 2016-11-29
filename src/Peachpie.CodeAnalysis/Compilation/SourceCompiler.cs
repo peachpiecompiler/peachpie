@@ -181,11 +181,14 @@ namespace Pchp.CodeAnalysis
         void EmitMethodBody(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
-            Debug.Assert(routine.ControlFlowGraph != null);
-            Debug.Assert(routine.ControlFlowGraph.Start.FlowState != null);
 
-            var body = MethodGenerator.GenerateMethodBody(_moduleBuilder, routine, 0, null, _diagnostics, _emittingPdb);
-            _moduleBuilder.SetMethodBody(routine, body);
+            if (routine.ControlFlowGraph != null)   // non-abstract method
+            {
+                Debug.Assert(routine.ControlFlowGraph.Start.FlowState != null);
+
+                var body = MethodGenerator.GenerateMethodBody(_moduleBuilder, routine, 0, null, _diagnostics, _emittingPdb);
+                _moduleBuilder.SetMethodBody(routine, body);
+            }
         }
 
         void CompileEntryPoint(CancellationToken cancellationToken)

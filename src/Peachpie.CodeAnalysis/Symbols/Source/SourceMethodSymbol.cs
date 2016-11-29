@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override bool IsAbstract => _syntax.Modifiers.IsAbstract();
+        public override bool IsAbstract => _syntax.Modifiers.IsAbstract() || _type.IsInterface;
 
         public override bool IsOverride => this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
 

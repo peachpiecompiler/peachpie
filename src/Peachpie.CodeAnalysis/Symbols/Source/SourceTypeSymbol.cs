@@ -34,7 +34,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyContextField == null && !this.IsStatic)
+                if (_lazyContextField == null && !this.IsStatic && !this.IsInterface)
                 {
                     // resolve <ctx> field
                     _lazyContextField = (this.BaseType as IPhpTypeSymbol)?.ContextStore;
@@ -59,7 +59,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyRuntimeFieldsField == null && !this.IsStatic)
+                if (_lazyRuntimeFieldsField == null && !this.IsStatic && !this.IsInterface)
                 {
                     const string fldname = "<runtime_fields>";
 
@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Optional.
         /// A method <c>.phpnew</c> that ensures the initialization of the class without calling the base type constructor.
         /// </summary>
-        public MethodSymbol InitializeInstanceMethod => this.IsStatic ? null : (_lazyPhpNewMethod ?? (_lazyPhpNewMethod = new SynthesizedPhpNewMethodSymbol(this)));
+        public MethodSymbol InitializeInstanceMethod => (this.IsStatic || this.IsInterface) ? null : (_lazyPhpNewMethod ?? (_lazyPhpNewMethod = new SynthesizedPhpNewMethodSymbol(this)));
 
         /// <summary>
         /// Optional.
@@ -178,7 +178,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// <c>.ctor</c> synthesized method. Only if type is not static.
         /// </summary>
-        internal MethodSymbol PhpCtorMethodSymbol => this.IsStatic ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedPhpCtorSymbol(this)));
+        internal MethodSymbol PhpCtorMethodSymbol => (this.IsStatic || this.IsInterface) ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedPhpCtorSymbol(this)));
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
@@ -242,7 +242,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             throw new NotImplementedException();    // generics
                         }
                     }
-                    else
+                    else if (!IsStatic && !IsInterface)
                     {
                         _lazyBaseType = DeclaringCompilation.CoreTypes.Object.Symbol;
                     }
@@ -306,7 +306,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsInterface => (_syntax.MemberAttributes & PhpMemberAttributes.Interface) != 0;
 
-        public override bool IsAbstract => _syntax.MemberAttributes.IsAbstract();
+        public override bool IsAbstract => _syntax.MemberAttributes.IsAbstract() || IsInterface;
 
         public override bool IsSealed => _syntax.MemberAttributes.IsSealed();
 
