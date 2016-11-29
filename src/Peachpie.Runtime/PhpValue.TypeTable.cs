@@ -267,11 +267,11 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = new stdClass();   // empty class
-                
+
                 // me is changed if me.Boolean == FALSE
                 if (me.Boolean == false)
                     me = PhpValue.FromClass(obj);
-                
+
                 return obj;
             }
             public override IPhpArray EnsureArray(ref PhpValue me)
@@ -438,7 +438,7 @@ namespace Pchp.Core
             {
                 if (me.Object.Equals(right._obj.Obj)) return 0;
                 if (me.Object is IPhpComparable) return ((IPhpComparable)me.Object).Compare(right);
-                if (right._obj.Obj is IPhpComparable) return - ((IPhpComparable)right._obj.Obj).Compare(me);
+                if (right._obj.Obj is IPhpComparable) return -((IPhpComparable)right._obj.Obj).Compare(me);
 
                 throw new ArgumentException("incomparable_objects_compared_exception");
             }
@@ -450,16 +450,22 @@ namespace Pchp.Core
             }
             public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet)
             {
+                // IPhpArray[]
                 var arr = me.Object as IPhpArray;
                 if (arr != null)
                 {
                     return arr.GetItemValue(key);
                 }
-                else
+
+                // ArrayAccess.offsetGet()
+                var arracces = me.Object as ArrayAccess;
+                if (arracces != null)
                 {
-                    //var arr2 = me.Object as ArrayAccess;
-                    throw new NotImplementedException();
+                    return arracces.offsetGet(PhpValue.Create(key));
                 }
+
+                // TODO
+                throw new NotImplementedException();
             }
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet)
             {
@@ -479,7 +485,7 @@ namespace Pchp.Core
                 var obj = me.Object;
 
                 if (obj is IPhpCallable) return (IPhpCallable)obj;
-                
+
                 throw new NotImplementedException();    // return PhpCallback.Create(obj);
             }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
