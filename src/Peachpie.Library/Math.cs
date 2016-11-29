@@ -129,7 +129,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region rand, srand, getrandmax, uniqid, lcg_value
+        #region rand, srand, getrandmax, uniqid, lcg_value, random_int
 
         /// <summary>
         /// Gets <c>0</c> or <c>1</c> randomly.
@@ -254,6 +254,23 @@ namespace Pchp.Library
         public static double lcg_value()
         {
             return Generator.NextDouble();
+        }
+
+        /// <summary>
+        /// Generates cryptographically secure pseudo-random integers.
+        /// </summary>
+        /// <param name="min">The lowest value to be returned, which must be <see cref="Environment.PHP_INT_MIN"/> or higher.</param>
+        /// <param name="max">The highest value to be returned, which must be less than or equal to <see cref="Environment.PHP_INT_MAX"/>.</param>
+        /// <returns>Returns a cryptographically secure random integer in the range <paramref name="min"/> to <paramref name="max"/>, inclusive.</returns>
+        public static long random_int(long min, long max)
+        {
+            if (max < min)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+
+            // TODO: use mcrypt, int64
+            return rand((int)min, (int)max);
         }
 
         #endregion
