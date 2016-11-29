@@ -12,7 +12,7 @@ namespace Pchp.Library
     /// </summary>
     internal static class StandardPhpOptions
     {
-        public delegate PhpValue GetSetRestoreDelegate(IPhpConfigurationService config, string option, PhpValue value, IniAction action);
+        public delegate PhpValue GetSetDelegate(IPhpConfigurationService config, string option, PhpValue value, IniAction action);
 
         /// <summary>
         /// An action which can be performed on option.
@@ -21,6 +21,10 @@ namespace Pchp.Library
         {
             Set, Get
         }
+
+        public static bool IsGet(this IniAction action) => action == IniAction.Get;
+
+        public static bool IsSet(this IniAction action) => action == IniAction.Set;
 
         [Flags]
         public enum IniFlags : byte
@@ -51,10 +55,10 @@ namespace Pchp.Library
         public struct OptionDefinition
         {
             public readonly IniFlags Flags;
-            public readonly GetSetRestoreDelegate Gsr;
+            public readonly GetSetDelegate Gsr;
             public readonly string Extension;
 
-            internal OptionDefinition(IniFlags flags, GetSetRestoreDelegate gsr, string extension)
+            internal OptionDefinition(IniFlags flags, GetSetDelegate gsr, string extension)
             {
                 this.Flags = flags;
                 this.Gsr = gsr;
@@ -62,7 +66,7 @@ namespace Pchp.Library
             }
         }
 
-        static readonly GetSetRestoreDelegate EmptyGsr = new GetSetRestoreDelegate((s, name, value, action) => PhpValue.Null);
+        static readonly GetSetDelegate EmptyGsr = new GetSetDelegate((s, name, value, action) => PhpValue.Null);
 
         static Dictionary<string, OptionDefinition> _options = new Dictionary<string, OptionDefinition>(150, StringComparer.Ordinal);
 
@@ -187,7 +191,7 @@ namespace Pchp.Library
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is a <B>null</B> reference.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="gsr"/> is a <B>null</B> reference.</exception>
         /// <exception cref="ArgumentException">An option with specified name has already been registered.</exception>
-        public static void Register(string name, IniFlags flags, GetSetRestoreDelegate gsr, string extension = null)
+        public static void Register(string name, IniFlags flags, GetSetDelegate gsr, string extension = null)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (gsr == null) throw new ArgumentNullException(nameof(gsr));
