@@ -49,6 +49,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // IPhpCallable.Invoke
             EmitInvoke(EnsureInvokeMethod(module), module);
+            EmitToPhpValue(EnsureToPhpValueMethod(module), module);
 
             // .phpnew
             EmitPhpNew((SynthesizedPhpNewMethodSymbol)InitializeInstanceMethod, module);
@@ -103,6 +104,25 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.Builder.EmitLoadArgumentOpcode(2);
                 cg.EmitCall(ILOpCode.Call, call_t);
                 cg.EmitRet(invoke.ReturnType);
+
+            }, null, DiagnosticBag.GetInstance(), false));
+        }
+
+        void EmitToPhpValue(MethodSymbol tophpvalue, Emit.PEModuleBuilder module)
+        {
+            if (tophpvalue == null)
+            {
+                return;
+            }
+
+            module.SetMethodBody(tophpvalue, MethodGenerator.GenerateMethodBody(module, tophpvalue, il =>
+            {
+                var thisPlace = new ArgPlace(this, 0);
+                var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+
+                // return PhpValue.FromClass(this)
+                cg.EmitThis();
+                cg.EmitRet(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.FromClass_Object));
 
             }, null, DiagnosticBag.GetInstance(), false));
         }

@@ -98,7 +98,9 @@ namespace Pchp.CodeAnalysis.Symbols
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
         SynthesizedStaticFieldsHolder/*!*/_staticsContainer; // class __statics { ... }
+
         SynthesizedMethodSymbol _lazyInvokeSymbol; // IPhpCallable.Invoke(Context, PhpValue[]);
+        SynthesizedMethodSymbol _lazyToPhpValueSymbol; // IPhpCallable.ToPhpValue();
 
         /// <summary>
         /// Defined type members, methods, fields and constants.
@@ -211,6 +213,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (IsInvokable)
                 {
+                    // IPhpCallable.Invoke
                     _lazyInvokeSymbol = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue)
                     {
                         ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("Invoke").Single(),
@@ -221,9 +224,24 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     //
                     module.SynthesizedManager.AddMethod(this, _lazyInvokeSymbol);
+
+                    // IPhpInvokable.ToPhpValue
+                    _lazyToPhpValueSymbol = new SynthesizedMethodSymbol(this, "IPhpCallable.ToPhpValue", false, true, DeclaringCompilation.CoreTypes.PhpValue)
+                    {
+                        ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("ToPhpValue").Single(),
+                    };
+                    
+                    //
+                    module.SynthesizedManager.AddMethod(this, _lazyToPhpValueSymbol);
                 }
             }
             return _lazyInvokeSymbol;
+        }
+
+        internal SynthesizedMethodSymbol EnsureToPhpValueMethod(Emit.PEModuleBuilder module)
+        {
+            EnsureInvokeMethod(module);
+            return _lazyToPhpValueSymbol;
         }
 
         public override NamedTypeSymbol BaseType
