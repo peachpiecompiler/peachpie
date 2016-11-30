@@ -7,7 +7,7 @@ namespace Pchp.CodeAnalysis.Errors
 {
     internal enum ErrorCode
     {
-        ERR_BadCompilationOptionValue,
+        ERR_BadCompilationOptionValue = ParserErrors.MaxParserErrorId + 1,
         ERR_BadWin32Resource,
         ERR_BinaryFile,
         ERR_CantOpenFileWrite,
