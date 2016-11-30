@@ -64,10 +64,12 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public INamedTypeSymbol GetType(QualifiedName name)
         {
-            // std // TODO: table of types in PchpCor
-            if (name == NameUtils.SpecialNames.stdClass)
+            var clrName = name.ClrName();
+
+            // std
+            if (Core.std.StdTable.Types.Contains(clrName))
             {
-                return _compilation.PhpCorLibrary.GetTypeByMetadataName(name.ClrName());
+                return _compilation.PhpCorLibrary.GetTypeByMetadataName(clrName);
             }
 
             // TODO: reserved type names: self, parent, static
@@ -78,7 +80,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             {
                 if (!ass.IsPchpCorLibrary)
                 {
-                    var candidate = ass.GetTypeByMetadataName(name.ClrName());
+                    var candidate = ass.GetTypeByMetadataName(clrName);
                     if (candidate != null && !candidate.IsErrorType())
                     {
                         if (ass is PEAssemblySymbol && ((PEAssemblySymbol)ass).IsExtensionLibrary && candidate.IsStatic)
