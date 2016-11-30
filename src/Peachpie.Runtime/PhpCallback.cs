@@ -18,6 +18,11 @@ namespace Pchp.Core
         /// Invokes the object with given arguments.
         /// </summary>
         PhpValue Invoke(Context ctx, params PhpValue[] arguments);
+
+        /// <summary>
+        /// Gets PHP value representing the callback.
+        /// </summary>
+        PhpValue ToPhpValue();
     }
 
     /// <summary>
@@ -41,7 +46,7 @@ namespace Pchp.Core
     /// Callable object representing callback to a routine.
     /// Performs dynamic binding to actual method and provides <see cref="IPhpCallable"/> interface.
     /// </summary>
-    public abstract class PhpCallback : IPhpCallable
+    public abstract class PhpCallback : IPhpCallable, IEquatable<PhpCallback>
     {
         /// <summary>
         /// Resolved routine to be invoked.
@@ -52,6 +57,13 @@ namespace Pchp.Core
         /// Gets value indicating the callback is valid.
         /// </summary>
         public virtual bool IsValid => true;
+
+        /// <summary>
+        /// Gets value indicating this instance represents the same callback as <paramref name="other"/>.
+        /// </summary>
+        /// <param name="other">The other instance to compare with.</param>
+        /// <returns>Both callbacks represents the same routine.</returns>
+        public virtual bool Equals(PhpCallback other) => object.ReferenceEquals(_lazyResolved, other?._lazyResolved) && _lazyResolved != null;
 
         #region PhpCallbacks
 
@@ -68,6 +80,8 @@ namespace Pchp.Core
                 // cannot be reached
                 throw new InvalidOperationException();
             }
+
+            public override PhpValue ToPhpValue() => PhpValue.FromClass(_lazyResolved);
         }
 
         [DebuggerDisplay("{_function,nq}()")]
@@ -83,6 +97,8 @@ namespace Pchp.Core
                 _function = function;
             }
 
+            public override PhpValue ToPhpValue() => PhpValue.Create(_function);
+
             protected override PhpCallable BindCore(Context ctx) => ctx.GetDeclaredFunction(_function)?.PhpCallable;
 
             protected override PhpValue InvokeError(Context ctx, PhpValue[] arguments)
@@ -91,6 +107,9 @@ namespace Pchp.Core
                 // TODO: ctx.Error.CallToUndefinedFunction(_function)
                 return PhpValue.False;
             }
+
+            public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as FunctionCallback);
+            bool Equals(FunctionCallback other) => other != null && other._function == _function;
         }
 
         [DebuggerDisplay("{_class,nq}::{_method,nq}()")]
@@ -106,6 +125,8 @@ namespace Pchp.Core
                 _method = method;
             }
 
+            public override PhpValue ToPhpValue() => PhpValue.Create(new PhpArray(2) { (PhpValue)_class, (PhpValue)_method });
+
             protected override PhpCallable BindCore(Context ctx)
             {
                 for (var tinfo = ctx.GetDeclaredType(_class); tinfo != null; tinfo = tinfo.BaseType)
@@ -119,6 +140,9 @@ namespace Pchp.Core
 
                 return null;
             }
+
+            public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as MethodCallback);
+            bool Equals(MethodCallback other) => other != null && other._class == _class && other._method == _method;
         }
 
         [DebuggerDisplay("[{_item1,nq}, {_item2,nq}]()")]
@@ -133,6 +157,8 @@ namespace Pchp.Core
                 _item1 = item1;
                 _item2 = item2;
             }
+
+            public override PhpValue ToPhpValue() => PhpValue.Create(new PhpArray(2) { _item1, _item2 });
 
             protected override PhpCallable BindCore(Context ctx)
             {
@@ -160,6 +186,9 @@ namespace Pchp.Core
 
                 return null;
             }
+
+            public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as ArrayCallback);
+            bool Equals(ArrayCallback other) => other != null && other._item1 == _item1 && other._item2 == _item2;
         }
 
         [DebuggerDisplay("invalid callback")]
@@ -170,9 +199,13 @@ namespace Pchp.Core
 
             }
 
+            public override PhpValue ToPhpValue() => PhpValue.Null;
+
             protected override PhpCallable BindCore(Context ctx) => null;
 
             public override bool IsValid => false;
+
+            public override bool Equals(PhpCallback other) => object.ReferenceEquals(this, other);
         }
 
         #endregion
@@ -248,6 +281,12 @@ namespace Pchp.Core
         /// Invokes the callback with given arguments.
         /// </summary>
         public PhpValue Invoke(Context ctx, params PhpValue[] arguments) => Bind(ctx)(ctx, arguments);
+
+        /// <summary>
+        /// Gets value representing the calleback.
+        /// Used for human readable representation of the callback.
+        /// </summary>
+        public abstract PhpValue ToPhpValue();
 
         #endregion
     }
