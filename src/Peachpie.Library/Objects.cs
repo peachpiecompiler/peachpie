@@ -22,7 +22,7 @@ namespace Pchp.Library
             var info = ctx.GetDeclaredType(className);
             if (info == null && autoload)
             {
-                throw new NotImplementedException("autoload");
+                info = ctx.AutoloadService.AutoloadTypeByName(className);
             }
 
             //
@@ -42,7 +42,7 @@ namespace Pchp.Library
             var info = ctx.GetDeclaredType(ifaceName);
             if (info == null && autoload)
             {
-                throw new NotImplementedException("autoload");
+                info = ctx.AutoloadService.AutoloadTypeByName(ifaceName);
             }
 
             //
