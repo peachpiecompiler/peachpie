@@ -902,17 +902,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                     }
 
                                     var refvar = refexpr as BoundVariableRef;
-                                    if (refvar.Name.IsDirect)
+                                    if (refvar != null)
                                     {
-                                        State.SetVar(refvar.Name.NameValue.Value, expectedparams[i].Type);
-                                        if (ep.IsAlias)
+                                        if (refvar.Name.IsDirect)
                                         {
-                                            State.SetVarRef(refvar.Name.NameValue.Value);
+                                            State.SetVar(refvar.Name.NameValue.Value, expectedparams[i].Type);
+                                            if (ep.IsAlias)
+                                            {
+                                                State.SetVarRef(refvar.Name.NameValue.Value);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // TODO: indirect variable -> all may be aliases of any type
                                         }
                                     }
                                     else
                                     {
-                                        // TODO: indirect variable -> all may be aliases of any type
+                                        // fields, array items, ...
+                                        // TODO: remember the field will be accessed as reference
                                     }
                                 }
                                 else
