@@ -13,6 +13,7 @@ using Roslyn.Utilities;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Errors;
 using Devsense.PHP.Text;
+using Pchp.CodeAnalysis.Errors;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -147,8 +148,8 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             public void Error(Span span, ErrorInfo info, params string[] argsOpt)
             {
-                throw new Exception("Error: " + string.Format(info.FormatString, argsOpt));
-                // _diagnostics.Add(new DiagnosticInfo(null, info.Severity == ErrorSeverity.WarningAsError, info.Id, argsOpt)); // TODO: location, message provider
+                var errorType = ParserErrors.RegisterError(info);
+                _diagnostics.Add(errorType.CreateDiagnosticInfo(info.Severity == ErrorSeverity.WarningAsError, argsOpt));
             }
         }
 
