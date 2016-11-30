@@ -46,7 +46,7 @@ namespace Pchp.Core
     /// Callable object representing callback to a routine.
     /// Performs dynamic binding to actual method and provides <see cref="IPhpCallable"/> interface.
     /// </summary>
-    public abstract class PhpCallback : IPhpCallable, IEquatable<PhpCallback>
+    public abstract class PhpCallback : IPhpCallable
     {
         /// <summary>
         /// Resolved routine to be invoked.
@@ -63,7 +63,9 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="other">The other instance to compare with.</param>
         /// <returns>Both callbacks represents the same routine.</returns>
-        public virtual bool Equals(PhpCallback other) => object.ReferenceEquals(_lazyResolved, other?._lazyResolved) && _lazyResolved != null;
+        public virtual bool Equals(PhpCallback other) => other != null && object.ReferenceEquals(_lazyResolved, other?._lazyResolved) && _lazyResolved != null;
+        public override bool Equals(object obj) => Equals(obj as PhpCallback);
+        public override int GetHashCode() => this.GetType().GetHashCode();
 
         #region PhpCallbacks
 
