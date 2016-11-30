@@ -96,6 +96,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     // unknown something // ...                    
                 }
+                else if (tname[0] == '&')
+                {
+                    return GetTypeMask(typeCtx, tname.Substring(1), naming, fullyQualified).WithRefFlag;
+                }
                 else
                 {
                     var result = GetKnownTypeMask(typeCtx, tname);
