@@ -171,15 +171,24 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override DiagnosticSeverity GetSeverity(int code)
         {
-            var err = (ErrorCode)code;
-            if (err.ToString().StartsWith("WRN_"))
+            // TODO: Consider moving this logic to Errors class
+            if (ParserErrors.IsParserError(code))
             {
-                return DiagnosticSeverity.Warning;
+                return ParserErrors.GetError(code).Severity;
+            }
+            else
+            {
+                var err = (ErrorCode)code;
+                if (err.ToString().StartsWith("WRN_"))
+                {
+                    return DiagnosticSeverity.Warning;
+                }
+
+                // TODO: (ErrorCode)code severity
+
+                return DiagnosticSeverity.Error;
             }
 
-            // TODO: (ErrorCode)code severity
-
-            return DiagnosticSeverity.Error;
         }
 
         public override LocalizableString GetTitle(int code)
@@ -198,7 +207,8 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override string LoadMessage(int code, CultureInfo language)
         {
-            return ErrorStrings.ResourceManager.GetString(((ErrorCode)code).ToString(), language);
+            // TODO: language (if needed)
+            return Errors.GetAnyError(code).FormatString;
         }
 
         public override void ReportAttributeParameterRequired(DiagnosticBag diagnostics, SyntaxNode attributeSyntax, string parameterName)
