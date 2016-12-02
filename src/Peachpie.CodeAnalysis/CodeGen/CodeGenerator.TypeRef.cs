@@ -32,7 +32,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return tmask.IsSingleType && _routine.TypeRefContext.IsLong(tmask);
         }
-        
+
+        /// <summary>The given type represents only an integer, long or double.</summary>
+        internal bool IsNumberOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && !tmask.IsAnyType && _routine.TypeRefContext.GetTypes(tmask)
+                .All(x => x.TypeCode == Core.PhpTypeCode.Long || x.TypeCode == Core.PhpTypeCode.Int32 || x.TypeCode == Core.PhpTypeCode.Double);
+        }
+
         /// <summary>
         /// Gets value indicating the given type represents a long and nothing else.
         /// </summary>

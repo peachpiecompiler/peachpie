@@ -1117,6 +1117,60 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Mod
+
+        /// <summary>Gets remainder of two numbers.</summary>
+        public static long Mod(PhpValue x, PhpValue y)
+        {
+            PhpNumber nx, ny;
+            var info = x.ToNumber(out nx) | y.ToNumber(out ny);
+            if ((info & Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new ArgumentException();
+                // TODO: Err UnsupportedOperandTypes
+            }
+
+            return Mod(nx.ToLong(), ny.ToLong());
+        }
+
+        /// <summary>Gets remainder of two numbers.</summary>
+        public static long Mod(PhpValue x, long ly)
+        {
+            PhpNumber nx;
+            var info = x.ToNumber(out nx);
+            if ((info & Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new ArgumentException();
+                // TODO: Err UnsupportedOperandTypes
+            }
+
+            return Mod(nx.ToLong(), ly);
+        }
+
+        /// <summary>Gets remainder of two numbers.</summary>
+        public static long Mod(long lx, PhpValue y)
+        {
+            PhpNumber ny;
+            var info = y.ToNumber(out ny);
+            if ((info & Convert.NumberInfo.IsPhpArray) != 0)
+            {
+                throw new ArgumentException();
+                // TODO: Err UnsupportedOperandTypes
+            }
+
+            return Mod(lx, ny.ToLong());
+        }
+
+        /// <summary>Gets remainder of two numbers.</summary>
+        public static long Mod(long lx, long ly)
+        {
+            // TODO: Err check ly != 0 to report PHP warning
+
+            return lx % ly;
+        }
+
+        #endregion
+
         #endregion
 
         #region Construction

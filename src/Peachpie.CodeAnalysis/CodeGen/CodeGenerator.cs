@@ -43,7 +43,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             readonly ScopeType _type;
             readonly int _from, _to;
 
-            HashSet<BoundBlock> _blocks;
+            SortedSet<BoundBlock> _blocks;
 
             #endregion
 
@@ -82,7 +82,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (IsIn(block))
                 {
                     if (_blocks == null)
-                        _blocks = new HashSet<BoundBlock>();
+                    {
+                        _blocks = new SortedSet<BoundBlock>(BoundBlock.EmitOrderComparer.Instance);
+                    }
 
                     _blocks.Add(block);
                 }
@@ -139,8 +141,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (_blocks != null && _blocks.Count != 0)
                 {
-                    // TODO: "priority" queue to avoid branching
-
                     block = _blocks.First();
                     _blocks.Remove(block);
                 }
@@ -420,5 +420,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits IL into the underlaying <see cref="ILBuilder"/>.
         /// </summary>
         void Generate(CodeGenerator cg);
+    }
+
+    [DebuggerDisplay("Label {_name}")]
+    internal sealed class NamedLabel
+    {
+        readonly string _name;
+
+        public NamedLabel(string name) { _name = name; }
     }
 }

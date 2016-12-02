@@ -592,7 +592,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (from == CoreTypes.PhpValue)
             {
-                EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArray_PhpValue);        // TODO: ToArray(), not AsArray()
+                EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArray_PhpValue);
+            }
+            else if (from == CoreTypes.PhpAlias)
+            {
+                // <PhpAlias>.Value.ToArray()
+                this.Emit_PhpAlias_GetValueRef();
+                this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
             }
             else if (   // TODO: helper method for builtin types
                 from.SpecialType != SpecialType.None ||
