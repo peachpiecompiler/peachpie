@@ -76,23 +76,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.Mod:
-                    //Template: "x % y"        Operators.Remainder(x,y)
-
-                    //codeGenerator.EmitBoxing(node.LeftExpr.Emit(codeGenerator));
-                    //ro_typecode = node.RightExpr.Emit(codeGenerator);
-                    //switch (ro_typecode)
-                    //{
-                    //    case PhpTypeCode.Integer:
-                    //        returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Remainder.Object_Int32);
-                    //        break;
-
-                    //    default:
-                    //        codeGenerator.EmitBoxing(ro_typecode);
-                    //        returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.Remainder.Object_Object);
-                    //        break;
-                    //}
-                    //break;
-                    throw new NotImplementedException();
+                    // x % y
+                    returned_type = EmitRemainder(cg, Left, Right);
+                    break;
 
                 case Operations.ShiftLeft:
                     //Template: x << y : long
@@ -631,7 +617,56 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Expect(cg.CoreTypes.PhpValue);
             }
         }
-        
+
+        internal static TypeSymbol EmitRemainder(CodeGenerator cg, BoundExpression left, BoundExpression right)
+        {
+            return EmitRemainder(cg, cg.Emit(left), right);
+        }
+
+        internal static TypeSymbol EmitRemainder(CodeGenerator cg, TypeSymbol xtype, BoundExpression right)
+        {
+            switch (xtype.SpecialType)
+            {
+                case SpecialType.System_Int32:
+                case SpecialType.System_Double:
+                    cg.Builder.EmitOpCode(ILOpCode.Conv_i8);    // cast to long
+                    xtype = cg.CoreTypes.Long;
+                    goto case SpecialType.System_Int64;
+
+                case SpecialType.System_Int64:
+                    if (cg.IsNumberOnly(right.TypeRefMask))
+                    {
+                        // long & long
+                        cg.EmitConvert(right, cg.CoreTypes.Long);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Mod_long_long);
+                    }
+                    else
+                    {
+                        // long % value
+                        cg.EmitConvert(right, cg.CoreTypes.PhpValue);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Mod_long_value);
+                    }
+
+                default:
+
+                    cg.EmitConvert(xtype, 0, cg.CoreTypes.PhpValue);
+
+                    if (cg.IsNumberOnly(right.TypeRefMask))
+                    {
+                        // value % long
+                        cg.EmitConvert(right, cg.CoreTypes.Long);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Mod_value_long);
+                    }
+                    else
+                    {
+                        // value % value
+                        cg.EmitConvert(right, cg.CoreTypes.PhpValue);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Mod_value_value);
+                    }
+
+            }
+        }
+
         internal static TypeSymbol EmitShift(CodeGenerator cg, BoundExpression left, BoundExpression right, ILOpCode op)
         {
             Debug.Assert(op == ILOpCode.Shl || op == ILOpCode.Shr);

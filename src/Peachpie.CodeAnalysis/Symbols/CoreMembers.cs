@@ -669,6 +669,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 Pow_long_number = ct.PhpNumber.Method("Pow", ct.Long, ct.PhpNumber);
                 Pow_long_value = ct.PhpNumber.Method("Pow", ct.Long, ct.PhpValue);
 
+                Mod_value_value = ct.PhpNumber.Method("Mod", ct.PhpValue, ct.PhpValue);
+                Mod_value_long = ct.PhpNumber.Method("Mod", ct.PhpValue, ct.Long);
+                Mod_long_long = ct.PhpNumber.Method("Mod", ct.Long, ct.Long);
+                Mod_long_value = ct.PhpNumber.Method("Mod", ct.Long, ct.PhpValue);
+
                 gt_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.PhpNumber);
                 gt_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.Long);
                 gt_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.Double);
@@ -686,6 +691,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 get_Long, get_Double,
                 Mul_long_long, Mul_long_double, Mul_long_value, Mul_double_value, Mul_value_value, Mul_value_long, Mul_value_double,
                 Pow_long_long, Pow_long_double, Pow_long_number, Pow_long_value, Pow_double_double, Pow_double_value, Pow_number_double, Pow_number_number, Pow_number_value, Pow_value_value,
+                Mod_value_value, Mod_value_long, Mod_long_value, Mod_long_long,
                 Create_Long, Create_Double;
 
             public readonly CoreOperator
