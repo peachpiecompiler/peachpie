@@ -1294,7 +1294,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 _il.EmitBoolConstant((long)value != 0);
                                 return targetOpt;
                             case SpecialType.System_Int32:
-                                _il.EmitIntConstant((int)(long)value));
+                                _il.EmitIntConstant((int)(long)value);
                                 return targetOpt;
                             case SpecialType.System_String:
                                 _il.EmitStringConstant(value.ToString());
