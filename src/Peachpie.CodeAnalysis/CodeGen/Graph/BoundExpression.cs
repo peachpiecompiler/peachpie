@@ -95,22 +95,14 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw new NotImplementedException();
 
                 case Operations.ShiftLeft:
-
-                    //// LOAD Operators.ShiftLeft(box left, box right);
-                    //codeGenerator.EmitBoxing(node.LeftExpr.Emit(codeGenerator));
-                    //codeGenerator.EmitBoxing(node.RightExpr.Emit(codeGenerator));
-                    //returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.ShiftLeft);
-                    //break;
-                    throw new NotImplementedException();
-
+                    //Template: x << y : long
+                    returned_type = EmitShift(cg, Left, Right, ILOpCode.Shl);
+                    break;
+                    
                 case Operations.ShiftRight:
-
-                    //// LOAD Operators.ShiftRight(box left, box right);
-                    //codeGenerator.EmitBoxing(node.LeftExpr.Emit(codeGenerator));
-                    //codeGenerator.EmitBoxing(node.RightExpr.Emit(codeGenerator));
-                    //returned_typecode = codeGenerator.EmitMethodCall(Methods.Operators.ShiftRight);
-                    //break;
-                    throw new NotImplementedException();
+                    //Template: x >> y : long
+                    returned_type = EmitShift(cg, Left, Right, ILOpCode.Shr);
+                    break;
 
                 #endregion
 
@@ -638,6 +630,16 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BitwiseXor_PhpValue_PhpValue)
                         .Expect(cg.CoreTypes.PhpValue);
             }
+        }
+        
+        internal static TypeSymbol EmitShift(CodeGenerator cg, BoundExpression left, BoundExpression right, ILOpCode op)
+        {
+            Debug.Assert(op == ILOpCode.Shl || op == ILOpCode.Shr);
+            cg.EmitConvert(left, cg.CoreTypes.Long);
+            cg.EmitConvert(right, cg.CoreTypes.Int32);
+            cg.Builder.EmitOpCode(op);
+
+            return cg.CoreTypes.Long;
         }
 
         /// <summary>
