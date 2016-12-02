@@ -146,7 +146,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _binder = binder;
             _naming = naming;
 
-            this.Start = new StartBlock() { Naming = _naming };
+            this.Start = WithNewOrdinal(new StartBlock() { Naming = _naming });
             this.Exit = new ExitBlock();
 
             _current = WithOpenScope(this.Start);

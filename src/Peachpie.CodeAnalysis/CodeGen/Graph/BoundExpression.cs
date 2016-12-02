@@ -688,8 +688,8 @@ namespace Pchp.CodeAnalysis.Semantics
             var boolean = cg.CoreTypes.Boolean;  // typeof(bool)
 
             var il = cg.Builder;
-            var partial_eval_label = new object();
-            var end_label = new object();
+            var partial_eval_label = new NamedLabel("<partial_eval>" + this.GetHashCode().ToString("X"));
+            var end_label = new NamedLabel("<end>" + this.GetHashCode().ToString("X"));
 
             // IF [!]<(bool) Left> THEN GOTO partial_eval;
             cg.EmitConvert(Left, cg.CoreTypes.Boolean);

@@ -340,7 +340,20 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal void Generate()
         {
-            GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
+            // entire routine scope
+            _scope = new LocalScope(this, _scope, ScopeType.Variable, 0, int.MaxValue);
+
+            //
+            var cfg = _routine.ControlFlowGraph;
+
+            // code inside the routine
+            GenerateScope(cfg.Start, cfg.Exit.Ordinal);
+
+            // special exit block must be emitted at the very end
+            GenerateBlock(cfg.Exit);
+
+            //
+            _scope = _scope.Parent;
         }
 
         internal void GenerateScope(BoundBlock block, int to)
@@ -420,5 +433,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits IL into the underlaying <see cref="ILBuilder"/>.
         /// </summary>
         void Generate(CodeGenerator cg);
+    }
+
+    [DebuggerDisplay("Label {_name}")]
+    internal sealed class NamedLabel
+    {
+        readonly string _name;
+
+        public NamedLabel(string name) { _name = name; }
     }
 }

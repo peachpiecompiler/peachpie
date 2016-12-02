@@ -119,7 +119,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // lazy initialize
             if (_retlbl == null)
             {
-                _retlbl = new object();
+                _retlbl = new NamedLabel("<return>");
             }
 
             if (_rettmp == null)
