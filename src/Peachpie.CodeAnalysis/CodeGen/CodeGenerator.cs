@@ -43,7 +43,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             readonly ScopeType _type;
             readonly int _from, _to;
 
-            HashSet<BoundBlock> _blocks;
+            SortedSet<BoundBlock> _blocks;
 
             #endregion
 
@@ -82,7 +82,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (IsIn(block))
                 {
                     if (_blocks == null)
-                        _blocks = new HashSet<BoundBlock>();
+                    {
+                        _blocks = new SortedSet<BoundBlock>(BoundBlock.EmitOrderComparer.Instance);
+                    }
 
                     _blocks.Add(block);
                 }
@@ -139,8 +141,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (_blocks != null && _blocks.Count != 0)
                 {
-                    // TODO: "priority" queue to avoid branching
-
                     block = _blocks.First();
                     _blocks.Remove(block);
                 }
@@ -340,20 +340,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal void Generate()
         {
-            // entire routine scope
-            _scope = new LocalScope(this, _scope, ScopeType.Variable, 0, int.MaxValue);
-
-            //
-            var cfg = _routine.ControlFlowGraph;
-
-            // code inside the routine
-            GenerateScope(cfg.Start, cfg.Exit.Ordinal);
-
-            // special exit block must be emitted at the very end
-            GenerateBlock(cfg.Exit);
-
-            //
-            _scope = _scope.Parent;
+            GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
         }
 
         internal void GenerateScope(BoundBlock block, int to)

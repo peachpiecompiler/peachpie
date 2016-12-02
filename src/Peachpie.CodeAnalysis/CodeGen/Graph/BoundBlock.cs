@@ -26,6 +26,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         void IGenerator.Generate(CodeGenerator cg) => Emit(cg);
+
+        /// <summary>
+        /// Helper comparer defining order in which are blocks emitted if there is more than one in the queue.
+        /// Can be used for optimizing branches heuristically.
+        /// </summary>
+        internal sealed class EmitOrderComparer : IComparer<BoundBlock>
+        {
+            // TODO: blocks emit priority
+
+            public static readonly EmitOrderComparer Instance = new EmitOrderComparer();
+            private EmitOrderComparer() { }
+            public int Compare(BoundBlock x, BoundBlock y) => x.Ordinal - y.Ordinal;
+        }
     }
 
     partial class StartBlock
