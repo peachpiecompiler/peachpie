@@ -60,7 +60,7 @@ namespace Pchp.Core
         /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
         public object Create(string classname, params PhpValue[] arguments)
         {
-            var tinfo = _types.GetDeclaredType(classname);
+            var tinfo = this.GetDeclaredType(classname, true);
             if (tinfo != null)
             {
                 return tinfo.Creator(this, arguments);

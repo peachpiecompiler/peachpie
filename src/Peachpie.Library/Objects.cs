@@ -18,16 +18,7 @@ namespace Pchp.Library
 		/// <returns><B>true</B> if the class given by <paramref name="className"/> has been defined,
 		/// <B>false</B> otherwise.</returns>
 		public static bool class_exists(Context ctx, string className, bool autoload = true)
-        {
-            var info = ctx.GetDeclaredType(className);
-            if (info == null && autoload)
-            {
-                info = ctx.AutoloadService.AutoloadTypeByName(className);
-            }
-
-            //
-            return info != null;
-        }
+            => ctx.GetDeclaredType(className, autoload) != null;
 
         /// <summary>
 		/// Tests whether a given interface is defined.
@@ -39,13 +30,7 @@ namespace Pchp.Library
 		/// <B>false</B> otherwise.</returns>
 		public static bool interface_exists(Context ctx, string ifaceName, bool autoload = true)
         {
-            var info = ctx.GetDeclaredType(ifaceName);
-            if (info == null && autoload)
-            {
-                info = ctx.AutoloadService.AutoloadTypeByName(ifaceName);
-            }
-
-            //
+            var info = ctx.GetDeclaredType(ifaceName, autoload);
             return info != null && info.IsInterface;
         }
 

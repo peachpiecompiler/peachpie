@@ -845,7 +845,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
                 GetStatic_T = ct.Context.Method("GetStatic");
-                GetDeclaredType_string = ct.Context.Method("GetDeclaredType", ct.String);
+                GetDeclaredType_string_bool = ct.Context.Method("GetDeclaredType", ct.String, ct.Boolean);
 
                 // properties
                 Globals = ct.Context.Property("Globals");
@@ -867,7 +867,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptPath_TScript,
                 GetConstant_string_int32,
                 GetStatic_T,
-                GetDeclaredType_string,
+                GetDeclaredType_string_bool,
                 Dispose;
 
             public readonly CoreProperty
