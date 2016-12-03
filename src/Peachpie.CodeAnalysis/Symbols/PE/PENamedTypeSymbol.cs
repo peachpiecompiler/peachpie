@@ -799,6 +799,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal sealed override bool IsInterface => _flags.IsInterface();
 
+        public bool IsTrait => this.GetAttributes().Any(attr => attr.AttributeClass.Name == "PhpTraitAttribute");
+
         ImmutableArray<NamedTypeSymbol> MakeAcyclicInterfaces()
         {
             var declaredInterfaces = GetDeclaredInterfaces(null);

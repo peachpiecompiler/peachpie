@@ -17,6 +17,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         QualifiedName FullName { get; }
 
+        /// <summary>
+        /// Gets value indicating the class is declared as a trait.
+        /// </summary>
+        bool IsTrait { get; }
+
         #region Model
 
         /// <summary>

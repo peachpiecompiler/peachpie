@@ -108,6 +108,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         List<Symbol> _lazyMembers;
 
+        /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
+        BaseAttributeData _lazyPhpTraitAttribute;
+
         public SourceFileSymbol ContainingFile => _file;
 
         public SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
@@ -230,7 +233,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("ToPhpValue").Single(),
                     };
-                    
+
                     //
                     module.SynthesizedManager.AddMethod(this, _lazyToPhpValueSymbol);
                 }
@@ -324,6 +327,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsInterface => (_syntax.MemberAttributes & PhpMemberAttributes.Interface) != 0;
 
+        public bool IsTrait => (_syntax.MemberAttributes & PhpMemberAttributes.Trait) != 0;
+
         public override bool IsAbstract => _syntax.MemberAttributes.IsAbstract() || IsInterface;
 
         public override bool IsSealed => _syntax.MemberAttributes.IsSealed();
@@ -376,6 +381,26 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
             => GetTypeMembers().Where(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).AsImmutable();
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            if (this.IsTrait)
+            {
+                // [PhpTraitAttribute()]
+
+                if (_lazyPhpTraitAttribute == null)
+                {
+                    _lazyPhpTraitAttribute = new SynthesizedAttributeData(
+                        DeclaringCompilation.CoreMethods.Ctors.PhpTraitAttribute,
+                        ImmutableArray<TypedConstant>.Empty,
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                }
+
+                return ImmutableArray.Create<AttributeData>(_lazyPhpTraitAttribute);
+            }
+
+            return base.GetAttributes();
+        }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
