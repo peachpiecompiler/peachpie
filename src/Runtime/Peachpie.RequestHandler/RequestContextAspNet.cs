@@ -48,7 +48,7 @@ namespace Pchp.Core
 
         #endregion
 
-        public override IHttpPhpContext HttpContext => null; // TODO
+        public override IHttpPhpContext HttpPhpContext => null; // TODO
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -69,7 +69,7 @@ namespace Pchp.Core
             _httpctx = httpcontext;
 
             this.InitOutput(httpcontext.Response.OutputStream);
-            this.InitializeSuperglobals();
+            this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On
         }
@@ -77,7 +77,7 @@ namespace Pchp.Core
         /// <summary>
         /// Loads $_SERVER from <see cref="HttpRequest.ServerVariables"/>.
         /// </summary>
-        protected override PhpArray InitializeServerVariable()
+        protected override PhpArray InitServerVariable()
         {
             var array = new PhpArray(32);
 
