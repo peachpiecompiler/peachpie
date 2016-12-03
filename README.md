@@ -1,6 +1,6 @@
 <br>
 <p align="left">
-<img src="https://pbs.twimg.com/media/CoXRwvWUAAA7Wwq.png" width="250"/>
+<img src="http://www.peachpie.io/wp-content/uploads/2016/12/peachpie-round.png" width="400"/>
 </p>
 
 # Peachpie Compiler
