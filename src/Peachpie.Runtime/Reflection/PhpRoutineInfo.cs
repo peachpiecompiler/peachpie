@@ -42,6 +42,9 @@ namespace Pchp.Core.Reflection
         /// Gets methods representing the routine.
         /// </summary>
         public abstract MethodInfo[] Methods { get; }
+
+        /// <summary>Target instance when binding the methodinfo call.</summary>
+        internal virtual object Target => null;
         
         protected RoutineInfo(int index, string name)
         {
@@ -99,6 +102,8 @@ namespace Pchp.Core.Reflection
         PhpCallable _lazyDelegate;
 
         public override MethodInfo[] Methods => new[] { _delegate.GetMethodInfo() };
+
+        internal override object Target => _delegate.Target;
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
 

@@ -147,7 +147,7 @@ namespace Pchp.Core.Dynamic
 
             if (_name != null)
             {
-                return ResolveMethods(ctx, _name, _nameOpt, ref restrictions);
+                return ResolveMethods(ctx, ref target, _name, _nameOpt, ref restrictions);
             }
             else
             {
@@ -156,11 +156,11 @@ namespace Pchp.Core.Dynamic
                 var nameObj = args[0];
                 args.RemoveAt(0);
 
-                return ResolveMethods(ctx, nameObj.Expression, nameObj.Value, ref restrictions);
+                return ResolveMethods(ctx, ref target, nameObj.Expression, nameObj.Value, ref restrictions);
             }
         }
 
-        MethodBase[] ResolveMethods(DynamicMetaObject ctx, string name, string nameOpt, ref BindingRestrictions restrictions)
+        MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, string name, string nameOpt, ref BindingRestrictions restrictions)
         {
             var ctxInstance = (Context)ctx.Value;
             var routine = ctxInstance.GetDeclaredFunction(name) ?? ((nameOpt != null) ? ctxInstance.GetDeclaredFunction(nameOpt) : null);
@@ -187,11 +187,17 @@ namespace Pchp.Core.Dynamic
 
             // CLR routines persists across whole app, no restriction needed
 
+            var targetInstance = routine.Target;
+            if (targetInstance != null)
+            {
+                target = new DynamicMetaObject(Expression.Constant(targetInstance), BindingRestrictions.Empty, targetInstance);
+            }
+
             //
             return routine.Methods;
         }
 
-        MethodBase[] ResolveMethods(DynamicMetaObject ctx, Expression nameExpr, object nameObj, ref BindingRestrictions restrictions)
+        MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, Expression nameExpr, object nameObj, ref BindingRestrictions restrictions)
         {
             if (nameObj == null)
             {
@@ -209,7 +215,7 @@ namespace Pchp.Core.Dynamic
             {
                 // restriction: nameExpr == "name"
                 Combine(ref restrictions, BindingRestrictions.GetExpressionRestriction(Expression.Equal(nameExpr, Expression.Constant((string)nameObj))));   // TODO: ignore case
-                return ResolveMethods(ctx, (string)nameObj, null, ref restrictions);
+                return ResolveMethods(ctx, ref target, (string)nameObj, null, ref restrictions);
             }
 
             // array[2]
@@ -230,7 +236,7 @@ namespace Pchp.Core.Dynamic
                 {
                     // ((PhpValue)name).Object
                     var nameObjectExpr = Expression.Property(Expression.Convert(nameExpr, typeof(PhpValue)), "Object");
-                    return ResolveMethods(ctx, nameObjectExpr, value.Object, ref restrictions);
+                    return ResolveMethods(ctx, ref target, nameObjectExpr, value.Object, ref restrictions);
                 }
             }
 
