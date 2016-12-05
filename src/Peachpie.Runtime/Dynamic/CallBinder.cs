@@ -165,28 +165,29 @@ namespace Pchp.Core.Dynamic
             var ctxInstance = (Context)ctx.Value;
             var routine = ctxInstance.GetDeclaredFunction(name) ?? ((nameOpt != null) ? ctxInstance.GetDeclaredFunction(nameOpt) : null);
 
-            if (routine is Reflection.PhpRoutineInfo)
-            {
-                var phproutine = (Reflection.PhpRoutineInfo)routine;
-
-                // restriction: ctx.CheckFunctionDeclared(index, handle)
-                var checkExpr = Expression.Call(
-                    ctx.Expression,
-                    typeof(Context).GetMethod("CheckFunctionDeclared", typeof(int), typeof(RuntimeMethodHandle)),
-                    Expression.Constant(phproutine.Index), Expression.Constant(phproutine.Handle));
-
-                Combine(ref restrictions, BindingRestrictions.GetExpressionRestriction(checkExpr));
-
-                //
-                return new[] { MethodBase.GetMethodFromHandle(phproutine.Handle) };
-            }
-            else if (routine == null)
+            if (routine == null)
             {
                 return null;
             }
 
-            // CLR routines persists across whole app, no restriction needed
+            if (routine is PhpRoutineInfo || routine is DelegateRoutineInfo)
+            {
+                Debug.Assert(routine.Index != 0);
+            
+                // restriction: ctx.CheckFunctionDeclared(index, routine.GetHashCode())
+                var checkExpr = Expression.Call(
+                    ctx.Expression,
+                    typeof(Context).GetMethod("CheckFunctionDeclared", typeof(int), typeof(int)),
+                    Expression.Constant(routine.Index), Expression.Constant(routine.GetHashCode()));
 
+                Combine(ref restrictions, BindingRestrictions.GetExpressionRestriction(checkExpr));
+            }
+            else if (routine is ClrRoutineInfo)
+            {
+                // CLR routines persist across whole app, no restriction needed
+            }
+
+            // 
             var targetInstance = routine.Target;
             if (targetInstance != null)
             {

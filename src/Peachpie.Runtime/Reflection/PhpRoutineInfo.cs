@@ -43,9 +43,9 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public abstract MethodInfo[] Methods { get; }
 
-        /// <summary>Target instance when binding the methodinfo call.</summary>
+        /// <summary>Target instance when binding the MethodInfo call.</summary>
         internal virtual object Target => null;
-        
+
         protected RoutineInfo(int index, string name)
         {
             _index = index;
@@ -80,6 +80,8 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public RuntimeMethodHandle Handle => _handle;
 
+        public override int GetHashCode() => _handle.GetHashCode();
+
         public override MethodInfo[] Methods => new [] { (MethodInfo)MethodBase.GetMethodFromHandle(_handle) };
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
@@ -104,6 +106,8 @@ namespace Pchp.Core.Reflection
         public override MethodInfo[] Methods => new[] { _delegate.GetMethodInfo() };
 
         internal override object Target => _delegate.Target;
+
+        public override int GetHashCode() => _delegate.GetHashCode();
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
 
