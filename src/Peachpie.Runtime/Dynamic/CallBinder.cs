@@ -188,7 +188,7 @@ namespace Pchp.Core.Dynamic
             // CLR routines persists across whole app, no restriction needed
 
             //
-            return routine.Handles.Select(MethodBase.GetMethodFromHandle).ToArray();
+            return routine.Methods;
         }
 
         MethodBase[] ResolveMethods(DynamicMetaObject ctx, Expression nameExpr, object nameObj, ref BindingRestrictions restrictions)

@@ -39,30 +39,10 @@ namespace Pchp.Core.Reflection
         // TODO: PHPDoc
 
         /// <summary>
-        /// Gets routine runtime method handle.
-        /// Gets more handles in case of overloads.
-        /// </summary>
-        public abstract RuntimeMethodHandle[] Handles { get; }
-
-        /// <summary>
         /// Gets methods representing the routine.
-        /// See <see cref="Handles"/> for more details.
         /// </summary>
-        public virtual MethodInfo[] Methods
-        {
-            get
-            {
-                var handles = this.Handles;
-                var methods = new MethodInfo[handles.Length];
-                for (int i = 0; i < handles.Length; i ++)
-                {
-                    methods[i] = (MethodInfo)MethodBase.GetMethodFromHandle(handles[i]);
-                }
-                //
-                return methods;
-            }
-        }
-
+        public abstract MethodInfo[] Methods { get; }
+        
         protected RoutineInfo(int index, string name)
         {
             _index = index;
@@ -77,6 +57,14 @@ namespace Pchp.Core.Reflection
         /// <param name="handle">CLR method handle.</param>
         /// <returns>Instance of routine info with uninitialized slot index and unbound delegate.</returns>
         public static RoutineInfo CreateUserRoutine(string name, RuntimeMethodHandle handle) => new PhpRoutineInfo(name, handle);
+
+        /// <summary>
+        /// Creates user routine from a CLR delegate.
+        /// </summary>
+        /// <param name="name">PHP routine name.</param>
+        /// <param name="delegate">.NET delegate.</param>
+        /// <returns>Instance of routine info with uninitialized slot index and unbound delegate.</returns>
+        public static RoutineInfo CreateUserRoutine(string name, Delegate @delegate) => new DelegateRoutineInfo(name, @delegate);
     }
 
     internal class PhpRoutineInfo : RoutineInfo
@@ -89,7 +77,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public RuntimeMethodHandle Handle => _handle;
 
-        public override RuntimeMethodHandle[] Handles => new RuntimeMethodHandle[] { _handle };
+        public override MethodInfo[] Methods => new [] { (MethodInfo)MethodBase.GetMethodFromHandle(_handle) };
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
 
@@ -105,13 +93,52 @@ namespace Pchp.Core.Reflection
         }
     }
 
+    internal class DelegateRoutineInfo : RoutineInfo
+    {
+        Delegate _delegate;
+        PhpCallable _lazyDelegate;
+
+        public override MethodInfo[] Methods => new[] { _delegate.GetMethodInfo() };
+
+        public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
+
+        PhpCallable BindDelegate()
+        {
+            return (_delegate as PhpCallable) ?? Dynamic.BinderHelpers.BindToPhpCallable(_delegate.GetMethodInfo());
+        }
+
+        public DelegateRoutineInfo(string name, Delegate @delegate)
+            : base(0, name)
+        {
+            if (@delegate == null)
+            {
+                throw new ArgumentNullException(nameof(@delegate));
+            }
+
+            _delegate = @delegate;
+        }
+    }
+
     internal class ClrRoutineInfo : RoutineInfo
     {
         PhpCallable _lazyDelegate;
 
         RuntimeMethodHandle[] _handles;
 
-        public override RuntimeMethodHandle[] Handles => _handles;
+        public override MethodInfo[] Methods
+        {
+            get
+            {
+                var handles = _handles;
+                var methods = new MethodInfo[handles.Length];
+                for (int i = 0; i < handles.Length; i++)
+                {
+                    methods[i] = (MethodInfo)MethodBase.GetMethodFromHandle(handles[i]);
+                }
+                //
+                return methods;
+            }
+        }
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
@@ -157,14 +184,6 @@ namespace Pchp.Core.Reflection
             : base(index, name)
         {
             _methods = methods;
-        }
-
-        public override RuntimeMethodHandle[] Handles
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
         }
 
         internal PhpInvokable PhpInvokable => _lazyDelegate ?? BindDelegate();
