@@ -37,7 +37,7 @@ Peachpie is a modern PHP compiler based on Roslyn by Microsoft and drawing from 
 ## How to build or execute?
 This project is a work in progress. Please be aware that Peachpie is not complete and is therefore not intended to run full applications, but you are welcome to use it for your inspiration. You can run Peachpie in Visual Studio Code or on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to our [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) section. 
 
-You can use Peachpie in Visual Studio Code thanks to our [official extension](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode). Simply launch VS Code Quick Open (Ctrl+P), paste the following command, and press enter.`ext install peachpie-vscode` to install the Peachpie extension. Watch the intro video below to see how to work with the extension:
+You can use Peachpie in Visual Studio Code thanks to our [official extension](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode). Simply launch VS Code Quick Open (Ctrl+P), paste the following command, and press enter: `ext install peachpie-vscode`. Watch the intro video below to see how to work with the extension:
 
 <a href="https://youtu.be/hBiixbockK4
 " target="_blank"><img src="http://img.youtube.com/vi/hBiixbockK4/0.jpg" 
