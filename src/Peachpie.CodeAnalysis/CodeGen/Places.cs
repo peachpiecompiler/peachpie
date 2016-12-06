@@ -705,7 +705,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             var type = _place.TypeOpt;
 
-            if (_access.IsWriteRef)
+            if (_access.IsWriteRef || _access.IsUnset)
             {
                 // no need for preparation
                 _place.EmitStorePrepare(cg.Builder);
