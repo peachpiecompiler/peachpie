@@ -83,7 +83,7 @@ namespace Pchp.CodeAnalysis
 
         public override FileLinePositionSpan GetLineSpan(TextSpan span, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return new FileLinePositionSpan(_source.FilePath, _source.LinePosition(span.Start), _source.LinePosition(span.End));
         }
 
         public override Location GetLocation(TextSpan span)
@@ -93,7 +93,8 @@ namespace Pchp.CodeAnalysis
 
         public override FileLinePositionSpan GetMappedLineSpan(TextSpan span, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return new FileLinePositionSpan(_source.FilePath, _source.LinePosition(span.Start), _source.LinePosition(span.End));
+            // We do not use anything like C# #line directive in PHP
+            return GetLineSpan(span, cancellationToken);
         }
 
         public override SyntaxReference GetReference(SyntaxNode node)
