@@ -507,6 +507,7 @@ namespace Pchp.CodeAnalysis
                 case PhpTypeCode.WritableString: return CoreTypes.PhpString;
                 case PhpTypeCode.PhpArray: return CoreTypes.PhpArray;
                 case PhpTypeCode.Callable: return CoreTypes.PhpValue;   // array|object|string
+                case PhpTypeCode.Resource: return CoreTypes.PhpResource;
                 default:
                     throw new NotImplementedException();
             }

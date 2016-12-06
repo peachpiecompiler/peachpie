@@ -10,6 +10,13 @@ namespace Pchp.Core
     partial class Context
     {
         /// <summary>
+        /// Declare user function into the PHP runtime context.
+        /// </summary>
+        /// <param name="name">Global PHP function name.</param>
+        /// <param name="delegate">Delegate to represent the PHP function.</param>
+        public void DeclareFunction(string name, Delegate @delegate) => _functions.DeclarePhpRoutine(RoutineInfo.CreateUserRoutine(name, @delegate));
+
+        /// <summary>
         /// Call a function by its name dynamically.
         /// </summary>
         /// <param name="function">Function name valid within current runtime context.</param>
@@ -60,7 +67,7 @@ namespace Pchp.Core
         /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
         public object Create(string classname, params PhpValue[] arguments)
         {
-            var tinfo = _types.GetDeclaredType(classname);
+            var tinfo = this.GetDeclaredType(classname, true);
             if (tinfo != null)
             {
                 return tinfo.Creator(this, arguments);

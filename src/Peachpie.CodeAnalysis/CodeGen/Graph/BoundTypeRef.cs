@@ -59,10 +59,11 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                // CALL <ctx>.GetDeclaredType(<typename>)
+                // CALL <ctx>.GetDeclaredType(<typename>, autoload:true)
                 cg.EmitLoadContext();
                 this.EmitClassName(cg);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.GetDeclaredType_string);
+                cg.Builder.EmitBoolConstant(true);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.GetDeclaredType_string_bool);
             }
         }
 

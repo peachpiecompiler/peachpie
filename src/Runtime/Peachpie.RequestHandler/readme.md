@@ -7,6 +7,6 @@ The project exposes `System.Web.IHttpHandler` implementation that handles ASP.NE
   * Copy `Peachpie.RequestHandler.dll` (former `PchpRequestHandler.dll`) into *webroot\bin*;
   * Alter your `web.config` and insert following XML fragment into `<configuration><system.webServer>`:
 ```xml
-<add name="PhpHandler" path="*.php" verb="*" type="Pchp.Core.RequestHandler, Pchp.RequestHandler" preCondition="integratedMode" />
+<add name="PhpHandler" path="*.php" verb="*" type="Pchp.Core.RequestHandler, Peachpie.RequestHandler" preCondition="integratedMode" />
 ```
   * Deploy compiled PHP scripts to *webroot\bin*

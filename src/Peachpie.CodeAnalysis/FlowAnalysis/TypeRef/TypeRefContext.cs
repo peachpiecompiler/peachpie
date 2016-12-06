@@ -461,6 +461,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Gets type mask of a resource type.
+        /// </summary>
+        public TypeRefMask GetResourceTypeMask()
+        {
+            return GetPrimitiveTypeRefMask(TypeRefFactory.ResourceTypeRef);
+        }
+
+        /// <summary>
         /// Gets type mask of all callable types.
         /// </summary>
         public TypeRefMask GetCallableTypeMask()

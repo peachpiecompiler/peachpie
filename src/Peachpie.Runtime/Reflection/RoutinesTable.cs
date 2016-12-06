@@ -183,13 +183,11 @@ namespace Pchp.Core.Reflection
             return null;
         }
 
-        /// <summary>
-        /// Check PHP routine at <paramref name="index"/> is declared.
-        /// </summary>
-        internal bool IsDeclared(int index, RuntimeMethodHandle expected)
+        internal RoutineInfo GetDeclaredRoutine(int ctxslot)
         {
+            Debug.Assert(ctxslot >= 0);
             var routines = _contextRoutines;
-            return index <= routines.Length && ((PhpRoutineInfo)routines[index - 1])?.Handle == expected;
+            return ctxslot <= routines.Length ? routines[ctxslot] : null;
         }
 
         /// <summary>

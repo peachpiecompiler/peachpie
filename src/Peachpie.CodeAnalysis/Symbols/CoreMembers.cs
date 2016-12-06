@@ -808,6 +808,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IntStringKey_int = ct.IntStringKey.Ctor(ct.Int32);
                 IntStringKey_string = ct.IntStringKey.Ctor(ct.String);
                 ScriptAttribute_string = ct.ScriptAttribute.Ctor(ct.String);
+                PhpTraitAttribute = ct.PhpTraitAttribute.Ctor();
 
                 ScriptDiedException = ct.ScriptDiedException.Ctor();
                 ScriptDiedException_Long = ct.ScriptDiedException.Ctor(ct.Long);
@@ -819,7 +820,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpArray, PhpArray_int,
                 PhpString, PhpString_string, PhpString_string_string,
                 IntStringKey_int, IntStringKey_string,
-                ScriptAttribute_string,
+                ScriptAttribute_string, PhpTraitAttribute,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;
         }
 
@@ -845,7 +846,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
                 GetStatic_T = ct.Context.Method("GetStatic");
-                GetDeclaredType_string = ct.Context.Method("GetDeclaredType", ct.String);
+                GetDeclaredType_string_bool = ct.Context.Method("GetDeclaredType", ct.String, ct.Boolean);
 
                 // properties
                 Globals = ct.Context.Property("Globals");
@@ -867,7 +868,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptPath_TScript,
                 GetConstant_string_int32,
                 GetStatic_T,
-                GetDeclaredType_string,
+                GetDeclaredType_string_bool,
                 Dispose;
 
             public readonly CoreProperty

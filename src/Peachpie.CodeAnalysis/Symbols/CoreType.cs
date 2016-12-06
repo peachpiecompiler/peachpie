@@ -92,9 +92,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public const string PhpExtensionAttributeName = "Pchp.Core.PhpExtensionAttribute";
 
+        /// <summary>
+        /// Name of attribute class annotating trait declaration.
+        /// </summary>
+        public const string PhpTraitAttributeName = "Pchp.core.PhpTraitAttribute";
+
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison,
-            ScriptAttribute, ScriptDiedException,
+            ScriptAttribute, PhpTraitAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpTypeInfoExtension, PhpTypeInfo,
@@ -138,6 +143,7 @@ namespace Pchp.CodeAnalysis.Symbols
             StrictComparison = Create("StrictComparison");
             Convert = Create("Convert");
             ScriptAttribute = Create("ScriptAttribute");
+            PhpTraitAttribute = Create("PhpTraitAttribute");
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");

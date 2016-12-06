@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Pchp.Core</RootNamespace>
-    <AssemblyName>Pchp.RequestHandler</AssemblyName>
+    <AssemblyName>Peachpie.RequestHandler</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />

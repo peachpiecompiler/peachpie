@@ -64,4 +64,13 @@ namespace Pchp.Core
     {
 
     }
+
+    /// <summary>
+    /// Marks classes that are declared as trait.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public class PhpTraitAttribute : Attribute
+    {
+
+    }
 }
