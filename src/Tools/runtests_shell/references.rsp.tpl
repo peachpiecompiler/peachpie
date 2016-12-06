@@ -73,6 +73,6 @@ System.Threading.ThreadPool/4.0.10/ref/netstandard1.3/System.Threading.ThreadPoo
 System.Threading.Timer/4.0.1/ref/netstandard1.2/System.Threading.Timer.dll
 System.Xml.ReaderWriter/4.0.11/ref/netstandard1.3/System.Xml.ReaderWriter.dll
 System.Xml.XDocument/4.0.11/ref/netstandard1.3/System.Xml.XDocument.dll
-Peachpie.Library/0.4.1-dev/lib/netcoreapp1.0/Peachpie.Library.dll
-Peachpie.Library.MySql/0.4.1-dev/lib/netcoreapp1.0/Peachpie.Library.MySql.dll
-Peachpie.Runtime/0.4.1-dev/lib/netcoreapp1.0/Peachpie.Runtime.dll
+Peachpie.Library/0.4.0-dev/lib/netcoreapp1.0/Peachpie.Library.dll
+Peachpie.Library.MySql/0.4.0-dev/lib/netcoreapp1.0/Peachpie.Library.MySql.dll
+Peachpie.Runtime/0.4.0-dev/lib/netcoreapp1.0/Peachpie.Runtime.dll

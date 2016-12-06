@@ -1,5 +1,5 @@
 {
-  "version": "0.4.1-*",
+  "version": "0.4.0-*",
   "description": "Command line tool enabling 'php' project compilation.",
   "packOptions": {
     "tags": [
