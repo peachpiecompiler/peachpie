@@ -35,10 +35,12 @@ Peachpie is a modern PHP compiler based on Roslyn by Microsoft and drawing from 
 
 
 ## How to build or execute?
-This project is a work in progress. Please be aware that Peachpie is not complete and is therefore not intended to run full applications, but you are welcome to use it for your inspiration. You can run Peachpie in Visual Studio Code or on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to our [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) section. The video below shows how Peachpie can be integrated into Visual Studio Code:
+This project is a work in progress. Please be aware that Peachpie is not complete and is therefore not intended to run full applications, but you are welcome to use it for your inspiration. You can run Peachpie in Visual Studio Code or on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to our [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) section. 
 
-<a href="https://www.youtube.com/watch?v=ESLJtlQ_AxY
-" target="_blank"><img src="http://img.youtube.com/vi/ESLJtlQ_AxY/0.jpg" 
+You can use Peachpie in Visual Studio Code thanks to our [official extension](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode). Simply launch VS Code Quick Open (Ctrl+P), paste the following command, and press enter.`ext install peachpie-vscode` to install the Peachpie extension. Watch the intro video below to see how to work with the extension:
+
+<a href="https://youtu.be/hBiixbockK4
+" target="_blank"><img src="http://img.youtube.com/vi/hBiixbockK4/0.jpg" 
 alt="Peachpie Introduction" width="480" height="360" border="10" /></a>
 
 ## Status
