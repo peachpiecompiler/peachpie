@@ -14,6 +14,7 @@ using Devsense.PHP.Syntax;
 using Devsense.PHP.Errors;
 using Devsense.PHP.Text;
 using Pchp.CodeAnalysis.Errors;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -24,6 +25,8 @@ namespace Pchp.CodeAnalysis.CommandLine
     {
         internal const string ResponseFileName = "php.rsp";
 
+        private readonly DiagnosticFormatter _diagnosticFormatter = new DiagnosticFormatter();
+
         protected internal new PhpCommandLineArguments Arguments { get { return (PhpCommandLineArguments)base.Arguments; } }
 
         public PhpCompiler(CommandLineParser parser, string responseFile, string[] args, string clientDirectory, string baseDirectory, string sdkDirectory, string additionalReferenceDirectories, IAnalyzerAssemblyLoader analyzerLoader)
@@ -32,13 +35,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         }
 
-        public override DiagnosticFormatter DiagnosticFormatter
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override DiagnosticFormatter DiagnosticFormatter => _diagnosticFormatter;
 
         public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
         {
@@ -116,8 +113,16 @@ namespace Pchp.CodeAnalysis.CommandLine
             CommandLineSourceFile file,
             ErrorLogger errorLogger)
         {
-            var diagnostics = new List<DiagnosticInfo>();
-            var content = ReadFileContent(file, diagnostics);
+            var diagnosticInfos = new List<DiagnosticInfo>();
+            var content = ReadFileContent(file, diagnosticInfos);
+
+            if (diagnosticInfos.Count != 0)
+            {
+                ReportErrors(diagnosticInfos, consoleOutput, errorLogger);
+                hadErrors = true;
+            }
+
+            var diagnostics = new List<Diagnostic>();
             SourceUnit result = null;
 
             if (content != null)
@@ -132,24 +137,43 @@ namespace Pchp.CodeAnalysis.CommandLine
                 diagnostics.Clear();
             }
 
-            //
             return result;
         }
 
         class ErrorSink : IErrorSink<Span>
         {
-            readonly List<DiagnosticInfo> _diagnostics;
+            readonly List<Diagnostic> _diagnostics;
+            private SourceUnit _sourceUnit;
+            private SyntaxTree _lazySyntaxTree;
 
-            public ErrorSink(List<DiagnosticInfo> diagnostics)
+            public ErrorSink(List<Diagnostic> diagnostics, SourceUnit sourceUnit)
             {
                 Contract.ThrowIfNull(diagnostics);
                 _diagnostics = diagnostics;
+                _sourceUnit = sourceUnit;
+            }
+
+            private SyntaxTree LazySyntaxTree
+            {
+                get
+                {
+                    if (_lazySyntaxTree == null)
+                    {
+                        _lazySyntaxTree = new SyntaxTreeAdapter(_sourceUnit);
+                    }
+                    return _lazySyntaxTree;
+                }
             }
 
             public void Error(Span span, ErrorInfo info, params string[] argsOpt)
             {
-                var errorType = ParserErrors.RegisterError(info);
-                _diagnostics.Add(errorType.CreateDiagnosticInfo(info.Severity == ErrorSeverity.WarningAsError, argsOpt));
+                var location = new SourceLocation(
+                    LazySyntaxTree, 
+                    new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+                ParserMessageProvider.Instance.RegisterError(info);
+                var diagnostic = ParserMessageProvider.Instance.CreateDiagnostic(
+                    info.Severity == ErrorSeverity.WarningAsError, info.Id, location, argsOpt);
+                _diagnostics.Add(diagnostic);
             }
         }
 
@@ -159,14 +183,16 @@ namespace Pchp.CodeAnalysis.CommandLine
             PhpParseOptions scriptParseOptions,
             SourceText content,
             CommandLineSourceFile file,
-            List<DiagnosticInfo> diagnostics)
+            List<Diagnostic> diagnostics)
         {
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var tree = CodeSourceUnit.ParseCode(content.ToString(), file.Path, null, new ErrorSink(diagnostics));
-            
-            return tree;
+            var unit = new CodeSourceUnit(content.ToString(), file.Path, Encoding.UTF8);
+            var errorSink = new ErrorSink(diagnostics, unit);
+            unit.Parse(new BasicNodesFactory(unit), errorSink);
+
+            return unit;
         }
 
         public override void PrintHelp(TextWriter consoleOutput)
