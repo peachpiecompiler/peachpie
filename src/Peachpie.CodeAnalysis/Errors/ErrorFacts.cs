@@ -7,6 +7,9 @@ using System.Globalization;
 
 namespace Pchp.CodeAnalysis.Errors
 {
+    /// <summary>
+    /// Provides detailed information about compilation errors identified by <see cref="ErrorCode"/>.
+    /// </summary>
     internal static class ErrorFacts
     {
         public static DiagnosticSeverity GetSeverity(ErrorCode code)

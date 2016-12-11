@@ -9,6 +9,10 @@ using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Errors
 {
+    /// <summary>
+    /// Receives errors from PHP parser and transforms them into Roslyn diagnostics using
+    /// <see cref="ParserMessageProvider"/>.
+    /// </summary>
     internal class ErrorSink : IErrorSink<Span>
     {
         readonly List<Diagnostic> _diagnostics;

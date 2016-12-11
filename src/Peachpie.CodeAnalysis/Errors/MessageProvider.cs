@@ -9,6 +9,9 @@ using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Errors
 {
+    /// <summary>
+    /// A <see cref="CommonMessageProvider"/> implementation for compilation errors stored in <see cref="ErrorCode"/>.
+    /// </summary>
     internal class MessageProvider : CommonMessageProvider, IObjectWritable, IObjectReadable
     {
         public static readonly MessageProvider Instance = new MessageProvider();
