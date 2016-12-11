@@ -15,28 +15,6 @@ if ($framework -ne "netcoreapp1.0") {
 $projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.MySql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.Compiler.Tools")
 $suffix = "dev"
 
-# Distinguish between Windows and other OSs (variable $IsWindows is not present in Desktop version)
-$IsWindowsHlp = $true
-if ($PSEdition -eq "Core") {
-    # If running in Powershell Core, we might be on a different platform
-    $IsWindowsHlp = $IsWindows
-}
-
-# If later needed, launch nuget.exe either directly or under Mono
-$nugetCommand = $null
-$prependArgs = @()
-if ($IsWindowsHlp) {
-    $nugetCommand = "$rootDir/tools/nuget.exe"
-} else {
-    # Check if is Mono installed
-    if (Get-Command "mono" -ErrorAction SilentlyContinue) {
-        $nugetCommand = "mono"
-        $prependArgs.Add("$rootDir/tools/nuget.exe")
-    } else {
-        "Mono not found, packages will not be reinstalled"
-    }
-}
-
 # We suppose the global package source is in the default location 
 $packagesSource = (Resolve-Path "~/.nuget/packages").Path
 
@@ -44,8 +22,9 @@ $packagesSource = (Resolve-Path "~/.nuget/packages").Path
 foreach ($project in $projects) {
     dotnet pack --no-build -c $configuration -o "$rootDir/.nugs" --version-suffix $suffix "$rootDir/src/$project"
 
-    if ($nugetCommand) {
-        & $nugetCommand $prependArgs delete $project "$version-$suffix" -Source $packagesSource -Noninteractive
+    $installedFolder = "$packagesSource/$project/$version-$suffix"
+    if (Test-Path $installedFolder) {
+        Remove-Item -Recurse -Force $installedFolder
     }
 }
 

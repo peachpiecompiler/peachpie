@@ -7,11 +7,34 @@ using System.Globalization;
 
 namespace Pchp.CodeAnalysis.Errors
 {
+    /// <summary>
+    /// Provides detailed information about compilation errors identified by <see cref="ErrorCode"/>.
+    /// </summary>
     internal static class ErrorFacts
     {
         public static DiagnosticSeverity GetSeverity(ErrorCode code)
         {
-            return code.ToString().StartsWith("WRN_") ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error;
+            var name = code.ToString();
+            if (name.Length < 4)
+            {
+                throw new ArgumentException(nameof(code));
+            }
+
+            var prefix = name.Substring(0, 4);
+            switch (prefix)
+            {
+                case "FTL_":
+                case "ERR_":
+                    return DiagnosticSeverity.Error;
+                case "WRN_":
+                    return DiagnosticSeverity.Warning;
+                case "INF_":
+                    return DiagnosticSeverity.Info;
+                case "HDN_":
+                    return DiagnosticSeverity.Hidden;
+                default:
+                    throw new ArgumentException(nameof(code));
+            }
         }
 
         public static string GetFormatString(ErrorCode code)

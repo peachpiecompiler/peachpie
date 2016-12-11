@@ -5,6 +5,12 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Errors
 {
+    /// <summary>
+    /// A database of all possible diagnostics used by PHP compiler. The severity can be determined by the prefix:
+    /// "FTL_" stands for fatal error, "ERR_" for error, "WRN_" for warning, "INF_" for visible information and
+    /// "HDN_" for hidden information. Messages and other information are stored in the resources,
+    /// <see cref="ErrorFacts"/> contains the naming logic.
+    /// </summary>
     internal enum ErrorCode
     {
         ERR_BadCompilationOptionValue,
