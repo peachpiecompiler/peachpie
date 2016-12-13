@@ -277,7 +277,8 @@ namespace Pchp.Core
         /// <summary>
         /// Set of include paths to be used to resolve full file path.
         /// </summary>
-        public virtual string[] IncludePaths => null;   // TODO:  => this.Config.FileSystem.IncludePaths
+        public virtual string[] IncludePaths => _defaultIncludePaths;   // TODO:  => this.Config.FileSystem.IncludePaths
+        static readonly string[] _defaultIncludePaths = new[] { "." };
 
         /// <summary>
         /// Gets full script path in current context.
