@@ -68,7 +68,8 @@ namespace Peachpie.Web
         /// <summary>
         /// Application physical root directory including trailing slash.
         /// </summary>
-        public override string RootPath => System.IO.Directory.GetCurrentDirectory() + "\\";
+        public override string RootPath => _rootPath;
+        readonly string _rootPath;
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -82,6 +83,7 @@ namespace Peachpie.Web
             Debug.Assert(httpcontext != null);
 
             _httpctx = httpcontext;
+            _rootPath = System.IO.Directory.GetCurrentDirectory() + "\\";   // TODO: hostingEnvironment.ContentRootFileProvider
 
             this.InitOutput(httpcontext.Response.Body);
             this.InitSuperglobals();
