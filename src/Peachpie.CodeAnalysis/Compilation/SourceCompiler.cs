@@ -151,6 +151,24 @@ namespace Pchp.CodeAnalysis
             return new ExpressionAnalysis(_worklist, new GlobalSemantics(_compilation));
         }
 
+        internal void DiagnoseMethods(DiagnosticBag diagnostics)
+        {
+            this.WalkMethods(r => DiagnoseRoutine(r, diagnostics));
+        }
+
+        private void DiagnoseRoutine(SourceRoutineSymbol routine, DiagnosticBag diagnostics)
+        {
+            Contract.ThrowIfNull(routine);
+
+            if (routine.ControlFlowGraph != null)   // non-abstract method
+            {
+                // TODO: Reuse the semantic model somehow?
+                ISemanticModel semanticModel = new GlobalSemantics(_compilation);
+                var diagnosingVisitor = new DiagnosingVisitor(semanticModel, diagnostics);
+                diagnosingVisitor.VisitCFG(routine.ControlFlowGraph); 
+            }
+        }
+
         internal void EmitMethodBodies()
         {
             // source routines
@@ -237,6 +255,7 @@ namespace Pchp.CodeAnalysis
             //   c.type analysis(converge type - mask), resolve symbols
             //   d.lower semantics, update bound tree, repeat
             compiler.AnalyzeMethods();
+            compiler.DiagnoseMethods(diagnostics);
 
             // 3. Emit method bodies
             //   a. declared routines
