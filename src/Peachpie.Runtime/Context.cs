@@ -361,6 +361,50 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Shutdown
+
+        List<Action> _lazyShutdownCallbacks = null;
+
+        /// <summary>
+        /// Enqueues a callback to be invoked at the end of request.
+        /// </summary>
+        /// <param name="action">Callback. Cannot be <c>null</c>.</param>
+        public void RegisterShutdownCallback(Action action)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            var callbacks = _lazyShutdownCallbacks;
+            if (callbacks == null)
+            {
+                _lazyShutdownCallbacks = callbacks = new List<Action>(1);
+            }
+
+            callbacks.Add(action);
+        }
+
+        /// <summary>
+        /// Invokes callbacks in <see cref="_lazyShutdownCallbacks"/> and disposes the list.
+        /// </summary>
+        void ProcessShutdownCallbacks()
+        {
+            var callbacks = _lazyShutdownCallbacks;
+            if (callbacks != null)
+            {
+                for (int i = 0; i < callbacks.Count; i++)
+                {
+                    callbacks[i]();
+                }
+
+                //
+                _lazyShutdownCallbacks = callbacks = null;
+            }
+        }
+
+        #endregion
+
         #region IDisposable
 
         public virtual void Dispose()
@@ -369,7 +413,7 @@ namespace Pchp.Core
             {
                 try
                 {
-                    //this.GuardedCall<object, object>(this.ProcessShutdownCallbacks, null, false);
+                    ProcessShutdownCallbacks();
                     //this.GuardedCall<object, object>(this.FinalizePhpObjects, null, false);
                     FinalizeBufferedOutput();
 

@@ -147,9 +147,11 @@ namespace Pchp.Core
             bool Equals(MethodCallback other) => other != null && other._class == _class && other._method == _method;
         }
 
-        [DebuggerDisplay("[{_item1,nq}, {_item2,nq}]()")]
+        [DebuggerDisplay("{DebuggerDisplay,nq}")]
         sealed class ArrayCallback : PhpCallback
         {
+            string DebuggerDisplay => $"[{_item1.DisplayString}, {_item2.DisplayString}]()";
+
             readonly PhpValue _item1, _item2;
 
             // TODO: caller (to resolve accessibility)
