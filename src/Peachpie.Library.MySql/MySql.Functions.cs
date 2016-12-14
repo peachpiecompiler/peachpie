@@ -181,7 +181,7 @@ namespace Peachpie.Library.MySql
                 }
                 catch
                 {
-                    PhpException.Throw(PhpError.Notice, LibResources.GetString("invalid_port", port_or_socket));
+                   // PhpException.Throw(PhpError.Notice, LibResources.GetString("invalid_port", port_or_socket));
                 }
             }
         }
