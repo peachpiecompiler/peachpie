@@ -142,6 +142,10 @@ namespace Pchp.Core
         /// </summary>
         public RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
 
+        /// <summary>Gets enumeration of all functions declared within the context, including library and user functions.</summary>
+        /// <returns>Enumeration of all routines. Cannot be <c>null</c>.</returns>
+        public IEnumerable<RoutineInfo> GetDeclaredFunctions() => _functions.EnumerateRoutines();
+
         /// <summary>
         /// Declare a runtime user type.
         /// </summary>

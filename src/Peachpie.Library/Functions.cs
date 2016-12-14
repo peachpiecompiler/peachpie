@@ -60,7 +60,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region function_exists
+        #region function_exists, get_defined_functions
 
         /// <summary>
         /// Checks the list of defined functions, both built-in and user-defined.
@@ -69,6 +69,36 @@ namespace Pchp.Library
         public static bool function_exists(Context ctx, string name)
         {
             return ctx.GetDeclaredFunction(name) != null;
+        }
+
+        /// <summary>
+		/// Retrieves defined functions.
+		/// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+		/// <returns>
+		/// The <see cref="PhpArray"/> containing two entries with keys "internal" and "user".
+		/// The former's value is a <see cref="PhpArray"/> containing PHP library functions as values.
+		/// The latter's value is a <see cref="PhpArray"/> containing user defined functions as values.
+		/// Keys of both these arrays are integers starting from 0.
+		/// </returns>
+		/// <remarks>User functions which are declared conditionally and was not declared yet is considered as not existent.</remarks>
+		public static PhpArray get_defined_functions(Context ctx)
+        {
+            var result = new PhpArray(2);
+            var library = new PhpArray(500);
+            var user = new PhpArray();
+
+            foreach (var routine in ctx.GetDeclaredFunctions())
+            {
+                (routine.IsUserFunction ? user : library).AddValue((PhpValue)routine.Name);
+            }
+
+            //
+            result["internal"] = (PhpValue)library;
+            result["user"] = (PhpValue)user;
+
+            //
+            return result;
         }
 
         #endregion
