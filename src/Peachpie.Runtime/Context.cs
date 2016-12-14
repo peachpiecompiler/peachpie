@@ -362,7 +362,7 @@ namespace Pchp.Core
 
         #region IDisposable
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             //if (!disposed)
             {

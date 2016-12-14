@@ -40,6 +40,39 @@ namespace Pchp.Core.Utilities
         /// Filters a sequence of values that are not a <c>null</c> reference.
         /// </summary>
         public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T> e) where T : class => e.Where<T>(_not_null);
+
+        /// <summary>
+        /// Gets last element of the list.
+        /// </summary>
+        /// <returns>Last element or default of {T}.</returns>
+        public static T Last<T>(this IList<T> list) => list.Count != 0 ? list[list.Count - 1] : default(T);
+
+        /// <summary>
+        /// Gets last character of the string.
+        /// </summary>
+        /// <returns>Last character or <c>\0</c>.</returns>
+        public static char Last(this string str) => str.Length != 0 ? str[str.Length - 1] : '\0';
+
+        /// <summary>
+        /// Fast trim of a specified character.
+        /// </summary>
+        public static string Trim(string str, char ch)
+        {
+            if (!string.IsNullOrEmpty(str))
+            {
+                int i = 0;
+                int j = str.Length - 1;
+
+                //
+                while (i < str.Length && str[i] == ch) i++;
+                while (j > i && str[j] == ch) j--;
+
+                //
+                return i < j ? str.Substring(i, j - i + 1) : string.Empty;
+            }
+
+            return str;
+        }
     }
 
 }

@@ -55,11 +55,64 @@ namespace Peachpie.Web
 
         #endregion
 
+        #region Request Lifecycle
+
+        /// <summary>
+        /// The default document.
+        /// </summary>
+        const string DefaultDocument = "index.php";
+
         public static ScriptInfo ResolveScript(HttpRequest req)
         {
-            var path = req.Path.Value.Replace('/', '\\').Trim('\\');    // TODO: normalized form
-            return ScriptsMap.GetDeclaredScript(path);
+            var script = default(ScriptInfo);
+            var path = req.Path.Value;
+            var isfile = path.Last() != '/';
+
+            // trim slashes
+            path = ArrayUtils.Trim(path, '/');
+
+            if (isfile)
+            {
+                script = ScriptsMap.GetDeclaredScript(path);
+            }
+
+            if (!script.IsValid)
+            {
+                // path/defaultdocument
+                script = ScriptsMap.GetDeclaredScript(path + ('/' + DefaultDocument));
+            }
+
+            //
+            return script;
         }
+
+        /// <summary>
+        /// Performs the request lifecycle, invokes given entry script and cleanups the context.
+        /// </summary>
+        /// <param name="script">Entry script.</param>
+        public void ProcessScript(ScriptInfo script)
+        {
+            Debug.Assert(script.IsValid);
+
+            try
+            {
+                script.MainMethod(this, this.Globals, null);
+            }
+            catch (ScriptDiedException died)
+            {
+                died.ProcessStatus(this);
+            }
+        }
+
+        /// <summary>
+        /// Disposes request resources.
+        /// </summary>
+        public override void Dispose()
+        {
+            base.Dispose();
+        }
+
+        #endregion
 
         public override IHttpPhpContext HttpPhpContext => null;    // TODO
 
@@ -68,8 +121,8 @@ namespace Peachpie.Web
         /// <summary>
         /// Application physical root directory including trailing slash.
         /// </summary>
-        public override string RootPath => _rootPath;
-        readonly string _rootPath;
+        public override string RootPath => _contentRootPath;
+        readonly string _contentRootPath;
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -77,13 +130,15 @@ namespace Peachpie.Web
         /// </summary>
         readonly HttpContext _httpctx;
 
-        public RequestContextCore(HttpContext httpcontext)
-            : base()
+        public RequestContextCore(HttpContext httpcontext, string contentRootPath)
         {
             Debug.Assert(httpcontext != null);
+            Debug.Assert(contentRootPath != null);
+            Debug.Assert(contentRootPath.IndexOf('\\') == -1);
+            Debug.Assert(contentRootPath.Length != 0 && contentRootPath[contentRootPath.Length - 1] == '/');
 
             _httpctx = httpcontext;
-            _rootPath = System.IO.Directory.GetCurrentDirectory() + "\\";   // TODO: hostingEnvironment.ContentRootFileProvider
+            _contentRootPath = contentRootPath;
 
             this.InitOutput(httpcontext.Response.Body);
             this.InitSuperglobals();
@@ -137,7 +192,7 @@ namespace Peachpie.Web
             //    array["argv"] = PhpValue.Create(new PhpArray(1) { request.QueryString });
             //    array["argc"] = PhpValue.Create(0);
             //}
-            
+
             // additional variables defined in PHP manual:
             array["PHP_SELF"] = request.Path.HasValue ? (PhpValue)request.Path.Value : PhpValue.Null;
             array["DOCUMENT_ROOT"] = (PhpValue)RootPath;
