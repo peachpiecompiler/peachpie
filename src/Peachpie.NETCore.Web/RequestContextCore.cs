@@ -69,7 +69,7 @@ namespace Peachpie.Web
             var isfile = path.Last() != '/';
 
             // trim slashes
-            path = ArrayUtils.Trim(path, '/');
+            path = ScriptsMap.NormalizeSlashes(ArrayUtils.Trim(path, '/'));
 
             if (isfile)
             {
@@ -79,7 +79,8 @@ namespace Peachpie.Web
             if (!script.IsValid)
             {
                 // path/defaultdocument
-                script = ScriptsMap.GetDeclaredScript(path + ('/' + DefaultDocument));
+                path = (path.Length != 0) ? (path + ('/' + DefaultDocument)) : DefaultDocument;
+                script = ScriptsMap.GetDeclaredScript(path);
             }
 
             //
@@ -134,7 +135,7 @@ namespace Peachpie.Web
         {
             Debug.Assert(httpcontext != null);
             Debug.Assert(contentRootPath != null);
-            Debug.Assert(contentRootPath.IndexOf('\\') == -1);
+            Debug.Assert(contentRootPath == ScriptsMap.NormalizeSlashes(contentRootPath));
             Debug.Assert(contentRootPath.Length != 0 && contentRootPath[contentRootPath.Length - 1] == '/');
 
             _httpctx = httpcontext;

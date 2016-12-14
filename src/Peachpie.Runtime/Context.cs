@@ -223,7 +223,8 @@ namespace Pchp.Core
         {
             ScriptInfo script;
 
-            path = path.Replace('/', '\\'); // normalize slashes
+            path = ScriptsMap.NormalizeSlashes(path);
+
             if (path.StartsWith(this.RootPath, StringComparison.Ordinal)) // rooted
             {
                 script = _scripts.GetScript(path.Substring(this.RootPath.Length));
