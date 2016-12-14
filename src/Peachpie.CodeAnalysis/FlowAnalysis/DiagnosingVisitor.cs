@@ -49,14 +49,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (x.TargetMethod == null)
             {
-                var tree = new SyntaxTreeAdapter(x.PhpSyntax.ContainingSourceUnit);
-                var span = x.PhpSyntax.Span;
-                var location = new SourceLocation(tree, new TextSpan(span.Start, span.Length));
-                var diag = MessageProvider.Instance.CreateDiagnostic(
-                    ErrorCode.WRN_UndefinedFunctionCall,
-                    location,
-                    new object[] { x.Name.NameValue.ToString() });
-                _diagnostics.Add(diag);
+                _diagnostics.Add(x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
             }
         }
     }
