@@ -46,5 +46,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 base.VisitCFGBlockInternal(x); 
             }
         }
+
+        private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
+        {
+            if (x.TargetMethod == null)
+            {
+                var tree = new SyntaxTreeAdapter(x.PhpSyntax.ContainingSourceUnit);
+                var span = x.PhpSyntax.Span;
+                var location = new SourceLocation(tree, new TextSpan(span.Start, span.Length));
+                var diag = MessageProvider.Instance.CreateDiagnostic(
+                    ErrorCode.WRN_UndefinedFunctionCall,
+                    location,
+                    new object[] { x.Name.NameValue.ToString() });
+                _diagnostics.Add(diag);
+            }
+        }
     }
 }
