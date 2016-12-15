@@ -78,6 +78,7 @@ System.Security.Cryptography.Encoding/4.0.0/ref/netstandard1.3/System.Security.C
 System.Security.Cryptography.Primitives/4.0.0/ref/netstandard1.3/System.Security.Cryptography.Primitives.dll
 System.Security.Cryptography.X509Certificates/4.1.0/ref/netstandard1.4/System.Security.Cryptography.X509Certificates.dll
 System.Security.Principal/4.0.1/ref/netstandard1.0/System.Security.Principal.dll
+System.Security.Principal.Windows/4.0.0/ref/netstandard1.3/System.Security.Principal.Windows.dll
 System.Text.Encoding/4.0.11/ref/netstandard1.3/System.Text.Encoding.dll
 System.Text.Encoding.CodePages/4.0.1/ref/netstandard1.3/System.Text.Encoding.CodePages.dll
 System.Text.Encoding.Extensions/4.0.11/ref/netstandard1.3/System.Text.Encoding.Extensions.dll
