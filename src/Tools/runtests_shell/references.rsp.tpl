@@ -74,6 +74,7 @@ System.Runtime.Handles/4.0.1/ref/netstandard1.3/System.Runtime.Handles.dll
 System.Runtime.InteropServices/4.1.0/ref/netstandard1.5/System.Runtime.InteropServices.dll
 System.Runtime.InteropServices.RuntimeInformation/4.0.0/ref/netstandard1.1/System.Runtime.InteropServices.RuntimeInformation.dll
 System.Runtime.Numerics/4.0.1/ref/netstandard1.1/System.Runtime.Numerics.dll
+System.Runtime.Serialization.Primitives/4.1.1/ref/netstandard1.3/System.Runtime.Serialization.Primitives.dll
 System.Security.Cryptography.Algorithms/4.2.0/ref/netstandard1.6/System.Security.Cryptography.Algorithms.dll
 System.Security.Cryptography.Encoding/4.0.0/ref/netstandard1.3/System.Security.Cryptography.Encoding.dll
 System.Security.Cryptography.Primitives/4.0.0/ref/netstandard1.3/System.Security.Cryptography.Primitives.dll
