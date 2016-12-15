@@ -12,6 +12,7 @@ System.Collections.Immutable/1.2.0/lib/netstandard1.0/System.Collections.Immutab
 System.ComponentModel/4.0.1/ref/netstandard1.0/System.ComponentModel.dll
 System.ComponentModel.Annotations/4.1.0/ref/netstandard1.4/System.ComponentModel.Annotations.dll
 System.Console/4.0.0/ref/netstandard1.3/System.Console.dll
+System.Data.Common/4.1.0/ref/netstandard1.2/System.Data.Common.dll
 System.Diagnostics.Debug/4.0.11/ref/netstandard1.3/System.Diagnostics.Debug.dll
 System.Diagnostics.DiagnosticSource/4.0.0/lib/netstandard1.3/System.Diagnostics.DiagnosticSource.dll
 System.Diagnostics.Process/4.1.0/ref/netstandard1.4/System.Diagnostics.Process.dll
