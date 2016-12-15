@@ -67,5 +67,14 @@ namespace Pchp.CodeAnalysis.Errors {
                 return ResourceManager.GetString("ERR_MetadataFileNotFound", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Calling undefined function &apos;{0}&apos;.
+        /// </summary>
+        public static string WRN_UndefinedFunctionCall {
+            get {
+                return ResourceManager.GetString("WRN_UndefinedFunctionCall", resourceCulture);
+            }
+        }
     }
 }

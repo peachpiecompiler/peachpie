@@ -134,9 +134,13 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override Diagnostic CreateDiagnostic(int code, Location location, params object[] args)
         {
-            throw new NotImplementedException();
+            var info = new DiagnosticInfo(this, code, args);
+            return new DiagnosticWithInfo(info, location);
         }
 
+        public Diagnostic CreateDiagnostic(ErrorCode code, Location location, params object[] args) =>
+            CreateDiagnostic((int)code, location, args);
+        
         public override string GetCategory(int code)
         {
             //throw new NotImplementedException();

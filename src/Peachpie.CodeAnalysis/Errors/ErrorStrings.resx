@@ -117,7 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
- <data name="ERR_MetadataFileNotFound" xml:space="preserve">
+  <data name="ERR_MetadataFileNotFound" xml:space="preserve">
     <value>Metadata file '{0}' could not be found</value>
+  </data>
+  <data name="WRN_UndefinedFunctionCall" xml:space="preserve">
+    <value>Calling undefined function '{0}'</value>
   </data>
 </root>

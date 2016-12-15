@@ -151,6 +151,22 @@ namespace Pchp.CodeAnalysis
             return new ExpressionAnalysis(_worklist, new GlobalSemantics(_compilation));
         }
 
+        internal void DiagnoseMethods()
+        {
+            this.WalkMethods(DiagnoseRoutine);
+        }
+
+        private void DiagnoseRoutine(SourceRoutineSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+
+            if (routine.ControlFlowGraph != null)   // non-abstract method
+            {
+                var diagnosingVisitor = new DiagnosingVisitor(_diagnostics);
+                diagnosingVisitor.VisitCFG(routine.ControlFlowGraph); 
+            }
+        }
+
         internal void EmitMethodBodies()
         {
             // source routines
@@ -237,6 +253,7 @@ namespace Pchp.CodeAnalysis
             //   c.type analysis(converge type - mask), resolve symbols
             //   d.lower semantics, update bound tree, repeat
             compiler.AnalyzeMethods();
+            compiler.DiagnoseMethods();
 
             // 3. Emit method bodies
             //   a. declared routines
