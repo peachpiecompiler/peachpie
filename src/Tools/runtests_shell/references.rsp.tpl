@@ -30,6 +30,7 @@ System.Diagnostics.DiagnosticSource/4.0.0/lib/netstandard1.3/System.Diagnostics.
 System.Diagnostics.Process/4.1.0/ref/netstandard1.4/System.Diagnostics.Process.dll
 System.Diagnostics.TextWriterTraceListener/4.0.0/ref/netstandard1.3/System.Diagnostics.TextWriterTraceListener.dll
 System.Diagnostics.Tools/4.0.1/ref/netstandard1.0/System.Diagnostics.Tools.dll
+System.Diagnostics.TraceSource/4.0.0/ref/netstandard1.3/System.Diagnostics.TraceSource.dll
 System.Diagnostics.Tracing/4.1.0/ref/netstandard1.5/System.Diagnostics.Tracing.dll
 System.Dynamic.Runtime/4.0.11/ref/netstandard1.3/System.Dynamic.Runtime.dll
 System.Globalization/4.0.11/ref/netstandard1.3/System.Globalization.dll
