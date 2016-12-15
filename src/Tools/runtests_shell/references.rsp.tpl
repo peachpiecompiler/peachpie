@@ -1,6 +1,7 @@
 Microsoft.CSharp/4.0.1/ref/netstandard1.0/Microsoft.CSharp.dll
 Microsoft.VisualBasic/10.0.1/ref/netstandard1.1/Microsoft.VisualBasic.dll
 Microsoft.Win32.Primitives/4.0.1/ref/netstandard1.3/Microsoft.Win32.Primitives.dll
+MySql.Data/7.0.6-ir31/lib/netstandard1.6/MySql.Data.dll
 System.AppContext/4.1.0/ref/netstandard1.6/System.AppContext.dll
 System.Buffers/4.0.0/lib/netstandard1.1/System.Buffers.dll
 System.Collections/4.0.11/ref/netstandard1.3/System.Collections.dll
