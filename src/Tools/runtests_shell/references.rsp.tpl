@@ -1,5 +1,12 @@
 Microsoft.CSharp/4.0.1/ref/netstandard1.0/Microsoft.CSharp.dll
+Microsoft.Extensions.Configuration/1.0.0/lib/netstandard1.1/Microsoft.Extensions.Configuration.dll
+Microsoft.Extensions.Configuration.Abstractions/1.0.0/lib/netstandard1.0/Microsoft.Extensions.Configuration.Abstractions.dll
+Microsoft.Extensions.Configuration.FileExtensions/1.0.0/lib/netstandard1.3/Microsoft.Extensions.Configuration.FileExtensions.dll
 Microsoft.Extensions.Configuration.Json/1.0.0/lib/netstandard1.3/Microsoft.Extensions.Configuration.Json.dll
+Microsoft.Extensions.FileProviders.Abstractions/1.0.0/lib/netstandard1.0/Microsoft.Extensions.FileProviders.Abstractions.dll
+Microsoft.Extensions.FileProviders.Physical/1.0.0/lib/netstandard1.3/Microsoft.Extensions.FileProviders.Physical.dll
+Microsoft.Extensions.FileSystemGlobbing/1.0.0/lib/netstandard1.3/Microsoft.Extensions.FileSystemGlobbing.dll
+Microsoft.Extensions.Primitives/1.0.0/lib/netstandard1.0/Microsoft.Extensions.Primitives.dll
 Microsoft.VisualBasic/10.0.1/ref/netstandard1.1/Microsoft.VisualBasic.dll
 Microsoft.Win32.Primitives/4.0.1/ref/netstandard1.3/Microsoft.Win32.Primitives.dll
 Google.Protobuf/3.0.0/lib/netstandard1.0/Google.Protobuf.dll
