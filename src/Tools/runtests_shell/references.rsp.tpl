@@ -7,7 +7,7 @@ System.AppContext/4.1.0/ref/netstandard1.6/System.AppContext.dll
 System.Buffers/4.0.0/lib/netstandard1.1/System.Buffers.dll
 System.Collections/4.0.11/ref/netstandard1.3/System.Collections.dll
 System.Collections.Concurrent/4.0.12/ref/netstandard1.3/System.Collections.Concurrent.dll
-System.Collections.NonGeneric/4.0.1/ref\netstandard1.3/System.Collections.NonGeneric.dll
+System.Collections.NonGeneric/4.0.1/ref/netstandard1.3/System.Collections.NonGeneric.dll
 System.Collections.Immutable/1.2.0/lib/netstandard1.0/System.Collections.Immutable.dll
 System.ComponentModel/4.0.1/ref/netstandard1.0/System.ComponentModel.dll
 System.ComponentModel.Annotations/4.1.0/ref/netstandard1.4/System.ComponentModel.Annotations.dll
