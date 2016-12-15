@@ -74,13 +74,28 @@ namespace Peachpie.Library.MySql
 
         #endregion
 
+        static MySql()
+        {
+            Context.RegisterConfiguration(new MySqlConfiguration());
+            // TODO: StandardPhpOptions.Register
+        }
+
         /// <summary>
         /// Closes the non-persistent connection to the MySQL server that's associated with the specified link identifier.
         /// If link_identifier isn't specified, the last opened link is used.
         /// </summary>
         public static bool mysql_close(PhpResource link_identifier = null)
         {
-            return false;
+            var connection = (link_identifier ?? null/*TODO: last_connection*/) as MySqlConnectionResource;
+            if (connection != null)
+            {
+                connection.Dispose();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         #region mysql_connect

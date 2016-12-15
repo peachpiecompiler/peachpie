@@ -8,12 +8,6 @@ namespace Peachpie.Library.MySql
 {
     class MySqlConfiguration : IPhpConfiguration
     {
-        static MySqlConfiguration()
-        {
-            Context.RegisterConfiguration(new MySqlConfiguration());
-            // TODO: StandardPhpOptions.Register
-        }
-
         IPhpConfiguration IPhpConfiguration.Copy() => (MySqlConfiguration)this.MemberwiseClone();
 
         public int ConnectTimeout { get; set; } = 0;
