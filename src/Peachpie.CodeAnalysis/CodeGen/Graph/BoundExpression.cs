@@ -2383,8 +2383,14 @@ namespace Pchp.CodeAnalysis.Semantics
             target_place.EmitStorePrepare(cg);
 
             // TODO: load value & dereference eventually
-            if (t_value != null) cg.EmitConvert(this.Value, t_value);   // TODO: do not convert here yet
-            else t_value = cg.Emit(this.Value);
+            if (t_value != null && !this.Value.Access.IsReadRef)
+            {
+                cg.EmitConvert(this.Value, t_value);   // TODO: do not convert here yet
+            }
+            else
+            {
+                t_value = cg.Emit(this.Value);
+            }
 
             switch (this.Access.Flags)
             {
