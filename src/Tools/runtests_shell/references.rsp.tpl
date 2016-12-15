@@ -1,4 +1,5 @@
 Microsoft.CSharp/4.0.1/ref/netstandard1.0/Microsoft.CSharp.dll
+Microsoft.Extensions.Configuration.Json/1.0.0/lib/netstandard1.3/Microsoft.Extensions.Configuration.Json.dll
 Microsoft.VisualBasic/10.0.1/ref/netstandard1.1/Microsoft.VisualBasic.dll
 Microsoft.Win32.Primitives/4.0.1/ref/netstandard1.3/Microsoft.Win32.Primitives.dll
 Google.Protobuf/3.0.0/lib/netstandard1.0/Google.Protobuf.dll
@@ -11,11 +12,15 @@ System.Collections.NonGeneric/4.0.1/ref/netstandard1.3/System.Collections.NonGen
 System.Collections.Immutable/1.2.0/lib/netstandard1.0/System.Collections.Immutable.dll
 System.ComponentModel/4.0.1/ref/netstandard1.0/System.ComponentModel.dll
 System.ComponentModel.Annotations/4.1.0/ref/netstandard1.4/System.ComponentModel.Annotations.dll
+System.ComponentModel.Primitives/4.1.0/ref/netstandard1.0/System.ComponentModel.Primitives.dll
+System.ComponentModel.TypeConverter/4.1.0/ref/netstandard1.5/System.ComponentModel.TypeConverter.dll
 System.Console/4.0.0/ref/netstandard1.3/System.Console.dll
 System.Data.Common/4.1.0/ref/netstandard1.2/System.Data.Common.dll
+System.Data.SqlClient/4.1.0/ref/netstandard1.3/System.Data.SqlClient.dll
 System.Diagnostics.Debug/4.0.11/ref/netstandard1.3/System.Diagnostics.Debug.dll
 System.Diagnostics.DiagnosticSource/4.0.0/lib/netstandard1.3/System.Diagnostics.DiagnosticSource.dll
 System.Diagnostics.Process/4.1.0/ref/netstandard1.4/System.Diagnostics.Process.dll
+System.Diagnostics.TextWriterTraceListener/4.0.0/ref/netstandard1.3/System.Diagnostics.TextWriterTraceListener.dll
 System.Diagnostics.Tools/4.0.1/ref/netstandard1.0/System.Diagnostics.Tools.dll
 System.Diagnostics.Tracing/4.1.0/ref/netstandard1.5/System.Diagnostics.Tracing.dll
 System.Dynamic.Runtime/4.0.11/ref/netstandard1.3/System.Dynamic.Runtime.dll
@@ -29,6 +34,7 @@ System.IO.FileSystem/4.0.1/ref/netstandard1.3/System.IO.FileSystem.dll
 System.IO.FileSystem.Primitives/4.0.1/ref/netstandard1.3/System.IO.FileSystem.Primitives.dll
 System.IO.FileSystem.Watcher/4.0.0/ref/netstandard1.3/System.IO.FileSystem.Watcher.dll
 System.IO.MemoryMappedFiles/4.0.0/ref/netstandard1.3/System.IO.MemoryMappedFiles.dll
+System.IO.Pipes/4.0.0/ref/netstandard1.3/System.IO.Pipes.dll
 System.IO.UnmanagedMemoryStream/4.0.1/ref/netstandard1.3/System.IO.UnmanagedMemoryStream.dll
 System.Linq/4.1.0/ref/netstandard1.6/System.Linq.dll
 System.Linq.Expressions/4.1.0/ref/netstandard1.6/System.Linq.Expressions.dll
@@ -65,6 +71,7 @@ System.Security.Cryptography.Primitives/4.0.0/ref/netstandard1.3/System.Security
 System.Security.Cryptography.X509Certificates/4.1.0/ref/netstandard1.4/System.Security.Cryptography.X509Certificates.dll
 System.Security.Principal/4.0.1/ref/netstandard1.0/System.Security.Principal.dll
 System.Text.Encoding/4.0.11/ref/netstandard1.3/System.Text.Encoding.dll
+System.Text.Encoding.CodePages/4.0.1/ref/netstandard1.3/System.Text.Encoding.CodePages.dll
 System.Text.Encoding.Extensions/4.0.11/ref/netstandard1.3/System.Text.Encoding.Extensions.dll
 System.Text.RegularExpressions/4.1.0/ref/netstandard1.6/System.Text.RegularExpressions.dll
 System.Threading/4.0.11/ref/netstandard1.3/System.Threading.dll
