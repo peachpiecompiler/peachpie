@@ -656,9 +656,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    Debug.Assert(false, "value cannot be aliased");
-
-                    // new PhpAlias((PhpValue)<place>, 1)
+                    // new PhpAlias((PhpValue)<place>, 1)   // e.g. &$this
                     cg.EmitConvertToPhpValue(_place.EmitLoad(cg.Builder), 0);
                     return cg.Emit_PhpValue_MakeAlias();
                 }

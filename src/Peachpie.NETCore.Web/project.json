@@ -19,8 +19,9 @@
 
   "dependencies": {
     "NETStandard.Library": "1.6.0",
-    "Microsoft.AspNetCore.Http.Abstractions": "1.0.0",
     "System.Reflection": "4.1.0",
+    "Microsoft.AspNetCore.Http.Abstractions": "1.0.0",
+    "Microsoft.AspNetCore.Hosting.Abstractions": "1.0.0",
     "Peachpie.Runtime": "*"
   },
 

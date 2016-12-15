@@ -47,7 +47,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
         {
-            if (x.TargetMethod == null)
+            if (x.TargetMethod == null && x.Name.IsDirect)
             {
                 _diagnostics.Add(x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
             }

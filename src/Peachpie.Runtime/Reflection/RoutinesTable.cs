@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -97,6 +98,11 @@ namespace Pchp.Core.Reflection
             _contextRoutines = new RoutineInfo[counter.Count];
             _redeclarationCallback = redeclarationCallback;
         }
+
+        /// <summary>
+        /// Gets enumeration of all routines declared within the context.
+        /// </summary>
+        public IEnumerable<RoutineInfo> EnumerateRoutines() => _appRoutines.Concat(_contextRoutines.WhereNotNull());
 
         /// <summary>
         /// Declare a user PHP function.

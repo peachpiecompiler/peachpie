@@ -17,8 +17,8 @@ namespace Pchp.Core
         /// <summary>
         /// Gets collection of options.
         /// </summary>
-        /// <typeparam name="TOptions">Interface defining the options.</typeparam>
-        /// <returns>The instance of options or <c>null</c> if such options were not added.</returns>
+        /// <typeparam name="TOptions">Type providing the options.</typeparam>
+        /// <returns>The instance of options or <c>null</c> if such options were not registered.</returns>
         TOptions Get<TOptions>() where TOptions : class, IPhpConfiguration;
 
         /// <summary>
@@ -97,14 +97,7 @@ namespace Pchp.Core
             public PhpConfigurationService()
             {
                 // clone parent configuration
-
                 _configs = new Dictionary<Type, IPhpConfiguration>(_defaultConfigs.Count);
-                foreach (var cfg in _defaultConfigs)
-                {
-                    var newinst = cfg.Value.Copy();
-                    Debug.Assert(newinst != null && cfg.Key.GetTypeInfo().IsAssignableFrom(newinst.GetType()));
-                    _configs[cfg.Key] = newinst;
-                }
             }
 
             public PhpCoreConfiguration Core => Get<PhpCoreConfiguration>();
@@ -113,8 +106,20 @@ namespace Pchp.Core
 
             public virtual TOptions Get<TOptions>() where TOptions : class, IPhpConfiguration
             {
+                var key = typeof(TOptions);
+
                 IPhpConfiguration value;
-                return _configs.TryGetValue(typeof(TOptions), out value) ? (TOptions)value : null;
+                if (!_configs.TryGetValue(key, out value))
+                {
+                    if (_defaultConfigs.TryGetValue(key, out value))
+                    {
+                        // lazy clone default configuration
+                        _configs[key] = value = value.Copy();
+                    }
+                }
+
+                //
+                return (TOptions)value;
             }
         }
 

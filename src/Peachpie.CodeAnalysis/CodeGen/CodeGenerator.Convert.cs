@@ -168,6 +168,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // < place >.ToBoolean()
                         place.EmitLoadAddress(_il);
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
+                        if (negation) this.EmitLogicNegation();
                         return;
                     }
                     else if (place.TypeOpt == CoreTypes.PhpValue)
@@ -175,6 +176,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // < place >.ToBoolean()
                         place.EmitLoadAddress(_il);
                         EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
+                        if (negation) this.EmitLogicNegation();
                         return;
                     }
                 }

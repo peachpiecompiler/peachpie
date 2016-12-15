@@ -130,10 +130,12 @@ namespace Pchp.CodeAnalysis
                 {
                     var refs = modules[i].Module.ReferencedAssemblies;
                     var symbols = new AssemblySymbol[refs.Length];
-                    
+                    var ass = modules[i].ContainingAssembly;
+                    var basePath = PathUtilities.GetDirectoryName((ass as PEAssemblySymbol)?.FilePath);
+
                     for (int j = 0; j < refs.Length; j++)
                     {
-                        var symbol = CreateAssemblyFromIdentity(resolver, refs[j], null, modules);
+                        var symbol = CreateAssemblyFromIdentity(resolver, refs[j], basePath, modules);
                         symbols[j] = symbol;
                     }
 

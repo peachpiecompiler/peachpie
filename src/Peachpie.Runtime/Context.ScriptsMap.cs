@@ -116,6 +116,8 @@ namespace Pchp.Core
                 GetScriptIndex(path, mainmethod.DeclaringType.GetTypeInfo());
             }
 
+            public static string NormalizeSlashes(string path) => path.Replace('\\', '/');
+
             public void SetIncluded<TScript>() => array.SetTrue(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 
             public bool IsIncluded<TScript>() => IsIncluded(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
@@ -166,6 +168,8 @@ namespace Pchp.Core
             static int GetScriptIndex(string path, TypeInfo script)
             {
                 int index;
+
+                path = NormalizeSlashes(path);
 
                 lock (_scriptsMap)  // TODO: RW lock
                 {

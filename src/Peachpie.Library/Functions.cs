@@ -60,6 +60,8 @@ namespace Pchp.Library
 
         #endregion
 
+        #region function_exists, get_defined_functions
+
         /// <summary>
         /// Checks the list of defined functions, both built-in and user-defined.
         /// </summary>
@@ -68,5 +70,66 @@ namespace Pchp.Library
         {
             return ctx.GetDeclaredFunction(name) != null;
         }
+
+        /// <summary>
+		/// Retrieves defined functions.
+		/// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+		/// <returns>
+		/// The <see cref="PhpArray"/> containing two entries with keys "internal" and "user".
+		/// The former's value is a <see cref="PhpArray"/> containing PHP library functions as values.
+		/// The latter's value is a <see cref="PhpArray"/> containing user defined functions as values.
+		/// Keys of both these arrays are integers starting from 0.
+		/// </returns>
+		/// <remarks>User functions which are declared conditionally and was not declared yet is considered as not existent.</remarks>
+		public static PhpArray get_defined_functions(Context ctx)
+        {
+            var result = new PhpArray(2);
+            var library = new PhpArray(500);
+            var user = new PhpArray();
+
+            foreach (var routine in ctx.GetDeclaredFunctions())
+            {
+                (routine.IsUserFunction ? user : library).AddValue((PhpValue)routine.Name);
+            }
+
+            //
+            result["internal"] = (PhpValue)library;
+            result["user"] = (PhpValue)user;
+
+            //
+            return result;
+        }
+
+        #endregion
+
+        #region register_shutdown_function
+
+        /// <summary>
+        /// Registers callback which will be called when script processing is complete but before the request
+        /// has been complete.
+        /// Function has no return value.
+        /// </summary>
+        /// <param name="ctx">Runtime context. Cannot be <c>null</c>.</param>
+        /// <param name="callback">The function which is called after main code of the script is finishes execution.</param>
+        /// <param name="arguments">Parameters for the <paramref name="callback"/>.</param>
+        /// <remarks>
+        /// Although, there is explicitly written in the PHP manual that it is not possible 
+        /// to send an output to a browser via echo or another output handling functions you can actually do so.
+        /// There is no such limitation with Phalanger.
+        /// </remarks>
+        public static void register_shutdown_function(Context ctx, IPhpCallable callback, params PhpValue[] arguments)
+        {
+            if (callback == null)
+            {
+                //PhpException.ArgumentNull("function");
+                //return;
+                throw new ArgumentNullException(nameof(callback));
+            }
+
+            ctx.RegisterShutdownCallback(() => callback.Invoke(ctx, arguments));
+        }
+
+        #endregion
     }
 }

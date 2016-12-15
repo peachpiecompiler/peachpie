@@ -20,6 +20,7 @@
   "dependencies": {
     "System.Collections": "4.0.*",
     "Peachpie.Runtime": "*",
+    "Peachpie.Library": "*",
     "MySql.Data": "7.0.6-IR31"
   },
 

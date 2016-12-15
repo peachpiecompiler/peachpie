@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Utilities
 {
-    static class PathUtils
+    public static class PathUtils
     {
         public const char DirectorySeparator = '\\';
         public const char AltDirectorySeparator = '/';

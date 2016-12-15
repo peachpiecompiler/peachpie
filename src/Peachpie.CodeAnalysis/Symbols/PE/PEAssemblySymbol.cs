@@ -28,6 +28,11 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly ImmutableArray<ModuleSymbol> _modules;
 
         /// <summary>
+        /// Optional full file path to the assembly.
+        /// </summary>
+        readonly string _filePath;
+
+        /// <summary>
         /// Assembly is /l-ed by compilation that is using it as a reference.
         /// </summary>
         readonly bool _isLinked;
@@ -100,13 +105,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string Name => _assembly.ManifestModule.Name;
 
-        internal PEAssemblySymbol(PEAssembly assembly, DocumentationProvider documentationProvider, bool isLinked, MetadataImportOptions importOptions)
+        public string FilePath => _filePath;
+
+        internal PEAssemblySymbol(PEAssembly assembly, DocumentationProvider documentationProvider, string filePath, bool isLinked, MetadataImportOptions importOptions)
         {
             Debug.Assert(assembly != null);
             Debug.Assert(documentationProvider != null);
 
             _assembly = assembly;
             _documentationProvider = documentationProvider;
+            _filePath = filePath;
 
             var modules = new ModuleSymbol[assembly.Modules.Length];
 
@@ -149,7 +157,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ass = data.GetAssembly();
 
             return new PEAssemblySymbol(
-                ass, DocumentationProvider.Default, true,
+                ass, DocumentationProvider.Default, reference.FilePath, true,
                 IsPchpCor(ass) ? MetadataImportOptions.Internal : MetadataImportOptions.Public);
         }
 

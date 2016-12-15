@@ -142,6 +142,10 @@ namespace Pchp.Core
         /// </summary>
         public RoutineInfo GetDeclaredFunction(string name) => _functions.GetDeclaredRoutine(name);
 
+        /// <summary>Gets enumeration of all functions declared within the context, including library and user functions.</summary>
+        /// <returns>Enumeration of all routines. Cannot be <c>null</c>.</returns>
+        public IEnumerable<RoutineInfo> GetDeclaredFunctions() => _functions.EnumerateRoutines();
+
         /// <summary>
         /// Declare a runtime user type.
         /// </summary>
@@ -223,7 +227,8 @@ namespace Pchp.Core
         {
             ScriptInfo script;
 
-            path = path.Replace('/', '\\'); // normalize slashes
+            path = ScriptsMap.NormalizeSlashes(path);
+
             if (path.StartsWith(this.RootPath, StringComparison.Ordinal)) // rooted
             {
                 script = _scripts.GetScript(path.Substring(this.RootPath.Length));
@@ -277,7 +282,8 @@ namespace Pchp.Core
         /// <summary>
         /// Set of include paths to be used to resolve full file path.
         /// </summary>
-        public virtual string[] IncludePaths => null;   // TODO:  => this.Config.FileSystem.IncludePaths
+        public virtual string[] IncludePaths => _defaultIncludePaths;   // TODO:  => this.Config.FileSystem.IncludePaths
+        static readonly string[] _defaultIncludePaths = new[] { "." };
 
         /// <summary>
         /// Gets full script path in current context.
@@ -359,15 +365,59 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Shutdown
+
+        List<Action> _lazyShutdownCallbacks = null;
+
+        /// <summary>
+        /// Enqueues a callback to be invoked at the end of request.
+        /// </summary>
+        /// <param name="action">Callback. Cannot be <c>null</c>.</param>
+        public void RegisterShutdownCallback(Action action)
+        {
+            if (action == null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+
+            var callbacks = _lazyShutdownCallbacks;
+            if (callbacks == null)
+            {
+                _lazyShutdownCallbacks = callbacks = new List<Action>(1);
+            }
+
+            callbacks.Add(action);
+        }
+
+        /// <summary>
+        /// Invokes callbacks in <see cref="_lazyShutdownCallbacks"/> and disposes the list.
+        /// </summary>
+        void ProcessShutdownCallbacks()
+        {
+            var callbacks = _lazyShutdownCallbacks;
+            if (callbacks != null)
+            {
+                for (int i = 0; i < callbacks.Count; i++)
+                {
+                    callbacks[i]();
+                }
+
+                //
+                _lazyShutdownCallbacks = callbacks = null;
+            }
+        }
+
+        #endregion
+
         #region IDisposable
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             //if (!disposed)
             {
                 try
                 {
-                    //this.GuardedCall<object, object>(this.ProcessShutdownCallbacks, null, false);
+                    ProcessShutdownCallbacks();
                     //this.GuardedCall<object, object>(this.FinalizePhpObjects, null, false);
                     FinalizeBufferedOutput();
 

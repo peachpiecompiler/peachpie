@@ -23,6 +23,12 @@ namespace Pchp.Core.Reflection
         protected int _index;
 
         /// <summary>
+        /// Gets value indicating the routine was declared in a users code.
+        /// Otherwise the function is a library function.
+        /// </summary>
+        public bool IsUserFunction => _index > 0;
+
+        /// <summary>
         /// Gets the routine name, cannot be <c>null</c> or empty.
         /// </summary>
         public string Name => _name;
