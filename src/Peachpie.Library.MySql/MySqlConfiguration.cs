@@ -29,5 +29,7 @@ namespace Peachpie.Library.MySql
         public string User { get; set; } = "root";
 
         public string Password { get; set; } = "";
+
+        internal string ConnectionString { get; set; } = null;
     }
 }

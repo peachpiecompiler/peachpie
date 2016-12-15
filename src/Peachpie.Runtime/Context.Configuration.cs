@@ -113,8 +113,20 @@ namespace Pchp.Core
 
             public virtual TOptions Get<TOptions>() where TOptions : class, IPhpConfiguration
             {
+                var key = typeof(TOptions);
+
                 IPhpConfiguration value;
-                return _configs.TryGetValue(typeof(TOptions), out value) ? (TOptions)value : null;
+                if (!_configs.TryGetValue(key, out value))
+                {
+                    if (_defaultConfigs.TryGetValue(key, out value))
+                    {
+                        // config was registered after the context was created
+                        _configs[key] = value = value.Copy();
+                    }
+                }
+
+                //
+                return (TOptions)value;
             }
         }
 

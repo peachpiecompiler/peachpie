@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -90,16 +91,38 @@ namespace Peachpie.Library.MySql
         /// Open a connection to a MySQL Server.
         /// </summary>
         [return: CastToFalse]
-        public static PhpResource mysql_connect(string server = null, string username = null, string password = null, bool new_link = false, int client_flags = 0)
+        public static PhpResource mysql_connect(Context ctx, string server = null, string username = null, string password = null, bool new_link = false, int client_flags = 0)
         {
-            throw new NotImplementedException();
+            var config = ctx.Configuration.Get<MySqlConfiguration>();
+            Debug.Assert(config != null);
+
+            var connection_string = BuildConnectionString(config, server, username, password, (ConnectFlags)client_flags);
+            var connection = new MySqlConnectionResource(connection_string);
+
+            //
+            return connection;
+        }
+
+        /// <summary>
+        /// Establishes a connection to MySQL server using a specified server, user, password, and flags.
+        /// </summary>
+        /// <returns>
+        /// Resource representing the connection or a <B>null</B> reference (<B>false</B> in PHP) on failure.
+        /// </returns>
+        [return: CastToFalse]
+        public static PhpResource mysql_pconnect(Context ctx, string server = null, string username = null, string password = null, bool new_link = false, int client_flags = 0)
+        {
+            // TODO: Notice: unsupported
+            return mysql_connect(ctx, server, username, password, new_link, client_flags);
         }
 
         static string BuildConnectionString(MySqlConfiguration config, string server, string user, string password, ConnectFlags flags)
         {
-            //// connection strings:
-            //if (server == null && user == null && password == null && flags == ConnectFlags.None && !string.IsNullOrEmpty(local.ConnectionString))
-            //    return local.ConnectionString;
+            // connection strings:
+            if (server == null && user == null && password == null && flags == ConnectFlags.None && !string.IsNullOrEmpty(config.ConnectionString))
+            {
+                return config.ConnectionString;
+            }
 
             // TODO: local.ConnectionStringName
 
@@ -136,7 +159,7 @@ namespace Peachpie.Library.MySql
         /// <summary>
 		/// Builds a connection string.
 		/// </summary>
-		private static string/*!*/ BuildConnectionString(string server, string user, string password, string additionalSettings)
+		static string/*!*/ BuildConnectionString(string server, string user, string password, string additionalSettings)
         {
             var result = new StringBuilder(8);
             result.Append("server=");
@@ -157,7 +180,7 @@ namespace Peachpie.Library.MySql
             return result.ToString();
         }
 
-        private static void ParseServerName(ref string/*!*/ server, out int port, out string socketPath)
+        static void ParseServerName(ref string/*!*/ server, out int port, out string socketPath)
         {
             port = -1;
             socketPath = null;
@@ -175,13 +198,11 @@ namespace Peachpie.Library.MySql
             }
             else
             {
-                try
+
+                if (!int.TryParse(port_or_socket, out port) || port < 0 || port > ushort.MaxValue)
                 {
-                    port = UInt16.Parse(port_or_socket);
-                }
-                catch
-                {
-                   // PhpException.Throw(PhpError.Notice, LibResources.GetString("invalid_port", port_or_socket));
+                    // PhpException.Throw(PhpError.Notice, LibResources.GetString("invalid_port", port_or_socket));
+                    throw new ArgumentException(nameof(server));
                 }
             }
         }
