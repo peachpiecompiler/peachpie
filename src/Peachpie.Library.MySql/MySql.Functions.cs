@@ -81,12 +81,33 @@ namespace Peachpie.Library.MySql
         }
 
         /// <summary>
+        /// Gets last active connection.
+        /// </summary>
+        static MySqlConnectionResource LastConnection(Context ctx) => MySqlConnectionManager.GetInstance(ctx).GetLastConnection();
+
+        static MySqlConnectionResource ValidConnection(Context ctx, PhpResource link)
+        {
+            var resource = link ?? LastConnection(ctx);
+            if (resource is MySqlConnectionResource)
+            {
+                return (MySqlConnectionResource)resource;
+            }
+            else
+            {
+                // TODO: err
+                return null;
+            }
+        }
+
+        #region mysql_close
+
+        /// <summary>
         /// Closes the non-persistent connection to the MySQL server that's associated with the specified link identifier.
         /// If link_identifier isn't specified, the last opened link is used.
         /// </summary>
-        public static bool mysql_close(PhpResource link_identifier = null)
+        public static bool mysql_close(Context ctx, PhpResource link_identifier = null)
         {
-            var connection = (link_identifier ?? null/*TODO: last_connection*/) as MySqlConnectionResource;
+            var connection = ValidConnection(ctx, link_identifier);
             if (connection != null)
             {
                 connection.Dispose();
@@ -98,7 +119,9 @@ namespace Peachpie.Library.MySql
             }
         }
 
-        #region mysql_connect
+        #endregion
+
+        #region mysql_connect, mysql_pconnect
 
         // MySqlResource mysql_connect(string $server = ini_get("mysql.default_host")[, string $username = ini_get("mysql.default_user")[, string $password = ini_get("mysql.default_password")[, bool $new_link = false[, int $client_flags = 0]]]]] )
 
@@ -112,7 +135,19 @@ namespace Peachpie.Library.MySql
             Debug.Assert(config != null);
 
             var connection_string = BuildConnectionString(config, server, username, password, (ConnectFlags)client_flags);
-            var connection = new MySqlConnectionResource(connection_string);
+
+            bool success;
+            var connection = MySqlConnectionManager.GetInstance(ctx)
+                .CreateConnection(connection_string, new_link, -1, out success);
+
+            if (success)
+            {
+
+            }
+            else
+            {
+                connection = null;
+            }
 
             //
             return connection;
@@ -220,6 +255,20 @@ namespace Peachpie.Library.MySql
                     throw new ArgumentException(nameof(server));
                 }
             }
+        }
+
+        #endregion
+
+        #region mysql_get_server_info
+
+        /// <summary>
+        /// Gets server version.
+        /// </summary>
+        /// <returns>Server version</returns>
+        public static string mysql_get_server_info(Context ctx, PhpResource link)
+        {
+            var connection = ValidConnection(ctx, link);
+            return connection?.ServerVersion;
         }
 
         #endregion

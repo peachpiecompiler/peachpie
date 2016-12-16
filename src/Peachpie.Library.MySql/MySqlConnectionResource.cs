@@ -1,5 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 using Pchp.Core;
+using Pchp.Library.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,14 +11,26 @@ namespace Peachpie.Library.MySql
     /// <summary>
     /// 
     /// </summary>
-    sealed class MySqlConnectionResource : PhpResource
+    [PhpHidden]
+    sealed class MySqlConnectionResource : ConnectionResource
     {
         readonly MySqlConnection _connection;
 
-        public MySqlConnectionResource(string connectionString) : base("mysql connection")
+        public MySqlConnectionResource(string connectionString) : base(connectionString, "mysql connection")
         {
-            _connection = new MySqlConnection(connectionString);
-            _connection.Open(); // TODO: Async
+            _connection = new MySqlConnection(this.ConnectionString);
         }
+
+        public override bool Connect()
+        {
+            _connection.Open(); // TODO: Async
+
+            return true;
+        }
+
+        /// <summary>
+        /// Gets the server version.
+        /// </summary>
+        internal string ServerVersion => _connection.ServerVersion;
     }
 }
