@@ -14,10 +14,12 @@ namespace Peachpie.Library.MySql
     [PhpHidden]
     sealed class MySqlConnectionResource : ConnectionResource
     {
+        readonly MySqlConnectionManager _manager;
         readonly MySqlConnection _connection;
 
-        public MySqlConnectionResource(string connectionString) : base(connectionString, "mysql connection")
+        public MySqlConnectionResource(MySqlConnectionManager manager,string connectionString) : base(connectionString, "mysql connection")
         {
+            _manager = manager;
             _connection = new MySqlConnection(this.ConnectionString);
         }
 
@@ -26,6 +28,12 @@ namespace Peachpie.Library.MySql
             _connection.Open(); // TODO: Async
 
             return true;
+        }
+
+        protected override void FreeManaged()
+        {
+            _manager.RemoveConnection(this);
+            base.FreeManaged();
         }
 
         /// <summary>

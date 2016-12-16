@@ -14,6 +14,6 @@ namespace Peachpie.Library.MySql
         /// </summary>
         public static MySqlConnectionManager GetInstance(Context ctx) => ctx.GetStatic<MySqlConnectionManager>();
 
-        protected override MySqlConnectionResource CreateConnection(string connectionString) => new MySqlConnectionResource(connectionString);
+        protected override MySqlConnectionResource CreateConnection(string connectionString) => new MySqlConnectionResource(this, connectionString);
     }
 }
