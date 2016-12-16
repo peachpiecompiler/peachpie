@@ -10,7 +10,8 @@ namespace Pchp.Library
     /// <summary>
     /// Manages association of PHP option names and flags.
     /// </summary>
-    internal static class StandardPhpOptions
+    [PhpHidden]
+    public static class StandardPhpOptions
     {
         public delegate PhpValue GetSetDelegate(IPhpConfigurationService config, string option, PhpValue value, IniAction action);
 
