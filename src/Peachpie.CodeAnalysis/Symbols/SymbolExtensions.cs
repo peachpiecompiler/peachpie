@@ -21,6 +21,12 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.TypeParameters.IsEmpty ? type : type.Construct(typeArguments, unbound: false);
         }
 
+        public static bool IsPhpHidden(this Symbol s)
+        {
+            var attrs = s.GetAttributes();
+            return attrs.Length != 0 && attrs.Any(a => a.AttributeClass.MetadataName == "PhpHidden");
+        }
+
         /// <summary>
         /// Gets type full qualified name.
         /// </summary>

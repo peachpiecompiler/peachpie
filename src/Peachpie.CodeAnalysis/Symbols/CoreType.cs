@@ -99,7 +99,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison,
-            ScriptAttribute, PhpTraitAttribute, ScriptDiedException,
+            ScriptAttribute, PhpTraitAttribute, PhpHiddenAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpTypeInfoExtension, PhpTypeInfo,
@@ -144,6 +144,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Convert = Create("Convert");
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create("PhpTraitAttribute");
+            PhpHiddenAttribute = Create("PhpHiddenAttribute");
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");

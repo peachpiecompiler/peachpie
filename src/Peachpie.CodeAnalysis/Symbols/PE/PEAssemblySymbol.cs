@@ -216,7 +216,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         containers.AddRange(
                             this.PrimaryModule.GlobalNamespace
                             .GetTypeMembers()
-                            .Where(t => t.IsStatic && t.DeclaredAccessibility == Accessibility.Public));
+                            .Where(t => t.IsStatic && t.DeclaredAccessibility == Accessibility.Public && !t.IsPhpHidden()));
 
                         //
                         _lazyExtensionContainers = containers.ToImmutable();

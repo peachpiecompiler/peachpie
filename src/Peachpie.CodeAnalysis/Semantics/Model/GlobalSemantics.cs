@@ -37,12 +37,12 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         internal static bool IsFunction(MethodSymbol method)
         {
-            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary;
+            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden();
         }
 
         internal static bool IsConstantField(FieldSymbol field)
         {
-            return (field.IsConst || (field.IsReadOnly && field.IsStatic)) && field.DeclaredAccessibility == Accessibility.Public;
+            return (field.IsConst || (field.IsReadOnly && field.IsStatic)) && field.DeclaredAccessibility == Accessibility.Public && !field.IsPhpHidden();
         }
 
         ImmutableArray<NamedTypeSymbol> ExtensionContainers

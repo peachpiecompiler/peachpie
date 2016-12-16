@@ -51,6 +51,14 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Marks public declarations that won't be visible to the compiled PHP script.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method)]
+    public class PhpHiddenAttribute : Attribute
+    {
+    }
+
+    /// <summary>
 	/// Marks return values of methods implementing PHP functions which returns <B>false</B> on error
 	/// but has other return type than <see cref="bool"/> or <see cref="object"/>.
 	/// </summary>
