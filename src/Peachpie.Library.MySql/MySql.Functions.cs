@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,6 +15,8 @@ namespace Peachpie.Library.MySql
     [PhpExtension("mysql")]
     public static partial class MySql
     {
+        const string EquivalentNativeLibraryVersion = "7.0.6";
+
         #region Enums
 
         /// <summary>
@@ -105,9 +108,9 @@ namespace Peachpie.Library.MySql
         /// Closes the non-persistent connection to the MySQL server that's associated with the specified link identifier.
         /// If link_identifier isn't specified, the last opened link is used.
         /// </summary>
-        public static bool mysql_close(Context ctx, PhpResource link_identifier = null)
+        public static bool mysql_close(Context ctx, PhpResource link = null)
         {
-            var connection = ValidConnection(ctx, link_identifier);
+            var connection = ValidConnection(ctx, link);
             if (connection != null)
             {
                 connection.Dispose();
@@ -259,13 +262,18 @@ namespace Peachpie.Library.MySql
 
         #endregion
 
-        #region mysql_get_server_info
+        #region mysql_get_client_info, mysql_get_server_info
+
+        /// <summary>
+        /// Gets a version of the client library.
+        /// </summary>
+        public static string mysql_get_client_info() => EquivalentNativeLibraryVersion;
 
         /// <summary>
         /// Gets server version.
         /// </summary>
         /// <returns>Server version</returns>
-        public static string mysql_get_server_info(Context ctx, PhpResource link)
+        public static string mysql_get_server_info(Context ctx, PhpResource link = null)
         {
             var connection = ValidConnection(ctx, link);
             return connection?.ServerVersion;
