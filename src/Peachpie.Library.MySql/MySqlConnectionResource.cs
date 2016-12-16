@@ -33,6 +33,9 @@ namespace Peachpie.Library.MySql
         protected override void FreeManaged()
         {
             _manager.RemoveConnection(this);
+            _connection.Close();
+
+            //
             base.FreeManaged();
         }
 
