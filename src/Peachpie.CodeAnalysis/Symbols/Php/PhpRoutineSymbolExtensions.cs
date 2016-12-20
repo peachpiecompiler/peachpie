@@ -110,5 +110,29 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             return result.ToArray();
         }
+
+        /// <summary>
+        /// Gets value indicating the routine requires array of callers' local variables.
+        /// </summary>
+        public static bool HasImportLocals(this IPhpRoutineSymbol routine)
+        {
+            var ps = routine.Parameters;
+            foreach (var p in ps)
+            {
+                if (p.IsImplicitlyDeclared)
+                {
+                    if (SpecialParameterSymbol.IsLocalsParameter(p))
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return false;
+        }
     }
 }
