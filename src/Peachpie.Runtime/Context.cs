@@ -231,7 +231,7 @@ namespace Pchp.Core
 
             if (path.StartsWith(this.RootPath, StringComparison.Ordinal)) // rooted
             {
-                script = _scripts.GetScript(path.Substring(this.RootPath.Length));
+                script = _scripts.GetScript(path.Substring(this.RootPath.Length + 1));
             }
             else
             {
@@ -268,6 +268,7 @@ namespace Pchp.Core
 
         /// <summary>
         /// Root directory (web root or console app root) where loaded scripts are relative to.
+        /// The root path does not end with directory separator.
         /// </summary>
         /// <remarks>
         /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
@@ -284,13 +285,6 @@ namespace Pchp.Core
         /// </summary>
         public virtual string[] IncludePaths => _defaultIncludePaths;   // TODO:  => this.Config.FileSystem.IncludePaths
         static readonly string[] _defaultIncludePaths = new[] { "." };
-
-        /// <summary>
-        /// Gets full script path in current context.
-        /// </summary>
-        /// <typeparam name="TScript">Script type.</typeparam>
-        /// <returns>Full script path.</returns>
-        public string ScriptPath<TScript>() => RootPath + ScriptsMap.GetScript<TScript>().Path;
 
         #endregion
 

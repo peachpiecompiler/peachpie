@@ -387,6 +387,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsSet_PhpValue = ct.Operators.Method("IsSet", ct.PhpValue);
                 IsEmpty_PhpValue = ct.Operators.Method("IsEmpty", ct.PhpValue);
                 IsNullOrEmpty_String = ct.String.Method("IsNullOrEmpty", ct.String);
+                Concat_String_String = ct.String.Method("Concat", ct.String, ct.String);
 
                 ToString_Bool = ct.Convert.Method("ToString", ct.Boolean);
                 ToString_Int32 = ct.Convert.Method("ToString", ct.Int32);
@@ -461,7 +462,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef,
                 GetItemValue_String_IntStringKey, GetItemValue_String_Int,
                 GetItemValue_PhpValue_IntStringKey_Bool, EnsureItemAlias_PhpValue_IntStringKey_Bool,
-                IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String,
+                IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
@@ -841,14 +842,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 OnInclude_TScript = ct.Context.Method("OnInclude");
                 Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
 
-                ScriptPath_TScript = ct.Context.Method("ScriptPath");
-
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
                 GetStatic_T = ct.Context.Method("GetStatic");
                 GetDeclaredType_string_bool = ct.Context.Method("GetDeclaredType", ct.String, ct.Boolean);
 
                 // properties
+                RootPath = ct.Context.Property("RootPath");
                 Globals = ct.Context.Property("Globals");
                 Server = ct.Context.Property("Server");
                 Request = ct.Context.Property("Request");
@@ -865,13 +865,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_RoutineInfo, DeclareType_T,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
-                ScriptPath_TScript,
                 GetConstant_string_int32,
                 GetStatic_T,
                 GetDeclaredType_string_bool,
                 Dispose;
 
             public readonly CoreProperty
+                RootPath,
                 Globals, Server, Request, Get, Post, Cookie, Env, Files, Session;
         }
 

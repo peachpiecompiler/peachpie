@@ -44,10 +44,8 @@ namespace Peachpie.Web
             }
             else
             {
-                path = path.Replace('\\', '/');                
-                return path.Last() == '/'
-                    ? (path)
-                    : (path + "/");
+                path = path.Replace('\\', '/');
+                return path.Last() != '/' ? path : path.Substring(0, path.Length - 1);
             }
         }
 

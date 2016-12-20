@@ -3193,9 +3193,29 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 case PseudoConstUse.Types.File:
 
-                    // <ctx>.FilePath<TScript>()
+                    // <ctx>.RootPath + RelativePath
                     cg.EmitLoadContext();
-                    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.ScriptPath_TScript.Symbol.Construct(cg.Routine.ContainingFile))
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.RootPath.Getter);
+
+                    cg.Builder.EmitStringConstant("/" + cg.Routine.ContainingFile.RelativeFilePath);
+
+                    // TODO: normalize slashes
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Concat_String_String)
+                        .Expect(SpecialType.System_String);
+
+                case PseudoConstUse.Types.Dir:
+
+                    // <ctx>.RootPath + RelativeDirectory
+                    cg.EmitLoadContext();
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.RootPath.Getter);
+
+                    var relative_dir = cg.Routine.ContainingFile.DirectoryRelativePath;
+                    if (relative_dir.Length != 0) relative_dir = "/" + relative_dir;
+
+                    cg.Builder.EmitStringConstant(relative_dir);
+
+                    // TODO: normalize slashes
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Concat_String_String)
                         .Expect(SpecialType.System_String);
 
                 default:
