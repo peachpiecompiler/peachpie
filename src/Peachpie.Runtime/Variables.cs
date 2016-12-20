@@ -261,6 +261,30 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+		/// Checks whether a string is "valid" PHP variable identifier.
+		/// </summary>
+		/// <param name="name">The variable name.</param>
+		/// <returns>
+		/// Whether <paramref name="name"/> is "valid" name of variable, i.e. [_[:alpha:]][_0-9[:alpha:]]*.
+		/// This doesn't say anything about whether a variable of such name can be used in PHP, e.g. <c>${0}</c> is ok.
+		/// </returns>
+		public static bool IsValidName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+
+            // first char:
+            if (!char.IsLetter(name[0]) && name[0] != '_') return false;
+
+            // next chars:
+            for (int i = 1; i < name.Length; i++)
+            {
+                if (!char.IsLetterOrDigit(name[i]) && name[i] != '_') return false;
+            }
+
+            return true;
+        }
+
         public static bool IsValidCallback(IPhpCallable callable)
         {
             PhpCallback tmp;
