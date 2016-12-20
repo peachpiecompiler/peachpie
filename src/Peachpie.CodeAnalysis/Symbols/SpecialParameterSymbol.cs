@@ -62,6 +62,9 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool IsContextParameter(ParameterSymbol p)
             => p != null && p.Ordinal == 0 && p.Type != null && p.Type.MetadataName == "Context"; // TODO: && namespace == Pchp.Core.
 
+        public static bool IsLocalsParameter(IParameterSymbol p)
+            => p != null && p.Type != null && p.Type.MetadataName == "PhpArray" && p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportLocalsAttribute");
+
         public override bool IsImplicitlyDeclared => true;
 
         public override Symbol ContainingSymbol => _symbol;

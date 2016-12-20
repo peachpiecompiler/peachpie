@@ -54,7 +54,20 @@ namespace Pchp.Core
     /// Marks public declarations that won't be visible to the compiled PHP script.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method)]
-    public class PhpHiddenAttribute : Attribute
+    public sealed class PhpHiddenAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Denotates a function parameter of type <see cref="PhpArray"/>
+    /// that will be referenced to the array of local PHP variables.
+    /// </summary>
+    /// <remarks>
+    /// The parameter is used to let the function to read or modify caller routine local variables.
+    /// The parameter must be of type <see cref="PhpArray"/>.
+    /// The parameter must be before regular parameters.</remarks>
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class ImportLocalsAttribute : Attribute
     {
     }
 
@@ -68,7 +81,7 @@ namespace Pchp.Core
 	/// or of a reference type (<B>null</B> is converted to <B>false</B>).
 	/// </remarks>
     [AttributeUsage(AttributeTargets.ReturnValue, AllowMultiple = false, Inherited = false)]
-    public class CastToFalse : Attribute
+    public sealed class CastToFalse : Attribute
     {
 
     }
@@ -77,7 +90,7 @@ namespace Pchp.Core
     /// Marks classes that are declared as trait.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public class PhpTraitAttribute : Attribute
+    public sealed class PhpTraitAttribute : Attribute
     {
 
     }
