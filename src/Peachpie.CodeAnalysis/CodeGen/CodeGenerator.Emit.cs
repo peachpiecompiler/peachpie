@@ -684,11 +684,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // <ctx>
                     if (SpecialParameterSymbol.IsContextParameter(p))
                     {
+                        Debug.Assert(p.Type == this.CoreTypes.Context);
                         EmitLoadContext();
-                        continue;
                     }
-                    // TypeCtx, Locals, ...
-                    throw new NotImplementedException();
+                    else if (SpecialParameterSymbol.IsLocalsParameter(p))
+                    {
+                        Debug.Assert(p.Type == this.CoreTypes.PhpArray);
+                        if (!this.HasUnoptimizedLocals) throw new InvalidOperationException();
+                        this.LocalsPlaceOpt.EmitLoad(this.Builder);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    continue;
                 }
 
                 // load arguments
