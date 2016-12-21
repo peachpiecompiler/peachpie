@@ -948,7 +948,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         EmitConvertToPhpNumber(from, fromHint);
                     }
-                    else if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.IPhpArray)    // TODO: merge into IPhpArray
+                    else if (CoreTypes.PhpArray.Symbol.IsOfType(to))
                     {
                         EmitConvertToPhpArray(from, fromHint);
                     }

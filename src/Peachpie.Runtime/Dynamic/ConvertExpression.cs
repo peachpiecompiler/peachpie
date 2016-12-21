@@ -58,6 +58,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(IPhpArray)) return BindToArray(arg);   // TODO
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
             if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
+            if (target == typeof(PhpAlias) && arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
 
             var target_type = target.GetTypeInfo();
 
