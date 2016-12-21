@@ -165,6 +165,18 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            if (IsParams)
+            {
+                yield return new SynthesizedAttributeData(
+                    (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ParamArrayAttribute__ctor),
+                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            yield break;
+        }
+
         public override bool IsOptional => this.HasExplicitDefaultValue;
 
         internal override ConstantValue ExplicitDefaultConstantValue

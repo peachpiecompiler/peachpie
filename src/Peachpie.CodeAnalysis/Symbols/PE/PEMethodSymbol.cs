@@ -165,15 +165,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #region Fields
 
-        readonly PENamedTypeSymbol _containingType;
         readonly MethodDefinitionHandle _handle;
+        readonly string _name;
+        readonly PENamedTypeSymbol _containingType;
+        private Symbol _associatedPropertyOrEventOpt;
         private PackedFlags _packedFlags;
         private readonly ushort _flags;     // MethodAttributes
         private readonly ushort _implFlags; // MethodImplAttributes
         private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
         private SignatureData _lazySignature;
         private ImmutableArray<MethodSymbol> _lazyExplicitMethodImplementations;
-        readonly string _name;
 
         #endregion
 
@@ -572,6 +573,50 @@ namespace Pchp.CodeAnalysis.Symbols
                 this.Parameters.All(p => p.RefKind == RefKind.None) && //this.ParameterRefKinds.IsDefault && // No 'ref' or 'out'
                 !this.IsParams();
 
+        /// <summary>
+        /// Associate the method with a particular property. Returns
+        /// false if the method is already associated with a property or event.
+        /// </summary>
+        internal bool SetAssociatedProperty(PEPropertySymbol propertySymbol, MethodKind methodKind)
+        {
+            Debug.Assert((methodKind == MethodKind.PropertyGet) || (methodKind == MethodKind.PropertySet));
+            return this.SetAssociatedPropertyOrEvent(propertySymbol, methodKind);
+        }
+
+        /// <summary>
+        /// Associate the method with a particular event. Returns
+        /// false if the method is already associated with a property or event.
+        /// </summary>
+        internal bool SetAssociatedEvent(/*PEEventSymbol*/Symbol eventSymbol, MethodKind methodKind)
+        {
+            Debug.Assert((methodKind == MethodKind.EventAdd) || (methodKind == MethodKind.EventRemove));
+            return this.SetAssociatedPropertyOrEvent(eventSymbol, methodKind);
+        }
+
+        private bool SetAssociatedPropertyOrEvent(Symbol propertyOrEventSymbol, MethodKind methodKind)
+        {
+            if ((object)_associatedPropertyOrEventOpt == null)
+            {
+                Debug.Assert(propertyOrEventSymbol.ContainingType == _containingType);
+
+                // No locking required since SetAssociatedProperty/SetAssociatedEvent will only be called
+                // by the thread that created the method symbol (and will be called before the method
+                // symbol is added to the containing type members and available to other threads).
+                _associatedPropertyOrEventOpt = propertyOrEventSymbol;
+
+                // NOTE: may be overwriting an existing value.
+                Debug.Assert(
+                    _packedFlags.MethodKind == default(MethodKind) ||
+                    _packedFlags.MethodKind == MethodKind.Ordinary ||
+                    _packedFlags.MethodKind == MethodKind.ExplicitInterfaceImplementation);
+
+                _packedFlags.MethodKind = methodKind;
+                return true;
+            }
+
+            return false;
+        }
+
         private SignatureData Signature => _lazySignature ?? LoadSignature();
 
         public override CallingConvention CallingConvention => (CallingConvention)Signature.Header.RawValue;
@@ -691,6 +736,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 return typeParams;
             }
         }
+
+        public override ISymbol AssociatedSymbol => _associatedPropertyOrEventOpt;
 
         public override bool ReturnsVoid => this.ReturnType.SpecialType == SpecialType.System_Void;
 

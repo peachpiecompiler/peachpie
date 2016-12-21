@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -150,6 +151,33 @@ namespace Pchp.CodeAnalysis.Symbols
             return DeclaringCompilation.GetTypeFromTypeRef(typeCtx, rtype);
         }
 
+        /// <summary>
+        /// Gets array of parameter symbols.
+        /// Lazily ensures there is the variadic parameter at the end if needed.
+        /// </summary>
+        ImmutableArray<ParameterSymbol> GetParameters()
+        {
+            if ((Flags & RoutineFlags.RequiresParams) != 0 && (this is SourceFunctionSymbol || this is SourceMethodSymbol))
+            {
+                if (_params.Length == 0 || !_params.Last().IsParams)
+                {
+                    // lazily add [params] PhpValue[] <params>
+                    var p = new SynthesizedParameterSymbol( // IsImplicitlyDeclared, IsParams
+                        this,
+                        ArrayTypeSymbol.CreateSZArray(this.ContainingAssembly, this.DeclaringCompilation.CoreTypes.PhpValue),
+                        _params.Length,
+                        RefKind.None,
+                        SpecialParameterSymbol.ParamsName, true);
+
+                    //
+                    _params = _params.Add(p);
+                }
+            }
+
+            //
+            return _params;
+        }
+
         public override bool IsExtern => false;
 
         public override bool IsOverride => false;
@@ -166,9 +194,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override ImmutableArray<ParameterSymbol> Parameters => _params;
+        public override ImmutableArray<ParameterSymbol> Parameters => GetParameters();
 
-        public override int ParameterCount => _params.Length;
+        public override int ParameterCount => Parameters.Length;
 
         public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 

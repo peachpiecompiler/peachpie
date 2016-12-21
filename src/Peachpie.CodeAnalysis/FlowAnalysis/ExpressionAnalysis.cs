@@ -933,10 +933,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
 
                     //
-                    if (m.HasImportLocals())
-                    {
-                        Routine.Flags |= RoutineFlags.UsesLocals;
-                    }
+                    Routine.Flags |= m.InvocationFlags();
 
                     //
                     result_type |= m.GetResultType(TypeCtx);

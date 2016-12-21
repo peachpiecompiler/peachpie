@@ -119,15 +119,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (!callMethodsDirectly)
             {
-                //if ((object)_getMethod != null)
-                //{
-                //    _getMethod.SetAssociatedProperty(this, MethodKind.PropertyGet);
-                //}
+                if ((object)_getMethod != null)
+                {
+                    _getMethod.SetAssociatedProperty(this, MethodKind.PropertyGet);
+                }
 
-                //if ((object)_setMethod != null)
-                //{
-                //    _setMethod.SetAssociatedProperty(this, MethodKind.PropertySet);
-                //}
+                if ((object)_setMethod != null)
+                {
+                    _setMethod.SetAssociatedProperty(this, MethodKind.PropertySet);
+                }
             }
 
             if (callMethodsDirectly)

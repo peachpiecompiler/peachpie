@@ -112,10 +112,12 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Gets value indicating the routine requires array of callers' local variables.
+        /// Gets additional flags of the caller routine.
         /// </summary>
-        public static bool HasImportLocals(this IPhpRoutineSymbol routine)
+        public static RoutineFlags InvocationFlags(this IPhpRoutineSymbol routine)
         {
+            RoutineFlags f = RoutineFlags.None;
+
             var ps = routine.Parameters;
             foreach (var p in ps)
             {
@@ -123,7 +125,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (SpecialParameterSymbol.IsLocalsParameter(p))
                     {
-                        return true;
+                        f |= RoutineFlags.UsesLocals;
+                    }
+                    else if (SpecialParameterSymbol.IsCallerArgsParameter(p))
+                    {
+                        f |= RoutineFlags.UsesArgs;
                     }
                 }
                 else
@@ -132,7 +138,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            return false;
+            return f;
         }
     }
 }
