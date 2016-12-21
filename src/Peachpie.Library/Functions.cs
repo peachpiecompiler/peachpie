@@ -60,6 +60,58 @@ namespace Pchp.Library
 
         #endregion
 
+        #region func_num_args, func_get_arg, func_get_args
+
+        /// <summary>
+		/// Retrieves the number of arguments passed to the current user-function.
+		/// </summary>
+		public static int func_num_args([ImportCallerArgs]PhpValue[] args) => args.Length;
+
+        /// <summary>
+        /// Retrieves an argument passed to the current user-function.
+        /// </summary>
+        /// <remarks><seealso cref="PhpStack.GetArgument"/></remarks>
+        public static PhpValue func_get_arg([ImportCallerArgs]PhpValue[] args, int index)
+        {
+            //// checks correctness of the argument:
+            //if (index < 0)
+            //{
+            //    PhpException.InvalidArgument("index", "arg:negative");
+            //    return PhpValue.False;
+            //}
+
+            //if (index >= arg_count)
+            //{
+            //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("argument_not_passed_to_function", index));
+            //    return PhpValue.False;
+            //}
+
+            //
+            return args[index].DeepCopy();
+        }
+
+        /// <summary>
+        /// Returns an array of arguments of the current user-defined function. 
+        /// </summary>
+        /// <remarks><seealso cref="PhpStack.GetArguments"/>
+        /// Also throws warning if called from global scope.</remarks>
+        public static PhpArray func_get_args([ImportCallerArgs]PhpValue[] args)
+        {
+            // TODO: when called from global code, return FALSE
+
+            var result = new PhpArray(args.Length);
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                result.AddValue(args[i].DeepCopy());
+            }
+
+            //
+            return result;
+        }
+
+        #endregion
+
         #region function_exists, get_defined_functions
 
         /// <summary>
