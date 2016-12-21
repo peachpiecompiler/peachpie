@@ -28,6 +28,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string LocalsName = "<locals>";
 
         /// <summary>
+        /// Synthesized params parameter.
+        /// </summary>
+        public const string ParamsName = ".varargs";
+
+        /// <summary>
         /// Name of special late-bound parameter.
         /// Is of type <see cref="System.RuntimeTypeHandle"/>
         /// </summary>
@@ -64,6 +69,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static bool IsLocalsParameter(IParameterSymbol p)
             => p != null && p.Type != null && p.Type.MetadataName == "PhpArray" && p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportLocalsAttribute");
+
+        public static bool IsCallerArgsParameter(IParameterSymbol p)
+            => p != null && p.Type != null && p.Type.IsSZArray() && p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportCallerArgsAttribute");
 
         public override bool IsImplicitlyDeclared => true;
 

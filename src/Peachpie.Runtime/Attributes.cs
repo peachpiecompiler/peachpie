@@ -72,6 +72,18 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Denotates a function parameter that will be filled with array of callers' parameters.
+    /// </summary>
+    /// <remarks>
+    /// The parameter is used to access calers' arguments.
+    /// The parameter must be of type <c>array</c>.
+    /// The parameter must be before regular parameters.</remarks>
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class ImportCallerArgsAttribute : Attribute
+    {
+    }
+
+    /// <summary>
 	/// Marks return values of methods implementing PHP functions which returns <B>false</B> on error
 	/// but has other return type than <see cref="bool"/> or <see cref="object"/>.
 	/// </summary>
