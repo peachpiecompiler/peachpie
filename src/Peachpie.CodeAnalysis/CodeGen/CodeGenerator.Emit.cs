@@ -1,4 +1,5 @@
-﻿using Devsense.PHP.Syntax.Ast;
+﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
@@ -598,6 +599,110 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Emits array of <paramref name="elementType"/> containing all current routine PHP arguments value.
+        /// </summary>
+        void Emit_ArgsArray(TypeSymbol elementType)
+        {
+            var routine = this.Routine;
+            if (routine == null)
+            {
+                throw new InvalidOperationException("Routine is null!");
+            }
+
+            var ps = routine.Parameters;
+            var last = ps.LastOrDefault();
+            var variadic = (last != null && last.IsParams && last.Type.IsSZArray()) ? last : null;  // optional params
+            var variadic_element = (variadic?.Type as ArrayTypeSymbol)?.ElementType;
+            int hasthis = routine.HasThis ? 1 : 0;  // +1 when loading parameter value if there is @this
+
+            ps = ps.Where(p => !p.IsImplicitlyDeclared).ToImmutableArray();  // parameters without implicitly declared parameters
+
+            if (ps.Length == 0 && variadic_element == elementType)
+            {
+                // == params
+                _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+            }
+            else
+            {
+                // COUNT: (N + params.Length)
+                _il.EmitIntConstant(ps.Length);
+
+                if (variadic != null)
+                {
+                    // + params.Length
+                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+                    _il.EmitOpCode(ILOpCode.Add);
+                }
+
+                // new [<COUNT>]
+                _il.EmitOpCode(ILOpCode.Newarr);
+                EmitSymbolToken(elementType, null);
+
+                // { p1, .., pN }
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    _il.EmitOpCode(ILOpCode.Dup);   // <array>
+                    _il.EmitIntConstant(i);         // [i]
+                    _il.EmitLoadArgumentOpcode(ps[i].Ordinal + hasthis);
+                    EmitConvert(ps[i].Type, 0, elementType);
+                    _il.EmitOpCode(ILOpCode.Stelem);
+                    EmitSymbolToken(elementType, null);
+                }
+
+                if (variadic != null)
+                {
+                    // { params[0, .., paramsN] }
+
+                    // Template: for (i = 0; i < params.Length; i++) [i + N] = params[i]
+
+                    var lbl_block = new object();
+                    var lbl_cond = new object();
+                    
+                    // i = 0
+                    var tmpi = GetTemporaryLocal(CoreTypes.Int32);
+                    _il.EmitIntConstant(0);
+                    _il.EmitLocalStore(tmpi);
+                    _il.EmitBranch(ILOpCode.Br, lbl_cond);
+
+                    // {body}
+                    _il.MarkLabel(lbl_block);
+
+                    // <array>[i+N] = (T)params[i]
+                    _il.EmitOpCode(ILOpCode.Dup);   // <array>
+                    _il.EmitIntConstant(ps.Length);
+                    _il.EmitLocalLoad(tmpi);        
+                    _il.EmitOpCode(ILOpCode.Add);
+
+                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    _il.EmitLocalLoad(tmpi);
+                    _il.EmitOpCode(ILOpCode.Ldelem);
+                    EmitSymbolToken(variadic_element, null);
+                    EmitConvert(variadic_element, 0, elementType);
+
+                    _il.EmitOpCode(ILOpCode.Stelem);
+                    EmitSymbolToken(elementType, null);
+
+                    // i++
+                    _il.EmitLocalLoad(tmpi);
+                    _il.EmitIntConstant(1);
+                    _il.EmitOpCode(ILOpCode.Add);
+                    _il.EmitLocalStore(tmpi);
+
+                    // i < params.Length
+                    _il.MarkLabel(lbl_cond);
+                    _il.EmitLocalLoad(tmpi);
+                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+                    _il.EmitBranch(ILOpCode.Blt, lbl_block);
+
+                    //
+                    ReturnTemporaryLocal(tmpi);
+                }
+            }
+        }
+
         public void EmitUnset(BoundReferenceExpression expr)
         {
             Debug.Assert(expr != null);
@@ -679,19 +784,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var p = parameters[param_index];
 
                 // special implicit parameters
-                if (arg_index == 0 && p.IsImplicitlyDeclared)
+                if (arg_index == 0 && p.IsImplicitlyDeclared && !p.IsParams)
                 {
                     // <ctx>
                     if (SpecialParameterSymbol.IsContextParameter(p))
                     {
-                        Debug.Assert(p.Type == this.CoreTypes.Context);
+                        Debug.Assert(p.Type == CoreTypes.Context);
                         EmitLoadContext();
                     }
                     else if (SpecialParameterSymbol.IsLocalsParameter(p))
                     {
-                        Debug.Assert(p.Type == this.CoreTypes.PhpArray);
+                        Debug.Assert(p.Type == CoreTypes.PhpArray);
                         if (!this.HasUnoptimizedLocals) throw new InvalidOperationException();
-                        this.LocalsPlaceOpt.EmitLoad(this.Builder);
+                        LocalsPlaceOpt.EmitLoad(Builder)
+                            .Expect(CoreTypes.PhpArray);
+                    }
+                    else if (SpecialParameterSymbol.IsCallerArgsParameter(p))
+                    {
+                        // ((NamedTypeSymbol)p.Type).TypeParameters // TODO: IList<T>
+                        Emit_ArgsArray(CoreTypes.PhpValue); // TODO: T
                     }
                     else
                     {
@@ -773,7 +884,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             for (int i = 0; i < targetps.Length; i++)
             {
                 var targetp = targetps[i];
-                if (targetp.IsImplicitlyDeclared)
+                if (targetp.IsImplicitlyDeclared && !targetp.IsParams)
                 {
                     if (SpecialParameterSymbol.IsContextParameter(targetp))
                     {
@@ -791,7 +902,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         var p = givenps[srcp];
                         EmitLoadArgument(
                             targetp,
-                            new BoundVariableRef(new BoundVariableName(new Devsense.PHP.Syntax.VariableName(p.MetadataName)))
+                            new BoundVariableRef(new BoundVariableName(new VariableName(p.MetadataName)))
                             {
                                 Variable = new BoundParameter(p, null),
                                 Access = BoundAccess.Read
@@ -875,7 +986,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <returns><see cref="WriteBackInfo"/> which has to be finalized with <see cref="WriteBackAndFree(CodeGenerator)"/> once the routine call ends.</returns>
             public static WriteBackInfo CreateAndLoad(CodeGenerator cg, ParameterSymbol targetp, BoundReferenceExpression expr)
             {
-                var writeback =  new WriteBackInfo()
+                var writeback = new WriteBackInfo()
                 {
                     TmpLocal = cg.GetTemporaryLocal(targetp.Type),
                     Target = expr,
