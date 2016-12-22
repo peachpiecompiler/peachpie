@@ -97,7 +97,7 @@ namespace Pchp.Library.Database
         /// Gets the number of records affected by the query that generates this result.
         /// Contains minus one for select queries.
         /// </summary>
-        public int RecordsAffected { get { return CurrentSet.RecordsAffected; } }
+        public int RecordsAffected => CurrentSet.RecordsAffected;
 
         #endregion
 
@@ -106,18 +106,12 @@ namespace Pchp.Library.Database
         /// <summary>
         /// Gets the current result set.
         /// </summary>
-        protected ResultSet/*!*/ CurrentSet
-        {
-            get { return (ResultSet)resultSets[currentSetIndex]; }
-        }
+        protected ResultSet/*!*/ CurrentSet => resultSets[currentSetIndex];
 
         /// <summary>
         /// Gets the number of results sets.
         /// </summary>
-        public int ResultSetCount
-        {
-            get { return resultSets.Count; }
-        }
+        public int ResultSetCount => resultSets.Count;
 
         /// <summary>
         /// Advances the current result set index.
@@ -149,8 +143,8 @@ namespace Pchp.Library.Database
         /// <param name="convertTypes">Whether to convert resulting values to PHP types.</param>
         /// <exception cref="ArgumentNullException">Argument is a <B>null</B> reference.</exception>
         protected ResultResource(ConnectionResource/*!*/ connection, IDataReader/*!*/ reader, string/*!*/ name, bool convertTypes)
-			: base(name)
-		{
+            : base(name)
+        {
             if (connection == null)
                 throw new ArgumentNullException("connection");
 
@@ -527,8 +521,12 @@ namespace Pchp.Library.Database
         /// <returns>The value or a <B>null</B> reference if row or index are out of range.</returns>
         public object GetFieldValue(int rowIndex, int fieldIndex)
         {
-            if (!CheckRowIndex(rowIndex) || !CheckFieldIndex(fieldIndex)) return null;
-            return ((object[])CurrentSet.Rows[rowIndex])[fieldIndex];
+            if (!CheckRowIndex(rowIndex) || !CheckFieldIndex(fieldIndex))
+            {
+                return null;
+            }
+
+            return CurrentSet.Rows[rowIndex][fieldIndex];
         }
 
         /// <summary>

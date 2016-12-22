@@ -452,7 +452,47 @@ namespace Peachpie.Library.MySql
                 dest[dest_index++] = b;
             }
         }
-        
+
+        #endregion
+
+        #region mysql_result
+
+        /// <summary>
+        /// Gets a contents of a specified cell from a specified query result resource.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="row">Row index.</param>
+        /// <param name="field">Column (field) integer index or string name.</param>
+        /// <returns>The value of the cell or a <B>null</B> reference (<B>false</B> in PHP) on failure (invalid resource or row/field index/name).</returns>
+        /// <remarks>
+        /// Result is affected by run-time quoting.
+        /// </remarks>
+        public static PhpValue mysql_result(PhpResource resultHandle, int row, PhpValue field)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null)
+            {
+                return PhpValue.False;
+            }
+
+            string field_name;
+            object field_value;
+            if (field.IsEmpty)
+            {
+                field_value = result.GetFieldValue(row, result.CurrentFieldIndex);
+            }
+            else if ((field_name = PhpVariable.AsString(field)) != null)
+            {
+                field_value = result.GetFieldValue(row, field_name);
+            }
+            else
+            {
+                field_value = result.GetFieldValue(row, (int)field.ToLong());
+            }
+
+            return PhpValue.FromClr(field_value); // TODO: Core.Convert.Quote(field_value, context);
+        }
+
         #endregion
 
         #region mysql_get_client_info, mysql_get_server_info

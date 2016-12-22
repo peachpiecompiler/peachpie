@@ -47,6 +47,21 @@ namespace Peachpie.Library.MySql
             // no code in here
         }
 
+        internal static MySqlResultResource ValidResult(PhpResource handle)
+        {
+            var result = handle as MySqlResultResource;
+            if (result != null && result.IsValid)
+            {
+                return result;
+            }
+            else
+            {
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_result_resource"));
+                //return null;
+                throw new NotImplementedException();    // TODO: Err
+            }
+        }
+
         /// <summary>
         /// Gets row values.
         /// </summary>
