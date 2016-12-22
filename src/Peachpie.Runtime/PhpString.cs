@@ -651,6 +651,8 @@ namespace Pchp.Core
             throw new ArgumentException(chunk.GetType().ToString());
         }
 
+        public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
+
         public byte[] ToBytes(Encoding encoding)
         {
             var chunks = _chunks;
