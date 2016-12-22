@@ -62,6 +62,17 @@ namespace Peachpie.Library.MySql
             }
         }
 
+        protected override void FreeManaged()
+        {
+            var reader = (MySqlDataReader)this.Reader;
+            if (reader != null)
+            {
+                reader.Close(); // non virtual!!
+            }
+
+            base.FreeManaged();
+        }
+
         /// <summary>
         /// Gets row values.
         /// </summary>

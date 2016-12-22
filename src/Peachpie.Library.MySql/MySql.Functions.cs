@@ -455,6 +455,48 @@ namespace Peachpie.Library.MySql
 
         #endregion
 
+        #region mysql_free_result
+
+        /// <summary>
+        /// Releases a resource represening a query result.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <returns><B>true</B> on success, <B>false</B> on failure (invalid resource).</returns>
+        public static bool mysql_free_result(PhpResource resultHandle)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result != null)
+            {
+                result.Dispose();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region mysql_select_db
+        
+        /// <summary>
+        /// Selects the current DB for a specified connection.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="databaseName">Name of the database.</param>
+        /// <param name="linkIdentifier">Connection resource.</param>
+        /// <returns><B>true</B> on success, <B>false</B> on failure.</returns>
+        public static bool mysql_select_db(Context ctx, string databaseName, PhpResource linkIdentifier = null)
+        {
+            var connection = ValidConnection(ctx, linkIdentifier);
+            return (connection != null)
+                ? connection.SelectDb(databaseName)
+                : false;
+        }
+
+        #endregion
+
         #region mysql_result
 
         /// <summary>
