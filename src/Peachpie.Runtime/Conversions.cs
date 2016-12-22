@@ -89,6 +89,11 @@ namespace Pchp.Core
         /// <summary>
         /// Gets string representation of a floating point number value.
         /// </summary>
+        public static string ToString(double value) => value.ToString("G", NumberFormatInfo.InvariantInfo);
+
+        /// <summary>
+        /// Gets string representation of a floating point number value.
+        /// </summary>
         public static string ToString(double value, Context ctx) => value.ToString("G", ctx.NumberFormat);
 
         #endregion
