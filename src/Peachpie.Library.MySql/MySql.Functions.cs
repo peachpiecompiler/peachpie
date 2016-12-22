@@ -1,6 +1,8 @@
-﻿using Pchp.Core;
+﻿using MySql.Data.MySqlClient;
+using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -260,6 +262,197 @@ namespace Peachpie.Library.MySql
             }
         }
 
+        #endregion
+
+        #region mysql_query
+
+        /// <summary>
+        /// Sends a query to the current database associated with a specified connection.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="query">Query.</param>
+        /// <param name="link">Connection resource.</param>
+        /// <returns>Query resource or a <B>null</B> reference (<B>null</B> in PHP) on failure.</returns>
+        [return: CastToFalse]
+        public static PhpResource mysql_query(Context ctx, PhpString query, PhpResource link = null)
+        {
+            var connection = ValidConnection(ctx, link);
+            if (query == null || connection == null || query.IsEmpty)
+            {
+                return null;
+            }
+            else if (query.ContainsBinaryData)
+            {
+                // be aware of binary data
+                return QueryBinary(ctx.StringEncoding, query.ToBytes(ctx), connection);
+            }
+            else
+            {
+                // standard unicode behaviour
+                return connection.ExecuteQuery(query.ToString(ctx), true);
+            }
+        }
+
+        /// <summary>
+        /// Sends a query to the current database associated with a specified connection. Preserves binary characters.
+        /// </summary>
+        /// <param name="encoding">Current string encoding.</param>
+        /// <param name="query">Query.</param>
+        /// <param name="connection">Connection resource.</param>
+        /// <returns>Query resource or a <B>null</B> reference (<B>null</B> in PHP) on failure.</returns>
+        private static PhpResource QueryBinary(Encoding encoding, byte[] query, MySqlConnectionResource connection)
+        {
+            Debug.Assert(query != null);
+            Debug.Assert(connection != null && connection.IsValid);
+
+            //
+            List<IDataParameter> parameters = null;
+            string commandText = null;
+            int commandTextLast = 0;
+
+            // Parse values whether it contains non-ascii characters,
+            // non-encodable values convert to byte[] parameter:
+            int lastQuote = -1;
+            bool escaped = false;
+            bool containsNonAscii = false;  // whether encosing may corrupt value when storing into BLOB column
+            int escapedChars = 0;    // amount of '\' chars (> 0 means we have to unescape the value)
+
+            for (int i = 0; i < query.Length; i++)
+            {
+                byte b = query[i];
+
+                if (b == '\'' || b == '\"')
+                {
+                    if (escaped)
+                    {
+                        escaped = false;
+                    }
+                    else //(!escaped)
+                    {
+                        if (lastQuote >= 0 && query[lastQuote] != b)
+                            continue;   // incompatible quotes (should be escaped, but we should handle that)
+
+                        if (lastQuote >= 0 && containsNonAscii)
+                        {
+                            commandText = string.Concat(commandText, encoding.GetString(query, commandTextLast, lastQuote - commandTextLast));
+                            commandTextLast = i + 1;
+
+                            // param name @paramName
+                            string paramName = string.Concat("_ImplData_", i.ToString());
+
+                            // replace [lastQuote, i] with "@paramName"
+                            // and add parameter @paramName
+                            byte[] value = new byte[i - lastQuote - 1 - escapedChars];
+                            if (escapedChars == 0)
+                            {
+                                // we can block-copy the value, there are no escaped characters:
+                                Buffer.BlockCopy(query, lastQuote + 1, value, 0, value.Length);
+                            }
+                            else
+                            {
+                                // unescape the value, parameters are assumed to contained raw data, escaping is not desirable:
+                                UnescapeString(query, lastQuote + 1, value);
+                            }
+
+                            //
+                            if (parameters == null) parameters = new List<IDataParameter>(1);
+                            parameters.Add(new MySqlParameter(paramName, value));
+                            commandText += '@' + paramName;
+
+                            lastQuote = -1; // out of quoted value
+                        }
+                        else
+                        {
+                            lastQuote = i;  // start of quoted value
+                            escapedChars = 0;
+                        }
+
+                        containsNonAscii = false;
+                    }
+                }
+                else if (b > 0x7f && lastQuote >= 0)   // non-ascii character
+                {
+                    // this character may not pass:
+                    containsNonAscii = true;
+                    escaped = false;
+                }
+                else if (escaped)
+                {
+                    escaped = false;
+                }
+                else if (b == '\\') // && !escaped)
+                {
+                    escapedChars++;
+                    escaped = true;
+                }
+                // handle comments (only outside quoted values):
+                else if (lastQuote < 0)
+                {
+                    // escaped = false
+                    // 
+                    byte bnext = ((i + 1) < query.Length) ? query[i + 1] : (byte)0;
+                    if (b == '/' && bnext == '*') // /*
+                    {
+                        // /* comment */
+                        i += 2;
+                        while ((i + 1) < query.Length && (query[i] != '*' || query[i + 1] != '/'))
+                            i++;    // skip comment
+                    }
+                    else if (   // -- or #
+                        (b == '-' && bnext == '-' && (i + 2 < query.Length) && char.IsWhiteSpace((char)query[i + 2])) ||
+                        (b == '#'))
+                    {
+                        // single line comment
+                        i++;
+                        while (i < query.Length && query[i] != '\n')
+                            i++;
+                    }
+                }
+            }
+
+            //
+            commandText = string.Concat(commandText, encoding.GetString(query, commandTextLast, query.Length - commandTextLast));
+            return connection.ExecuteCommand(commandText, CommandType.Text, true, parameters, false);
+        }
+
+        /// <summary>
+        /// Inverse function to <see cref="mysql_escape_string(Context, PhpString)"/>.
+        /// </summary>
+        /// <param name="source">Source byte array containing escaped characters.</param>
+        /// <param name="startFrom">Index of the first character to start unescaping with.</param>
+        /// <param name="dest">Target byte array where unescaped <paramref name="source"/> is copied.</param>
+        /// <remarks>This method unescapes as many characters as <paramref name="dest"/> can hold.</remarks>
+        private static void UnescapeString(byte[]/*!*/source, int startFrom, byte[]/*!*/dest)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(dest != null);
+            Debug.Assert(startFrom >= 0 && startFrom < source.Length);
+            Debug.Assert(source.Length - startFrom /* - escapedChars */ >= dest.Length);
+
+            int dest_index = 0; // dest write index
+            int source_length = source.Length;
+
+            for (int i = startFrom; dest_index < dest.Length; i++)
+            {
+                byte b = source[i];
+
+                // unescape the character (invert function to EscapeString)
+                if (b == '\\')// && i < source_length - 1)
+                {
+                    Debug.Assert(i < source_length - 1);
+
+                    b = source[++i];    // next char after the \
+                    if (b == 'n') b = (byte)'\n';
+                    else if (b == 'r') b = (byte)'\r';
+                    else if (b == 'Z') b = (byte)'\u001a';
+                    // else: other characters are as they are
+                }
+
+                //
+                dest[dest_index++] = b;
+            }
+        }
+        
         #endregion
 
         #region mysql_get_client_info, mysql_get_server_info
