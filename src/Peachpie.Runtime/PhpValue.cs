@@ -137,7 +137,7 @@ namespace Pchp.Core
         /// Gets the object field of the value as string.
         /// Does not perform a conversion, expects the value is of type (readonly UTF16) string.
         /// </summary>
-        public string String { get { Debug.Assert(_obj.Obj is string); return _obj.String; } }
+        public string String { get { Debug.Assert(_obj.Obj is string || _obj.Obj == null); return _obj.String; } }
 
         /// <summary>
         /// Gets the object field of the value as PHP writable string.

@@ -742,11 +742,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // loads value from place most effectively without runtime type checking
             var place = PlaceOrNull(expr);
-            var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
-            if (type != null)
+            if (place != null && place.TypeOpt != to)
             {
-                EmitConvert(type, 0, to);
-                return;
+                var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
+                if (type != null)
+                {
+                    EmitConvert(type, 0, to);
+                    return;
+                }
             }
 
             // avoiding of load of full value
