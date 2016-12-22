@@ -385,6 +385,15 @@ namespace Pchp.Core
         /// </summary>
         public void Accept(PhpVariableVisitor visitor) => _type.Accept(ref this, visitor);
 
+        /// <summary>
+        /// Gets value converted to string using default configuration options.
+        /// </summary>
+        public override string ToString()
+        {
+            Debug.WriteLine("Use ToString(Context) instead!");
+            return _type.ToStringQuiet(ref this);
+        }
+
         #endregion
 
         #region IEquatable<PhpValue>

@@ -32,6 +32,7 @@ namespace Pchp.Core
             public abstract bool IsNull { get; }
             public virtual bool IsEmpty(ref PhpValue me) => ToBoolean(ref me) == false;
             public abstract object ToClass(ref PhpValue me);
+            public abstract string ToStringQuiet(ref PhpValue me);
             public abstract string ToString(ref PhpValue me, Context ctx);
             public abstract string ToStringOrThrow(ref PhpValue me, Context ctx);
             public abstract long ToLong(ref PhpValue me);
@@ -148,6 +149,7 @@ namespace Pchp.Core
             public override bool IsNull => true;
             public override bool IsEmpty(ref PhpValue me) => true;
             public override object ToClass(ref PhpValue me) => new stdClass();
+            public override string ToStringQuiet(ref PhpValue me) => string.Empty;
             public override string ToString(ref PhpValue me, Context ctx) => string.Empty;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => string.Empty;
             public override long ToLong(ref PhpValue me) => 0;
@@ -196,6 +198,7 @@ namespace Pchp.Core
             public override PhpTypeCode Type => PhpTypeCode.Long;
             public override bool IsNull => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
+            public override string ToStringQuiet(ref PhpValue me) => me.Long.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => me.Long.ToString();
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Long.ToString();
             public override long ToLong(ref PhpValue me) => me.Long;
@@ -223,6 +226,7 @@ namespace Pchp.Core
             public override PhpTypeCode Type => PhpTypeCode.Double;
             public override bool IsNull => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
+            public override string ToStringQuiet(ref PhpValue me) => Convert.ToString(me.Double);
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
             public override long ToLong(ref PhpValue me) => (long)me.Double;
@@ -250,6 +254,7 @@ namespace Pchp.Core
             public override PhpTypeCode Type => PhpTypeCode.Boolean;
             public override bool IsNull => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
+            public override string ToStringQuiet(ref PhpValue me) => Convert.ToString(me.Boolean);
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
             public override long ToLong(ref PhpValue me) => me.Boolean ? 1L : 0L;
@@ -295,6 +300,7 @@ namespace Pchp.Core
             public override PhpTypeCode Type => PhpTypeCode.String;
             public override bool IsNull => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
+            public override string ToStringQuiet(ref PhpValue me) => me.String;
             public override string ToString(ref PhpValue me, Context ctx) => me.String;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.String;
             public override long ToLong(ref PhpValue me) => Convert.StringToLongInteger(me.String);
@@ -347,6 +353,7 @@ namespace Pchp.Core
             public override PhpTypeCode Type => PhpTypeCode.WritableString;
             public override bool IsNull => false;
             public override object ToClass(ref PhpValue me) => new stdClass(DeepCopy(ref me));	// new stdClass(){ $scalar = VALUE }
+            public override string ToStringQuiet(ref PhpValue me) => me.WritableString.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => me.WritableString.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.WritableString.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.WritableString.ToLong();
@@ -397,6 +404,7 @@ namespace Pchp.Core
             public override bool IsNull => false;
             public override bool IsEmpty(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => me.Object;
+            public override string ToStringQuiet(ref PhpValue me) => me.Object.ToString();
             public override string ToString(ref PhpValue me, Context ctx)
             {
                 if (me.Object is IPhpConvertible)
@@ -498,6 +506,7 @@ namespace Pchp.Core
             public override bool IsNull => false;
             public override bool IsEmpty(ref PhpValue me) => me.Array.Count == 0;
             public override object ToClass(ref PhpValue me) => me.Array.ToClass();
+            public override string ToStringQuiet(ref PhpValue me) => PhpArray.PrintablePhpTypeName;
             public override string ToString(ref PhpValue me, Context ctx) => me.Array.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.Array.ToLong();
@@ -547,6 +556,7 @@ namespace Pchp.Core
             public override bool IsNull => false;
             public override bool IsEmpty(ref PhpValue me) => me.Alias.Value.IsEmpty;
             public override object ToClass(ref PhpValue me) => me.Alias.ToClass();
+            public override string ToStringQuiet(ref PhpValue me) => me.Alias.Value.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => me.Alias.ToString(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Alias.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.Alias.ToLong();
