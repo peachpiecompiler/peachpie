@@ -280,5 +280,91 @@ namespace Peachpie.Library.MySql
         }
 
         #endregion
+
+        #region mysql_real_escape_string, mysql_escape_string
+
+        /// <summary>
+        /// Escapes special characters in a string for use in a SQL statement.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="str">String to escape.</param>
+        /// <param name="link">Connection resource.</param>
+        /// <returns>Escaped string.</returns>
+        [return: CastToFalse]
+        public static PhpString mysql_real_escape_string(Context ctx, PhpString str, PhpResource link = null)
+        {
+            var connection = ValidConnection(ctx, link);
+            if (connection == null)
+            {
+                // TODO: create default connection
+            }
+
+            // TODO: get character set from connection
+
+            return mysql_escape_string(ctx, str);
+        }
+
+        /// <summary>
+        /// Escapes special characters in a string for use in a SQL statement.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="unescaped_str">String to escape.</param>
+        /// <returns>Escaped string.</returns>
+        public static PhpString mysql_escape_string(Context ctx, PhpString unescaped_str)
+        {
+            if (unescaped_str == null || unescaped_str.IsEmpty)
+            {
+                return PhpString.Empty;
+            }
+
+            // binary aware:
+            if (unescaped_str.ContainsBinaryData)
+            {
+                var bytes = unescaped_str.ToBytes(ctx);
+                if (bytes.Length == 0) return unescaped_str;
+
+                List<byte>/*!*/result = new List<byte>(bytes.Length + 8);
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    switch (bytes[i])
+                    {
+                        case (byte)'\0': result.Add((byte)'\\'); goto default;
+                        case (byte)'\\': result.Add((byte)'\\'); goto default;
+                        case (byte)'\n': result.Add((byte)'\\'); result.Add((byte)'n'); break;
+                        case (byte)'\r': result.Add((byte)'\\'); result.Add((byte)'r'); break;
+                        case (byte)'\u001a': result.Add((byte)'\\'); result.Add((byte)'Z'); break;
+                        case (byte)'\'': result.Add((byte)'\\'); goto default;
+                        case (byte)'"': result.Add((byte)'\\'); goto default;
+                        default: result.Add(bytes[i]); break;
+                    }
+                }
+
+                return new PhpString(result.ToArray());
+            }
+
+            // else
+            var str = unescaped_str.ToString(ctx);
+
+            var sb = new StringBuilder(str.Length + 8);
+            for (int i = 0; i < str.Length; i++)
+            {
+                char c = str[i];
+                switch (c)
+                {
+                    case '\0': sb.Append(@"\0"); break;
+                    case '\\': sb.Append(@"\\"); break;
+                    case '\n': sb.Append(@"\n"); break;
+                    case '\r': sb.Append(@"\r"); break;
+                    case '\u001a': sb.Append(@"\Z"); break;
+                    case '\'': sb.Append(@"\'"); break;
+                    case '"': sb.Append("\\\""); break;
+                    default: sb.Append(c); break;
+                }
+            }
+
+            return new PhpString(sb.ToString());
+        }
+
+        #endregion
     }
 }
