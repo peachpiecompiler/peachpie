@@ -24,7 +24,7 @@ namespace Pchp.Library.Database
         /// <summary>
 		/// A result associated with this connection that possibly has not been closed yet.
 		/// </summary>
-		protected IDataReader pendingReader;
+		protected IDataReader _pendingReader;
 
         /// <summary>
 		/// Last result resource.
@@ -141,14 +141,12 @@ namespace Pchp.Library.Database
         /// <summary>
 		/// Closes pending reader.
 		/// </summary>
-		public void ClosePendingReader()
+		public virtual void ClosePendingReader()
         {
-            if (pendingReader != null)
-            {
-                if (!pendingReader.IsClosed)
-                    pendingReader.Close();
-
-                pendingReader = null;
+            if (_pendingReader != null)
+            {   
+                _pendingReader.Close();
+                _pendingReader = null;
             }
         }
 
@@ -217,7 +215,9 @@ namespace Pchp.Library.Database
             {
                 command.Parameters.Clear();
                 foreach (IDataParameter parameter in parameters)
+                {
                     command.Parameters.Add(parameter);
+                }
             }
 
             // ExecuteReader
@@ -225,7 +225,7 @@ namespace Pchp.Library.Database
 
             try
             {
-                var/*!*/reader = this.pendingReader = command.ExecuteReader();
+                var/*!*/reader = _pendingReader = command.ExecuteReader();
 
                 if (skipResults)
                 {
@@ -269,7 +269,7 @@ namespace Pchp.Library.Database
 
             try
             {
-                result.Reader = pendingReader = result.Command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SchemaOnly);
+                result.Reader = _pendingReader = result.Command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SchemaOnly);
             }
             catch (Exception e)
             {

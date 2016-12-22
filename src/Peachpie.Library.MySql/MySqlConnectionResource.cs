@@ -76,6 +76,16 @@ namespace Peachpie.Library.MySql
             }
         }
 
+        public override void ClosePendingReader()
+        {
+            var myreader = (MySqlDataReader)_pendingReader;
+            if (myreader != null)
+            {
+                myreader.Close();   // we have to call Close() on MySqlDataReader, it is declared as non-virtual!
+                _pendingReader = myreader = null;
+            }
+        }
+
         protected override IDbConnection ActiveConnection => _connection;
 
         protected override ResultResource GetResult(ConnectionResource connection, IDataReader reader, bool convertTypes)
