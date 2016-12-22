@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Data;
+using System.Diagnostics;
 
 namespace Peachpie.Library.MySql
 {
@@ -17,7 +19,7 @@ namespace Peachpie.Library.MySql
         readonly MySqlConnectionManager _manager;
         readonly MySqlConnection _connection;
 
-        public MySqlConnectionResource(MySqlConnectionManager manager,string connectionString) : base(connectionString, "mysql connection")
+        public MySqlConnectionResource(MySqlConnectionManager manager, string connectionString) : base(connectionString, "mysql connection")
         {
             _manager = manager;
             _connection = new MySqlConnection(this.ConnectionString);
@@ -25,18 +27,70 @@ namespace Peachpie.Library.MySql
 
         public override bool Connect()
         {
-            _connection.Open(); // TODO: Async
+            if (_connection.State == ConnectionState.Open)
+            {
+                return true;
+            }
+
+            try
+            {
+                _connection.Open();  // TODO: Async
+                _lastException = null;
+            }
+            catch (Exception e)
+            {
+                _lastException = e;
+
+                throw new NotImplementedException();    // TODO: ERR
+
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("cannot_open_connection",
+                //  GetExceptionMessage(e)));
+
+                //return false;
+            }
 
             return true;
         }
 
         protected override void FreeManaged()
         {
-            _manager.RemoveConnection(this);
-            _connection.Close();
-
-            //
             base.FreeManaged();
+
+            _manager.RemoveConnection(this);
+
+            try
+            {
+                if (_connection != null && _connection.State != ConnectionState.Closed)
+                {
+                    _connection.Close();
+                }
+
+                _lastException = null;
+            }
+            catch (Exception e)
+            {
+                _lastException = e;
+                throw new NotImplementedException(); // TODO: ERR
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("error_closing_connection",
+                //  GetExceptionMessage(e)));
+            }
+        }
+
+        protected override IDbConnection ActiveConnection => _connection;
+
+        protected override ResultResource GetResult(ConnectionResource connection, IDataReader reader, bool convertTypes)
+        {
+            return new MySqlResultResource(connection, reader, convertTypes);
+        }
+
+        protected override IDbCommand CreateCommand(string commandText, CommandType commandType)
+        {
+            return new MySqlCommand()
+            {
+                Connection = _connection,
+                CommandText = commandText,
+                CommandType = commandType
+            };
         }
 
         /// <summary>
