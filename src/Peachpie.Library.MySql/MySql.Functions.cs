@@ -490,9 +490,7 @@ namespace Peachpie.Library.MySql
         public static bool mysql_select_db(Context ctx, string databaseName, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
-            return (connection != null)
-                ? connection.SelectDb(databaseName)
-                : false;
+            return connection != null && connection.SelectDb(databaseName);
         }
 
         #endregion
