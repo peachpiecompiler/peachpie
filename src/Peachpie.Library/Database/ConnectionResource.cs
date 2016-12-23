@@ -283,8 +283,8 @@ namespace Pchp.Library.Database
         /// <summary>
 		/// Changes the active database on opened connection.
 		/// </summary>
-		/// <param name="databaseName"></param>
-		/// <returns>true if databse was changed; otherwise returns false</returns>
+		/// <param name="databaseName">Database name.</param>
+		/// <returns><c>True</c> if the database was changed, otherwise <c>false</c>.</returns>
 		public bool SelectDb(string databaseName)
         {
             ClosePendingReader();
