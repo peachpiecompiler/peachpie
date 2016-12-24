@@ -359,44 +359,6 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Recursion Prevention
-
-        #region Nested struct: RecursionState
-
-        struct RecursionState : IEquatable<RecursionState>
-        {
-            public class EqualityComparer : IEqualityComparer<RecursionState>
-            {
-                public static readonly EqualityComparer Instance = new EqualityComparer();
-                private EqualityComparer() { }
-                public bool Equals(RecursionState x, RecursionState y) => x.Equals(y);
-                public int GetHashCode(RecursionState obj) => obj.GetHashCode();
-            }
-
-            readonly object _obj;
-            readonly int _type;
-
-            public RecursionState(object obj, int type)
-            {
-                _obj = obj;
-                _type = type;
-            }
-
-            public bool Equals(RecursionState other) => _type == other._type && ReferenceEquals(_obj, other._obj);
-            public override int GetHashCode() => _obj.GetHashCode() ^ _type;
-            public override bool Equals(object obj) => obj is RecursionState && Equals((RecursionState)obj);
-        }
-
-        #endregion
-
-        public bool TryEnterRecursion(object obj, int type) => _recursionPrevention.Add(new RecursionState(obj, type));
-
-        public void ExitRecursion(object obj, int type) => _recursionPrevention.Remove(new RecursionState(obj, type));
-
-        readonly HashSet<RecursionState> _recursionPrevention = new HashSet<RecursionState>(RecursionState.EqualityComparer.Instance);
-
-        #endregion
-
         #region Shutdown
 
         List<Action> _lazyShutdownCallbacks = null;
