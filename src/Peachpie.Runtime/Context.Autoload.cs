@@ -26,12 +26,10 @@ namespace Pchp.Core
         /// </summary>
         PhpTypeInfo IPhpAutoloadService.AutoloadTypeByName(string fullName)
         {
-            // TODO: recursion prevention
-
             var autoload = _lazyAutoloadRoutine;
             if (autoload == null)
             {
-                _lazyAutoloadRoutine = autoload = this.GetDeclaredFunction(AutoloadFunctionName);
+                _lazyAutoloadRoutine = autoload = GetDeclaredFunction(AutoloadFunctionName);
 
                 if (autoload == null)
                 {
@@ -39,11 +37,25 @@ namespace Pchp.Core
                 }
             }
 
-            // CALL __autoload(fullName)
-            autoload.PhpCallable(this, new PhpValue[] { (PhpValue)fullName });
+            if (this.RecursionService.TryEnterRecursion(fullName))
+            {
+                try
+                {
+                    // CALL __autoload(fullName)
+                    autoload.PhpCallable(this, new PhpValue[] { (PhpValue)fullName });
+                }
+                finally
+                {
+                    RecursionService.ExitRecursion(fullName);
+                }
 
-            //
-            return this.GetDeclaredType(fullName);
+                //
+                return GetDeclaredType(fullName);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
