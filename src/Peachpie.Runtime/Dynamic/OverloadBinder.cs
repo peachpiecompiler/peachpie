@@ -395,8 +395,8 @@ namespace Pchp.Core.Dynamic
                             {
                                 value2 = new TmpVarValue();
 
-                                value2.TrueInitializer = ConvertExpression.Bind(value.Expression, targetparam.ParameterType);   // reuse the value already obtained from argv
-                                value2.FalseInitializer = ConvertExpression.Bind(defaultValueExpr, value2.TrueInitializer.Type); // ~ default(targetparam)
+                                value2.TrueInitializer = ConvertExpression.Bind(value.Expression, targetparam.ParameterType, _ctx);   // reuse the value already obtained from argv
+                                value2.FalseInitializer = ConvertExpression.Bind(defaultValueExpr, value2.TrueInitializer.Type, _ctx); // ~ default(targetparam)
                                 value2.Expression = Expression.Variable(value2.TrueInitializer.Type, "arg_" + srcarg + "_" + defaultValueStr);
 
                                 //

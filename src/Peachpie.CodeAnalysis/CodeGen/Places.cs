@@ -1554,7 +1554,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (_access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
             else return_type = _access.TargetType ?? cg.CoreTypes.PhpValue;
 
-            var args = new List<TypeSymbol>();
+            // Template: Invoke(TInstance, Context, [string name])
+
+            var args = new List<TypeSymbol>()
+            {
+                cg.EmitLoadContext()
+            };
 
             // NameExpression in case of indirect call
             if (!_name.IsDirect)
@@ -1570,7 +1575,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 default(ImmutableArray<RefKind>),
                 null,
                 return_type);
-
 
             cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
 
@@ -1613,6 +1617,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(_lazyStoreCallSite != null);
             Debug.Assert(this.Instance.ResultType != null);
 
+            // Template: Invoke(TInstance, [string name], [value], Context)
+
             var args = new List<TypeSymbol>();
 
             // NameExpression in case of indirect call
@@ -1625,6 +1631,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 args.Add(valueType);
             }
+
+            args.Add(cg.EmitLoadContext());
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
@@ -1702,7 +1710,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (Access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
             else return_type = Access.TargetType ?? cg.CoreTypes.PhpValue;
 
-            var args = new List<TypeSymbol>();
+            // Template: Invoke(PhpTypeInfo, Context, [string name])
+
+            var args = new List<TypeSymbol>()
+            {
+                cg.EmitLoadContext()
+            };
 
             // NameExpression in case of indirect call
             if (!_name.IsDirect)
@@ -1757,7 +1770,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
             Debug.Assert(_lazyStoreCallSite != null);
-            
+
+            // Template: Invoke(PhpTypeInfo, [string name], [value], Context)
+
             var args = new List<TypeSymbol>();
 
             // NameExpression in case of indirect call
@@ -1770,6 +1785,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 args.Add(valueType);
             }
+
+            args.Add(cg.EmitLoadContext());
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(

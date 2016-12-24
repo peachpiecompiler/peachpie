@@ -24,7 +24,7 @@ namespace Pchp.Core.Dynamic
         /// <param name="target">Target type.</param>
         /// <param name="ctx">Expression with current context.</param>
         /// <returns>Expression converting <paramref name="arg"/> to <paramref name="target"/> type.</returns>
-        public static Expression Bind(Expression arg, Type target, Expression ctx = null)
+        public static Expression Bind(Expression arg, Type target, Expression ctx)
         {
             if (arg.Type == target)
                 return arg;
@@ -40,8 +40,7 @@ namespace Pchp.Core.Dynamic
 
             if (ctx == null)
             {
-                //Debug.Assert(false, "Provide context Expression");
-                ctx = Expression.Constant(null, typeof(Context));
+                throw new ArgumentNullException(nameof(ctx));
             }
 
             //

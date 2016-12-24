@@ -28,15 +28,17 @@ namespace Pchp.Core.Dynamic
 
         string ResolveName(DynamicMetaObject[] args, ref BindingRestrictions restrictions)
         {
+            int i = 1;  // [0] = ctx
+
             if (_name != null)
             {
                 return _name;
             }
             else
             {
-                Debug.Assert(args.Length >= 1 && args[0].LimitType == typeof(string));
-                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[0].Expression, Expression.Constant(args[0].Value)))); // args[0] == "VALUE"
-                return (string)args[0].Value;
+                Debug.Assert(args.Length >= i && args[i].LimitType == typeof(string));
+                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[i].Expression, Expression.Constant(args[i].Value)))); // args[0] == "VALUE"
+                return (string)args[i++].Value;
             }
         }
 
@@ -48,6 +50,7 @@ namespace Pchp.Core.Dynamic
             Expression target_expr;
 
             //
+            var ctx = args[0];
             var fldName = ResolveName(args, ref restrictions);
 
             //
@@ -78,11 +81,11 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            var getter = BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, null, _access, null);
+            var getter = BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, ctx.Expression, _access, null);
             if (getter != null)
             {
                 //
-                return new DynamicMetaObject(ConvertExpression.Bind(getter, _returnType), restrictions);
+                return new DynamicMetaObject(ConvertExpression.Bind(getter, _returnType, ctx.Expression), restrictions);
             }
 
             // field not found

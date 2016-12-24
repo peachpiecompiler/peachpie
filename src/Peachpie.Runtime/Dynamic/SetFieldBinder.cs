@@ -26,18 +26,22 @@ namespace Pchp.Core.Dynamic
 
         void ResolveArgs(DynamicMetaObject[] args, ref BindingRestrictions restrictions, out string fieldName, out Expression valueExpr)
         {
+            int i = 0;
+
+            // name
             if (_name != null)
             {
                 fieldName = _name;
-                valueExpr = (args.Length > 0) ? args[0].Expression : null;
             }
             else
             {
-                Debug.Assert(args.Length >= 1 && args[0].LimitType == typeof(string));
-                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[0].Expression, Expression.Constant(args[0].Value)))); // args[0] == "VALUE"
-                fieldName = (string)args[0].Value;
-                valueExpr = (args.Length > 1) ? args[1].Expression : null;
+                Debug.Assert(args.Length >= i && args[i].LimitType == typeof(string));
+                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[i].Expression, Expression.Constant(args[i].Value)))); // args[0] == "VALUE"
+                fieldName = (string)args[i++].Value;
             }
+
+            //
+            valueExpr = (args.Length > i && i < args.Length - 1) ? args[i].Expression : null;
         }
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
@@ -52,6 +56,7 @@ namespace Pchp.Core.Dynamic
             Expression value;
 
             ResolveArgs(args, ref restrictions, out fldName, out value);
+            var ctx = args[args.Length - 1];
 
             //
             if (target.LimitType == typeof(PhpTypeInfo))    // static field
@@ -77,7 +82,7 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            var setter = BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, null, _access, value);
+            var setter = BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, ctx.Expression, _access, value);
             if (setter != null)
             {
                 //
