@@ -226,7 +226,7 @@ namespace Pchp.Core.Reflection
                 var isstatic = p.GetMethod.IsStatic;
                 if ((kind == FieldKind.StaticField) == isstatic)
                 {
-                    Debug.Assert(isstatic ? target == null : target != null);
+                    Debug.Assert((target == null) == isstatic);
                     return Expression.Property(target, p);
                 }
             }
