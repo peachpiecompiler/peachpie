@@ -37,25 +37,20 @@ namespace Pchp.Core
                 }
             }
 
-            if (this.RecursionService.TryEnterRecursion(fullName))
+            using (var token = new RecursionCheckToken(this, fullName))
             {
-                try
+                if (!token.IsInRecursion)
                 {
                     // CALL __autoload(fullName)
                     autoload.PhpCallable(this, new PhpValue[] { (PhpValue)fullName });
-                }
-                finally
-                {
-                    RecursionService.ExitRecursion(fullName);
-                }
 
-                //
-                return GetDeclaredType(fullName);
+                    //
+                    return GetDeclaredType(fullName);
+                }
             }
-            else
-            {
-                return null;
-            }
+
+            //
+            return null;
         }
 
         /// <summary>
