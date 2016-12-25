@@ -53,7 +53,11 @@ namespace Pchp.Core
             /// </summary>
             public bool IsInRecursion => _isrecursion;
 
-            void IDisposable.Dispose()
+            /// <summary>
+            /// Exits recursion check.
+            /// Must be called once.
+            /// </summary>
+            public void Dispose()
             {
                 _list.Pop();
             }

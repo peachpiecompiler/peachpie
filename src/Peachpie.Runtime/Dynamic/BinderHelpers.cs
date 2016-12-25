@@ -565,15 +565,17 @@ namespace Pchp.Core.Dynamic
                  * }
                  */
 
+                int subkey = access.Write() ? 1 : access.Unset() ? 2 : access.Isset() ? 3 : 4;  // recursion prevention scope
+
                 // Template: RecursionCheckToken token;
                 var tokenvar = Expression.Variable(typeof(Context.RecursionCheckToken), "token");
 
                 // Template: token = new RecursionCheckToken(_ctx, (object)target, (int)access))
                 var tokenassign = Expression.Assign(tokenvar, Expression.New(Cache.RecursionCheckToken.ctor_ctx_object_int,
-                    ctx, Expression.Convert(target, Cache.Types.Object[0]), Expression.Constant((int)access)));
+                    ctx, Expression.Convert(target, Cache.Types.Object[0]), Expression.Constant(subkey)));
 
                 //
-                return Expression.Block(typeof(PhpValue),
+                return Expression.Block(resultType,
                     new[] { tokenvar},
                     Expression.TryFinally(
                         Expression.Condition(Expression.Property(tokenassign, Cache.RecursionCheckToken.IsInRecursion),
