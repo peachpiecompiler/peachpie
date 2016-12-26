@@ -24,16 +24,30 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static bool IsImplicitParameter(this ParameterInfo p)
         {
-            return p.IsContextParameter();
+            return p.IsContextParameter() || p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter();
 
-            // TODO: <locals>, <caller>, <this>
+            // TODO: classCtx, <this>
         }
 
         public static bool IsContextParameter(this ParameterInfo p)
         {
             return p.Position == 0
                 && p.ParameterType == typeof(Context)
-                && (p.Name == "ctx" || p.Name == "<ctx>" || p.Name == "context");
+                && (p.Name == "ctx" || p.Name == "<ctx>" || p.Name == "context" || p.Name == ".ctx");
+        }
+
+        public static bool IsImportLocalsParameter(this ParameterInfo p)
+        {
+            return
+                p.ParameterType == typeof(PhpArray) &&
+                p.GetCustomAttribute(typeof(ImportLocalsAttribute)) != null;
+        }
+
+        public static bool IsImportCallerArgsParameter(this ParameterInfo p)
+        {
+            return
+                p.ParameterType == typeof(PhpValue).MakeArrayType() &&
+                p.GetCustomAttribute(typeof(ImportCallerArgsAttribute)) != null;
         }
 
         /// <summary>
@@ -601,9 +615,24 @@ namespace Pchp.Core.Dynamic
                 if (argi == 0 && p.IsImplicitParameter())
                 {
                     if (p.IsContextParameter())
+                    {
                         boundargs[i] = ctx;
+                    }
+                    else if (p.IsImportLocalsParameter())
+                    {
+                        // no way we can implement this
+                        throw new NotImplementedException();    // TODO: empty array & report warning
+                    }
+                    else if (p.IsImportCallerArgsParameter())
+                    {
+                        // we don't have this info
+                        throw new NotImplementedException();    // TODO: empty array & report warning
+                    }
+                    // TODO: classCtx
                     else
+                    {
                         throw new NotImplementedException();
+                    }
                 }
                 else
                 {
