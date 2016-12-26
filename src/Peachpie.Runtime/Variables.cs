@@ -336,6 +336,56 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Determines whether the value is <see cref="bool"/>.
+        /// </summary>
+        public static bool IsBoolean(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Boolean:
+                    return true;
+
+                case PhpTypeCode.Alias:
+                    return IsBoolean(value.Alias.Value);
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the value is <see cref="double"/>.
+        /// </summary>
+        public static bool IsDouble(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Double:
+                    return true;
+
+                case PhpTypeCode.Alias:
+                    return IsDouble(value.Alias.Value);
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// In case value is a resource, gets its reference.
+        /// </summary>
+        public static PhpResource AsResource(this PhpValue value)
+        {
+            var resource = value.Object as PhpResource;
+            if (resource == null && value.IsAlias)
+            {
+                resource = value.Alias.Value.Object as PhpResource;
+            }
+
+            return resource;
+        }
+
+        /// <summary>
         /// In case value contains <see cref="PhpArray"/>,
         /// its instance is returned. Otherwise <c>null</c>.
         /// </summary>

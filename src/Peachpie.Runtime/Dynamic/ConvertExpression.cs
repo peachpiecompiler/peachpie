@@ -122,12 +122,20 @@ namespace Pchp.Core.Dynamic
             var source = expr.Type;
 
             if (source == typeof(int) ||
-                source == typeof(long) ||
-                source == typeof(double))   // TODO: ToString_Double_Context
+                source == typeof(long))
                 return Expression.Call(expr, Cache.Object.ToString);
+
+            if (source == typeof(double))
+                return Expression.Call(Cache.Object.ToString_Double_Context, expr, ctx);
+
+            if (source == typeof(bool))
+                return Expression.Call(Cache.Object.ToString_Bool, expr);
 
             if (source == typeof(string))
                 return expr;
+
+            if (source == typeof(PhpString))
+                return Expression.Call(expr, Cache.PhpString.ToString_Context, ctx); ;
 
             if (source == typeof(PhpValue))
                 return Expression.Call(expr, Cache.Operators.PhpValue_ToString_Context, ctx);

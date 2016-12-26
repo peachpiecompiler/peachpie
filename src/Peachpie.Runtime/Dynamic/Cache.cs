@@ -68,6 +68,7 @@ namespace Pchp.Core.Dynamic
         {
             public static ConstructorInfo ctor_String = typeof(Core.PhpString).GetCtor(Types.String);
             public static ConstructorInfo ctor_ByteArray = typeof(Core.PhpString).GetCtor(typeof(byte[]));
+            public static readonly MethodInfo ToString_Context = typeof(Core.PhpString).GetMethod("ToString", typeof(Context));
         }
 
         public static class RecursionCheckToken
@@ -81,6 +82,8 @@ namespace Pchp.Core.Dynamic
         {
             /// <summary><see cref="System.Object"/>.</summary>
             public static new MethodInfo ToString = typeof(object).GetMethod("ToString", Types.Empty);
+            public static readonly MethodInfo ToString_Bool = typeof(Core.Convert).GetMethod("ToString", Types.Bool);
+            public static readonly MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", Types.Double[0], typeof(Context));
         }
 
         /// <summary>

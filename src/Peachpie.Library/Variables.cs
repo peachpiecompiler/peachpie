@@ -357,7 +357,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is integer.</returns>
-        public static bool is_int(PhpValue variable) => variable.TypeCode == PhpTypeCode.Long || variable.TypeCode == PhpTypeCode.Int32;
+        public static bool is_int(PhpValue variable) => variable.IsInteger();
 
         /// <summary>
         /// Checks whether a dereferenced variable is integer.
@@ -380,7 +380,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is boolean.</returns>
-        public static bool is_bool(PhpValue variable) => variable.TypeCode == PhpTypeCode.Boolean;
+        public static bool is_bool(PhpValue variable) => variable.IsBoolean();
 
         /// <summary>
         /// Checks whether a dereferenced variable is double.
@@ -395,7 +395,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is double.</returns>
-        public static bool is_double(PhpValue variable) => variable.TypeCode == PhpTypeCode.Double;
+        public static bool is_double(PhpValue variable) => variable.IsDouble();
 
         /// <summary>
         /// Checks whether a dereferenced variable is double.
@@ -410,20 +410,20 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is string.</returns>
-        public static bool is_string(PhpValue variable) => variable.TypeCode == PhpTypeCode.String || variable.TypeCode == PhpTypeCode.WritableString;
+        public static bool is_string(PhpValue variable) => variable.TypeCode == PhpTypeCode.String || variable.TypeCode == PhpTypeCode.WritableString || (variable.IsAlias && is_string(variable.Alias.Value));
 
         /// <summary>
         /// Checks whether a dereferenced variable is an <see cref="PhpArray"/>.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is <see cref="PhpArray"/>.</returns>
-        public static bool is_array(PhpValue variable) => variable.IsArray;
+        public static bool is_array(PhpValue variable) => variable.IsArray || (variable.IsAlias && variable.Alias.Value.IsArray);
 
         /// <summary>
         /// Checks whether a dereferenced variable is <see cref="Core.Reflection.DObject"/>.
         /// </summary>
         /// <param name="variable">The variable.</param>
-        /// <returns>Whether <paramref name="variable"/> is <see cref="Core.Reflection.DObject"/>.</returns>
+        /// <returns>Whether <paramref name="variable"/> is <see cref="object"/>.</returns>
         public static bool is_object(PhpValue variable)
             => variable.IsObject && variable.Object != null && !(variable.Object is __PHP_Incomplete_Class);
 
@@ -434,9 +434,8 @@ namespace Pchp.Library
         /// <returns>Whether <paramref name="variable"/> is a valid <see cref="PhpResource"/>.</returns>
         public static bool is_resource(PhpValue variable)
         {
-            //PhpResource res = variable as PhpResource;
-            //return res != null && res.IsValid;
-            throw new NotImplementedException();
+            var res = variable.AsResource();
+            return res != null && res.IsValid;
         }
 
         /// <summary>
@@ -444,7 +443,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is a <B>null</B> reference.</returns>
-        public static bool is_null(PhpValue variable) => variable.IsNull;
+        public static bool is_null(PhpValue variable) => variable.IsNull || (variable.IsAlias && variable.Alias.Value.IsNull);
 
         #endregion
 
