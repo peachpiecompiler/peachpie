@@ -661,25 +661,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return cg.Emit_PhpValue_MakeAlias();
                 }
             }
-            // Read Value & Dereference eventually
+            // Read Value
             else
             {
-                if (type == cg.CoreTypes.PhpAlias)
-                {
-                    _place.EmitLoad(cg.Builder);
-
-                    if (_access.TargetType == cg.CoreTypes.PhpArray)
-                    {
-                        // <place>.Value.ToArray()
-                        cg.Builder.EmitOpCode(ILOpCode.Ldflda);
-                        cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray)
-                            .Expect(cg.CoreTypes.PhpArray);
-                    }
-
-                    return cg.Emit_PhpAlias_GetValue();
-                }
-                else if (type == cg.CoreTypes.PhpValue)
+                if (type == cg.CoreTypes.PhpValue)
                 {
                     if (_access.TargetType == cg.CoreTypes.PhpArray)
                     {
@@ -688,14 +673,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray)
                             .Expect(cg.CoreTypes.PhpArray);
                     }
+                }
 
-                    // TODO: dereference if applicable (=> PhpValue.Alias.Value)
-                    return _place.EmitLoad(cg.Builder);
-                }
-                else
-                {
-                    return _place.EmitLoad(cg.Builder);
-                }
+                return _place.EmitLoad(cg.Builder);
             }
         }
 
