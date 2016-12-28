@@ -1107,7 +1107,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
                 // keep NULL if parameter is a reference type
-                if (cvalue.IsNull && targetp.Type.IsReferenceType)
+                if (cvalue.IsNull && targetp.Type.IsReferenceType && targetp.Type != CoreTypes.PhpAlias)
                 {
                     _il.EmitNullConstant();
                     return;

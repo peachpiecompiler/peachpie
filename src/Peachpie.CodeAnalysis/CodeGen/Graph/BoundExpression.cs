@@ -2574,7 +2574,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             TypeSymbol result_type = cg.CoreTypes.Void;
-            LocalDefinition postfix_temp = null;
+            LocalDefinition tempvar = null;    // temporary variable containing result of the expression if needed
 
             var read = this.Access.IsRead;
 
@@ -2583,7 +2583,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
             using (var instance_holder = new InstanceCacheHolder())
             {
-
                 // prepare target for store operation
                 target_place.EmitStorePrepare(cg, instance_holder);
 
@@ -2597,11 +2596,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (read && IsPostfix)
             {
-                // store original value of target
+                // store value of target
                 // <temp> = TARGET
-                postfix_temp = cg.GetTemporaryLocal(target_load_type);
+                tempvar = cg.GetTemporaryLocal(target_load_type);
                 cg.EmitOpCode(ILOpCode.Dup);
-                cg.Builder.EmitLocalStore(postfix_temp);
+                cg.Builder.EmitLocalStore(tempvar);
             }
 
             if (IsIncrement)
@@ -2614,31 +2613,33 @@ namespace Pchp.CodeAnalysis.Semantics
                 op_type = BoundBinaryEx.EmitSub(cg, target_load_type, this.Value, target_place.TypeOpt);
             }
 
-            if (read)
+            if (read && IsPrefix)
             {
-                if (IsPostfix)
-                {
-                    // READ <temp>
-                    cg.Builder.EmitLocalLoad(postfix_temp);
-                    result_type = target_load_type;
-
-                    //
-                    cg.ReturnTemporaryLocal(postfix_temp);
-                    postfix_temp = null;
-                }
-                else
-                {
-                    // dup resulting value
-                    // READ (++TARGET OR --TARGET)
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    result_type = op_type;
-                }
+                // store value of result
+                // <temp> = TARGET
+                tempvar = cg.GetTemporaryLocal(op_type);
+                cg.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(tempvar);
             }
 
             //
             target_place.EmitStore(cg, op_type);
 
-            Debug.Assert(postfix_temp == null);
+            if (read)
+            {
+                Debug.Assert(tempvar != null);
+                
+                // READ <temp>
+                cg.Builder.EmitLocalLoad(tempvar);
+                result_type = (TypeSymbol)tempvar.Type;
+
+                //
+                cg.ReturnTemporaryLocal(tempvar);
+                tempvar = null;
+            }
+
+            //
+            Debug.Assert(tempvar == null);
             Debug.Assert(!read || result_type.SpecialType != SpecialType.System_Void);
 
             //
@@ -2646,6 +2647,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         bool IsPostfix => this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement || this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement;
+        bool IsPrefix => !IsPostfix;
         bool IsIncrement => this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement || this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement;
         bool IsDecrement => this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement || this.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement;
     }
