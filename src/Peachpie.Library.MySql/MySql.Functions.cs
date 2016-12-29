@@ -495,6 +495,42 @@ namespace Peachpie.Library.MySql
 
         #endregion
 
+        #region mysql_error, mysql_errno
+
+        /// <summary>
+        /// Returns the text of the error message from previous operation.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="linkIdentifier">Connection resource.</param>
+        /// <returns>
+        /// Error message, empty string if no error occured, or a <B>null</B> reference 
+        /// if the connection resource is invalid.
+        /// </returns>
+        public static string mysql_error(Context ctx, PhpResource linkIdentifier = null)
+        {
+            var connection = ValidConnection(ctx, linkIdentifier);
+            if (connection == null)
+            {
+                return null;
+            }
+
+            return connection.GetLastErrorMessage();
+        }
+
+        /// <summary>
+        /// Returns the number of the error from previous operation.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="linkIdentifier">Connection resource.</param>
+        /// <returns>Error number, 0 if no error occured, or -1 if the number cannot be retrieved.</returns>
+        public static int mysql_errno(Context ctx, PhpResource linkIdentifier = null)
+        {
+            var connection = ValidConnection(ctx, linkIdentifier);
+            return (connection != null) ? connection.GetLastErrorNumber() : -1;
+        }
+
+        #endregion
+
         #region mysql_result
 
         /// <summary>
