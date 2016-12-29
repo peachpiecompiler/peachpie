@@ -37,7 +37,7 @@ namespace Peachpie.Library.MySql
                 _connection.Open();  // TODO: Async
                 _lastException = null;
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 _lastException = e;
 
@@ -67,7 +67,7 @@ namespace Peachpie.Library.MySql
 
                 _lastException = null;
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 _lastException = e;
                 throw new NotImplementedException(); // TODO: ERR

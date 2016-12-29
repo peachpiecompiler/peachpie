@@ -36,8 +36,8 @@ namespace Pchp.Library.Database
         /// Gets an exception thrown by last performed operation or a <B>null</B> reference 
         /// if that operation succeeded.
         /// </summary>
-        public Exception LastException => _lastException;
-        protected Exception _lastException;
+        public System.Exception LastException => _lastException;
+        protected System.Exception _lastException;
 
         /// <summary>
         /// Gets the number of rows affected by the last query executed on this connection.
@@ -245,12 +245,10 @@ namespace Pchp.Library.Database
 
                 _lastException = null;
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 _lastException = e;
-                throw new NotImplementedException();    // ERR
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("command_execution_failed",
-                //    GetExceptionMessage(e)));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("command_execution_failed", GetExceptionMessage(e))); // TODO: ERR
             }
 
             //
@@ -271,7 +269,7 @@ namespace Pchp.Library.Database
             {
                 result.Reader = _pendingReader = result.Command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SchemaOnly);
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 _lastException = e;
                 throw new NotImplementedException(); // ERR
@@ -299,7 +297,7 @@ namespace Pchp.Library.Database
                     return true;
                 }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 _lastException = e;
                 throw new NotImplementedException();     // ERR
@@ -317,7 +315,7 @@ namespace Pchp.Library.Database
         /// <param name="e">Exception.</param>
         /// <returns>The message.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="e"/> is a <B>null</B> reference.</exception>
-        public virtual string GetExceptionMessage(Exception/*!*/ e)
+        public virtual string GetExceptionMessage(System.Exception/*!*/ e)
         {
             if (e == null) throw new ArgumentNullException("e");
             return PhpException.ToErrorMessage(e.Message);
@@ -329,7 +327,7 @@ namespace Pchp.Library.Database
         /// <returns>The message or an empty string if no error occured.</returns>
         public virtual string GetLastErrorMessage()
         {
-            return (LastException != null) ? LastException.Message : String.Empty;
+            return (LastException != null) ? LastException.Message : string.Empty;
         }
 
         /// <summary>
