@@ -2879,6 +2879,24 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotImplementedException($"LOAD {t.Name}[]");    // TODO: emit convert as PhpArray
             }
 
+            if (this.Access.IsRead && this.Access.IsQuiet)  // TODO: analyse if Array can be NULL
+            {
+                // ?? PhpArray.Empty
+                if (cg.CoreTypes.PhpArray.Symbol.IsOfType(t))
+                {
+                    var lbl_notnull = new NamedLabel("NotNull");
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.Builder.EmitBranch(ILOpCode.Brtrue, lbl_notnull);
+
+                    cg.Builder.EmitOpCode(ILOpCode.Pop);
+                    cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
+                    cg.EmitSymbolToken(cg.CoreMethods.PhpArray.Empty, null);
+                    cg.EmitCastClass(cg.CoreMethods.PhpArray.Empty.Symbol.Type, t);
+
+                    cg.Builder.MarkLabel(lbl_notnull);
+                }
+            }
+
             Debug.Assert(t.IsOfType(cg.CoreTypes.IPhpArray) || t.SpecialType == SpecialType.System_String || t.IsArray() || t == cg.CoreTypes.PhpValue);
             PushEmittedArray(t);
 
@@ -2915,6 +2933,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (Access.IsReadRef)
                 {
+                    Debug.Assert(this.Array.Access.EnsureArray);
+
                     return isphparr
                         ? cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey)
                         : cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.EnsureItemAlias_IntStringKey);
