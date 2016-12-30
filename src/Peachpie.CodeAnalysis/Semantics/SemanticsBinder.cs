@@ -350,7 +350,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var arrayAccess = BoundAccess.Read;
 
-            if (access.IsWrite || access.EnsureObject || access.EnsureArray)
+            if (access.IsWrite || access.EnsureObject || access.EnsureArray || access.IsReadRef)
                 arrayAccess = arrayAccess.WithEnsureArray();
             if (access.IsQuiet)
                 arrayAccess = arrayAccess.WithQuiet();
