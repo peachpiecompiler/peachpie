@@ -33,6 +33,12 @@ namespace Pchp.Core
         /// </summary>
         protected OrderedDictionary.Enumerator _intrinsicEnumerator;
 
+        /// <summary>
+        /// Empty array singleton.
+        /// Must not be modified.
+        /// </summary>
+        public static readonly PhpArray Empty = new PhpArray();
+
         #region Constructors
 
         /// <summary>

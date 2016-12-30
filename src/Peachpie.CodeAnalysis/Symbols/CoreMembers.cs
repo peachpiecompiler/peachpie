@@ -783,6 +783,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemAlias_IntStringKey = t.Method("EnsureItemAlias", ct.IntStringKey);
 
                 New_PhpValue = t.Method("New", ct.PhpValue);
+
+                Empty = t.Field("Empty");
             }
 
             public readonly CoreMethod
@@ -792,8 +794,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy, GetForeachEnumerator_Boolean,
-
                 New_PhpValue;
+
+            public readonly CoreField
+                Empty;
         }
 
         public struct ConstructorsHolder
