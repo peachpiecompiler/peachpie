@@ -317,7 +317,7 @@ namespace Pchp.Library.Database
         /// <exception cref="ArgumentNullException"><paramref name="e"/> is a <B>null</B> reference.</exception>
         public virtual string GetExceptionMessage(System.Exception/*!*/ e)
         {
-            if (e == null) throw new ArgumentNullException("e");
+            if (e == null) throw new ArgumentNullException(nameof(e));
             return PhpException.ToErrorMessage(e.Message);
         }
 
