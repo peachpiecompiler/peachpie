@@ -23,7 +23,7 @@ using Pchp.CodeAnalysis.DocGen;
 
 namespace Pchp.CodeAnalysis
 {
-    internal sealed partial class PhpCompilation : Compilation
+    public sealed partial class PhpCompilation : Compilation
     {
         readonly SourceDeclarations _tables;
         MethodSymbol _lazyMainMethod;
@@ -54,18 +54,18 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// COR library containing base system types.
         /// </summary>
-        public AssemblySymbol CorLibrary => ((ReferenceManager)GetBoundReferenceManager()).CorLibrary;
+        internal AssemblySymbol CorLibrary => ((ReferenceManager)GetBoundReferenceManager()).CorLibrary;
 
         /// <summary>
         /// PHP COR library containing PHP runtime.
         /// </summary>
-        public AssemblySymbol PhpCorLibrary => ((ReferenceManager)GetBoundReferenceManager()).PhpCorLibrary;
+        internal AssemblySymbol PhpCorLibrary => ((ReferenceManager)GetBoundReferenceManager()).PhpCorLibrary;
 
         /// <summary>
         /// Tables containing all source symbols to be compiled.
         /// Used for enumeration and lookup.
         /// </summary>
-        public SourceDeclarations SourceSymbolTables => _tables;
+        internal SourceDeclarations SourceSymbolTables => _tables;
 
         /// <summary>
         /// The AssemblySymbol that represents the assembly being created.

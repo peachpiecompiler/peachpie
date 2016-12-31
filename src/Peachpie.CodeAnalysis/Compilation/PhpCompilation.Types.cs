@@ -38,13 +38,13 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Well known types associated with this compilation.
         /// </summary>
-        public CoreTypes CoreTypes => _coreTypes;
+        internal CoreTypes CoreTypes => _coreTypes;
         readonly CoreTypes _coreTypes;
 
         /// <summary>
         /// Well known methods associated with this compilation.
         /// </summary>
-        public CoreMethods CoreMethods => _coreMethods;
+        internal CoreMethods CoreMethods => _coreMethods;
         readonly CoreMethods _coreMethods;
 
         #endregion
@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis
         /// <param name="first">First type.</param>
         /// <param name="second">Second type.</param>
         /// <returns>One type convering both <paramref name="first"/> and <paramref name="second"/> types.</returns>
-        public TypeSymbol Merge(TypeSymbol first, TypeSymbol second)
+        internal TypeSymbol Merge(TypeSymbol first, TypeSymbol second)
         {
             Contract.ThrowIfNull(first);
             Contract.ThrowIfNull(second);
@@ -111,7 +111,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Determines whether given type is treated as a PHP number (<c>int</c> or <c>double</c>).
         /// </summary>
-        public bool IsNumber(TypeSymbol type)
+        internal bool IsNumber(TypeSymbol type)
         {
             Contract.ThrowIfNull(type);
 
@@ -125,7 +125,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Determines given type is treated as a string (UTF16 string or PHP string builder).
         /// </summary>
-        public bool IsAString(TypeSymbol type)
+        internal bool IsAString(TypeSymbol type)
         {
             Contract.ThrowIfNull(type);
 
@@ -143,7 +143,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         /// <param name="tref">Type reference.</param>
         /// <returns>Resolved symbol.</returns>
-        public TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref)
+        internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref)
         {
             if (tref != null)
             {
