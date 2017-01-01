@@ -143,12 +143,15 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // PHPDoc @var type
-            var vartag = _phpDoc?.GetElement<PHPDocBlock.VarTag>();
-            if (vartag != null && vartag.TypeNamesArray.Length != 0)
+            if ((DeclaringCompilation.Options.PhpDocTypes & PhpDocTypes.FieldTypes) != 0)
             {
-                var dummyctx = TypeRefFactory.CreateTypeRefContext(_containingType);
-                var tmask = PHPDoc.GetTypeMask(dummyctx, vartag.TypeNamesArray, NameUtils.GetNamingContext(_containingType.Syntax));
-                return DeclaringCompilation.GetTypeFromTypeRef(dummyctx, tmask);
+                var vartag = _phpDoc?.GetElement<PHPDocBlock.VarTag>();
+                if (vartag != null && vartag.TypeNamesArray.Length != 0)
+                {
+                    var dummyctx = TypeRefFactory.CreateTypeRefContext(_containingType);
+                    var tmask = PHPDoc.GetTypeMask(dummyctx, vartag.TypeNamesArray, NameUtils.GetNamingContext(_containingType.Syntax));
+                    return DeclaringCompilation.GetTypeFromTypeRef(dummyctx, tmask);
+                }
             }
 
             // default

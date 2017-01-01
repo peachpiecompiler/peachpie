@@ -134,7 +134,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var typeCtx = this.TypeRefContext;
 
             //
-            if (phpdocOpt != null)
+            if (phpdocOpt != null && (DeclaringCompilation.Options.PhpDocTypes & PhpDocTypes.ReturnTypes) != 0)
             {
                 var returnTag = phpdocOpt.Returns;
                 if (returnTag != null && returnTag.TypeNames.Length != 0)

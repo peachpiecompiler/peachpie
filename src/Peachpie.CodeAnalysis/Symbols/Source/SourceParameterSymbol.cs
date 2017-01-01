@@ -105,7 +105,8 @@ namespace Pchp.CodeAnalysis.Symbols
             var result = DeclaringCompilation.GetTypeFromTypeRef(_syntax.TypeHint);
 
             // 2. optionally type specified in PHPDoc
-            if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0)
+            if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0
+                && (DeclaringCompilation.Options.PhpDocTypes & PhpDocTypes.ParameterTypes) != 0)
             {
                 var typectx = _routine.TypeRefContext;
                 var tmask = FlowAnalysis.PHPDoc.GetTypeMask(typectx, _ptagOpt.TypeNamesArray, _routine.GetNamingContext());

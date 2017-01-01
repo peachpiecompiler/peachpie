@@ -67,6 +67,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string runtimeMetadataVersion = null; // will be read from cor library if not specified in cmd
             string compilationName = null;
             bool optimize = false;
+            PhpDocTypes phpdocTypes = PhpDocTypes.None;
             OutputKind outputKind = OutputKind.ConsoleApplication;
             bool optionsEnded = false;
             bool displayHelp = false, displayLogo = true;
@@ -228,6 +229,23 @@ namespace Pchp.CodeAnalysis.CommandLine
                         documentationPath = value ?? string.Empty;
                         break;
 
+                    case "phpdoctypes+":
+                        phpdocTypes = PhpDocTypes.All;
+                        break;
+                    case "phpdoctypes-":
+                        phpdocTypes = PhpDocTypes.None;
+                        break;
+                    case "phpdoctypes":
+                        if (value == null)
+                        {
+                            phpdocTypes = PhpDocTypes.All;
+                        }
+                        else
+                        {
+                            phpdocTypes = (PhpDocTypes)Enum.Parse(typeof(PhpDocTypes), value);
+                        }
+                        break;
+
                     case "modulename":
                         var unquotedModuleName = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(unquotedModuleName))
@@ -298,6 +316,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 moduleName: moduleName,
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
+                phpdocTypes: phpdocTypes,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 checkOverflow: false, // checkOverflow,
@@ -306,7 +325,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                                         //cryptoKeyContainer: keyContainerSetting,
                                         //cryptoKeyFile: keyFileSetting,
                                         //delaySign: delaySignSetting,
-                platform: Platform.AnyCpu //, // platform,
+                platform: Platform.AnyCpu // platform,
                                           //generalDiagnosticOption: generalDiagnosticOption,
                                           //warningLevel: warningLevel,
                                           //specificDiagnosticOptions: diagnosticOptions,
