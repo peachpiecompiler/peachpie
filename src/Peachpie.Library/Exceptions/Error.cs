@@ -1,17 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Pchp.Core;
 
 /// <summary>
-/// <see cref="Exception"/> is the base class for all Exceptions in PHP 5, and the base class for all user exceptions in PHP 7.
+/// <see cref="Error"/> is the base class for all internal PHP errors.
 /// </summary>
-public class Exception : System.Exception, Throwable
+public class Error : System.Exception, Throwable
 {
     protected string message;
     protected long code;
     protected string file;
     protected int line;
 
-    public Exception(string message = "", long code = 0, Throwable previous = null)
+    public Error(string message = "", long code = 0, Throwable previous = null)
     {
         __construct(message, code, previous);
     }
