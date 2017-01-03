@@ -652,7 +652,7 @@ namespace Pchp.Core
                 {
                     if (chunks.GetType() == typeof(object[]))
                     {
-                        return _chunksCount == 1 && ChunkToBoolean(((object[])chunks)[0]);
+                        return _chunksCount >= 1 && ChunkToBoolean(((object[])chunks)[0]);
                     }
                     else
                     {
