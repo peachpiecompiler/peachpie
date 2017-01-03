@@ -275,7 +275,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // add catch control variable to the state
             Accept(x.Variable);
             VisitTypeRef(x.TypeRef);
-
+            SetVar(x.Variable.Name.NameValue.Value, TypeCtx.GetTypeMask(x.TypeRef.TypeRef));
+            
             //
             x.Variable.ResultType = x.TypeRef.ResolvedType;
 
