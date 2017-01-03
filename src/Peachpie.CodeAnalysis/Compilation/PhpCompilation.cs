@@ -500,7 +500,9 @@ namespace Pchp.CodeAnalysis
 
         internal override AnalyzerDriver AnalyzerForLanguage(ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerManager analyzerManager)
         {
-            throw new NotImplementedException();
+            Func<SyntaxNode, int> getKind = node => node.RawKind;
+            Func<SyntaxTrivia, bool> isComment = trivia => false;
+            return new AnalyzerDriver<int>(analyzers, getKind, analyzerManager, isComment);
         }
 
         internal override CommonReferenceManager CommonGetBoundReferenceManager() => GetBoundReferenceManager();
