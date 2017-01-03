@@ -666,6 +666,22 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Implements <c>-</c> operator on numbers.
+        /// </summary>
+        public static PhpNumber Sub(PhpNumber x, PhpValue y)
+        {
+            PhpNumber y_number;
+
+            var y_info = x.ToNumber(out y_number);
+            if ((y_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                throw new NotImplementedException();    // TODO: PhpException; return 0
+            }
+
+            return x - y_number;
+        }
+
+        /// <summary>
         /// Subtract operator.
         /// </summary>
         public static PhpNumber Sub(PhpValue x, PhpValue y)

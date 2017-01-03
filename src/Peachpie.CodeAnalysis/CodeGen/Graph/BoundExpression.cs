@@ -432,6 +432,12 @@ namespace Pchp.CodeAnalysis.Semantics
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_number_number)
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
+                        else if (ytype == cg.CoreTypes.PhpValue)
+                        {
+                            // number - value : number
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_number_value)
+                                .Expect(cg.CoreTypes.PhpNumber);
+                        }
 
                         throw new NotImplementedException($"Sub(PhpNumber, {ytype.Name})");
                     }
