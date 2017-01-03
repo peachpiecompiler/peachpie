@@ -387,11 +387,7 @@ namespace Pchp.Core
             public override IPhpArray EnsureArray(ref PhpValue me) => me.WritableString;
             public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => ((IPhpArray)me.WritableString).GetItemValue(key);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) { throw new NotSupportedException(); } // TODO: Err
-            public override PhpValue DeepCopy(ref PhpValue me)
-            {
-                //me.WritableString.DeepCopy()
-                throw new NotImplementedException();
-            }
+            public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());
             public override PhpArray ToArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.WritableString.ToString());
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
