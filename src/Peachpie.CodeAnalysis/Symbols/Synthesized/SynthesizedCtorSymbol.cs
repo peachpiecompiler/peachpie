@@ -94,12 +94,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         static bool CanBePassedTo(ParameterSymbol[] givenparams, ParameterSymbol[] calledparams)
         {
-            if (calledparams.Length > givenparams.Length)
-                return false;
-
             for (int i = 0; i < calledparams.Length; i++)
             {
-                if (!givenparams[i].CanBePassedTo(calledparams[i]))
+                if (i >= givenparams.Length)
+                {
+                    if (!calledparams[i].IsOptional)
+                    {
+                        return false;
+                    }
+                }
+                else if (!givenparams[i].CanBePassedTo(calledparams[i]))
                 {
                     return false;
                 }
