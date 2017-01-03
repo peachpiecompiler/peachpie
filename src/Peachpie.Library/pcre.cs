@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -127,7 +128,7 @@ namespace Pchp.Library
             return result;
         }
 
-        public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit = -1)
+        public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit = -1)
         {
             long count;
             return preg_replace(ctx, pattern, replacement, subject, limit, out count);
@@ -148,7 +149,7 @@ namespace Pchp.Library
         /// <param name="limit">The maximum possible replacements for each pattern in each subject string. Defaults to <c>-1</c> (no limit).</param>
         /// <param name="count">This variable will be filled with the number of replacements done.</param>
         /// <returns></returns>
-        public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit, out long count)
+        public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit, out long count)
         {
             count = 0;
 
@@ -169,7 +170,7 @@ namespace Pchp.Library
                     // string pattern
                     // string replacement
 
-                    return preg_replace(ctx, pattern.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx), null, subject, limit, ref count);
+                    return PregReplaceInternal(ctx, pattern.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx), null, subject, (int)limit, ref count);
                 }
                 else
                 {
@@ -192,17 +193,71 @@ namespace Pchp.Library
             throw new NotImplementedException();
         }
 
-        static PhpValue preg_replace(Context ctx, string pattern, string replacement, PhpCallable callback, PhpValue subject, int limit, ref long count)
+        public static PhpValue preg_replace_callback(Context ctx, PhpValue pattern, IPhpCallable callback, PhpValue subject, long limit = -1)
+        {
+            long count = 0;
+            return preg_replace_callback(ctx, pattern, callback, subject, limit, ref count);
+        }
+
+        public static PhpValue preg_replace_callback(Context ctx, PhpValue pattern, IPhpCallable callback, PhpValue subject, long limit, ref long count)
+        {
+            count = 0;
+
+            // PHP's behaviour for undocumented limit range
+            if (limit < -1)
+            {
+                limit = 0;
+            }
+
+            //
+            var pattern_array = pattern.AsArray();
+
+            if (pattern_array == null)
+            {
+                // string pattern
+                return PregReplaceInternal(ctx, pattern.ToStringOrThrow(ctx), null, callback, subject, (int)limit, ref count);
+            }
+            else
+            {
+                // array pattern
+            }
+
+            throw new NotImplementedException();
+
+        }
+
+        static PhpValue PregReplaceInternal(Context ctx, string pattern, string replacement, IPhpCallable callback, PhpValue subject, int limit, ref long count)
         {
             var regex = new PerlRegex.Regex(pattern);
 
             // TODO: count
-            // TODO: callback
 
+            // callback
+            PerlRegex.MatchEvaluator evaluator = null;
+            if (callback != null)
+            {
+                evaluator = (match) =>
+                {
+                    var matches_arr = new PhpArray(0);
+                    foreach (PerlRegex.Group g in match.Groups)
+                    {
+                        matches_arr.Add((PhpValue)g.Value);
+                    }
+
+                    return callback
+                        .Invoke(ctx, (PhpValue)matches_arr)
+                        .ToStringOrThrow(ctx);
+                };
+            }
+
+            //
             var subject_array = subject.AsArray();
             if (subject_array == null)
             {
-                return PhpValue.Create(regex.Replace(subject.ToStringOrThrow(ctx), replacement, limit));
+                return PhpValue.Create(
+                    evaluator == null
+                        ? regex.Replace(subject.ToStringOrThrow(ctx), replacement, limit)
+                        : regex.Replace(subject.ToStringOrThrow(ctx), evaluator, limit));
             }
             else
             {
@@ -210,7 +265,10 @@ namespace Pchp.Library
                 var enumerator = arr.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    var newvalue = regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit);
+                    var newvalue = evaluator == null
+                        ? regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit)
+                        : regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), evaluator, limit);
+
                     enumerator.CurrentValue = PhpValue.Create(newvalue);
                 }
 
