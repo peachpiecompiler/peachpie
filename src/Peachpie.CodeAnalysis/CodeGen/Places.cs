@@ -1330,7 +1330,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
-            Debug.Assert(Access.IsWrite);
+            Debug.Assert(Access.IsWrite || Access.IsUnset);
 
             EmitLoadFieldInstance(cg, instanceOpt);
 
@@ -1362,7 +1362,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            Debug.Assert(Access.IsWrite);
+            Debug.Assert(Access.IsWrite || Access.IsUnset);
 
             var type = Field.Type;
 
