@@ -363,6 +363,18 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>+</c> operator on numbers.
         /// </summary>
+        public static PhpNumber Add(long x, string sy)
+        {
+            PhpNumber number;
+            Convert.ToNumber(sy, out number);
+
+            //
+            return x + number;
+        }
+
+        /// <summary>
+        /// Implements <c>+</c> operator on numbers.
+        /// </summary>
         public static double Add(PhpNumber x, double y)
         {
             return x.ToDouble() + y;

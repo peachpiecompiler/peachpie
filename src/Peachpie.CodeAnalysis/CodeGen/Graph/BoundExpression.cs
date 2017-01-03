@@ -287,6 +287,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_long_double)
                         .Expect(SpecialType.System_Double);
                 }
+                else if (ytype.SpecialType == SpecialType.System_String)
+                {
+                    // i8 + string : number
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_long_string)
+                        .Expect(cg.CoreTypes.PhpNumber);
+                }
                 else if (ytype == cg.CoreTypes.PhpNumber)
                 {
                     // i8 + number : number
