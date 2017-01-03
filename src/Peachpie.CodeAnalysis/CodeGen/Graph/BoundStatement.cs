@@ -91,10 +91,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (t.IsReferenceType)
             {
-                if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
-                {
-                    throw new NotImplementedException();    // Wrap to System.Exception
-                }
+                //if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
+                //{
+                //    throw new NotImplementedException();    // Wrap to System.Exception
+                //}
+                cg.EmitCastClass(t, cg.CoreTypes.Exception);
             }
             else
             {
