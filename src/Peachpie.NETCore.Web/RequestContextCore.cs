@@ -14,7 +14,7 @@ namespace Peachpie.Web
     /// <summary>
     /// Runtime context for ASP.NET Core request.
     /// </summary>
-    sealed class RequestContextCore : Context // , IHttpPhpContext
+    sealed class RequestContextCore : Context, IHttpPhpContext
     {
         #region .cctor
 
@@ -51,7 +51,26 @@ namespace Peachpie.Web
 
         #region IHttpPhpContext
 
-        // TODO
+        /// <summary>Gets value indicating HTTP headers were already sent.</summary>
+        public bool HeadersSent
+        {
+            get { return _httpctx.Response.HasStarted; }
+        }
+
+        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, new Microsoft.Extensions.Primitives.StringValues(value)); }
+
+        public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
+
+        public void RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+
+        /// <summary>
+        /// Gets or sets HTTP response status code.
+        /// </summary>
+        public int StatusCode
+        {
+            get { return _httpctx.Response.StatusCode; }
+            set { _httpctx.Response.StatusCode = value; }
+        }
 
         #endregion
 
@@ -115,7 +134,7 @@ namespace Peachpie.Web
 
         #endregion
 
-        public override IHttpPhpContext HttpPhpContext => null;    // TODO
+        public override IHttpPhpContext HttpPhpContext => this;
 
         public override Encoding StringEncoding => Encoding.UTF8;
 

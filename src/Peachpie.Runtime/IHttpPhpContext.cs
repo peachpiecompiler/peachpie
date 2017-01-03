@@ -10,7 +10,7 @@ namespace Pchp.Core
     /// </summary>
     public interface IHttpPhpContext
     {
-        #region HTTP response headers
+        #region headers
 
         /// <summary>Gets value indicating HTTP headers were already sent.</summary>
         bool HeadersSent { get; }
