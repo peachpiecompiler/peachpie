@@ -105,23 +105,26 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     _cacheAll = new List<TSymbol>();
                     _cacheDict = new MultiDictionary<TKey, TSymbol>();
-                    _cacheVersion = _table._version;
 
                     foreach (var f in _table._files.Values)
                     {
                         var symbols = _getter(f);
                         _cacheAll.AddRange(symbols);
-                        
-                        foreach (var visible in symbols.Where(_isVisible))
+
+                        foreach (var s in symbols)
                         {
-                            _cacheDict.Add(_key(visible), visible);
+                            // add all symbols,
+                            // _isVisible may have side effects accessing this incomplete collection
+                            _cacheDict.Add(_key(s), s);
                         }
                     }
+
+                    _cacheVersion = _table._version;
                 }
             }
 
             /// <summary>
-            /// All symbols, both visible or not.
+            /// All symbols, both visible and not visible.
             /// </summary>
             public IEnumerable<TSymbol> Symbols
             {
@@ -139,19 +142,36 @@ namespace Pchp.CodeAnalysis.Symbols
             /// <returns></returns>
             public TSymbol SingleOrNull(TKey key)
             {
+                var single = default(TSymbol);
                 var values = this[key];
-                return values.Count == 1 ? values.Single() : default(TSymbol);
+
+                int n = 0;
+
+                foreach (var s in values)
+                {
+                    if (n++ == 0)
+                    {
+                        single = s;
+                    }
+                    else
+                    {
+                        single = default(TSymbol);
+                        break;
+                    }
+                }
+
+                return single;
             }
 
             /// <summary>
             /// Gets all visible symbols.
             /// </summary>
-            public MultiDictionary<TKey, TSymbol>.ValueSet this[TKey key]
+            public IEnumerable<TSymbol> this[TKey key]
             {
                 get
                 {
                     EnsureUpdated();
-                    return _cacheDict[key];
+                    return _cacheDict[key].Where(_isVisible);
                 }
             }
         }
