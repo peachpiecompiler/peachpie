@@ -185,9 +185,9 @@ namespace Pchp.CodeAnalysis.Emit
         internal void CreateEnumerateReferencedFunctions(DiagnosticBag diagnostic)
         {
             var method = this.ScriptType.EnumerateReferencedFunctionsSymbol;
-            var functions = GlobalSemantics.ResolveExtensionContainers(this.Compilation)
+            var functions = GlobalSymbolProvider.ResolveExtensionContainers(this.Compilation)
                 .SelectMany(c => c.GetMembers().OfType<MethodSymbol>())
-                .Where(GlobalSemantics.IsFunction);
+                .Where(GlobalSymbolProvider.IsFunction);
 
             // void (Action<string, RuntimeMethodHandle> callback)
             var body = MethodGenerator.GenerateMethodBody(this, method,
@@ -221,7 +221,7 @@ namespace Pchp.CodeAnalysis.Emit
         internal void CreateEnumerateScriptsSymbol(DiagnosticBag diagnostic)
         {
             var method = this.ScriptType.EnumerateScriptsSymbol;
-            var files = this.Compilation.SourceSymbolTables.GetFiles();
+            var files = this.Compilation.SourceSymbolCollection.GetFiles();
 
             // void (Action<string, RuntimeMethodHandle> callback)
             var body = MethodGenerator.GenerateMethodBody(this, method,

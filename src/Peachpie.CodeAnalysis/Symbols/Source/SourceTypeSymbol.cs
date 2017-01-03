@@ -299,7 +299,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (_syntax.IsConditional)
                 {
-                    var ambiguities = this.DeclaringCompilation.SourceSymbolTables.GetTypes().Where(t => t.Name == this.Name && t.NamespaceName == this.NamespaceName);
+                    var ambiguities = this.DeclaringCompilation.SourceSymbolCollection.GetTypes().Where(t => t.Name == this.Name && t.NamespaceName == this.NamespaceName);
                     name += "@" + ambiguities.TakeWhile(f => f != this).Count().ToString(); // index within types with the same name
                 }
 

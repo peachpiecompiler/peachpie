@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis
 {
     public sealed partial class PhpCompilation : Compilation
     {
-        readonly SourceDeclarations _tables;
+        readonly SourceSymbolCollection _tables;
         MethodSymbol _lazyMainMethod;
         readonly PhpCompilationOptions _options;
 
@@ -65,7 +65,7 @@ namespace Pchp.CodeAnalysis
         /// Tables containing all source symbols to be compiled.
         /// Used for enumeration and lookup.
         /// </summary>
-        internal SourceDeclarations SourceSymbolTables => _tables;
+        internal SourceSymbolCollection SourceSymbolCollection => _tables;
 
         /// <summary>
         /// The AssemblySymbol that represents the assembly being created.
@@ -102,7 +102,7 @@ namespace Pchp.CodeAnalysis
 
             _options = options;
             _referenceManager = new ReferenceManager(options.SdkDirectory);
-            _tables = new SourceDeclarations();
+            _tables = new SourceSymbolCollection(this);
             _coreTypes = new CoreTypes(this);
             _coreMethods = new CoreMethods(_coreTypes);
 
@@ -221,7 +221,7 @@ namespace Pchp.CodeAnalysis
                 ValidateReferences<CompilationReference>(references));
 
             //
-            compilation._tables.PopulateTables(compilation, syntaxTrees);
+            compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees);
 
             //
             return compilation;
@@ -414,18 +414,18 @@ namespace Pchp.CodeAnalysis
             if (string.IsNullOrEmpty(maintype))
             {
                 // first script
-                if (this.SourceSymbolTables.FirstScript != null)
-                    return this.SourceSymbolTables.FirstScript.MainMethod;
+                if (this.SourceSymbolCollection.FirstScript != null)
+                    return this.SourceSymbolCollection.FirstScript.MainMethod;
             }
             else
             {
                 // "ScriptFile"
-                var file = this.SourceSymbolTables.GetFile(maintype);
+                var file = this.SourceSymbolCollection.GetFile(maintype);
                 if (file != null)
                     return file.MainMethod;
 
                 // "Function"
-                var func = this.SourceSymbolTables.GetFunction(NameUtils.MakeQualifiedName(maintype, true));
+                var func = this.SourceSymbolCollection.GetFunction(NameUtils.MakeQualifiedName(maintype, true));
                 if (func != null)
                     return func;
 
@@ -446,7 +446,7 @@ namespace Pchp.CodeAnalysis
                     methodname = methodname.Substring(ddot + Name.ClassMemberSeparator.Length);
                 }
 
-                var type = this.SourceSymbolTables.GetType(qname);
+                var type = this.SourceSymbolCollection.GetType(qname);
                 if (type != null)
                 {
                     var mains = type.GetMembers(methodname).OfType<SourceMethodSymbol>().AsImmutable();

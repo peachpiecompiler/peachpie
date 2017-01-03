@@ -714,10 +714,10 @@ namespace Pchp.CodeAnalysis.Emit
             //    yield return type;
             //}
 
-            foreach (var f in _sourceModule.SymbolTables.GetFiles())
+            foreach (var f in _sourceModule.SymbolCollection.GetFiles())
                 yield return f;
 
-            foreach (var t in _sourceModule.SymbolTables.GetTypes())
+            foreach (var t in _sourceModule.SymbolCollection.GetTypes())
                 yield return t;
 
             //var namespacesToProcess = new Stack<INamespaceSymbol>();

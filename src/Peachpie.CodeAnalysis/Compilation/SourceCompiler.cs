@@ -51,14 +51,14 @@ namespace Pchp.CodeAnalysis
         void WalkMethods(Action<SourceRoutineSymbol> action)
         {
             // DEBUG
-            _compilation.SourceSymbolTables.AllRoutines.ForEach(action);
+            _compilation.SourceSymbolCollection.AllRoutines.ForEach(action);
 
             // TODO: methodsWalker.VisitNamespace(_compilation.SourceModule.GlobalNamespace)
         }
 
         void WalkTypes(Action<SourceTypeSymbol> action)
         {
-            _compilation.SourceSymbolTables.GetTypes().Cast<SourceTypeSymbol>().Foreach(action);
+            _compilation.SourceSymbolCollection.GetTypes().Foreach(action);
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace Pchp.CodeAnalysis
 
         ExpressionAnalysis AnalysisFactory()
         {
-            return new ExpressionAnalysis(_worklist, new GlobalSemantics(_compilation));
+            return new ExpressionAnalysis(_worklist, new GlobalSymbolProvider(_compilation));
         }
 
         internal void DiagnoseMethods()
@@ -181,7 +181,7 @@ namespace Pchp.CodeAnalysis
             this.WalkMethods(f => f.SynthesizeGhostStubs(_moduleBuilder, _diagnostics));
 
             // initialize RoutineInfo
-            _compilation.SourceSymbolTables.GetFiles().SelectMany(f => f.Functions)
+            _compilation.SourceSymbolCollection.GetFunctions()
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
             // __statics.Init, .phpnew, .ctor

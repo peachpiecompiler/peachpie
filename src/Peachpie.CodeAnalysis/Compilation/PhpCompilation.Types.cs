@@ -51,12 +51,12 @@ namespace Pchp.CodeAnalysis
 
         #region PHP Type Hierarchy
 
-        GlobalSemantics _model;
+        GlobalSymbolProvider _model;
 
         /// <summary>
         /// Gets global semantics. To be replaced once we implement SyntaxNode (<see cref="CommonGetSemanticModel"/>).
         /// </summary>
-        internal GlobalSemantics GlobalSemantics => _model ?? (_model = new GlobalSemantics(this));
+        internal GlobalSymbolProvider GlobalSemantics => _model ?? (_model = new GlobalSymbolProvider(this));
 
         /// <summary>
         /// Merges two CLR types into one, according to PCHP type hierarchy.

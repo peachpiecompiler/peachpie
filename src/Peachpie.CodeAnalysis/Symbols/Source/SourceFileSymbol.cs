@@ -34,8 +34,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// List of functions declared within the file.
         /// </summary>
         public ImmutableArray<SourceFunctionSymbol> Functions => _lazyMembers.OfType<SourceFunctionSymbol>().ToImmutableArray();
-        
+
+        /// <summary>
+        /// List of functions declared within the file.
+        /// </summary>
+        public List<SourceTypeSymbol> ContainedTypes
+        {
+            get { return _containedTypes; }
+        }
+
         readonly List<Symbol> _lazyMembers = new List<Symbol>();
+        readonly List<SourceTypeSymbol> _containedTypes = new List<SourceTypeSymbol>();
         
         public GlobalCode Syntax => _syntax;
 

@@ -77,9 +77,9 @@ namespace Pchp.CodeAnalysis.DocGen
             // TODO: implement Symbol.GetDocumentationCommentId
             // TODO: implement Symbol.GetDocumentationCommentXml
 
-            var tables = compilation.SourceSymbolTables;
+            var tables = compilation.SourceSymbolCollection;
             tables.GetFiles().ForEach(WriteFile);
-            tables.GetTypes().OfType<SourceTypeSymbol>().ForEach(WriteType);
+            tables.GetTypes().ForEach(WriteType);
             tables.AllRoutines.ForEach(WriteRoutine);
 
             _writer.WriteLine("</members>");

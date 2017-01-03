@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     {
         #region Fields
 
-        readonly ISemanticModel _model;
+        readonly ISymbolProvider _model;
 
         /// <summary>
         /// Reference to corresponding source routine.
@@ -177,7 +177,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Construction
 
-        public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISemanticModel model)
+        public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISymbolProvider model)
             : base(worklist)
         {
             Contract.ThrowIfNull(model);

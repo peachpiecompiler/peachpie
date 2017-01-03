@@ -128,12 +128,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
-            return _sourceModule.SymbolTables.GetTypes().AsImmutable();
+            return _sourceModule.SymbolCollection.GetTypes().Cast<NamedTypeSymbol>().AsImmutable();
         }
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
         {
-            var x = _sourceModule.SymbolTables.GetType(NameUtils.MakeQualifiedName(name, true));
+            var x = _sourceModule.SymbolCollection.GetType(NameUtils.MakeQualifiedName(name, true));
             return (x != null) ? ImmutableArray.Create(x) : ImmutableArray<NamedTypeSymbol>.Empty;
         }
     }
