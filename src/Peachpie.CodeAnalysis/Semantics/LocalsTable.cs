@@ -127,7 +127,7 @@ namespace Pchp.CodeAnalysis.Semantics
             BoundVariable value;
             return _dict.TryGetValue(varname, out value)
                 ? value.VariableKind
-                : (_routine is SourceGlobalMethodSymbol || varname.IsAutoGlobal)
+                : varname.IsAutoGlobal
                     ? VariableKind.GlobalVariable
                     : VariableKind.LocalVariable;
         }

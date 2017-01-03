@@ -1004,19 +1004,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         protected override TypeSymbol LoadVariablesArray(CodeGenerator cg)
         {
-            if (cg.IsGlobalScope)
-            {
-                // <locals>
-                Debug.Assert(cg.LocalsPlaceOpt != null);
-                return cg.LocalsPlaceOpt.EmitLoad(cg.Builder)
-                    .Expect(cg.CoreTypes.PhpArray);
-            }
-            else
-            {
-                // $GLOBALS
-                cg.EmitLoadContext();
-                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.Globals.Getter);   // <ctx>.Globals
-            }
+            // $GLOBALS
+            cg.EmitLoadContext();
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.Globals.Getter);   // <ctx>.Globals
         }
     }
 
