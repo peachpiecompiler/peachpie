@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     //Template: x << y : long
                     returned_type = EmitShift(cg, Left, Right, ILOpCode.Shl);
                     break;
-                    
+
                 case Operations.ShiftRight:
                     //Template: x >> y : long
                     returned_type = EmitShift(cg, Left, Right, ILOpCode.Shr);
@@ -355,7 +355,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_value)
                         .Expect(cg.CoreTypes.PhpValue);
                 }
-                
+
                 //
                 throw new NotImplementedException($"Add(PhpValue, {ytype.Name})");
             }
@@ -605,7 +605,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Long;
             }
 
-             // TODO: IF cg.IsStringOnly(left.TypeRefMask) && cg.IsStringOnly(Right.TypeRefMask)
+            // TODO: IF cg.IsStringOnly(left.TypeRefMask) && cg.IsStringOnly(Right.TypeRefMask)
 
             //
             return EmitBitXor(cg, cg.Emit(left), right);
@@ -2652,7 +2652,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (read)
             {
                 Debug.Assert(tempvar != null);
-                
+
                 // READ <temp>
                 cg.Builder.EmitLocalLoad(tempvar);
                 result_type = (TypeSymbol)tempvar.Type;
@@ -2928,9 +2928,12 @@ namespace Pchp.CodeAnalysis.Semantics
             // LOAD [Index]
             //
 
-            Debug.Assert(this.Index != null, "Index is required when reading the array item.");
+            Debug.Assert(this.Index != null || this.Access.IsEnsure, "Index is required when reading the array item.");
 
-            cg.EmitIntStringKey(this.Index);    // TODO: save Index into InstanceCacheHolder
+            if (this.Index != null)
+            {
+                cg.EmitIntStringKey(this.Index);    // TODO: save Index into InstanceCacheHolder
+            }
         }
 
         TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
@@ -2942,7 +2945,45 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 var isphparr = (arrtype == cg.CoreTypes.PhpArray);    // whether the target is instance of PhpArray, otherwise it is an IPhpArray and we have to use .callvirt
 
-                if (Access.EnsureObject)
+                if (this.Index == null)
+                {
+                    Debug.Assert(this.Access.IsEnsure);
+                    /*
+                     * Template:
+                     * <array>.AddValue((PhpValue)(tmp = new <T>));
+                     * LOAD tmp;
+                     */
+                    LocalDefinition tmp;
+                    if (Access.EnsureArray)
+                    {
+                        // tmp = new PhpArray();
+                        tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray));
+                    }
+                    else if (Access.EnsureObject)
+                    {
+                        // tmp = new stdClass();
+                        tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.stdClass.Ctor()));
+                    }
+                    else
+                    {
+                        throw ExceptionUtilities.UnexpectedValue(Access);
+                    }
+
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.Builder.EmitLocalStore(tmp);
+
+                    var tmp_type = (TypeSymbol)tmp.Type;
+                    cg.EmitConvertToPhpValue(tmp_type, 0);
+
+                    if (isphparr) cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                    else cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
+
+                    //
+                    cg.Builder.EmitLocalLoad(tmp);
+                    cg.ReturnTemporaryLocal(tmp);
+                    return tmp_type;
+                }
+                else if (Access.EnsureObject)
                 {
                     // <array>.EnsureItemObject(<key>)
                     return isphparr
