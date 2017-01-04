@@ -35,6 +35,35 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Returns the name of the class of which the object <paramref name="obj"/> is an instance.
+        /// </summary>
+        /// <param name="tctx">Current class context.</param>
+        /// <param name="obj">The object whose class is requested.</param>
+        /// <returns><paramref name="obj"/>'s class name or current class name if <paramref name="obj"/> is <B>null</B>.</returns>
+        [return: CastToFalse]
+        public static string get_class([ImportCallerClass]string tctx, PhpValue obj)
+        {
+            if (obj.IsSet)
+            {
+                if (obj.IsObject)
+                {
+                    return obj.Object.GetType().FullName.Replace('.', '\\');
+                }
+                else if (obj.IsAlias)
+                {
+                    return get_class(tctx, obj.Alias.Value);
+                }
+                else
+                {
+                    // TODO: E_WARNING
+                    throw new ArgumentException(nameof(obj));
+                }
+            }
+
+            return tctx;
+        }
+
+        /// <summary>
         /// Helper getting declared classes or interfaces.
         /// </summary>
         /// <param name="ctx">Runtime context with declared types.</param>
