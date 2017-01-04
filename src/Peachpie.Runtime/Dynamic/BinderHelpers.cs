@@ -24,7 +24,7 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static bool IsImplicitParameter(this ParameterInfo p)
         {
-            return p.IsContextParameter() || p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter();
+            return p.IsContextParameter() || p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter() || p.IsImportCallerClassParameter();
 
             // TODO: classCtx, <this>
         }
@@ -48,6 +48,13 @@ namespace Pchp.Core.Dynamic
             return
                 p.ParameterType == typeof(PhpValue).MakeArrayType() &&
                 p.GetCustomAttribute(typeof(ImportCallerArgsAttribute)) != null;
+        }
+
+        public static bool IsImportCallerClassParameter(this ParameterInfo p)
+        {
+            return
+                (p.ParameterType == typeof(string) || p.ParameterType == typeof(RuntimeTypeHandle) || p.ParameterType == typeof(PhpTypeInfo)) &&
+                p.GetCustomAttribute(typeof(ImportCallerClassAttribute)) != null;
         }
 
         /// <summary>
@@ -628,7 +635,11 @@ namespace Pchp.Core.Dynamic
                         // we don't have this info
                         throw new NotImplementedException();    // TODO: empty array & report warning
                     }
-                    // TODO: classCtx
+                    else if (p.IsImportCallerClassParameter())
+                    {
+                        // TODO: pass classctx from the callsite
+                        throw new NotImplementedException();
+                    }
                     else
                     {
                         throw new NotImplementedException();
