@@ -1209,32 +1209,34 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         if (x.FieldName.IsDirect)
                         {
                             // TODO: visibility and resolution (model)
-
-                            var field = t.LookupMember<FieldSymbol>(x.FieldName.NameValue.Value);
-                            if (field != null)
+                            var member = t.ResolveInstanceProperty(x.FieldName.NameValue.Value);
+                            if (member != null)
                             {
-                                x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
-                                x.TypeRefMask = field.GetResultType(TypeCtx);
-                                return;
-                            }
-                            else
-                            {
-                                var prop = t.LookupMember<PropertySymbol>(x.FieldName.NameValue.Value);
-                                if (prop != null)
+                                Debug.Assert(member is FieldSymbol || member is PropertySymbol);
+                                if (member is FieldSymbol)
                                 {
+                                    var field = (FieldSymbol)member;
+                                    x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
+                                    x.TypeRefMask = field.GetResultType(TypeCtx);
+                                }
+                                else if (member is PropertySymbol)
+                                {
+                                    var prop = (PropertySymbol)member;
                                     x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
                                     x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
-                                    return;
                                 }
                                 else
                                 {
-                                    // TODO: use runtime fields directly, __get, __set, etc.,
-                                    // do not fallback to BoundIndirectFieldPlace
+                                    throw ExceptionUtilities.UnexpectedValue(member);
                                 }
+                            }
+                            else
+                            {
+                                // TODO: use runtime fields directly, __get, __set, etc.,
+                                // do not fallback to BoundIndirectFieldPlace
                             }
                         }
                     }
-
                 }
 
                 // dynamic behavior

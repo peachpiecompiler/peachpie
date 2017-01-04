@@ -53,6 +53,42 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Resolves field or property on an instance.
+        /// </summary>
+        public static Symbol ResolveInstanceProperty(this INamedTypeSymbol type, string name)
+        {
+            Symbol candidate;
+
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                candidate = t.GetMembers(name).OfType<FieldSymbol>().Where(f => !f.IsConst).SingleOrDefault();  // we do accepts static fields called on instances
+                if (candidate != null)
+                {
+                    return candidate;
+                }
+
+                candidate = t.GetMembers(name).OfType<PropertySymbol>().Where(p => !p.IsStatic).SingleOrDefault();
+                if (candidate != null)
+                {
+                    return candidate;
+                }
+            }
+
+            // properties on interfaces
+            foreach (var i in type.AllInterfaces)
+            {
+                candidate = i.GetMembers(name).OfType<PropertySymbol>().SingleOrDefault();
+                if(candidate != null)
+                {
+                    return candidate;
+                }
+            }
+
+            //
+            return null;
+        }
+
+        /// <summary>
         /// Tries to find static field with given name.
         /// Lookups through the class inheritance.
         /// Does not handle member visibility.
