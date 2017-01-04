@@ -1473,23 +1473,17 @@ namespace Pchp.CodeAnalysis.CodeGen
     /// </summary>
     internal class BoundIndirectFieldPlace : IBoundReference
     {
-        public BoundVariableName Name => _name;
-        readonly BoundVariableName _name;
+        readonly BoundFieldRef _field;
 
-        public BoundExpression Instance => _instance;
-        readonly BoundExpression _instance;
+        public BoundVariableName Name => _field.FieldName;
+        public BoundExpression Instance => _field.Instance;
+        public string NameValueOpt => _field.FieldName.NameValue.Value;
+        public BoundAccess Access => _field.Access;
 
-        public string NameValueOpt => _name.IsDirect ? _name.NameValue.Value : null;
-
-        readonly BoundAccess _access;
-
-        public BoundIndirectFieldPlace(BoundExpression instance, BoundVariableName name, BoundAccess access)
+        public BoundIndirectFieldPlace(BoundFieldRef field)
         {
-            Contract.ThrowIfNull(name);
-
-            _instance = instance;
-            _name = name;
-            _access = access;
+            Contract.ThrowIfNull(field);
+            _field = field;
         }
 
         #region IBoundReference
@@ -1519,10 +1513,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // resolve actual return type
             TypeSymbol return_type;
-            if (_access.EnsureObject) return_type = cg.CoreTypes.Object;
-            else if (_access.EnsureArray) return_type = cg.CoreTypes.IPhpArray;
-            else if (_access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
-            else return_type = _access.TargetType ?? cg.CoreTypes.PhpValue;
+            if (Access.EnsureObject) return_type = cg.CoreTypes.Object;
+            else if (Access.EnsureArray) return_type = cg.CoreTypes.IPhpArray;
+            else if (Access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
+            else return_type = Access.TargetType ?? cg.CoreTypes.PhpValue;
 
             // Template: Invoke(TInstance, Context, [string name])
 
@@ -1532,9 +1526,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             };
 
             // NameExpression in case of indirect call
-            if (!_name.IsDirect)
+            if (!Name.IsDirect)
             {
-                cg.EmitConvert(_name.NameExpression, cg.CoreTypes.String);
+                cg.EmitConvert(Name.NameExpression, cg.CoreTypes.String);
                 args.Add(cg.CoreTypes.String);
             }
 
@@ -1555,7 +1549,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
                 cctor.EmitLoadToken(return_type, null);
-                cctor.Builder.EmitIntConstant((int)_access.AccessFlags);
+                cctor.Builder.EmitIntConstant((int)Access.AccessFlags);
                 cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
             });
 
@@ -1576,9 +1570,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
 
             // NameExpression in case of indirect call
-            if (!_name.IsDirect)
+            if (!Name.IsDirect)
             {
-                cg.EmitConvert(_name.NameExpression, cg.CoreTypes.String);
+                cg.EmitConvert(Name.NameExpression, cg.CoreTypes.String);
             }
         }
 
@@ -1592,7 +1586,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var args = new List<TypeSymbol>();
 
             // NameExpression in case of indirect call
-            if (!_name.IsDirect)
+            if (!Name.IsDirect)
             {
                 args.Add(cg.CoreTypes.String);
             }
@@ -1618,7 +1612,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
-                cctor.Builder.EmitIntConstant((int)_access.AccessFlags);   // flags
+                cctor.Builder.EmitIntConstant((int)Access.AccessFlags);   // flags
                 cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
             });
         }

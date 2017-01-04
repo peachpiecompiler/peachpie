@@ -1229,6 +1229,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 {
                                     throw ExceptionUtilities.UnexpectedValue(member);
                                 }
+
+                                Debug.Assert(x.BoundReference != null);
+                                return; // bound
                             }
                             else
                             {
@@ -1242,7 +1245,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // dynamic behavior
                 // indirect field access ...
 
-                x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName, x.Access);
+                x.BoundReference = new BoundIndirectFieldPlace(x);
                 x.TypeRefMask = TypeRefMask.AnyType;
                 return;
             }
