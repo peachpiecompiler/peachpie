@@ -12,7 +12,7 @@ namespace Pchp.Library.PerlRegex
 {
     internal sealed class RegexTree
     {
-        internal RegexTree(RegexNode root, Dictionary<int, int> caps, int[] capnumlist, int captop, Dictionary<string, int> capnames, string[] capslist, RegexOptions opts)
+        internal RegexTree(RegexNode root, Dictionary<int, int> caps, int[] capnumlist, int captop, Dictionary<string, int> capnames, string[] capslist, RegexOptions opts, PerlRegexOptions poptions)
         {
             _root = root;
             _caps = caps;
@@ -21,6 +21,7 @@ namespace Pchp.Library.PerlRegex
             _capslist = capslist;
             _captop = captop;
             _options = opts;
+            _poptions = poptions;
         }
 
         internal readonly RegexNode _root;
@@ -29,6 +30,7 @@ namespace Pchp.Library.PerlRegex
         internal readonly Dictionary<string, int> _capnames;
         internal readonly string[] _capslist;
         internal readonly RegexOptions _options;
+        internal readonly PerlRegexOptions _poptions;
         internal readonly int _captop;
 
 #if DEBUG

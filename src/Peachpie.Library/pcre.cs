@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Library.PerlRegex;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -308,7 +309,79 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int preg_match(Context ctx, string pattern, string subject, out PhpArray matches, int flags = 0, long offset = 0)
         {
-            throw new NotImplementedException();
+            bool matchAll = false; 
+
+            var regex = new PerlRegex.Regex(pattern);
+            var m = regex.Match(subject);
+
+            if ((regex.PerlOptions & PerlRegex.PerlRegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
+            {
+                matches = new PhpArray();
+                return -1;
+            }
+
+            if (m.Success)
+            {
+                if (!matchAll || (flags & PREG_PATTERN_ORDER) != 0)
+                {
+                    matches = new PhpArray(m.Groups.Count);
+                }
+                else
+                    matches = new PhpArray();
+
+                if (!matchAll)
+                {
+                    // Preg numbers groups sequentially, both named and unnamed.
+                    // .Net only numbers unnamed groups.
+                    // So we name unnamed groups (see ConvertRegex) to map correctly.
+                    int lastSuccessfulGroupIndex = GetLastSuccessfulGroup(m.Groups);
+                    var indexGroups = new List<Group>(m.Groups.Count);
+                    var groupNameByIndex = new Dictionary<int, string>(m.Groups.Count);
+                    for (int i = 0; i <= lastSuccessfulGroupIndex; i++)
+                    {
+                        // All groups should be named.
+                        var groupName = GetGroupName(regex, i);
+                        var item = NewArrayItem(m.Groups[i].Value, m.Groups[i].Index, (flags & PREG_OFFSET_CAPTURE) != 0);
+
+                        if (!string.IsNullOrEmpty(groupName))
+                        {
+                            matches[groupName] = item.DeepCopy();
+                        }
+
+                        matches[i] = item;
+                    }
+
+                    return 1;
+                }
+
+                // store all other matches in PhpArray matches
+                if ((flags & PREG_SET_ORDER) != 0) // cannot test PatternOrder, it is 0, SetOrder must be tested
+                    return FillMatchesArrayAllSetOrder(regex, m, ref matches, (flags & PREG_OFFSET_CAPTURE) != 0);
+                else
+                    return FillMatchesArrayAllPatternOrder(regex, m, ref matches, (flags & PREG_OFFSET_CAPTURE) != 0);
+            }
+
+            // no match has been found
+            if (matchAll && (flags & PREG_SET_ORDER) == 0)
+            {
+                // in that case PHP returns an array filled with empty arrays according to parentheses count
+                matches = new PhpArray(m.Groups.Count);
+                for (int i = 0; i < regex.GetGroupNumbers().Length; i++)
+                {
+                    AddGroupNameToResult(regex, matches, i, (ms, groupName) =>
+                    {
+                        ms[groupName] = (PhpValue)new PhpArray();
+                    });
+
+                    matches[i] = (PhpValue)new PhpArray();
+                }
+            }
+            else
+            {
+                matches = new PhpArray(); // empty array
+            }
+
+            return 0;
         }
 
         /// <summary>
@@ -383,5 +456,132 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        static void AddGroupNameToResult(Regex regex, PhpArray matches, int i, Action<PhpArray, string> action)
+        {
+            var groupName = GetGroupName(regex, i);
+            if (!string.IsNullOrEmpty(groupName))
+            {
+                action(matches, groupName);
+            }
+        }
+
+        /// <summary>
+        /// Goes through <paramref name="m"/> matches and fill <paramref name="matches"/> array with results
+        /// according to Pattern Order.
+        /// </summary>
+        /// <param name="r"><see cref="Regex"/> that produced the match</param>
+        /// <param name="m"><see cref="Match"/> to iterate through all matches by NextMatch() call.</param>
+        /// <param name="matches">Array for storing results.</param>
+        /// <param name="addOffsets">Whether or not add arrays with offsets instead of strings.</param>
+        /// <returns>Number of full pattern matches.</returns>
+        static int FillMatchesArrayAllPatternOrder(Regex r, Match m, ref PhpArray matches, bool addOffsets)
+        {
+            // second index, increases at each match in pattern order
+            int j = 0;
+            while (m.Success)
+            {
+                // add all groups
+                for (int i = 0; i < m.Groups.Count; i++)
+                {
+                    var arr = NewArrayItem(m.Groups[i].Value, m.Groups[i].Index, addOffsets);
+
+                    AddGroupNameToResult(r, matches, i, (ms, groupName) =>
+                    {
+                        if (j == 0) ms[groupName] = (PhpValue)new PhpArray();
+                        ((PhpArray)ms[groupName])[j] = arr;
+                    });
+
+                    if (j == 0) matches[i] = (PhpValue)new PhpArray();
+                    ((PhpArray)matches[i])[j] = arr;
+                }
+
+                j++;
+                m = m.NextMatch();
+            }
+
+            return j;
+        }
+
+        /// <summary>
+        /// Goes through <paramref name="m"/> matches and fill <paramref name="matches"/> array with results
+        /// according to Set Order.
+        /// </summary>
+        /// <param name="r"><see cref="Regex"/> that produced the match</param>
+        /// <param name="m"><see cref="Match"/> to iterate through all matches by NextMatch() call.</param>
+        /// <param name="matches">Array for storing results.</param>
+        /// <param name="addOffsets">Whether or not add arrays with offsets instead of strings.</param>
+        /// <returns>Number of full pattern matches.</returns>
+        static int FillMatchesArrayAllSetOrder(Regex r, Match m, ref PhpArray matches, bool addOffsets)
+        {
+            // first index, increases at each match in set order
+            int i = 0;
+
+            while (m.Success)
+            {
+                var pa = new PhpArray(m.Groups.Count, 0);
+
+                // add all groups
+                for (int j = 0; j < m.Groups.Count; j++)
+                {
+                    var arr = NewArrayItem(m.Groups[j].Value, m.Groups[j].Index, addOffsets);
+
+                    AddGroupNameToResult(r, pa, j, (p, groupName) =>
+                    {
+                        p[groupName] = arr;
+                    });
+
+
+                    pa[j] = arr;
+                }
+
+                matches[i] = (PhpValue)pa;
+                i++;
+                m = m.NextMatch();
+            }
+
+            return i;
+        }
+
+        static int GetLastSuccessfulGroup(GroupCollection/*!*/ groups)
+        {
+            Debug.Assert(groups != null);
+
+            for (int i = groups.Count - 1; i >= 0; i--)
+            {
+                if (groups[i].Success)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        static string GetGroupName(Regex regex, int index)
+        {
+            return regex.GroupNameFromNumber(index);
+        }
+
+        /// <summary>
+        /// Used for handling Offset Capture flags. Returns just <paramref name="item"/> if
+        /// <paramref name="offsetCapture"/> is <B>false</B> or an <see cref="PhpArray"/> containing
+        /// <paramref name="item"/> at index 0 and <paramref name="index"/> at index 1.
+        /// </summary>
+        /// <param name="item">Item to add to return value.</param>
+        /// <param name="index">Index to specify in return value if <paramref name="offsetCapture"/> is
+        /// <B>true</B>.</param>
+        /// <param name="offsetCapture">Whether or not to make <see cref="PhpArray"/> with item and index.</param>
+        /// <returns></returns>
+        static PhpValue NewArrayItem(string item, int index, bool offsetCapture)
+        {
+            if (!offsetCapture)
+            {
+                return (PhpValue)item;
+            }
+
+            var arr = new PhpArray(2);
+            arr.AddValue((PhpValue)item);
+            arr.AddValue((PhpValue)index);
+            return (PhpValue)arr;
+        }
     }
 }

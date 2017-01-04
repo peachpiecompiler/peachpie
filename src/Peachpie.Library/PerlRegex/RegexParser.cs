@@ -81,7 +81,7 @@ namespace Pchp.Library.PerlRegex
             else
                 capnamelist = p._capnamelist.ToArray();
 
-            return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op);
+            return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op, pcreOptions);
         }
 
         /// <summary>
