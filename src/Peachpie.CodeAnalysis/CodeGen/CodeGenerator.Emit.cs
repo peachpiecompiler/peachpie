@@ -1445,7 +1445,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 return targetOpt;
                             case SpecialType.System_Int64:
                                 _il.EmitLongConstant((long)(int)value);
-                                break;
+                                return targetOpt;
                             case SpecialType.System_String:
                                 _il.EmitStringConstant(value.ToString());
                                 return targetOpt;
