@@ -869,7 +869,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             PropertySymbol prop;
 
             var c = cg.CoreMethods.Context;
-            
+
             if (_name == VariableName.GlobalsName) prop = c.Globals;
             else if (_name == VariableName.ServerName) prop = c.Server;
             else if (_name == VariableName.RequestName) prop = c.Request;
@@ -879,6 +879,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (_name == VariableName.EnvName) prop = c.Env;
             else if (_name == VariableName.FilesName) prop = c.Files;
             else if (_name == VariableName.SessionName) prop = c.Session;
+            else if (_name == VariableName.HttpRawPostDataName) prop = c.HttpRawPostData;
             else throw new NotImplementedException($"Superglobal ${_name.Value}");
 
             return prop;

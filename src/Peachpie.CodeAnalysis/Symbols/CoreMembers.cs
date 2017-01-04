@@ -867,6 +867,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Env = ct.Context.Property("Env");
                 Files = ct.Context.Property("Files");
                 Session = ct.Context.Property("Session");
+                HttpRawPostData = ct.Context.Property("HttpRawPostData");
             }
 
             public readonly CoreMethod
@@ -881,7 +882,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreProperty
                 RootPath,
-                Globals, Server, Request, Get, Post, Cookie, Env, Files, Session;
+                Globals, Server, Request, Get, Post, Cookie, Env, Files, Session, HttpRawPostData;
         }
 
         public struct DynamicHolder

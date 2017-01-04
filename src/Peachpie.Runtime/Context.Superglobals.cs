@@ -458,6 +458,12 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Gets value of <c>$HTTP_RAW_POST_DATA</c> variable.
+        /// Note this variable has been removed in PHP 7.0 and should not be used.
+        /// </summary>
+        public virtual string HttpRawPostData { get { return string.Empty; } set { throw new NotImplementedException(); } }
+
         #endregion
     }
 }
