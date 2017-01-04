@@ -748,7 +748,7 @@ namespace Pchp.Core
         internal void Output(Context ctx) => _blob.Output(ctx);
 
         // Prepend
-        
+
         #region IPhpConvertible
 
         public PhpTypeCode TypeCode => PhpTypeCode.WritableString;
@@ -898,5 +898,13 @@ namespace Pchp.Core
         public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
 
         public byte[] ToBytes(Encoding encoding) => _blob.ToBytes(encoding);
+
+        public PhpNumber ToNumber()
+        {
+            double d;
+            long l;
+            var info = Convert.StringToNumber(ToString(), out l, out d);
+            return (info & Convert.NumberInfo.Double) != 0 ? PhpNumber.Create(d) : PhpNumber.Create(l);
+        }
     }
 }

@@ -400,6 +400,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Long);
                 ToDouble_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Double);
                 ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
+                ToNumber_String = ct.Convert.Method("ToNumber", ct.String);
                 ToLong_String = ct.Convert.Method("StringToLongInteger", ct.String);
                 ToDouble_String = ct.Convert.Method("StringToDouble", ct.String);
 
@@ -466,7 +467,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
-                ToNumber_PhpValue,
+                ToNumber_PhpValue, ToNumber_String,
                 AsObject_PhpValue, ToArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
@@ -614,26 +615,26 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Add_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.Long);
                 Add_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.Long, ct.PhpNumber);
-                Add_double_number = ct.PhpNumber.Method("Add", ct.Double, ct.PhpNumber);
-                Add_number_double = ct.PhpNumber.Method("Add", ct.PhpNumber, ct.Double);
+                Add_double_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.Double, ct.PhpNumber);
+                Add_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.Double);
+                Add_number_value = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.PhpValue);
+                Add_value_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpValue, ct.PhpNumber);
                 Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
                 Add_long_double = ct.PhpNumber.Method("Add", ct.Long, ct.Double);
-                Add_long_string = ct.PhpNumber.Method("Add", ct.Long, ct.String);
                 Add_value_long = ct.PhpNumber.Method("Add", ct.PhpValue, ct.Long);
                 Add_value_double = ct.PhpNumber.Method("Add", ct.PhpValue, ct.Double);
-                Add_value_string = ct.PhpNumber.Method("Add", ct.PhpValue, ct.String);
-                Add_value_number = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpNumber);
                 Add_long_value = ct.PhpNumber.Method("Add", ct.Long, ct.PhpValue);
                 Add_double_value = ct.PhpNumber.Method("Add", ct.Double, ct.PhpValue);
-                Add_number_value = ct.PhpNumber.Method("Add", ct.PhpNumber, ct.PhpValue);
                 Add_value_value = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpValue);
+                Add_value_array = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpArray);
+                Add_array_value = ct.PhpNumber.Method("Add", ct.PhpArray, ct.PhpValue);
 
-                Subtract_long_long = ct.PhpNumber.Method("Sub", ct.Long, ct.Long);
-                Subtract_number_double = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.Double);
-                Subtract_long_double = ct.PhpNumber.Method("Sub", ct.Long, ct.Double);
                 Subtract_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Subtract_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.Long, ct.PhpNumber);
                 Subtract_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.PhpNumber, ct.Long);
+                Subtract_long_long = ct.PhpNumber.Method("Sub", ct.Long, ct.Long);
+                Subtract_number_double = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.Double);
+                Subtract_long_double = ct.PhpNumber.Method("Sub", ct.Long, ct.Double);
                 Subtract_value_value = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.PhpValue);
                 Subtract_value_long = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.Long);
                 Subtract_value_double = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.Double);
@@ -652,7 +653,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Mul_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.Long);
                 Mul_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.Long, ct.PhpNumber);
                 Mul_number_value = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.PhpValue);
-                Mul_value_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.PhpValue);
+                Mul_value_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpValue, ct.PhpNumber);
                 Mul_long_long = ct.PhpNumber.Method("Multiply", ct.Long, ct.Long);
                 Mul_long_double = ct.PhpNumber.Method("Multiply", ct.Long, ct.Double);
                 Mul_double_value = ct.PhpNumber.Method("Multiply", ct.Double, ct.PhpValue);
@@ -688,7 +689,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass,
                 CompareTo_number, CompareTo_long, CompareTo_double,
-                Add_long_long, Add_long_double, Add_long_string, Add_number_double, Add_double_number, Add_value_long, Add_value_double, Add_value_string, Add_value_number, Add_long_value, Add_double_value, Add_number_value, Add_value_value,
+                Add_long_long, Add_long_double, Add_value_long, Add_value_double, Add_long_value, Add_double_value, Add_value_value, Add_value_array, Add_array_value,
                 Subtract_long_long, Subtract_number_double, Subtract_long_double, Subtract_value_value, Subtract_value_long, Subtract_value_double, Subtract_value_number, Subtract_number_value, Subtract_long_value,
                 Negation_long,
                 get_Long, get_Double,
@@ -702,7 +703,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Eq_number_number, Ineq_number_number,
                 Eq_number_long, Ineq_number_long,
                 Eq_number_double, Ineq_number_double,
-                Add_number_number, Add_number_long, Add_long_number,
+                Add_number_number, Add_number_long, Add_long_number, Add_value_number, Add_number_double, Add_double_number, Add_number_value,
                 Subtract_number_number, Subtract_long_number, Subtract_number_long,
                 Division_number_number, Division_long_number,
                 Mul_number_number, Mul_number_double, Mul_number_long, Mul_long_number, Mul_number_value, Mul_value_number,
@@ -722,13 +723,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = ct.PhpString.Method("ToLong");
                 ToDouble = ct.PhpString.Method("ToDouble");
                 ToString_Context = ct.PhpString.Method("ToString", ct.Context);
+                ToNumber = ct.PhpString.Method("ToNumber");
 
                 Append_String = ct.PhpString.Method("Append", ct.String);
                 Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber,
                 Append_String, Append_PhpString;
         }
 
@@ -785,6 +787,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemAlias_IntStringKey = t.Method("EnsureItemAlias", ct.IntStringKey);
 
                 New_PhpValue = t.Method("New", ct.PhpValue);
+                Union_PhpArray_PhpArray = t.Method("Union", ct.PhpArray, ct.PhpArray);
 
                 Empty = t.Field("Empty");
             }
@@ -796,7 +799,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy, GetForeachEnumerator_Boolean,
-                New_PhpValue;
+                New_PhpValue, Union_PhpArray_PhpArray;
 
             public readonly CoreField
                 Empty;

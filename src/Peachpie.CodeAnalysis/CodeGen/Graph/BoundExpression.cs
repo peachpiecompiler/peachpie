@@ -206,12 +206,12 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var il = cg.Builder;
 
-            xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> long
+            xtype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(xtype));    // int|bool -> long, string -> number
 
             //
             if (xtype == cg.CoreTypes.PhpNumber)
             {
-                var ytype = cg.EmitConvertIntToLong(cg.Emit(Right));  // int|bool -> long
+                var ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(Right)));  // int|bool -> long, string -> number
 
                 if (ytype == cg.CoreTypes.PhpNumber)
                 {
@@ -243,7 +243,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (xtype.SpecialType == SpecialType.System_Double)
             {
-                var ytype = cg.EmitConvertNumberToDouble(Right); // bool|int|long|number -> double
+                var ytype = cg.EmitConvertStringToNumber(cg.EmitConvertNumberToDouble(Right)); // bool|int|long|number -> double, string -> number
 
                 if (ytype.SpecialType == SpecialType.System_Double)
                 {
@@ -263,7 +263,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (xtype.SpecialType == SpecialType.System_Int64)
             {
-                var ytype = cg.EmitConvertIntToLong(cg.Emit(Right));    // int|bool -> long
+                var ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(Right)));    // int|bool -> long, string -> number
 
                 if (ytype.SpecialType == SpecialType.System_Int64)
                 {
@@ -287,12 +287,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_long_double)
                         .Expect(SpecialType.System_Double);
                 }
-                else if (ytype.SpecialType == SpecialType.System_String)
-                {
-                    // i8 + string : number
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_long_string)
-                        .Expect(cg.CoreTypes.PhpNumber);
-                }
                 else if (ytype == cg.CoreTypes.PhpNumber)
                 {
                     // i8 + number : number
@@ -309,16 +303,28 @@ namespace Pchp.CodeAnalysis.Semantics
                 //
                 throw new NotImplementedException($"Add(int64, {ytype.Name})");
             }
+            else if (xtype == cg.CoreTypes.PhpArray)
+            {
+                var ytype = cg.Emit(Right);
+                if (ytype == cg.CoreTypes.PhpArray)
+                {
+                    // PhpArray.Union(array, array) : PhpArray
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Union_PhpArray_PhpArray)
+                        .Expect(cg.CoreTypes.PhpArray);
+                }
+
+                if (ytype == cg.CoreTypes.PhpValue)
+                {
+                    // array + value
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_array);
+                }
+
+                //
+                throw new NotImplementedException($"Add(PhpArray, {ytype.Name})");
+            }
             else if (xtype == cg.CoreTypes.PhpValue)
             {
-                var ytype = cg.EmitConvertIntToLong(cg.Emit(Right));    // int|bool -> long
-
-                // PhpString -> String
-                if (ytype == cg.CoreTypes.PhpString)
-                {
-                    cg.EmitConvertToString(ytype, 0);
-                    // continue ...
-                }
+                var ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(Right)));    // int|bool -> long, string -> number
 
                 if (ytype.SpecialType == SpecialType.System_Int64)
                 {
@@ -332,11 +338,10 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_double)
                         .Expect(SpecialType.System_Double);
                 }
-                else if (ytype == cg.CoreTypes.String)
+                else if (ytype == cg.CoreTypes.PhpArray)
                 {
-                    // value + string : number
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_string)
-                        .Expect(cg.CoreTypes.PhpNumber);
+                    // value + array
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_array);
                 }
                 else if (ytype == cg.CoreTypes.PhpNumber)
                 {
@@ -350,7 +355,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_value)
                         .Expect(cg.CoreTypes.PhpValue);
                 }
-
+                
                 //
                 throw new NotImplementedException($"Add(PhpValue, {ytype.Name})");
             }
@@ -374,13 +379,14 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var il = cg.Builder;
 
-            xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> int64
+            xtype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(xtype));    // int|bool -> int64, string -> number
             TypeSymbol ytype;
 
+            //
             switch (xtype.SpecialType)
             {
                 case SpecialType.System_Int64:
-                    ytype = cg.EmitConvertIntToLong(cg.Emit(right));
+                    ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
                         // i8 - i8 : number
@@ -408,7 +414,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
 
                 case SpecialType.System_Double:
-                    ytype = cg.EmitConvertNumberToDouble(right); // bool|int|long|number -> double
+                    ytype = cg.EmitConvertStringToNumber(cg.EmitConvertNumberToDouble(right)); // bool|int|long|number -> double, string -> number
                     if (ytype.SpecialType == SpecialType.System_Double)
                     {
                         // r8 - r8 : r8
@@ -416,10 +422,16 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.CoreTypes.Double;
                     }
                     throw new NotImplementedException($"Sub(double, {ytype.Name})");
+
+                case SpecialType.System_String:
+                    xtype = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ToNumber_String)
+                        .Expect(cg.CoreTypes.PhpNumber);
+                    goto default;
+
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));
+                        ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {
                             // number - i8 : number
@@ -449,7 +461,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (xtype == cg.CoreTypes.PhpValue)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));
+                        ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
 
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {

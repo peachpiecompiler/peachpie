@@ -329,6 +329,28 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// In case there is <c>string</c> or <c>PhpString</c> on the top of evaluation stack,
+        /// converts it to <c>PhpNumber</c>.
+        /// </summary>
+        /// <returns>New type on top of stack.</returns>
+        internal TypeSymbol EmitConvertStringToNumber(TypeSymbol stack)
+        {
+            if (stack.SpecialType == SpecialType.System_String)
+            {
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToNumber_String)
+                    .Expect(CoreTypes.PhpNumber);
+            }
+
+            if (stack == CoreTypes.PhpString)
+            {
+                return EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.ToNumber)
+                    .Expect(CoreTypes.PhpNumber);
+            }
+
+            return stack;
+        }
+
+        /// <summary>
         /// In case there is <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c> on the top of evaluation stack,
         /// converts it to <c>double</c>.
         /// </summary>

@@ -223,6 +223,17 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Converts given string to a number.
+        /// </summary>
+        public static PhpNumber ToNumber(string str)
+        {
+            long l;
+            double d;
+            var info = StringToNumber(str, out l, out d);
+            return ((info & NumberInfo.Double) != 0) ? PhpNumber.Create(d) : PhpNumber.Create(l);
+        }
+
+        /// <summary>
         /// Performs conversion of a value to a number.
         /// Additional conversion warnings may be thrown.
         /// </summary>

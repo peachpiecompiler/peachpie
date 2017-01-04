@@ -140,6 +140,11 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Makes new array containing union of two arrays.
+        /// </summary>
+        public static PhpArray Union(PhpArray x, PhpArray y) => (PhpArray)x.DeepCopy().Unite(y);
+
+        /// <summary>
         /// Creates an instance of <see cref="PhpArray"/> filled by given entries.
         /// </summary>
         /// <param name="keysValues">Keys and values (alternating) or values only.</param>
