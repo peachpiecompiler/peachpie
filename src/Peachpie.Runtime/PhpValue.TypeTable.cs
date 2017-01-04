@@ -482,7 +482,17 @@ namespace Pchp.Core
                 // TODO: Err
                 throw new NotSupportedException();
             }
-            public override PhpArray ToArray(ref PhpValue me) { throw new NotImplementedException(); }
+            public override PhpArray ToArray(ref PhpValue me)
+            {
+                if (me.Object.GetType() == typeof(stdClass))
+                {
+                    // special case,
+                    // object is stdClass, we can simply sopy its runtime fields
+                    return ((stdClass)me.Object).__peach__runtimeFields.DeepCopy();
+                }
+
+                throw new NotImplementedException();    // TODO: PhpTypeInfo.RuntimeFields
+            }
             public override object AsObject(ref PhpValue me) => me.Object;
             public override IPhpCallable AsCallable(ref PhpValue me)
             {
