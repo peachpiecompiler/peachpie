@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override NamedTypeSymbol ContainingType => _class;
 
-        public override Accessibility DeclaredAccessibility => Accessibility.Public;
+        public override Accessibility DeclaredAccessibility => Accessibility.Public; // TODO: Accessibility.Private; Generate stubs "get|set field(Context)" in containing class to access these fields
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {

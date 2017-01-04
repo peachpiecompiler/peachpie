@@ -285,7 +285,9 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                return PEModuleBuilder.MemberVisibility(this);
+                return (this is SourceFieldSymbol && ((SourceFieldSymbol)this).RequiresHolder)
+                    ? Cci.TypeMemberVisibility.Public   // fields in __statics holder must be "public"
+                    : PEModuleBuilder.MemberVisibility(this);
             }
         }
 
