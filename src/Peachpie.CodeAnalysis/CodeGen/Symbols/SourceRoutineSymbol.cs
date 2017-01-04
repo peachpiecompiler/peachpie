@@ -55,8 +55,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 var p = ps[i] as SourceParameterSymbol;
                 if (p != null && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
                 {
-                    // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
-                    CreateGhostOverload(module, diagnostic, i);
+                    if (this.ContainingType.IsInterface)
+                    {
+                        // TODO: we can't build instance method in an interface, generate static extension method ?
+                        Debug.WriteLine($"we've lost parameter explicit default value {this.ContainingType.Name}::{this.RoutineName}, parameter ${p.Name}");
+                    }
+                    else
+                    {
+                        // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
+                        CreateGhostOverload(module, diagnostic, i);
+                    }
                 }
             }
         }
@@ -154,7 +162,17 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // <this>.<ctx> in instance methods
                 var t = (SourceTypeSymbol)this.ContainingType;
-                return new FieldPlace(GetThisPlace(), t.ContextStore);
+
+                var ctx_field = t.ContextStore;
+                if (ctx_field != null)  // might be null in interfaces
+                {
+                    return new FieldPlace(GetThisPlace(), ctx_field);
+                }
+                else
+                {
+                    Debug.Assert(t.IsInterface);
+                    return null;
+                }
             }
 
             //
@@ -203,4 +221,4 @@ namespace Pchp.CodeAnalysis.Symbols
             field.EmitStore(cctor);
         }
     }
-}
+};
