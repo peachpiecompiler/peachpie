@@ -35,6 +35,17 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Returns the name of the callers class context.
+        /// </summary>
+        /// <param name="tctx">Current class context.</param>
+        /// <returns>Current class name.</returns>
+        [return: CastToFalse]
+        public static string get_class([ImportCallerClass]string tctx)
+        {
+            return tctx;
+        }
+
+        /// <summary>
         /// Returns the name of the class of which the object <paramref name="obj"/> is an instance.
         /// </summary>
         /// <param name="tctx">Current class context.</param>
