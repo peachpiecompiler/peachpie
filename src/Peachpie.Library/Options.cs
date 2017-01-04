@@ -438,5 +438,12 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        /// <summary>
+        /// Gets the current configuration setting of magic_quotes_gpc.
+        /// Always returns <c>false</c>.
+        /// </summary>
+        /// <returns>Always <c>false</c>.</returns>
+        public static bool get_magic_quotes_gpc() => false;
     }
 }
