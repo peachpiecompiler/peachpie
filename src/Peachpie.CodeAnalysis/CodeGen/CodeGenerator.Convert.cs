@@ -513,6 +513,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_String:
                     // nop
                     break;
+                case SpecialType.System_Void:
+                    Builder.EmitStringConstant(string.Empty);
+                    break;
                 case SpecialType.System_Boolean:
                     EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Bool);
                     break;
@@ -578,10 +581,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 return;
             }
-
-            // new PhpString(string)
-            EmitConvertToString(from, fromHint);
-            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+            else if (from.SpecialType == SpecialType.System_Void)
+            {
+                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString);
+            }
+            else
+            {
+                // new PhpString(string)
+                EmitConvertToString(from, fromHint);
+                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+            }
         }
         /// <summary>
         /// Emits conversion to <c>PhpArray</c>.
