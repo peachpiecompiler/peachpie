@@ -21,7 +21,7 @@ namespace Pchp.Core.Dynamic
         {
             _name = name;
             _classContext = Type.GetTypeFromHandle(classContext);
-            _access = access;
+            _access = access & AccessFlags.WriteMask;
         }
 
         void ResolveArgs(DynamicMetaObject[] args, ref BindingRestrictions restrictions, out string fieldName, out Expression valueExpr)
