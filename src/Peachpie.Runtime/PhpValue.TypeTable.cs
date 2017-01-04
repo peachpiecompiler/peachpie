@@ -342,7 +342,7 @@ namespace Pchp.Core
             }
             public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => PhpValue.Create(Operators.GetItemValue(me.String, key));
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) { throw new NotSupportedException(); } // TODO: Err
-            public override PhpArray ToArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
+            public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.String);
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.String);

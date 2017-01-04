@@ -171,7 +171,7 @@ namespace Pchp.Core
         /// Keys will correspond order of values in the array.</param>
         public static PhpArray New(PhpValue value)
         {
-            return new PhpArray(1, 0)
+            return new PhpArray(1)
             {
                 value
             };
