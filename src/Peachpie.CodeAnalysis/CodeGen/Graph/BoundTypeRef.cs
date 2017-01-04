@@ -1,4 +1,5 @@
 ﻿using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
@@ -54,8 +55,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (this.ResolvedType != null)
             {
-                // CALL GetPhpTypeInfo<T>()
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(this.ResolvedType));
+                EmitLoadPhpTypeInfo(cg, this.ResolvedType);
             }
             else
             {
@@ -65,6 +65,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.Builder.EmitBoolConstant(true);
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.GetDeclaredType_string_bool);
             }
+        }
+
+        internal static ITypeSymbol EmitLoadPhpTypeInfo(CodeGenerator cg, ITypeSymbol t)
+        {
+            Contract.ThrowIfNull(t);
+
+            // CALL GetPhpTypeInfo<T>()
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(t));
         }
 
         public void Accept(PhpOperationVisitor visitor) => visitor.VisitTypeRef(this);

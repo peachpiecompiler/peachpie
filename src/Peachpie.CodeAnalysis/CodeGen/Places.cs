@@ -1548,7 +1548,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // new GetFieldBinder(field_name, context, return, flags)
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
-                cctor.EmitLoadToken(cg.Routine.ContainingType, null);
+                cctor.EmitLoadToken(cg.CallerType, null);
                 cctor.EmitLoadToken(return_type, null);
                 cctor.Builder.EmitIntConstant((int)Access.AccessFlags);
                 cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);

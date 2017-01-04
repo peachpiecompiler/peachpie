@@ -660,6 +660,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return SpecialParameterSymbol.IsContextParameter(this) ||
                     SpecialParameterSymbol.IsLocalsParameter(this) ||
                     SpecialParameterSymbol.IsCallerArgsParameter(this) ||
+                    SpecialParameterSymbol.IsCallerClassParameter(this) ||
                     base.IsImplicitlyDeclared;
             }
         }

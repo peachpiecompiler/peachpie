@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -80,6 +81,18 @@ namespace Pchp.Core
     /// The parameter must be before regular parameters.</remarks>
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ImportCallerArgsAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Denotates a function parameter that will be loaded with current class.
+    /// </summary>
+    /// <remarks>
+    /// The parameter is used to access calers' class context.
+    /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
+    /// The parameter must be before regular parameters.</remarks>
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class ImportCallerClassAttribute : Attribute
     {
     }
 

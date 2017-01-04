@@ -826,6 +826,34 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // ((NamedTypeSymbol)p.Type).TypeParameters // TODO: IList<T>
                         Emit_ArgsArray(CoreTypes.PhpValue); // TODO: T
                     }
+                    else if (SpecialParameterSymbol.IsCallerClassParameter(p))
+                    {
+                        if (p.Type == CoreTypes.PhpTypeInfo)
+                        {
+                            if (this.CallerType != null)
+                                BoundTypeRef.EmitLoadPhpTypeInfo(this, this.CallerType);
+                            else
+                                Builder.EmitNullConstant();
+                        }
+                        else if (p.Type.SpecialType == SpecialType.System_String)
+                        {
+                            Builder.EmitStringConstant(this.CallerType != null
+                                ? ((IPhpTypeSymbol)this.CallerType).FullName.ToString()
+                                : null);
+                        }
+                        else
+                        {
+                            if (p.Type == CoreTypes.RuntimeTypeHandle)
+                            {
+                                // LOAD <RuntimeTypeHandle>
+                                this.EmitLoadToken(this.CallerType, null);
+                            }
+                            else
+                            {
+                                throw ExceptionUtilities.UnexpectedValue(p.Type);
+                            }
+                        }
+                    }
                     else
                     {
                         throw new NotImplementedException();

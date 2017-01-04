@@ -73,6 +73,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool IsCallerArgsParameter(IParameterSymbol p)
             => p != null && p.Type != null && p.Type.IsSZArray() && p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportCallerArgsAttribute");
 
+        public static bool IsCallerClassParameter(IParameterSymbol p)
+            => p != null && p.Type != null &&
+            (p.Type.MetadataName == "RuntimeTypeHandle" || p.Type.MetadataName == "Type" || p.Type.MetadataName == "PhpTypeInfo" || p.Type.SpecialType == SpecialType.System_String) &&
+            p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportCallerClassAttribute");
+
         public override bool IsImplicitlyDeclared => true;
 
         public override Symbol ContainingSymbol => _symbol;
