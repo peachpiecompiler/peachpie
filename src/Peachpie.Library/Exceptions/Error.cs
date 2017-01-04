@@ -14,6 +14,8 @@ public class Error : System.Exception, Throwable
     protected string file;
     protected int line;
 
+    public Error() { }
+
     public Error(string message = "", long code = 0, Throwable previous = null)
     {
         __construct(message, code, previous);
