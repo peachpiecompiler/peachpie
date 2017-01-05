@@ -533,18 +533,18 @@ namespace Pchp.Library
         #region compact, extract
 
         /// <summary>
-		/// Creates array containing variables and their values.
-		/// </summary>
+        /// Creates array containing variables and their values.
+        /// </summary>
         /// <param name="locals">The table of defined variables.</param>
-		/// <param name="names">Names of the variables - each chan be either 
-		/// <see cref="string"/> or <see cref="PhpArray"/>. Names are retrived recursively from an array.</param>
-		/// <returns>The <see cref="PhpArray"/> which keys are names of variables and values are deep copies of 
-		/// their values.</returns>
-		/// <remarks>
-		/// Items in <paramref name="names"/> which are neither of type <see cref="string"/> nor <see cref="PhpArray"/> 
-		/// are ignored.</remarks>
-		/// <exception cref="PhpException"><paramref name="names"/> is a <B>null</B> reference.</exception>
-		public static PhpArray compact([ImportLocals]PhpArray locals, params PhpValue[] names)
+        /// <param name="names">Names of the variables - each chan be either 
+        /// <see cref="string"/> or <see cref="PhpArray"/>. Names are retrived recursively from an array.</param>
+        /// <returns>The <see cref="PhpArray"/> which keys are names of variables and values are deep copies of 
+        /// their values.</returns>
+        /// <remarks>
+        /// Items in <paramref name="names"/> which are neither of type <see cref="string"/> nor <see cref="PhpArray"/> 
+        /// are ignored.</remarks>
+        /// <exception cref="PhpException"><paramref name="names"/> is a <B>null</B> reference.</exception>
+        public static PhpArray compact([ImportLocals]PhpArray locals, params PhpValue[] names)
         {
             if (names == null)
             {
