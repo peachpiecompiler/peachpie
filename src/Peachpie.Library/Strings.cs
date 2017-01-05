@@ -47,7 +47,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="charCode">The ASCII code.</param>
         /// <returns>The character with <paramref name="charCode"/> ASCIT code.</returns>
-        /// <remarks>Current code-page is determined by the <see cref="ApplicationConfiguration.GlobalizationSection.PageEncoding"/> property.</remarks>
         public static string chr(int charCode) => unchecked((char)charCode).ToString();
 
         /// <summary>
@@ -1275,6 +1274,817 @@ namespace Pchp.Library
             }
 
             return result;
+        }
+
+        #endregion
+
+        #region quoted_printable_decode, quoted_printable_encode
+
+        /// <summary>
+        /// Maximum length of line according to quoted-printable specification.
+        /// </summary>
+        internal const int PHP_QPRINT_MAXL = 75;
+
+        /// <summary>
+        /// Converts a quoted-printable string into (an 8-bit) string.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="str">The quoted-printable string.</param>
+        /// <returns>The 8-bit string corresponding to the decoded <paramref name="str"/>.</returns>
+        /// <remarks>Based on the implementation in quot_print.c PHP source file.</remarks>
+        public static string quoted_printable_decode(Context ctx, string str)
+        {
+            if (str == null)
+            {
+                return string.Empty;
+            }
+
+            Encoding encoding = ctx.StringEncoding;
+            MemoryStream stream = new MemoryStream();
+            StringBuilder result = new StringBuilder(str.Length / 2);
+
+            int i = 0;
+            while (i < str.Length)
+            {
+                char c = str[i];
+
+                if (c == '=')
+                {
+                    if (i + 2 < str.Length && UriUtils.IsHexDigit(str[i + 1]) && UriUtils.IsHexDigit(str[i + 2]))
+                    {
+                        stream.WriteByte((byte)((UriUtils.FromHex(str[i + 1]) << 4) + UriUtils.FromHex(str[i + 2])));
+                        i += 3;
+                    }
+                    else  // check for soft line break according to RFC 2045
+                    {
+                        int k = 1;
+
+                        // Possibly, skip spaces/tabs at the end of line
+                        while (i + k < str.Length && (str[i + k] == ' ' || str[i + k] == '\t')) k++;
+
+                        // End of line reached
+                        if (i + k >= str.Length)
+                        {
+                            i += k;
+                        }
+                        else if (str[i + k] == '\r' && i + k + 1 < str.Length && str[i + k + 1] == '\n')
+                        {
+                            // CRLF
+                            i += k + 2;
+                        }
+                        else if (str[i + k] == '\r' || str[i + k] == '\n')
+                        {
+                            // CR or LF
+                            i += k + 1;
+                        }
+                        else
+                        {
+                            // flush stream
+                            if (stream.Position > 0)
+                            {
+                                result.Append(encoding.GetChars(stream.GetBuffer(), 0, (int)stream.Position));
+                                stream.Seek(0, SeekOrigin.Begin);
+                            }
+                            result.Append(str[i++]);
+                        }
+                    }
+                }
+                else
+                {
+                    // flush stream
+                    if (stream.Position > 0)
+                    {
+                        result.Append(encoding.GetChars(stream.GetBuffer(), 0, (int)stream.Position));
+                        stream.Seek(0, SeekOrigin.Begin);
+                    }
+
+                    result.Append(c);
+                    i++;
+                }
+            }
+
+            // flush stream
+            if (stream.Position > 0)
+            {
+                result.Append(encoding.GetChars(stream.GetBuffer(), 0, (int)stream.Position));
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Convert a 8 bit string to a quoted-printable string
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="str">The input string.</param>
+        /// <returns>The quoted-printable string.</returns>
+        /// <remarks>Based on the implementation in quot_print.c PHP source file.</remarks>
+        public static string quoted_printable_encode(Context ctx, string str)
+        {
+            if (str == null)
+            {
+                return string.Empty;
+            }
+
+            Encoding encoding = ctx.StringEncoding;
+            MemoryStream stream = new MemoryStream();
+
+            StringBuilder result = new StringBuilder(3 * str.Length + 3 * (((3 * str.Length) / PHP_QPRINT_MAXL) + 1));
+            string hex = "0123456789ABCDEF";
+
+            byte[] bytes = new byte[encoding.GetMaxByteCount(1)];
+            int encodedChars;
+
+
+            int i = 0;
+            int j = 0;
+            int charsOnLine = 0;
+            char c;
+            while (i < str.Length)
+            {
+                c = str[i];
+
+                if (c == '\r' && i + 1 < str.Length && str[i + 1] == '\n')
+                {
+                    result.Append("\r\n");
+                    charsOnLine = 0;
+                    i += 2;
+                }
+                else
+                {
+
+                    if (char.IsControl(c) ||
+                        c >= 0x7F || // is not ascii char
+                        (c == '=') ||
+                        ((c == ' ') && i + 1 < str.Length && (str[i + 1] == '\r')))
+                    {
+
+                        if ((charsOnLine += 3) > PHP_QPRINT_MAXL)
+                        {
+                            result.Append("=\r\n");
+                            charsOnLine = 3;
+                        }
+
+                        // encode c(==str[i])
+                        encodedChars = encoding.GetBytes(str, i, 1, bytes, 0);
+
+                        for (j = 0; j < encodedChars; ++j)
+                        {
+                            result.Append('=');
+                            result.Append(hex[bytes[j] >> 4]);
+                            result.Append(hex[bytes[j] & 0xf]);
+                        }
+                    }
+                    else
+                    {
+
+                        if ((++charsOnLine) > PHP_QPRINT_MAXL)
+                        {
+                            result.Append("=\r\n");
+                            charsOnLine = 1;
+                        }
+                        result.Append(c);
+                    }
+
+                    ++i;
+                }
+            }
+            return result.ToString();
+        }
+
+        #endregion
+
+        #region addslashes, addcslashes, quotemeta
+
+        /// <summary>
+        /// Adds backslashes before characters depending on current configuration.
+        /// </summary>
+        /// <param name="str">Data to process.</param>
+        /// <returns>
+        /// The string or string of bytes where some characters are preceded with the backslash character.
+        /// </returns>
+        /// <remarks>
+        /// If <see cref="LocalConfiguration.VariablesSection.QuoteInDbManner"/> ("magic_quotes_sybase" in PHP) option 
+        /// is set then '\0' characters are slashed and single quotes are replaced with two single quotes. Otherwise,
+        /// '\'', '"', '\\' and '\0 characters are slashed.
+        /// </remarks>
+        public static string addslashes(string str) => StringUtils.AddCSlashes(str, true, true);
+
+        /// <summary>
+        /// Quote string with slashes in a C style.
+        /// </summary>
+        public static string addcslashes(string str, string mask)
+        {
+            if (string.IsNullOrEmpty(str)) return string.Empty;
+            if (string.IsNullOrEmpty(mask)) return str;
+
+            //Encoding encoding = Configuration.Application.Globalization.PageEncoding;
+
+            //// to guarantee the same result both the string and the mask has to be converted to bytes:
+            //string c = ArrayUtils.ToString(encoding.GetBytes(mask));
+            //string s = ArrayUtils.ToString(encoding.GetBytes(str));
+
+            string c = Encoding.ASCII.GetString(Encoding.ASCII.GetBytes(mask));
+            string s = Encoding.ASCII.GetString(Encoding.ASCII.GetBytes(str));
+
+            // the result contains ASCII characters only, so there is no need to conversions:
+            return AddCSlashesInternal(str, s, c);
+        }
+
+        /// <param name="translatedStr">A sequence of chars or ints from which to take character codes.</param>
+        /// <param name="translatedMask">A mask containing codes.</param>
+        /// <param name="str">A string to be slashed.</param>
+        /// <exception cref="PhpException"><paramref name="translatedStr"/> interval is invalid.</exception>
+        /// <exception cref="PhpException"><paramref name="translatedStr"/> contains Unicode characters greater than '\u0800'.</exception>
+        static string AddCSlashesInternal(string str, string translatedStr, string translatedMask)
+        {
+            Debug.Assert(str != null && translatedMask != null && translatedStr != null && str.Length == translatedStr.Length);
+
+            // prepares the mask:
+            CharMap charmap = InitializeCharMap();
+            try
+            {
+                charmap.AddUsingMask(translatedMask);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw; // TODO: Err
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("too_big_unicode_character"));
+                //return null;
+            }
+
+            const string cslashed_chars = "abtnvfr";
+
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < str.Length; i++)
+            {
+                //char c = translatedStr[i];
+
+                if (charmap.Contains(translatedStr[i]))
+                {
+                    result.Append('\\');
+
+                    char c = str[i];    // J: translatedStr and translatedMask are used only in context of CharMap, later we are working with original str only
+
+                    // performs conversion to C representation:
+                    if (c < '\u0020' || c > '\u007f')
+                    {
+                        if (c >= '\u0007' && c <= '\u000d')
+                            result.Append(cslashed_chars[c - '\u0007']);
+                        else
+                            result.Append(System.Convert.ToString((int)c, 8));  // 0x01234567
+                    }
+                    else
+                        result.Append(c);
+                }
+                else
+                    result.Append(str[i]);
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// A map of following characters: {'.', '\', '+', '*', '?', '[', '^', ']', '(', '$', ')'}.
+        /// </summary>
+        static readonly CharMap metaCharactersMap = new CharMap(new uint[] { 0, 0x08f20001, 0x0000001e });
+
+        /// <summary>
+        /// Adds backslashes before following characters: {'.', '\', '+', '*', '?', '[', '^', ']', '(', '$', ')'}
+        /// </summary>
+        /// <param name="str">The string to be processed.</param>
+        /// <returns>The string where said characters are backslashed.</returns>
+        public static string quotemeta(string str)
+        {
+            if (str == null)
+            {
+                return string.Empty;
+            }
+
+            int length = str.Length;
+            StringBuilder result = new StringBuilder(length);
+
+            for (int i = 0; i < length; i++)
+            {
+                char c = str[i];
+                if (metaCharactersMap.Contains(c)) result.Append('\\');
+                result.Append(c);
+            }
+
+            return result.ToString();
+        }
+
+        #endregion
+
+        #region stripslashes, stripcslashes
+
+        /// <summary>
+        /// Unquote string quoted with <see cref="AddSlashes"/>.
+        /// </summary>
+        /// <param name="str">The string to unquote.</param>
+        /// <returns>The unquoted string.</returns>
+        public static string stripslashes(string str)
+        {
+            return StringUtils.StripCSlashes(str);
+        }
+
+        /// <summary>
+        /// Returns a string with backslashes stripped off. Recognizes \a, \b, \f, \n, \r, \t, \v, \\, octal
+        /// and hexadecimal representation.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="str">The string to strip.</param>
+        /// <returns>The stripped string.</returns>
+        public static string stripcslashes(Context ctx, string str)
+        {
+            if (str == null)
+            {
+                return string.Empty;
+            }
+
+            Encoding encoding = ctx.StringEncoding;
+            const char escape = '\\';
+            int length = str.Length;
+            StringBuilder result = new StringBuilder(length);
+            bool state1 = false;
+            byte[] bA1 = new byte[1];
+
+            for (int i = 0; i < length; i++)
+            {
+                char c = str[i];
+                if (c == escape && state1 == false)
+                {
+                    state1 = true;
+                    continue;
+                }
+
+                if (state1 == true)
+                {
+                    switch (c)
+                    {
+                        case 'a': result.Append('\a'); break;
+                        case 'b': result.Append('\b'); break;
+                        case 'f': result.Append('\f'); break;
+                        case 'n': result.Append('\n'); break;
+                        case 'r': result.Append('\r'); break;
+                        case 't': result.Append('\t'); break;
+                        case 'v': result.Append('\v'); break;
+                        case '\\': result.Append('\\'); break;
+
+                        // hex ASCII code
+                        case 'x':
+                            {
+                                int code = 0;
+                                if (i + 1 < length && UriUtils.IsHexDigit(str[i + 1])) // first digit
+                                {
+                                    code = UriUtils.FromHex(str[i + 1]);
+                                    i++;
+                                    if (i + 1 < length && UriUtils.IsHexDigit(str[i + 1])) // second digit
+                                    {
+                                        code = (code << 4) + UriUtils.FromHex(str[i + 1]);
+                                        i++;
+                                    }
+
+                                    bA1[0] = (byte)code;
+                                    result.Append(encoding.GetChars(bA1)[0]);
+                                    break;
+                                }
+                                goto default;
+                            }
+
+                        // octal ASCII code
+                        default:
+                            {
+                                int code = 0, j = 0;
+                                for (; j < 3 && i < length && str[i] >= '0' && str[i] <= '8'; i++, j++)
+                                {
+                                    code = (code << 3) + (str[i] - '0');
+                                }
+
+                                if (j > 0)
+                                {
+                                    i--;
+                                    bA1[0] = (byte)code;
+                                    result.Append(encoding.GetChars(bA1)[0]);
+                                }
+                                else result.Append(c);
+                                break;
+                            }
+                    }
+
+                    state1 = false;
+                }
+                else result.Append(c);
+            }
+
+            return result.ToString();
+        }
+
+        #endregion
+
+        #region htmlspecialchars, htmlspecialchars_decode, htmlentities, get_html_translation_table, html_entity_decode
+
+        /// <summary>Quote conversion options.</summary>
+        [Flags, PhpHidden]
+        public enum QuoteStyle
+        {
+            /// <summary>
+            /// Default quote style for <c>htmlentities</c>.
+            /// </summary>
+            HtmlEntitiesDefault = QuoteStyle.Compatible | QuoteStyle.Html401,
+
+            /// <summary>Single quotes.</summary>
+            SingleQuotes = 1,
+
+            /// <summary>Double quotes.</summary>
+            DoubleQuotes = 2,
+
+            /// <summary>
+            /// No quotes.
+            /// Will leave both double and single quotes unconverted.
+            /// </summary>
+            NoQuotes = 0,
+
+            /// <summary>
+            /// Will convert double-quotes and leave single-quotes alone.
+            /// </summary>
+            Compatible = DoubleQuotes,
+
+            /// <summary>
+            /// Both single and double quotes.
+            /// Will convert both double and single quotes.
+            /// </summary>
+            BothQuotes = DoubleQuotes | SingleQuotes,
+
+            /// <summary>
+            /// Silently discard invalid code unit sequences instead of
+            /// returning an empty string. Using this flag is discouraged
+            /// as it may have security implications.
+            /// </summary>
+            Ignore = 4,
+
+            /// <summary>
+            /// Replace invalid code unit sequences with a Unicode
+            /// Replacement Character U+FFFD (UTF-8) or &amp;#FFFD;
+            /// (otherwise) instead of returning an empty string.
+            /// </summary>
+            Substitute = 8,
+
+            /// <summary>
+            /// Handle code as HTML 4.01.
+            /// </summary>
+            Html401 = NoQuotes,
+
+            /// <summary>
+            /// Handle code as XML 1.
+            /// </summary>
+            XML1 = 16,
+
+            /// <summary>
+            /// Handle code as XHTML.
+            /// </summary>
+            XHTML = 32,
+
+            /// <summary>
+            /// Handle code as HTML 5.
+            /// </summary>
+            HTML5 = XML1 | XHTML,
+
+            /// <summary>
+            /// Replace invalid code points for the given document type
+            /// with a Unicode Replacement Character U+FFFD (UTF-8) or &amp;#FFFD;
+            /// (otherwise) instead of leaving them as is.
+            /// This may be useful, for instance, to ensure the well-formedness
+            /// of XML documents with embedded external content.
+            /// </summary>
+            Disallowed = 128,
+        };
+
+        public const int ENT_NOQUOTES = (int)QuoteStyle.NoQuotes;
+        public const int ENT_COMPAT = (int)QuoteStyle.Compatible;
+        public const int ENT_QUOTES = (int)QuoteStyle.BothQuotes;
+        public const int ENT_IGNORE = (int)QuoteStyle.Ignore;
+        public const int ENT_SUBSTITUTE = (int)QuoteStyle.Substitute;
+        public const int ENT_HTML401 = (int)QuoteStyle.Html401;
+        public const int ENT_XML1 = (int)QuoteStyle.XML1;
+        public const int ENT_XHTML = (int)QuoteStyle.XHTML;
+        public const int ENT_HTML5 = (int)QuoteStyle.HTML5;
+        public const int ENT_DISALLOWED = (int)QuoteStyle.Disallowed;
+
+        /// <summary>Types of HTML entities tables.</summary>
+        [PhpHidden]
+        public enum HtmlEntitiesTable
+        {
+            /// <summary>Table containing special characters only.</summary>
+            SpecialChars = 0,
+
+            /// <summary>Table containing all entities.</summary>
+            AllEntities = 1
+        };
+
+        public const int HTML_SPECIALCHARS = (int)HtmlEntitiesTable.SpecialChars;
+        public const int HTML_ENTITIES = (int)HtmlEntitiesTable.AllEntities;
+
+        /// <summary>
+        /// Converts special characters to HTML entities.
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <param name="quoteStyle">Quote conversion.</param>
+        /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
+        /// <param name="doubleEncode">When double_encode is turned off PHP will not encode existing html entities, the default is to convert everything.</param>
+        /// <returns>The converted string.</returns>
+        public static string htmlspecialchars(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = "ISO-8859-1", bool doubleEncode = true)
+        {
+            if (!doubleEncode)
+            {
+                // PhpException.ArgumentValueNotSupported("doubleEncode", doubleEncode); // TODO
+                throw new NotSupportedException(nameof(doubleEncode));
+            }
+
+            return HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet);
+        }
+
+        /// <summary>
+        /// Converts special characters of substring to HTML entities.
+        /// </summary>
+        /// <param name="str">The string.</param>
+        /// <param name="index">First character of the string to covert.</param>
+        /// <param name="length">Length of the substring to covert.</param>
+        /// <param name="quoteStyle">Quote conversion.</param>
+        /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
+        /// <returns>The converted substring.</returns>
+        static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string charSet)
+        {
+            if (str == null) return String.Empty;
+
+            Debug.Assert(index + length <= str.Length);
+
+            StringBuilder result = new StringBuilder(length);
+
+            // quote style is anded to emulate PHP behavior (any value is allowed):
+            string single_quote = (quoteStyle & QuoteStyle.SingleQuotes) != 0 ? "&#039;" : "'";
+            string double_quote = (quoteStyle & QuoteStyle.DoubleQuotes) != 0 ? "&quot;" : "\"";
+
+            for (int i = index; i < index + length; i++)
+            {
+                char c = str[i];
+                switch (c)
+                {
+                    case '&': result.Append("&amp;"); break;
+                    case '"': result.Append(double_quote); break;
+                    case '\'': result.Append(single_quote); break;
+                    case '<': result.Append("&lt;"); break;
+                    case '>': result.Append("&gt;"); break;
+                    default: result.Append(c); break;
+                }
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Converts HTML entities (&amp;amp;, &amp;lt;, &amp;gt;, and optionally &amp;quot; and &amp;#039;) 
+        /// in a specified string to the respective characters. 
+        /// </summary>
+        /// <param name="str">The string to be converted.</param>
+        /// <param name="quoteStyle">Which quote entities to convert.</param>
+        /// <returns>String with converted entities.</returns>
+        public static string htmlspecialchars_decode(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible)
+        {
+            if (str == null) return null;
+
+            StringBuilder result = new StringBuilder(str.Length);
+
+            bool dq = (quoteStyle & QuoteStyle.DoubleQuotes) != 0;
+            bool sq = (quoteStyle & QuoteStyle.SingleQuotes) != 0;
+
+            int i = 0;
+            while (i < str.Length)
+            {
+                char c = str[i];
+                if (c == '&')
+                {
+                    i++;
+                    if (i + 4 < str.Length && str[i + 4] == ';')                   // quot; #039;
+                    {
+                        if (dq && str[i] == 'q' && str[i + 1] == 'u' && str[i + 2] == 'o' && str[i + 3] == 't') { i += 5; result.Append('"'); continue; }
+                        if (sq && str[i] == '#' && str[i + 1] == '0' && str[i + 2] == '3' && str[i + 3] == '9') { i += 5; result.Append('\''); continue; }
+                    }
+
+                    if (i + 3 < str.Length && str[i + 3] == ';')                   // amp; #39;
+                    {
+                        if (str[i] == 'a' && str[i + 1] == 'm' && str[i + 2] == 'p') { i += 4; result.Append('&'); continue; }
+                        if (sq && str[i] == '#' && str[i + 1] == '3' && str[i + 2] == '9') { i += 4; result.Append('\''); continue; }
+                    }
+
+                    if (i + 2 < str.Length && str[i + 2] == ';' && str[i + 1] == 't')  // lt; gt;
+                    {
+                        if (str[i] == 'l') { i += 3; result.Append('<'); continue; }
+                        if (str[i] == 'g') { i += 3; result.Append('>'); continue; }
+                    }
+                }
+                else
+                {
+                    i++;
+                }
+
+                result.Append(c);
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Default <c>encoding</c> used in <c>htmlentities</c>.
+        /// </summary>
+        const string DefaultHtmlEntitiesCharset = "UTF-8";
+
+        /// <summary>
+        /// Converts special characters to HTML entities.
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <param name="quoteStyle">Quote conversion.</param>
+        /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
+        /// <param name="doubleEncode">When it is turned off existing HTML entities will not be encoded. The default is to convert everything.</param>
+        /// <returns>The converted string.</returns>
+        /// <remarks>This method is identical to <see cref="HtmlSpecialChars"/> in all ways, except with
+        /// <b>htmlentities</b> (<see cref="EncodeHtmlEntities"/>), all characters that have HTML character entity equivalents are
+        /// translated into these entities.</remarks>
+        public static string htmlentities(PhpString str, QuoteStyle quoteStyle = QuoteStyle.HtmlEntitiesDefault, string charSet = DefaultHtmlEntitiesCharset, bool doubleEncode = true)
+        {
+            try
+            {
+                return EncodeHtmlEntities(str.ToString(charSet), quoteStyle, doubleEncode);
+            }
+            catch (ArgumentException ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+                return string.Empty;
+            }
+        }
+
+        static string EncodeHtmlEntities(string str, QuoteStyle quoteStyle, bool doubleEncode)
+        {
+            if (string.IsNullOrEmpty(str))
+                return string.Empty;
+
+            if (!doubleEncode)
+            {   // existing HTML entities will not be double encoded // TODO: do it nicely
+                str = DecodeHtmlEntities(str, quoteStyle);
+            }
+
+            // if only double quotes should be encoded, we can use HttpUtility.HtmlEncode right away:
+            if ((quoteStyle & QuoteStyle.BothQuotes) == QuoteStyle.DoubleQuotes)
+            {
+                return System.Net.WebUtility.HtmlEncode(str);
+            }
+
+            // quote style is anded to emulate PHP behavior (any value is allowed):
+            string single_quote = (quoteStyle & QuoteStyle.SingleQuotes) != 0 ? "&#039;" : "'";
+            string double_quote = (quoteStyle & QuoteStyle.DoubleQuotes) != 0 ? "&quot;" : "\"";
+
+            StringBuilder str_builder = new StringBuilder(str.Length);
+            StringWriter result = new StringWriter(str_builder);
+
+            // convert ' and " manually, rely on HttpUtility.HtmlEncode for everything else
+            char[] quotes = new char[] { '\'', '\"' };
+            int old_index = 0, index = 0;
+            while (index < str.Length && (index = str.IndexOfAny(quotes, index)) >= 0)
+            {
+                result.Write(System.Net.WebUtility.HtmlEncode(str.Substring(old_index, index - old_index)));
+
+                if (str[index] == '\'') result.Write(single_quote);
+                else result.Write(double_quote);
+
+                old_index = ++index;
+            }
+            if (old_index < str.Length) result.Write(System.Net.WebUtility.HtmlEncode(str.Substring(old_index)));
+
+            result.Flush();
+            return str_builder.ToString();
+        }
+
+        /// <summary>
+        /// Returns the translation table used by <see cref="HtmlSpecialChars"/> and <see cref="EncodeHtmlEntities"/>. 
+        /// </summary>
+        /// <param name="table">Type of the table that should be returned.</param>
+        /// <param name="quoteStyle">Quote conversion.</param>
+        /// <returns>The table.</returns>
+        public static PhpArray get_html_translation_table(HtmlEntitiesTable table, QuoteStyle quoteStyle = QuoteStyle.Compatible)
+        {
+            PhpArray result = new PhpArray();
+            if (table == HtmlEntitiesTable.SpecialChars)
+            {
+                // return the table used with HtmlSpecialChars
+                if ((quoteStyle & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
+                if ((quoteStyle & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
+
+                result.Add("&", "&amp;");
+                result.Add("<", "&lt;");
+                result.Add(">", "&gt;");
+            }
+            else
+            {
+                // return the table used with HtmlEntities
+                if ((quoteStyle & QuoteStyle.SingleQuotes) != 0) result.Add("\'", "&#039;");
+                if ((quoteStyle & QuoteStyle.DoubleQuotes) != 0) result.Add("\"", "&quot;");
+
+                for (char ch = (char)0; ch < 0x100; ch++)
+                {
+                    if (ch != '\'' && ch != '\"')
+                    {
+                        string str = ch.ToString();
+                        string enc = System.Net.WebUtility.HtmlEncode(str);
+
+                        // if the character was encoded:
+                        if (str != enc) result.Add(str, enc);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Converts all HTML entities to their applicable characters.
+        /// </summary>
+        /// <param name="str">The string to convert.</param>
+        /// <param name="quoteStyle">Quote conversion.</param>
+        /// <param name="charSet">The character set used in conversion.</param>
+        /// <returns>The converted string.</returns>
+        public static string html_entity_decode(PhpString str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = DefaultHtmlEntitiesCharset)
+        {
+            try
+            {
+                return DecodeHtmlEntities(str.ToString(charSet), quoteStyle);
+            }
+            catch (ArgumentException ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+                return string.Empty;
+            }
+        }
+
+        static string DecodeHtmlEntities(string str, QuoteStyle quoteStyle)
+        {
+            if (str == null) return String.Empty;
+
+            // if both quotes should be decoded, we can use HttpUtility.HtmlDecode right away:
+            if ((quoteStyle & QuoteStyle.BothQuotes) == QuoteStyle.BothQuotes)
+            {
+                return System.Net.WebUtility.HtmlDecode(str);
+            }
+
+            StringBuilder str_builder = new StringBuilder(str.Length);
+            StringWriter result = new StringWriter(str_builder);
+
+            // convert &#039;, &#39; and &quot; manually, rely on HttpUtility.HtmlDecode for everything else
+            int old_index = 0, index = 0;
+            while (index < str.Length && (index = str.IndexOf('&', index)) >= 0)
+            {
+                // &quot;
+                if ((quoteStyle & QuoteStyle.DoubleQuotes) == 0 && index < str.Length - 5 &&
+                    str[index + 1] == 'q' && str[index + 2] == 'u' &&
+                    str[index + 3] == 'o' && str[index + 4] == 't' &&
+                    str[index + 5] == ';')
+                {
+                    result.Write(System.Net.WebUtility.HtmlDecode(str.Substring(old_index, index - old_index)));
+                    result.Write("&quot;");
+                    old_index = (index += 6);
+                    continue;
+                }
+
+                if ((quoteStyle & QuoteStyle.SingleQuotes) == 0)
+                {
+                    // &#039;
+                    if (index < str.Length - 5 && str[index + 1] == '#' &&
+                        str[index + 2] == '0' && str[index + 3] == '3' &&
+                        str[index + 4] == '9' && str[index + 5] == ';')
+                    {
+                        result.Write(System.Net.WebUtility.HtmlDecode(str.Substring(old_index, index - old_index)));
+                        result.Write("&#039;");
+                        old_index = (index += 6);
+                        continue;
+                    }
+
+                    // &#39;
+                    if (index < str.Length - 4 && str[index + 1] == '#' &&
+                        str[index + 2] == '3' && str[index + 3] == '9' && str[index + 4] == ';')
+                    {
+                        result.Write(System.Net.WebUtility.HtmlDecode(str.Substring(old_index, index - old_index)));
+                        result.Write("&#39;");
+                        old_index = (index += 5);
+                        continue;
+                    }
+                }
+
+                index++; // for the &
+            }
+            if (old_index < str.Length) result.Write(System.Net.WebUtility.HtmlDecode(str.Substring(old_index)));
+
+            result.Flush();
+            return str_builder.ToString();
         }
 
         #endregion
@@ -3126,10 +3936,21 @@ namespace Pchp.Library
             Both = 2
         }
 
+        /// <summary>
+        /// Pad a string from the left.
+        /// </summary>
         public const int STR_PAD_LEFT = (int)PaddingType.Left;
+
+        /// <summary>
+        /// Pad a string from the right.
+        /// </summary>
         public const int STR_PAD_RIGHT = (int)PaddingType.Right;
+
+        /// <summary>
+        /// Pad a string from both sides.
+        /// </summary>
         public const int STR_PAD_BOTH = (int)PaddingType.Both;
-        
+
         /// <summary>
         /// Pads a string to certain length with another string.
         /// </summary>
