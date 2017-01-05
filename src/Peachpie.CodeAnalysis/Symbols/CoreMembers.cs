@@ -727,11 +727,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Append_String = ct.PhpString.Method("Append", ct.String);
                 Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
+
+                DeepCopy = ct.PhpString.Method("DeepCopy");
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber,
-                Append_String, Append_PhpString;
+                Append_String, Append_PhpString,
+                DeepCopy;
         }
 
         public struct IPhpArrayHolder

@@ -71,5 +71,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return !tmask.IsVoid && !tmask.IsAnyType && _routine.TypeRefContext.GetTypes(tmask).All(x => x.IsArray);
         }
+
+        /// <summary>
+        /// Determines whether the type needs to be copied when passing by value.
+        /// </summary>
+        internal bool IsCopiable(TypeSymbol t)
+        {
+            return
+                t == CoreTypes.PhpValue ||
+                t == CoreTypes.PhpString ||
+                t == CoreTypes.PhpArray;
+        }
     }
 }

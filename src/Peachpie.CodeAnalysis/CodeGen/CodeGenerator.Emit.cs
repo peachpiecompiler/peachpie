@@ -1721,6 +1721,31 @@ namespace Pchp.CodeAnalysis.CodeGen
             //dt.GetMember("Assert")
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Emits copy of value from top of the stack if necessary.
+        /// </summary>
+        public TypeSymbol EmitDeepCopy(TypeSymbol t)
+        {
+            if (IsCopiable(t))
+            {
+                if (t == CoreTypes.PhpValue)
+                {
+                    EmitPhpValueAddr();
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+                }
+                else if (t == CoreTypes.PhpString)
+                {
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpString.DeepCopy);
+                }
+                else if (t == CoreTypes.PhpArray)
+                {
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpArray.DeepCopy);
+                }
+            }
+
+            return t;
+        }
     }
 
     internal static class ILBuilderExtension
