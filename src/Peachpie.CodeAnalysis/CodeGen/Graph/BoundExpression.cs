@@ -205,6 +205,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
             xtype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(xtype));    // int|bool -> long, string -> number
 
+            if (xtype == cg.CoreTypes.PhpAlias)
+            {
+                // <PhpAlias>.Value
+                xtype = cg.Emit_PhpAlias_GetValue();
+            }
+
             //
             if (xtype == cg.CoreTypes.PhpNumber)
             {
@@ -378,6 +384,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
             xtype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(xtype));    // int|bool -> int64, string -> number
             TypeSymbol ytype;
+
+            if (xtype == cg.CoreTypes.PhpAlias)
+            {
+                // <PhpAlias>.Value
+                xtype = cg.Emit_PhpAlias_GetValue();
+            }
 
             //
             switch (xtype.SpecialType)
@@ -1287,7 +1299,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var il = cg.Builder;
 
-            xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> int64
+            xtype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(xtype));    // int|bool -> int64, string -> number
 
             TypeSymbol ytype;
 
@@ -1310,7 +1322,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     //
                     throw new NotImplementedException($"Mul(double, {ytype.Name})");
                 case SpecialType.System_Int64:
-                    ytype = cg.EmitConvertIntToLong(cg.Emit(right));
+                    ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
                         // i8 * i8 : number
@@ -1340,7 +1352,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));
+                        ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
 
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {
@@ -1379,7 +1391,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (xtype == cg.CoreTypes.PhpValue)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));    // bool|int -> long
+                        ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));    // bool|int -> long, string -> number
                         if (ytype == cg.CoreTypes.PhpValue)
                         {
                             // value * value : number
@@ -1423,7 +1435,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var il = cg.Builder;
 
-            xtype = cg.EmitConvertIntToLong(xtype);    // int|bool -> int64
+            xtype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(xtype));    // int|bool -> int64, string -> number
             TypeSymbol ytype;
 
             switch (xtype.SpecialType)
