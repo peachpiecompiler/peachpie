@@ -31,6 +31,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Containing routine. Cannot be <c>null</c>.
         /// </summary>
+        public SourceRoutineSymbol Routine => _routine;
         readonly SourceRoutineSymbol _routine;
 
         #endregion

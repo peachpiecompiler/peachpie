@@ -592,6 +592,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
             }
         }
+        
         /// <summary>
         /// Emits conversion to <c>PhpArray</c>.
         /// </summary>

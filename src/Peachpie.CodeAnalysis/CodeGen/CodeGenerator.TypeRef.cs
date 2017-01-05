@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsDoubleOnly(TypeRefMask tmask)
         {
-            return tmask.IsSingleType && _routine.TypeRefContext.IsDouble(tmask);
+            return tmask.IsSingleType && this.TypeRefContext.IsDouble(tmask);
         }
 
         /// <summary>
@@ -30,13 +30,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsLongOnly(TypeRefMask tmask)
         {
-            return tmask.IsSingleType && _routine.TypeRefContext.IsLong(tmask);
+            return tmask.IsSingleType && this.TypeRefContext.IsLong(tmask);
         }
 
         /// <summary>The given type represents only an integer, long or double.</summary>
         internal bool IsNumberOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && !tmask.IsAnyType && _routine.TypeRefContext.GetTypes(tmask)
+            return !tmask.IsVoid && !tmask.IsAnyType && this.TypeRefContext.GetTypes(tmask)
                 .All(x => x.TypeCode == Core.PhpTypeCode.Long || x.TypeCode == Core.PhpTypeCode.Int32 || x.TypeCode == Core.PhpTypeCode.Double);
         }
 
@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsBooleanOnly(TypeRefMask tmask)
         {
-            return tmask.IsSingleType && _routine.TypeRefContext.IsBoolean(tmask);
+            return tmask.IsSingleType && this.TypeRefContext.IsBoolean(tmask);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsReadonlyStringOnly(TypeRefMask tmask)
         {
-            return tmask.IsSingleType && _routine.TypeRefContext.IsReadonlyString(tmask);
+            return tmask.IsSingleType && this.TypeRefContext.IsReadonlyString(tmask);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsClassOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && !tmask.IsAnyType && _routine.TypeRefContext.GetTypes(tmask).All(x => x.IsObject);
+            return !tmask.IsVoid && !tmask.IsAnyType && this.TypeRefContext.GetTypes(tmask).All(x => x.IsObject);
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsArrayOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && !tmask.IsAnyType && _routine.TypeRefContext.GetTypes(tmask).All(x => x.IsArray);
+            return !tmask.IsVoid && !tmask.IsAnyType && this.TypeRefContext.GetTypes(tmask).All(x => x.IsArray);
         }
 
         /// <summary>
@@ -81,6 +81,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                 t == CoreTypes.PhpValue ||
                 t == CoreTypes.PhpString ||
                 t == CoreTypes.PhpArray;
+        }
+
+        /// <summary>
+        /// Determines whether the type needs to be copied when passing by value.
+        /// </summary>
+        internal bool IsCopiable(TypeRefMask tmask)
+        {
+            return
+                tmask.IsAnyType ||
+                tmask.IsUninitialized ||
+                this.TypeRefContext.IsArray(tmask) ||
+                this.TypeRefContext.IsWritableString(tmask);
         }
     }
 }

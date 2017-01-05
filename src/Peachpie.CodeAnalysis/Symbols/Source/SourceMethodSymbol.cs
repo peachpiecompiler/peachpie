@@ -60,6 +60,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal override Signature SyntaxSignature => _syntax.Signature;
+
         internal override AstNode Syntax => _syntax;
 
         internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;

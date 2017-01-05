@@ -54,6 +54,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ParameterSymbol ThisParameter => null;
 
+        internal override Signature SyntaxSignature => _syntax.Signature;
+
         internal override AstNode Syntax => _syntax;
 
         internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;

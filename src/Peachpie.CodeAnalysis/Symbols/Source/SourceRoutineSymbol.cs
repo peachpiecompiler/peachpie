@@ -75,6 +75,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public abstract ParameterSymbol ThisParameter { get; }
 
+        internal abstract Signature SyntaxSignature { get; }
+
         /// <summary>
         /// Gets routine declaration syntax.
         /// </summary>

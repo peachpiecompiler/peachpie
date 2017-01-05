@@ -27,6 +27,8 @@ namespace Pchp.CodeAnalysis.Symbols
             _params = BuildParameters().ToImmutableArray();
         }
 
+        internal override Signature SyntaxSignature => new Signature(false, Array.Empty<FormalParam>());
+
         protected override IEnumerable<ParameterSymbol> BuildParameters(Signature signature, PHPDocBlock phpdocOpt = null)
         {
             throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
