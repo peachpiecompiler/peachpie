@@ -18,6 +18,8 @@ namespace Pchp.Core.Dynamic
         readonly Type _returnType;
         readonly AccessFlags _access;
 
+        protected virtual bool IsClassConst => false;
+
         public GetFieldBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessFlags access)
         {
             _name = name;
@@ -80,8 +82,13 @@ namespace Pchp.Core.Dynamic
                 phptype = runtime_type.GetPhpTypeInfo();
             }
 
+            Debug.Assert(IsClassConst == (target_expr == null));
+
             //
-            var getter = BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, ctx.Expression, _access, null);
+            var getter = IsClassConst
+                ? phptype.DeclaredFields.Bind(fldName, _classContext, null, ctx.Expression, TypeFields.FieldKind.Constant)
+                : BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, ctx.Expression, _access, null);
+
             if (getter != null)
             {
                 //
@@ -91,5 +98,15 @@ namespace Pchp.Core.Dynamic
             // field not found
             throw new NotImplementedException();
         }
+    }
+
+    public class GetClassConstBinder : GetFieldBinder
+    {
+        public GetClassConstBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessFlags access)
+            :base(name, classContext, returnType, access)
+        {
+        }
+
+        protected override bool IsClassConst => true;
     }
 }

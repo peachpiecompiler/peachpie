@@ -895,6 +895,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 CallBinderFactory_Function = ct.CallBinderFactory.Method("Function", ct.String, ct.String, ct.RuntimeTypeHandle, ct.Int32);
                 CallBinderFactory_InstanceFunction = ct.CallBinderFactory.Method("InstanceFunction", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
                 CallBinderFactory_StaticFunction = ct.CallBinderFactory.Method("StaticFunction", ct.RuntimeTypeHandle, ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
+                GetClassConstBinder_ctor = ct.GetClassConstBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
                 GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
                 SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessFlags);
 
@@ -902,6 +903,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreConstructor
+                GetClassConstBinder_ctor,
                 GetFieldBinder_ctor, SetFieldBinder_ctor;
 
             public readonly CoreMethod

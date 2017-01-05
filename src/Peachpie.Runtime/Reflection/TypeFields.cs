@@ -126,7 +126,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Resolves a constant value in given context.
         /// </summary>
-        public object GetConstantValue(string name, Context ctx)
+        public object GetConstantValue(Context ctx, string name)
         {
             if (ctx == null)
             {

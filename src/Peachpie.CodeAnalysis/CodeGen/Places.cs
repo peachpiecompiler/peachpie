@@ -864,13 +864,37 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
-            cg.EmitLoadContext();
-            return cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).GetMethod);
+            if (_access.IsReadRef)
+            {
+                // TODO: update Context
+                // &$<_name>
+                // Template: ctx.Globals.EnsureAlias(<_name>)
+                cg.EmitLoadContext();
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.Globals.Getter);
+                cg.EmitIntStringKey(_name.Value);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey);
+            }
+            else
+            {
+                Debug.Assert(_access.IsRead);
+                cg.EmitLoadContext();
+                return cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).GetMethod);
+            }
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            cg.EmitConvertToPhpArray(valueType, 0);
+            if (_access.IsUnset)
+            {
+                Debug.Assert(valueType == null);
+                cg.Builder.EmitNullConstant();
+            }
+            else
+            {
+                Debug.Assert(_access.IsWrite);
+                cg.EmitConvertToPhpArray(valueType, 0);
+            }
+
             cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).SetMethod);
         }
 
@@ -1738,11 +1762,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             cg.EmitCall(ILOpCode.Callvirt, functype.DelegateInvokeMethod);
 
-            if (_boundref.IsClassConstant)
-            {
-                throw new NotImplementedException();
-            }
-
             //
             _lazyLoadCallSite.Construct(functype, cctor =>
             {
@@ -1751,7 +1770,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
                 cctor.EmitLoadToken(return_type, null);
                 cctor.Builder.EmitIntConstant((int)Access.AccessFlags);
-                cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
+                cctor.EmitCall(ILOpCode.Newobj, _boundref.IsClassConstant
+                    ? cg.CoreMethods.Dynamic.GetClassConstBinder_ctor
+                    : cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
             });
 
             //
