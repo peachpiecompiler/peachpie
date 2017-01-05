@@ -172,18 +172,15 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            switch (Access.Flags)
+            if (Access.IsNone)
             {
-                case AccessMask.Read:
-                    // Result is read, do nothing.
-                    Debug.Assert(returned_type.SpecialType != SpecialType.System_Void);
-                    break;
-
-                case AccessMask.None:
-                    // Result is not read, pop the result
-                    cg.EmitPop(returned_type);
-                    returned_type = cg.CoreTypes.Void;
-                    break;
+                // Result is not read, pop the result
+                cg.EmitPop(returned_type);
+                returned_type = cg.CoreTypes.Void;
+            }
+            else if (Access.IsRead)
+            {
+                Debug.Assert(returned_type.SpecialType != SpecialType.System_Void);
             }
 
             //
@@ -1714,19 +1711,20 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw ExceptionUtilities.Unreachable;
             }
 
-            switch (Access.Flags)
+            //
+            if (Access.IsNone)
             {
-                case AccessMask.Read:
-                    Debug.Assert(returned_type.SpecialType != SpecialType.System_Void);
-                    // do nothing
-                    break;
-                case AccessMask.None:
-                    // pop operation's result value from stack
-                    cg.EmitPop(returned_type);
-                    returned_type = cg.CoreTypes.Void;
-                    break;
-                default:
-                    throw ExceptionUtilities.UnexpectedValue(Access);
+                // Result is not read, pop the result
+                cg.EmitPop(returned_type);
+                returned_type = cg.CoreTypes.Void;
+            }
+            else if (Access.IsRead)
+            {
+                Debug.Assert(returned_type.SpecialType != SpecialType.System_Void);
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(Access);
             }
 
             return returned_type;
@@ -2416,32 +2414,31 @@ namespace Pchp.CodeAnalysis.Semantics
                 t_value = cg.Emit(this.Value);
             }
 
-            switch (this.Access.Flags)
+            //
+            if (Access.IsNone)
             {
-                case AccessMask.Read:
-                    tmp = cg.GetTemporaryLocal(t_value, false);
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    cg.Builder.EmitLocalStore(tmp);
-                    break;
-                case AccessMask.None:
-                    break;
-                default:
-                    throw ExceptionUtilities.UnexpectedValue(this.Access);
             }
-
+            else if (Access.IsRead)
+            {
+                tmp = cg.GetTemporaryLocal(t_value, false);
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(tmp);
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(Access);
+            }
+            
             target_place.EmitStore(cg, t_value);
 
             //
-            switch (this.Access.Flags)
+            if (Access.IsNone)
             {
-                case AccessMask.None:
-                    t_value = cg.CoreTypes.Void;
-                    break;
-                case AccessMask.Read:
-                    cg.Builder.EmitLocalLoad(tmp);
-                    break;
-                default:
-                    throw ExceptionUtilities.UnexpectedValue(this.Access);
+                t_value = cg.CoreTypes.Void;
+            }
+            else if (Access.IsRead)
+            {
+                cg.Builder.EmitLocalLoad(tmp);
             }
 
             if (tmp != null)
@@ -2526,33 +2523,30 @@ namespace Pchp.CodeAnalysis.Semantics
 
             LocalDefinition tmp = null;
 
-            switch (this.Access.Flags)
+            if (Access.IsRead)
             {
-                case AccessMask.Read:
-                    tmp = cg.GetTemporaryLocal(result_type, false);
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    cg.Builder.EmitLocalStore(tmp);
-                    break;
-                case AccessMask.None:
-                    break;
-                default:
-                    throw ExceptionUtilities.UnexpectedValue(this.Access);
+                tmp = cg.GetTemporaryLocal(result_type, false);
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(tmp);
             }
 
             target_place.EmitStore(cg, result_type);
 
             //
-            switch (this.Access.Flags)
+            if (Access.IsRead)
             {
-                case AccessMask.None:
-                    return cg.CoreTypes.Void;
-                case AccessMask.Read:
-                    Debug.Assert(tmp != null);
-                    cg.Builder.EmitLoad(tmp);
-                    cg.ReturnTemporaryLocal(tmp);
-                    return result_type;
-                default:
-                    throw ExceptionUtilities.UnexpectedValue(this.Access);
+                Debug.Assert(tmp != null);
+                cg.Builder.EmitLoad(tmp);
+                cg.ReturnTemporaryLocal(tmp);
+                return result_type;
+            }
+            else if (Access.IsNone)
+            {
+                return cg.CoreTypes.Void;
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(this.Access);
             }
         }
 

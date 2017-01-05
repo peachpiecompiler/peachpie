@@ -661,6 +661,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return cg.Emit_PhpValue_MakeAlias();
                 }
             }
+            // Read Copy
+            else if (_access.IsReadCopy && cg.IsCopiable(type))
+            {
+                if (type == cg.CoreTypes.PhpValue)
+                {
+                    // <place>.DeepCopy
+                    _place.EmitLoadAddress(cg.Builder);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.DeepCopy);
+                }
+
+                return cg.EmitDeepCopy(_place.EmitLoad(cg.Builder));
+            }
             // Read Value
             else
             {
@@ -949,8 +961,18 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
+                // <array>.GetItemValue(<Index>)
                 Debug.Assert(_access.IsRead);
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
+                var result = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
+
+                // .DeepCopy()
+                if (_access.IsReadCopy && (_access.TargetType == null || cg.IsCopiable( _access.TargetType)))
+                {
+                    cg.EmitDeepCopy(result);
+                }
+
+                //
+                return result;
             }
         }
 
@@ -1258,74 +1280,90 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return cg.Emit_PhpValue_MakeAlias();
                 }
             }
-            // Read (...->Field) & Dereference eventually
+            // Read by value (copy value if applicable)
+            else if (Access.IsReadCopy && cg.IsCopiable(type))
+            {
+                if (Access.TargetType == null || cg.IsCopiable(Access.TargetType))  // if target type is not a copiable type, we don't have to perform deep copy since the result will be converted to a value anyway
+                {
+                    if (type == cg.CoreTypes.PhpValue)
+                    {
+                        EmitOpCode_LoadAddress(cg);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.DeepCopy);
+                    }
+
+                    EmitOpCode_Load(cg);
+                    return cg.EmitDeepCopy(type);
+                }
+            }
+
+            //
+            // Read (...->Field)
+            //
+
+            if (type == cg.CoreTypes.PhpAlias)
+            {
+                EmitOpCode_Load(cg);
+
+                if (Access.TargetType != null)
+                {
+                    // convert PhpValue to target type without loading whole value and storing to temporary variable
+                    switch (Access.TargetType.SpecialType)
+                    {
+                        default:
+                            if (Access.TargetType == cg.CoreTypes.PhpArray)
+                            {
+                                // <PhpAlias>.Value.ToArray()
+                                cg.Builder.EmitOpCode(ILOpCode.Ldflda);
+                                cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
+                            }
+                            break;
+                    }
+                }
+
+                return cg.Emit_PhpAlias_GetValue();
+            }
+            else if (type == cg.CoreTypes.PhpValue)
+            {
+                if (Access.TargetType != null)
+                {
+                    // convert PhpValue to target type without loading whole value and storing to temporary variable
+                    switch (Access.TargetType.SpecialType)
+                    {
+                        case SpecialType.System_Double:
+                            EmitOpCode_LoadAddress(cg); // &PhpValue.ToDouble()
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToDouble);
+                        case SpecialType.System_Int64:
+                            EmitOpCode_LoadAddress(cg); // &PhpValue.ToLong()
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToLong);
+                        case SpecialType.System_Boolean:
+                            EmitOpCode_LoadAddress(cg); // &PhpValue.ToBoolean()
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToBoolean);
+                        case SpecialType.System_String:
+                            EmitOpCode_LoadAddress(cg); // &PhpValue.ToString(ctx)
+                            cg.EmitLoadContext();
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToString_Context);
+                        case SpecialType.System_Object:
+                            EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass()
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass);
+                        default:
+                            if (Access.TargetType == cg.CoreTypes.PhpArray)
+                            {
+                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToArray()
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
+                            }
+                            break;
+                    }
+                }
+
+                // TODO: dereference if applicable (=> PhpValue.Alias.Value)
+                EmitOpCode_Load(cg);
+                return type;
+            }
             else
             {
-                if (type == cg.CoreTypes.PhpAlias)
-                {
-                    EmitOpCode_Load(cg);
-
-                    if (Access.TargetType != null)
-                    {
-                        // convert PhpValue to target type without loading whole value and storing to temporary variable
-                        switch (Access.TargetType.SpecialType)
-                        {
-                            default:
-                                if (Access.TargetType == cg.CoreTypes.PhpArray)
-                                {
-                                    // <PhpAlias>.Value.ToArray()
-                                    cg.Builder.EmitOpCode(ILOpCode.Ldflda);
-                                    cg.EmitSymbolToken(cg.CoreMethods.PhpAlias.Value, null);
-                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
-                                }
-                                break;
-                        }
-                    }
-
-                    return cg.Emit_PhpAlias_GetValue();
-                }
-                else if (type == cg.CoreTypes.PhpValue)
-                {
-                    if (Access.TargetType != null)
-                    {
-                        // convert PhpValue to target type without loading whole value and storing to temporary variable
-                        switch (Access.TargetType.SpecialType)
-                        {
-                            case SpecialType.System_Double:
-                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToDouble()
-                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToDouble);
-                            case SpecialType.System_Int64:
-                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToLong()
-                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToLong);
-                            case SpecialType.System_Boolean:
-                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToBoolean()
-                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToBoolean);
-                            case SpecialType.System_String:
-                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToString(ctx)
-                                cg.EmitLoadContext();
-                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToString_Context);
-                            case SpecialType.System_Object:
-                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass()
-                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass);
-                            default:
-                                if (Access.TargetType == cg.CoreTypes.PhpArray)
-                                {
-                                    EmitOpCode_LoadAddress(cg); // &PhpValue.ToArray()
-                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
-                                }
-                                break;
-                        }
-                    }
-
-                    // TODO: dereference if applicable (=> PhpValue.Alias.Value)
-                    EmitOpCode_Load(cg);
-                    return type;
-                }
-                else
-                {
-                    EmitOpCode_Load(cg);
-                    return type;
-                }
+                EmitOpCode_Load(cg);
+                return type;
             }
         }
 

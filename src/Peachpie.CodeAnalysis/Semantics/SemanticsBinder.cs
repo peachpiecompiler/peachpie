@@ -101,11 +101,15 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (stmt.Type == AST.JumpStmt.Types.Return)
             {
-                return new BoundReturnStatement(
-                    (stmt.Expression != null)
-                        ? BindExpression(stmt.Expression, BoundAccess.Read)   // ReadRef in case routine returns an aliased value
-                        : null)
-                { PhpSyntax = stmt };
+                Debug.Assert(_locals != null);
+                var access = _locals.Routine.SyntaxSignature.AliasReturn
+                    ? BoundAccess.ReadRef
+                    : BoundAccess.Read.WithReadCopy();
+
+                return new BoundReturnStatement(stmt.Expression != null ? BindExpression(stmt.Expression, access) : null)
+                {
+                    PhpSyntax = stmt
+                };
             }
 
             throw ExceptionUtilities.Unreachable;
@@ -470,7 +474,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // bind value (read as value or as ref)
             if (expr is AST.ValueAssignEx)
             {
-                value = BindExpression(((AST.ValueAssignEx)expr).RValue, BoundAccess.Read);
+                value = BindExpression(((AST.ValueAssignEx)expr).RValue, BoundAccess.Read.WithReadCopy());
             }
             else
             {
