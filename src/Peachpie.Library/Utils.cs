@@ -233,6 +233,32 @@ namespace Pchp.Library
             //
             return str.ToString(Encoding.UTF8);
         }
+
+        /// <summary>
+        /// Returns last character of string or -1 if empty
+        /// </summary>
+        /// <param name="str">String</param>
+        /// <returns>Last character of string or -1 if empty</returns>
+        public static int LastCharacter(this string/*!*/ str)
+        {
+            return str.Length == 0 ? -1 : str[str.Length - 1];
+        }
+
+        /// <summary>
+        /// Counts characters within the string.
+        /// </summary>
+        public static int CharsCount(this string str, char c)
+        {
+            if (str == null)
+                return 0;
+
+            int count = 0;
+            for (int i = 0; i < str.Length; i++)
+                if (str[i] == c)
+                    count++;
+
+            return count;
+        }
     }
 
     internal static class ArrayExtensions
