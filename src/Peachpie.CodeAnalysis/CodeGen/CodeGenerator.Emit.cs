@@ -1168,9 +1168,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if ((boundinitializer = (targetp as SourceParameterSymbol)?.Initializer) != null)
             {
-                _emitTypeRefContext.Push((targetp as SourceParameterSymbol).Routine.TypeRefContext);
-                EmitConvert(boundinitializer, ptype = targetp.Type);
-                _emitTypeRefContext.Pop();
+                using (var cg = new CodeGenerator(this, (SourceRoutineSymbol)targetp.ContainingSymbol))
+                {
+                    cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                }
             }
             else
             {
