@@ -771,6 +771,36 @@ namespace Pchp.Core
         /// <summary>
         /// Divide operator.
         /// </summary>
+        public static PhpNumber operator /(PhpNumber x, long ly)
+        {
+            x.AssertTypeCode();
+
+            if (x.IsDouble) // double / long
+            {
+                return Create(x._double / (double)ly);
+            }
+
+            // long / long
+            var r = x._long % ly;
+
+            return (r == 0)
+                ? Create(x._long / ly)
+                : Create((double)x._long / (double)ly);
+        }
+
+        /// <summary>
+        /// Divide operator.
+        /// </summary>
+        public static double operator /(PhpNumber x, double dy)
+        {
+            x.AssertTypeCode();
+
+            return x.ToDouble() / dy;
+        }
+
+        /// <summary>
+        /// Divide operator.
+        /// </summary>
         public static PhpNumber operator /(long lx, PhpNumber y)
         {
             y.AssertTypeCode();

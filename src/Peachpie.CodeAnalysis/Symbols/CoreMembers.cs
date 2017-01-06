@@ -646,6 +646,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Negation_long = ct.PhpNumber.Method("Minus", ct.Long);
 
                 Division_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.PhpNumber, ct.PhpNumber);
+                Division_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.PhpNumber, ct.Long);
+                Division_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.PhpNumber, ct.Double);
                 Division_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.Long, ct.PhpNumber);
 
                 Mul_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.PhpNumber);
@@ -705,7 +707,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Eq_number_double, Ineq_number_double,
                 Add_number_number, Add_number_long, Add_long_number, Add_value_number, Add_number_double, Add_double_number, Add_number_value,
                 Subtract_number_number, Subtract_long_number, Subtract_number_long,
-                Division_number_number, Division_long_number,
+                Division_number_number, Division_number_long, Division_number_double, Division_long_number,
                 Mul_number_number, Mul_number_double, Mul_number_long, Mul_long_number, Mul_number_value, Mul_value_number,
                 gt_number_number, gt_number_long, gt_number_double,
                 lt_number_number, lt_number_long, lt_number_double,
