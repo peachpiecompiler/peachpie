@@ -429,6 +429,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (t == CoreTypes.PhpValue)
             {
                 // Template: <value>.GetValue()
+                this.EmitPhpValueAddr();
                 return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetValue);
             }
             else
