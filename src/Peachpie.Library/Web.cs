@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -262,23 +263,23 @@ namespace Pchp.Library
         /// <param name="result">The array to store the variable found in <paramref name="str"/> to.</param>
         public static void parse_str(string str, out PhpArray result)
         {
-            result = new PhpArray();
-            //AutoGlobals.LoadFromCollection(result, HttpUtility.ParseQueryString(str));
-            throw new NotImplementedException();    // see Microsoft.AspNetCore.WebUtilities/QueryHelpers.cs, ParseNullableQuery
+            parse_str(result = new PhpArray(), str);
         }
 
         /// <summary>
         /// Parses a string as if it were the query string passed via an URL and sets variables in the
         /// current scope.
         /// </summary>
+        /// <param name="locals">Array of local variables passed from runtime, will be filled with parsed variables. Must not be <c>null</c>.</param>
         /// <param name="str">The string to parse.</param>
-        public static void parse_str(string str)
+        public static void parse_str([ImportLocals]PhpArray locals, string str)
         {
-            if (str == null) return;
+            Debug.Assert(locals != null);
 
-            //PhpArray globals = (localVariables != null) ? null : ScriptContext.CurrentContext.GlobalVariables;
-            //AutoGlobals.LoadFromCollection(globals, HttpUtility.ParseQueryString(str));
-            throw new NotImplementedException();
+            if (!string.IsNullOrEmpty(str))
+            {
+                UriUtils.ParseQuery(str, locals.AddVariable);
+            }
         }
 
         #endregion
