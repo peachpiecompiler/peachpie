@@ -215,7 +215,7 @@ namespace Pchp.Core
         public static PhpValue operator ^(PhpValue left, PhpValue right) => Operators.BitXor(ref left, ref right);
 
         /// <summary>
-        /// Division of <paramref name="left"/> and <paramref name="right"/> accorsing to PHP semantics.
+        /// Division of <paramref name="left"/> and <paramref name="right"/> according to PHP semantics.
         /// </summary>
         /// <param name="left">Left operand.</param>
         /// <param name="right">Right operand.</param>

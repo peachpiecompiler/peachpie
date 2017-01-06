@@ -438,12 +438,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpArray AsArray(this PhpValue value)
         {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.PhpArray: return value.Array;
-                case PhpTypeCode.Alias: return AsArray(value.Alias.Value);
-                default: return null;
-            }
+            return (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpArray;
         }
     }
 }

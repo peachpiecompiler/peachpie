@@ -70,6 +70,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
+                    // TODO: Dereference value
+
                     // return (T)<expr>;
                     cg.EmitConvert(this.Returned, rtype);
                 }

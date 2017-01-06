@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Synthesized params parameter.
         /// </summary>
-        public const string ParamsName = ".varargs";
+        public const string ParamsName = "<arguments>";
 
         /// <summary>
         /// Name of special late-bound parameter.

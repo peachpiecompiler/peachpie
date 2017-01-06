@@ -104,7 +104,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 Debug.Assert(_locals != null);
                 var access = _locals.Routine.SyntaxSignature.AliasReturn
                     ? BoundAccess.ReadRef
-                    : BoundAccess.Read.WithReadCopy();
+                    : BoundAccess.Read;
 
                 return new BoundReturnStatement(stmt.Expression != null ? BindExpression(stmt.Expression, access) : null)
                 {
