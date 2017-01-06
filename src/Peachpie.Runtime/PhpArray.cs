@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Utilities;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -190,6 +191,14 @@ namespace Pchp.Core
         /// Gets PHP enumerator for this array.
         /// </summary>
         public new OrderedDictionary.Enumerator GetEnumerator() => new OrderedDictionary.Enumerator(this);
+
+        /// <summary>
+        /// Adds a variable into the array while keeping duplicit keys in sub-arrays of indexed items.
+        /// </summary>
+        /// <param name="name">Key, respecting <c>[subkey]</c> notation.</param>
+        /// <param name="value">The value.</param>
+        /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(IPhpArray, string, string, string)"/> for details.</remarks>
+        public void AddVariable(string name, string value) => NameValueCollectionUtils.AddVariable(this, name, value);
 
         #endregion
 
