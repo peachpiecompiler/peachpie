@@ -37,6 +37,24 @@ namespace Pchp.Core
         public static bool Ceq(string sx, double dy) => Equals(sx, dy);
         public static bool Ceq(string sx, bool by) => Convert.ToBoolean(sx) == by;
 
+        public static bool CeqNull(PhpValue x)
+        {
+            switch (x.TypeCode)
+            {
+                case PhpTypeCode.String:
+                    return x.String.Length == 0;
+
+                case PhpTypeCode.WritableString:
+                    return x.WritableString.IsEmpty;
+
+                case PhpTypeCode.Alias:
+                    return CeqNull(x.Alias.Value);
+
+                default:
+                    return x.IsEmpty;
+            }
+        }
+
         public static int Compare(long lx, PhpValue y)
         {
             switch (y.TypeCode)
@@ -100,8 +118,6 @@ namespace Pchp.Core
 
         public static int CompareNull(PhpValue y)
         {
-            // TODO: PhpValue.IsEmpty ? 0 : -1
-
             switch (y.TypeCode)
             {
                 case PhpTypeCode.Boolean: return y.Boolean ? -1 : 0;

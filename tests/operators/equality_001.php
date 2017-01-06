@@ -4,7 +4,7 @@ function b($value) {
 	echo ($value == null) ? 0 : 1;
 }
 
-function test($value) {
+function test() {
 	b(null);
 	b(true);
 	b(false);
@@ -14,3 +14,5 @@ function test($value) {
 	b("0");
 	b([0]);
 }
+
+test();

@@ -431,6 +431,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Ceq_string_long = ct.Comparison.Method("Ceq", ct.String, ct.Long);
                 Ceq_string_double = ct.Comparison.Method("Ceq", ct.String, ct.Double);
                 Ceq_string_bool = ct.Comparison.Method("Ceq", ct.String, ct.Boolean);
+                CeqNull_value = ct.Comparison.Method("CeqNull", ct.PhpValue);
                 Clt_long_double = ct.Comparison.Method("Clt", ct.Long, ct.Double);
                 Cgt_long_double = ct.Comparison.Method("Cgt", ct.Long, ct.Double);
                 Compare_bool_bool = ct.Comparison.Method("Compare", ct.Boolean, ct.Boolean);
@@ -475,7 +476,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
 
-                Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool,
+                Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool, CeqNull_value,
                 Clt_long_double, Cgt_long_double,
                 Compare_bool_bool, Compare_number_value,
                 Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value,

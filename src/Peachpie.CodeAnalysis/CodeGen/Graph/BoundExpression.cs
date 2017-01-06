@@ -797,8 +797,65 @@ namespace Pchp.CodeAnalysis.Semantics
 
         static TypeSymbol EmitEqualityToNull(CodeGenerator cg, BoundExpression expr)
         {
-            // Template: empty(expr)
-            return BoundIsEmptyEx.Emit(cg, cg.Emit(expr));
+            // Template: <expr> == null
+
+            var il = cg.Builder;
+            var t = cg.Emit(expr);
+
+            //
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Object:
+                    // object == null
+                    il.EmitNullConstant();
+                    il.EmitOpCode(ILOpCode.Ceq);
+                    return cg.CoreTypes.Boolean;
+
+                case SpecialType.System_Double:
+                    // r8 == 0
+                    il.EmitDoubleConstant(0.0);
+                    il.EmitOpCode(ILOpCode.Ceq);
+                    return cg.CoreTypes.Boolean;
+
+                case SpecialType.System_Int32:
+                    // i4 == 0
+                    cg.EmitLogicNegation();
+                    return cg.CoreTypes.Boolean;
+
+                case SpecialType.System_Int64:
+                    // i8 == 0
+                    il.EmitLongConstant(0);
+                    il.EmitOpCode(ILOpCode.Ceq);
+                    return cg.CoreTypes.Boolean;
+
+                case SpecialType.System_String:
+                    // string.IsNullOrEmpty(string)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsNullOrEmpty_String);
+                    return cg.CoreTypes.Boolean;
+
+                default:
+                    if (t == cg.CoreTypes.PhpNumber)
+                    {
+                        // number == 0L
+                        il.EmitLongConstant(0);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_number_long)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+                    else if (t == cg.CoreTypes.PhpAlias)
+                    {
+                        // LOAD <PhpAlias>.Value
+                        cg.Emit_PhpAlias_GetValue();
+                    }
+                    else
+                    {
+                        // LOAD <PhpValue>
+                        cg.EmitConvert(t, 0, cg.CoreTypes.PhpValue);
+                    }
+
+                    // CeqNull(<value>)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.CeqNull_value)
+                        .Expect(SpecialType.System_Boolean);
+            }
         }
 
         /// <summary>
@@ -3398,7 +3455,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return Emit(cg, cg.Emit(this.Operand));
         }
 
-        internal static TypeSymbol Emit(CodeGenerator cg, TypeSymbol t)
+        private static TypeSymbol Emit(CodeGenerator cg, TypeSymbol t)
         {
             var il = cg.Builder;
             
