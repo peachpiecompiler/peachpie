@@ -799,6 +799,23 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Mul operator.
+        /// </summary>
+        public static PhpNumber operator /(PhpNumber x, PhpValue y)
+        {
+            PhpNumber ynumber;
+            if ((y.ToNumber(out ynumber) & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
+            {
+                //PhpException.UnsupportedOperandTypes();
+                //return 0.0;
+                throw new ArgumentException();
+            }
+
+            //
+            return x / ynumber;
+        }
+
+        /// <summary>
         /// Divide operator.
         /// </summary>
         public static PhpNumber operator /(long lx, PhpNumber y)

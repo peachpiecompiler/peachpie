@@ -1485,6 +1485,11 @@ namespace Pchp.CodeAnalysis.Semantics
                             // number / r8 : r8
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Division_number_double);
                         }
+                        else if (ytype == cg.CoreTypes.PhpValue)
+                        {
+                            // number / value : number
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Division_number_value);
+                        }
 
                         //
                         throw new NotImplementedException($"Div(number, {ytype.Name})");
