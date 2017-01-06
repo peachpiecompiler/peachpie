@@ -21,12 +21,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Copies <c>PhpNumber</c> into a temp variable and loads its address.
         /// </summary>
-        private void EmitPhpNumberAddr() => EmitStructAddr(CoreTypes.PhpNumber);
+        internal void EmitPhpNumberAddr() => EmitStructAddr(CoreTypes.PhpNumber);
 
         /// <summary>
         /// Copies <c>PhpValue</c> into a temp variable and loads its address.
         /// </summary>
-        private void EmitPhpValueAddr() => EmitStructAddr(CoreTypes.PhpValue);
+        internal void EmitPhpValueAddr() => EmitStructAddr(CoreTypes.PhpValue);
 
         /// <summary>
         /// Copies a value type from the top of evaluation stack into a temporary variable and loads its address.

@@ -778,7 +778,27 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal static TypeSymbol EmitEquality(CodeGenerator cg, BoundExpression left, BoundExpression right)
         {
-            return EmitEquality(cg, cg.Emit(left), right);
+            if (left.ConstantValue.HasValue && left.ConstantValue.Value == null)
+            {
+                // null == right
+                return EmitEqualityToNull(cg, right);
+            }
+            else if (right.ConstantValue.HasValue && right.ConstantValue.Value == null)
+            {
+                // left == null
+                return EmitEqualityToNull(cg, left);
+            }
+            else
+            {
+                // left == right
+                return EmitEquality(cg, cg.Emit(left), right);
+            }
+        }
+
+        static TypeSymbol EmitEqualityToNull(CodeGenerator cg, BoundExpression expr)
+        {
+            // Template: empty(expr)
+            return BoundIsEmptyEx.Emit(cg, cg.Emit(expr));
         }
 
         /// <summary>
@@ -3375,9 +3395,13 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var il = cg.Builder;
-            var t = cg.Emit(this.Operand);
+            return Emit(cg, cg.Emit(this.Operand));
+        }
 
+        internal static TypeSymbol Emit(CodeGenerator cg, TypeSymbol t)
+        {
+            var il = cg.Builder;
+            
             //
             switch (t.SpecialType)
             {
