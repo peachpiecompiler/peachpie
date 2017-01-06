@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -300,6 +301,78 @@ namespace Pchp.Library
         public static bool IsHexDigit(char character)
         {
             return (character >= '0' && character <= '9') || (character >= 'A' && character <= 'F') || (character >= 'a' && character <= 'f');
+        }
+
+        /// <summary>
+        /// Parse a query string into its component key and value parts.
+        /// </summary>
+        /// <param name="queryString">The raw query string value, with or without the leading '?'.</param>
+        /// <param name="callback">Delegate invoked when a [name, value] is parsed from the query.</param>
+        /// <returns>A collection of parsed keys and values, null if there are no entries.</returns>
+        public static void ParseQuery(string queryString, Action<string, string> callback)
+        {
+            if (callback == null)
+            {
+                throw new ArgumentNullException(nameof(callback));
+            }
+
+            if (string.IsNullOrEmpty(queryString))
+            {
+                return;
+            }
+
+            int scanIndex = 0;
+            if (queryString[0] == '?')
+            {
+                scanIndex = 1;
+            }
+
+            int textLength = queryString.Length;
+            int equalIndex = queryString.IndexOf('=');
+            if (equalIndex == -1)
+            {
+                equalIndex = textLength;
+            }
+
+            while (scanIndex < textLength)
+            {
+                int delimiterIndex = queryString.IndexOf('&', scanIndex);
+                if (delimiterIndex == -1)
+                {
+                    delimiterIndex = textLength;
+                }
+                if (equalIndex < delimiterIndex)
+                {
+                    // skip whitespaces
+                    while (scanIndex != equalIndex && char.IsWhiteSpace(queryString[scanIndex]))
+                    {
+                        ++scanIndex;
+                    }
+
+                    // &name=value
+                    string name = queryString.Substring(scanIndex, equalIndex - scanIndex);
+                    string value = queryString.Substring(equalIndex + 1, delimiterIndex - equalIndex - 1);
+                    callback(Uri.UnescapeDataString(name.Replace('+', ' ')), Uri.UnescapeDataString(value.Replace('+', ' ')));
+
+                    //
+                    equalIndex = queryString.IndexOf('=', delimiterIndex);
+                    if (equalIndex == -1)
+                    {
+                        equalIndex = textLength;
+                    }
+                }
+                else
+                {
+                    if (delimiterIndex > scanIndex)
+                    {
+                        // &name
+                        callback(
+                            queryString.Substring(scanIndex, delimiterIndex - scanIndex),
+                            string.Empty);
+                    }
+                }
+                scanIndex = delimiterIndex + 1;
+            }
         }
     }
 
