@@ -1468,13 +1468,26 @@ namespace Pchp.CodeAnalysis.Semantics
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
-                        ytype = cg.EmitConvertIntToLong(cg.Emit(right));  // bool|int -> long
+                        ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));  // bool|int -> long, string -> number
                         if (ytype == cg.CoreTypes.PhpNumber)
                         {
-                            // nmumber / number : number
+                            // number / number : number
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Division_number_number)
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
+                        else if (ytype.SpecialType == SpecialType.System_Int64)
+                        {
+                            // number / i8 : number
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Division_number_long);
+                        }
+                        else if (ytype.SpecialType == SpecialType.System_Double)
+                        {
+                            // number / r8 : r8
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Division_number_double);
+                        }
+
+                        //
+                        throw new NotImplementedException($"Div(number, {ytype.Name})");
                     }
 
                     // x -> PhpValue
