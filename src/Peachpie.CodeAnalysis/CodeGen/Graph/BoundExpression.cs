@@ -3249,7 +3249,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (type == cg.CoreTypes.PhpAlias)
             {
                 // <alias>.Value.AsObject()
-                cg.Emit_PhpAlias_GetValueRef();
+                cg.Emit_PhpAlias_GetValueAddr();
                 type = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsObject);
             }
 
@@ -3421,7 +3421,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     else if (t == cg.CoreTypes.PhpAlias)
                     {
                         // <PhpAlias>.Value.get_IsEmpty()
-                        cg.Emit_PhpAlias_GetValueRef();
+                        cg.Emit_PhpAlias_GetValueAddr();
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.IsEmpty.Getter)
                             .Expect(SpecialType.System_Boolean);
                     }

@@ -63,17 +63,31 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
+                var t = cg.Emit(this.Returned);
+
                 if (rvoid)
                 {
                     // <expr>;
-                    cg.EmitPop(this.Returned.Emit(cg));
+                    cg.EmitPop(t);
                 }
                 else
                 {
-                    // TODO: Dereference value
+                    if (cg.Routine.SyntaxSignature.AliasReturn)
+                    {
+                        Debug.Assert(rtype == cg.CoreTypes.PhpAlias);
+                    }
+                    else
+                    {
+                        // return by value
+                        //if (this.Returned.TypeRefMask.IsRef)
+                        {
+                            // dereference
+                            t = cg.EmitDereference(t);
+                        }
+                    }
 
                     // return (T)<expr>;
-                    cg.EmitConvert(this.Returned, rtype);
+                    cg.EmitConvert(t, this.Returned.TypeRefMask, rtype);
                 }
             }
 
@@ -185,11 +199,11 @@ namespace Pchp.CodeAnalysis.Semantics
                         holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0));
 
                     var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
-                    
+
                     // Template: this.value = <initilizer>;
 
                     valuePlace.EmitStorePrepare(il);
-                    cg.EmitConvert(initializer, valuePlace.TypeOpt);                    
+                    cg.EmitConvert(initializer, valuePlace.TypeOpt);
                     valuePlace.EmitStore(il);
 
                     //

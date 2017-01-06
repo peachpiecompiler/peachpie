@@ -47,7 +47,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (from == CoreTypes.PhpAlias)
             {
                 // <PhpAlias>.Value.ToBoolean()
-                Emit_PhpAlias_GetValueRef();
+                Emit_PhpAlias_GetValueAddr();
                 EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
 
                 // !
@@ -492,6 +492,111 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// In case there is <c>Int32</c> or <c>bool</c> on the top of evaluation stack,
+        /// converts it to <c>Int64</c>.
+        /// </summary>
+        /// <param name="stack">New type on top of stack.</param>
+        /// <returns></returns>
+        internal TypeSymbol EmitConvertIntToLong(TypeSymbol stack)
+        {
+            if (stack.SpecialType == SpecialType.System_Int32 ||
+                stack.SpecialType == SpecialType.System_Boolean)
+            {
+                _il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
+                stack = this.CoreTypes.Long;
+            }
+
+            return stack;
+        }
+
+        /// <summary>
+        /// In case there is <c>string</c> or <c>PhpString</c> on the top of evaluation stack,
+        /// converts it to <c>PhpNumber</c>.
+        /// </summary>
+        /// <returns>New type on top of stack.</returns>
+        internal TypeSymbol EmitConvertStringToNumber(TypeSymbol stack)
+        {
+            if (stack.SpecialType == SpecialType.System_String)
+            {
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToNumber_String)
+                    .Expect(CoreTypes.PhpNumber);
+            }
+
+            if (stack == CoreTypes.PhpString)
+            {
+                return EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.ToNumber)
+                    .Expect(CoreTypes.PhpNumber);
+            }
+
+            return stack;
+        }
+
+        /// <summary>
+        /// In case there is <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c> on the top of evaluation stack,
+        /// converts it to <c>double</c>.
+        /// </summary>
+        internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
+        {
+            // emit number literal directly as double
+            var constant = expr.ConstantValue;
+            if (constant.HasValue)
+            {
+                if (constant.Value is long)
+                {
+                    _il.EmitDoubleConstant((long)constant.Value);
+                    return this.CoreTypes.Double;
+                }
+                if (constant.Value is int)
+                {
+                    _il.EmitDoubleConstant((int)constant.Value);
+                    return this.CoreTypes.Double;
+                }
+                if (constant.Value is bool)
+                {
+                    _il.EmitDoubleConstant((bool)constant.Value ? 1.0 : 0.0);
+                    return this.CoreTypes.Double;
+                }
+            }
+
+            // emit fast ToDouble() in case of a PhpNumber variable
+            var place = PlaceOrNull(expr);
+            var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
+            if (type == null)
+            {
+                if (place != null && place.HasAddress)
+                {
+                    if (place.TypeOpt == CoreTypes.PhpNumber)
+                    {
+                        place.EmitLoadAddress(_il);
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble)
+                            .Expect(SpecialType.System_Double);
+                    }
+                }
+
+                type = EmitSpecialize(expr);
+            }
+
+            Debug.Assert(type != null);
+
+            if (type.SpecialType == SpecialType.System_Int32 ||
+                type.SpecialType == SpecialType.System_Int64 ||
+                type.SpecialType == SpecialType.System_Boolean)
+            {
+                _il.EmitOpCode(ILOpCode.Conv_r8);    // int|bool -> long
+                type = this.CoreTypes.Double;
+            }
+            else if (type == CoreTypes.PhpNumber)
+            {
+                EmitPhpNumberAddr();
+                EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);    // number -> double
+                type = this.CoreTypes.Double;
+            }
+
+            //
+            return type;
+        }
+
+        /// <summary>
         /// Emits conversion to <see cref="System.String"/>.
         /// </summary>
         public void EmitConvertToString(TypeSymbol from, TypeRefMask fromHint)
@@ -609,7 +714,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (from == CoreTypes.PhpAlias)
             {
                 // <PhpAlias>.Value.ToArray()
-                this.Emit_PhpAlias_GetValueRef();
+                this.Emit_PhpAlias_GetValueAddr();
                 this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
             }
             else if (   // TODO: helper method for builtin types
