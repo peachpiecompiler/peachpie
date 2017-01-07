@@ -73,7 +73,7 @@ namespace Pchp.Core.Dynamic
 
         public static class PhpAlias
         {
-            public static ConstructorInfo ctor_PhpValue => Types.PhpAlias[0].GetCtor(Types.PhpValue[0], Types.Int[0]);
+            public static ConstructorInfo ctor_PhpValue_int => Types.PhpAlias[0].GetCtor(Types.PhpValue[0], Types.Int[0]);
         }
 
         public static class RecursionCheckToken

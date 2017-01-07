@@ -60,7 +60,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpAlias))
             {
                 if (arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
-                return Expression.New(Cache.PhpAlias.ctor_PhpValue, BindToValue(arg), Expression.Constant(1));
+                return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
             }
 
             var target_type = target.GetTypeInfo();
