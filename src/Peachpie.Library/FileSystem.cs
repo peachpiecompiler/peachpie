@@ -186,7 +186,7 @@ namespace Pchp.Library
         /// The file is automatically removed when closed (using fclose()), 
         /// or when the script ends.
         /// </remarks>
-        /// <returns></returns>
+        [return: CastToFalse]
         public static PhpResource tmpfile(Context ctx)
         {
             string path = tempnam(string.Empty, "php");
