@@ -41,12 +41,12 @@ namespace Peachpie.Library.MySql
             {
                 _lastException = e;
 
-                throw new NotImplementedException();    // TODO: ERR
+                // TODO: ERR
 
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("cannot_open_connection",
                 //  GetExceptionMessage(e)));
 
-                //return false;
+                return false;
             }
 
             return true;

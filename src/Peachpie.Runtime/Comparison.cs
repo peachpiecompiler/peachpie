@@ -156,11 +156,8 @@ namespace Pchp.Core
 		/// Compares string in a manner of PHP. 
 		/// </summary>
 		/// <remarks>Note that this comparison is not transitive (e.g. {"2","10","10a"} leads to a contradiction).</remarks>
-        public static int Compare(string/*!*/sx, string/*!*/sy)
+        public static int Compare(string sx, string sy)
         {
-            Debug.Assert(sx != null);
-            Debug.Assert(sy != null);
-
             long lx, ly;
             double dx, dy;
             Convert.NumberInfo info_x, info_y;
