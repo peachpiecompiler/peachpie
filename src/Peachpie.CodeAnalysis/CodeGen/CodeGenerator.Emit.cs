@@ -674,19 +674,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             // <this>
             if (thisExpr != null)
             {
-                thisType = Emit(thisExpr);
-                Debug.Assert(thisType != null && thisType.SpecialType != SpecialType.System_Void);
-
                 if (method.HasThis)
                 {
+                    // <thisExpr> -> <TObject>
+                    EmitConvert(thisExpr, thisType = method.ContainingType);
+
                     if (thisType.IsValueType)
                     {
-                        EmitStructAddr(thisType);   // value -> valueref
+                        EmitStructAddr(thisType);   // value -> valueaddr
                     }
                 }
                 else
                 {
-                    EmitPop(thisType);
+                    // POP <thisExpr>
+                    EmitPop(Emit(thisExpr));
                     thisType = null;
                 }
             }
