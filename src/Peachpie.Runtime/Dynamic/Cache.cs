@@ -71,6 +71,11 @@ namespace Pchp.Core.Dynamic
             public static readonly MethodInfo ToString_Context = typeof(Core.PhpString).GetMethod("ToString", typeof(Context));
         }
 
+        public static class PhpAlias
+        {
+            public static ConstructorInfo ctor_PhpValue => Types.PhpAlias[0].GetCtor(Types.PhpValue[0], Types.Int[0]);
+        }
+
         public static class RecursionCheckToken
         {
             public static ConstructorInfo ctor_ctx_object_int = typeof(Context.RecursionCheckToken).GetCtor(typeof(Context), Types.Object[0], Types.Int[0]);

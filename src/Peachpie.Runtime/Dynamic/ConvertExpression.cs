@@ -57,7 +57,11 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(IPhpArray)) return BindToArray(arg);   // TODO
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
             if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
-            if (target == typeof(PhpAlias) && arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
+            if (target == typeof(PhpAlias))
+            {
+                if (arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
+                return Expression.New(Cache.PhpAlias.ctor_PhpValue, BindToValue(arg), Expression.Constant(1));
+            }
 
             var target_type = target.GetTypeInfo();
 
@@ -404,7 +408,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(string)) return Expression.Constant(ConversionCost.ImplicitCast);
             if (target == typeof(bool)) return Expression.Constant(ConversionCost.LoosingPrecision);
             if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.PassCostly);
-            
+
             return Expression.Constant(ConversionCost.Warning);
         }
 
