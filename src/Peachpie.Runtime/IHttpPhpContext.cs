@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -27,5 +28,10 @@ namespace Pchp.Core
         /// Gets or sets HTTP response status code.
         /// </summary>
         int StatusCode { get; set; }
+
+        /// <summary>
+        /// Stream with contents of the incoming HTTP entity body.
+        /// </summary>
+        Stream InputStream { get; }
     }
 }

@@ -13,7 +13,7 @@ using System.Web;
 
 namespace Pchp.Core
 {
-    sealed class RequestContextAspNet : Context // , IHttpPhpContext
+    sealed class RequestContextAspNet : Context, IHttpPhpContext
     {
         #region .cctor
 
@@ -63,11 +63,48 @@ namespace Pchp.Core
 
         #region IHttpPhpContext
 
-        // TODO
+        /// <summary>Gets value indicating HTTP headers were already sent.</summary>
+        public bool HeadersSent
+        {
+            get
+            {
+                var code = StatusCode;
+                try
+                {
+                    // a trick (StatusCodes's setter checks whether or not headers has been sent):
+                    StatusCode = code;
+                }
+                catch (HttpException)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, value); }
+
+        public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
+
+        public void RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+
+        /// <summary>
+        /// Gets or sets HTTP response status code.
+        /// </summary>
+        public int StatusCode
+        {
+            get { return _httpctx.Response.StatusCode; }
+            set { _httpctx.Response.StatusCode = value; }
+        }
+
+        /// <summary>
+        /// Stream with contents of the incoming HTTP entity body.
+        /// </summary>
+        public Stream InputStream => _httpctx.Request.InputStream;
 
         #endregion
 
-        public override IHttpPhpContext HttpPhpContext => null; // TODO
+        public override IHttpPhpContext HttpPhpContext => this;
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core;
+using System;
 using System.IO;
 
 namespace Pchp.Library.Streams
@@ -46,7 +47,7 @@ namespace Pchp.Library.Streams
     /// <summary>
     /// Flags passed in the options argument to the <see cref="StreamWrapper.Open"/> method.
     /// </summary>
-    [Flags]
+    [Flags, PhpHidden]
     public enum StreamOptions
     {
         /// <summary>Empty option (default)</summary>

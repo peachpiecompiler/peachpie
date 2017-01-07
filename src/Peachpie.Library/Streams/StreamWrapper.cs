@@ -434,11 +434,11 @@ namespace Pchp.Library.Streams
                 switch (scheme)
                 {
                     case FileStreamWrapper.scheme:
-                        return (StreamWrapper)(SystemStreamWrappers[scheme] = new FileStreamWrapper());
+                        return (SystemStreamWrappers[scheme] = new FileStreamWrapper());
                     //case HttpStreamWrapper.scheme:
-                    //    return (StreamWrapper)(SystemStreamWrappers[scheme] = new HttpStreamWrapper());
-                    //case InputOutputStreamWrapper.scheme:
-                    //    return (StreamWrapper)(SystemStreamWrappers[scheme] = new InputOutputStreamWrapper());
+                    //    return (SystemStreamWrappers[scheme] = new HttpStreamWrapper());
+                    case InputOutputStreamWrapper.scheme:
+                        return (SystemStreamWrappers[scheme] = new InputOutputStreamWrapper());
                 }
 
                 //// Next search the user wrappers (if present)
@@ -1076,6 +1076,281 @@ namespace Pchp.Library.Streams
         }
 
         #endregion
+    }
+
+    #endregion
+
+    #region Input/Output Stream Wrapper
+
+    /// <summary>
+    /// Derived from <see cref="StreamWrapper"/>, this class provides access to the PHP input/output streams.
+    /// </summary>
+    public partial class InputOutputStreamWrapper : StreamWrapper
+    {
+        #region StreamWrapper overrides
+
+        public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
+        {
+            Stream native = null;
+
+            StreamAccessOptions accessOptions;
+            if (!ParseMode(mode, options, out accessOptions))
+                return null;
+
+            // Do not close the system I/O streams.
+            accessOptions |= StreamAccessOptions.Persistent;
+
+            // EX: Use a cache of persistent streams (?) instead of static properties.
+
+            FileAccess supportedAccess;
+            switch (path)
+            {
+                // Standard IO streams are not available on Silverlight
+                // stdin/stdout/input/stderr, the only supported is 'output'
+                case "php://stdin":
+                    //rv = InputOutputStreamWrapper.In;
+                    native = Console.OpenStandardInput();
+                    supportedAccess = FileAccess.Read;
+                    break;
+
+                case "php://stdout":
+                    // rv = InputOutputStreamWrapper.Out;
+                    native = Console.OpenStandardOutput();
+                    supportedAccess = FileAccess.Write;
+                    break;
+
+                case "php://stderr":
+                    // rv = InputOutputStreamWrapper.Error;
+                    native = Console.OpenStandardError();
+                    supportedAccess = FileAccess.Write;
+                    break;
+
+                case "php://input":
+                    // rv = InputOutputStreamWrapper.ScriptInput;
+                    native = OpenScriptInput(ctx);
+                    supportedAccess = FileAccess.Read;
+                    break;
+
+                case "php://output":
+                    // rv = InputOutputStreamWrapper.ScriptOutput;
+                    native = OpenScriptOutput(ctx);
+                    supportedAccess = FileAccess.Write;
+                    break;
+
+                default:
+                    const string filter_uri = "php://filter/";
+                    const string resource_param = "/resource=";
+
+                    // The only remaining option is the "php://filter"
+                    if (path.StartsWith(filter_uri))
+                    {
+                        int pos = path.IndexOf(resource_param, filter_uri.Length - 1);
+                        if (pos > 0)
+                        {
+                            string arguments = path.Substring(filter_uri.Length, pos - filter_uri.Length);
+                            path = path.Substring(pos + resource_param.Length);
+                            return OpenFiltered(ctx, path, arguments, mode, options, context);
+                        }
+
+                        // No URL resource specified.
+                        //PhpException.Throw(PhpError.Warning, CoreResources.GetString("url_resource_missing"));
+                        //return null;
+                        throw new ArgumentException("No URL resource specified.");  // TODO: Err
+                    }
+                    else
+                    {
+                        // Unrecognized php:// stream name
+                        //PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_invalid",
+                        //  FileSystemUtils.StripPassword(path)));
+                        //return null;
+                        throw new ArgumentException("Unrecognized php:// stream name.");  // TODO: Err
+                    }
+            }
+
+            if (!CheckOptions(accessOptions, supportedAccess, path))
+                return null;
+
+            if (native == null)
+            {
+                //PhpException.Throw(PhpError.Warning, CoreResources.GetString("stream_file_invalid",
+                //  FileSystemUtils.StripPassword(path)));
+                //return null;
+                throw new ArgumentException("stream_file_invalid");  // TODO: Err
+            }
+
+            var rv = new NativeStream(ctx, native, this, accessOptions, path, context);
+            rv.IsReadBuffered = rv.IsWriteBuffered = false;
+            return rv;
+        }
+
+        /// <summary>
+        /// Opens a PhpStream and appends the stream filters.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">The URL resource.</param>
+        /// <param name="arguments">String containig '/'-separated options.</param>
+        /// <param name="mode">Original mode.</param>
+        /// <param name="options">Original options.</param>
+        /// <param name="context">Original context.</param>
+        /// <returns></returns>
+        private PhpStream OpenFiltered(Context ctx, string path, string arguments, string mode, StreamOpenOptions options, StreamContext context)
+        {
+            PhpStream rv = PhpStream.Open(ctx, path, mode, options, context);
+            if (rv == null) return null;
+
+            // Note that only the necessary read/write chain is updated (depending on the StreamAccessOptions)
+            foreach (string arg in arguments.Split('/'))
+            {
+                if (string.Compare(arg, 0, "read=", 0, "read=".Length) == 0)
+                {
+                    foreach (string filter in arg.Substring("read=".Length).Split('|'))
+                        PhpFilter.AddToStream(rv, filter, FilterChainOptions.Tail | FilterChainOptions.Read, PhpValue.Null);
+                }
+                else if (string.Compare(arg, 0, "write=", 0, "write=".Length) == 0)
+                {
+                    foreach (string filter in arg.Substring("read=".Length).Split('|'))
+                        PhpFilter.AddToStream(rv, filter, FilterChainOptions.Tail | FilterChainOptions.Write, PhpValue.Null);
+                }
+                else
+                {
+                    foreach (string filter in arg.Split('|'))
+                        PhpFilter.AddToStream(rv, filter, FilterChainOptions.Tail | FilterChainOptions.ReadWrite, PhpValue.Null);
+                }
+            }
+
+            return rv;
+        }
+
+        public override string Label => "InputOutput";
+
+        public override string Scheme => scheme;
+
+        public override bool IsUrl => false;
+
+        /// <summary>
+        /// Represents the script input stream (containing the raw POST data).
+        /// </summary>
+        /// <remarks>
+        /// It is a persistent binary stream. This means that it is never closed
+        /// by <c>fclose()</c> and no EOLN mapping is performed.
+        /// </remarks>
+        public static PhpStream ScriptInput(Context ctx)
+        {
+            PhpStream input = null; // TODO: cache in Context
+            if (input == null)
+            {
+                input = new NativeStream(ctx, OpenScriptInput(ctx), null, StreamAccessOptions.Read | StreamAccessOptions.Persistent, "php://input", StreamContext.Default)
+                {
+                    IsReadBuffered = false
+                };
+                // EX: cache this as a persistent stream
+            }
+            return input;
+        }
+
+        /// <summary>
+        /// Represents the script output stream (alias php://output).
+        /// </summary>
+        /// <remarks>
+        /// It is a persistent binary stream. This means that it is never closed
+        /// by <c>fclose()</c> and no EOLN mapping is performed.
+        /// </remarks>
+        public static PhpStream ScriptOutput(Context ctx)
+        {
+            PhpStream output = null; // TODO: cache in Context
+            output = new NativeStream(ctx, OpenScriptOutput(ctx), null, StreamAccessOptions.Write | StreamAccessOptions.Persistent, "php://output", StreamContext.Default)
+            {
+                IsWriteBuffered = false
+            };
+            // EX: cache this as a persistent stream
+
+            return output;
+        }
+
+        private static Stream bytesink = null;
+
+        /// <summary>
+        /// Opens the script input (containing raw POST data).
+        /// </summary>
+        /// <returns>The corresponding native stream opened for reading.</returns>
+        private static Stream OpenScriptInput(Context ctx)
+        {
+            var httpctx = ctx.HttpPhpContext;
+            return (httpctx != null)
+                ? httpctx.InputStream   // HttpContext.Request.InputStream
+                : Console.OpenStandardInput();
+        }
+
+        /// <summary>
+        /// Opens the script output (binary output sink of the script).
+        /// </summary>
+        /// <returns>The corresponding native stream opened for writing.</returns>
+        private static Stream OpenScriptOutput(Context ctx) => ctx.OutputStream;
+
+        /// <summary>
+        /// The protocol portion of URL handled by this wrapper.
+        /// </summary>
+        public const string scheme = "php";
+
+        #endregion
+
+        /// <summary>
+        /// Represents the console input stream (alias php://stdin).
+        /// </summary>
+        /// <remarks>
+        /// It is a persistent text stream. This means that it is never closed
+        /// by <c>fclose()</c> and <c>\r\n</c> is converted to <c>\n</c>.
+        /// </remarks>
+        public static PhpStream In(Context ctx)
+        {
+            if (stdin == null)
+            {
+                stdin = new NativeStream(ctx, Console.OpenStandardInput(), null, StreamAccessOptions.Read | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stdin", StreamContext.Default);
+                stdin.IsReadBuffered = false;
+                // EX: cache this as a persistent stream (incl. path and options)
+            }
+            return stdin;
+        }
+        private static PhpStream stdin = null;
+
+        /// <summary>
+        /// Represents the console output stream (alias php://stdout).
+        /// </summary>
+        /// <remarks>
+        /// It is a persistent text stream. This means that it is never closed
+        /// by <c>fclose()</c> and <c>\n</c> is converted to <c>\r\n</c>.
+        /// </remarks>
+        public static PhpStream Out(Context ctx)
+        {
+            if (stdout == null)
+            {
+                stdout = new NativeStream(ctx, Console.OpenStandardOutput(), null, StreamAccessOptions.Write | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stdout", StreamContext.Default);
+                stdout.IsWriteBuffered = false;
+                // EX: cache this as a persistent stream
+            }
+            return stdout;
+        }
+        private static PhpStream stdout = null;
+
+        /// <summary>
+        /// Represents the console error stream (alias php://error).
+        /// </summary>
+        /// <remarks>
+        /// It is a persistent text stream. This means that it is never closed
+        /// by <c>fclose()</c> and <c>\n</c> is converted to <c>\r\n</c>.
+        /// </remarks>
+        public static PhpStream Error(Context ctx)
+        {
+            if (stderr == null)
+            {
+                stderr = new NativeStream(ctx, Console.OpenStandardInput(), null,
+                    StreamAccessOptions.Write | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stderr", StreamContext.Default);
+                stderr.IsWriteBuffered = false;
+                // EX: cache this as a persistent stream
+            }
+            return stderr;
+        }
+        private static PhpStream stderr = null;
     }
 
     #endregion

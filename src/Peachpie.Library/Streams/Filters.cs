@@ -36,6 +36,8 @@ namespace Pchp.Library.Streams
 
         public override string ToString() => IsText ? GetText() : Encoding.UTF8.GetString(GetBytes());
 
+        public PhpString ToPhpString() => IsText ? new PhpString(GetText()) : new PhpString(GetBytes());
+
         /// <summary>
         /// Gets length of the string or byytes array.
         /// </summary>
@@ -240,7 +242,7 @@ namespace Pchp.Library.Streams
         /// <param name="instance">Filled with a new instance of an implemented filter if <paramref name="instantiate"/>.</param>
         /// <param name="parameters">Additional parameters provided to the filter constructor.</param>
         /// <returns><c>true</c> if a filter with the given name was found.</returns>
-        bool GetImplementedFilter(string name, bool instantiate, out PhpFilter instance, object parameters);
+        bool GetImplementedFilter(string name, bool instantiate, out PhpFilter instance, PhpValue parameters);
     }
 
     /// <summary>
@@ -296,51 +298,51 @@ namespace Pchp.Library.Streams
 
         #region Stream Filter Chain Access
 
-        ///// <summary>
-        ///// Insert the filter into the filter chains.
-        ///// </summary>
-        ///// <param name="stream">Which stream's filter chains.</param>
-        ///// <param name="filter">What filter.</param>
-        ///// <param name="where">What position in the chains.</param>
-        ///// <param name="parameters">Additional parameters for the filter.</param>
-        ///// <returns>True if successful.</returns>
-        //public static bool AddToStream(PhpStream stream, string filter, FilterChainOptions where, object parameters)
-        //{
-        //    PhpFilter readFilter, writeFilter;
+        /// <summary>
+        /// Insert the filter into the filter chains.
+        /// </summary>
+        /// <param name="stream">Which stream's filter chains.</param>
+        /// <param name="filter">What filter.</param>
+        /// <param name="where">What position in the chains.</param>
+        /// <param name="parameters">Additional parameters for the filter.</param>
+        /// <returns>True if successful.</returns>
+        public static bool AddToStream(PhpStream stream, string filter, FilterChainOptions where, PhpValue parameters)
+        {
+            PhpFilter readFilter, writeFilter;
 
-        //    if ((stream.Options & StreamAccessOptions.Read) == 0) where &= ~FilterChainOptions.Read;
-        //    if ((stream.Options & StreamAccessOptions.Write) == 0) where &= ~FilterChainOptions.Write;
+            if ((stream.Options & StreamAccessOptions.Read) == 0) where &= ~FilterChainOptions.Read;
+            if ((stream.Options & StreamAccessOptions.Write) == 0) where &= ~FilterChainOptions.Write;
 
-        //    if ((where & FilterChainOptions.Read) > 0)
-        //    {
-        //        if (!GetFilter(filter, true, out readFilter, parameters))
-        //        {
-        //            //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_filter_name", filter));
-        //            //return false;
-        //            throw new ArgumentException(nameof(filter));
-        //        }
+            if ((where & FilterChainOptions.Read) > 0)
+            {
+                if (!GetFilter(filter, true, out readFilter, parameters))
+                {
+                    //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_filter_name", filter));
+                    //return false;
+                    throw new ArgumentException(nameof(filter));
+                }
 
-        //        stream.AddFilter(readFilter, where);
-        //        readFilter.OnCreate();
-        //        // Add to chain, (filters buffers too).
-        //    }
+                stream.AddFilter(readFilter, where);
+                readFilter.OnCreate();
+                // Add to chain, (filters buffers too).
+            }
 
-        //    if ((where & FilterChainOptions.Write) > 0)
-        //    {
-        //        if (!GetFilter(filter, true, out writeFilter, parameters))
-        //        {
-        //            //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_filter_name", filter));
-        //            //return false;
-        //            throw new ArgumentException(nameof(filter));
-        //        }
+            if ((where & FilterChainOptions.Write) > 0)
+            {
+                if (!GetFilter(filter, true, out writeFilter, parameters))
+                {
+                    //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_filter_name", filter));
+                    //return false;
+                    throw new ArgumentException(nameof(filter));
+                }
 
-        //        stream.AddFilter(writeFilter, where);
-        //        writeFilter.OnCreate();
-        //        // Add to chain.
-        //    }
+                stream.AddFilter(writeFilter, where);
+                writeFilter.OnCreate();
+                // Add to chain.
+            }
 
-        //    return true;
-        //}
+            return true;
+        }
 
         #endregion
 
@@ -354,7 +356,7 @@ namespace Pchp.Library.Streams
         /// <param name="instance">Filled with a new instance of an implemented filter if <paramref name="instantiate"/>.</param>
         /// <param name="parameters">Additional parameters for the filter.</param>
         /// <returns><c>true</c> if a filter with the given name was found.</returns>
-        internal static bool GetFilter(string filter, bool instantiate, out PhpFilter instance, object parameters)
+        internal static bool GetFilter(string filter, bool instantiate, out PhpFilter instance, PhpValue parameters)
         {
             instance = null;
 
@@ -390,7 +392,7 @@ namespace Pchp.Library.Streams
         {
             // Note: have to check for wildcard conflicts too (?)
             PhpFilter instance;
-            if (GetFilter(filter, false, out instance, null))
+            if (GetFilter(filter, false, out instance, PhpValue.Null))
             {
                 // EX: [PhpFilter.Register] stringtable - filter already exists, check the filter name string?
                 return false;
@@ -412,7 +414,7 @@ namespace Pchp.Library.Streams
             PhpFilter instance;
             bool ok = true;
             foreach (string filter in factory.GetImplementedFilterNames())
-                if (GetFilter(filter, false, out instance, null)) ok = false;
+                if (GetFilter(filter, false, out instance, PhpValue.Null)) ok = false;
             Debug.Assert(ok);
 
             systemFilters.Add(factory);

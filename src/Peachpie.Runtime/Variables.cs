@@ -390,10 +390,7 @@ namespace Pchp.Core
         /// its instance is returned. Otherwise <c>null</c>.
         /// </summary>
         /// <remarks>Value is dereferenced if necessary.</remarks>
-        public static PhpArray ArrayOrNull(this PhpValue value)
-        {
-            return (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpArray;
-        }
+        public static PhpArray ArrayOrNull(this PhpValue value) => AsArray(value);
 
         /// <summary>
         /// Alias to <see cref="StringOrNull(PhpValue)"/>.
@@ -429,6 +426,16 @@ namespace Pchp.Core
                 case PhpTypeCode.WritableString: return value.WritableString.ToBytes(Encoding.UTF8);
                 case PhpTypeCode.Alias: return BytesOrNull(value.Alias.Value);
                 default: return null;
+            }
+        }
+
+        public static byte[] ToBytes(this PhpValue value, Context ctx)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.WritableString: return value.WritableString.ToBytes(ctx);
+                case PhpTypeCode.Alias: return ToBytes(value.Alias.Value, ctx);
+                default: return ctx.StringEncoding.GetBytes(value.ToString(ctx));
             }
         }
 

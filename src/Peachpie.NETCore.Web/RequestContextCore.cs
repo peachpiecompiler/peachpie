@@ -5,6 +5,7 @@ using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -71,6 +72,11 @@ namespace Peachpie.Web
             get { return _httpctx.Response.StatusCode; }
             set { _httpctx.Response.StatusCode = value; }
         }
+
+        /// <summary>
+        /// Stream with contents of the incoming HTTP entity body.
+        /// </summary>
+        public Stream InputStream => _httpctx.Request.Body;
 
         #endregion
 
