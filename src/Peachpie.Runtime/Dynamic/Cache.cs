@@ -33,8 +33,8 @@ namespace Pchp.Core.Dynamic
 
             public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
 
-            public static MethodInfo PhpAlias_EnsureObject = typeof(PhpAlias).GetMethod("EnsureObject", Types.Empty);
-            public static MethodInfo PhpAlias_EnsureArray = typeof(PhpAlias).GetMethod("EnsureArray", Types.Empty);
+            public static MethodInfo PhpAlias_EnsureObject = typeof(Core.PhpAlias).GetMethod("EnsureObject", Types.Empty);
+            public static MethodInfo PhpAlias_EnsureArray = typeof(Core.PhpAlias).GetMethod("EnsureArray", Types.Empty);
 
             public static MethodInfo PhpValue_EnsureObject = typeof(PhpValue).GetMethod("EnsureObject", Types.Empty);
             public static MethodInfo PhpValue_EnsureArray = typeof(PhpValue).GetMethod("EnsureArray", Types.Empty);
@@ -47,8 +47,8 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpNumber_ToString_Context = typeof(PhpNumber).GetMethod("ToString", typeof(Context));
 
             public static MethodInfo PhpArray_ToClass = typeof(PhpArray).GetMethod("ToClass", Types.Empty);
-            public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(IntStringKey), typeof(PhpAlias));
-            public static MethodInfo PhpArray_SetItemValue = typeof(PhpArray).GetMethod("SetItemValue", typeof(IntStringKey), typeof(PhpValue));
+            public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(IntStringKey), typeof(Core.PhpAlias));
+            public static MethodInfo PhpArray_SetItemValue = typeof(PhpArray).GetMethod("SetItemValue", typeof(IntStringKey), typeof(Core.PhpValue));
             public static MethodInfo PhpArray_EnsureItemObject = typeof(PhpArray).GetMethod("EnsureItemObject", typeof(IntStringKey));
             public static MethodInfo PhpArray_EnsureItemArray = typeof(PhpArray).GetMethod("EnsureItemArray", typeof(IntStringKey));
             public static MethodInfo PhpArray_EnsureItemAlias = typeof(PhpArray).GetMethod("EnsureItemAlias", typeof(IntStringKey));
