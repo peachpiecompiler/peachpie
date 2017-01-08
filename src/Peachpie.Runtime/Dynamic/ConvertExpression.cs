@@ -344,6 +344,9 @@ namespace Pchp.Core.Dynamic
             // other types
             if (t.GetTypeInfo().IsAssignableFrom(target.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
 
+            // anything -> PhpValue 
+            if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.PassCostly);
+
             //
             throw new NotImplementedException($"costof({t} -> {target})");
         }

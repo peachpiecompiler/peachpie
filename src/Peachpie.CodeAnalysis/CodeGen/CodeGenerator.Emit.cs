@@ -842,7 +842,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var writebacks = new List<WriteBackInfo>();
 
             int srcp = 0;
-            while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared)
+            while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared && !givenps[srcp].IsParams)
             {
                 srcp++;
             }
@@ -1068,8 +1068,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             ConstantValue cvalue;
             BoundExpression boundinitializer;
 
-            // TODO: targetp.IsParams
-
             if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
                 // keep NULL if parameter is a reference type
@@ -1088,6 +1086,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     cg.EmitConvert(boundinitializer, ptype = targetp.Type);
                 }
+            }
+            else if (targetp.IsParams)
+            {
+                // new T[0]
+                Emit_NewArray(((ArrayTypeSymbol)targetp.Type).ElementType, Array.Empty<BoundExpression>());
+                return;
             }
             else
             {

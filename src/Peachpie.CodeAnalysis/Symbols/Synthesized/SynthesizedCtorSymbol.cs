@@ -273,7 +273,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             if (SpecialParameterSymbol.IsContextParameter(p))
                                 continue;
 
-                            ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name,
+                            ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name, p.IsParams,
                                 explicitDefaultConstantValue: p.ExplicitDefaultConstantValue));
                         }
                     }
