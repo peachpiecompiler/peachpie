@@ -199,7 +199,6 @@ namespace Pchp.Library.Streams
                 return null;
 
             return wrapper.Open(ctx, ref path, mode, options, context);
-
         }
 
         #endregion

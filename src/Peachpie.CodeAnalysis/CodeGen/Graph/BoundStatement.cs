@@ -103,25 +103,26 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitSequencePoint(this.PhpSyntax);
 
             //
-            var t = cg.Emit(Thrown);
+            cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
 
-            if (t.IsReferenceType)
-            {
-                //if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
-                //{
-                //    throw new NotImplementedException();    // Wrap to System.Exception
-                //}
-                cg.EmitCastClass(t, cg.CoreTypes.Exception);
-            }
-            else
-            {
-                //if (t == cg.CoreTypes.PhpValue)
-                //{
+            //var t = cg.Emit(Thrown);
+            //if (t.IsReferenceType)
+            //{
+            //    //if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
+            //    //{
+            //    //    throw new NotImplementedException();    // Wrap to System.Exception
+            //    //}
+            //    cg.EmitCastClass(t, cg.CoreTypes.Exception);
+            //}
+            //else
+            //{
+            //    //if (t == cg.CoreTypes.PhpValue)
+            //    //{
 
-                //}
+            //    //}
 
-                throw new NotImplementedException();    // Wrap to System.Exception
-            }
+            //    throw new NotImplementedException();    // Wrap to System.Exception
+            //}
 
             // throw <stack>;
             cg.Builder.EmitThrow(false);

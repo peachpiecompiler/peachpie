@@ -122,6 +122,7 @@ namespace Pchp.Library.Streams
         /// combination.
         /// Integrate the relevant options from <see cref="StreamOpenOptions"/> too.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="mode">Mode as passed to <c>fopen()</c>.</param>
         /// <param name="options">The <see cref="StreamOpenOptions"/> passed to <c>fopen()</c>.</param>
         /// <param name="fileMode">Resulting <see cref="FileMode"/> specifying opening mode.</param>
@@ -129,7 +130,7 @@ namespace Pchp.Library.Streams
         /// <param name="accessOptions">Resulting <see cref="StreamAccessOptions"/> giving 
         /// additional information to the stream opener.</param>
         /// <returns><c>true</c> if the given mode was a valid file opening mode, otherwise <c>false</c>.</returns>
-        public bool ParseMode(string mode, StreamOpenOptions options, out FileMode fileMode, out FileAccess fileAccess, out StreamAccessOptions accessOptions)
+        public bool ParseMode(Context ctx, string mode, StreamOpenOptions options, out FileMode fileMode, out FileAccess fileAccess, out StreamAccessOptions accessOptions)
         {
             accessOptions = StreamAccessOptions.Empty;
             bool forceBinary = false; // The user requested a text stream
@@ -226,14 +227,14 @@ namespace Pchp.Library.Streams
             // Exactly one of these options is required.
             if ((forceBinary && forceText) || (!forceBinary && !forceText))
             {
-                //LocalConfiguration config = Configuration.Local;
+                //var cconfig = ctx.Configuration.Core;
 
                 //// checks whether default mode is applicable:
-                //if (config.FileSystem.DefaultFileOpenMode == "b")
+                //if (cconfig.DefaultFileOpenMode == "b")
                 //{
                 //    forceBinary = true;
                 //}
-                //else if (config.FileSystem.DefaultFileOpenMode == "t")
+                //else if (cconfig.DefaultFileOpenMode == "t")
                 //{
                 //    forceText = true;
                 //}
@@ -241,7 +242,6 @@ namespace Pchp.Library.Streams
                 //{
                 //    PhpException.Throw(PhpError.Warning, ErrResources.ambiguous_file_mode, mode);
                 //}
-                throw new NotImplementedException("Configuration.FileSystem.DefaultFileOpenMode");
 
                 // Binary mode is assumed
             }
@@ -260,18 +260,19 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Overload of <see cref="ParseMode(string, StreamOpenOptions, out FileMode, out FileAccess, out StreamAccessOptions)"/> without the <c>out</c> arguments.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="mode">Mode as passed to <c>fopen()</c>.</param>
         /// <param name="options">The <see cref="StreamOpenOptions"/> passed to <c>fopen()</c>.</param>
         /// <param name="accessOptions">Resulting <see cref="StreamAccessOptions"/> giving 
         /// additional information to the stream opener.</param>
         /// <returns><c>true</c> if the given mode was a valid file opening mode, otherwise <c>false</c>.</returns>
         /// <exception cref="ArgumentException">If the <paramref name="mode"/> is not valid.</exception>
-        internal bool ParseMode(string mode, StreamOpenOptions options, out StreamAccessOptions accessOptions)
+        internal bool ParseMode(Context ctx, string mode, StreamOpenOptions options, out StreamAccessOptions accessOptions)
         {
             FileMode fileMode;
             FileAccess fileAccess;
 
-            return (ParseMode(mode, options, out fileMode, out fileAccess, out accessOptions));
+            return ParseMode(ctx, mode, options, out fileMode, out fileAccess, out accessOptions);
         }
 
         /// <summary>
@@ -541,7 +542,7 @@ namespace Pchp.Library.Streams
             FileAccess fileAccess;
             StreamAccessOptions ao;
 
-            if (!ParseMode(mode, options, out fileMode, out fileAccess, out ao)) return null;
+            if (!ParseMode(ctx, mode, options, out fileMode, out fileAccess, out ao)) return null;
 
             // Open the native stream
             FileStream stream = null;
@@ -1094,7 +1095,7 @@ namespace Pchp.Library.Streams
             Stream native = null;
 
             StreamAccessOptions accessOptions;
-            if (!ParseMode(mode, options, out accessOptions))
+            if (!ParseMode(ctx, mode, options, out accessOptions))
                 return null;
 
             // Do not close the system I/O streams.

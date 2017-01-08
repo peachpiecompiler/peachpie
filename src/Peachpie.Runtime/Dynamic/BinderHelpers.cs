@@ -117,7 +117,7 @@ namespace Pchp.Core.Dynamic
                 else if (target_expr.Type == typeof(PhpAlias))
                 {
                     // dereference
-                    target_value = (PhpAlias)target_value;
+                    target_value = ((PhpAlias)target_value).Value;
                     target_expr = Expression.PropertyOrField(target_expr, "Value");
                     continue;
                 }
