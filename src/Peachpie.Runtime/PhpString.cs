@@ -668,9 +668,9 @@ namespace Pchp.Core
                 AssertChunkObject(chunk);
 
                 if (chunk.GetType() == typeof(string)) return Convert.ToBoolean((string)chunk);
-                if (chunk.GetType() == typeof(byte[])) Convert.ToBoolean((byte[])chunk);
-                if (chunk.GetType() == typeof(PhpString)) ((PhpString)chunk).ToBoolean();
-                if (chunk.GetType() == typeof(char[])) Convert.ToBoolean((char[])chunk);
+                if (chunk.GetType() == typeof(byte[])) return Convert.ToBoolean((byte[])chunk);
+                if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk).ToBoolean();
+                if (chunk.GetType() == typeof(char[])) return Convert.ToBoolean((char[])chunk);
                 throw new ArgumentException();
             }
 
