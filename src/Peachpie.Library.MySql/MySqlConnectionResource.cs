@@ -107,5 +107,10 @@ namespace Peachpie.Library.MySql
         /// Gets the server version.
         /// </summary>
         internal string ServerVersion => _connection.ServerVersion;
+
+        /// <summary>
+        /// Returns the id of the server thread this connection is executing on.
+        /// </summary>
+        internal int ServerThread => _connection.ServerThread;
     }
 }
