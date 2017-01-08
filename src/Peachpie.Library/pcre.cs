@@ -438,12 +438,102 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Split string by a regular expression.
+        /// Splits <paramref name="subject"/> along boundaries matched by <paramref name="pattern"/> and returns an array containing substrings.
+        /// 
+        /// <paramref name="limit"/> specifies the maximum number of strings returned in the resulting array. If (limit-1) matches is found
+        /// and there remain some characters to match whole remaining string is returned as the last element of the array.
+        /// 
+        /// Some flags may be specified. <see cref="PREG_SPLIT_NO_EMPTY"/> means no empty strings will be
+        /// in the resulting array. <see cref="PREG_SPLIT_DELIM_CAPTURE"/> adds also substrings matching
+        /// the delimiter and <see cref="PREG_SPLIT_OFFSET_CAPTURE"/> returns instead substrings the arrays
+        /// containing appropriate substring at index 0 and the offset of this substring in original
+        /// <paramref name="subject"/> at index 1.
         /// </summary>
+        /// <param name="pattern">Regular expression to match to boundaries.</param>
+        /// <param name="subject">String or string of bytes to split.</param>
+        /// <param name="limit">Max number of elements in the resulting array.</param>
+        /// <param name="flags">Flags affecting the returned array.</param>
+        /// <returns>An array containing substrings.</returns>
         [return: CastToFalse]
         public static PhpArray preg_split(string pattern, string subject, int limit = -1, int flags = 0)
         {
-            throw new NotImplementedException();
+            if (limit == 0) // 0 does not make sense, php's behavior is as it is -1
+                limit = -1;
+            if (limit < -1) // for all other negative values it seems that is as limit == 1
+                limit = 1;
+
+            var regex = new PerlRegex.Regex(pattern);
+            //if (!regex.IsValid) return null;
+
+            var m = regex.Match(subject);
+
+            bool offset_capture = (flags & PREG_SPLIT_OFFSET_CAPTURE) != 0;
+            PhpArray result = new PhpArray();
+            int last_index = 0;
+
+            while (m.Success && (limit == -1 || --limit > 0) && last_index < subject.Length)
+            {
+                // add part before match
+                int length = m.Index - last_index;
+                if (length > 0 || (flags & PREG_SPLIT_NO_EMPTY) == 0)
+                    result.Add(NewArrayItem(subject.Substring(last_index, length), last_index, offset_capture));
+
+                if (m.Value.Length > 0)
+                {
+                    if ((flags & PREG_SPLIT_DELIM_CAPTURE) != 0) // add all captures but not whole pattern match (start at 1)
+                    {
+                        List<object> lastUnsucessfulGroups = null;  // value of groups that was not successful since last succesful one
+                        for (int i = 1; i < m.Groups.Count; i++)
+                        {
+                            Group g = m.Groups[i];
+                            if (g.Length > 0 || (flags & PREG_SPLIT_NO_EMPTY) == 0)
+                            {
+                                // the value to be added into the result:
+                                object value = NewArrayItem(g.Value, g.Index, offset_capture);
+
+                                if (g.Success)
+                                {
+                                    // group {i} was matched:
+                                    // if there was some unsuccesfull matches before, add them now:
+                                    if (lastUnsucessfulGroups != null && lastUnsucessfulGroups.Count > 0)
+                                    {
+                                        foreach (var x in lastUnsucessfulGroups)
+                                            result.Add(x);
+                                        lastUnsucessfulGroups.Clear();
+                                    }
+                                    // add the matched group:
+                                    result.Add(value);
+                                }
+                                else
+                                {
+                                    // The match was unsuccesful, remember all the unsuccesful matches
+                                    // and add them only if some succesful match will follow.
+                                    // In PHP, unsuccessfully matched groups are trimmed by the end
+                                    // (regexp processing stops when other groups cannot be matched):
+                                    if (lastUnsucessfulGroups == null) lastUnsucessfulGroups = new List<object>();
+                                    lastUnsucessfulGroups.Add(value);
+                                }
+                            }
+                        }
+                    }
+
+                    last_index = m.Index + m.Length;
+                }
+                else // regular expression match an empty string => add one character
+                {
+                    // always not empty
+                    result.Add(NewArrayItem(subject.Substring(last_index, 1), last_index, offset_capture));
+                    last_index++;
+                }
+
+                m = m.NextMatch();
+            }
+
+            // add remaining string (might be empty)
+            if (last_index < subject.Length || (flags & PREG_SPLIT_NO_EMPTY) == 0)
+                result.Add(NewArrayItem(subject.Substring(last_index), last_index, offset_capture));
+
+            return result;
         }
 
         /// <summary>
