@@ -80,10 +80,10 @@ namespace Pchp.Core
                 }
             }
 
-            public static void InitializeEGPCSForWeb(ref Superglobals superglobals, string registering_order = null)
+            public static void InitializeEGPCSForWeb(PhpArray globals, ref Superglobals superglobals, string registering_order = null)
             {
                 // adds EGPCS variables as globals:
-                var globals = superglobals.globals;
+                
                 // adds items in the order specified by RegisteringOrder config option (overwrites existing):
                 for (int i = 0; i < registering_order.Length; i++)
                 {
@@ -103,9 +103,9 @@ namespace Pchp.Core
                 }
             }
 
-            public static void InitializeEGPCSForConsole(ref Superglobals superglobals)
+            public static void InitializeEGPCSForConsole(PhpArray globals, ref Superglobals superglobals)
             {
-                AddVariables(superglobals.globals, superglobals.env);
+                AddVariables(globals, superglobals.env);
             }
 
             #endregion
@@ -140,15 +140,17 @@ namespace Pchp.Core
 
         void InitSuperglobals(ref Superglobals superglobals)
         {
+            var egpcs = this.Configuration.Core.RegisteringOrder;
+
             superglobals.env = Superglobals.StaticEnv.DeepCopy();
             superglobals.server = InitServerVariable();
-            superglobals.request = InitRequestVariable();
             superglobals.get = InitGetVariable();
             superglobals.post = InitPostVariable();
             superglobals.files = InitFilesVariable();
             superglobals.session = new PhpArray();
             superglobals.cookie = new PhpArray();
-            superglobals.globals = InitGlobals(null); // TODO: Configuration/EGPCS
+            superglobals.request = InitRequestVariable(superglobals.get, superglobals.post, superglobals.cookie, egpcs);   // after get, post, cookie
+            superglobals.globals = InitGlobals(egpcs);
         }
 
         /// <summary>
@@ -167,9 +169,13 @@ namespace Pchp.Core
             if (registering_order != null)
             {
                 if (IsWebApplication)
-                    Superglobals.InitializeEGPCSForWeb(ref _superglobals, registering_order);
+                {
+                    Superglobals.InitializeEGPCSForWeb(globals, ref _superglobals, registering_order);
+                }
                 else
-                    Superglobals.InitializeEGPCSForConsole(ref _superglobals);
+                {
+                    Superglobals.InitializeEGPCSForConsole(globals, ref _superglobals);
+                }
             }
 
             // adds auto-global variables (overwrites potential existing variables in $GLOBALS):
@@ -206,7 +212,32 @@ namespace Pchp.Core
         protected virtual PhpArray InitServerVariable() => PhpArray.NewEmpty();
 
         /// <summary>Initialize $_REQUEST global variable.</summary>
-        protected virtual PhpArray InitRequestVariable() => PhpArray.NewEmpty();
+        protected PhpArray InitRequestVariable(PhpArray get, PhpArray post, PhpArray cookie, string gpcOrder)
+        {
+            Debug.Assert(get != null && post != null && cookie != null && gpcOrder != null);
+
+            if (IsWebApplication)
+            {
+                var requestArray = new PhpArray(get.Count + post.Count + cookie.Count);
+
+                // adds items from GET, POST, COOKIE arrays in the order specified by RegisteringOrder config option:
+                for (int i = 0; i < gpcOrder.Length; i++)
+                {
+                    switch (char.ToUpperInvariant(gpcOrder[i]))
+                    {
+                        case 'G': Superglobals.AddVariables(requestArray, get); break;
+                        case 'P': Superglobals.AddVariables(requestArray, post); break;
+                        case 'C': Superglobals.AddVariables(requestArray, cookie); break;
+                    }
+                }
+
+                return requestArray;
+            }
+            else
+            {
+                return PhpArray.NewEmpty();
+            }
+        }
 
         /// <summary>Initialize $_GET global variable.</summary>
         protected virtual PhpArray InitGetVariable() => PhpArray.NewEmpty();

@@ -328,10 +328,5 @@ namespace Peachpie.Web
         {
             return base.InitFilesVariable();
         }
-
-        protected override PhpArray InitRequestVariable()
-        {
-            return base.InitRequestVariable();
-        }
     }
 }
