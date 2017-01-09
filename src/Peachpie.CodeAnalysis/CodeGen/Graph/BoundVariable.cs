@@ -168,8 +168,19 @@ namespace Pchp.CodeAnalysis.Semantics
                     // <locals>[name] = value
                     cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // <locals>
                     cg.EmitIntStringKey(new BoundLiteral(this.Name));   // [key]
-                    cg.EmitConvertToPhpValue(srcplace.EmitLoad(cg.Builder), 0); // value
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+
+                    if (srcparam.Syntax.PassedByRef)
+                    {
+                        var srcpt = srcplace.EmitLoad(cg.Builder);  // PhpAlias
+                        Debug.Assert(srcpt == cg.CoreTypes.PhpAlias);
+                        cg.EmitConvert(srcpt, 0, cg.CoreTypes.PhpAlias);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                    }
+                    else
+                    {
+                        cg.EmitConvertToPhpValue(srcplace.EmitLoad(cg.Builder), 0); // PhpValue
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                    }
 
                     //
                     _isUnoptimized = true;
