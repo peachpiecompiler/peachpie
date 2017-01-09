@@ -247,7 +247,7 @@ namespace Pchp.Library
                     case PHP_URL_USER: return array["user"].AsString();
 
                     default:
-                        //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:invalid_value", "component", component));                        
+                        //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_invalid_value", "component", component));                        
                         throw new ArgumentException(nameof(component));
                 }
             }

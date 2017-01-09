@@ -815,7 +815,7 @@ namespace Pchp.Library
         {
             if (count <= 0)
             {
-                // TODO: PhpException.InvalidArgument("count", LibResources.GetString("arg:negative_or_zero"));
+                // TODO: PhpException.InvalidArgument("count", LibResources.GetString("arg_negative_or_zero"));
                 return null;
             }
 
@@ -926,7 +926,7 @@ namespace Pchp.Library
         {
             if (step == 0)
             {
-                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg_zero"));
                 //return null;
                 throw new ArgumentException();
             }
@@ -959,7 +959,7 @@ namespace Pchp.Library
         {
             if (step == 0)
             {
-                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg_zero"));
                 //return null;
                 throw new ArgumentException();
             }
@@ -992,7 +992,7 @@ namespace Pchp.Library
         {
             if (step == 0)
             {
-                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg_zero"));
                 //step = 1;
                 throw new ArgumentException();
             }
@@ -1944,7 +1944,7 @@ namespace Pchp.Library
 
             if (arrays == null || arrays.Length == 0)
             {
-                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg:null_or_empty"));
+                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg_null_or_empty"));
                 //return null;
                 throw new ArgumentException();
             }
@@ -2267,7 +2267,7 @@ namespace Pchp.Library
             }
             if (size <= 0)
             {
-                //PhpException.InvalidArgument("array", LibResources.GetString("arg:negative_or_zero"));
+                //PhpException.InvalidArgument("array", LibResources.GetString("arg_negative_or_zero"));
                 //return null;
                 throw new ArgumentException(nameof(size));
             }
@@ -3073,7 +3073,7 @@ namespace Pchp.Library
             //if (!PhpArgument.CheckCallback(map, caller, "map", 0, true)) return null;
             if (arrays == null || arrays.Length == 0)
             {
-                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg:null_or_emtpy"));
+                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg_null_or_emtpy"));
                 //return null;
                 throw new ArgumentException();
             }

@@ -146,14 +146,14 @@ namespace Pchp.Library
 
             if (string.IsNullOrEmpty(path))
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:empty", "path"));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_empty", "path"));
                 //return null;
                 throw new ArgumentException(nameof(path));
             }
 
             if (string.IsNullOrEmpty(mode))
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:empty", "mode"));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_empty", "mode"));
                 //return null;
                 throw new ArgumentException(nameof(mode));
             }
@@ -343,7 +343,7 @@ namespace Pchp.Library
             // check arguments
             PhpStream stream = PhpStream.GetValid(handle, FileAccess.Read);
             if (stream == null) return PhpValue.Null;
-            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length)); // TODO: Err // PhpException.InvalidArgument("length", LibResources.GetString("arg:negative"));
+            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length)); // TODO: Err //PhpException.InvalidArgument("length", LibResources.GetString("arg_negative"));
             if (length <= 0) length = -1;    // no length limit
             if (stream.Eof) return PhpValue.False;
 
@@ -810,7 +810,7 @@ namespace Pchp.Library
         {
             if (length <= 0)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:negative", "Length"));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_negative", "Length"));
                 //return null;
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
@@ -844,7 +844,7 @@ namespace Pchp.Library
         {
             if (length <= 0)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:negative", "Length"));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_negative", "Length"));
                 //return null;
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
@@ -1143,7 +1143,7 @@ namespace Pchp.Library
         {
             if (string.IsNullOrEmpty(path))
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:empty", "path"));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_empty", "path"));
                 //return false;
                 throw new ArgumentException(nameof(path));
             }

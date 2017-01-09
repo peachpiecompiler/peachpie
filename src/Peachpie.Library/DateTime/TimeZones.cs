@@ -155,7 +155,7 @@ namespace Pchp.Library
 
             //// collect php time zone names and match them with Windows TZ IDs:
             //var tzdoc = new XmlDocument();
-            //tzdoc.LoadXml(Resource.WindowsTZ);
+            //tzdoc.LoadXml(Resources.WindowsTZ);
             //foreach (var tz in tzdoc.DocumentElement.SelectNodes(@"//windowsZones/mapTimezones/mapZone"))
             //{
             //    // <mapZone other="Dateline Standard Time" type="Etc/GMT+12"/>

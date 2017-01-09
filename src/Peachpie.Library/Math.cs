@@ -470,7 +470,7 @@ namespace Pchp.Library
 
             if (fromBase < 2 || fromBase > 36)
             {
-                //PhpException.InvalidArgument("toBase", LibResources.GetString("arg:out_of_bounds"));
+                //PhpException.InvalidArgument("toBase", LibResources.GetString("arg_out_of_bounds"));
                 //return 0.0;
                 throw new ArgumentException();
             }
@@ -498,7 +498,7 @@ namespace Pchp.Library
         //    if (fromBase < 2 || fromBase > 36)
         //    {
         //        throw new NotImplementedException();
-        //        //PhpException.InvalidArgument("toBase", LibResources.GetString("arg:out_of_bounds"));
+        //        //PhpException.InvalidArgument("toBase", LibResources.GetString("arg_out_of_bounds"));
         //        //return 0.0;
         //    }
 
@@ -523,7 +523,7 @@ namespace Pchp.Library
             if (toBase < 2 || toBase > 36)
             {
                 throw new NotImplementedException();
-                //PhpException.InvalidArgument("toBase", LibResources.GetString("arg:out_of_bounds"));
+                //PhpException.InvalidArgument("toBase", LibResources.GetString("arg_out_of_bounds"));
                 //return String.Empty;
             }
 
@@ -531,7 +531,7 @@ namespace Pchp.Library
             if (Double.IsInfinity(number) || Double.IsNaN(number))
             {
                 throw new NotImplementedException();
-                //PhpException.InvalidArgument("number", LibResources.GetString("arg:out_of_bounds"));
+                //PhpException.InvalidArgument("number", LibResources.GetString("arg_out_of_bounds"));
                 //return String.Empty;
             }
 
@@ -576,7 +576,7 @@ namespace Pchp.Library
             }
             catch (ArgumentException)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:invalid_value", "fromBase", fromBase));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_invalid_value", "fromBase", fromBase));
                 //return PhpValue.False;
                 throw new NotImplementedException();
             }
@@ -587,7 +587,7 @@ namespace Pchp.Library
             }
             catch (ArgumentException)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:invalid_value", "toBase", toBase));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_invalid_value", "toBase", toBase));
                 //return PhpValue.False;
                 throw new NotImplementedException();
             }

@@ -228,7 +228,7 @@ namespace Pchp.Library
             {
                 if ((int)category < 0 || (int)category >= Cultures.CulturesCount)
                 {
-                    //PhpException.InvalidArgument("category", LibResources.GetString("arg:invalid_value"));
+                    //PhpException.InvalidArgument("category", LibResources.GetString("arg_invalid_value"));
                     //return null;
                     throw new ArgumentOutOfRangeException(nameof(category)); // TODO: Err
                 }

@@ -1268,8 +1268,6 @@ namespace Pchp.Library.Streams
             return output;
         }
 
-        private static Stream bytesink = null;
-
         /// <summary>
         /// Opens the script input (containing raw POST data).
         /// </summary>

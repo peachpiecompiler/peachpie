@@ -88,7 +88,7 @@ namespace Pchp.Library
             if (string.IsNullOrEmpty(path))
             {
                 wrapper = null;
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:empty", "path"));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_empty", "path"));
                 //return false;
                 throw new ArgumentException(nameof(path));
             }

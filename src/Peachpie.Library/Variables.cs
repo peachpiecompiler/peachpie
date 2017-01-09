@@ -730,7 +730,7 @@ namespace Pchp.Library
 
                         default:
                             throw new ArgumentException(nameof(type));
-                            //PhpException.InvalidArgument("type", LibResources.GetString("arg:invalid_value"));
+                            //PhpException.InvalidArgument("type", LibResources.GetString("arg_invalid_value"));
                             //return 0;
                     }
 

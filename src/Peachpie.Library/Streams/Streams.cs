@@ -237,14 +237,14 @@ namespace Pchp.Library.Streams
 
             if (length <= 0)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:negative", "length"));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_negative", "length"));
                 //return null;
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             if (string.IsNullOrEmpty(ending))
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:empty", "ending"));
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_empty", "ending"));
                 //return null;
                 throw new ArgumentException(nameof(ending));
             }

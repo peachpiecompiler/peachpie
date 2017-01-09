@@ -76,7 +76,7 @@ namespace Pchp.Library
             //// checks correctness of the argument:
             //if (index < 0)
             //{
-            //    PhpException.InvalidArgument("index", "arg:negative");
+            //    PhpException.InvalidArgument("index", "arg_negative");
             //    return PhpValue.False;
             //}
 

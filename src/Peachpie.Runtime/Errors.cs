@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Pchp.Core.Resources;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -93,6 +95,36 @@ namespace Pchp.Core
         {
             // TODO: get current Context from execution context
             // TODO: throw error according to configuration
+        }
+
+        /// <summary>
+        /// Invalid argument error.
+        /// </summary>
+        /// <param name="argument">The name of the argument being invalid.</param>
+        public static void InvalidArgument(string argument)
+        {
+            Throw(PhpError.Warning, string.Format(ErrResources.invalid_argument, argument));
+        }
+
+        /// <summary>
+        /// Invalid argument error with a description of a reason. 
+        /// </summary>
+        /// <param name="argument">The name of the argument being invalid.</param>
+        /// <param name="message">The message - what is wrong with the argument. Must contain "{0}" which is replaced by argument's name.
+        /// </param>
+        public static void InvalidArgument(string argument, string message)
+        {
+            Debug.Assert(message.Contains("{0}"));
+            Throw(PhpError.Warning, string.Format(ErrResources.invalid_argument_with_message + message, argument));
+        }
+
+        /// <summary>
+        /// Argument null error. Thrown when argument can't be null but it is.
+        /// </summary>
+        /// <param name="argument">The name of the argument.</param>
+        public static void ArgumentNull(string argument)
+        {
+            Throw(PhpError.Warning, string.Format(ErrResources.argument_null, argument));
         }
 
         /// <summary>

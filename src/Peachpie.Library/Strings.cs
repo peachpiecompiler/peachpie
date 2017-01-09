@@ -282,7 +282,7 @@ namespace Pchp.Library
             // validate parameters:
             if (string.IsNullOrEmpty(separator))
             {
-                //PhpException.InvalidArgument("separator", LibResources.GetString("arg:null_or_empty"));
+                //PhpException.InvalidArgument("separator", LibResources.GetString("arg_null_or_empty"));
                 //return null;
                 throw new ArgumentException();
             }
@@ -2430,7 +2430,7 @@ namespace Pchp.Library
 
             if (chunkLength <= 0)
             {
-                //PhpException.InvalidArgument("chunkLength", LibResources.GetString("arg:negative_or_zero"));
+                //PhpException.InvalidArgument("chunkLength", LibResources.GetString("arg_negative_or_zero"));
                 //return null;
                 throw new ArgumentException();
             }
@@ -3650,7 +3650,7 @@ namespace Pchp.Library
             }
             else
             {
-                //PhpException.InvalidArgument("decimals", LibResources.GetString("arg:out_of_bounds", decimals));
+                //PhpException.InvalidArgument("decimals", LibResources.GetString("arg_out_of_bounds", decimals));
                 throw new ArgumentException();
             }
 
@@ -3970,7 +3970,7 @@ namespace Pchp.Library
 
             //    if (binPaddingString == null || binPaddingString.Length == 0)
             //    {
-            //        PhpException.InvalidArgument("paddingString", LibResources.GetString("arg:null_or_empty"));
+            //        PhpException.InvalidArgument("paddingString", LibResources.GetString("arg_null_or_empty"));
             //        return null;
             //    }
             //    if (binstr == null) binstr = PhpBytes.Empty;
@@ -4044,7 +4044,7 @@ namespace Pchp.Library
 
                 if (string.IsNullOrEmpty(uniPaddingString))
                 {
-                    //PhpException.InvalidArgument("paddingString", LibResources.GetString("arg:null_or_empty"));
+                    //PhpException.InvalidArgument("paddingString", LibResources.GetString("arg_null_or_empty"));
                     //return null;
                     throw new ArgumentException();
                 }
@@ -4385,7 +4385,7 @@ namespace Pchp.Library
                 if (offset != haystack.Length)
                 {
                     throw new ArgumentOutOfRangeException();
-                    //PhpException.InvalidArgument("offset", LibResources.GetString("arg:out_of_bounds"));
+                    //PhpException.InvalidArgument("offset", LibResources.GetString("arg_out_of_bounds"));
                 }
                 return -1;
             }
@@ -4396,7 +4396,7 @@ namespace Pchp.Library
                 if (str_needle == String.Empty)
                 {
                     throw new ArgumentException();
-                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg_empty"));
                     //return -1;
                 }
 
@@ -4419,7 +4419,7 @@ namespace Pchp.Library
             if (offset > end || offset < -end - 1)
             {
                 throw new ArgumentOutOfRangeException();
-                //PhpException.InvalidArgument("offset", LibResources.GetString("arg:out_of_bounds"));
+                //PhpException.InvalidArgument("offset", LibResources.GetString("arg_out_of_bounds"));
                 //return -1;
             }
 
@@ -4435,7 +4435,7 @@ namespace Pchp.Library
                 if (str_needle.Length == 0)
                 {
                     throw new ArgumentException();
-                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg_empty"));
                     //return -1;
                 }
 
@@ -4514,7 +4514,7 @@ namespace Pchp.Library
                 if (str_needle.Length == 0)
                 {
                     throw new ArgumentException();
-                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg_empty"));
                     //return null;
                 }
 
@@ -4546,7 +4546,7 @@ namespace Pchp.Library
                 if (str_needle == String.Empty)
                 {
                     throw new ArgumentException();
-                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg:empty"));
+                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg_empty"));
                     //return null;
                 }
 
@@ -4586,7 +4586,7 @@ namespace Pchp.Library
             if (charList == null)
             {
                 throw new ArgumentException();
-                //PhpException.InvalidArgument("charList", LibResources.GetString("arg:empty"));
+                //PhpException.InvalidArgument("charList", LibResources.GetString("arg_empty"));
                 //return null;
             }
 

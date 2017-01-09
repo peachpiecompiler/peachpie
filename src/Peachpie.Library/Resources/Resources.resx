@@ -1,0 +1,610 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="option_already_registered" xml:space="preserve">
+    <value>Option '{0}' has already been registered.</value>
+  </data>
+  <data name="serializer_already_registered" xml:space="preserve">
+    <value>Serializer '{0}' has already been registered.</value>
+  </data>
+  <data name="serialization_unsupported_type" xml:space="preserve">
+    <value>Serialization of type {0} is not supported by PhpFormatter.</value>
+  </data>
+  <data name="unexpected_character_in_stream" xml:space="preserve">
+    <value>Unexpected character in the stream.</value>
+  </data>
+  <data name="unexpected_end_of_stream" xml:space="preserve">
+    <value>Unexpected end of stream.</value>
+  </data>
+  <data name="invalid_data_bad_length" xml:space="preserve">
+    <value>Invalid data encountered in the stream (bad length marker).</value>
+  </data>
+  <data name="invalid_data_bad_type" xml:space="preserve">
+    <value>Invalid data encountered in the stream (the specified data type is invalid in this context).</value>
+  </data>
+  <data name="invalid_data_bad_back_reference" xml:space="preserve">
+    <value>Invalid data encountered in the stream (bad back reference marker).</value>
+  </data>
+  <data name="class_instantiation_failed" xml:space="preserve">
+    <value>Unable to instantiate class '{0}'.</value>
+  </data>
+  <data name="serialization_binder_unsupported" xml:space="preserve">
+    <value>PhpFormatter does not support serialization binders.</value>
+  </data>
+  <data name="streaming_context_unsupported" xml:space="preserve">
+    <value>PhpFormatter does not support streaming context.</value>
+  </data>
+  <data name="surrogate_selector_unsupported" xml:space="preserve">
+    <value>PhpFormatter does not support surrogate selectors.</value>
+  </data>
+  <data name="regexp_duplicate_quantifier" xml:space="preserve">
+    <value>Nothing to repeat - duplicate quantifier at offset {0} in matching part of regular expression.</value>
+  </data>
+  <data name="class_has_no_unserializer" xml:space="preserve">
+    <value>Class {0} has no unserializer</value>
+  </data>
+  <data name="serialize_must_return_null_or_string" xml:space="preserve">
+    <value>{0}::serialize() must return a string or NULL</value>
+  </data>
+  <data name="web_server_not_available" xml:space="preserve">
+    <value />
+  </data>
+  <data name="headers_has_been_sent" xml:space="preserve">
+    <value>Headers has already been sent; modification of cookies or other HTTP headers are not allowed</value>
+  </data>
+  <data name="additional_parameters_not_supported" xml:space="preserve">
+    <value>Additional parameters not supported</value>
+  </data>
+  <data name="number_of_elements_not_positive" xml:space="preserve">
+    <value>Number of elements must be positive</value>
+  </data>
+  <data name="number_of_repetitions_negative" xml:space="preserve">
+    <value>Number of repetitions must be non-negative</value>
+  </data>
+  <data name="both_must_be_arrays_or_nonarrays" xml:space="preserve">
+    <value />
+  </data>
+  <data name="invalid_url" xml:space="preserve">
+    <value>Not a valid URL, unable to parse ({0})</value>
+  </data>
+  <data name="invalid_src_charset" xml:space="preserve">
+    <value>Invalid source charser</value>
+  </data>
+  <data name="invalid_dst_charset" xml:space="preserve">
+    <value>Invalid destination charser</value>
+  </data>
+  <data name="limit_less_than_one" xml:space="preserve">
+    <value>Limit is less than 1</value>
+  </data>
+  <data name="range_shared_endpoint" xml:space="preserve">
+    <value>Ranges cannot share an endpoint</value>
+  </data>
+  <data name="range_not_allowed" xml:space="preserve">
+    <value>Range not allowed here (first endpoint may be illeagal)</value>
+  </data>
+  <data name="first_endpoint_character_class" xml:space="preserve">
+    <value>First endpoint of range cannot be a character class</value>
+  </data>
+  <data name="word_boundary_not_single_bracket_expr" xml:space="preserve">
+    <value>Word boundary must be single bracket expression</value>
+  </data>
+  <data name="bad_collating_el_at_first_endpoint_of_range" xml:space="preserve">
+    <value>Collating element representing more than one character cannot be the first endpoint of range</value>
+  </data>
+  <data name="equivalence_class_at_first_endpoint_of_range" xml:space="preserve">
+    <value>Equivalence class cannot be endpoint of range (first endpoint here)</value>
+  </data>
+  <data name="ranges_not_supported" xml:space="preserve">
+    <value>Ranges for current page encoding are not supported</value>
+  </data>
+  <data name="range_first_character_greater" xml:space="preserve">
+    <value>Range: first character code is greater than second</value>
+  </data>
+  <data name="unknown_character_class" xml:space="preserve">
+    <value>Unknown character class name</value>
+  </data>
+  <data name="character_class_at_second_endpoint_of_range" xml:space="preserve">
+    <value>Character class cannot be an endpoint of range (second endpoint here)</value>
+  </data>
+  <data name="equivalence_class_at_second_endpoint_of_range" xml:space="preserve">
+    <value>Equivalence class cannot be an endpoint of a range (second endpoint here)</value>
+  </data>
+  <data name="question_mark_folowing_nothing" xml:space="preserve">
+    <value>Quantifier '?' following nothing (after '(')</value>
+  </data>
+  <data name="regexp_cannot_end_with_two_backslashes" xml:space="preserve">
+    <value>Regular expression cannot end with '\\'</value>
+  </data>
+  <data name="regexp_cannot_end_with_open_bracket" xml:space="preserve">
+    <value>Regular expression cannot end with '('</value>
+  </data>
+  <data name="unenclosed_bracket_expression" xml:space="preserve">
+    <value>Unenclosed bracket expression</value>
+  </data>
+  <data name="char_range_no_char_on_left" xml:space="preserve">
+    <value>Invalid '{0}'-range, no character to the left of '{0}'</value>
+  </data>
+  <data name="char_range_no_char_on_right" xml:space="preserve">
+    <value>Invalid '{0}'-range, no character to the right of '{0}'</value>
+  </data>
+  <data name="char_range_not_incrementing" xml:space="preserve">
+    <value>Invalid '{0}'-range, '{0}'-range needs to be incrementing</value>
+  </data>
+  <data name="cut_forced_with_zero_width" xml:space="preserve">
+    <value>Can't force cut when width is zero</value>
+  </data>
+  <data name="no_prefix_specified" xml:space="preserve">
+    <value />
+  </data>
+  <data name="invalid_type_name" xml:space="preserve">
+    <value>Invalid name of type</value>
+  </data>
+  <data name="number_of_items_not_between_one_and_item_count" xml:space="preserve">
+    <value>The number of items is {0} but it must be between 1 and array item count {1}</value>
+  </data>
+  <data name="neither_string_nor_integer_value" xml:space="preserve">
+    <value>Can {0} only string and integer values</value>
+  </data>
+  <data name="uninitialized_string_offset" xml:space="preserve">
+    <value>Uninitialized string offset '{0}'</value>
+  </data>
+  <data name="call_user_method_deprecated" xml:space="preserve">
+    <value>This function is deprecated, use the call_user_func variety with the array(&amp;$obj, "method") syntax instead</value>
+  </data>
+  <data name="should_be_specified" xml:space="preserve">
+    <value>{0} should be specified</value>
+  </data>
+  <data name="cannot_send_email" xml:space="preserve">
+    <value>Cannot send the mail due to error: '{0}'</value>
+  </data>
+  <data name="invalid_email_address" xml:space="preserve">
+    <value>Email address '{0}' is not valid</value>
+  </data>
+  <data name="header_not_supported" xml:space="preserve">
+    <value>Header '{0}' not supported and has been ignored</value>
+  </data>
+  <data name="host_not_responding" xml:space="preserve">
+    <value>Requested host not responding</value>
+  </data>
+  <data name="http_request_failed" xml:space="preserve">
+    <value>HTTP request failed with message '{0}'</value>
+  </data>
+  <data name="dl_not_supported" xml:space="preserve">
+    <value>Extensions cannot be loaded by script. Use configuration files instead.</value>
+  </data>
+  <data name="option_readonly" xml:space="preserve">
+    <value>Configuration option '{0}' cannot be set or restored since it is read only</value>
+  </data>
+  <data name="option_not_supported" xml:space="preserve">
+    <value>Configuration option '{0}' is not supported</value>
+  </data>
+  <data name="unknown_option" xml:space="preserve">
+    <value>Configuration option '{0}' is not known</value>
+  </data>
+  <data name="segment_length_not_positive" xml:space="preserve">
+    <value>The segment length must be greater then zero</value>
+  </data>
+  <data name="zero_argument_invalid" xml:space="preserve">
+    <value>Zero is not a valid argument number</value>
+  </data>
+  <data name="no_prefix_security_hazard" xml:space="preserve">
+    <value>No prefix specified - possible security hazard</value>
+  </data>
+  <data name="too_big_unicode_character" xml:space="preserve">
+    <value>String containg Unicode characters greater than '\u0800' are not supported</value>
+  </data>
+  <data name="invalid_scan_conversion_character" xml:space="preserve">
+    <value>Invalid scan conversion character "{0}"</value>
+  </data>
+  <data name="different_variables_and_specifiers" xml:space="preserve">
+    <value>The number of variables ({0}) differs from the number of format specifiers ({1})</value>
+  </data>
+  <data name="unmathed_format_bracket" xml:space="preserve">
+    <value>Unmatched [ in format string</value>
+  </data>
+  <data name="preg_match_pattern_set_order" xml:space="preserve">
+    <value>PREG_PATTERN_ORDER and PREG_SET_ORDER flags are mutually exclusive</value>
+  </data>
+  <data name="replacement_array_pattern_not" xml:space="preserve">
+    <value>Replacement cannot be an array if pattern is not an array</value>
+  </data>
+  <data name="regular_expression_empty" xml:space="preserve">
+    <value>Empty regular expression</value>
+  </data>
+  <data name="delimiter_alnum_backslash" xml:space="preserve">
+    <value>Delimiter must not be alphanumeric or backslash</value>
+  </data>
+  <data name="modifier_not_supported" xml:space="preserve">
+    <value>Ignoring unsupported pattern modifier '{0}' in perl regular expression</value>
+  </data>
+  <data name="modifier_unknown" xml:space="preserve">
+    <value>Ignoring unknown pattern modifier '{0}' in perl regular expression</value>
+  </data>
+  <data name="modifiers_inconsistent" xml:space="preserve">
+    <value>Pattern modifier '{0}' is ignored due to use of modifier '{1}' in perl regular expression</value>
+  </data>
+  <data name="preg_no_end_delimiter" xml:space="preserve">
+    <value>No ending delimiter '{0}' found</value>
+  </data>
+  <data name="invalid_calendar" xml:space="preserve">
+    <value>Invalid calendar id '{0}'</value>
+  </data>
+  <data name="session_not_exists" xml:space="preserve">
+    <value>Session doesn't not exist</value>
+  </data>
+  <data name="function_disallowed_in_web_context" xml:space="preserve">
+    <value>Function not allowed in web server context</value>
+  </data>
+  <data name="parse_error" xml:space="preserve">
+    <value>Parse error on position {0} near '{1}'</value>
+  </data>
+  <data name="unknown_serializer" xml:space="preserve">
+    <value>Serializer '{0}' is unknown. It hasn't been registered by any loaded library</value>
+  </data>
+  <data name="deserialization_failed" xml:space="preserve">
+    <value>Deserialization failed: {0} at offset {1} of {2} bytes</value>
+  </data>
+  <data name="serialization_failed" xml:space="preserve">
+    <value>Serialization failed: {0}</value>
+  </data>
+  <data name="ini_parse_error" xml:space="preserve">
+    <value>Parse error on line {0}</value>
+  </data>
+  <data name="invalid_path" xml:space="preserve">
+    <value>Path '{0}' is invalid</value>
+  </data>
+  <data name="recursion_detected" xml:space="preserve">
+    <value>Recursion detected</value>
+  </data>
+  <data name="unknown_timezone_env" xml:space="preserve">
+    <value>Unknown time zone '{0}' specified by 'TZ' environment variable</value>
+  </data>
+  <data name="unknown_timezone" xml:space="preserve">
+    <value>Unknown time zone '{0}'</value>
+  </data>
+  <data name="using_implicit_timezone" xml:space="preserve">
+    <value>Using system time zone settings which may be inaccurate ('{0}' zone selected)</value>
+  </data>
+  <data name="invalid_uuencoded_string" xml:space="preserve">
+    <value>The given parameter is not a valid uuencoded string</value>
+  </data>
+  <data name="descriptor_unsupported" xml:space="preserve">
+    <value>Descriptor #{0} is not supported</value>
+  </data>
+  <data name="descriptor_item_not_array_nor_resource" xml:space="preserve">
+    <value>Descriptor item #{0} must be either an array or a resource</value>
+  </data>
+  <data name="descriptor_item_missing_qualifier" xml:space="preserve">
+    <value>Descriptor item #{0} should contain handle qualifier and parameters</value>
+  </data>
+  <data name="descriptor_item_missing_mode" xml:space="preserve">
+    <value>Missing mode parameter from descriptor item #{0}</value>
+  </data>
+  <data name="descriptor_item_invalid_mode" xml:space="preserve">
+    <value>Invalid mode for descriptor item #{0}</value>
+  </data>
+  <data name="descriptor_item_missing_file_name" xml:space="preserve">
+    <value>Missing file name parameter from descriptor item #{0}</value>
+  </data>
+  <data name="invalid_handle_qualifier" xml:space="preserve">
+    <value>'{0}' is not a valid handle qualifier</value>
+  </data>
+  <data name="invalid_process_resource" xml:space="preserve">
+    <value>Invalid process resource</value>
+  </data>
+  <data name="error_terminating_process" xml:space="preserve">
+    <value>An error occured while terminating process {0} (pid = {1}): {2}</value>
+  </data>
+  <data name="error_starting_process" xml:space="preserve">
+    <value>An error occured while starting process: {0}</value>
+  </data>
+  <data name="error_waiting_for_process_exit" xml:space="preserve">
+    <value>An error occured while waiting for process exit: {0}</value>
+  </data>
+  <data name="attempted_variable_override" xml:space="preserve">
+    <value>Attempted {0} variable override</value>
+  </data>
+  <data name="invalid_cache_limiter" xml:space="preserve">
+    <value>'{0}' is not a valid value for cache limiter</value>
+  </data>
+  <data name="invalid_base64_encoded_data" xml:space="preserve">
+    <value>Invalid base64 encoded data</value>
+  </data>
+  <data name="unknown_format_code" xml:space="preserve">
+    <value>Type '{0}': unknown format code</value>
+  </data>
+  <data name="asterisk_ignored" xml:space="preserve">
+    <value>Type '{0}': '*' ignored</value>
+  </data>
+  <data name="not_enought_arguments" xml:space="preserve">
+    <value>Type '{0}': not enough arguments</value>
+  </data>
+  <data name="not_enought_characters" xml:space="preserve">
+    <value>Type '{0}': not enough characters in string</value>
+  </data>
+  <data name="outside_string" xml:space="preserve">
+    <value>Type '{0}': outside of string</value>
+  </data>
+  <data name="binary_data_overflown" xml:space="preserve">
+    <value>Type '{0}': binary data length has overflown integer size</value>
+  </data>
+  <data name="multibyte_chars_unsupported" xml:space="preserve">
+    <value>Type '{0}': multi-byte characters are not supported</value>
+  </data>
+  <data name="illegal_hex_digit" xml:space="preserve">
+    <value>Type '{0}': illegal hex digit '{0}'</value>
+  </data>
+  <data name="unused_arguments" xml:space="preserve">
+    <value>{0} unused arguments</value>
+  </data>
+  <data name="not_enought_input" xml:space="preserve">
+    <value>Type '{0}': not enough input, need {1}, have {2}</value>
+  </data>
+  <data name="invalid_session_save_path" xml:space="preserve">
+    <value>Invalid session save path '{0}'.</value>
+  </data>
+  <data name="user_session_handler_failed" xml:space="preserve">
+    <value>User session handler operation '{0}' failed (sid = '{1}', save_path = '{2}')</value>
+  </data>
+  <data name="invalid_directory_resource" xml:space="preserve">
+    <value>Supplied resource is not a valid Directory listing resource</value>
+  </data>
+  <data name="invalid_context_resource" xml:space="preserve">
+    <value>Supplied resource is not a valid Stream-Context resource</value>
+  </data>
+  <data name="directory_not_found" xml:space="preserve">
+    <value>The directory '{0}' does not exist</value>
+  </data>
+  <data name="wrappers_must_match" xml:space="preserve">
+    <value>The destination wrapper is different from the source one; use copy instead</value>
+  </data>
+  <data name="unknown_file_type" xml:space="preserve">
+    <value>File type not recognized</value>
+  </data>
+  <data name="socket_open_error" xml:space="preserve">
+    <value>Error connecting '{0}': {0}</value>
+  </data>
+  <data name="socket_open_timeout" xml:space="preserve">
+    <value>Connect timeout: {0} did not respond</value>
+  </data>
+  <data name="connection_limit_reached" xml:space="preserve">
+    <value>Number of connections reached the limit ({0})</value>
+  </data>
+  <data name="cannot_open_connection" xml:space="preserve">
+    <value>Cannot open connection: {0}</value>
+  </data>
+  <data name="error_closing_connection" xml:space="preserve">
+    <value>Error occured while closing the connection: {0}</value>
+  </data>
+  <data name="command_execution_failed" xml:space="preserve">
+    <value>Command execution failed: {0}</value>
+  </data>
+  <data name="database_selection_failed" xml:space="preserve">
+    <value>Database selection failed: {0}</value>
+  </data>
+  <data name="cannot_retrieve_schema" xml:space="preserve">
+    <value>Cannot retrieve schema information</value>
+  </data>
+  <data name="field_not_exists" xml:space="preserve">
+    <value>Field (column) of name '{0}' doesn't exist in the result</value>
+  </data>
+  <data name="invalid_data_result_field_index" xml:space="preserve">
+    <value>Field index {0} is invalid for {1} resource #{2}</value>
+  </data>
+  <data name="invalid_data_result_row_index" xml:space="preserve">
+    <value>Row index {0} is invalid for {1} resource #{2}</value>
+  </data>
+  <data name="parameter_already_bound" xml:space="preserve">
+    <value>Parameter '{0}' has already been bound</value>
+  </data>
+  <data name="invalid_stored_procedure_resource" xml:space="preserve">
+    <value>Invalid stored procedure resource</value>
+  </data>
+  <data name="invalid_connection_resource" xml:space="preserve">
+    <value>Invalid connection resource</value>
+  </data>
+  <data name="invalid_result_resource" xml:space="preserve">
+    <value>Invalid query result resource</value>
+  </data>
+  <data name="invalid_port" xml:space="preserve">
+    <value>Invalid port number '{0}'</value>
+  </data>
+  <data name="invalid_argument" xml:space="preserve">
+    <value>Invalid argument '{0}'</value>
+  </data>
+  <data name="too_few_arguments" xml:space="preserve">
+    <value>Too few arguments</value>
+  </data>
+  <data name="argument_not_object_or_class_name" xml:space="preserve">
+    <value>Second argument is not an object or class name</value>
+  </data>
+  <data name="argument_not_array_or_sort_flag" xml:space="preserve">
+    <value>Argument #{0} should be an array or a sort flag</value>
+  </data>
+  <data name="sorting_flag_already_specified" xml:space="preserve">
+    <value>Argument #{0} specifies a sorting flag which has already been specified for the array</value>
+  </data>
+  <data name="argument_not_array" xml:space="preserve">
+    <value>Argument #{0} should be an array</value>
+  </data>
+  <data name="argument_not_integer_indexed_array" xml:space="preserve">
+    <value>Argument '{0}' must be an integer indexed array</value>
+  </data>
+  <data name="arg_negative" xml:space="preserve">
+    <value>'{0}' should not be negative</value>
+  </data>
+  <data name="arg_negative_or_zero" xml:space="preserve">
+    <value>'{0}' should be positive</value>
+  </data>
+  <data name="arg_zero" xml:space="preserve">
+    <value>'{0}' should not be zero</value>
+  </data>
+  <data name="arg_null_or_empty" xml:space="preserve">
+    <value>'{0}' should not be null nor empty</value>
+  </data>
+  <data name="arg_empty" xml:space="preserve">
+    <value>'{0}' should not be empty</value>
+  </data>
+  <data name="arg_out_of_bounds" xml:space="preserve">
+    <value>'{0}' is out of bounds</value>
+  </data>
+  <data name="arg_not_object_or_class_name" xml:space="preserve">
+    <value>'{0}' not an object or class name</value>
+  </data>
+  <data name="arg_invalid_value" xml:space="preserve">
+    <value>Value '{1}' is invalid for argument '{0}'</value>
+  </data>
+  <data name="arg_invalid_length" xml:space="preserve">
+    <value>Argument '{0}' has invalid length</value>
+  </data>
+  <data name="sleep_seconds_less_zero" xml:space="preserve">
+    <value>Number of seconds must be greater than or equal to 0</value>
+  </data>
+  <data name="substr_count_length_exceeds" xml:space="preserve">
+    <value>Length value {0} exceeds string length</value>
+  </data>
+  <data name="substr_count_offset_exceeds" xml:space="preserve">
+    <value>Offset value {0} exceeds string length</value>
+  </data>
+  <data name="substr_count_zero_length" xml:space="preserve">
+    <value>Length should be greater than 0</value>
+  </data>
+  <data name="substr_count_offset_zero" xml:space="preserve">
+    <value>Offset should be greater than or equal to 0</value>
+  </data>
+  <data name="must_be_positive" xml:space="preserve">
+    <value>{0} must be greater than or equal to 0</value>
+  </data>
+  <data name="unexpected_arg_given" xml:space="preserve">
+    <value>expects parameter {0} to be {1}, {2} given</value>
+  </data>
+  <data name="option_missing" xml:space="preserve">
+    <value>'{0}' option missing</value>
+  </data>
+  <data name="smtp_sendmail_from_not_set" xml:space="preserve">
+    <value>From header was not specified.</value>
+  </data>
+  <data name="aspnet_sessionhandler_id_reset" xml:space="preserve">
+    <value>By changing ASP.NET session ID, all the session data created during this request will be lost. New session will start in the next request.</value>
+  </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="WindowsTZ" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>WindowsTZ.xml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+</root>
