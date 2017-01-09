@@ -60,7 +60,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
         {
-            var sflds = GetMembers().OfType<SourceFieldSymbol>().Where(f => f.IsStatic && !f.RequiresHolder).ToList();
+            var sflds = GetMembers().OfType<SourceFieldSymbol>().Where(f => !f.IsConst && f.IsStatic && !f.RequiresHolder).ToList();
             if (sflds.Count != 0)
             {
                 // emit initialization of app static fields
