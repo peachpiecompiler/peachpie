@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Primitives;
 using Pchp.Core;
 using Pchp.Core.Utilities;
 using System;
@@ -172,6 +173,18 @@ namespace Peachpie.Web
             // TODO: start session if AutoStart is On
         }
 
+        static void AddVariables(PhpArray target, IEnumerable<KeyValuePair<string, StringValues>> values)
+        {
+            foreach (var pair in values)
+            {
+                var strs = pair.Value;
+                for (int i = 0; i < strs.Count; i++)
+                {
+                    Superglobals.AddVariable(target, pair.Key, strs[i]);
+                }
+            }
+        }
+
         /// <summary>
         /// Loads $_SERVER from <see cref="_httpctx"/>.
         /// </summary>
@@ -282,6 +295,43 @@ namespace Peachpie.Web
 
             //
             return array;
+        }
+
+        protected override PhpArray InitGetVariable()
+        {
+            var result = PhpArray.NewEmpty();
+
+            if (_httpctx.Request.Method == "GET")
+            {
+                AddVariables(result, _httpctx.Request.Form);
+            }
+
+            AddVariables(result, _httpctx.Request.Query);
+
+            //
+            return result;
+        }
+
+        protected override PhpArray InitPostVariable()
+        {
+            var result = PhpArray.NewEmpty();
+
+            if (_httpctx.Request.Method == "POST")
+            {
+                AddVariables(result, _httpctx.Request.Form);
+            }
+
+            return result;
+        }
+
+        protected override PhpArray InitFilesVariable()
+        {
+            return base.InitFilesVariable();
+        }
+
+        protected override PhpArray InitRequestVariable()
+        {
+            return base.InitRequestVariable();
         }
     }
 }

@@ -143,9 +143,9 @@ namespace Pchp.Core
             superglobals.env = Superglobals.StaticEnv.DeepCopy();
             superglobals.server = InitServerVariable();
             superglobals.request = InitRequestVariable();
-            superglobals.get = new PhpArray();
-            superglobals.post = new PhpArray();
-            superglobals.files = new PhpArray();
+            superglobals.get = InitGetVariable();
+            superglobals.post = InitPostVariable();
+            superglobals.files = InitFilesVariable();
             superglobals.session = new PhpArray();
             superglobals.cookie = new PhpArray();
             superglobals.globals = InitGlobals(null); // TODO: Configuration/EGPCS
@@ -203,10 +203,19 @@ namespace Pchp.Core
         }
 
         /// <summary>Initialize $_SERVER global variable.</summary>
-        protected virtual PhpArray InitServerVariable() => new PhpArray();
+        protected virtual PhpArray InitServerVariable() => PhpArray.NewEmpty();
 
         /// <summary>Initialize $_REQUEST global variable.</summary>
-        protected virtual PhpArray InitRequestVariable() => new PhpArray();
+        protected virtual PhpArray InitRequestVariable() => PhpArray.NewEmpty();
+
+        /// <summary>Initialize $_GET global variable.</summary>
+        protected virtual PhpArray InitGetVariable() => PhpArray.NewEmpty();
+
+        /// <summary>Initialize $_POST global variable.</summary>
+        protected virtual PhpArray InitPostVariable() => PhpArray.NewEmpty();
+
+        /// <summary>Initialize $_FILES global variable.</summary>
+        protected virtual PhpArray InitFilesVariable() => PhpArray.NewEmpty();
 
         #region Properties
 

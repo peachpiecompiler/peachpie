@@ -40,6 +40,12 @@ namespace Pchp.Core
         /// </summary>
         public static readonly PhpArray Empty = new PhpArray();
 
+        /// <summary>
+        /// Fast creation of an empty array
+        /// by referencing internal structure of empty singleton.
+        /// </summary>
+        public static PhpArray NewEmpty() => Empty.DeepCopy();
+
         #region Constructors
 
         /// <summary>
