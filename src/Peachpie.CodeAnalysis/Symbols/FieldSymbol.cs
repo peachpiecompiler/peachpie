@@ -109,7 +109,12 @@ namespace Pchp.CodeAnalysis.Symbols
         // metadata constant unless they are of type decimal, because decimals are not regarded as constant by the CLR.
         public bool IsMetadataConstant
         {
-            get { return this.IsConst && (this.Type.SpecialType != SpecialType.System_Decimal); }
+            get
+            {
+                var isconst = this.IsConst && (this.Type.SpecialType != SpecialType.System_Decimal);
+                Debug.Assert(!isconst || IsStatic, "Literal field must be Static.");
+                return isconst;
+            }
         }
 
         /// <summary>

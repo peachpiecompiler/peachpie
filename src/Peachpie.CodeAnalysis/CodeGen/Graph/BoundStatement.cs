@@ -238,6 +238,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     valuePlace.EmitStore(il);
                 }
 
+                // base..ctor()
+                var ctor = holder.BaseType.InstanceConstructors.Single();
+                il.EmitLoadArgumentOpcode(0);   // this
+                il.EmitCall(module, diagnostic, ILOpCode.Call, ctor);   // .ctor()
+
                 //
                 il.EmitRet(true);
             });

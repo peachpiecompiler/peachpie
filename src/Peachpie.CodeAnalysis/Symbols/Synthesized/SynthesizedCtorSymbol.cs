@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsVirtual => false;
         public override bool IsStatic => false;
         public override MethodKind MethodKind => MethodKind.Ordinary;
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => true;
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
 
         /// <summary>
         /// <c>__construct</c> in current class. Can be <c>null</c>.

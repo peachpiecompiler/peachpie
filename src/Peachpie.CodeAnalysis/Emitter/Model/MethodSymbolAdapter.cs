@@ -530,7 +530,9 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                return this.IsMetadataVirtual();
+                var isvirt = this.IsMetadataVirtual();
+                Debug.Assert(isvirt || (!IsMetadataFinal && !IsMetadataNewSlot()), "Method marked Final or NewSlot or CheckAccessOnOverride but not Virtual.");
+                return isvirt;
             }
         }
 

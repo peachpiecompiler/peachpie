@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.Modifiers.IsStatic();
 
-        public override bool IsVirtual => !IsSealed && !_type.IsSealed && !IsStatic;
+        public override bool IsVirtual => !IsStatic;    // every method in PHP is virtual except static methods
 
         public override ImmutableArray<Location> Locations
         {
@@ -121,8 +121,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => !IsSealed && !IsStatic;
+        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => this.IsVirtual;
 
-        internal override bool IsMetadataFinal => base.IsMetadataFinal && !IsStatic;
+        internal override bool IsMetadataFinal => IsSealed && !IsStatic && base.IsMetadataFinal;
     }
 }

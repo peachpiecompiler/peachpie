@@ -171,6 +171,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Whether the field is real CLR static field.
         /// </summary>
-        public override bool IsStatic => _fieldKind == KindEnum.AppStaticField;
+        public override bool IsStatic => _fieldKind == KindEnum.AppStaticField || IsConst; // either field is CLR static field or constant (Literal field must be Static).
     }
 }

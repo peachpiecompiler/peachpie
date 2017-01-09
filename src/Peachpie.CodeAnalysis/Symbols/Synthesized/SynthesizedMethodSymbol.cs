@@ -59,7 +59,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsOverride => OverriddenMethod != null;
 
-        public override bool IsSealed => !IsStatic;
+        public override bool IsSealed => IsVirtual && !IsStatic;
 
         public override bool IsStatic => _static;
 
@@ -98,7 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// virtual = IsVirtual AND NewSlot 
         /// override = IsVirtual AND !NewSlot
         /// </summary>
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && !IsStatic;
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => IsVirtual && !IsOverride;
 
         internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual;
     }
