@@ -102,14 +102,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public ILBuilder CctorBuilder => _cg.Module.GetStaticCtorBuilder(_container);
 
-        int _fieldIndex;
-
         public SynthesizedFieldSymbol CreateCallSiteField(string namehint) => _cg.Module.SynthesizedManager
-            .GetOrCreateSynthesizedField(_container, CallSite, "<>" + namehint + "`" + (_fieldIndex++), Accessibility.Private, true, true);
+            .GetOrCreateSynthesizedField(
+                _container, CallSite, namehint, Accessibility.Private, true, true,
+                autoincrement: true);
 
         public DynamicOperationFactory(CodeGenerator cg, NamedTypeSymbol container)
         {
             Contract.ThrowIfNull(cg);
+            Contract.ThrowIfNull(container);
 
             _cg = cg;
             _compilation = cg.DeclaringCompilation;

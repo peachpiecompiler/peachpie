@@ -46,7 +46,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyRoutineInfoField == null)
             {
                 _lazyRoutineInfoField = module.SynthesizedManager
-                    .GetOrCreateSynthesizedField(_file, this.DeclaringCompilation.CoreTypes.RoutineInfo, "!" + this.MetadataName, Accessibility.Internal, true, true);
+                    .GetOrCreateSynthesizedField(_file, this.DeclaringCompilation.CoreTypes.RoutineInfo, $"[method]{this.MetadataName}", Accessibility.Internal, true, true);
             }
 
             return _lazyRoutineInfoField;

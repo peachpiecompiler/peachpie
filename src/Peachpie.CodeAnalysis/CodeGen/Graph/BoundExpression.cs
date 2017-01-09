@@ -3437,7 +3437,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             var idxfield = cg.Module.SynthesizedManager
-                .GetOrCreateSynthesizedField(cg.Module.ScriptType, cg.CoreTypes.Int32, $"c<{this.Name}>idx", Accessibility.Internal, true, false);
+                .GetOrCreateSynthesizedField(cg.Module.ScriptType, cg.CoreTypes.Int32, $"[const]{this.Name}", Accessibility.Internal, true, false);
 
             // <ctx>.GetConstant(<name>, ref <Index of constant>)
             cg.EmitLoadContext();
