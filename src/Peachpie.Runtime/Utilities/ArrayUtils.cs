@@ -73,6 +73,31 @@ namespace Pchp.Core.Utilities
 
             return str;
         }
+
+        /// <summary>
+        /// Fills a portion of an array of bytes by specified byte.
+        /// </summary>
+        /// <param name="array">The array to fill.</param>
+        /// <param name="value">The value to fill the array with.</param>
+        /// <param name="offset">The index of the first byte to be set.</param>
+        /// <param name="count">The number of bytes to be set.</param>
+        /// <remarks>This method uses fast unsafe filling of memory with bytes.</remarks>
+        public static void Fill(byte[] array, byte value, int offset, int count)
+        {
+            if (array == null)
+                throw new ArgumentNullException("array");
+            if (offset < 0 || offset + count > array.Length)
+                throw new ArgumentOutOfRangeException("offset");
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("length");
+            if (array.Length == 0)
+                return;
+
+            for (int i = offset; i < count + offset; i++)
+            {
+                array[i] = value;
+            }
+        }
     }
 
 }
