@@ -147,8 +147,8 @@ namespace Peachpie.Web
         /// <summary>
         /// Application physical root directory including trailing slash.
         /// </summary>
-        public override string RootPath => _contentRootPath;
-        readonly string _contentRootPath;
+        public override string RootPath => _rootPath;
+        readonly string _rootPath;
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -156,15 +156,15 @@ namespace Peachpie.Web
         /// </summary>
         readonly HttpContext _httpctx;
 
-        public RequestContextCore(HttpContext httpcontext, string contentRootPath)
+        public RequestContextCore(HttpContext httpcontext, string rootPath)
         {
             Debug.Assert(httpcontext != null);
-            Debug.Assert(contentRootPath != null);
-            Debug.Assert(contentRootPath == ScriptsMap.NormalizeSlashes(contentRootPath));
-            Debug.Assert(contentRootPath.Length != 0 && contentRootPath[contentRootPath.Length - 1] != '/');
+            Debug.Assert(rootPath != null);
+            Debug.Assert(rootPath == ScriptsMap.NormalizeSlashes(rootPath));
+            Debug.Assert(rootPath.Length != 0 && rootPath[rootPath.Length - 1] != '/');
 
             _httpctx = httpcontext;
-            _contentRootPath = contentRootPath;
+            _rootPath = rootPath;
 
             this.InitOutput(httpcontext.Response.Body);
             this.InitSuperglobals();

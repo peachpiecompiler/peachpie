@@ -14,7 +14,7 @@ namespace Peachpie.Web
     internal class PhpHandlerMiddleware
     {
         readonly RequestDelegate _next;
-        readonly string _contentRootPath;
+        readonly string _rootPath;
 
         public PhpHandlerMiddleware(RequestDelegate next, IHostingEnvironment hostingEnv)
         {
@@ -29,7 +29,7 @@ namespace Peachpie.Web
             }
 
             _next = next;
-            _contentRootPath = NormalizeRootPath(hostingEnv.ContentRootPath ?? System.IO.Directory.GetCurrentDirectory());
+            _rootPath = NormalizeRootPath(hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? System.IO.Directory.GetCurrentDirectory());
             // TODO: pass hostingEnv.ContentRootFileProvider to the Context for file system functions
         }
 
@@ -63,7 +63,7 @@ namespace Peachpie.Web
             {
                 return Task.Run(() =>
                 {
-                    using (var phpctx = new RequestContextCore(context, _contentRootPath))
+                    using (var phpctx = new RequestContextCore(context, _rootPath))
                     {
                         phpctx.ProcessScript(script);
                     }
