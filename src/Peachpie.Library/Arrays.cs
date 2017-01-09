@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Library.Resources;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -601,9 +602,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull("array");
+                return false;
             }
 
             array.Shuffle(PhpMath.Generator);
@@ -667,22 +667,22 @@ namespace Pchp.Library
         {
             if (source == null)
             {
-                // TODO: PhpException.ArgumentNull("array");
+                PhpException.ArgumentNull(nameof(source));
                 return false;
             }
             if (result == null)
             {
-                // TODO: PhpException.ArgumentNull("result");
+                PhpException.ArgumentNull(nameof(result));
                 return false;
             }
             if (generator == null)
             {
-                // TODO: PhpException.ArgumentNull("generator");
+                PhpException.ArgumentNull(nameof(generator));
                 return false;
             }
             if (count < 1 || count > source.Count)
             {
-                // TODO: PhpException.InvalidArgument("count", LibResources.GetString("number_of_items_not_between_one_and_item_count", count, source.Count));
+                PhpException.InvalidArgument(nameof(count), string.Format(LibResources.number_of_items_not_between_one_and_item_count, count, source.Count));
                 return false;
             }
 
@@ -721,7 +721,7 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                // TODO: PhpException.ArgumentNull("array");
+                PhpException.ArgumentNull(nameof(array));
                 return false;
             }
 
@@ -767,7 +767,7 @@ namespace Pchp.Library
 
             if (haystack == null)
             {
-                // TODO: PhpException.ArgumentNull("haystack");
+                PhpException.ArgumentNull(nameof(haystack));
                 return PhpValue.False;
             }
 
@@ -815,7 +815,7 @@ namespace Pchp.Library
         {
             if (count <= 0)
             {
-                // TODO: PhpException.InvalidArgument("count", LibResources.GetString("arg_negative_or_zero"));
+                PhpException.InvalidArgument("count", LibResources.arg_negative_or_zero);
                 return null;
             }
 
@@ -833,9 +833,8 @@ namespace Pchp.Library
         {
             if (keys == null)
             {
-                // PhpException.ArgumentNull("keys");
-                // return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull("keys");
+                return null;
             }
 
             var result = new PhpArray(keys.Count);
@@ -869,9 +868,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                // PhpException.ArgumentNull("array");
-                // return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull("array");
+                return null;
             }
 
             // number of items to add:

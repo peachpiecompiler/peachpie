@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Resources
 {
-    internal static class LibResources
+    internal class LibResources : Resources
     {
         /// <summary>
         /// Retrieves formatted string resource.
