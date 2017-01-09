@@ -278,7 +278,7 @@ namespace Pchp.Library.Streams
                 // The file wrapper expects an absolute path w/o the scheme, others expect the scheme://url.
                 if (scheme != "file")
                 {
-                    path = String.Format("{0}://{1}", scheme, path);
+                    path = string.Format("{0}://{1}", scheme, path);
                 }
             }
 
