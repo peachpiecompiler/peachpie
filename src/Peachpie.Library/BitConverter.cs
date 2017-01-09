@@ -116,6 +116,7 @@ namespace Pchp.Library
                         }
                         break;
 
+                    case 'Z': // equivalent functionality to "a" for Perl compatibility
                     case 'a': // NUL-padded string
                     case 'A': // SPACE-padded string 
                     case 'h': // Hex string, low/high nibble first - converts to a string, takes n hex digits:
