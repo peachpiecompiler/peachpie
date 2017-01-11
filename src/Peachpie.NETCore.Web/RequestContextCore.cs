@@ -301,7 +301,7 @@ namespace Peachpie.Web
         {
             var result = PhpArray.NewEmpty();
 
-            if (_httpctx.Request.Method == "GET")
+            if (_httpctx.Request.Method == "GET" && _httpctx.Request.HasFormContentType)
             {
                 AddVariables(result, _httpctx.Request.Form);
             }
@@ -316,7 +316,7 @@ namespace Peachpie.Web
         {
             var result = PhpArray.NewEmpty();
 
-            if (_httpctx.Request.Method == "POST")
+            if (_httpctx.Request.Method == "POST" && _httpctx.Request.HasFormContentType)
             {
                 AddVariables(result, _httpctx.Request.Form);
             }
