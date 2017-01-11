@@ -6,6 +6,9 @@ using Pchp.Core;
 using Pchp.Core.Reflection;
 using System.Text;
 using System.Globalization;
+using Pchp.Library.Resources;
+using System.IO;
+using System.Diagnostics;
 
 namespace Pchp.Library
 {
@@ -38,11 +41,10 @@ namespace Pchp.Library
                 {
                     return CommonSerialize(ctx, variable, caller);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    //PhpException.Throw(PhpError.Notice, LibResources.GetString("serialization_failed", e.Message));
-                    //return null;
-                    throw;  // TODO: Err
+                    PhpException.Throw(PhpError.Notice, LibResources.GetString("serialization_failed", e.Message));
+                    return null;
                 }
             }
 
@@ -57,20 +59,20 @@ namespace Pchp.Library
             /// <returns>The deserialized object graph or <B>false</B> on error.</returns>
             public PhpValue Deserialize(Context ctx, PhpString data, RuntimeTypeHandle caller /*, allowed_classes */)
             {
+                var stream = new MemoryStream(data.ToBytes(ctx));
+
                 try
                 {
-                    return CommonDeserialize(ctx, data, caller);
+                    return CommonDeserialize(ctx, stream, caller);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    //PhpException.Throw(PhpError.Notice, LibResources.GetString("deserialization_failed", e.Message, stream.Position, stream.Length));
-                    //return new PhpReference(false);
-
-                    throw;  // TODO: Err
+                    PhpException.Throw(PhpError.Notice, LibResources.GetString("deserialization_failed", e.Message, stream.Position, stream.Length));
+                    return PhpValue.False;
                 }
             }
 
-            protected abstract PhpValue CommonDeserialize(Context ctx, PhpString data, RuntimeTypeHandle caller);
+            protected abstract PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller);
         }
 
         #endregion
@@ -107,6 +109,8 @@ namespace Pchp.Library
             }
 
             #endregion
+
+            #region ObjectWriter
 
             sealed class ObjectWriter : PhpVariableVisitor
             {
@@ -282,6 +286,406 @@ namespace Pchp.Library
                 }
             }
 
+            #endregion
+
+            #region ObjectReader
+
+            sealed class ObjectReader
+            {
+                readonly Context _ctx;
+                readonly Stream _stream;
+                readonly RuntimeTypeHandle _caller;
+
+                public ObjectReader(Context ctx, Stream stream, RuntimeTypeHandle caller)
+                {
+                    Debug.Assert(ctx != null);
+                    Debug.Assert(stream != null);
+
+                    _ctx = ctx;
+                    _stream = stream;
+                    _caller = caller;
+                }
+
+                #region Throw helpers
+
+                /// <summary>
+                /// Throws a <see cref="SerializationException"/> due to an unexpected character.
+                /// </summary>
+                private void ThrowUnexpected()
+                {
+                    throw new InvalidDataException(LibResources.unexpected_character_in_stream);
+                }
+
+                /// <summary>
+                /// Throws a <see cref="SerializationException"/> due to an unexpected end of stream.
+                /// </summary>
+                private void ThrowEndOfStream()
+                {
+                    throw new InvalidDataException(LibResources.unexpected_end_of_stream);
+                }
+
+                /// <summary>
+                /// Throws a <see cref="SerializationException"/> due to an data type.
+                /// </summary>
+                private void ThrowInvalidDataType()
+                {
+                    throw new InvalidDataException(LibResources.invalid_data_bad_type);
+                }
+
+                /// <summary>
+                /// Throws a <see cref="SerializationException"/> due to an invalid length marker.
+                /// </summary>
+                private void ThrowInvalidLength()
+                {
+                    throw new InvalidDataException(LibResources.invalid_data_bad_length);
+                }
+
+                /// <summary>
+                /// Throws a <see cref="SerializationException"/> due to an invalid back-reference.
+                /// </summary>
+                private void ThrowInvalidReference()
+                {
+                    throw new InvalidDataException(LibResources.invalid_data_bad_back_reference);
+                }
+
+                #endregion
+
+                #region Utils
+
+                /// <summary>
+                /// Quickly check if the look ahead byte is digit. Assumes the value is in range 0x00 - 0xff.
+                /// </summary>
+                /// <param name="ch">The byte value.</param>
+                /// <returns>True if value is in range '0'-'9'.</returns>
+                static bool IsDigit(char ch)
+                {
+                    return Digit(ch) != -1;
+                }
+
+                /// <summary>
+                /// Quickly determine the numeric value of given <paramref name="ch"/> byte.
+                /// </summary>
+                /// <param name="ch">The byte value.</param>
+                /// <returns>Digit value or <c>-1</c> if <paramref name="ch"/> is not a digit.</returns>
+                static int Digit(char ch)
+                {
+                    int num = unchecked((int)ch - (int)'0');
+                    return (num >= 0 && num <= 9) ? num : -1;
+                }
+
+                /// <summary>
+                /// Temporarily used <see cref="StringBuilder"/>. Remember it to save GC.
+                /// This method always returns the same instance of <see cref="StringBuilder"/>, it will always reset its <see cref="StringBuilder.Length"/> to <c>0</c>.
+                /// </summary>
+                StringBuilder/*!*/GetTemporaryStringBuilder(int initialCapacity)
+                {
+                    var tmp = _tmpStringBuilder;
+
+                    if (tmp != null)
+                    {
+                        tmp.Length = 0;
+                    }
+                    else
+                    {
+                        _tmpStringBuilder = tmp = new StringBuilder(initialCapacity, int.MaxValue);
+                    }
+
+                    return tmp;
+                }
+                StringBuilder _tmpStringBuilder;
+
+                #endregion
+
+                #region Consume
+
+                /// <summary>
+                /// Consumes the look ahead character and moves to the next character in the input stream.
+                /// </summary>
+                /// <returns>The old (consumed) look ahead character.</returns>
+                /// <remarks>The consumed value is 8-bit, always in range 0x00 - 0xff.</remarks>
+                char Consume()
+                {
+                    var b = _stream.ReadByte();
+                    if (b == -1)
+                    {
+                        ThrowEndOfStream();
+                    }
+
+                    return (char)b;
+                }
+
+                /// <summary>
+                /// Consumes a given look ahead character and moves to the next character in the input stream.
+                /// </summary>
+                /// <param name="expected">The character that should be consumed.</param>
+                /// <remarks>If <paramref name="expected"/> does not match current look ahead character, <see cref="ThrowUnexpected"/> is called.</remarks>
+                void Consume(char expected)
+                {
+                    var ch = Consume();
+                    if (ch != expected)
+                    {
+                        ThrowUnexpected();
+                    }
+                }
+
+                #endregion
+
+                /// <summary>
+                /// Reads a signed 64-bit integer number from the <see cref="_stream"/>.
+                /// </summary>
+                /// <returns>The integer.</returns>
+                long ReadInteger()
+                {
+                    // pattern:
+                    // [+-]?[0-9]+
+
+                    long number = 0;
+
+                    // [+-]?
+                    var ch = Consume();
+                    bool minus;
+                    if (ch == '-')
+                    {
+                        minus = true;
+                        ch = Consume();
+                    }
+                    else if (ch == '+')
+                    {
+                        minus = false;
+                        ch = Consume();
+                    }
+                    else
+                    {
+                        minus = false;
+                    }
+
+                    // [0-9]+
+
+                    int digit = Digit(ch);
+                    if (digit == -1)
+                    {
+                        ThrowUnexpected();
+                    }
+
+                    do
+                    {
+                        // let it overflow just as PHP does
+                        number = unchecked((10 * number) + digit);
+                        ch = Consume();
+
+                    } while ((digit = Digit(ch)) != -1);
+
+                    // seek one back
+                    _stream.Seek(-1, SeekOrigin.Current);
+
+                    //
+                    return minus ? unchecked(-number) : number;
+                }
+
+                /// <summary>
+                /// Deserializes object from given stream.
+                /// </summary>
+                public PhpValue Deserialize() => Parse();
+
+                PhpValue Parse()
+                {
+                    switch (Consume())
+                    {
+                        case Tokens.Null: ParseNull(); return PhpValue.Null;
+                        case Tokens.Boolean: return PhpValue.Create(ParseBoolean());
+                        case Tokens.Integer: return PhpValue.Create(ParseInteger());
+                        case Tokens.Double: return PhpValue.Create(ParseDouble());
+                        case Tokens.String: return ParseString();
+                        case Tokens.Array: return PhpValue.Create(ParseArray());
+                        //case Tokens.Object: ParseObject(false); break;
+                        //case Tokens.ObjectSer: ParseObject(true); break;
+                        //case Tokens.ClrObject: ParseClrObject(); break;
+                        //case Tokens.Reference: ParseReference(); break;
+                        //case Tokens.ObjectRef: ParseObjectRef(); break;
+
+                        default:
+                            ThrowUnexpected();
+                            throw new ArgumentException();  // unreachable
+                    }
+                }
+
+                void ParseNull()
+                {
+                    Consume(Tokens.Semicolon);
+                }
+
+                /// <summary>
+                /// Parses the <B>b</B> token.
+                /// </summary>
+                bool ParseBoolean()
+                {
+                    bool value = false;
+
+                    Consume(Tokens.Colon);
+                    switch (Consume())
+                    {
+                        case '0': break;
+                        case '1': value = true; break;
+                        default: ThrowUnexpected(); break;
+                    }
+                    Consume(Tokens.Semicolon);
+
+                    //
+                    return value;
+                }
+
+                /// <summary>
+                /// Parses the <B>i</B> token.
+                /// </summary>
+                long ParseInteger()
+                {
+                    Consume(Tokens.Colon);
+                    long i = ReadInteger();                    
+                    Consume(Tokens.Semicolon);
+
+                    //
+                    return i;
+                }
+
+                /// <summary>
+                /// Parses the <B>d</B> token.
+                /// </summary>
+                double ParseDouble()
+                {
+                    Consume(Tokens.Colon);
+
+                    // pattern:
+                    // NAN
+                    // [+-]INF
+                    // [+-]?[0-9]*[.]?[0-9]*([eE][+-]?[0-9]+)?
+
+                    var ch = Consume();
+
+                    // NaN
+                    if (ch == 'N')
+                    {
+                        Consume('A');
+                        Consume('N');
+                        return Double.NaN;
+                    }
+
+                    // mantissa + / -
+                    int sign = 1;
+                    if (ch == '+') ch = Consume();
+                    else if (ch == '-')
+                    {
+                        sign = -1;
+                        ch = Consume();
+                    }
+
+                    // Infinity
+                    if (ch == 'I')
+                    {
+                        Consume('N');
+                        Consume('F');
+                        return sign > 0 ? double.PositiveInfinity : double.NegativeInfinity;
+                    }
+
+                    // reconstruct the number:
+                    var number = GetTemporaryStringBuilder(16);
+                    if (sign < 0)
+                    {
+                        number.Append('-');
+                    }
+
+                    // [^;]*;
+                    while (Tokens.Semicolon != ch)
+                    {
+                        number.Append(ch);
+                        ch = Consume();
+                    }
+
+                    double result;
+                    if (!double.TryParse(number.ToString(), NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result))
+                    {
+                        ThrowUnexpected();
+                    }
+
+                    return result;
+                }
+
+                PhpValue ParseString()
+                {
+                    // :
+                    Consume(Tokens.Colon);
+
+                    // <length>
+                    int length = (unchecked((int)ReadInteger()));
+                    if (length < 0) ThrowInvalidLength();
+
+                    if (length != 0)
+                    {
+                        var bytes = new byte[length];
+
+                        // :"<bytes>";
+                        Consume(Tokens.Colon);
+                        Consume(Tokens.Quote);
+                        if (_stream.Read(bytes, 0, length) != length)
+                        {
+                            ThrowEndOfStream();
+                        }
+                        Consume(Tokens.Quote);
+                        Consume(Tokens.Semicolon);
+
+                        //
+                        try
+                        {
+                            // unicode string
+                            return PhpValue.Create(_ctx.StringEncoding.GetString(bytes));
+                        }
+                        catch (DecoderFallbackException)
+                        {
+                            // binary string
+                            return PhpValue.Create(new PhpString(bytes));
+                        }
+                    }
+                    else
+                    {
+                        // :"";
+                        Consume(Tokens.Colon);
+                        Consume(Tokens.Quote);
+                        Consume(Tokens.Quote);
+                        Consume(Tokens.Semicolon);
+
+                        //
+                        return PhpValue.Create(string.Empty);
+                    }
+                }
+
+                PhpArray ParseArray()
+                {
+                    Consume(Tokens.Colon);
+                    int length = unchecked((int)ReadInteger());
+                    if (length < 0) ThrowInvalidLength();
+
+                    var arr = (length == 0) ? PhpArray.NewEmpty() : new PhpArray(length);
+
+                    Consume(Tokens.Colon);
+                    Consume(Tokens.BraceOpen);
+
+                    while (length-- > 0)
+                    {
+                        var key = Parse();
+                        var value = Parse();
+
+                        //
+                        arr.Add(key.ToIntStringKey(), value);
+                    }
+                    
+                    Consume(Tokens.BraceClose);
+
+                    //
+                    return arr;
+                }
+            }
+
+            #endregion
+
             public static readonly PhpSerializer Instance = new PhpSerializer();
 
             public override string Name => "php";
@@ -291,9 +695,9 @@ namespace Pchp.Library
                 return ObjectWriter.Serialize(variable);
             }
 
-            protected override PhpValue CommonDeserialize(Context ctx, PhpString data, RuntimeTypeHandle caller)
+            protected override PhpValue CommonDeserialize(Context ctx, Stream stream, RuntimeTypeHandle caller)
             {
-                throw new NotImplementedException();
+                return new ObjectReader(ctx, stream, caller).Deserialize();
             }
         }
 
@@ -316,15 +720,17 @@ namespace Pchp.Library
         /// <summary>
         /// Creates a PHP value from a stored representation.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="caller">Class context.</param>
         /// <param name="str">The serialized string.</param>
         /// <param name="options">Any options to be provided to unserialize(), as an associative array.</param>
         /// <returns>
         /// The converted value is returned, and can be a boolean, integer, float, string, array or object.
         /// In case the passed string is not unserializeable, <c>FALSE</c> is returned and <b>E_NOTICE</b> is issued.
         /// </returns>
-        public static PhpValue unserialize(PhpString str, PhpArray options = null)
+        public static PhpValue unserialize(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpString str, PhpArray options = null)
         {
-            throw new NotImplementedException();
+            return PhpSerializer.Instance.Deserialize(ctx, str, caller);
         }
 
         #endregion
