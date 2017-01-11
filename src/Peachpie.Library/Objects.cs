@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -142,6 +143,38 @@ namespace Pchp.Library
             else
             {
                 return is_a(ctx, obj, class_name);
+            }
+        }
+
+        /// <summary>
+        /// Gets the properties of the given object.
+        /// </summary>
+        /// <param name="caller">Caller context.</param>
+        /// <param name="obj"></param>
+        /// <returns>Returns an associative array of defined object accessible non-static properties for the specified object in scope.
+        /// If a property has not been assigned a value, it will be returned with a NULL value.</returns>
+        public static PhpArray get_object_vars([ImportCallerClass]RuntimeTypeHandle caller, object obj)
+        {
+            if (obj == null)
+            {
+                return null; // not FALSE since PHP 5.3
+            }
+            else if (obj.GetType() == typeof(stdClass))
+            {
+                // optimization for stdClass:
+                var arr = ((stdClass)obj).GetRuntimeFields();
+                return (arr != null) ? arr.DeepCopy() : PhpArray.NewEmpty();
+            }
+            else
+            {
+                var result = PhpArray.NewEmpty();
+
+                foreach (var pair in TypeMembersUtils.EnumerateInstanceFields(obj, caller))
+                {
+                    result.Add(pair.Key, pair.Value.DeepCopy());
+                }
+
+                return result;
             }
         }
     }
