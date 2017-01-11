@@ -137,6 +137,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new ParamPlace(phpnew.Parameters[0]), new ArgPlace(this, 0));
 
+                // base..phpnew ?? base..ctor
+                var basenew = phpnew.BasePhpNew;
+                Debug.Assert(basenew != null);
+                cg.EmitPop(cg.EmitThisCall(basenew, phpnew));
+
                 // initialize <ctx> field,
                 // if field is declared within this type
                 var ctxField = this.ContextStore;
@@ -158,11 +163,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     fld.EmitInit(cg);
                 }
-
-                // base..phpnew ?? base..ctor
-                var basenew = phpnew.BasePhpNew;
-                Debug.Assert(basenew != null);
-                cg.EmitPop(cg.EmitThisCall(basenew, phpnew));
 
                 Debug.Assert(phpnew.ReturnsVoid);
                 cg.EmitRet(phpnew.ReturnType);
