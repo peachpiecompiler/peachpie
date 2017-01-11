@@ -443,7 +443,7 @@ namespace Pchp.CodeAnalysis
         {
             if (typeMask.IsRef)
             {
-                return CoreTypes.PhpAlias;
+                return CoreTypes.PhpValue;  // even we know the type, since there is an alias to the value, it can be anything
             }
 
             if (!typeMask.IsAnyType)
