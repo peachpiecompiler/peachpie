@@ -430,7 +430,7 @@ namespace Pchp.Library.Streams
         private static PhpArray MergeFilterNames(ICollection<string> filterList, PhpArray rv)
         {
             if (rv == null)
-                rv = new PhpArray(8, 0);
+                rv = new PhpArray(8);
 
             if (filterList != null)
             {

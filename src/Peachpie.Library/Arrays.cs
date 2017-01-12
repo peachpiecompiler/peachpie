@@ -819,7 +819,7 @@ namespace Pchp.Library
                 return null;
             }
 
-            PhpArray result = new PhpArray(count, 0);
+            PhpArray result = new PhpArray(count);
             int last = startIndex + count;
             for (int i = startIndex; i < last; i++)
                 result.Add(i, value);
@@ -997,7 +997,7 @@ namespace Pchp.Library
 
             if (step < 0) step = -step;
 
-            PhpArray result = new PhpArray(Math.Abs(high - low) / step + 1, 0);
+            PhpArray result = new PhpArray(Math.Abs(high - low) / step + 1);
             if (high >= low)
             {
                 for (int i = 0; low <= high; i++, low = unchecked((char)(low + step))) result.Add(i, low.ToString());
@@ -2278,7 +2278,7 @@ namespace Pchp.Library
             int count = (array.Count - 1) / size + 1; // = ceil(Count/size):
 
             PhpArray chunk;
-            PhpArray result = new PhpArray(count, 0);
+            PhpArray result = new PhpArray(count);
 
             IEnumerator<KeyValuePair<IntStringKey, PhpValue>> iterator = array.GetEnumerator();
 
@@ -2291,7 +2291,7 @@ namespace Pchp.Library
             // all chunks except for the last one:
             for (int i = 0; i < count - 1; i++)
             {
-                chunk = new PhpArray(size, 0);
+                chunk = new PhpArray(size);
 
                 if (preserveKeys)
                 {
@@ -2308,7 +2308,7 @@ namespace Pchp.Library
             }
 
             // the last chunk:
-            chunk = new PhpArray((size <= array.Count) ? size : array.Count, 0);
+            chunk = new PhpArray((size <= array.Count) ? size : array.Count);
 
             if (preserveKeys)
             {
@@ -3071,9 +3071,8 @@ namespace Pchp.Library
             //if (!PhpArgument.CheckCallback(map, caller, "map", 0, true)) return null;
             if (arrays == null || arrays.Length == 0)
             {
-                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg_null_or_emtpy"));
-                //return null;
-                throw new ArgumentException();
+                PhpException.InvalidArgument("arrays", LibResources.GetString("arg_null_or_emtpy"));
+                return null;
             }
 
             // if callback has not been specified uses the default one:
@@ -3096,9 +3095,8 @@ namespace Pchp.Library
 
                 if (array == null)
                 {
-                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));// +2 (first arg is callback) 
-                    //return null;
-                    throw new ArgumentException();
+                    PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));// +2 (first arg is callback) 
+                    return null;
                 }
 
                 args[i] = PhpValue.CreateAlias();
@@ -3107,10 +3105,7 @@ namespace Pchp.Library
             }
 
             // keys are preserved in a case of a single array and re-indexed otherwise:
-            if (preserve_keys)
-                result = new PhpArray(arrays[0].IntegerCount, arrays[0].StringCount);
-            else
-                result = new PhpArray(max_count, 0);
+            result = new PhpArray(arrays[0].Count);
 
             for (;;)
             {

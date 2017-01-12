@@ -840,6 +840,15 @@ namespace Pchp.Core
             this.Add(IntStringKey.FromObject(key), PhpValue.FromClr(value));
         }
 
+        public void Add(string key, long value) => Add(new IntStringKey(key), (PhpValue)value);
+        public void Add(string key, string value) => Add(new IntStringKey(key), (PhpValue)value);
+        public void Add(string key, PhpArray value) => Add(new IntStringKey(key), (PhpValue)value);
+        public void Add(string key, bool value) => Add(new IntStringKey(key), (PhpValue)value);
+        public void Add(int key, long value) => Add(new IntStringKey(key), (PhpValue)value);
+        public void Add(int key, double value) => Add(new IntStringKey(key), (PhpValue)value);
+        public void Add(int key, string value) => Add(new IntStringKey(key), (PhpValue)value);
+        public void Add(int key, PhpArray value) => Add(new IntStringKey(key), (PhpValue)value);
+
         /// <summary>
         /// Gets or sets a value associated with a key.
         /// </summary>

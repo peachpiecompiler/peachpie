@@ -150,12 +150,11 @@ namespace Pchp.Library
             Debug.Assert(groups != null);
 
             int length = groups.Length;
-            PhpArray result = new PhpArray(length, 0);
+            var result = new PhpArray(length);
             for (int i = 0; i < length; i++)
-                if (groups[i] == 0)
-                    result.Add(i, CHAR_MAX);
-                else
-                    result.Add(i, groups[i]);
+            {
+                result.Add(i, (PhpValue)(groups[i] == 0 ? CHAR_MAX : groups[i]));
+            }
 
             return result;
         }
@@ -370,6 +369,6 @@ namespace Pchp.Library
             throw new NotImplementedException();
         }
 
-#endregion
+        #endregion
     }
 }

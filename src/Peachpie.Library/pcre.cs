@@ -609,7 +609,7 @@ namespace Pchp.Library
 
             while (m.Success)
             {
-                var pa = new PhpArray(m.Groups.Count, 0);
+                var pa = new PhpArray(m.Groups.Count);
 
                 // add all groups
                 for (int j = 0; j < m.Groups.Count; j++)

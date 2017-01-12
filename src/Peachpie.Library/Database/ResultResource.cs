@@ -329,7 +329,7 @@ namespace Pchp.Library.Database
             Debug.Assert(currentRowIndex >= 0 && currentRowIndex < RowCount);
 
             var oa = CurrentSet.Rows[currentRowIndex];
-            var row = new PhpArray((intKeys) ? FieldCount : 0, (stringKeys) ? FieldCount : 0);
+            var row = new PhpArray(FieldCount);
 
             for (int i = 0; i < FieldCount; i++)
             {

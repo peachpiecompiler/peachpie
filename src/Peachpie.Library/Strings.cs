@@ -1236,7 +1236,7 @@ namespace Pchp.Library
         static PhpArray Split(string str, int splitLength)
         {
             int length = str.Length;
-            PhpArray result = new PhpArray(length / splitLength + 1, 0);
+            PhpArray result = new PhpArray(length / splitLength + 1);
 
             // add items of length splitLength
             int i;
@@ -1254,7 +1254,7 @@ namespace Pchp.Library
         static PhpArray Split(byte[] str, int splitLength)
         {
             int length = str.Length;
-            PhpArray result = new PhpArray(length / splitLength + 1, 0);
+            PhpArray result = new PhpArray(length / splitLength + 1);
 
             // add items of length splitLength
             int i;

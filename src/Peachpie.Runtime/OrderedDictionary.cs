@@ -2691,8 +2691,8 @@ namespace Pchp.Core
 
         #region IDictionary
 
-        public void Add(object key, object value) { this.Add((IntStringKey)key, value); }
-        public bool Contains(object key) { return this.Contains((IntStringKey)key); }
+        public void Add(object key, object value) { this.Add((IntStringKey)key, PhpValue.FromClr(value)); }
+        public bool Contains(object key) { return this.ContainsKey((IntStringKey)key); }
         IDictionaryEnumerator IDictionary.GetEnumerator() => new DictionaryEnumerator(this);
         public bool IsFixedSize { get { return false; } }
         ICollection IDictionary.Keys { get { return (ICollection)this.Keys; } }

@@ -42,7 +42,7 @@ namespace Pchp.Library
         {
             // An unitialized StatStruct means an error.
             if (stat.st_ctime == 0) return null;
-            PhpArray result = new PhpArray(13, 13);
+            var result = new PhpArray(26);
 
             result.Add(0, (int)stat.st_dev);         // device number 
             result.Add(1, (int)stat.st_ino);         // inode number 

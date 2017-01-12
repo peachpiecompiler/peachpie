@@ -314,7 +314,7 @@ namespace Pchp.Library
             // return requested value or all of them in an associative array
             if (options == PathInfoOptions.All)
             {
-                PhpArray result = new PhpArray(0, 4);
+                var result = new PhpArray(4);
                 result.Add("dirname", dirname);
                 result.Add("basename", basename);
                 result.Add("extension", extension);

@@ -285,7 +285,7 @@ namespace Pchp.Library.Streams
                 return null;
             }
 
-            PhpArray result = new PhpArray(0, 10);
+            var result = new PhpArray(10);
 
             // TODO: timed_out (bool) - TRUE if the stream timed out while waiting for data on the last call to fread() or fgets().
             // TODO: blocked (bool) - TRUE if the stream is in blocking IO mode. See stream_set_blocking().

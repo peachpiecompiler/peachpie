@@ -204,7 +204,7 @@ namespace Pchp.Library
                 host = null;
             }
 
-            PhpArray result = new PhpArray(0, 8);
+            PhpArray result = new PhpArray(8);
 
             const char neutralChar = '_';
 

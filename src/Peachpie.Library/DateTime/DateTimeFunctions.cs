@@ -641,7 +641,7 @@ namespace Pchp.Library
         /// <returns>Associative array with date information.</returns>
         static PhpArray GetDate(Context ctx, System_DateTime utc)
         {
-            PhpArray result = new PhpArray(1, 10);
+            PhpArray result = new PhpArray(11);
 
             var zone = PhpTimeZone.GetCurrentTimeZone(ctx);
             var local = TimeZoneInfo.ConvertTime(utc, zone);
@@ -697,7 +697,7 @@ namespace Pchp.Library
 
         internal static PhpArray GetTimeOfDay(System_DateTime utc, TimeZoneInfo/*!*/ zone)
         {
-            var result = new PhpArray(0, 4);
+            var result = new PhpArray(4);
 
             var local = TimeZoneInfo.ConvertTime(utc, zone);
 
@@ -784,13 +784,11 @@ namespace Pchp.Library
 
         internal static PhpArray GetLocalTime(TimeZoneInfo currentTz, System_DateTime utc, bool returnAssociative)
         {
-            PhpArray result;
-
             var local = TimeZoneInfo.ConvertTime(utc, currentTz);
+            var result = new PhpArray(9);
 
             if (returnAssociative)
             {
-                result = new PhpArray(0, 9);
                 result["tm_sec"] = PhpValue.Create(local.Second);
                 result["tm_min"] = PhpValue.Create(local.Minute);
                 result["tm_hour"] = PhpValue.Create(local.Hour);
@@ -803,7 +801,6 @@ namespace Pchp.Library
             }
             else
             {
-                result = new PhpArray(9, 0);
                 result.AddValue(PhpValue.Create(local.Second));
                 result.AddValue(PhpValue.Create(local.Minute));
                 result.AddValue(PhpValue.Create(local.Hour));
