@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -488,7 +489,7 @@ namespace Pchp.Core
                 {
                     // special case,
                     // object is stdClass, we can simply sopy its runtime fields
-                    return ((stdClass)me.Object).__peach__runtimeFields.DeepCopy();
+                    return ((stdClass)me.Object).GetRuntimeFields().DeepCopy();
                 }
 
                 throw new NotImplementedException();    // TODO: PhpTypeInfo.RuntimeFields
@@ -522,10 +523,7 @@ namespace Pchp.Core
             public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => me.Array.GetForeachEnumerator(aliasedValues);
             public override int Compare(ref PhpValue me, PhpValue right) => me.Array.Compare(right);
-            public override bool StrictEquals(ref PhpValue me, PhpValue right)
-            {
-                throw new NotImplementedException();
-            }
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Array.StrictCompareEq(right.ArrayOrNull());
             public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => me.Array.GetItemValue(key);
