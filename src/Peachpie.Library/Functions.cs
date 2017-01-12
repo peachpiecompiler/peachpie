@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Library.Resources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -72,18 +73,18 @@ namespace Pchp.Library
         /// <remarks><seealso cref="PhpStack.GetArgument"/></remarks>
         public static PhpValue func_get_arg([ImportCallerArgs]PhpValue[] args, int index)
         {
-            //// checks correctness of the argument:
-            //if (index < 0)
-            //{
-            //    PhpException.InvalidArgument("index", "arg_negative");
-            //    return PhpValue.False;
-            //}
+            // checks correctness of the argument:
+            if (index < 0)
+            {
+                PhpException.InvalidArgument(nameof(index), LibResources.arg_negative);
+                return PhpValue.False;
+            }
 
-            //if (index >= arg_count)
-            //{
-            //    PhpException.Throw(PhpError.Warning, CoreResources.GetString("argument_not_passed_to_function", index));
-            //    return PhpValue.False;
-            //}
+            if (args == null || index >= args.Length)
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_passed_to_function", index));
+                return PhpValue.False;
+            }
 
             //
             return args[index].DeepCopy();
@@ -162,23 +163,22 @@ namespace Pchp.Library
         /// Function has no return value.
         /// </summary>
         /// <param name="ctx">Runtime context. Cannot be <c>null</c>.</param>
-        /// <param name="callback">The function which is called after main code of the script is finishes execution.</param>
-        /// <param name="arguments">Parameters for the <paramref name="callback"/>.</param>
+        /// <param name="function">The function which is called after main code of the script is finishes execution.</param>
+        /// <param name="arguments">Parameters for the <paramref name="function"/>.</param>
         /// <remarks>
         /// Although, there is explicitly written in the PHP manual that it is not possible 
         /// to send an output to a browser via echo or another output handling functions you can actually do so.
         /// There is no such limitation with Phalanger.
         /// </remarks>
-        public static void register_shutdown_function(Context ctx, IPhpCallable callback, params PhpValue[] arguments)
+        public static void register_shutdown_function(Context ctx, IPhpCallable function, params PhpValue[] arguments)
         {
-            if (callback == null)
+            if (function == null)
             {
-                //PhpException.ArgumentNull("function");
-                //return;
-                throw new ArgumentNullException(nameof(callback));
+                PhpException.ArgumentNull(nameof(function));
+                return;
             }
 
-            ctx.RegisterShutdownCallback(() => callback.Invoke(ctx, arguments));
+            ctx.RegisterShutdownCallback(() => function.Invoke(ctx, arguments));
         }
 
         #endregion

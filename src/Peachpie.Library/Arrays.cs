@@ -3071,7 +3071,7 @@ namespace Pchp.Library
             //if (!PhpArgument.CheckCallback(map, caller, "map", 0, true)) return null;
             if (arrays == null || arrays.Length == 0)
             {
-                PhpException.InvalidArgument("arrays", LibResources.GetString("arg_null_or_emtpy"));
+                PhpException.InvalidArgument(nameof(arrays), LibResources.arg_null_or_empty);
                 return null;
             }
 
