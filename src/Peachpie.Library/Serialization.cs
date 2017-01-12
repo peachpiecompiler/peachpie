@@ -102,8 +102,7 @@ namespace Pchp.Library
                 public const char Array = 'a';
                 public const char Object = 'O'; // instance of a class that does not implement SPL.Serializable
                 public const char ObjectSer = 'C'; // instance of a class that implements SPL.Serializable
-                public const char ClrObject = 'T';    // instance of CLR object, serialized using binary formatter
-
+                
                 public const char Reference = 'R'; // &-like reference
                 public const char ObjectRef = 'r'; // same instance reference (PHP5 object semantics)
             }
@@ -497,11 +496,10 @@ namespace Pchp.Library
                         case Tokens.Double: return PhpValue.Create(ParseDouble());
                         case Tokens.String: return ParseString();
                         case Tokens.Array: return PhpValue.Create(ParseArray());
-                        //case Tokens.Object: ParseObject(false); break;
-                        //case Tokens.ObjectSer: ParseObject(true); break;
-                        //case Tokens.ClrObject: ParseClrObject(); break;
-                        //case Tokens.Reference: ParseReference(); break;
-                        //case Tokens.ObjectRef: ParseObjectRef(); break;
+                        case Tokens.Object: throw new NotImplementedException();
+                        case Tokens.ObjectSer: throw new NotImplementedException();
+                        case Tokens.Reference: throw new NotImplementedException();
+                        case Tokens.ObjectRef: throw new NotImplementedException();
 
                         default:
                             ThrowUnexpected();

@@ -23,9 +23,8 @@ namespace Pchp.Library
         {
             if (function == null)
             {
-                //PhpException.ArgumentNull("function");
-                //return null;
-                throw new ArgumentNullException();  // NOTE: should not be reached, runtime converts NULL to InvalidCallback instance
+                PhpException.ArgumentNull("function");
+                return PhpValue.Null;
             }
 
             Debug.Assert(args != null);
