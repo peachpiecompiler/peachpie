@@ -153,7 +153,7 @@ namespace Pchp.Core
         public static object AsObject(PhpValue value) => value.AsObject();
 
         /// <summary>
-        /// COnverts value to an array.
+        /// Converts value to an array.
         /// </summary>
         public static PhpArray ToArray(PhpValue value) => value.ToArray();
 
