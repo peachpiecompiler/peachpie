@@ -90,6 +90,61 @@ namespace Pchp.Core.Reflection
             }
         }
 
+        /// <summary>
+        /// Casts object to given PHP array.
+        /// </summary>
+        /// <param name="instance">Object instance, cannot be <c>null</c>.</param>
+        /// <param name="arr">Array to be filled with object instance properties.</param>
+        public static void InstanceFieldsToPhpArray(object instance, PhpArray arr)
+        {
+            Debug.Assert(instance != null);
+            Debug.Assert(arr != null);
+
+            // PhpTypeInfo
+            var tinfo = PhpTypeInfoExtension.GetPhpTypeInfo(instance.GetType());
+
+            // iterate through type and its base types
+            for (var t = tinfo; t != null; t = t.BaseType)
+            {
+                // iterate through instance fields
+                foreach (var f in t.DeclaredFields.InstanceFields)
+                {
+                    arr[FieldAsArrayKey(f, t)] = PhpValue.FromClr(f.GetValue(instance)).DeepCopy();
+                }
+
+                // TODO: CLR properties
+            }
+
+            // PhpArray __runtime_fields
+            var runtime_fields = tinfo.GetRuntimeFields(instance);
+            if (runtime_fields != null && runtime_fields.Count != 0)
+            {
+                // all runtime fields are considered public
+                var enumerator = runtime_fields.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    arr[enumerator.CurrentKey] = enumerator.CurrentValue.DeepCopy();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets field name to be used as array key when casting object to array.
+        /// </summary>
+        static string FieldAsArrayKey(FieldInfo f, PhpTypeInfo declaringType)
+        {
+            Debug.Assert(f != null);
+            Debug.Assert(declaringType != null);
+
+            if (f.IsPublic) return f.Name;
+            if (f.IsFamily) return " * " + f.Name;
+            if (f.IsPrivate) return " " + declaringType.Name + " " + f.Name;
+
+            Debug.Fail($"Unexpected field attributes {f.Attributes}");
+
+            return f.Name;
+        }
+
         static bool IsVisible(this FieldInfo f, RuntimeTypeHandle caller)
         {
             return

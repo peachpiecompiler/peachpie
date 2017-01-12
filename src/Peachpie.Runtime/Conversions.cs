@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -155,6 +156,32 @@ namespace Pchp.Core
         /// COnverts value to an array.
         /// </summary>
         public static PhpArray ToArray(PhpValue value) => value.ToArray();
+
+        /// <summary>
+        /// Creates <see cref="PhpArray"/> from object's properties.
+        /// </summary>
+        /// <param name="obj">Object instance.</param>
+        /// <returns>Array containing given object properties keyed according to PHP specifications.</returns>
+        public static PhpArray ClassToArray(object obj)
+        {
+            if (object.ReferenceEquals(obj, null))
+            {
+                return PhpArray.NewEmpty();
+            }
+            else if (obj.GetType() == typeof(stdClass))
+            {
+                // special case,
+                // object is stdClass, we can simply copy its runtime fields
+                return ((stdClass)obj).GetRuntimeFields().DeepCopy();
+            }
+            else
+            {
+                // obj -> array
+                var arr = new PhpArray();
+                TypeMembersUtils.InstanceFieldsToPhpArray(obj, arr);
+                return arr;
+            }
+        }
 
         /// <summary>
         /// Converts given value to a class object.

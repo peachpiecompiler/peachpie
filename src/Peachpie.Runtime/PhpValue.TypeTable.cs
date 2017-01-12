@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -183,7 +182,7 @@ namespace Pchp.Core
                 me = PhpValue.Create(arr);
                 return arr.EnsureItemAlias(key);
             }
-            public override PhpArray ToArray(ref PhpValue me) => new PhpArray();
+            public override PhpArray ToArray(ref PhpValue me) => PhpArray.NewEmpty();
             public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptNull();
         }
@@ -483,17 +482,7 @@ namespace Pchp.Core
                 // TODO: Err
                 throw new NotSupportedException();
             }
-            public override PhpArray ToArray(ref PhpValue me)
-            {
-                if (me.Object.GetType() == typeof(stdClass))
-                {
-                    // special case,
-                    // object is stdClass, we can simply sopy its runtime fields
-                    return ((stdClass)me.Object).GetRuntimeFields().DeepCopy();
-                }
-
-                throw new NotImplementedException();    // TODO: PhpTypeInfo.RuntimeFields
-            }
+            public override PhpArray ToArray(ref PhpValue me) => Core.Convert.ClassToArray(me.Object);
             public override object AsObject(ref PhpValue me) => me.Object;
             public override IPhpCallable AsCallable(ref PhpValue me)
             {
