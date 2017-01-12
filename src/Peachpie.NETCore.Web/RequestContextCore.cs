@@ -16,6 +16,7 @@ namespace Peachpie.Web
     /// <summary>
     /// Runtime context for ASP.NET Core request.
     /// </summary>
+    [DebuggerDisplay("RequestContextCore({DebugRequestDisplay,nq})")]
     sealed class RequestContextCore : Context, IHttpPhpContext
     {
         #region .cctor
@@ -51,6 +52,11 @@ namespace Peachpie.Web
 
         #endregion
 
+        /// <summary>
+        /// Debug display string.
+        /// </summary>
+        string DebugRequestDisplay => $"{_httpctx.Request.Path.Value}{_httpctx.Request.QueryString.Value}";
+
         #region IHttpPhpContext
 
         /// <summary>Gets value indicating HTTP headers were already sent.</summary>
@@ -59,7 +65,7 @@ namespace Peachpie.Web
             get { return _httpctx.Response.HasStarted; }
         }
 
-        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, new Microsoft.Extensions.Primitives.StringValues(value)); }
+        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, new StringValues(value)); }
 
         public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
 
