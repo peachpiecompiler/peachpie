@@ -2546,6 +2546,12 @@ namespace Pchp.CodeAnalysis.Semantics
             else if (Access.IsRead)
             {
                 cg.Builder.EmitLocalLoad(tmp);
+
+                if (Access.IsReadCopy)
+                {
+                    // DeepCopy(<tmp>)
+                    t_value = cg.EmitDeepCopy(t_value);
+                }
             }
 
             if (tmp != null)
@@ -2852,6 +2858,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            // TODO: _items.Length == 0 => PhpArray.NewEmpty()
+
             // new PhpArray(count)
             cg.Builder.EmitIntConstant(_items.Length);
             var result = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int)
