@@ -518,33 +518,26 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new NotImplementedException();
         }
 
-        public static ConstantValue TryGetConstantValue(PhpCompilation compilation, AST.Expression value)
+        /// <summary>
+        /// Updates <paramref name="expr"/>'s <see cref="BoundAccess"/> to <see cref="BoundAccess.ReadRef"/>.
+        /// </summary>
+        /// <param name="expr">Expression which access has to be updated.</param>
+        public static void BindReadRefAccess(BoundReferenceExpression expr)
         {
-            if (value is AST.Literal) return CreateConstant((AST.Literal)value);
-            if (value is AST.GlobalConstUse) return CreateConstant((AST.GlobalConstUse)value);
+            if (expr == null || expr.Access.IsReadRef) return;
 
-            return null;
+            expr.Access = expr.Access.WithReadRef();
+            BindEnsureAccess(expr); // parent expression chain has to be updated as well
         }
 
-        static ConstantValue CreateConstant(AST.Literal expr)
+        static void BindEnsureAccess(BoundExpression expr)
         {
-            if (expr is AST.LongIntLiteral) return ConstantValue.Create(((AST.LongIntLiteral)expr).Value);
-            if (expr is AST.StringLiteral) return ConstantValue.Create(((AST.StringLiteral)expr).Value);
-            if (expr is AST.DoubleLiteral) return ConstantValue.Create(((AST.DoubleLiteral)expr).Value);
-            if (expr is AST.BoolLiteral) return ConstantValue.Create(((AST.BoolLiteral)expr).Value);
-            if (expr is AST.NullLiteral) return ConstantValue.Create(null);
-            //if (expr is BinaryStringLiteral) return ConstantValue.Create(((BinaryStringLiteral)expr).Value);
-
-            return null;
-        }
-
-        static ConstantValue CreateConstant(AST.GlobalConstUse expr)
-        {
-            if (expr.Name == QualifiedName.Null) return ConstantValue.Null;
-            if (expr.Name == QualifiedName.True) return ConstantValue.True;
-            if (expr.Name == QualifiedName.False) return ConstantValue.False;
-
-            return null;
+            if (expr is BoundArrayItemEx)
+            {
+                var arritem = (BoundArrayItemEx)expr;
+                arritem.Array.Access = arritem.Array.Access.WithEnsureArray();
+                BindEnsureAccess(arritem.Array);
+            }
         }
     }
 }

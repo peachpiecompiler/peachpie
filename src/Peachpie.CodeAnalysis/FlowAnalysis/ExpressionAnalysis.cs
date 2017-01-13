@@ -901,6 +901,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                         Worklist.Enqueue(CurrentBlock);
                                     }
 
+                                    if (ep.IsAlias)
+                                    {
+                                        SemanticsBinder.BindReadRefAccess(refexpr);
+                                    }
+
                                     var refvar = refexpr as BoundVariableRef;
                                     if (refvar != null)
                                     {

@@ -196,10 +196,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         return value;
                     }
 
-                    // old way: // TO BE REMOVED // TODO: analysis of literal expression has to resolve its ConstantValue
-                    value = SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
-
-                    // NOTE: non-literal default values (like array()) must be handled by creating a method overload calling this method:
+                    // NOTE: non-literal default values (like array()) must be handled by creating a ghost method overload calling this method:
 
                     // Template:
                     // foo($a = [], $b = [1, 2, 3]) =>
