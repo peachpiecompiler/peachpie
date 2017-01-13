@@ -215,6 +215,11 @@ namespace Pchp.CodeAnalysis.Semantics
             // default .ctor
             holder.EmitCtor(module, (il) =>
             {
+                // base..ctor()
+                var ctor = holder.BaseType.InstanceConstructors.Single();
+                il.EmitLoadArgumentOpcode(0);   // this
+                il.EmitCall(module, diagnostic, ILOpCode.Call, ctor);   // .ctor()
+
                 if (!requiresContext)
                 {
                     // emit default value only if it won't be initialized by Init above
@@ -237,11 +242,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     valuePlace.EmitStore(il);
                 }
-
-                // base..ctor()
-                var ctor = holder.BaseType.InstanceConstructors.Single();
-                il.EmitLoadArgumentOpcode(0);   // this
-                il.EmitCall(module, diagnostic, ILOpCode.Call, ctor);   // .ctor()
 
                 //
                 il.EmitRet(true);

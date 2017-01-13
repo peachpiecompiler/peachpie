@@ -1124,7 +1124,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
-            return EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
+            return EmitCall((getter.IsVirtual || getter.IsAbstract) ? ILOpCode.Callvirt : ILOpCode.Call, getter);
         }
 
         internal void EmitCastClass(TypeSymbol from, TypeSymbol to)

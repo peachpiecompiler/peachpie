@@ -205,6 +205,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         MethodSymbol _moveNextMethod, _disposeMethod;
         PropertySymbol _currentValue, _currentKey, _current;
 
+        static ILOpCode CallOpCode(MethodSymbol method, TypeSymbol declaringtype)
+        {
+            return declaringtype.IsValueType ? ILOpCode.Call : ILOpCode.Callvirt;
+        }
+
         internal void EmitMoveNext(CodeGenerator cg)
         {
             Debug.Assert(_enumeratorLoc != null);
@@ -222,7 +227,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.Builder.EmitLocalLoad(_enumeratorLoc);
             }
 
-            cg.EmitCall(_enumeratorLoc.Type.IsValueType ? ILOpCode.Call : ILOpCode.Callvirt, _moveNextMethod)
+            cg.EmitCall(CallOpCode(_moveNextMethod, (TypeSymbol)_enumeratorLoc.Type), _moveNextMethod)
                 .Expect(SpecialType.System_Boolean);
         }
 
@@ -282,7 +287,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 else
                     cg.Builder.EmitLocalLoad(_enumeratorLoc);
 
-                cg.EmitCall(_disposeMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, _disposeMethod)
+                cg.EmitCall(CallOpCode(_disposeMethod, (TypeSymbol)_enumeratorLoc.Type), _disposeMethod)
                     .Expect(SpecialType.System_Void);
             }
 
@@ -339,7 +344,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
             {
                 // enumeree.GetEnumerator()
-                enumeratorType = cg.EmitCall(getEnumeratorMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getEnumeratorMethod);
+                enumeratorType = cg.EmitCall(CallOpCode(getEnumeratorMethod, enumereeType), getEnumeratorMethod);
             }
             else
             {
