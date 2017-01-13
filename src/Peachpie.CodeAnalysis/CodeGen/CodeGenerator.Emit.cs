@@ -700,15 +700,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // implicit $this instance
                         thisType = EmitThis();
-                        code = ILOpCode.Call;   // instead of .callvirt
                     }
                     else
                     {
                         throw new ArgumentException();  // TODO: PHP would create temporary instance of class
                     }
                 }
+                else
+                {
+                    thisType = null;
+                }
+            }
 
-                thisType = null;
+            // .callvirt -> .call
+            if (code == ILOpCode.Callvirt && (!method.HasThis || !method.IsMetadataVirtual()))
+            {
+                code = ILOpCode.Call;
             }
 
             // arguments
@@ -1124,7 +1131,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
-            return EmitCall((getter.IsVirtual || getter.IsAbstract) ? ILOpCode.Callvirt : ILOpCode.Call, getter);
+            return EmitCall(getter.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call, getter);
         }
 
         internal void EmitCastClass(TypeSymbol from, TypeSymbol to)

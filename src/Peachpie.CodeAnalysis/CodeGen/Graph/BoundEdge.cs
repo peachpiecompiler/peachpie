@@ -207,7 +207,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         static ILOpCode CallOpCode(MethodSymbol method, TypeSymbol declaringtype)
         {
-            return declaringtype.IsValueType ? ILOpCode.Call : ILOpCode.Callvirt;
+            return method.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call;
         }
 
         internal void EmitMoveNext(CodeGenerator cg)
