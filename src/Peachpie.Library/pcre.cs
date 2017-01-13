@@ -290,7 +290,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int preg_match_all(Context ctx, string pattern, string subject, out PhpArray matches, int flags = PREG_PATTERN_ORDER, int offset = 0)
         {
-            throw new NotImplementedException();
+            return Match(ctx, pattern, subject, out matches, flags, offset, true);
         }
 
         /// <summary>
@@ -309,8 +309,14 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int preg_match(Context ctx, string pattern, string subject, out PhpArray matches, int flags = 0, long offset = 0)
         {
-            bool matchAll = false; 
+            return Match(ctx, pattern, subject, out matches, flags, offset, false);
+        }
 
+        /// <summary>
+        /// Perform a regular expression match.
+        /// </summary>
+        static int Match(Context ctx, string pattern, string subject, out PhpArray matches, int flags, long offset, bool matchAll)
+        {
             var regex = new PerlRegex.Regex(pattern);
             var m = regex.Match(subject);
 
