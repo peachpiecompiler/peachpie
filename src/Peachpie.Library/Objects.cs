@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
@@ -177,5 +178,34 @@ namespace Pchp.Library
                 return result;
             }
         }
+
+        /// <summary>
+        /// Creates an alias named <paramref name="alias"/> based on the user defined class <paramref name="original"/>.
+        /// The aliased class is exactly the same as the original class.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="original">Existing original class name.</param>
+        /// <param name="alias">The alias name for the class.</param>
+        /// <param name="autoload">Whether to autoload if the original class is not found. </param>
+        /// <returns><c>true</c> on success.</returns>
+        public static bool class_alias(Context ctx, string original, string alias, bool autoload = true)
+        {
+            if (!string.IsNullOrEmpty(original))
+            {
+                var type = ctx.GetDeclaredType(original, autoload);
+                if (type != null && type.Name != alias)
+                {
+                    ctx.DeclareType(type, alias);
+                    return ctx.GetDeclaredType(alias, false) == type;
+                }
+            }
+            else
+            {
+                PhpException.InvalidArgument(nameof(original), LibResources.arg_null_or_empty);
+            }
+
+            return false;
+        }
+
     }
 }

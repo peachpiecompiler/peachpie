@@ -152,6 +152,13 @@ namespace Pchp.Core
         /// <typeparam name="T">Type to be declared in current context.</typeparam>
         public void DeclareType<T>() => _types.DeclareType<T>();
 
+        /// <summary>
+        /// Declare a runtime user type unser an aliased name.
+        /// </summary>
+        /// <param name="tinfo">Original type descriptor.</param>
+        /// <param name="typename">Type name alias, can differ from <see cref="PhpTypeInfo.Name"/>.</param>
+        public void DeclareType(PhpTypeInfo tinfo, string typename) => _types.DeclareTypeAlias(tinfo, typename);
+
         public void AssertTypeDeclared<T>()
         {
             if (!_types.IsDeclared(TypeInfoHolder<T>.TypeInfo))
