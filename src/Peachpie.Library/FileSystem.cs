@@ -1199,9 +1199,8 @@ namespace Pchp.Library
 
             //
 
-            //PhpException.FunctionNotSupported();
-            //return false;
-            throw new NotSupportedException();
+            PhpException.FunctionNotSupported("flock");
+            return false;
         }
 
         #endregion

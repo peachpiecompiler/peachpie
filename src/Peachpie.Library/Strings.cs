@@ -1798,8 +1798,7 @@ namespace Pchp.Library
         {
             if (!doubleEncode)
             {
-                // PhpException.ArgumentValueNotSupported("doubleEncode", doubleEncode); // TODO
-                throw new NotSupportedException(nameof(doubleEncode));
+                 PhpException.ArgumentValueNotSupported(nameof(doubleEncode), doubleEncode);
             }
 
             return HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet);

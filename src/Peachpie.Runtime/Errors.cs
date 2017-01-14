@@ -93,6 +93,8 @@ namespace Pchp.Core
     {
         public static void Throw(PhpError error, string formatString, params string[] args)
         {
+            Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, string.Format(formatString, args));   // assert in debug mode to handle exception
+
             // TODO: get current Context from execution context
             // TODO: throw error according to configuration
         }
@@ -103,7 +105,7 @@ namespace Pchp.Core
         /// <param name="argument">The name of the argument being invalid.</param>
         public static void InvalidArgument(string argument)
         {
-            Throw(PhpError.Warning, string.Format(ErrResources.invalid_argument, argument));
+            Throw(PhpError.Warning, ErrResources.invalid_argument, argument);
         }
 
         /// <summary>
@@ -115,7 +117,7 @@ namespace Pchp.Core
         public static void InvalidArgument(string argument, string message)
         {
             Debug.Assert(message.Contains("{0}"));
-            Throw(PhpError.Warning, string.Format(ErrResources.invalid_argument_with_message + message, argument));
+            Throw(PhpError.Warning, ErrResources.invalid_argument_with_message + message, argument);
         }
 
         /// <summary>
@@ -124,7 +126,28 @@ namespace Pchp.Core
         /// <param name="argument">The name of the argument.</param>
         public static void ArgumentNull(string argument)
         {
-            Throw(PhpError.Warning, string.Format(ErrResources.argument_null, argument));
+            Throw(PhpError.Warning, ErrResources.argument_null, argument);
+        }
+
+        /// <summary>
+        /// The value of an argument is not invalid but unsupported.
+        /// </summary>
+        /// <param name="argument">The argument which value is unsupported.</param>
+        /// <param name="value">The value which is unsupported.</param>
+        public static void ArgumentValueNotSupported(string argument, object value)
+        {
+            Throw(PhpError.Warning, ErrResources.argument_value_not_supported, value?.ToString() ?? PhpVariable.TypeNameNull, argument);
+        }
+
+        /// <summary>
+        /// Called function is not supported.
+        /// </summary>
+        /// <param name="function">Not supported function name.</param>
+        public static void FunctionNotSupported(string/*!*/function)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(function));
+
+            Throw(PhpError.Warning, ErrResources.notsupported_function_called, function);
         }
 
         /// <summary>
