@@ -19,13 +19,18 @@ namespace Pchp.Core.Utilities
         /// <returns>Unix timestamp.</returns>
         public static int UtcToUnixTimeStamp(DateTime dt)
         {
-            double seconds = (dt - UtcStartOfUnixEpoch).TotalSeconds;
+            double seconds = UtcToUnixTimeStampFloat(dt);
 
             return (seconds < int.MinValue)
                 ? int.MinValue
                 : (seconds > int.MaxValue)
                     ? int.MaxValue
                     : (int)seconds;
+        }
+
+        public static double UtcToUnixTimeStampFloat(DateTime dt)
+        {
+            return (dt - UtcStartOfUnixEpoch).TotalSeconds;
         }
     }
 }
