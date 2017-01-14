@@ -690,7 +690,7 @@ namespace Pchp.Library
             {
                 // File OpenMode is binary.
                 byte[] sub = data.ToBytes(ctx);
-                if (length > 0 || length < sub.Length)
+                if (length > 0 && length < sub.Length)
                 {
                     var bytes = new byte[length];
                     Array.Copy(sub, bytes, length);
