@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace Pchp.Library
 {
@@ -453,6 +454,62 @@ namespace Pchp.Library
             // TODO: cookies, session
 
             return list;
+        }
+
+        #endregion
+
+        #region rawurlencode, rawurldecode, urlencode, urldecode
+
+        /// <summary>
+        /// Decode URL-encoded strings
+        /// </summary>
+        /// <param name="str">The URL string (e.g. "hello%20from%20foo%40bar").</param>
+        /// <returns>Decoded string (e.g. "hello from foo@bar")</returns>
+        public static string rawurldecode(string str)
+        {
+            if (str == null) return null;
+            return WebUtility.UrlDecode(str.Replace("+", "%2B"));  // preserve '+'
+        }
+
+        /// <summary>
+        /// Encodes a URL string keeping spaces in it. Spaces are encoded as '%20'.
+        /// </summary>  
+        /// <param name="str">The string to be encoded.</param>
+        /// <returns>The encoded string.</returns>
+        public static string rawurlencode(string str)
+        {
+            if (str == null) return null;
+            return UpperCaseEncodedChars(WebUtility.UrlEncode(str)).Replace("+", "%20");   // ' ' => '+' => '%20'
+        }
+
+        /// <summary>
+        /// Decodes a URL string.
+        /// </summary>  
+        public static string urldecode(string str)
+        {
+            return WebUtility.UrlDecode(str);
+        }
+
+        /// <summary>
+        /// Encodes a URL string. Spaces are encoded as '+'.
+        /// </summary>  
+        public static string urlencode(string str)
+        {
+            return UpperCaseEncodedChars(WebUtility.UrlEncode(str));
+        }
+
+        static string UpperCaseEncodedChars(string encoded)
+        {
+            char[] temp = encoded.ToCharArray();
+            for (int i = 0; i < temp.Length; i++)
+            {
+                if (temp[i] == '%' && i < temp.Length - 2)
+                {
+                    temp[i + 1] = char.ToUpperInvariant(temp[i + 1]);
+                    temp[i + 2] = char.ToUpperInvariant(temp[i + 2]);
+                }
+            }
+            return new string(temp);
         }
 
         #endregion
