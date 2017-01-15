@@ -3114,17 +3114,21 @@ namespace Pchp.Library
                 // fills args[] with items from arrays:
                 for (int i = 0; i < arrays.Length; i++)
                 {
-                    if (iterators[i].IsValid)
+                    if (!iterators[i].IsDefault)
                     {
-                        hasvalid = true;
+                        if (iterators[i].MoveNext())
+                        {
+                            hasvalid = true;
 
-                        // note: deep copy is not necessary since a function copies its arguments if needed:
-                        args[i].Alias.Value = iterators[i].CurrentValue.GetValue();
-                        // TODO: throws if the current Value is PhpReference
-                    }
-                    else
-                    {
-                        args[i].Alias.Value = PhpValue.Null;
+                            // note: deep copy is not necessary since a function copies its arguments if needed:
+                            args[i].Alias.Value = iterators[i].CurrentValue.GetValue();
+                            // TODO: throws if the current Value is PhpReference
+                        }
+                        else
+                        {
+                            args[i].Alias.Value = PhpValue.Null;
+                            iterators[i] = default(OrderedDictionary.FastEnumerator);   // iterators[i].IsDefault
+                        }
                     }
                 }
 
@@ -3155,7 +3159,10 @@ namespace Pchp.Library
                         }
 
                         //
-                        iterators[i].MoveNext();
+                        if (!iterators[i].MoveNext())
+                        {
+                            iterators[i] = default(OrderedDictionary.FastEnumerator);   // iterators[i].IsDefault
+                        }
                     }
                 }
             }
