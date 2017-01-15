@@ -70,6 +70,16 @@ namespace Pchp.Core.Dynamic
                 object target_value;
                 BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
 
+                if (target_value == null)
+                {
+                    if (_access.Quiet())
+                    {
+                        return new DynamicMetaObject(ConvertExpression.BindDefault(_returnType), restrictions);
+                    }
+
+                    throw new ArgumentNullException();
+                }
+
                 var runtime_type = target_value.GetType();
 
                 //

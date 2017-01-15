@@ -91,7 +91,11 @@ namespace Pchp.Core.Dynamic
                     var value = (PhpValue)target_value;
                     if (value.IsNull)
                     {
-                        throw new NotImplementedException();    // TODO: call on NULL
+                        restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(target_expr, "IsNull")));
+
+                        target_value = null;
+                        target_expr = Expression.Constant(null, Cache.Types.Object[0]);
+                        break;
                     }
                     else if (value.IsObject)
                     {
