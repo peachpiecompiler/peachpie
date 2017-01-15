@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
@@ -176,22 +177,56 @@ namespace Pchp.Library
                 else
                 {
                     // string pattern and array replacement not allowed:
-                    throw new ArgumentException("replacement_array_pattern_not", nameof(replacement));
-                    // return PhpValue.Null;
+                    PhpException.InvalidArgument(nameof(replacement), LibResources.replacement_array_pattern_not);
+                    return PhpValue.Null;
                 }
             }
             else if (replacement_array == null)
             {
                 // array  pattern
                 // string replacement
+
+                using (var pattern_enumerator = pattern_array.GetFastEnumerator())
+                    while (pattern_enumerator.MoveNext())
+                    {
+                        subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx),
+                            null, subject, (int)limit, ref count);
+                    }
+
+                //
+                return subject;
             }
             else
             {
                 // array pattern
                 // array replacement
-            }
 
-            throw new NotImplementedException();
+                var replacement_enumerator = replacement_array.GetFastEnumerator();
+
+                bool replacement_valid = true;
+                string replacement_string;
+
+                using (var pattern_enumerator = pattern_array.GetFastEnumerator())
+                    while (pattern_enumerator.MoveNext())
+                    {
+                        // replacements are in array, move to next item and take it if possible, in other case take empty string:
+                        if (replacement_valid && replacement_enumerator.MoveNext())
+                        {
+                            replacement_string = replacement_enumerator.CurrentValue.ToStringOrThrow(ctx);
+                        }
+                        else
+                        {
+                            replacement_string = string.Empty;
+                            replacement_valid = false;  // end of replacement_enumerator, do not call MoveNext again!
+                        }
+
+                        subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement_string,
+                            null, subject, (int)limit, ref count);
+                    }
+
+                //
+                return subject;
+            }
         }
 
         public static PhpValue preg_replace_callback(Context ctx, PhpValue pattern, IPhpCallable callback, PhpValue subject, long limit = -1)
