@@ -341,6 +341,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         State.SetVarInitialized(name);
                         State.SetVar(name, vartype);
                     }
+                    else
+                    {
+                        if (State.MaybeVarUninitialized(name))
+                        {
+                            vartype |= TypeCtx.GetNullTypeMask();
+                        }
+                    }
 
                     x.TypeRefMask = vartype;
                 }

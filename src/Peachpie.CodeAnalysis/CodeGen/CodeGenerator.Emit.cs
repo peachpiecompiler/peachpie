@@ -201,7 +201,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
             // load resulting value directly if resolved:
-            if (expr.ConstantValue.HasValue)
+            if (expr.ConstantValue.HasValue && !expr.Access.IsEnsure)
             {
                 if (expr.Access.IsNone)
                 {
