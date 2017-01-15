@@ -3482,6 +3482,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     il.EmitOpCode(ILOpCode.Ceq);
                     return cg.CoreTypes.Boolean;
 
+                case SpecialType.System_Boolean:
                 case SpecialType.System_Int32:
                     // i4 == 0
                     cg.EmitLogicNegation();
