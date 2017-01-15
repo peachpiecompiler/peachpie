@@ -230,28 +230,22 @@ namespace Pchp.Library
             // option not found:
             if (def.Gsr == null)
             {
-                // TODO: Err
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("unknown_option", name));
-                //return PhpValue.Null;
-                throw new ArgumentException("unknown_option");
+                PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.unknown_option, name));
+                return PhpValue.Null;
             }
 
             // the option is known but not supported:
             if ((def.Flags & IniFlags.Supported) == 0)
             {
-                // TODO: Err
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("option_not_supported", name));
-                //return PhpValue.Null;
-                throw new ArgumentException("option_not_supported");
+                PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.option_not_supported, name));
+                return PhpValue.Null;
             }
 
             // the option is global thus cannot be changed:
             if ((def.Flags & IniFlags.Local) == 0 && action != IniAction.Get)
             {
-                // TODO: Err
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("option_readonly", name));
-                //return PhpValue.Null;
-                throw new ArgumentException("option_readonly");
+                PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.option_readonly, name));
+                return PhpValue.Null;
             }
 
             error = false;
