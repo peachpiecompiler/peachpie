@@ -23,7 +23,7 @@ namespace Pchp.Core
         /// Union for possible value types.
         /// </summary>
         [StructLayout(LayoutKind.Explicit)]
-        private struct ValueField
+        struct ValueField
         {
             [FieldOffset(0)]
             public long Long;
@@ -42,17 +42,17 @@ namespace Pchp.Core
         /// <summary>
         /// Union for reference types.
         /// </summary>
-        [StructLayout(LayoutKind.Explicit)]
-        private struct ObjectField
+        //[StructLayout(LayoutKind.Explicit)]
+        struct ObjectField
         {
-            [FieldOffset(0)]
+            //[FieldOffset(0)]
             public object Obj;
-            [FieldOffset(0)]
-            public string String;
-            [FieldOffset(0)]
-            public PhpArray Array;
-            [FieldOffset(0)]
-            public PhpAlias Alias;
+            //[FieldOffset(0)]
+            public string String => (string)Obj;
+            //[FieldOffset(0)]
+            public PhpArray Array => (PhpArray)Obj;
+            //[FieldOffset(0)]
+            public PhpAlias Alias => (PhpAlias)Obj;
 
             public override int GetHashCode() => (Obj != null) ? Obj.GetHashCode() : 0;
         }
@@ -114,6 +114,32 @@ namespace Pchp.Core
         /// Gets value indicating the value represents boolean.
         /// </summary>
         public bool IsBoolean => (TypeCode == PhpTypeCode.Boolean);
+
+        /// <summary>
+        /// Gets value indicating this variable after dereferencing is a scalar variable.
+        /// </summary>
+        public bool IsScalar
+        {
+            get
+            {
+                switch (TypeCode)
+                {
+                    case PhpTypeCode.Boolean:
+                    case PhpTypeCode.Int32:
+                    case PhpTypeCode.Long:
+                    case PhpTypeCode.Double:
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                        return true;
+
+                    case PhpTypeCode.Alias:
+                        return Alias.Value.IsScalar;
+
+                    default:
+                        return false;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the long field of the value.
@@ -478,7 +504,12 @@ namespace Pchp.Core
         /// <summary>
         /// Creates value containing new <see cref="PhpAlias"/> pointing to <c>NULL</c> value.
         /// </summary>
-        public static PhpValue CreateAlias() => Create(new PhpAlias(Null));
+        public static PhpValue CreateAlias() => CreateAlias(Null);
+
+        /// <summary>
+        /// Creates value containing new <see cref="PhpAlias"/>.
+        /// </summary>
+        public static PhpValue CreateAlias(PhpValue value) => Create(new PhpAlias(value));
 
         public static PhpValue Create(IntStringKey value) => value.IsInteger ? Create(value.Integer) : Create(value.String);
 

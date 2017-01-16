@@ -160,7 +160,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(0L);
                 return Convert.NumberInfo.LongInteger;
             }
-            public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
+            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey(0); // { throw new NotImplementedException(); }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new InvalidOperationException(); }
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.CompareNull(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsNull;
@@ -216,7 +216,7 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
-            public override PhpArray ToArray(ref PhpValue me) { throw new InvalidCastException(); }
+            public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Long);
         }
@@ -244,7 +244,7 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
-            public override PhpArray ToArray(ref PhpValue me) { throw new InvalidCastException(); }
+            public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Double);
         }
@@ -290,7 +290,7 @@ namespace Pchp.Core
                 return arr;
             }
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
-            public override PhpArray ToArray(ref PhpValue me) { throw new InvalidCastException(); }
+            public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Boolean ? PhpVariable.True : PhpVariable.False;
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Boolean);
         }
@@ -388,7 +388,7 @@ namespace Pchp.Core
             public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => ((IPhpArray)me.WritableString).GetItemValue(key);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());
-            public override PhpArray ToArray(ref PhpValue me) { throw new NotImplementedException(); }    // TODO: StringArray helper
+            public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me.DeepCopy());
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.WritableString.ToString());
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.WritableString);
