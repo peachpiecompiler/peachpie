@@ -554,12 +554,13 @@ namespace Pchp.Library.PerlRegex
                         case '*':
                             min = 0;
                             max = int.MaxValue;
-                            break;
 
                             if (CharsRight() > 0 && RightChar() == '+')
                             {
                                 MoveRight();    // TODO: possesive quantifier
                             }
+
+                            break;
 
                         case '?':
                             min = 0;
