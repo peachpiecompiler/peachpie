@@ -193,10 +193,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         public FieldPlace(IPlace holder, IFieldSymbol field)
         {
             Contract.ThrowIfNull(field);
-            Debug.Assert(holder != null || field.IsStatic);
 
             _holder = holder;
             _field = (FieldSymbol)field;
+
+            Debug.Assert(holder != null || field.IsStatic);
+            Debug.Assert(holder == null || holder.TypeOpt.IsOfType(_field.ContainingType));
         }
 
         void EmitHolder(ILBuilder il)
@@ -205,7 +207,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (_holder != null)
             {
-                _holder.EmitLoad(il);
+                var t = _holder.EmitLoad(il);
+                Debug.Assert(t.IsOfType(_field.ContainingType));
             }
         }
 
@@ -1388,7 +1391,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                 }
 
-                // TODO: dereference if applicable (=> PhpValue.Alias.Value)
                 EmitOpCode_Load(cg);
                 return type;
             }

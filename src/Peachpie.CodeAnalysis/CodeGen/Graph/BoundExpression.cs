@@ -319,7 +319,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (ytype == cg.CoreTypes.PhpValue)
                 {
                     // array + value
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_value_array);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Add_array_value);
                 }
 
                 //
@@ -2069,8 +2069,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 Debug.Assert(fldplace.Field != null);
 
                 var instanceplace = (fldplace.Instance as BoundReferenceExpression)?.Place(il);
-                if (instanceplace != null || (fldplace.Instance == null && fldplace.Field.IsStatic))
+                if ((fldplace.Field.IsStatic) ||
+                    (instanceplace != null && instanceplace.TypeOpt != null && instanceplace.TypeOpt.IsOfType(fldplace.Field.ContainingType)))
+                {
                     return new FieldPlace(instanceplace, fldplace.Field);
+                }
             }
 
             return null;

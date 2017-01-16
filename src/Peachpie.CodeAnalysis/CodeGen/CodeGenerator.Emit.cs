@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(expr.Access.IsRead);
 
-            if (!expr.Access.IsEnsure)
+            if (!expr.Access.IsEnsure && !expr.TypeRefMask.IsAnyType && !expr.TypeRefMask.IsRef)
             {
                 // avoiding of load of full value if not necessary
                 return TryEmitVariableSpecialize(PlaceOrNull(expr), expr.TypeRefMask);
@@ -596,7 +596,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     var lbl_block = new object();
                     var lbl_cond = new object();
-                    
+
+                    // tmparr = <array>
+                    var tmparr = this.GetTemporaryLocal(ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType));
+                    _il.EmitLocalStore(tmparr);
+
                     // i = 0
                     var tmpi = GetTemporaryLocal(CoreTypes.Int32);
                     _il.EmitIntConstant(0);
@@ -607,7 +611,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.MarkLabel(lbl_block);
 
                     // <array>[i+N] = (T)params[i]
-                    _il.EmitOpCode(ILOpCode.Dup);   // <array>
+                    _il.EmitLocalLoad(tmparr);   // <array>
                     _il.EmitIntConstant(ps.Length);
                     _il.EmitLocalLoad(tmpi);        
                     _il.EmitOpCode(ILOpCode.Add);
@@ -634,7 +638,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
                     _il.EmitBranch(ILOpCode.Blt, lbl_block);
 
+                    // <array>
+                    _il.EmitLocalLoad(tmparr);   // <array>
+
                     //
+                    ReturnTemporaryLocal(tmparr);
                     ReturnTemporaryLocal(tmpi);
                 }
             }
