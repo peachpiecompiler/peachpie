@@ -365,13 +365,20 @@ namespace Pchp.Library
             var webctx = ctx.HttpPhpContext;
             if (webctx != null)
             {
-                if (name != null)
+                try
                 {
-                    webctx.RemoveHeader(name);
+                    if (name != null)
+                    {
+                        webctx.RemoveHeader(name);
+                    }
+                    else
+                    {
+                        webctx.RemoveHeaders();
+                    }
                 }
-                else
+                catch
                 {
-                    webctx.RemoveHeaders();
+                    // can't remove, webctx.HeadersSent
                 }
 
                 // TODO: cookies, session
