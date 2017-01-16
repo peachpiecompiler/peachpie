@@ -76,8 +76,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 _factory = factory;
 
-                _target = new SubstitutedFieldSymbol(factory.CallSite_T, factory.CallSite_T_Target); // AsMember // we'll change containing type later once we know, important to have Substitued symbol before calling it
                 _fld = factory.CreateCallSiteField(fldname ?? string.Empty);
+
+                // AsMember // we'll change containing type later once we know, important to have Substitued symbol before calling it
+                _target = new SubstitutedFieldSymbol(factory.CallSite_T, factory.CallSite_T_Target, _fld.MetadataName);
             }
         }
 

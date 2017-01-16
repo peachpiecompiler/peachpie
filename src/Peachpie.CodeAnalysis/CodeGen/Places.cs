@@ -1412,6 +1412,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // no need for preparation
             }
+            else if (Access.IsUnset)
+            {
+                // no need for preparation
+            }
             else
             {
                 //
@@ -1469,8 +1473,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Debug.Assert(valueType == null);
 
-                // <place> =
-
+                // <place> = default(T)
+                
                 if (type == cg.CoreTypes.PhpAlias)
                 {
                     // new PhpAlias(void)
