@@ -1486,20 +1486,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                 default:
                     if (type.IsReferenceType)
                     {
-                        if (type == CoreTypes.PhpArray || type == CoreTypes.IPhpArray)
-                        {
-                            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
-                        }
-                        else if (type == CoreTypes.PhpAlias)
+                        if (type == CoreTypes.PhpAlias)
                         {
                             // new PhpAlias(void, 1);
                             Emit_PhpValue_Void();
                             Emit_PhpValue_MakeAlias();
                         }
-                        else if (type == CoreTypes.PhpString)
-                        {
-                            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString);
-                        }
+                        //else if (CoreTypes.PhpArray.Symbol.IsOfType(type))
+                        //{
+                        //    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
+                        //}
+                        //else if (type == CoreTypes.PhpString)
+                        //{
+                        //    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString);
+                        //}
                         else
                         {
                             _il.EmitNullConstant();

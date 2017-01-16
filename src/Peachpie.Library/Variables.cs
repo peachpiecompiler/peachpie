@@ -332,9 +332,8 @@ namespace Pchp.Library
                     return true;
             }
 
-            //PhpException.InvalidArgument("type", LibResources.GetString("invalid_type_name"));
-            //return false;
-            throw new ArgumentException(nameof(type));
+            PhpException.InvalidArgument(nameof(type), Resources.LibResources.invalid_type_name);
+            return false;
         }
 
         /// <summary>
@@ -454,7 +453,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is an integer, a double, a bool or a string after dereferencing.</returns>
-        public static bool is_scalar(PhpValue variable) => PhpVariable.IsScalar(variable);
+        public static bool is_scalar(PhpValue variable) => variable.IsScalar;
 
         /// <summary>
         /// Checks whether a dereferenced variable is numeric.

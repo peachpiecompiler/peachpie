@@ -134,7 +134,7 @@ namespace Pchp.Core
 
             public static void DefineAppConstant(string name, PhpValue value, bool ignorecase = false)
             {
-                Debug.Assert(value.IsScalar());
+                Debug.Assert(value.IsScalar);
 
                 var idx = -RegisterConstantId(name, ignorecase, true);
                 Debug.Assert(idx != 0);
@@ -149,7 +149,7 @@ namespace Pchp.Core
 
             public bool DefineConstant(string name, PhpValue value, bool ignorecase = false)
             {
-                Debug.Assert(value.IsScalar());
+                Debug.Assert(value.IsScalar);
 
                 var idx = RegisterConstantId(name, ignorecase, false);
                 Debug.Assert(idx != 0);

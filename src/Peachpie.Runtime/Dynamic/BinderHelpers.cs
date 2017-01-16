@@ -113,9 +113,16 @@ namespace Pchp.Core.Dynamic
                         target_expr = Expression.Property(target_expr, "Alias");
                         continue;
                     }
+                    else if (value.IsScalar)
+                    {
+                        restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(target_expr, "IsScalar")));
+
+                        target_value = null;
+                        target_expr = Expression.Constant(null, Cache.Types.Object[0]);
+                    }
                     else
                     {
-                        throw new NotImplementedException();    // TODO: scalar
+                        throw new NotImplementedException();
                     }
                 }
                 else if (target_expr.Type == typeof(PhpAlias))
@@ -682,6 +689,11 @@ namespace Pchp.Core.Dynamic
                 return Expression.New((ConstructorInfo)method, boundargs);
             }
 
+            if (instance != null)
+            {
+                instance = Expression.Convert(instance, method.DeclaringType);
+            }
+
             if (instance != null && method.IsVirtual)
             {
                 // Ugly hack here,
@@ -718,7 +730,7 @@ namespace Pchp.Core.Dynamic
 
             // dynamic method parameters
             var dtypes = new Type[ps.Length + 1];
-            dtypes[0] = typeof(object); // method.DeclaringType;   // target
+            dtypes[0] = method.DeclaringType;   // target
             for (int i = 0; i < ps.Length; i++)
             {
                 dtypes[i + 1] = ps[i].ParameterType;    // parameter_i
