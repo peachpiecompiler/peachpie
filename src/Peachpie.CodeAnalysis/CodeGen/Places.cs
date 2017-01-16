@@ -1200,9 +1200,17 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             if (Field.IsStatic && Instance != null)
+            {
                 cg.EmitPop(instancetype);
+            }
             else if (!Field.IsStatic && Instance == null)
+            {
                 throw new NotImplementedException();
+            }
+            else if (instancetype != null)
+            {
+                cg.EmitConvert(instancetype, Instance.TypeRefMask, _field.ContainingType);
+            }
         }
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)

@@ -170,7 +170,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         else if (IsClassOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Object)
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter)
                                 .Expect(SpecialType.System_Object);
 
                             // DEBUG:

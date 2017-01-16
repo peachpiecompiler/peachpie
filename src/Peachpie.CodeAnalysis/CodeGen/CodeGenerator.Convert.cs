@@ -801,12 +801,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                 default:
                     if (from == CoreTypes.PhpValue)
                     {
-                        // Convert.ToClass( value )
-                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToClass_PhpValue)
-                            .Expect(SpecialType.System_Object);
+                        if (!fromHint.IsRef && IsClassOnly(fromHint))
+                        {
+                            // <value>.Object
+                            EmitPhpValueAddr();
+                            from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter)
+                                .Expect(SpecialType.System_Object);
+                        }
+                        else
+                        {
+                            // Convert.ToClass( value )
+                            from = EmitCall(ILOpCode.Call, CoreMethods.Operators.ToClass_PhpValue)
+                                .Expect(SpecialType.System_Object);
+                        }
 
                         // (T)
-                        EmitCastClass(to);
+                        EmitCastClass(from, to);
                         return;
                     }
                     if (from == CoreTypes.PhpNumber)

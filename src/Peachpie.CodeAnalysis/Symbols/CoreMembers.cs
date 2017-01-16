@@ -514,7 +514,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
                 get_Boolean = ct.PhpValue.Method("get_Boolean");   // TODO: special name, property
                 get_String = ct.PhpValue.Method("get_String");   // TODO: special name, property
-                get_Object = ct.PhpValue.Method("get_Object");   // TODO: special name, property
+                Object = ct.PhpValue.Property("Object");
                 get_Array = ct.PhpValue.Method("get_Array");   // TODO: special name, property
 
                 Create_Boolean = ct.PhpValue.Method("Create", ct.Boolean);
@@ -539,7 +539,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AsObject,
                 DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue,
-                get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
+                get_Long, get_Double, get_Boolean, get_String, get_Array,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
                 FromClr_Object, FromClass_Object;
 
@@ -547,7 +547,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Void, Null;
 
             public readonly CoreProperty
-                IsEmpty;
+                IsEmpty, Object;
                 
         }
 

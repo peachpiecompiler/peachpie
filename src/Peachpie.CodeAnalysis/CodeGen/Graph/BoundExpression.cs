@@ -3267,9 +3267,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
 
                         if (isphparr)
-                            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
-                        else
                             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                        else
+                            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
                     }
                 }
                 else if (Access.IsUnset)
@@ -3293,9 +3293,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (this.Index != null)
                     {
                         if (isphparr)
-                            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.SetItemValue_IntStringKey_PhpValue);
-                        else
                             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                        else
+                            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.SetItemValue_IntStringKey_PhpValue);
                     }
                     else
                     {
