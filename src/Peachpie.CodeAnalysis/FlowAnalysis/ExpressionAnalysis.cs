@@ -884,10 +884,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     // analyze TargetMethod with x.Arguments
                     // require method result type if access != none
-                    var enqueued = this.Worklist.EnqueueRoutine(m, CurrentBlock, args);
-                    if (enqueued)   // => target has to be reanalysed
+                    if (x.Access.IsRead)
                     {
-                        // note: continuing current block may be waste of time
+                        var enqueued = this.Worklist.EnqueueRoutine(m, CurrentBlock, args);
+                        if (enqueued)   // => target has to be reanalysed
+                        {
+                            // note: continuing current block may be waste of time
+                        }
                     }
 
                     // process arguments by ref
