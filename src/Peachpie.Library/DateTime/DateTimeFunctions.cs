@@ -861,44 +861,44 @@ namespace Pchp.Library
         /// <summary>
         /// Parses a string containing an English date format into a UNIX timestamp relative to the current time.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="time">String containing time definition</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
-        public static int strtotime(string time)
+        public static int strtotime(Context ctx, string time)
         {
-            return StringToTime(time, System_DateTime.UtcNow);
+            return StringToTime(ctx, time, System_DateTime.UtcNow);
         }
 
         /// <summary>
         /// Parses a string containing an English date format into a UNIX timestamp relative to a specified time.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="time">String containing time definition.</param>
         /// <param name="start">Timestamp (seconds from 1970) to which is the new timestamp counted.</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
-        public static int strtotime(string time, int start)
+        public static int strtotime(Context ctx, string time, int start)
         {
-            return StringToTime(time, DateTimeUtils.UnixTimeStampToUtc(start));
+            return StringToTime(ctx, time, DateTimeUtils.UnixTimeStampToUtc(start));
         }
 
         /// <summary>
         /// Implementation of <see cref="StringToTime(string,int)"/> function.
         /// </summary>
-        static int StringToTime(string time, System_DateTime startUtc)
+        static int StringToTime(Context ctx, string time, System_DateTime startUtc)
         {
-            //if (time == null) return false;
-            //time = time.Trim();
-            //if (time.Length == 0) return false;
+            if (time == null) return -1;
+            time = time.Trim();
+            if (time.Length == 0) return -1;
 
-            //string error = null;
-            //int result = StrToTime.DateInfo.Parse(time, startUtc, out error);
-            //if (error != null)
-            //{
-            //    PhpException.Throw(PhpError.Warning, error);
-            //    return false;
-            //}
+            string error = null;
+            int result = DateInfo.Parse(ctx, time, startUtc, out error);
+            if (error != null)
+            {
+                PhpException.Throw(PhpError.Warning, error);
+                return -1;
+            }
 
-            //return result;
-
-            throw new NotImplementedException();
+            return result;
         }
 
         #endregion
