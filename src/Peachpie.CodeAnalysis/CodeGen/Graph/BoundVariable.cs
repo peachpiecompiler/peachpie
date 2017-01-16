@@ -178,7 +178,24 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else
                     {
-                        cg.EmitConvertToPhpValue(srcplace.EmitLoad(cg.Builder), 0); // PhpValue
+                        if (_symbol.Type == cg.CoreTypes.PhpValue)
+                        {
+                            // <param>.GetValue()
+                            srcplace.EmitLoadAddress(cg.Builder);
+                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
+                        }
+                        else
+                        {
+                            // (PhpValue)<param>
+                            cg.EmitConvertToPhpValue(srcplace.EmitLoad(cg.Builder), 0); // PhpValue
+                        }
+
+                        // copy <value>
+                        if (cg.IsCopiable(_symbol.Type))
+                        {
+                            cg.EmitDeepCopy(cg.CoreTypes.PhpValue);
+                        }
+
                         cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
                     }
 
@@ -187,8 +204,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
-                    // TODO: copy parameter by value in case of PhpValue, Array, PhpString
-
                     // create local variable in case of parameter type is not enough for its use within routine
                     if (_symbol.Type != cg.CoreTypes.PhpValue && _symbol.Type != cg.CoreTypes.PhpAlias)
                     {
@@ -206,6 +221,30 @@ namespace Pchp.CodeAnalysis.Semantics
                             localplace.EmitStorePrepare(cg.Builder);
                             cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
                             localplace.EmitStore(cg.Builder);
+                        }
+                    }
+                    else
+                    {
+                        if (_symbol.Type == cg.CoreTypes.PhpValue)
+                        {
+                            srcplace.EmitStorePrepare(cg.Builder);
+
+                            // dereference & copy
+                            // <param> = <param>.GetValue().DeepCopy()
+                            srcplace.EmitLoadAddress(cg.Builder);
+                            cg.EmitDeepCopy(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue));
+
+                            srcplace.EmitStore(cg.Builder);
+                        }
+                        else if (cg.IsCopiable(_symbol.Type))
+                        {
+                            srcplace.EmitStorePrepare(cg.Builder);
+
+                            // copy
+                            // <param> = DeepCopy(<param>)
+                            cg.EmitDeepCopy(srcplace.EmitLoad(cg.Builder));
+
+                            srcplace.EmitStore(cg.Builder);
                         }
                     }
                 }
