@@ -3029,12 +3029,11 @@ namespace Pchp.Library
         /// <returns>A delegate returning <see cref="PhpArray"/> containing items on the stack (passed as arguments).</returns>
         private static readonly IPhpCallable _mapIdentity = PhpCallback.Create((ctx, args) =>
         {
-            PhpArray result = new PhpArray(args.Length);
+            var result = new PhpArray(args.Length);
 
-            for (int i = 0; i <= args.Length; i++)
+            for (int i = 0; i < args.Length; i++)
             {
-                // TODO: result.Add(PhpVariable.Copy(args[i], CopyReason.PassedByCopy));
-                result.Add(args[i]);
+                result.Add(args[i].DeepCopy());
             }
 
             return PhpValue.Create(result);
@@ -3099,7 +3098,6 @@ namespace Pchp.Library
                     return null;
                 }
 
-                args[i] = PhpValue.CreateAlias();
                 iterators[i] = array.GetFastEnumerator();
                 if (array.Count > max_count) max_count = array.Count;
             }
@@ -3121,13 +3119,13 @@ namespace Pchp.Library
                             hasvalid = true;
 
                             // note: deep copy is not necessary since a function copies its arguments if needed:
-                            args[i].Alias.Value = iterators[i].CurrentValue.GetValue();
-                            // TODO: throws if the current Value is PhpReference
+                            args[i] = iterators[i].CurrentValue;
+                            // TODO: throws if the CurrentValue is an alias
                         }
                         else
                         {
-                            args[i].Alias.Value = PhpValue.Null;
-                            iterators[i] = default(OrderedDictionary.FastEnumerator);   // iterators[i].IsDefault
+                            args[i] = PhpValue.Null;
+                            iterators[i] = default(OrderedDictionary.FastEnumerator);   // IsDefault
                         }
                     }
                 }
@@ -3139,9 +3137,13 @@ namespace Pchp.Library
 
                 // return value is not deeply copied:
                 if (preserve_keys)
+                {
                     result.Add(iterators[0].CurrentKey, return_value);
+                }
                 else
+                {
                     result.Add(return_value);
+                }
 
                 // loads new values (callback may modify some by ref arguments):
                 for (int i = 0; i < arrays.Length; i++)
@@ -3151,17 +3153,11 @@ namespace Pchp.Library
                         var item = iterators[i].CurrentValue;
                         if (item.IsAlias)
                         {
-                            item.Alias.Value = args[i].Alias.Value;
+                            item.Alias.Value = args[i].GetValue();
                         }
                         else
                         {
-                            iterators[i].CurrentValue = args[i].Alias.Value;
-                        }
-
-                        //
-                        if (!iterators[i].MoveNext())
-                        {
-                            iterators[i] = default(OrderedDictionary.FastEnumerator);   // iterators[i].IsDefault
+                            iterators[i].CurrentValue = args[i].GetValue();
                         }
                     }
                 }
