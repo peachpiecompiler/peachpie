@@ -258,7 +258,11 @@ namespace Pchp.Core
             }
             else
             {
-                if (throwOnError)
+                if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation)
+                {
+                    return PhpValue.Null;
+                }
+                else if (throwOnError)
                 {
                     throw new ArgumentException($"File '{path}' cannot be included with current configuration.");   // TODO: ErrCode
                 }
@@ -266,6 +270,24 @@ namespace Pchp.Core
                 {
                     return PhpValue.Create(false);   // TODO: Warning
                 }
+            }
+        }
+
+        /// <summary>
+        /// Tries to read a file and outputs its content.
+        /// </summary>
+        /// <param name="path">Path to the file. Will be resolved using available stream wrappers.</param>
+        /// <returns><c>true</c> if file was read and outputted, otherwise <c>false</c>.</returns>
+        bool TryIncludeFileContent(string path)
+        {
+            var fnc = this.GetDeclaredFunction("readfile");
+            if (fnc != null)
+            {
+                return fnc.PhpCallable(this, (PhpValue)path).ToLong() >= 0;
+            }
+            else
+            {
+                return false;
             }
         }
 
