@@ -42,6 +42,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_ToClass = typeof(PhpValue).GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_ToArray = typeof(PhpValue).GetMethod("ToArray", Types.Empty);
             public static MethodInfo PhpValue_AsCallable = typeof(PhpValue).GetMethod("AsCallable", Types.Empty);
+            public static MethodInfo PhpValue_AsObject = typeof(PhpValue).GetMethod("AsObject", Types.Empty);
             public static MethodInfo PhpValue_ToString_Context = typeof(PhpValue).GetMethod("ToString", typeof(Context));
 
             public static MethodInfo PhpNumber_ToString_Context = typeof(PhpNumber).GetMethod("ToString", typeof(Context));

@@ -213,7 +213,7 @@ namespace Pchp.Core
         /// <summary>
         /// Implementation of PHP <c>isset</c> operator.
         /// </summary>
-        public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;
+        public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;   // TODO: !Alias.IsNull
 
         /// <summary>
         /// Implements <c>empty</c> operator.

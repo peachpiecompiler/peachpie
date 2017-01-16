@@ -62,6 +62,11 @@ namespace Pchp.Core.Dynamic
                 if (arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
                 return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
             }
+            if (typeof(PhpResource).GetTypeInfo().IsAssignableFrom(target)) // PhpResource
+            {
+                // AsObject() as PhpResource
+                return Expression.TypeAs(BindAsObject(arg), target);
+            }
 
             var target_type = target.GetTypeInfo();
 
@@ -254,6 +259,17 @@ namespace Pchp.Core.Dynamic
             throw new NotImplementedException(source.FullName);
         }
 
+        static Expression BindAsObject(Expression expr)
+        {
+            var source = expr.Type;
+
+            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_AsObject);
+            
+            if (!source.GetTypeInfo().IsValueType) return expr;
+
+            throw new NotImplementedException(source.FullName);
+        }
+
         private static Expression BindToArray(Expression expr)
         {
             var source = expr.Type;
@@ -354,7 +370,8 @@ namespace Pchp.Core.Dynamic
         static Expression BindCostFromValue(Expression arg, Type target)
         {
             // constant cases
-            if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.Pass);
+            if (target == typeof(PhpValue) ||
+                target == typeof(PhpAlias)) return Expression.Constant(ConversionCost.Pass);
 
             //
             var target_type = target.GetTypeInfo();
