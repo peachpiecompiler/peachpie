@@ -116,7 +116,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
 {
     #region Fields & Properties
 
-    readonly Context _ctx;
+    readonly protected Context _ctx;
 
     PhpArray _array;
     OrderedDictionary.Enumerator _arrayEnumerator;    // lazily instantiated so we can rewind() once when needed
@@ -157,9 +157,15 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
 
     #region Constructor
 
-    public ArrayIterator(Context/*!*/ctx, PhpValue array, int flags = 0)
+    public ArrayIterator(Context/*!*/ctx)
     {
+        if (ctx == null) throw new ArgumentNullException(nameof(ctx));
         _ctx = ctx;
+    }
+
+    public ArrayIterator(Context/*!*/ctx, PhpValue array, int flags = 0)
+        :this(ctx)
+    {
         __construct(ctx, array, flags);
     }
 
