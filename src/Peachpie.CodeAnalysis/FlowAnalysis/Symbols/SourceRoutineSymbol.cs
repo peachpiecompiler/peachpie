@@ -25,6 +25,15 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// 
         /// </summary>
-        internal TypeRefMask ResultTypeMask => this.ControlFlowGraph.FlowContext.ReturnType;
+        internal TypeRefMask ResultTypeMask
+        {
+            get
+            {
+                var cfg = this.ControlFlowGraph;
+                return (cfg != null)
+                    ? cfg.FlowContext.ReturnType
+                    : TypeRefMask.AnyType;
+            }
+        }
     }
 }
