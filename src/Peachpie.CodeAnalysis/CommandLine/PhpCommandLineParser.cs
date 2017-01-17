@@ -50,10 +50,32 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         IEnumerable<CommandLineSourceFile> ExpandFileArgument(string path, string baseDirectory, List<Diagnostic> diagnostics)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                return Array.Empty<CommandLineSourceFile>();
+            }
+
+            var gindex = path.IndexOf('*');
+            if (gindex < 0)
+            {
+                return ParseFileArgument(path, baseDirectory, diagnostics);
+            }
+
             var dir = baseDirectory;
 
+            // root
+            if (PathUtilities.IsDirectorySeparator(path[0])) // unix root
+            {
+                dir = "/";
+            }
+            else if (path[1] == ':') // windows root
+            {
+                dir = path.Substring(0, 3); // C:\
+                path = path.Substring(3);
+            }
+
             // process the path parts and go through the directory
-            var parts = path.Split(new char[] { '\\', '/' });
+            var parts = path.Split(new char[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < parts.Length; i++)
             {
                 var p = parts[i];
@@ -70,20 +92,19 @@ namespace Pchp.CodeAnalysis.CommandLine
                 {
                     // all subdirs
                     return new[] { dir }.Concat(System.IO.Directory.GetDirectories(dir, "*", System.IO.SearchOption.AllDirectories))
-                        .SelectMany((subdir) => ExpandFileArgument(string.Join("\\", parts.Skip(i + 1)), subdir, diagnostics));
+                        .SelectMany((subdir) => ExpandFileArgument(string.Join("/", parts.Skip(i + 1)), subdir, diagnostics));
                 }
                 else
                 {
                     if (i == parts.Length - 1)
                     {
                         // file
-                        return System.IO.Directory.GetFiles(dir, p, System.IO.SearchOption.TopDirectoryOnly)
-                            .Select(fname => new CommandLineSourceFile(fname, true));
+                        return ParseFileArgument(p, dir, diagnostics);
                     }
                     else
                     {
                         return System.IO.Directory.GetDirectories(dir, p, System.IO.SearchOption.TopDirectoryOnly)
-                            .SelectMany((subdir) => ExpandFileArgument(string.Join("\\", parts.Skip(i)), subdir, diagnostics));
+                            .SelectMany((subdir) => ExpandFileArgument(string.Join("/", parts.Skip(i)), subdir, diagnostics));
                     }
                 }
             }
