@@ -71,7 +71,11 @@ namespace Pchp.Core.Dynamic
             var target_type = target.GetTypeInfo();
 
             if (target_type.IsEnum) return Expression.Convert(BindToLong(arg), target);
-            if (target_type.IsValueType == false) { } // TODO
+            if (target_type.IsValueType == false)
+            {
+                // TODO: handle type conversion and throw PHP TypeException
+                return Expression.Convert(BindAsObject(arg), target);
+            }
 
             //
             throw new NotImplementedException(target.ToString());
