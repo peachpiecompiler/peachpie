@@ -48,6 +48,50 @@ namespace Pchp.CodeAnalysis.CommandLine
             return TryParseOption(arg, out name, out value);
         }
 
+        IEnumerable<CommandLineSourceFile> ExpandFileArgument(string path, string baseDirectory, List<Diagnostic> diagnostics)
+        {
+            var dir = baseDirectory;
+
+            // process the path parts and go through the directory
+            var parts = path.Split(new char[] { '\\', '/' });
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var p = parts[i];
+                if (p == ".")
+                {
+                    // do nothing
+                }
+                else if (p == "..")
+                {
+                    // parent dir
+                    dir = PathUtilities.GetDirectoryName(dir);
+                }
+                else if (p == "**")
+                {
+                    // all subdirs
+                    return new[] { dir }.Concat(System.IO.Directory.GetDirectories(dir, "*", System.IO.SearchOption.AllDirectories))
+                        .SelectMany((subdir) => ExpandFileArgument(string.Join("\\", parts.Skip(i + 1)), subdir, diagnostics));
+                }
+                else
+                {
+                    if (i == parts.Length - 1)
+                    {
+                        // file
+                        return System.IO.Directory.GetFiles(dir, p, System.IO.SearchOption.TopDirectoryOnly)
+                            .Select(fname => new CommandLineSourceFile(fname, true));
+                    }
+                    else
+                    {
+                        return System.IO.Directory.GetDirectories(dir, p, System.IO.SearchOption.TopDirectoryOnly)
+                            .SelectMany((subdir) => ExpandFileArgument(string.Join("\\", parts.Skip(i)), subdir, diagnostics));
+                    }
+                }
+            }
+
+            //return ParseFileArgument(path, baseDirectory, diagnostics);
+            throw new ArgumentException();
+        }
+
         internal override CommandLineArguments CommonParse(IEnumerable<string> args, string baseDirectory, string sdkDirectoryOpt, string additionalReferenceDirectories)
         {
             List<Diagnostic> diagnostics = new List<Diagnostic>();
@@ -85,7 +129,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 string name, value;
                 if (optionsEnded || !TryParseOption2(arg, out name, out value))
                 {
-                    sourceFiles.AddRange(ParseFileArgument(arg, baseDirectory, diagnostics));
+                    sourceFiles.AddRange(ExpandFileArgument(arg, baseDirectory, diagnostics));
                     continue;
                 }
 
