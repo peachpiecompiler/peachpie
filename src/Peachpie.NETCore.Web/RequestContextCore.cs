@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Primitives;
 using Pchp.Core;
 using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +16,8 @@ namespace Peachpie.Web
     /// <summary>
     /// Runtime context for ASP.NET Core request.
     /// </summary>
-    sealed class RequestContextCore : Context // , IHttpPhpContext
+    [DebuggerDisplay("RequestContextCore({DebugRequestDisplay,nq})")]
+    sealed class RequestContextCore : Context, IHttpPhpContext
     {
         #region .cctor
 
@@ -49,9 +52,38 @@ namespace Peachpie.Web
 
         #endregion
 
+        /// <summary>
+        /// Debug display string.
+        /// </summary>
+        string DebugRequestDisplay => $"{_httpctx.Request.Path.Value}{_httpctx.Request.QueryString.Value}";
+
         #region IHttpPhpContext
 
-        // TODO
+        /// <summary>Gets value indicating HTTP headers were already sent.</summary>
+        public bool HeadersSent
+        {
+            get { return _httpctx.Response.HasStarted; }
+        }
+
+        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, new StringValues(value)); }
+
+        public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
+
+        public void RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+
+        /// <summary>
+        /// Gets or sets HTTP response status code.
+        /// </summary>
+        public int StatusCode
+        {
+            get { return _httpctx.Response.StatusCode; }
+            set { _httpctx.Response.StatusCode = value; }
+        }
+
+        /// <summary>
+        /// Stream with contents of the incoming HTTP entity body.
+        /// </summary>
+        public Stream InputStream => _httpctx.Request.Body;
 
         #endregion
 
@@ -95,6 +127,11 @@ namespace Peachpie.Web
         {
             Debug.Assert(script.IsValid);
 
+            // set additional $_SERVER items
+            AddServerScriptItems(script);
+            
+            //
+
             try
             {
                 script.MainMethod(this, this.Globals, null);
@@ -103,6 +140,14 @@ namespace Peachpie.Web
             {
                 died.ProcessStatus(this);
             }
+        }
+
+        void AddServerScriptItems(ScriptInfo script)
+        {
+            var array = this.Server;
+
+            array["SCRIPT_FILENAME"] = (PhpValue)(this.RootPath + "/" + script.Path);
+            array["PHP_SELF"] = (PhpValue)("/" + script.Path);
         }
 
         /// <summary>
@@ -115,15 +160,15 @@ namespace Peachpie.Web
 
         #endregion
 
-        public override IHttpPhpContext HttpPhpContext => null;    // TODO
+        public override IHttpPhpContext HttpPhpContext => this;
 
         public override Encoding StringEncoding => Encoding.UTF8;
 
         /// <summary>
         /// Application physical root directory including trailing slash.
         /// </summary>
-        public override string RootPath => _contentRootPath;
-        readonly string _contentRootPath;
+        public override string RootPath => _rootPath;
+        readonly string _rootPath;
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -131,20 +176,32 @@ namespace Peachpie.Web
         /// </summary>
         readonly HttpContext _httpctx;
 
-        public RequestContextCore(HttpContext httpcontext, string contentRootPath)
+        public RequestContextCore(HttpContext httpcontext, string rootPath)
         {
             Debug.Assert(httpcontext != null);
-            Debug.Assert(contentRootPath != null);
-            Debug.Assert(contentRootPath == ScriptsMap.NormalizeSlashes(contentRootPath));
-            Debug.Assert(contentRootPath.Length != 0 && contentRootPath[contentRootPath.Length - 1] == '/');
+            Debug.Assert(rootPath != null);
+            Debug.Assert(rootPath == ScriptsMap.NormalizeSlashes(rootPath));
+            Debug.Assert(rootPath.Length != 0 && rootPath[rootPath.Length - 1] != '/');
 
             _httpctx = httpcontext;
-            _contentRootPath = contentRootPath;
+            _rootPath = rootPath;
 
             this.InitOutput(httpcontext.Response.Body);
             this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On
+        }
+
+        static void AddVariables(PhpArray target, IEnumerable<KeyValuePair<string, StringValues>> values)
+        {
+            foreach (var pair in values)
+            {
+                var strs = pair.Value;
+                for (int i = 0; i < strs.Count; i++)
+                {
+                    Superglobals.AddVariable(target, pair.Key, strs[i]);
+                }
+            }
         }
 
         /// <summary>
@@ -194,69 +251,71 @@ namespace Peachpie.Web
             //    array["argc"] = PhpValue.Create(0);
             //}
 
-            // additional variables defined in PHP manual:
-            array["PHP_SELF"] = request.Path.HasValue ? (PhpValue)request.Path.Value : PhpValue.Null;
-            array["DOCUMENT_ROOT"] = (PhpValue)RootPath;
+            // variables defined in PHP manual
+            // order as it is by builtin PHP server
+            array["DOCUMENT_ROOT"] = (PhpValue)RootPath;    // string, backslashes, no trailing slash
+
+            //var f_connection = _httpctx.Features.Get<IHttpConnectionFeature>();
+            array["REMOTE_ADDR"] = (PhpValue)_httpctx.Connection.RemoteIpAddress.ToString();
+            array["REMOTE_PORT"] = (PhpValue)_httpctx.Connection.RemotePort;
+            array["LOCAL_ADDR"] = array["SERVER_ADDR"] = (PhpValue)_httpctx.Connection.LocalIpAddress.ToString();
+            array["LOCAL_PORT"] = (PhpValue)_httpctx.Connection.LocalPort;
+            array["SERVER_SOFTWARE"] = (PhpValue)"ASP.NET Core Server";
+            array["SERVER_PROTOCOL"] = (PhpValue)request.Protocol;
+            array["SERVER_NAME"] = (PhpValue)request.Host.Host;
+            array["SERVER_PORT"] = (PhpValue)request.Host.Port;
+            array["REQUEST_URI"] = (PhpValue)(request.Path.Value + request.QueryString.Value);
+            array["REQUEST_METHOD"] = (PhpValue)request.Method;
+            array["SCRIPT_NAME"] = (PhpValue)request.Path.ToString();
+            array["SCRIPT_FILENAME"] = PhpValue.Null; // set in ProcessScript
+            array["PHP_SELF"] = PhpValue.Null; // set in ProcessScript
+            array["QUERY_STRING"] = (PhpValue)(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : string.Empty);
+            array["HTTP_HOST"] = (PhpValue)request.Headers["Host"].ToString();
+            array["HTTP_CONNECTION"] = (PhpValue)request.Headers["Connection"].ToString();
+            array["HTTP_USER_AGENT"] = (PhpValue)request.Headers["User-Agent"].ToString();
+            array["HTTP_ACCEPT"] = (PhpValue)request.Headers["Accept"].ToString();
+            array["HTTP_ACCEPT_ENCODING"] = (PhpValue)request.Headers["Accept-Encoding"].ToString();
+            array["HTTP_ACCEPT_LANGUAGE"] = (PhpValue)request.Headers["Accept-Language"].ToString();
+            array["HTTP_REFERER"] = (PhpValue)request.Headers["Referer"].ToString();
             //array["REQUEST_URI"] = (PhpValue)request.RawUrl;
+            array["REQUEST_TIME_FLOAT"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
             array["REQUEST_TIME"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
-            //array["SCRIPT_FILENAME"] = (PhpValue)request.PhysicalPath;
-
-            var f_connection = _httpctx.Features.Get<IHttpConnectionFeature>();
-            if (f_connection != null)
-            {
-                array["SERVER_ADDR"]
-                    = array["LOCAL_ADDR"]
-                    = (PhpValue)f_connection.LocalIpAddress.ToString();
-            }
-
-            ////IPv6 is the default in IIS7, convert to an IPv4 address (store the IPv6 as well)
-            //if (request.UserHostAddress.Contains(":"))
-            //{
-            //    array["REMOTE_ADDR_IPV6"] = (PhpValue)request.UserHostAddress;
-
-            //    if (request.UserHostAddress == "::1")
-            //    {
-            //        array["REMOTE_ADDR"] = array["SERVER_ADDR"] = (PhpValue)"127.0.0.1";
-            //    }
-            //    else foreach (IPAddress IPA in Dns.GetHostAddresses(request.UserHostAddress))
-            //        {
-            //            if (IPA.AddressFamily.ToString() == "InterNetwork")
-            //            {
-            //                array["REMOTE_ADDR"] = (PhpValue)IPA.ToString();
-            //                break;
-            //            }
-            //        }
-            //}
-
-            // PATH_INFO
-            // should contain partial path information only
-            // note: IIS has AllowPathInfoForScriptMappings property that do the thing ... but ISAPI does not work then
-            // hence it must be done here manually
-
-            if (array.ContainsKey("PATH_INFO"))
-            {
-                string path_info = array["PATH_INFO"].AsString();
-                string script_name = array["SCRIPT_NAME"].AsString();
-
-                // 'ORIG_PATH_INFO'
-                // Original version of 'PATH_INFO' before processed by PHP. 
-                array["ORIG_PATH_INFO"] = (PhpValue)path_info;
-
-                // 'PHP_INFO'
-                // Contains any client-provided pathname information trailing the actual script filename
-                // but preceding the query string, if available. For instance, if the current script was
-                // accessed via the URL http://www.example.com/php/path_info.php/some/stuff?foo=bar,
-                // then $_SERVER['PATH_INFO'] would contain /some/stuff. 
-
-                // php-5.3.2\sapi\isapi\php5isapi.c:
-                // 
-                // strncpy(path_info_buf, static_variable_buf + scriptname_len - 1, sizeof(path_info_buf) - 1);    // PATH_INFO = PATH_INFO.SubString(SCRIPT_NAME.Length);
-
-                array["PATH_INFO"] = (PhpValue)((script_name.Length <= path_info.Length) ? path_info.Substring(script_name.Length) : string.Empty);
-            }
+            array["HTTPS"] = PhpValue.Create(request.IsHttps);
 
             //
             return array;
+        }
+
+        protected override PhpArray InitGetVariable()
+        {
+            var result = PhpArray.NewEmpty();
+
+            if (_httpctx.Request.Method == "GET" && _httpctx.Request.HasFormContentType)
+            {
+                AddVariables(result, _httpctx.Request.Form);
+            }
+
+            AddVariables(result, _httpctx.Request.Query);
+
+            //
+            return result;
+        }
+
+        protected override PhpArray InitPostVariable()
+        {
+            var result = PhpArray.NewEmpty();
+
+            if (_httpctx.Request.Method == "POST" && _httpctx.Request.HasFormContentType)
+            {
+                AddVariables(result, _httpctx.Request.Form);
+            }
+
+            return result;
+        }
+
+        protected override PhpArray InitFilesVariable()
+        {
+            return base.InitFilesVariable();
         }
     }
 }

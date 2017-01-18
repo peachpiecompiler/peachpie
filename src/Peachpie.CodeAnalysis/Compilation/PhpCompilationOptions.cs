@@ -10,6 +10,35 @@ using Roslyn.Utilities;
 namespace Pchp.CodeAnalysis
 {
     /// <summary>
+    /// Options for getting type information from correspodning PHPDoc comments.
+    /// </summary>
+    [Flags]
+    public enum PhpDocTypes
+    {
+        None = 0,
+
+        /// <summary>
+        /// Fields type will be declared according to PHPDoc @var tag.
+        /// </summary>
+        FieldTypes = 1,
+
+        /// <summary>
+        /// Parameter type will be declared according to PHPDoc @param tag.
+        /// </summary>
+        ParameterTypes = 2,
+
+        /// <summary>
+        /// Method return type will be declared according to PHPDoc @return tag.
+        /// </summary>
+        ReturnTypes = 4,
+
+        /// <summary>
+        /// Declare all additional type information from PHPDoc.
+        /// </summary>
+        All = FieldTypes | ParameterTypes | ReturnTypes,
+    }
+
+    /// <summary>
     /// Represents various options that affect compilation, such as 
     /// whether to emit an executable or a library, whether to optimize
     /// generated code, and so on.
@@ -27,6 +56,11 @@ namespace Pchp.CodeAnalysis
         /// All script paths will be emitted relatively to this path.
         /// </summary>
         public string SdkDirectory { get; private set; }
+
+        /// <summary>
+        /// Options for getting type information from correspodning PHPDoc comments.
+        /// </summary>
+        public PhpDocTypes PhpDocTypes { get; private set; }
 
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
@@ -61,7 +95,8 @@ namespace Pchp.CodeAnalysis
             MetadataReferenceResolver metadataReferenceResolver = null,
             AssemblyIdentityComparer assemblyIdentityComparer = null,
             StrongNameProvider strongNameProvider = null,
-            bool publicSign = false)
+            bool publicSign = false,
+            PhpDocTypes phpdocTypes = PhpDocTypes.None)
             : this(outputKind, baseDirectory, sdkDirectory,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    optimizationLevel, checkOverflow,
@@ -76,7 +111,8 @@ namespace Pchp.CodeAnalysis
                    assemblyIdentityComparer: assemblyIdentityComparer,
                    strongNameProvider: strongNameProvider,
                    metadataImportOptions: MetadataImportOptions.Public,
-                   publicSign: publicSign)
+                   publicSign: publicSign,
+                   phpdocTypes : phpdocTypes)
         {
         }
 
@@ -109,7 +145,8 @@ namespace Pchp.CodeAnalysis
             AssemblyIdentityComparer assemblyIdentityComparer,
             StrongNameProvider strongNameProvider,
             MetadataImportOptions metadataImportOptions,
-            bool publicSign)
+            bool publicSign,
+            PhpDocTypes phpdocTypes)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel, checkOverflow,
                    platform, generalDiagnosticOption, warningLevel, specificDiagnosticOptions.ToImmutableDictionaryOrEmpty(),
@@ -119,6 +156,7 @@ namespace Pchp.CodeAnalysis
         {
             this.BaseDirectory = baseDirectory;
             this.SdkDirectory = sdkDirectory;
+            this.PhpDocTypes = phpdocTypes;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
@@ -149,7 +187,8 @@ namespace Pchp.CodeAnalysis
             strongNameProvider: other.StrongNameProvider,
             metadataImportOptions: other.MetadataImportOptions,
             reportSuppressedDiagnostics: other.ReportSuppressedDiagnostics,
-            publicSign: other.PublicSign)
+            publicSign: other.PublicSign,
+            phpdocTypes: other.PhpDocTypes)
         {
         }
 

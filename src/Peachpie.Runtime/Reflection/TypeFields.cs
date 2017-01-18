@@ -73,6 +73,7 @@ namespace Pchp.Core.Reflection
             return getter;
         }
 
+        static Func<FieldInfo, bool> _isInstanceField = f => !f.IsStatic;
         static Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name) && !ReflectionUtils.IsRuntimeFields(f);
         static Func<FieldInfo, string> _FieldName = f => f.Name;
         static Func<PropertyInfo, string> _PropertyName = p => p.Name;
@@ -126,7 +127,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Resolves a constant value in given context.
         /// </summary>
-        public object GetConstantValue(string name, Context ctx)
+        public object GetConstantValue(Context ctx, string name)
         {
             if (ctx == null)
             {
@@ -226,7 +227,7 @@ namespace Pchp.Core.Reflection
                 var isstatic = p.GetMethod.IsStatic;
                 if ((kind == FieldKind.StaticField) == isstatic)
                 {
-                    Debug.Assert(isstatic ? target == null : target != null);
+                    Debug.Assert((target == null) == isstatic);
                     return Expression.Property(target, p);
                 }
             }
@@ -234,5 +235,10 @@ namespace Pchp.Core.Reflection
             //
             return null;
         }
+
+        /// <summary>
+        /// Gets enumeration of class instance fields excluding eventual <c>__runtime_fields</c>.
+        /// </summary>
+        public IEnumerable<FieldInfo> InstanceFields => (_fields != null) ? _fields.Values.Where(_isInstanceField) : Array.Empty<FieldInfo>();
     }
 }

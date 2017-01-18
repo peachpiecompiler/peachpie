@@ -19,7 +19,7 @@ namespace Pchp.Core
         protected void InitOutput(Stream output)
         {
             // setups Output and OutputStream
-            _textSink = new StreamWriter(_streamSink = output ?? Stream.Null);
+            _textSink = new StreamWriter(_streamSink = output ?? Stream.Null) { AutoFlush = true };
             IsOutputBuffered = false;
         }
 

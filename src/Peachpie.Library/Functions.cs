@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Library.Resources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,9 +24,8 @@ namespace Pchp.Library
         {
             if (function == null)
             {
-                //PhpException.ArgumentNull("function");
-                //return null;
-                throw new ArgumentNullException();  // NOTE: should not be reached, runtime converts NULL to InvalidCallback instance
+                PhpException.ArgumentNull("function");
+                return PhpValue.Null;
             }
 
             Debug.Assert(args != null);
@@ -56,6 +56,58 @@ namespace Pchp.Library
             }
 
             return call_user_func(ctx, function, args_array);
+        }
+
+        #endregion
+
+        #region func_num_args, func_get_arg, func_get_args
+
+        /// <summary>
+		/// Retrieves the number of arguments passed to the current user-function.
+		/// </summary>
+		public static int func_num_args([ImportCallerArgs]PhpValue[] args) => args.Length;
+
+        /// <summary>
+        /// Retrieves an argument passed to the current user-function.
+        /// </summary>
+        /// <remarks><seealso cref="PhpStack.GetArgument"/></remarks>
+        public static PhpValue func_get_arg([ImportCallerArgs]PhpValue[] args, int index)
+        {
+            // checks correctness of the argument:
+            if (index < 0)
+            {
+                PhpException.InvalidArgument(nameof(index), LibResources.arg_negative);
+                return PhpValue.False;
+            }
+
+            if (args == null || index >= args.Length)
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_passed_to_function", index));
+                return PhpValue.False;
+            }
+
+            //
+            return args[index].DeepCopy();
+        }
+
+        /// <summary>
+        /// Returns an array of arguments of the current user-defined function. 
+        /// </summary>
+        /// <remarks><seealso cref="PhpStack.GetArguments"/>
+        /// Also throws warning if called from global scope.</remarks>
+        public static PhpArray func_get_args([ImportCallerArgs]PhpValue[] args)
+        {
+            // TODO: when called from global code, return FALSE
+
+            var result = new PhpArray(args.Length);
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                result.AddValue(args[i].DeepCopy());
+            }
+
+            //
+            return result;
         }
 
         #endregion
@@ -111,23 +163,22 @@ namespace Pchp.Library
         /// Function has no return value.
         /// </summary>
         /// <param name="ctx">Runtime context. Cannot be <c>null</c>.</param>
-        /// <param name="callback">The function which is called after main code of the script is finishes execution.</param>
-        /// <param name="arguments">Parameters for the <paramref name="callback"/>.</param>
+        /// <param name="function">The function which is called after main code of the script is finishes execution.</param>
+        /// <param name="arguments">Parameters for the <paramref name="function"/>.</param>
         /// <remarks>
         /// Although, there is explicitly written in the PHP manual that it is not possible 
         /// to send an output to a browser via echo or another output handling functions you can actually do so.
         /// There is no such limitation with Phalanger.
         /// </remarks>
-        public static void register_shutdown_function(Context ctx, IPhpCallable callback, params PhpValue[] arguments)
+        public static void register_shutdown_function(Context ctx, IPhpCallable function, params PhpValue[] arguments)
         {
-            if (callback == null)
+            if (function == null)
             {
-                //PhpException.ArgumentNull("function");
-                //return;
-                throw new ArgumentNullException(nameof(callback));
+                PhpException.ArgumentNull(nameof(function));
+                return;
             }
 
-            ctx.RegisterShutdownCallback(() => callback.Invoke(ctx, arguments));
+            ctx.RegisterShutdownCallback(() => function.Invoke(ctx, arguments));
         }
 
         #endregion

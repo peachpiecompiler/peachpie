@@ -1,4 +1,5 @@
-﻿using Devsense.PHP.Syntax.Ast;
+﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
@@ -96,7 +97,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(expr.Access.IsRead);
 
-            if (!expr.Access.IsEnsure)
+            if (!expr.Access.IsEnsure && !expr.TypeRefMask.IsAnyType && !expr.TypeRefMask.IsRef)
             {
                 // avoiding of load of full value if not necessary
                 return TryEmitVariableSpecialize(PlaceOrNull(expr), expr.TypeRefMask);
@@ -169,7 +170,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         else if (IsClassOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Object)
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter)
                                 .Expect(SpecialType.System_Object);
 
                             // DEBUG:
@@ -200,7 +201,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal TypeSymbol EmitSpecialize(BoundExpression expr)
         {
             // load resulting value directly if resolved:
-            if (expr.ConstantValue.HasValue)
+            if (expr.ConstantValue.HasValue && !expr.Access.IsEnsure)
             {
                 if (expr.Access.IsNone)
                 {
@@ -209,7 +210,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (expr.Access.IsRead)
                 {
-                    return EmitLoadConstant(expr.ConstantValue.Value, expr.Access.TargetType);
+                    return expr.ResultType = EmitLoadConstant(expr.ConstantValue.Value, expr.Access.TargetType);
                 }
             }
 
@@ -307,89 +308,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             return stack;
-        }
-
-        /// <summary>
-        /// In case there is <c>Int32</c> or <c>bool</c> on the top of evaluation stack,
-        /// converts it to <c>Int64</c>.
-        /// </summary>
-        /// <param name="stack">New type on top of stack.</param>
-        /// <returns></returns>
-        internal TypeSymbol EmitConvertIntToLong(TypeSymbol stack)
-        {
-            if (stack.SpecialType == SpecialType.System_Int32 ||
-                stack.SpecialType == SpecialType.System_Boolean)
-            {
-                _il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
-                stack = this.CoreTypes.Long;
-            }
-
-            return stack;
-        }
-
-        /// <summary>
-        /// In case there is <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c> on the top of evaluation stack,
-        /// converts it to <c>double</c>.
-        /// </summary>
-        internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
-        {
-            // emit number literal directly as double
-            var constant = expr.ConstantValue;
-            if (constant.HasValue)
-            {
-                if (constant.Value is long)
-                {
-                    _il.EmitDoubleConstant((long)constant.Value);
-                    return this.CoreTypes.Double;
-                }
-                if (constant.Value is int)
-                {
-                    _il.EmitDoubleConstant((int)constant.Value);
-                    return this.CoreTypes.Double;
-                }
-                if (constant.Value is bool)
-                {
-                    _il.EmitDoubleConstant((bool)constant.Value ? 1.0 : 0.0);
-                    return this.CoreTypes.Double;
-                }
-            }
-
-            // emit fast ToDouble() in case of a PhpNumber variable
-            var place = PlaceOrNull(expr);
-            var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
-            if (type == null)
-            {
-                if (place != null && place.HasAddress)
-                {
-                    if (place.TypeOpt == CoreTypes.PhpNumber)
-                    {
-                        place.EmitLoadAddress(_il);
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble)
-                            .Expect(SpecialType.System_Double);
-                    }
-                }
-
-                type = EmitSpecialize(expr);
-            }
-
-            Debug.Assert(type != null);
-
-            if (type.SpecialType == SpecialType.System_Int32 ||
-                type.SpecialType == SpecialType.System_Int64 ||
-                type.SpecialType == SpecialType.System_Boolean)
-            {
-                _il.EmitOpCode(ILOpCode.Conv_r8);    // int|bool -> long
-                type = this.CoreTypes.Double;
-            }
-            else if (type == CoreTypes.PhpNumber)
-            {
-                EmitPhpNumberAddr();
-                EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);    // number -> double
-                type = this.CoreTypes.Double;
-            }
-
-            //
-            return type;
         }
 
         public void EmitOpCode(ILOpCode code) => _il.EmitOpCode(code);
@@ -501,6 +419,26 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
         SyntaxTree _lazySyntaxTree;
 
+        public TypeSymbol EmitDereference(TypeSymbol t)
+        {
+            if (t == CoreTypes.PhpAlias)
+            {
+                // Template: <alias>.Value
+                return this.Emit_PhpAlias_GetValue();
+            }
+            else if (t == CoreTypes.PhpValue)
+            {
+                // Template: <value>.GetValue()
+                this.EmitPhpValueAddr();
+                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetValue);
+            }
+            else
+            {
+                // value already dereferenced
+                return t;
+            }
+        }
+
         /// <summary>
         /// Emits load of <c>PhpAlias.Value</c>,
         /// expecting <c>PhpAlias</c> on top of evaluation stack,
@@ -519,7 +457,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// expecting <c>PhpAlias</c> on top of evaluation stack,
         /// pushing <c>PhpValue</c> on top of the stack.
         /// </summary>
-        public void Emit_PhpAlias_GetValueRef()
+        public void Emit_PhpAlias_GetValueAddr()
         {
             // ref <stack>.Value
             EmitOpCode(ILOpCode.Ldflda);
@@ -598,6 +536,118 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Emits array of <paramref name="elementType"/> containing all current routine PHP arguments value.
+        /// </summary>
+        void Emit_ArgsArray(TypeSymbol elementType)
+        {
+            var routine = this.Routine;
+            if (routine == null)
+            {
+                throw new InvalidOperationException("Routine is null!");
+            }
+
+            var ps = routine.Parameters;
+            var last = ps.LastOrDefault();
+            var variadic = (last != null && last.IsParams && last.Type.IsSZArray()) ? last : null;  // optional params
+            var variadic_element = (variadic?.Type as ArrayTypeSymbol)?.ElementType;
+            int hasthis = routine.HasThis ? 1 : 0;  // +1 when loading parameter value if there is @this
+
+            ps = ps.Where(p => !p.IsImplicitlyDeclared).ToImmutableArray();  // parameters without implicitly declared parameters
+
+            if (ps.Length == 0 && variadic_element == elementType)
+            {
+                // == params
+                _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+            }
+            else
+            {
+                // COUNT: (N + params.Length)
+                _il.EmitIntConstant(ps.Length);
+
+                if (variadic != null)
+                {
+                    // + params.Length
+                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+                    _il.EmitOpCode(ILOpCode.Add);
+                }
+
+                // new [<COUNT>]
+                _il.EmitOpCode(ILOpCode.Newarr);
+                EmitSymbolToken(elementType, null);
+
+                // { p1, .., pN }
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    _il.EmitOpCode(ILOpCode.Dup);   // <array>
+                    _il.EmitIntConstant(i);         // [i]
+                    _il.EmitLoadArgumentOpcode(ps[i].Ordinal + hasthis);
+                    EmitConvert(ps[i].Type, 0, elementType);
+                    _il.EmitOpCode(ILOpCode.Stelem);
+                    EmitSymbolToken(elementType, null);
+                }
+
+                if (variadic != null)
+                {
+                    // { params[0, .., paramsN] }
+
+                    // Template: for (i = 0; i < params.Length; i++) [i + N] = params[i]
+
+                    var lbl_block = new object();
+                    var lbl_cond = new object();
+
+                    // tmparr = <array>
+                    var tmparr = this.GetTemporaryLocal(ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType));
+                    _il.EmitLocalStore(tmparr);
+
+                    // i = 0
+                    var tmpi = GetTemporaryLocal(CoreTypes.Int32);
+                    _il.EmitIntConstant(0);
+                    _il.EmitLocalStore(tmpi);
+                    _il.EmitBranch(ILOpCode.Br, lbl_cond);
+
+                    // {body}
+                    _il.MarkLabel(lbl_block);
+
+                    // <array>[i+N] = (T)params[i]
+                    _il.EmitLocalLoad(tmparr);   // <array>
+                    _il.EmitIntConstant(ps.Length);
+                    _il.EmitLocalLoad(tmpi);        
+                    _il.EmitOpCode(ILOpCode.Add);
+
+                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    _il.EmitLocalLoad(tmpi);
+                    _il.EmitOpCode(ILOpCode.Ldelem);
+                    EmitSymbolToken(variadic_element, null);
+                    EmitConvert(variadic_element, 0, elementType);
+
+                    _il.EmitOpCode(ILOpCode.Stelem);
+                    EmitSymbolToken(elementType, null);
+
+                    // i++
+                    _il.EmitLocalLoad(tmpi);
+                    _il.EmitIntConstant(1);
+                    _il.EmitOpCode(ILOpCode.Add);
+                    _il.EmitLocalStore(tmpi);
+
+                    // i < params.Length
+                    _il.MarkLabel(lbl_cond);
+                    _il.EmitLocalLoad(tmpi);
+                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+                    _il.EmitBranch(ILOpCode.Blt, lbl_block);
+
+                    // <array>
+                    _il.EmitLocalLoad(tmparr);   // <array>
+
+                    //
+                    ReturnTemporaryLocal(tmparr);
+                    ReturnTemporaryLocal(tmpi);
+                }
+            }
+        }
+
         public void EmitUnset(BoundReferenceExpression expr)
         {
             Debug.Assert(expr != null);
@@ -632,19 +682,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             // <this>
             if (thisExpr != null)
             {
-                thisType = Emit(thisExpr);
-                Debug.Assert(thisType != null && thisType.SpecialType != SpecialType.System_Void);
-
                 if (method.HasThis)
                 {
+                    // <thisExpr> -> <TObject>
+                    EmitConvert(thisExpr, thisType = method.ContainingType);
+
                     if (thisType.IsValueType)
                     {
-                        EmitStructAddr(thisType);   // value -> valueref
+                        EmitStructAddr(thisType);   // value -> valueaddr
                     }
                 }
                 else
                 {
-                    EmitPop(thisType);
+                    // POP <thisExpr>
+                    EmitPop(Emit(thisExpr));
                     thisType = null;
                 }
             }
@@ -657,15 +708,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // implicit $this instance
                         thisType = EmitThis();
-                        code = ILOpCode.Call;   // instead of .callvirt
                     }
                     else
                     {
                         throw new ArgumentException();  // TODO: PHP would create temporary instance of class
                     }
                 }
+                else
+                {
+                    thisType = null;
+                }
+            }
 
-                thisType = null;
+            // .callvirt -> .call
+            if (code == ILOpCode.Callvirt && (!method.HasThis || !method.IsMetadataVirtual()))
+            {
+                code = ILOpCode.Call;
             }
 
             // arguments
@@ -679,16 +737,60 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var p = parameters[param_index];
 
                 // special implicit parameters
-                if (arg_index == 0 && p.IsImplicitlyDeclared)
+                if (arg_index == 0 && p.IsImplicitlyDeclared && !p.IsParams)
                 {
                     // <ctx>
                     if (SpecialParameterSymbol.IsContextParameter(p))
                     {
+                        Debug.Assert(p.Type == CoreTypes.Context);
                         EmitLoadContext();
-                        continue;
                     }
-                    // TypeCtx, Locals, ...
-                    throw new NotImplementedException();
+                    else if (SpecialParameterSymbol.IsLocalsParameter(p))
+                    {
+                        Debug.Assert(p.Type == CoreTypes.PhpArray);
+                        if (!this.HasUnoptimizedLocals) throw new InvalidOperationException();
+                        LocalsPlaceOpt.EmitLoad(Builder)
+                            .Expect(CoreTypes.PhpArray);
+                    }
+                    else if (SpecialParameterSymbol.IsCallerArgsParameter(p))
+                    {
+                        // ((NamedTypeSymbol)p.Type).TypeParameters // TODO: IList<T>
+                        Emit_ArgsArray(CoreTypes.PhpValue); // TODO: T
+                    }
+                    else if (SpecialParameterSymbol.IsCallerClassParameter(p))
+                    {
+                        if (p.Type == CoreTypes.PhpTypeInfo)
+                        {
+                            if (this.CallerType != null)
+                                BoundTypeRef.EmitLoadPhpTypeInfo(this, this.CallerType);
+                            else
+                                Builder.EmitNullConstant();
+                        }
+                        else if (p.Type.SpecialType == SpecialType.System_String)
+                        {
+                            Builder.EmitStringConstant(this.CallerType != null
+                                ? ((IPhpTypeSymbol)this.CallerType).FullName.ToString()
+                                : null);
+                        }
+                        else
+                        {
+                            if (p.Type == CoreTypes.RuntimeTypeHandle)
+                            {
+                                // LOAD <RuntimeTypeHandle>
+                                this.EmitLoadToken(this.CallerType, null);
+                            }
+                            else
+                            {
+                                throw ExceptionUtilities.UnexpectedValue(p.Type);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    continue;
                 }
 
                 // load arguments
@@ -755,7 +857,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var writebacks = new List<WriteBackInfo>();
 
             int srcp = 0;
-            while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared)
+            while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared && !givenps[srcp].IsParams)
             {
                 srcp++;
             }
@@ -763,7 +865,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             for (int i = 0; i < targetps.Length; i++)
             {
                 var targetp = targetps[i];
-                if (targetp.IsImplicitlyDeclared)
+                if (targetp.IsImplicitlyDeclared && !targetp.IsParams)
                 {
                     if (SpecialParameterSymbol.IsContextParameter(targetp))
                     {
@@ -781,7 +883,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         var p = givenps[srcp];
                         EmitLoadArgument(
                             targetp,
-                            new BoundVariableRef(new BoundVariableName(new Devsense.PHP.Syntax.VariableName(p.MetadataName)))
+                            new BoundVariableRef(new BoundVariableName(new VariableName(p.MetadataName)))
                             {
                                 Variable = new BoundParameter(p, null),
                                 Access = BoundAccess.Read
@@ -865,7 +967,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <returns><see cref="WriteBackInfo"/> which has to be finalized with <see cref="WriteBackAndFree(CodeGenerator)"/> once the routine call ends.</returns>
             public static WriteBackInfo CreateAndLoad(CodeGenerator cg, ParameterSymbol targetp, BoundReferenceExpression expr)
             {
-                var writeback =  new WriteBackInfo()
+                var writeback = new WriteBackInfo()
                 {
                     TmpLocal = cg.GetTemporaryLocal(targetp.Type),
                     Target = expr,
@@ -981,12 +1083,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             ConstantValue cvalue;
             BoundExpression boundinitializer;
 
-            // TODO: targetp.IsParams
-
             if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
                 // keep NULL if parameter is a reference type
-                if (cvalue.IsNull && targetp.Type.IsReferenceType)
+                if (cvalue.IsNull && targetp.Type.IsReferenceType && targetp.Type != CoreTypes.PhpAlias)
                 {
                     _il.EmitNullConstant();
                     return;
@@ -997,9 +1097,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if ((boundinitializer = (targetp as SourceParameterSymbol)?.Initializer) != null)
             {
-                _emitTypeRefContext.Push((targetp as SourceParameterSymbol).Routine.TypeRefContext);
-                EmitConvert(boundinitializer, ptype = targetp.Type);
-                _emitTypeRefContext.Pop();
+                using (var cg = new CodeGenerator(this, (SourceRoutineSymbol)targetp.ContainingSymbol))
+                {
+                    cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                }
+            }
+            else if (targetp.IsParams)
+            {
+                // new T[0]
+                Emit_NewArray(((ArrayTypeSymbol)targetp.Type).ElementType, Array.Empty<BoundExpression>());
+                return;
             }
             else
             {
@@ -1032,7 +1139,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
-            return EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
+            return EmitCall(getter.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call, getter);
         }
 
         internal void EmitCastClass(TypeSymbol from, TypeSymbol to)
@@ -1150,6 +1257,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
         }
 
+        public void EmitIntStringKey(string key)
+        {
+            _il.EmitStringConstant(key);
+            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
+        }
+
         public void EmitIntStringKey(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
@@ -1159,8 +1272,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (constant.Value is string)
                 {
-                    _il.EmitStringConstant((string)constant.Value);
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
+                    EmitIntStringKey((string)constant.Value);
                 }
                 else if (constant.Value is long)
                 {
@@ -1274,7 +1386,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 return targetOpt;
                             case SpecialType.System_Int64:
                                 _il.EmitLongConstant((long)(int)value);
-                                break;
+                                return targetOpt;
                             case SpecialType.System_String:
                                 _il.EmitStringConstant(value.ToString());
                                 return targetOpt;
@@ -1372,26 +1484,23 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitStringConstant(string.Empty);
                     break;
                 default:
-                    if (type.IsReferenceType)
+                    if (type == CoreTypes.PhpAlias)
                     {
-                        if (type == CoreTypes.PhpArray || type == CoreTypes.IPhpArray)
-                        {
-                            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
-                        }
-                        else if (type == CoreTypes.PhpAlias)
-                        {
-                            // new PhpAlias(void, 1);
-                            Emit_PhpValue_Void();
-                            Emit_PhpValue_MakeAlias();
-                        }
-                        else if (type == CoreTypes.PhpString)
-                        {
-                            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString);
-                        }
-                        else
-                        {
-                            _il.EmitNullConstant();
-                        }
+                        // new PhpAlias(void, 1);
+                        Emit_PhpValue_Void();
+                        Emit_PhpValue_MakeAlias();
+                    }
+                    //else if (CoreTypes.PhpArray.Symbol.IsOfType(type))
+                    //{
+                    //    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray);
+                    //}
+                    //else if (type == CoreTypes.PhpString)
+                    //{
+                    //    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString);
+                    //}
+                    else if (type.IsReferenceType)
+                    {
+                        _il.EmitNullConstant();
                     }
                     else
                     {
@@ -1548,6 +1657,31 @@ namespace Pchp.CodeAnalysis.CodeGen
             //var dt = this.DeclaringCompilation.GetTypeByMetadataName("System.Diagnostics.Debug"); // System.dll
             //dt.GetMember("Assert")
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Emits copy of value from top of the stack if necessary.
+        /// </summary>
+        public TypeSymbol EmitDeepCopy(TypeSymbol t)
+        {
+            if (IsCopiable(t))
+            {
+                if (t == CoreTypes.PhpValue)
+                {
+                    EmitPhpValueAddr();
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+                }
+                else if (t == CoreTypes.PhpString)
+                {
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpString.DeepCopy);
+                }
+                else if (t == CoreTypes.PhpArray)
+                {
+                    return EmitCall(ILOpCode.Call, CoreMethods.PhpArray.DeepCopy);
+                }
+            }
+
+            return t;
         }
     }
 

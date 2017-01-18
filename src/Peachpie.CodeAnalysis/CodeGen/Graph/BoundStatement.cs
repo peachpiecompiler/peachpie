@@ -63,15 +63,31 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
+                var t = cg.Emit(this.Returned);
+
                 if (rvoid)
                 {
                     // <expr>;
-                    cg.EmitPop(this.Returned.Emit(cg));
+                    cg.EmitPop(t);
                 }
                 else
                 {
+                    if (cg.Routine.SyntaxSignature.AliasReturn)
+                    {
+                        Debug.Assert(rtype == cg.CoreTypes.PhpAlias);
+                    }
+                    else
+                    {
+                        // return by value
+                        //if (this.Returned.TypeRefMask.IsRef)
+                        {
+                            // dereference
+                            t = cg.EmitDereference(t);
+                        }
+                    }
+
                     // return (T)<expr>;
-                    cg.EmitConvert(this.Returned, rtype);
+                    cg.EmitConvert(t, this.Returned.TypeRefMask, rtype);
                 }
             }
 
@@ -87,24 +103,26 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitSequencePoint(this.PhpSyntax);
 
             //
-            var t = cg.Emit(Thrown);
+            cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
 
-            if (t.IsReferenceType)
-            {
-                if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
-                {
-                    throw new NotImplementedException();    // Wrap to System.Exception
-                }
-            }
-            else
-            {
-                //if (t == cg.CoreTypes.PhpValue)
-                //{
+            //var t = cg.Emit(Thrown);
+            //if (t.IsReferenceType)
+            //{
+            //    //if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
+            //    //{
+            //    //    throw new NotImplementedException();    // Wrap to System.Exception
+            //    //}
+            //    cg.EmitCastClass(t, cg.CoreTypes.Exception);
+            //}
+            //else
+            //{
+            //    //if (t == cg.CoreTypes.PhpValue)
+            //    //{
 
-                //}
+            //    //}
 
-                throw new NotImplementedException();    // Wrap to System.Exception
-            }
+            //    throw new NotImplementedException();    // Wrap to System.Exception
+            //}
 
             // throw <stack>;
             cg.Builder.EmitThrow(false);
@@ -182,11 +200,11 @@ namespace Pchp.CodeAnalysis.Semantics
                         holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0));
 
                     var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
-                    
+
                     // Template: this.value = <initilizer>;
 
                     valuePlace.EmitStorePrepare(il);
-                    cg.EmitConvert(initializer, valuePlace.TypeOpt);                    
+                    cg.EmitConvert(initializer, valuePlace.TypeOpt);
                     valuePlace.EmitStore(il);
 
                     //
@@ -197,6 +215,11 @@ namespace Pchp.CodeAnalysis.Semantics
             // default .ctor
             holder.EmitCtor(module, (il) =>
             {
+                // base..ctor()
+                var ctor = holder.BaseType.InstanceConstructors.Single();
+                il.EmitLoadArgumentOpcode(0);   // this
+                il.EmitCall(module, diagnostic, ILOpCode.Call, ctor);   // .ctor()
+
                 if (!requiresContext)
                 {
                     // emit default value only if it won't be initialized by Init above

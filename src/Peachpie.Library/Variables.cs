@@ -332,9 +332,8 @@ namespace Pchp.Library
                     return true;
             }
 
-            //PhpException.InvalidArgument("type", LibResources.GetString("invalid_type_name"));
-            //return false;
-            throw new ArgumentException(nameof(type));
+            PhpException.InvalidArgument(nameof(type), Resources.LibResources.invalid_type_name);
+            return false;
         }
 
         /// <summary>
@@ -357,7 +356,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is integer.</returns>
-        public static bool is_int(PhpValue variable) => variable.TypeCode == PhpTypeCode.Long || variable.TypeCode == PhpTypeCode.Int32;
+        public static bool is_int(PhpValue variable) => variable.IsInteger();
 
         /// <summary>
         /// Checks whether a dereferenced variable is integer.
@@ -380,7 +379,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is boolean.</returns>
-        public static bool is_bool(PhpValue variable) => variable.TypeCode == PhpTypeCode.Boolean;
+        public static bool is_bool(PhpValue variable) => variable.IsBoolean();
 
         /// <summary>
         /// Checks whether a dereferenced variable is double.
@@ -395,7 +394,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is double.</returns>
-        public static bool is_double(PhpValue variable) => variable.TypeCode == PhpTypeCode.Double;
+        public static bool is_double(PhpValue variable) => variable.IsDouble();
 
         /// <summary>
         /// Checks whether a dereferenced variable is double.
@@ -410,20 +409,20 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is string.</returns>
-        public static bool is_string(PhpValue variable) => variable.TypeCode == PhpTypeCode.String || variable.TypeCode == PhpTypeCode.WritableString;
+        public static bool is_string(PhpValue variable) => variable.TypeCode == PhpTypeCode.String || variable.TypeCode == PhpTypeCode.WritableString || (variable.IsAlias && is_string(variable.Alias.Value));
 
         /// <summary>
         /// Checks whether a dereferenced variable is an <see cref="PhpArray"/>.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is <see cref="PhpArray"/>.</returns>
-        public static bool is_array(PhpValue variable) => variable.IsArray;
+        public static bool is_array(PhpValue variable) => variable.IsArray || (variable.IsAlias && variable.Alias.Value.IsArray);
 
         /// <summary>
         /// Checks whether a dereferenced variable is <see cref="Core.Reflection.DObject"/>.
         /// </summary>
         /// <param name="variable">The variable.</param>
-        /// <returns>Whether <paramref name="variable"/> is <see cref="Core.Reflection.DObject"/>.</returns>
+        /// <returns>Whether <paramref name="variable"/> is <see cref="object"/>.</returns>
         public static bool is_object(PhpValue variable)
             => variable.IsObject && variable.Object != null && !(variable.Object is __PHP_Incomplete_Class);
 
@@ -434,9 +433,8 @@ namespace Pchp.Library
         /// <returns>Whether <paramref name="variable"/> is a valid <see cref="PhpResource"/>.</returns>
         public static bool is_resource(PhpValue variable)
         {
-            //PhpResource res = variable as PhpResource;
-            //return res != null && res.IsValid;
-            throw new NotImplementedException();
+            var res = variable.AsResource();
+            return res != null && res.IsValid;
         }
 
         /// <summary>
@@ -444,7 +442,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is a <B>null</B> reference.</returns>
-        public static bool is_null(PhpValue variable) => variable.IsNull;
+        public static bool is_null(PhpValue variable) => variable.IsNull || (variable.IsAlias && variable.Alias.Value.IsNull);
 
         #endregion
 
@@ -455,7 +453,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is an integer, a double, a bool or a string after dereferencing.</returns>
-        public static bool is_scalar(PhpValue variable) => PhpVariable.IsScalar(variable);
+        public static bool is_scalar(PhpValue variable) => variable.IsScalar;
 
         /// <summary>
         /// Checks whether a dereferenced variable is numeric.
@@ -531,6 +529,226 @@ namespace Pchp.Library
 
         #endregion
 
+        #region compact, extract
+
+        /// <summary>
+        /// Creates array containing variables and their values.
+        /// </summary>
+        /// <param name="locals">The table of defined variables.</param>
+        /// <param name="names">Names of the variables - each chan be either 
+        /// <see cref="string"/> or <see cref="PhpArray"/>. Names are retrived recursively from an array.</param>
+        /// <returns>The <see cref="PhpArray"/> which keys are names of variables and values are deep copies of 
+        /// their values.</returns>
+        /// <remarks>
+        /// Items in <paramref name="names"/> which are neither of type <see cref="string"/> nor <see cref="PhpArray"/> 
+        /// are ignored.</remarks>
+        /// <exception cref="PhpException"><paramref name="names"/> is a <B>null</B> reference.</exception>
+        public static PhpArray compact([ImportLocals]PhpArray locals, params PhpValue[] names)
+        {
+            if (names == null)
+            {
+                //PhpException.ArgumentNull("names");
+                //return null;
+                throw new ArgumentNullException(nameof(names));
+            }
+
+            PhpArray result = new PhpArray(names.Length);
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                string name;
+                PhpArray array;
+
+                if ((name = PhpVariable.StringOrNull(names[i])) != null)
+                {
+                    // if variable exists adds a copy of its current value to the result:
+                    var value = locals[name];
+                    if (value.IsSet)
+                    {
+                        result.Add(name, value.DeepCopy());
+                    }
+                }
+                else if ((array = PhpVariable.ArrayOrNull(names[i])) != null)
+                {
+                    // recursively searches for string variable names:
+                    using (PhpHashtable.RecursiveEnumerator iterator = array.GetRecursiveEnumerator(false, true))
+                    {
+                        while (iterator.MoveNext())
+                        {
+                            if ((name = PhpVariable.StringOrNull(iterator.Current.Value)) != null)
+                            {
+                                // if variable exists adds a copy of its current value to the result:
+                                var value = locals[name];
+                                if (value.IsSet)
+                                {
+                                    result.Add(name, value.DeepCopy());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            //
+            return result;
+        }
+
+        /// <summary>
+        /// Import variables into the current variables table from an array.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="locals">The table of defined variables.</param>
+        /// <param name="vars">The <see cref="PhpArray"/> containing names of variables and values to be assigned to them.</param>
+        /// <param name="type">The type of the extraction.</param>
+        /// <param name="prefix">The prefix (can be a <B>null</B> reference) of variables names.</param>
+        /// <returns>The number of variables actually affected by the extraction.</returns>
+        /// <exception cref="PhpException"><paramref name="type"/> is invalid.</exception>
+        /// <exception cref="PhpException"><paramref name="vars"/> is a <B>null</B> reference.</exception>
+        /// <exception cref="InvalidCastException">Some key of <paramref name="locals"/> is not type of <see cref="string"/>.</exception>
+        public static int extract(Context ctx, [ImportLocals]PhpArray locals, PhpArray vars, ExtractType type = ExtractType.Overwrite, string prefix = null)
+        {
+            if (vars == null)
+            {
+                //PhpException.ArgumentNull("vars");
+                //return 0;
+                throw new ArgumentNullException(nameof(vars));
+            }
+
+            if (vars.Count == 0)
+            {
+                return 0;
+            }
+
+            // unfortunately, type contains flags are combined with enumeration: 
+            bool refs = (type & ExtractType.Refs) != 0;
+            type &= ExtractType.NonFlags;
+
+            //
+            // construct the action used to set the variable into the locals/globals
+            //
+            Action<string/*name*/, PhpValue/*value*/> updateVariableFn;    // function that writes the value to locals/globals
+
+            #region select function that writes the variable
+
+            if (refs)
+            {
+                // makes a reference and writes it back (deep copy is not necessary, "no duplicate pointers" rule preserved):
+                updateVariableFn = (name, value) =>
+                {
+                    locals[name] = vars[name] = PhpValue.Create(value.EnsureAlias());
+                };
+            }
+            else
+            {
+                updateVariableFn = (name, value) =>
+                {
+                    // deep copy the value
+                    value = value.GetValue().DeepCopy();
+
+                    // put into locals
+                    var item = locals[name];
+                    if (item.IsAlias)
+                    {
+                        item.Alias.Value = value;
+                    }
+                    else
+                    {
+                        locals[name] = value;
+                    }
+                };
+            }
+
+            #endregion
+
+            Debug.Assert(updateVariableFn != null);
+
+            //
+            //
+            //
+            int extracted_count = 0;
+            using (var enumerator = vars.GetFastEnumerator())
+                while (enumerator.MoveNext())
+                {
+                    var name = enumerator.CurrentValue.ToString(ctx);
+                    if (string.IsNullOrEmpty(name) && type != ExtractType.PrefixInvalid) continue;
+
+                    switch (type)
+                    {
+                        case ExtractType.Overwrite:
+
+                            // anything is overwritten:
+
+                            break;
+
+                        case ExtractType.Skip:
+
+                            // skips existing name:
+                            if (locals.ContainsKey(name)) continue;
+
+                            break;
+
+                        case ExtractType.IfExists:
+
+                            // skips nonexistent name:
+                            if (!locals.ContainsKey(name)) continue;
+
+                            break;
+
+                        case ExtractType.PrefixAll:
+
+                            // prefix anything:
+                            name = string.Concat(prefix, "_", name);
+
+                            break;
+
+                        case ExtractType.PrefixInvalid:
+
+                            // prefixes invalid, others are overwritten:
+                            if (!PhpVariable.IsValidName(name))
+                                name = string.Concat(prefix, "_", name);
+
+                            break;
+
+                        case ExtractType.PrefixSame:
+
+                            // prefixes existing, others are overwritten:
+                            if (locals.ContainsKey(name))
+                                name = string.Concat(prefix, "_", name);
+
+                            break;
+
+                        case ExtractType.PrefixIfExists:
+
+                            // prefixes existing, others are skipped:
+                            if (locals.ContainsKey(name))
+                                name = string.Concat(prefix, "_", name);
+                            else
+                                continue;
+
+                            break;
+
+                        default:
+                            throw new ArgumentException(nameof(type));
+                            //PhpException.InvalidArgument("type", LibResources.GetString("arg_invalid_value"));
+                            //return 0;
+                    }
+
+                    // invalid names are skipped:
+                    if (PhpVariable.IsValidName(name))
+                    {
+                        // write the value to locals or globals:
+                        updateVariableFn(name, enumerator.CurrentValue);
+
+                        extracted_count++;
+                    }
+                }
+
+            //
+            return extracted_count;
+        }
+
+        #endregion
+
         #region print_r, var_export, var_dump
 
         abstract class FormatterVisitor : PhpVariableVisitor, IPhpVariableFormatter
@@ -555,7 +773,7 @@ namespace Pchp.Library
 
                 //
                 Accept(value);
-                
+
                 return _output;
             }
 
@@ -601,8 +819,8 @@ namespace Pchp.Library
             }
 
             public PrintFormatter(Context ctx, string newline)
-                :base(ctx, newline)
-            {   
+                : base(ctx, newline)
+            {
             }
 
             public override PhpString Serialize(PhpValue value)
@@ -708,7 +926,7 @@ namespace Pchp.Library
             }
 
             public ExportFormatter(Context ctx, string newline)
-                :base(ctx, newline)
+                : base(ctx, newline)
             {
             }
 
@@ -774,7 +992,7 @@ namespace Pchp.Library
                     OutputIndent();
                 }
                 Accept(entry.Value);
-                
+
                 _output.Append(",");
                 _output.Append(_nl);
             }
@@ -802,7 +1020,7 @@ namespace Pchp.Library
             }
 
             public DumpFormatter(Context ctx, string newline)
-                :base(ctx, newline)
+                : base(ctx, newline)
             {
             }
 

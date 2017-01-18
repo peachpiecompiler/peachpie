@@ -1,4 +1,5 @@
 ﻿using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.CodeGen;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -46,16 +48,15 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="cg">Code generator instance.</param>
         /// <param name="throwOnError">Emits PHP error in case type is not declared.</param>
         /// <remarks>Emits <c>NULL</c> in case type is not declared.</remarks>
-        internal void EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
+        internal TypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
         {
             Debug.Assert(cg != null);
 
-            Debug.Assert(throwOnError == false, "Not Implemented!");    // TODO: if (throwOnError) { if (DUP == null) PhpException.TypeNotDeclared(<typename>)
+            TypeSymbol t;
 
             if (this.ResolvedType != null)
             {
-                // CALL GetPhpTypeInfo<T>()
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(this.ResolvedType));
+                t = (TypeSymbol)EmitLoadPhpTypeInfo(cg, this.ResolvedType);
             }
             else
             {
@@ -63,8 +64,20 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitLoadContext();
                 this.EmitClassName(cg);
                 cg.Builder.EmitBoolConstant(true);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.GetDeclaredType_string_bool);
+                t = cg.EmitCall(ILOpCode.Call, throwOnError
+                    ? cg.CoreMethods.Context.GetDeclaredTypeOrThrow_string_bool
+                    : cg.CoreMethods.Context.GetDeclaredType_string_bool);
             }
+
+            return t;
+        }
+
+        internal static ITypeSymbol EmitLoadPhpTypeInfo(CodeGenerator cg, ITypeSymbol t)
+        {
+            Contract.ThrowIfNull(t);
+
+            // CALL GetPhpTypeInfo<T>()
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(t));
         }
 
         public void Accept(PhpOperationVisitor visitor) => visitor.VisitTypeRef(this);

@@ -105,7 +105,8 @@ namespace Pchp.CodeAnalysis.Symbols
             var result = DeclaringCompilation.GetTypeFromTypeRef(_syntax.TypeHint);
 
             // 2. optionally type specified in PHPDoc
-            if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0)
+            if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0
+                && (DeclaringCompilation.Options.PhpDocTypes & PhpDocTypes.ParameterTypes) != 0)
             {
                 var typectx = _routine.TypeRefContext;
                 var tmask = FlowAnalysis.PHPDoc.GetTypeMask(typectx, _ptagOpt.TypeNamesArray, _routine.GetNamingContext());
@@ -165,6 +166,18 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            if (IsParams)
+            {
+                yield return new SynthesizedAttributeData(
+                    (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ParamArrayAttribute__ctor),
+                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            yield break;
+        }
+
         public override bool IsOptional => this.HasExplicitDefaultValue;
 
         internal override ConstantValue ExplicitDefaultConstantValue
@@ -183,10 +196,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         return value;
                     }
 
-                    // old way: // TO BE REMOVED // TODO: analysis of literal expression has to resolve its ConstantValue
-                    value = SemanticsBinder.TryGetConstantValue(this.DeclaringCompilation, _syntax.InitValue);
-
-                    // NOTE: non-literal default values (like array()) must be handled by creating a method overload calling this method:
+                    // NOTE: non-literal default values (like array()) must be handled by creating a ghost method overload calling this method:
 
                     // Template:
                     // foo($a = [], $b = [1, 2, 3]) =>

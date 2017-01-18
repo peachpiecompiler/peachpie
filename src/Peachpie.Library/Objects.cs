@@ -1,9 +1,11 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
@@ -32,6 +34,46 @@ namespace Pchp.Library
         {
             var info = ctx.GetDeclaredType(ifaceName, autoload);
             return info != null && info.IsInterface;
+        }
+
+        /// <summary>
+        /// Returns the name of the callers class context.
+        /// </summary>
+        /// <param name="tctx">Current class context.</param>
+        /// <returns>Current class name.</returns>
+        [return: CastToFalse]
+        public static string get_class([ImportCallerClass]string tctx)
+        {
+            return tctx;
+        }
+
+        /// <summary>
+        /// Returns the name of the class of which the object <paramref name="obj"/> is an instance.
+        /// </summary>
+        /// <param name="tctx">Current class context.</param>
+        /// <param name="obj">The object whose class is requested.</param>
+        /// <returns><paramref name="obj"/>'s class name or current class name if <paramref name="obj"/> is <B>null</B>.</returns>
+        [return: CastToFalse]
+        public static string get_class([ImportCallerClass]string tctx, PhpValue obj)
+        {
+            if (obj.IsSet)
+            {
+                if (obj.IsObject)
+                {
+                    return obj.Object.GetType().FullName.Replace('.', '\\');
+                }
+                else if (obj.IsAlias)
+                {
+                    return get_class(tctx, obj.Alias.Value);
+                }
+                else
+                {
+                    // TODO: E_WARNING
+                    throw new ArgumentException(nameof(obj));
+                }
+            }
+
+            return tctx;
         }
 
         /// <summary>
@@ -104,5 +146,66 @@ namespace Pchp.Library
                 return is_a(ctx, obj, class_name);
             }
         }
+
+        /// <summary>
+        /// Gets the properties of the given object.
+        /// </summary>
+        /// <param name="caller">Caller context.</param>
+        /// <param name="obj"></param>
+        /// <returns>Returns an associative array of defined object accessible non-static properties for the specified object in scope.
+        /// If a property has not been assigned a value, it will be returned with a NULL value.</returns>
+        public static PhpArray get_object_vars([ImportCallerClass]RuntimeTypeHandle caller, object obj)
+        {
+            if (obj == null)
+            {
+                return null; // not FALSE since PHP 5.3
+            }
+            else if (obj.GetType() == typeof(stdClass))
+            {
+                // optimization for stdClass:
+                var arr = ((stdClass)obj).GetRuntimeFields();
+                return (arr != null) ? arr.DeepCopy() : PhpArray.NewEmpty();
+            }
+            else
+            {
+                var result = PhpArray.NewEmpty();
+
+                foreach (var pair in TypeMembersUtils.EnumerateInstanceFields(obj, caller))
+                {
+                    result.Add(pair.Key, pair.Value.DeepCopy());
+                }
+
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Creates an alias named <paramref name="alias"/> based on the user defined class <paramref name="original"/>.
+        /// The aliased class is exactly the same as the original class.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="original">Existing original class name.</param>
+        /// <param name="alias">The alias name for the class.</param>
+        /// <param name="autoload">Whether to autoload if the original class is not found. </param>
+        /// <returns><c>true</c> on success.</returns>
+        public static bool class_alias(Context ctx, string original, string alias, bool autoload = true)
+        {
+            if (!string.IsNullOrEmpty(original))
+            {
+                var type = ctx.GetDeclaredType(original, autoload);
+                if (type != null && type.Name != alias)
+                {
+                    ctx.DeclareType(type, alias);
+                    return ctx.GetDeclaredType(alias, false) == type;
+                }
+            }
+            else
+            {
+                PhpException.InvalidArgument(nameof(original), LibResources.arg_null_or_empty);
+            }
+
+            return false;
+        }
+
     }
 }

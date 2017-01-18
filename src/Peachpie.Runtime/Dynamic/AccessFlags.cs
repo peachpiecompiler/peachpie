@@ -53,6 +53,16 @@ namespace Pchp.Core.Dynamic
         /// The variable is checked for existance.
         /// </summary>
         Isset = 128,
+
+        /// <summary>
+        /// Read access flags.
+        /// </summary>
+        ReadMask = EnsureObject | EnsureArray | EnsureAlias | CheckOnly | Isset,
+
+        /// <summary>
+        /// Write access flags.
+        /// </summary>
+        WriteMask = WriteValue | WriteAlias | Unset,
     }
 
     internal static class AccessFlagsExtensions

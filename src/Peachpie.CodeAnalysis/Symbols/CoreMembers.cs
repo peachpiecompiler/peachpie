@@ -347,6 +347,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly PhpAliasHolder PhpAlias;
         public readonly PhpArrayHolder PhpArray;
         public readonly IPhpArrayHolder IPhpArray;
+        public readonly IPhpConvertibleHolder IPhpConvertible;
         public readonly PhpNumberHolder PhpNumber;
         public readonly OperatorsHolder Operators;
         public readonly PhpStringHolder PhpString;
@@ -363,6 +364,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpAlias = new PhpAliasHolder(types);
             PhpArray = new PhpArrayHolder(types);
             IPhpArray = new IPhpArrayHolder(types);
+            IPhpConvertible = new IPhpConvertibleHolder(types);
             PhpNumber = new PhpNumberHolder(types);
             PhpString = new PhpStringHolder(types);
             Operators = new OperatorsHolder(types);
@@ -387,6 +389,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsSet_PhpValue = ct.Operators.Method("IsSet", ct.PhpValue);
                 IsEmpty_PhpValue = ct.Operators.Method("IsEmpty", ct.PhpValue);
                 IsNullOrEmpty_String = ct.String.Method("IsNullOrEmpty", ct.String);
+                Concat_String_String = ct.String.Method("Concat", ct.String, ct.String);
 
                 ToString_Bool = ct.Convert.Method("ToString", ct.Boolean);
                 ToString_Int32 = ct.Convert.Method("ToString", ct.Int32);
@@ -396,9 +399,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
                 ToBoolean_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Boolean);
                 ToBoolean_Object = ct.Convert.Method("ToBoolean", ct.Object);
+                ToBoolean_IPhpConvertible = ct.Convert.Method("ToBoolean", ct.IPhpConvertible);
                 ToLong_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Long);
                 ToDouble_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Double);
                 ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
+                ToNumber_String = ct.Convert.Method("ToNumber", ct.String);
                 ToLong_String = ct.Convert.Method("StringToLongInteger", ct.String);
                 ToDouble_String = ct.Convert.Method("StringToDouble", ct.String);
 
@@ -422,6 +427,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
 
+                offsetGet_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetGet", ct.PhpValue);
+
                 Ceq_long_double = ct.Comparison.Method("Ceq", ct.Long, ct.Double);
                 Ceq_long_bool = ct.Comparison.Method("Ceq", ct.Long, ct.Boolean);
                 Ceq_long_string = ct.Comparison.Method("Ceq", ct.Long, ct.String);
@@ -429,6 +436,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Ceq_string_long = ct.Comparison.Method("Ceq", ct.String, ct.Long);
                 Ceq_string_double = ct.Comparison.Method("Ceq", ct.String, ct.Double);
                 Ceq_string_bool = ct.Comparison.Method("Ceq", ct.String, ct.Boolean);
+                CeqNull_value = ct.Comparison.Method("CeqNull", ct.PhpValue);
                 Clt_long_double = ct.Comparison.Method("Clt", ct.Long, ct.Double);
                 Cgt_long_double = ct.Comparison.Method("Cgt", ct.Long, ct.Double);
                 Compare_bool_bool = ct.Comparison.Method("Compare", ct.Boolean, ct.Boolean);
@@ -450,7 +458,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Div_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.PhpValue, ct.PhpValue);
                 Div_long_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.Long, ct.PhpValue);
-                Div_double_PhpValue = ct.PhpNumber.Method(WellKnownMemberNames.DivisionOperatorName, ct.Double, ct.PhpValue);
+                Div_double_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.Double, ct.PhpValue);
                 BitwiseOr_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseOrOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseAnd_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseAndOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseXor_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.ExclusiveOrOperatorName, ct.PhpValue, ct.PhpValue);
@@ -461,11 +469,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef,
                 GetItemValue_String_IntStringKey, GetItemValue_String_Int,
                 GetItemValue_PhpValue_IntStringKey_Bool, EnsureItemAlias_PhpValue_IntStringKey_Bool,
-                IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String,
+                IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
-                ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
+                ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object, ToBoolean_IPhpConvertible,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
-                ToNumber_PhpValue,
+                ToNumber_PhpValue, ToNumber_String,
                 AsObject_PhpValue, ToArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
@@ -473,7 +481,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
 
-                Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool,
+                offsetGet_ArrayAccess_PhpValue,
+
+                Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool, CeqNull_value,
                 Clt_long_double, Cgt_long_double,
                 Compare_bool_bool, Compare_number_value,
                 Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value,
@@ -503,6 +513,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsEmpty = ct.PhpValue.Property("IsEmpty");
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
+                GetValue = ct.PhpValue.Method("GetValue");
                 ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
 
@@ -510,7 +521,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
                 get_Boolean = ct.PhpValue.Method("get_Boolean");   // TODO: special name, property
                 get_String = ct.PhpValue.Method("get_String");   // TODO: special name, property
-                get_Object = ct.PhpValue.Method("get_Object");   // TODO: special name, property
+                Object = ct.PhpValue.Property("Object");
                 get_Array = ct.PhpValue.Method("get_Array");   // TODO: special name, property
 
                 Create_Boolean = ct.PhpValue.Method("Create", ct.Boolean);
@@ -533,9 +544,9 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
                 AsObject,
-                DeepCopy,
+                DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue,
-                get_Long, get_Double, get_Boolean, get_String, get_Object, get_Array,
+                get_Long, get_Double, get_Boolean, get_String, get_Array,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
                 FromClr_Object, FromClass_Object;
 
@@ -543,7 +554,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Void, Null;
 
             public readonly CoreProperty
-                IsEmpty;
+                IsEmpty, Object;
                 
         }
 
@@ -613,35 +624,40 @@ namespace Pchp.CodeAnalysis.Symbols
                 Add_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Add_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.Long);
                 Add_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.Long, ct.PhpNumber);
-                Add_double_number = ct.PhpNumber.Method("Add", ct.Double, ct.PhpNumber);
-                Add_number_double = ct.PhpNumber.Method("Add", ct.PhpNumber, ct.Double);
+                Add_double_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.Double, ct.PhpNumber);
+                Add_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.Double);
+                Add_number_value = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.PhpValue);
+                Add_value_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpValue, ct.PhpNumber);
                 Add_long_long = ct.PhpNumber.Method("Add", ct.Long, ct.Long);
                 Add_long_double = ct.PhpNumber.Method("Add", ct.Long, ct.Double);
                 Add_value_long = ct.PhpNumber.Method("Add", ct.PhpValue, ct.Long);
                 Add_value_double = ct.PhpNumber.Method("Add", ct.PhpValue, ct.Double);
-                Add_value_string = ct.PhpNumber.Method("Add", ct.PhpValue, ct.String);
-                Add_value_number = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpNumber);
                 Add_long_value = ct.PhpNumber.Method("Add", ct.Long, ct.PhpValue);
                 Add_double_value = ct.PhpNumber.Method("Add", ct.Double, ct.PhpValue);
-                Add_number_value = ct.PhpNumber.Method("Add", ct.PhpNumber, ct.PhpValue);
                 Add_value_value = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpValue);
+                Add_value_array = ct.PhpNumber.Method("Add", ct.PhpValue, ct.PhpArray);
+                Add_array_value = ct.PhpNumber.Method("Add", ct.PhpArray, ct.PhpValue);
 
-                Subtract_long_long = ct.PhpNumber.Method("Sub", ct.Long, ct.Long);
-                Subtract_number_double = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.Double);
-                Subtract_long_double = ct.PhpNumber.Method("Sub", ct.Long, ct.Double);
                 Subtract_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Subtract_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.Long, ct.PhpNumber);
                 Subtract_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.SubtractionOperatorName, ct.PhpNumber, ct.Long);
+                Subtract_long_long = ct.PhpNumber.Method("Sub", ct.Long, ct.Long);
+                Subtract_number_double = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.Double);
+                Subtract_long_double = ct.PhpNumber.Method("Sub", ct.Long, ct.Double);
                 Subtract_value_value = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.PhpValue);
                 Subtract_value_long = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.Long);
                 Subtract_value_double = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.Double);
                 Subtract_value_number = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.PhpNumber);
+                Subtract_number_value = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.PhpValue);
                 Subtract_long_value = ct.PhpNumber.Method("Sub", ct.Long, ct.PhpValue);
 
                 Negation = ct.PhpNumber.Operator(WellKnownMemberNames.UnaryNegationOperatorName, ct.PhpNumber);
                 Negation_long = ct.PhpNumber.Method("Minus", ct.Long);
 
+                Division_number_value = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.PhpNumber, ct.PhpValue);
                 Division_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.PhpNumber, ct.PhpNumber);
+                Division_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.PhpNumber, ct.Long);
+                Division_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.PhpNumber, ct.Double);
                 Division_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.DivisionOperatorName, ct.Long, ct.PhpNumber);
 
                 Mul_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.PhpNumber);
@@ -649,7 +665,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Mul_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.Long);
                 Mul_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.Long, ct.PhpNumber);
                 Mul_number_value = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.PhpValue);
-                Mul_value_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpNumber, ct.PhpValue);
+                Mul_value_number = ct.PhpNumber.Operator(WellKnownMemberNames.MultiplyOperatorName, ct.PhpValue, ct.PhpNumber);
                 Mul_long_long = ct.PhpNumber.Method("Multiply", ct.Long, ct.Long);
                 Mul_long_double = ct.PhpNumber.Method("Multiply", ct.Long, ct.Double);
                 Mul_double_value = ct.PhpNumber.Method("Multiply", ct.Double, ct.PhpValue);
@@ -685,8 +701,8 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass,
                 CompareTo_number, CompareTo_long, CompareTo_double,
-                Add_long_long, Add_long_double, Add_number_double, Add_double_number, Add_value_long, Add_value_double, Add_value_string, Add_value_number, Add_long_value, Add_double_value, Add_number_value, Add_value_value,
-                Subtract_long_long, Subtract_number_double, Subtract_long_double, Subtract_value_value, Subtract_value_long, Subtract_value_double, Subtract_value_number, Subtract_long_value,
+                Add_long_long, Add_long_double, Add_value_long, Add_value_double, Add_long_value, Add_double_value, Add_value_value, Add_value_array, Add_array_value,
+                Subtract_long_long, Subtract_number_double, Subtract_long_double, Subtract_value_value, Subtract_value_long, Subtract_value_double, Subtract_value_number, Subtract_number_value, Subtract_long_value,
                 Negation_long,
                 get_Long, get_Double,
                 Mul_long_long, Mul_long_double, Mul_long_value, Mul_double_value, Mul_value_value, Mul_value_long, Mul_value_double,
@@ -699,9 +715,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 Eq_number_number, Ineq_number_number,
                 Eq_number_long, Ineq_number_long,
                 Eq_number_double, Ineq_number_double,
-                Add_number_number, Add_number_long, Add_long_number,
+                Add_number_number, Add_number_long, Add_long_number, Add_value_number, Add_number_double, Add_double_number, Add_number_value,
                 Subtract_number_number, Subtract_long_number, Subtract_number_long,
-                Division_number_number, Division_long_number,
+                Division_number_value, Division_number_number, Division_number_long, Division_number_double, Division_long_number,
                 Mul_number_number, Mul_number_double, Mul_number_long, Mul_long_number, Mul_number_value, Mul_value_number,
                 gt_number_number, gt_number_long, gt_number_double,
                 lt_number_number, lt_number_long, lt_number_double,
@@ -709,6 +725,24 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreField
                 Default;
+        }
+
+        public struct IPhpConvertibleHolder
+        {
+            public IPhpConvertibleHolder(CoreTypes ct)
+            {
+                var t = ct.IPhpConvertible;
+
+                ToBoolean = t.Method("ToBoolean");
+                ToLong = t.Method("ToLong");
+                ToDouble = t.Method("ToDouble");
+                ToString_Context = t.Method("ToString", ct.Context);
+                ToNumber = t.Method("ToNumber");
+                ToClass = t.Method("ToClass");
+            }
+
+            public readonly CoreMethod
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToClass;
         }
 
         public struct PhpStringHolder
@@ -719,14 +753,18 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = ct.PhpString.Method("ToLong");
                 ToDouble = ct.PhpString.Method("ToDouble");
                 ToString_Context = ct.PhpString.Method("ToString", ct.Context);
+                ToNumber = ct.PhpString.Method("ToNumber");
 
                 Append_String = ct.PhpString.Method("Append", ct.String);
                 Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
+
+                DeepCopy = ct.PhpString.Method("DeepCopy");
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context,
-                Append_String, Append_PhpString;
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber,
+                Append_String, Append_PhpString,
+                DeepCopy;
         }
 
         public struct IPhpArrayHolder
@@ -782,6 +820,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemAlias_IntStringKey = t.Method("EnsureItemAlias", ct.IntStringKey);
 
                 New_PhpValue = t.Method("New", ct.PhpValue);
+                Union_PhpArray_PhpArray = t.Method("Union", ct.PhpArray, ct.PhpArray);
+
+                Empty = t.Field("Empty");
             }
 
             public readonly CoreMethod
@@ -791,8 +832,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy, GetForeachEnumerator_Boolean,
+                New_PhpValue, Union_PhpArray_PhpArray;
 
-                New_PhpValue;
+            public readonly CoreField
+                Empty;
         }
 
         public struct ConstructorsHolder
@@ -841,14 +884,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 OnInclude_TScript = ct.Context.Method("OnInclude");
                 Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
 
-                ScriptPath_TScript = ct.Context.Method("ScriptPath");
+                AssertTypeDeclared_PhpTypeInfo_string = ct.Context.Method("AssertTypeDeclared", ct.PhpTypeInfo, ct.String);
 
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
                 GetStatic_T = ct.Context.Method("GetStatic");
                 GetDeclaredType_string_bool = ct.Context.Method("GetDeclaredType", ct.String, ct.Boolean);
+                GetDeclaredTypeOrThrow_string_bool = ct.Context.Method("GetDeclaredTypeOrThrow", ct.String, ct.Boolean);
 
                 // properties
+                RootPath = ct.Context.Property("RootPath");
                 Globals = ct.Context.Property("Globals");
                 Server = ct.Context.Property("Server");
                 Request = ct.Context.Property("Request");
@@ -858,6 +903,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Env = ct.Context.Property("Env");
                 Files = ct.Context.Property("Files");
                 Session = ct.Context.Property("Session");
+                HttpRawPostData = ct.Context.Property("HttpRawPostData");
             }
 
             public readonly CoreMethod
@@ -865,14 +911,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_RoutineInfo, DeclareType_T,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
-                ScriptPath_TScript,
+                AssertTypeDeclared_PhpTypeInfo_string,
                 GetConstant_string_int32,
                 GetStatic_T,
-                GetDeclaredType_string_bool,
+                GetDeclaredType_string_bool, GetDeclaredTypeOrThrow_string_bool,
                 Dispose;
 
             public readonly CoreProperty
-                Globals, Server, Request, Get, Post, Cookie, Env, Files, Session;
+                RootPath,
+                Globals, Server, Request, Get, Post, Cookie, Env, Files, Session, HttpRawPostData;
         }
 
         public struct DynamicHolder
@@ -882,6 +929,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 CallBinderFactory_Function = ct.CallBinderFactory.Method("Function", ct.String, ct.String, ct.RuntimeTypeHandle, ct.Int32);
                 CallBinderFactory_InstanceFunction = ct.CallBinderFactory.Method("InstanceFunction", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
                 CallBinderFactory_StaticFunction = ct.CallBinderFactory.Method("StaticFunction", ct.RuntimeTypeHandle, ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
+                GetClassConstBinder_ctor = ct.GetClassConstBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
                 GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessFlags);
                 SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessFlags);
 
@@ -889,6 +937,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreConstructor
+                GetClassConstBinder_ctor,
                 GetFieldBinder_ctor, SetFieldBinder_ctor;
 
             public readonly CoreMethod

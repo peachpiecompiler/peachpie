@@ -90,7 +90,7 @@ public class DateTime
             throw new ArgumentException();
         }
 
-        this.Time = StrToTime(time, System_DateTime.UtcNow);
+        this.Time = StrToTime(ctx, time, System_DateTime.UtcNow);
 
         //this.date.Value = this.Time.ToString("yyyy-mm-dd HH:mm:ss");
         //this.timezone_type.Value = 3;
@@ -101,14 +101,14 @@ public class DateTime
 
     #region Methods
 
-    private static System_DateTime StrToTime(string timestr, System_DateTime time)
+    static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
     {
         if (string.IsNullOrEmpty(timestr) || timestr.Equals("now", StringComparison.OrdinalIgnoreCase))
         {
             return System_DateTime.UtcNow;
         }
 
-        var result = DateTimeFunctions.strtotime(timestr, DateTimeUtils.UtcToUnixTimeStamp(time));
+        var result = DateTimeFunctions.strtotime(ctx, timestr, DateTimeUtils.UtcToUnixTimeStamp(time));
         return (result >= 0) ? DateTimeUtils.UnixTimeStampToUtc(result) : System_DateTime.UtcNow;
     }
 
@@ -116,7 +116,7 @@ public class DateTime
     {
         if (timezone == null)
         {
-            //PhpException.ArgumentNull("timezone");
+            //PhpException.ArgumentNull(nameof(timezone));
             //return false;
             throw new ArgumentNullException();
         }
@@ -162,7 +162,7 @@ public class DateTime
             throw new ArgumentNullException();
         }
 
-        this.Time = StrToTime(modify, Time);
+        this.Time = StrToTime(_ctx, modify, Time);
 
         return this;
     }

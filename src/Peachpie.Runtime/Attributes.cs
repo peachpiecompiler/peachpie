@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -51,6 +52,51 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Marks public declarations that won't be visible to the compiled PHP script.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method)]
+    public sealed class PhpHiddenAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Denotates a function parameter of type <see cref="PhpArray"/>
+    /// that will be referenced to the array of local PHP variables.
+    /// </summary>
+    /// <remarks>
+    /// The parameter is used to let the function to read or modify caller routine local variables.
+    /// The parameter must be of type <see cref="PhpArray"/>.
+    /// The parameter must be before regular parameters.</remarks>
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class ImportLocalsAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Denotates a function parameter that will be filled with array of callers' parameters.
+    /// </summary>
+    /// <remarks>
+    /// The parameter is used to access calers' arguments.
+    /// The parameter must be of type <c>array</c>.
+    /// The parameter must be before regular parameters.</remarks>
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class ImportCallerArgsAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Denotates a function parameter that will be loaded with current class.
+    /// </summary>
+    /// <remarks>
+    /// The parameter is used to access calers' class context.
+    /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
+    /// The parameter must be before regular parameters.</remarks>
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class ImportCallerClassAttribute : Attribute
+    {
+    }
+
+    /// <summary>
 	/// Marks return values of methods implementing PHP functions which returns <B>false</B> on error
 	/// but has other return type than <see cref="bool"/> or <see cref="object"/>.
 	/// </summary>
@@ -60,7 +106,7 @@ namespace Pchp.Core
 	/// or of a reference type (<B>null</B> is converted to <B>false</B>).
 	/// </remarks>
     [AttributeUsage(AttributeTargets.ReturnValue, AllowMultiple = false, Inherited = false)]
-    public class CastToFalse : Attribute
+    public sealed class CastToFalse : Attribute
     {
 
     }
@@ -69,7 +115,7 @@ namespace Pchp.Core
     /// Marks classes that are declared as trait.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public class PhpTraitAttribute : Attribute
+    public sealed class PhpTraitAttribute : Attribute
     {
 
     }

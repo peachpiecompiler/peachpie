@@ -47,7 +47,7 @@ namespace Pchp.Library.PerlRegex
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="inner">The exception that is the cause of the current exception, or a <code>null</code>.</param>
-        public RegexMatchTimeoutException(string message, Exception inner) : base(message, inner) { }
+        public RegexMatchTimeoutException(string message, System.Exception inner) : base(message, inner) { }
 
         public string Input { get; } = string.Empty;
 

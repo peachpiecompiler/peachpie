@@ -62,14 +62,18 @@ namespace Pchp.Library
             {
                 PhpTypeInfo resolved = null;
 
-                // TODO: recursion prevention
-
-                var args = new[] { (PhpValue)fullName };
-
-                for (var node = _autoloaders.First; node != null && resolved == null; node = node.Next)
+                using (var token = new Context.RecursionCheckToken(_ctx, fullName))
                 {
-                    node.Value.Invoke(_ctx, args);
-                    resolved = _ctx.GetDeclaredType(fullName);
+                    if (!token.IsInRecursion)
+                    {
+                        var args = new[] { (PhpValue)fullName };
+
+                        for (var node = _autoloaders.First; node != null && resolved == null; node = node.Next)
+                        {
+                            node.Value.Invoke(_ctx, args);
+                            resolved = _ctx.GetDeclaredType(fullName);
+                        }
+                    }
                 }
 
                 //

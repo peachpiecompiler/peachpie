@@ -11,20 +11,22 @@ using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Semantics.Model
 {
-    internal class GlobalSemantics : ISemanticModel
+    internal class GlobalSymbolProvider : ISymbolProvider
     {
         #region Fields
 
         readonly PhpCompilation _compilation;
+        readonly ISymbolProvider _next;
 
         ImmutableArray<NamedTypeSymbol> _lazyExtensionContainers;
 
         #endregion
 
-        public GlobalSemantics(PhpCompilation compilation)
+        public GlobalSymbolProvider(PhpCompilation compilation)
         {
             Contract.ThrowIfNull(compilation);
             _compilation = compilation;
+            _next = new SourceSymbolProvider(compilation.SourceSymbolCollection);
         }
 
         internal static ImmutableArray<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
@@ -37,12 +39,12 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         internal static bool IsFunction(MethodSymbol method)
         {
-            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary;
+            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden();
         }
 
         internal static bool IsConstantField(FieldSymbol field)
         {
-            return (field.IsConst || (field.IsReadOnly && field.IsStatic)) && field.DeclaredAccessibility == Accessibility.Public;
+            return (field.IsConst || (field.IsReadOnly && field.IsStatic)) && field.DeclaredAccessibility == Accessibility.Public && !field.IsPhpHidden();
         }
 
         ImmutableArray<NamedTypeSymbol> ExtensionContainers
@@ -59,8 +61,6 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         }
 
         #region ISemanticModel
-
-        public ISemanticModel Next => _compilation.SourceSymbolTables;
 
         public INamedTypeSymbol GetType(QualifiedName name)
         {
@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
 
             //
-            return Next.GetType(name);
+            return _next.GetType(name);
         }
 
         public SourceFileSymbol GetFile(string path)
@@ -106,7 +106,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
             // TODO: RoutineSemantics // relative to current script
 
-            return Next.GetFile(path);
+            return _next.GetFile(path);
         }
 
         public IEnumerable<IPhpRoutineSymbol> ResolveFunction(QualifiedName name)
@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 // library functions, public static methods
                 ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName())).OfType<MethodSymbol>().Where(IsFunction).OfType<IPhpRoutineSymbol>()
                 // source functions
-                .Concat(Next.ResolveFunction(name));
+                .Concat(_next.ResolveFunction(name));
 
             return result;
         }
@@ -138,7 +138,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             if (candidates.Count > 1)
                 return null;    // TODO: ErrCode ambiguity
 
-            return Next.ResolveConstant(name);
+            return _next.ResolveConstant(name);
         }
 
         public bool IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from)

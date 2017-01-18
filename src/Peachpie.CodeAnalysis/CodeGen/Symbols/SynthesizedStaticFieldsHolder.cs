@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection.Metadata;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -25,6 +26,11 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false, this, null, new ArgPlace(this, 0));
 
+                // base..ctor()
+                cg.EmitThis();   // this
+                il.EmitCall(module, diagnostic, ILOpCode.Call, this.BaseType.InstanceConstructors.Single());   // .ctor()
+
+                //
                 foreach (var fld in this.Fields)
                 {
                     if (fld.RequiresContext)

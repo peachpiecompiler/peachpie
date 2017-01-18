@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Pchp.Core.Resources;
+using Pchp.Core.Utilities;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,6 +35,28 @@ namespace Pchp.Core
         /// </summary>
         protected OrderedDictionary.Enumerator _intrinsicEnumerator;
 
+        /// <summary>
+        /// Empty array singleton.
+        /// Must not be modified.
+        /// </summary>
+        public static readonly PhpArray Empty = new PhpArray();
+
+        /// <summary>
+        /// Fast creation of an empty array
+        /// by referencing internal structure of empty singleton.
+        /// </summary>
+        public static PhpArray NewEmpty() => Empty.DeepCopy();
+
+        /// <summary>
+        /// Helper property used by visitor algorithms.
+        /// Gets value determining whether this instance has been visited during recursive pass of some structure containing <see cref="PhpArray"/>s.
+        /// </summary>
+        /// <remarks>
+        /// Must be set to <c>false</c> immediately after the pass.
+        /// </remarks>
+        public bool Visited { get { return _visited; } set { _visited = value; } }
+        bool _visited = false;
+
         #region Constructors
 
         /// <summary>
@@ -45,13 +69,6 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="capacity"></param>
         public PhpArray(int capacity) : base(capacity) { }
-
-        /// <summary>
-        /// Creates a new instance of <see cref="PhpArray"/> with specified capacities for integer and string keys respectively.
-        /// </summary>
-        /// <param name="intCapacity"></param>
-        /// <param name="stringCapacity"></param>
-        public PhpArray(int intCapacity, int stringCapacity) : base(intCapacity + stringCapacity) { }
 
         /// <summary>
         /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
@@ -114,9 +131,12 @@ namespace Pchp.Core
         /// Keys will correspond order of values in the array.</param>
         public static PhpArray New(params object[] values)
         {
-            PhpArray result = new PhpArray(values.Length, 0);
+            PhpArray result = new PhpArray(values.Length);
             foreach (object value in values)
+            {
                 result.Add(value);
+            }
+
             return result;
         }
 
@@ -127,11 +147,19 @@ namespace Pchp.Core
         /// Keys will correspond order of values in the array.</param>
         public static PhpArray New(params PhpValue[] values)
         {
-            PhpArray result = new PhpArray(values.Length, 0);
+            PhpArray result = new PhpArray(values.Length);
             foreach (var value in values)
+            {
                 result.Add(value);
+            }
+
             return result;
         }
+
+        /// <summary>
+        /// Makes new array containing union of two arrays.
+        /// </summary>
+        public static PhpArray Union(PhpArray x, PhpArray y) => (PhpArray)x.DeepCopy().Unite(y);
 
         /// <summary>
         /// Creates an instance of <see cref="PhpArray"/> filled by given entries.
@@ -160,7 +188,7 @@ namespace Pchp.Core
         /// Keys will correspond order of values in the array.</param>
         public static PhpArray New(PhpValue value)
         {
-            return new PhpArray(1, 0)
+            return new PhpArray(1)
             {
                 value
             };
@@ -179,6 +207,14 @@ namespace Pchp.Core
         /// Gets PHP enumerator for this array.
         /// </summary>
         public new OrderedDictionary.Enumerator GetEnumerator() => new OrderedDictionary.Enumerator(this);
+
+        /// <summary>
+        /// Adds a variable into the array while keeping duplicit keys in sub-arrays of indexed items.
+        /// </summary>
+        /// <param name="name">Key, respecting <c>[subkey]</c> notation.</param>
+        /// <param name="value">The value.</param>
+        /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(IPhpArray, string, string, string)"/> for details.</remarks>
+        public void AddVariable(string name, string value) => NameValueCollectionUtils.AddVariable(this, name, value);
 
         #endregion
 
@@ -205,11 +241,13 @@ namespace Pchp.Core
 
         public string ToStringOrThrow(Context ctx)
         {
-            //PhpException.Throw(PhpError.Notice, CoreResources.GetString("array_to_string_conversion"));
-            
+            PhpException.Throw(PhpError.Notice, ErrResources.array_to_string_conversion);            
             return ToString(ctx);
         }
 
+        /// <summary>
+        /// Creates <see cref="stdClass"/> with runtime instance fields copied from entries of this array.
+        /// </summary>
         public object ToClass()
         {
             return new stdClass()
@@ -222,32 +260,247 @@ namespace Pchp.Core
 
         #region IPhpComparable
 
-        public int Compare(PhpValue obj)
+        public int Compare(PhpValue value) => Compare(value, PhpComparer.Default);
+
+        public int Compare(PhpValue value, IComparer<PhpValue> comparer)
         {
-            switch (obj.TypeCode)
+            switch (value.TypeCode)
             {
                 case PhpTypeCode.Object:
-                    if (obj.Object == null) return Count;
+                    if (value.Object == null) return Count;
                     break;
 
                 case PhpTypeCode.Boolean:
-                    return (Count > 0 ? 2 : 1) - (obj.Boolean ? 2 : 1);
+                    return (Count > 0 ? 2 : 1) - (value.Boolean ? 2 : 1);
 
                 case PhpTypeCode.PhpArray:
                     // compare elements:
-                    //bool incomparable;
-                    //int result = CompareArrays(this, obj.Array, comparer, out incomparable);
-                    //if (incomparable)
-                    //{
-                    //    //PhpException.Throw(PhpError.Warning, CoreResources.GetString("incomparable_arrays_compared"));
-                    //    throw new ArgumentException("incomparable_arrays_compared");
-                    //}
-                    //return result;
-                    throw new NotImplementedException();
+                    bool incomparable;
+                    int result = CompareArrays(this, value.Array, comparer, out incomparable);
+                    if (incomparable)
+                    {
+                        PhpException.Throw(PhpError.Warning, ErrResources.incomparable_arrays_compared);
+                    }
+                    return result;
             }
 
             //
             return 1;
+        }
+
+        /// <summary>
+		/// Compares two instances of <see cref="PhpArray"/>.
+		/// </summary>
+        /// <param name="x">First operand. Cannot be <c>null</c>.</param>
+        /// <param name="y">Second operand. Cannot be <c>null</c>.</param>
+		/// <param name="comparer">The comparer.</param>
+		/// <param name="incomparable">Whether arrays are incomparable 
+		/// (no difference is found before both arrays enters an infinite recursion). 
+		/// Returns zero then.</param>
+		public static int CompareArrays(PhpArray x, PhpArray y, IComparer<PhpValue> comparer, out bool incomparable)
+        {
+            Debug.Assert(x != null && y != null);
+
+            incomparable = false;
+
+            // if both operands point to the same internal dictionary:
+            if (object.ReferenceEquals(x.table, y.table)) return 0;
+
+            //
+            PhpArray array_x, array_y;
+            PhpArray sorted_x, sorted_y;
+            
+            // if numbers of elements differs:
+            int result = x.Count - y.Count;
+            if (result != 0) return result;
+
+            // comparing with the same instance:
+            if (x == y) return 0;
+
+            // marks arrays as visited (will be always restored to false value before return):
+            x.Visited = true;
+            y.Visited = true;
+
+            // it will be more effective to implement OrderedHashtable.ToOrderedList method and use it here (in future version):
+            sorted_x = (PhpArray)x.Clone();
+            sorted_x.Sort(KeyComparer.ArrayKeys);
+            sorted_y = (PhpArray)y.Clone();
+            sorted_y.Sort(KeyComparer.ArrayKeys);
+
+            var iter_x = sorted_x.GetFastEnumerator();
+            var iter_y = sorted_y.GetFastEnumerator();
+
+            result = 0;
+
+            try
+            {
+                // compares corresponding elements (keys first values then):
+                while (iter_x.MoveNext())
+                {
+                    iter_y.MoveNext();
+
+                    // compares keys:
+                    result = iter_x.CurrentKey.CompareTo(iter_y.CurrentKey);
+                    if (result != 0) break;
+
+                    // dereferences childs if they are references:
+                    var child_x = iter_x.CurrentValue.GetValue();
+                    var child_y = iter_y.CurrentValue.GetValue();
+
+                    // compares values:
+                    if ((array_x = child_x.ArrayOrNull()) != null)
+                    {
+                        if ((array_y = child_y.ArrayOrNull()) != null)
+                        {
+                            // at least one child has not been visited yet => continue with recursion:
+                            if (!array_x.Visited || !array_y.Visited)
+                            {
+                                result = CompareArrays(array_x, array_y, comparer, out incomparable);
+                            }
+                            else
+                            {
+                                incomparable = true;
+                            }
+
+                            // infinity recursion has been detected:
+                            if (incomparable) break;
+                        }
+                        else
+                        {
+                            // compares an array with a non-array:
+                            array_x.Compare(child_y, comparer);
+                        }
+                    }
+                    else
+                    {
+                        // compares unknown item with a non-array:
+                        result = -comparer.Compare(child_y, child_x);
+                    }
+
+                    if (result != 0) break;
+                } // while
+            }
+            finally
+            {
+                x.Visited = false;
+                y.Visited = false;
+            }
+            return result;
+        }
+
+        #endregion
+
+        #region Strict Comparison
+
+        /// <summary>
+        /// Compares this instance with another <see cref="PhpArray"/>.
+        /// </summary>
+        /// <param name="array">The array to be strictly compared.</param>
+        /// <returns>Whether this instance strictly equals to <paramref name="array"/>.</returns>
+        /// <remarks>
+        /// Arrays are strictly equal if all entries are strictly equal and in the same order in both arrays.
+        /// Entries are strictly equal if keys are the same and values are strictly equal 
+        /// in the terms of operator <B>===</B>.
+        /// </remarks>
+        public bool StrictCompareEq(PhpArray array)
+        {
+            bool incomparable = false;
+
+            var result = array != null && StrictCompareArrays(this, array, out incomparable);
+            if (incomparable)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.incomparable_arrays_compared);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Compares two instances of <see cref="PhpArray"/> for strict equality.
+        /// </summary>
+        /// <param name="x">First operand. Cannot be <c>null</c>.</param>
+        /// <param name="y">Second operand. Cannot be <c>null</c>.</param>
+		/// <param name="incomparable">Whether arrays are incomparable 
+        /// (no difference is found before both arrays enters an infinite recursion). 
+        /// Returns <B>true</B> then.</param>
+        static bool StrictCompareArrays(PhpArray x, PhpArray y, out bool incomparable)
+        {
+            Debug.Assert(x != null && y != null);
+
+            incomparable = false;
+
+            // if both operands point to the same internal dictionary:
+            if (object.ReferenceEquals(x.table, y.table)) return true;
+
+            // if numbers of elements differs:
+            if (x.Count != y.Count) return false;
+
+            // comparing with the same instance:
+            if (x == y) return true;
+
+            var iter_x = x.GetFastEnumerator();
+            var iter_y = y.GetFastEnumerator();
+
+            PhpArray array_x, array_y;
+
+            // marks arrays as visited (will be always restored to false value before return):
+            x.Visited = true;
+            y.Visited = true;
+
+            bool result = true;
+
+            try
+            {
+                // compares corresponding elements (keys first values then):
+                while (result && iter_x.MoveNext())
+                {
+                    iter_y.MoveNext();
+
+                    // compares keys:
+                    if (!iter_x.Current.Key.Equals(iter_y.Current.Key))
+                    {
+                        result = false;
+                        break;
+                    }
+
+                    var child_x = iter_x.CurrentValue;
+                    var child_y = iter_y.CurrentValue;
+                    
+                    // compares values:
+                    if ((array_x = child_x.ArrayOrNull()) != null)
+                    {
+                        if ((array_y = child_y.ArrayOrNull()) != null)
+                        {
+                            // at least one child has not been visited yet => continue with recursion:
+                            if (!array_x.Visited || !array_y.Visited)
+                            {
+                                result = StrictCompareArrays(array_x, array_y, out incomparable);
+                            }
+                            else
+                            {
+                                incomparable = true;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // an array with a non-array comparison:
+                            result = false;
+                        }
+                    }
+                    else
+                    {
+                        // compares unknown item with a non-array:
+                        result = child_x.GetValue().StrictEquals(child_y.GetValue());
+                    }
+                } // while
+            }
+            finally
+            {
+                x.Visited = false;
+                y.Visited = false;
+            }
+            return result;
         }
 
         #endregion

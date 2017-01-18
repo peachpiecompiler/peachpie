@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsVirtual => false;
         public override bool IsStatic => false;
         public override MethodKind MethodKind => MethodKind.Ordinary;
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => true;
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
 
         /// <summary>
         /// <c>__construct</c> in current class. Can be <c>null</c>.
@@ -94,12 +94,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         static bool CanBePassedTo(ParameterSymbol[] givenparams, ParameterSymbol[] calledparams)
         {
-            if (calledparams.Length > givenparams.Length)
-                return false;
-
             for (int i = 0; i < calledparams.Length; i++)
             {
-                if (!givenparams[i].CanBePassedTo(calledparams[i]))
+                if (i >= givenparams.Length)
+                {
+                    if (!calledparams[i].IsOptional)
+                    {
+                        return false;
+                    }
+                }
+                else if (!givenparams[i].CanBePassedTo(calledparams[i]))
                 {
                     return false;
                 }
@@ -269,7 +273,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             if (SpecialParameterSymbol.IsContextParameter(p))
                                 continue;
 
-                            ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name,
+                            ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name, p.IsParams,
                                 explicitDefaultConstantValue: p.ExplicitDefaultConstantValue));
                         }
                     }

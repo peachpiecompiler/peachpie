@@ -261,35 +261,35 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+		/// Checks whether a string is "valid" PHP variable identifier.
+		/// </summary>
+		/// <param name="name">The variable name.</param>
+		/// <returns>
+		/// Whether <paramref name="name"/> is "valid" name of variable, i.e. [_[:alpha:]][_0-9[:alpha:]]*.
+		/// This doesn't say anything about whether a variable of such name can be used in PHP, e.g. <c>${0}</c> is ok.
+		/// </returns>
+		public static bool IsValidName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+
+            // first char:
+            if (!char.IsLetter(name[0]) && name[0] != '_') return false;
+
+            // next chars:
+            for (int i = 1; i < name.Length; i++)
+            {
+                if (!char.IsLetterOrDigit(name[i]) && name[i] != '_') return false;
+            }
+
+            return true;
+        }
+
         public static bool IsValidCallback(IPhpCallable callable)
         {
             PhpCallback tmp;
 
             return callable != null && ((tmp = callable as PhpCallback) == null || tmp.IsValid);
-        }
-
-        /// <summary>
-        /// Finds whether a value is a scalar.
-        /// </summary>
-        /// <remarks>Scalar variables are those containing an integer, float, string or boolean.</remarks>
-        public static bool IsScalar(this PhpValue variable)
-        {
-            switch (variable.TypeCode)
-            {
-                case PhpTypeCode.Boolean:
-                case PhpTypeCode.Int32:
-                case PhpTypeCode.Long:
-                case PhpTypeCode.Double:
-                case PhpTypeCode.String:
-                case PhpTypeCode.WritableString:
-                    return true;
-
-                case PhpTypeCode.Alias:
-                    return IsScalar(variable.Alias.Value);
-
-                default:
-                    return false;
-            }
         }
 
         /// <summary>
@@ -312,14 +312,61 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Determines whether the value is <see cref="bool"/>.
+        /// </summary>
+        public static bool IsBoolean(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Boolean:
+                    return true;
+
+                case PhpTypeCode.Alias:
+                    return IsBoolean(value.Alias.Value);
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the value is <see cref="double"/>.
+        /// </summary>
+        public static bool IsDouble(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Double:
+                    return true;
+
+                case PhpTypeCode.Alias:
+                    return IsDouble(value.Alias.Value);
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// In case value is a resource, gets its reference.
+        /// </summary>
+        public static PhpResource AsResource(this PhpValue value)
+        {
+            var resource = value.Object as PhpResource;
+            if (resource == null && value.IsAlias)
+            {
+                resource = value.Alias.Value.Object as PhpResource;
+            }
+
+            return resource;
+        }
+
+        /// <summary>
         /// In case value contains <see cref="PhpArray"/>,
         /// its instance is returned. Otherwise <c>null</c>.
         /// </summary>
         /// <remarks>Value is dereferenced if necessary.</remarks>
-        public static PhpArray ArrayOrNull(this PhpValue value)
-        {
-            return (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpArray;
-        }
+        public static PhpArray ArrayOrNull(this PhpValue value) => AsArray(value);
 
         /// <summary>
         /// Alias to <see cref="StringOrNull(PhpValue)"/>.
@@ -358,18 +405,23 @@ namespace Pchp.Core
             }
         }
 
+        public static byte[] ToBytes(this PhpValue value, Context ctx)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.WritableString: return value.WritableString.ToBytes(ctx);
+                case PhpTypeCode.Alias: return ToBytes(value.Alias.Value, ctx);
+                default: return ctx.StringEncoding.GetBytes(value.ToString(ctx));
+            }
+        }
+
         /// <summary>
         /// In case given value contains an array (<see cref="PhpArray"/>),
         /// it is returned. Otherwise <c>null</c>.
         /// </summary>
         public static PhpArray AsArray(this PhpValue value)
         {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.PhpArray: return value.Array;
-                case PhpTypeCode.Alias: return AsArray(value.Alias.Value);
-                default: return null;
-            }
+            return (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpArray;
         }
     }
 }

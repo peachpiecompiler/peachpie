@@ -152,6 +152,13 @@ namespace Pchp.Core
         /// <typeparam name="T">Type to be declared in current context.</typeparam>
         public void DeclareType<T>() => _types.DeclareType<T>();
 
+        /// <summary>
+        /// Declare a runtime user type unser an aliased name.
+        /// </summary>
+        /// <param name="tinfo">Original type descriptor.</param>
+        /// <param name="typename">Type name alias, can differ from <see cref="PhpTypeInfo.Name"/>.</param>
+        public void DeclareType(PhpTypeInfo tinfo, string typename) => _types.DeclareTypeAlias(tinfo, typename);
+
         public void AssertTypeDeclared<T>()
         {
             if (!_types.IsDeclared(TypeInfoHolder<T>.TypeInfo))
@@ -165,6 +172,19 @@ namespace Pchp.Core
         /// </summary>
         public PhpTypeInfo GetDeclaredType(string name, bool autoload = false)
             => _types.GetDeclaredType(name) ?? (autoload ? this.AutoloadService.AutoloadTypeByName(name) : null);
+
+        /// <summary>
+        /// Gets runtime type information, or <c>null</c> if type with given is not declared.
+        /// </summary>
+        public PhpTypeInfo GetDeclaredTypeOrThrow(string name, bool autoload = false)
+        {
+            var tinfo = GetDeclaredType(name, autoload);
+            
+            // TODO: Err PhpException.Throw(PhpError.Error, Resources.ErrResources....
+            Debug.Assert(tinfo != null);
+
+            return tinfo;
+        }
 
         /// <summary>
         /// Gets enumeration of all types declared in current context.
@@ -231,7 +251,7 @@ namespace Pchp.Core
 
             if (path.StartsWith(this.RootPath, StringComparison.Ordinal)) // rooted
             {
-                script = _scripts.GetScript(path.Substring(this.RootPath.Length));
+                script = _scripts.GetScript(path.Substring(this.RootPath.Length + 1));
             }
             else
             {
@@ -251,7 +271,11 @@ namespace Pchp.Core
             }
             else
             {
-                if (throwOnError)
+                if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation)
+                {
+                    return PhpValue.Null;
+                }
+                else if (throwOnError)
                 {
                     throw new ArgumentException($"File '{path}' cannot be included with current configuration.");   // TODO: ErrCode
                 }
@@ -262,12 +286,31 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Tries to read a file and outputs its content.
+        /// </summary>
+        /// <param name="path">Path to the file. Will be resolved using available stream wrappers.</param>
+        /// <returns><c>true</c> if file was read and outputted, otherwise <c>false</c>.</returns>
+        bool TryIncludeFileContent(string path)
+        {
+            var fnc = this.GetDeclaredFunction("readfile");
+            if (fnc != null)
+            {
+                return fnc.PhpCallable(this, (PhpValue)path).ToLong() >= 0;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         #endregion
 
         #region Path Resolving
 
         /// <summary>
         /// Root directory (web root or console app root) where loaded scripts are relative to.
+        /// The root path does not end with directory separator.
         /// </summary>
         /// <remarks>
         /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
@@ -284,13 +327,6 @@ namespace Pchp.Core
         /// </summary>
         public virtual string[] IncludePaths => _defaultIncludePaths;   // TODO:  => this.Config.FileSystem.IncludePaths
         static readonly string[] _defaultIncludePaths = new[] { "." };
-
-        /// <summary>
-        /// Gets full script path in current context.
-        /// </summary>
-        /// <typeparam name="TScript">Script type.</typeparam>
-        /// <returns>Full script path.</returns>
-        public string ScriptPath<TScript>() => RootPath + ScriptsMap.GetScript<TScript>().Path;
 
         #endregion
 

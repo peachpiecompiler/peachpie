@@ -48,6 +48,71 @@ namespace Pchp.CodeAnalysis.CommandLine
             return TryParseOption(arg, out name, out value);
         }
 
+        IEnumerable<CommandLineSourceFile> ExpandFileArgument(string path, string baseDirectory, List<Diagnostic> diagnostics)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return Array.Empty<CommandLineSourceFile>();
+            }
+
+            var gindex = path.IndexOf('*');
+            if (gindex < 0)
+            {
+                return ParseFileArgument(path, baseDirectory, diagnostics);
+            }
+
+            var dir = baseDirectory;
+
+            // root
+            if (PathUtilities.IsDirectorySeparator(path[0])) // unix root
+            {
+                dir = "/";
+            }
+            else if (path[1] == ':') // windows root
+            {
+                dir = path.Substring(0, 3); // C:\
+                path = path.Substring(3);
+            }
+
+            // process the path parts and go through the directory
+            var parts = path.Split(new char[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                var p = parts[i];
+                if (p == ".")
+                {
+                    // do nothing
+                }
+                else if (p == "..")
+                {
+                    // parent dir
+                    dir = PathUtilities.GetDirectoryName(dir);
+                }
+                else if (p == "**")
+                {
+                    // all subdirs
+                    return new[] { dir }.Concat(System.IO.Directory.GetDirectories(dir, "*", System.IO.SearchOption.AllDirectories))
+                        .SelectMany((subdir) => ExpandFileArgument(string.Join("/", parts.Skip(i + 1)), subdir, diagnostics));
+                }
+                else
+                {
+                    if (i == parts.Length - 1)
+                    {
+                        // file
+                        return ParseFileArgument(p, dir, diagnostics);
+                    }
+                    else
+                    {
+                        return System.IO.Directory.GetDirectories(dir, p, System.IO.SearchOption.TopDirectoryOnly)
+                            .SelectMany((subdir) => ExpandFileArgument(string.Join("/", parts.Skip(i)), subdir, diagnostics));
+                    }
+                }
+            }
+
+            //return ParseFileArgument(path, baseDirectory, diagnostics);
+            throw new ArgumentException();
+        }
+
         internal override CommandLineArguments CommonParse(IEnumerable<string> args, string baseDirectory, string sdkDirectoryOpt, string additionalReferenceDirectories)
         {
             List<Diagnostic> diagnostics = new List<Diagnostic>();
@@ -67,6 +132,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string runtimeMetadataVersion = null; // will be read from cor library if not specified in cmd
             string compilationName = null;
             bool optimize = false;
+            PhpDocTypes phpdocTypes = PhpDocTypes.None;
             OutputKind outputKind = OutputKind.ConsoleApplication;
             bool optionsEnded = false;
             bool displayHelp = false, displayLogo = true;
@@ -84,7 +150,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 string name, value;
                 if (optionsEnded || !TryParseOption2(arg, out name, out value))
                 {
-                    sourceFiles.AddRange(ParseFileArgument(arg, baseDirectory, diagnostics));
+                    sourceFiles.AddRange(ExpandFileArgument(arg, baseDirectory, diagnostics));
                     continue;
                 }
 
@@ -228,6 +294,23 @@ namespace Pchp.CodeAnalysis.CommandLine
                         documentationPath = value ?? string.Empty;
                         break;
 
+                    case "phpdoctypes+":
+                        phpdocTypes = PhpDocTypes.All;
+                        break;
+                    case "phpdoctypes-":
+                        phpdocTypes = PhpDocTypes.None;
+                        break;
+                    case "phpdoctypes":
+                        if (value == null)
+                        {
+                            phpdocTypes = PhpDocTypes.All;
+                        }
+                        else
+                        {
+                            phpdocTypes = (PhpDocTypes)Enum.Parse(typeof(PhpDocTypes), value);
+                        }
+                        break;
+
                     case "modulename":
                         var unquotedModuleName = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(unquotedModuleName))
@@ -298,6 +381,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 moduleName: moduleName,
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
+                phpdocTypes: phpdocTypes,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 checkOverflow: false, // checkOverflow,
@@ -306,7 +390,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                                         //cryptoKeyContainer: keyContainerSetting,
                                         //cryptoKeyFile: keyFileSetting,
                                         //delaySign: delaySignSetting,
-                platform: Platform.AnyCpu //, // platform,
+                platform: Platform.AnyCpu // platform,
                                           //generalDiagnosticOption: generalDiagnosticOption,
                                           //warningLevel: warningLevel,
                                           //specificDiagnosticOptions: diagnosticOptions,

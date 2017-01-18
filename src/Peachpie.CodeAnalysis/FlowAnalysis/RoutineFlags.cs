@@ -19,15 +19,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         HasInclude = 2,
         HasIndirectVar = 4,
         UsesLocals = 8,
+        UsesArgs = 16,
 
         /// <summary>
         /// The routine uses <c>static::</c> construct to access late static bound type.
         /// </summary>
-        UsesLateStatic = 16,
+        UsesLateStatic = 64,
 
         /// <summary>
         /// Whether the routine has to define local variables as an array instead of native local variables.
         /// </summary>
         RequiresLocalsArray = HasEval | HasInclude | HasIndirectVar | UsesLocals,
+
+        /// <summary>
+        /// Whether the routine accesses its arguments dynamically we should provide params.
+        /// </summary>
+        RequiresParams = UsesArgs,
     }
 }

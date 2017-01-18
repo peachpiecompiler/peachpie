@@ -44,34 +44,39 @@ namespace Pchp.CodeAnalysis.Semantics
         ReadRef = 4 | Read,
 
         /// <summary>
+        /// The expression will be read by value and copied.
+        /// </summary>
+        ReadCopy = 8 | Read,
+
+        /// <summary>
         /// An aliased value will be written to the place.
         /// Only available for VariableUse (variables, fields, properties, array items, references).
         /// </summary>
-        WriteRef = 8 | Write,
+        WriteRef = 16 | Write,
 
         /// <summary>
         /// The expression is accessed as a part of chain,
         /// its member field will be written to.
         /// E.g. (EnsureObject)->Field = Value
         /// </summary>
-        EnsureObject = 16 | Read,
+        EnsureObject = 32 | Read,
 
         /// <summary>
         /// The expression is accessed as a part of chain,
         /// its item entry will be written to.
         /// E.g. (EnsureArray)[] = Value
         /// </summary>
-        EnsureArray = 32 | Read,
+        EnsureArray = 64 | Read,
 
         /// <summary>
         /// Read is check only and won't result in an exception in case the variable does not exist.
         /// </summary>
-        ReadQuiet = 64,
+        ReadQuiet = 128,
 
         /// <summary>
         /// The variable will be unset. Combined with <c>quiet</c> flag, valid for variables, array entries and fields.
         /// </summary>
-        Unset = 128,
+        Unset = 256,
 
         // NOTE: WriteAndReadRef has to be constructed by semantic binder as bound expression with Write and another bound expression with ReadRef
         // NOTE: ReadAndWriteAndReadRef has to be constructed by semantic binder as bound expression with Read|Write and another bound expression with ReadRef
@@ -143,6 +148,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool IsReadRef => (_flags & AccessMask.ReadRef) == AccessMask.ReadRef;
 
         /// <summary>
+        /// The variable will be read by value and copied.
+        /// </summary>
+        public bool IsReadCopy => (_flags & AccessMask.ReadCopy) == AccessMask.ReadCopy;
+
+        /// <summary>
         /// A reference will be written.
         /// </summary>
         public bool IsWriteRef => (_flags & AccessMask.WriteRef) == AccessMask.WriteRef;
@@ -192,10 +202,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (EnsureObject) result |= Core.Dynamic.AccessFlags.EnsureObject;
                 if (EnsureArray) result |= Core.Dynamic.AccessFlags.EnsureArray;
                 if (IsReadRef) result |= Core.Dynamic.AccessFlags.EnsureAlias;
+                // TODO: if (IsReadCopy) result |= Core.Dynamic.AccessFlags.DeepCopy;
                 if (IsQuiet) result |= Core.Dynamic.AccessFlags.CheckOnly;
                 if (IsUnset) result |= Core.Dynamic.AccessFlags.Unset;
                 if (IsWriteRef) result |= Core.Dynamic.AccessFlags.WriteAlias;
                 else if (IsWrite) result |= Core.Dynamic.AccessFlags.WriteValue;
+                
 
                 return result;
             }
@@ -217,6 +229,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundAccess WithRead()
         {
             return new BoundAccess(_flags | AccessMask.Read, _targetType, _writeTypeMask);
+        }
+
+        public BoundAccess WithReadCopy()
+        {
+            return new BoundAccess(_flags | AccessMask.ReadCopy, _targetType, _writeTypeMask);
         }
 
         public BoundAccess WithWrite(TypeRefMask writeTypeMask)

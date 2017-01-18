@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 using Roslyn.Utilities;
 using System.Globalization;
 using Microsoft.CodeAnalysis;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -12,13 +13,20 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         NamedTypeSymbol _containingType;
         readonly FieldSymbol _originalDefinition;
+        readonly object _token;
 
         private TypeSymbol _lazyType;
 
         internal SubstitutedFieldSymbol(NamedTypeSymbol containingType, FieldSymbol substitutedFrom)
+            :this(containingType, substitutedFrom, containingType)
+        {
+        }
+
+        internal SubstitutedFieldSymbol(NamedTypeSymbol containingType, FieldSymbol substitutedFrom, object token)
         {
             _containingType = containingType;
             _originalDefinition = substitutedFrom.OriginalDefinition as FieldSymbol;
+            _token = token ?? _containingType;
         }
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
@@ -94,6 +102,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal void SetContainingType(SubstitutedNamedTypeSymbol type)
         {
+            Debug.Assert(_lazyType == null);
+
+            _lazyType = null;
             _containingType = type;
         }
 
@@ -243,12 +254,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             var other = obj as SubstitutedFieldSymbol;
-            return (object)other != null && _containingType == other._containingType && _originalDefinition == other._originalDefinition;
+            return (object)other != null && _token == other._token && _originalDefinition == other._originalDefinition;
         }
 
         public override int GetHashCode()
         {
-            return Hash.Combine(_containingType, _originalDefinition.GetHashCode());
+            return Hash.Combine(_token, _originalDefinition.GetHashCode());
         }
     }
 }

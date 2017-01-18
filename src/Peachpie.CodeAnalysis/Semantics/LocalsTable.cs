@@ -31,6 +31,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Containing routine. Cannot be <c>null</c>.
         /// </summary>
+        public SourceRoutineSymbol Routine => _routine;
         readonly SourceRoutineSymbol _routine;
 
         #endregion
@@ -127,7 +128,7 @@ namespace Pchp.CodeAnalysis.Semantics
             BoundVariable value;
             return _dict.TryGetValue(varname, out value)
                 ? value.VariableKind
-                : (_routine is SourceGlobalMethodSymbol || varname.IsAutoGlobal)
+                : varname.IsAutoGlobal
                     ? VariableKind.GlobalVariable
                     : VariableKind.LocalVariable;
         }

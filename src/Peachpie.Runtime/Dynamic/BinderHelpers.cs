@@ -24,16 +24,37 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static bool IsImplicitParameter(this ParameterInfo p)
         {
-            return p.IsContextParameter();
+            return p.IsContextParameter() || p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter() || p.IsImportCallerClassParameter();
 
-            // TODO: <locals>, <caller>, <this>
+            // TODO: classCtx, <this>
         }
 
         public static bool IsContextParameter(this ParameterInfo p)
         {
             return p.Position == 0
                 && p.ParameterType == typeof(Context)
-                && (p.Name == "ctx" || p.Name == "<ctx>" || p.Name == "context");
+                && (p.Name == "ctx" || p.Name == "<ctx>" || p.Name == "context" || p.Name == ".ctx");
+        }
+
+        public static bool IsImportLocalsParameter(this ParameterInfo p)
+        {
+            return
+                p.ParameterType == typeof(PhpArray) &&
+                p.GetCustomAttribute(typeof(ImportLocalsAttribute)) != null;
+        }
+
+        public static bool IsImportCallerArgsParameter(this ParameterInfo p)
+        {
+            return
+                p.ParameterType == typeof(PhpValue).MakeArrayType() &&
+                p.GetCustomAttribute(typeof(ImportCallerArgsAttribute)) != null;
+        }
+
+        public static bool IsImportCallerClassParameter(this ParameterInfo p)
+        {
+            return
+                (p.ParameterType == typeof(string) || p.ParameterType == typeof(RuntimeTypeHandle) || p.ParameterType == typeof(PhpTypeInfo)) &&
+                p.GetCustomAttribute(typeof(ImportCallerClassAttribute)) != null;
         }
 
         /// <summary>
@@ -70,7 +91,11 @@ namespace Pchp.Core.Dynamic
                     var value = (PhpValue)target_value;
                     if (value.IsNull)
                     {
-                        throw new NotImplementedException();    // TODO: call on NULL
+                        restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(target_expr, "IsNull")));
+
+                        target_value = null;
+                        target_expr = Expression.Constant(null, Cache.Types.Object[0]);
+                        break;
                     }
                     else if (value.IsObject)
                     {
@@ -88,15 +113,22 @@ namespace Pchp.Core.Dynamic
                         target_expr = Expression.Property(target_expr, "Alias");
                         continue;
                     }
+                    else if (value.IsScalar)
+                    {
+                        restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(target_expr, "IsScalar")));
+
+                        target_value = null;
+                        target_expr = Expression.Constant(null, Cache.Types.Object[0]);
+                    }
                     else
                     {
-                        throw new NotImplementedException();    // TODO: scalar
+                        throw new NotImplementedException();
                     }
                 }
                 else if (target_expr.Type == typeof(PhpAlias))
                 {
                     // dereference
-                    target_value = (PhpAlias)target_value;
+                    target_value = ((PhpAlias)target_value).Value;
                     target_expr = Expression.PropertyOrField(target_expr, "Value");
                     continue;
                 }
@@ -135,17 +167,18 @@ namespace Pchp.Core.Dynamic
             {
                 if (expr.Type == typeof(PhpAlias))
                 {
-                    // ((PhpAlias)fld).EnsureObject(ctx)
-                    expr = Expression.Call(expr, Cache.Operators.PhpAlias_EnsureObject_Context);
+                    // ((PhpAlias)fld).EnsureObject()
+                    expr = Expression.Call(expr, Cache.Operators.PhpAlias_EnsureObject);
                 }
                 else if (expr.Type == typeof(PhpValue))
                 {
-                    // ((PhpValue)fld).EnsureObject(ctx)
-                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureObject_Context);
+                    // ((PhpValue)fld).EnsureObject()
+                    expr = Expression.Call(expr, Cache.Operators.PhpValue_EnsureObject);
                 }
                 else
                 {
                     // getter // TODO: ensure it is not null
+                    Debug.Assert(!expr.Type.GetTypeInfo().IsValueType);
                 }
             }
             else if (access.EnsureArray())
@@ -303,6 +336,42 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        static Expression BindMagicMethod(PhpTypeInfo type, Type classCtx, Expression target, Expression ctx, TypeMethods.MagicMethods magic, string field, Expression rvalue = null)
+        {
+            for (var t = type; t != null; t = t.BaseType)
+            {
+                var m = (PhpMethodInfo)t.DeclaredMethods[magic];
+                if (m != null)
+                {
+                    var methods = m.Methods.Length == 1
+                        ? (m.Methods[0].IsVisible(classCtx) ? m.Methods : Array.Empty<MethodInfo>())    // optimization for array[1]
+                        : m.Methods.Where(x => x.IsVisible(classCtx)).ToArray();
+
+                    if (methods.Length != 0)
+                    {
+                        switch (magic)
+                        {
+                            case TypeMethods.MagicMethods.__set:
+                                // __set(name, value)
+                                return OverloadBinder.BindOverloadCall(typeof(void), target, methods, ctx, new Expression[] { Expression.Constant(field), rvalue });
+
+                            default:
+                                // __get(name), __unset(name), __isset(name)
+                                return OverloadBinder.BindOverloadCall(methods[0].ReturnType, target, methods, ctx, new Expression[] { Expression.Constant(field) });
+                        }
+                    }
+                    else
+                    {
+                        // TODO: ERR inaccessible
+                    }
+
+                    break;
+                }
+            }
+
+            return null;
+        }
+
         public static Expression BindField(PhpTypeInfo type, Type classCtx, Expression target, string field, Expression ctx, AccessFlags access, Expression rvalue)
         {
             if (access.Write() != (rvalue != null))
@@ -320,53 +389,233 @@ namespace Pchp.Core.Dynamic
                 }
             }
 
-            // lookup __get, __set, ...
-            TypeMethods.MagicMethods magic;
-            if (access.Write())
-                magic = TypeMethods.MagicMethods.__set;
-            else if (access.Unset())
-                magic = TypeMethods.MagicMethods.__unset;
-            else if (access.Isset())
-                magic = TypeMethods.MagicMethods.__isset;
-            else
-                magic = TypeMethods.MagicMethods.__get;
+            //
+            // runtime fields
+            //
 
-            for (var t = type; t != null; t = t.BaseType)
+            if (type.RuntimeFieldsHolder != null)   // we don't handle magic methods without the runtime fields
             {
-                var m = (PhpMethodInfo)t.DeclaredMethods[magic];
-                if (m != null)
+                var runtimeflds = Expression.Field(target, type.RuntimeFieldsHolder);       // Template: target->__runtime_fields
+                var fieldkey = Expression.Constant(new IntStringKey(field));                // Template: IntStringKey(field)
+                var resultvar = Expression.Variable(Cache.Types.PhpValue[0], "result");     // Template: PhpValue result;
+
+                // Template: runtimeflds != null && runtimeflds.TryGetValue(field, out result)
+                var trygetfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_TryGetValue, fieldkey, resultvar));
+                var containsfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_ContainsKey, fieldkey));
+
+                Expression result;
+
+                //
+                if (access.EnsureObject())
                 {
-                    if (m.Methods.Length == 1 && m.Methods[0].IsVisible(classCtx))
+                    // (object)target->field->
+
+                    // Template: runtimeflds.EnsureObject(key)
+                    result = Expression.Call(EnsureNotNullPhpArray(runtimeflds), Cache.Operators.PhpArray_EnsureItemObject, fieldkey);
+
+                    var __get = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
+                    if (__get != null)
                     {
-                        switch (magic)
+                        // Template: runtimeflds.Contains(key) ? runtimeflds.EnsureObject(key) : ( __get(key) ?? runtimeflds.EnsureObject(key))
+                        return Expression.Condition(containsfield,
+                                Expression.Call(runtimeflds, Cache.Operators.PhpArray_EnsureItemObject, fieldkey),
+                                InvokeHandler(ctx, target, field, __get, access, result, typeof(object)));
+                    }
+                    else
+                    {
+                        return result;
+                    }
+                }
+                else if (access.EnsureArray())
+                {
+                    // (IPhpArray)target->field[] =
+                    result = Expression.Call(EnsureNotNullPhpArray(runtimeflds), Cache.Operators.PhpArray_EnsureItemArray, fieldkey);
+
+                    var __get = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
+                    if (__get != null)
+                    {
+                        // Template: runtimeflds.Contains(key) ? runtimeflds.EnsureArray(key) : ( __get(key) ?? runtimeflds.EnsureArray(key))
+                        return Expression.Condition(containsfield,
+                                Expression.Call(runtimeflds, Cache.Operators.PhpArray_EnsureItemArray, fieldkey),
+                                InvokeHandler(ctx, target, field, __get, access, result, typeof(IPhpArray)));
+                    }
+                    else
+                    {
+                        // runtimeflds.EnsureItemArray(key)
+                        return result;
+                    }
+                }
+                else if (access.EnsureAlias())
+                {
+                    // (PhpAlias)&target->field
+
+                    result = Expression.Call(EnsureNotNullPhpArray(runtimeflds), Cache.Operators.PhpArray_EnsureItemAlias, fieldkey);
+
+                    var __get = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
+                    if (__get != null)
+                    {
+                        // Template: runtimeflds.Contains(key) ? runtimeflds.EnsureItemAlias(key) : ( __get(key) ?? runtimeflds.EnsureItemAlias(key))
+                        return Expression.Condition(containsfield,
+                                Expression.Call(runtimeflds, Cache.Operators.PhpArray_EnsureItemAlias, fieldkey),
+                                InvokeHandler(ctx, target, field, __get, access, result, typeof(PhpAlias)));
+                    }
+                    else
+                    {
+                        // runtimeflds.EnsureItemAlias(key)
+                        return result;
+                    }
+                }
+                else if (access.Unset())
+                {
+                    // unset(target->field)
+                    // Template: if (!runtimeflds.RemoveKey(key)) __unset(key)
+
+                    var removekey = Expression.Call(runtimeflds, Cache.Operators.PhpArray_RemoveKey, fieldkey);
+                    var __unset = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__unset, field, null);
+                    if (__unset != null)
+                    {
+                        return Expression.IfThen(
+                            Expression.OrElse(Expression.ReferenceEqual(runtimeflds, Expression.Constant(null)), Expression.IsFalse(removekey)),
+                            InvokeHandler(ctx, target, field, __unset, access, Expression.Block(), typeof(void)));
+                    }
+                    else
+                    {
+                        // if (runtimeflds != null) runtimeflds.RemoveKey(key)
+                        return Expression.IfThen(
+                            Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)),
+                            removekey);
+                    }
+                }
+                else if (access.Write())
+                {
+                    var __set = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__set, field, rvalue);
+
+                    if (access.WriteAlias())
+                    {
+                        // target->field = (PhpAlias)&rvalue
+                        Debug.Assert(rvalue.Type == typeof(PhpAlias));
+                        rvalue = ConvertExpression.Bind(rvalue, typeof(PhpAlias), ctx);
+
+                        // EnsureNotNull(runtimeflds).SetItemAlias(key, rvalue)
+                        result = Expression.Call(EnsureNotNullPhpArray(runtimeflds), Cache.Operators.PhpArray_SetItemAlias, fieldkey, rvalue);
+
+                        if (__set != null)
                         {
-                            case TypeMethods.MagicMethods.__set:
-                                // __set(name, value)
-                                return OverloadBinder.BindOverloadCall(rvalue.Type, target, m.Methods, ctx, new Expression[] { Expression.Constant(field), rvalue });
-                            default:
-                                // __get(name), __unset(name), __isset(name)
-                                return OverloadBinder.BindOverloadCall(m.Methods[0].ReturnType, target, m.Methods, ctx, new Expression[] { Expression.Constant(field) });
+                            // if (ContainsKey(key)) ? runtimeflds.SetItemAlias(rvalue) : (__set(key, rvalue) ?? runtimeflds.SetItemAlias(key, rvalue)
+                            return Expression.Condition(containsfield,
+                                    Expression.Call(runtimeflds, Cache.Operators.PhpArray_SetItemAlias, fieldkey, rvalue),
+                                    InvokeHandler(ctx, target, field, __set, access, result, typeof(void)));
+                        }
+                        else
+                        {
+                            return result;
                         }
                     }
+                    else
+                    {
+                        // target->field = rvalue
+                        rvalue = ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx);
 
-                    break;
+                        /* Template:
+                         * return runtimeflds != null && runtimeflds.ContainsKey(field)
+                         *   ? runtimeflds.SetItemValue(key, rvalue)
+                         *   : (__set(field, value) ?? runtimeflds.SetItemValue(key, value))
+                         */
+
+                        result = Expression.Call(EnsureNotNullPhpArray(runtimeflds), Cache.Operators.PhpArray_SetItemValue, fieldkey, rvalue);
+
+                        if (__set != null)
+                        {
+                            return Expression.Condition(containsfield,
+                                Expression.Call(runtimeflds, Cache.Operators.PhpArray_SetItemValue, fieldkey, rvalue),
+                                InvokeHandler(ctx, target, field, __set, access, result, typeof(void)));
+                        }
+                        else
+                        {
+                            return result;
+                        }
+                    }
                 }
+                else if (access.Isset())
+                {
+                    // isset(target->field)
+
+                    var __isset = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__isset, field, null);
+
+                    // Template: TryGetField(result) ? result : (__isset(key) ?? null)
+                    result = Expression.Condition(trygetfield,
+                        resultvar,
+                        InvokeHandler(ctx, target, field, __isset, access));
+                }
+                else
+                {
+                    // = target->field
+
+                    /* Template:
+                     * return runtimeflds.TryGetValue(field, out result) ? result : (__get(field) ?? ERR);
+                     */
+                    var __get = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
+                    result = Expression.Condition(trygetfield,
+                        resultvar,
+                        InvokeHandler(ctx, target, field, __get, access));    // TODO: @default = { ThrowError; return null; }
+                }
+
+                //
+                return Expression.Block(result.Type, new[] { resultvar }, result);
             }
 
-            // runtime fields
-            var __runtimeflds = type.RuntimeFieldsHolder;
-            if (__runtimeflds != null)
-            {
-                var __runtimeflds_field = Expression.Field(target, __runtimeflds);
-                var key = Expression.Constant(new IntStringKey(field));
-
-                return BindArrayAccess(__runtimeflds_field, key, ctx, access, rvalue);
-            }
-
-            // TODO: dynamic
+            // TODO: IDynamicMetaObject
 
             //
             return null;
+        }
+
+        /// <summary>
+        /// Binds recursion check for property magic method.
+        /// </summary>
+        static Expression InvokeHandler(Expression ctx, Expression target, string field, Expression getter, AccessFlags access, Expression @default = null, Type resultType = null)
+        {
+            // default
+            resultType = resultType ?? Cache.Types.PhpValue[0];
+            @default = @default ?? Expression.Field(null, Cache.Properties.PhpValue_Null);   // TODO: ERR field not found
+            @default = ConvertExpression.Bind(@default, resultType, ctx);
+
+            if (getter == null)
+            {
+                return @default;
+            }
+            else
+            {
+                /* Template:
+                 * var token;
+                 * try {
+                 *   return (token = new Context.RecursionCheckToken(_ctx, target, access))).IsInRecursion)
+                 *     ? default
+                 *     : getter;
+                 * } finally {
+                 *   token.Dispose();
+                 * }
+                 */
+
+                int subkey = access.Write() ? 1 : access.Unset() ? 2 : access.Isset() ? 3 : 4;  // recursion prevention scope
+
+                // Template: RecursionCheckToken token;
+                var tokenvar = Expression.Variable(typeof(Context.RecursionCheckToken), "token");
+
+                // Template: token = new RecursionCheckToken(_ctx, (object)target, (int)access))
+                var tokenassign = Expression.Assign(tokenvar, Expression.New(Cache.RecursionCheckToken.ctor_ctx_object_int,
+                    ctx, Expression.Convert(target, Cache.Types.Object[0]), Expression.Constant(subkey)));
+
+                //
+                return Expression.Block(resultType,
+                    new[] { tokenvar},
+                    Expression.TryFinally(
+                        Expression.Condition(Expression.Property(tokenassign, Cache.RecursionCheckToken.IsInRecursion),
+                            @default,
+                            ConvertExpression.Bind(getter, resultType, ctx)),
+                        Expression.Call(tokenvar, Cache.RecursionCheckToken.Dispose)
+                    ));
+            }
         }
 
         public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args)
@@ -384,9 +633,28 @@ namespace Pchp.Core.Dynamic
                 if (argi == 0 && p.IsImplicitParameter())
                 {
                     if (p.IsContextParameter())
+                    {
                         boundargs[i] = ctx;
-                    else
+                    }
+                    else if (p.IsImportLocalsParameter())
+                    {
+                        // no way we can implement this
+                        throw new NotImplementedException();    // TODO: empty array & report warning
+                    }
+                    else if (p.IsImportCallerArgsParameter())
+                    {
+                        // we don't have this info
+                        throw new NotImplementedException();    // TODO: empty array & report warning
+                    }
+                    else if (p.IsImportCallerClassParameter())
+                    {
+                        // TODO: pass classctx from the callsite
                         throw new NotImplementedException();
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
                 }
                 else
                 {
@@ -419,6 +687,11 @@ namespace Pchp.Core.Dynamic
             if (method.IsConstructor)
             {
                 return Expression.New((ConstructorInfo)method, boundargs);
+            }
+
+            if (instance != null)
+            {
+                instance = Expression.Convert(instance, method.DeclaringType);
             }
 
             if (instance != null && method.IsVirtual)
@@ -457,7 +730,7 @@ namespace Pchp.Core.Dynamic
 
             // dynamic method parameters
             var dtypes = new Type[ps.Length + 1];
-            dtypes[0] = typeof(object); // method.DeclaringType;   // target
+            dtypes[0] = method.DeclaringType;   // target
             for (int i = 0; i < ps.Length; i++)
             {
                 dtypes[i + 1] = ps[i].ParameterType;    // parameter_i

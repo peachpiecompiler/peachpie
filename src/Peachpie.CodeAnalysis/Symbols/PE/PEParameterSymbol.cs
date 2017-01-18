@@ -657,7 +657,11 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return SpecialParameterSymbol.IsContextParameter(this) || base.IsImplicitlyDeclared;
+                return SpecialParameterSymbol.IsContextParameter(this) ||
+                    SpecialParameterSymbol.IsLocalsParameter(this) ||
+                    SpecialParameterSymbol.IsCallerArgsParameter(this) ||
+                    SpecialParameterSymbol.IsCallerClassParameter(this) ||
+                    base.IsImplicitlyDeclared;
             }
         }
 
@@ -677,86 +681,86 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        //public override ImmutableArray<AttributeData> GetAttributes()
-        //{
-        //    if (_lazyCustomAttributes.IsDefault)
-        //    {
-        //        Debug.Assert(!_handle.IsNil);
-        //        var containingPEModuleSymbol = (PEModuleSymbol)this.ContainingModule;
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            if (_lazyCustomAttributes.IsDefault)
+            {
+                Debug.Assert(!_handle.IsNil);
+                var containingPEModuleSymbol = (PEModuleSymbol)this.ContainingModule;
 
-        //        // Filter out ParamArrayAttributes if necessary and cache
-        //        // the attribute handle for GetCustomAttributesToEmit
-        //        bool filterOutParamArrayAttribute = (!_lazyIsParams.HasValue() || _lazyIsParams.Value());
+                // Filter out ParamArrayAttributes if necessary and cache
+                // the attribute handle for GetCustomAttributesToEmit
+                bool filterOutParamArrayAttribute = (!_lazyIsParams.HasValue() || _lazyIsParams.Value());
 
-        //        ConstantValue defaultValue = this.ExplicitDefaultConstantValue;
-        //        AttributeDescription filterOutConstantAttributeDescription = default(AttributeDescription);
+                ConstantValue defaultValue = this.ExplicitDefaultConstantValue;
+                AttributeDescription filterOutConstantAttributeDescription = default(AttributeDescription);
 
-        //        if ((object)defaultValue != null)
-        //        {
-        //            if (defaultValue.Discriminator == ConstantValueTypeDiscriminator.DateTime)
-        //            {
-        //                filterOutConstantAttributeDescription = AttributeDescription.DateTimeConstantAttribute;
-        //            }
-        //            else if (defaultValue.Discriminator == ConstantValueTypeDiscriminator.Decimal)
-        //            {
-        //                filterOutConstantAttributeDescription = AttributeDescription.DecimalConstantAttribute;
-        //            }
-        //        }
+                if ((object)defaultValue != null)
+                {
+                    if (defaultValue.Discriminator == ConstantValueTypeDiscriminator.DateTime)
+                    {
+                        filterOutConstantAttributeDescription = AttributeDescription.DateTimeConstantAttribute;
+                    }
+                    else if (defaultValue.Discriminator == ConstantValueTypeDiscriminator.Decimal)
+                    {
+                        filterOutConstantAttributeDescription = AttributeDescription.DecimalConstantAttribute;
+                    }
+                }
 
-        //        if (filterOutParamArrayAttribute || filterOutConstantAttributeDescription.Signatures != null)
-        //        {
-        //            CustomAttributeHandle paramArrayAttribute;
-        //            CustomAttributeHandle constantAttribute;
+                if (filterOutParamArrayAttribute || filterOutConstantAttributeDescription.Signatures != null)
+                {
+                    CustomAttributeHandle paramArrayAttribute;
+                    CustomAttributeHandle constantAttribute;
 
-        //            ImmutableArray<AttributeData> attributes =
-        //                containingPEModuleSymbol.GetCustomAttributesForToken(
-        //                    _handle,
-        //                    out paramArrayAttribute,
-        //                    filterOutParamArrayAttribute ? AttributeDescription.ParamArrayAttribute : default(AttributeDescription),
-        //                    out constantAttribute,
-        //                    filterOutConstantAttributeDescription);
+                    ImmutableArray<AttributeData> attributes =
+                        containingPEModuleSymbol.GetCustomAttributesForToken(
+                            _handle,
+                            out paramArrayAttribute,
+                            filterOutParamArrayAttribute ? AttributeDescription.ParamArrayAttribute : default(AttributeDescription),
+                            out constantAttribute,
+                            filterOutConstantAttributeDescription);
 
-        //            if (!paramArrayAttribute.IsNil || !constantAttribute.IsNil)
-        //            {
-        //                var builder = ArrayBuilder<AttributeData>.GetInstance();
+                    if (!paramArrayAttribute.IsNil || !constantAttribute.IsNil)
+                    {
+                        var builder = ArrayBuilder<AttributeData>.GetInstance();
 
-        //                if (!paramArrayAttribute.IsNil)
-        //                {
-        //                    builder.Add(new PEAttributeData(containingPEModuleSymbol, paramArrayAttribute));
-        //                }
+                        if (!paramArrayAttribute.IsNil)
+                        {
+                            builder.Add(new PEAttributeData(containingPEModuleSymbol, paramArrayAttribute));
+                        }
 
-        //                if (!constantAttribute.IsNil)
-        //                {
-        //                    builder.Add(new PEAttributeData(containingPEModuleSymbol, constantAttribute));
-        //                }
+                        if (!constantAttribute.IsNil)
+                        {
+                            builder.Add(new PEAttributeData(containingPEModuleSymbol, constantAttribute));
+                        }
 
-        //                ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, builder.ToImmutableAndFree());
-        //            }
-        //            else
-        //            {
-        //                ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, ImmutableArray<CSharpAttributeData>.Empty);
-        //            }
+                        ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, builder.ToImmutableAndFree());
+                    }
+                    else
+                    {
+                        ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, ImmutableArray<AttributeData>.Empty);
+                    }
 
-        //            if (!_lazyIsParams.HasValue())
-        //            {
-        //                Debug.Assert(filterOutParamArrayAttribute);
-        //                _lazyIsParams = (!paramArrayAttribute.IsNil).ToThreeState();
-        //            }
+                    if (!_lazyIsParams.HasValue())
+                    {
+                        Debug.Assert(filterOutParamArrayAttribute);
+                        _lazyIsParams = (!paramArrayAttribute.IsNil).ToThreeState();
+                    }
 
-        //            ImmutableInterlocked.InterlockedInitialize(
-        //                ref _lazyCustomAttributes,
-        //                attributes);
-        //        }
-        //        else
-        //        {
-        //            ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, ImmutableArray<CSharpAttributeData>.Empty);
-        //            containingPEModuleSymbol.LoadCustomAttributes(_handle, ref _lazyCustomAttributes);
-        //        }
-        //    }
+                    ImmutableInterlocked.InterlockedInitialize(
+                        ref _lazyCustomAttributes,
+                        attributes);
+                }
+                else
+                {
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyHiddenAttributes, ImmutableArray<AttributeData>.Empty);
+                    containingPEModuleSymbol.LoadCustomAttributes(_handle, ref _lazyCustomAttributes);
+                }
+            }
 
-        //    Debug.Assert(!_lazyHiddenAttributes.IsDefault);
-        //    return _lazyCustomAttributes;
-        //}
+            Debug.Assert(!_lazyHiddenAttributes.IsDefault);
+            return _lazyCustomAttributes;
+        }
 
         internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
         {

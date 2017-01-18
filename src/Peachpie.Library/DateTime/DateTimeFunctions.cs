@@ -641,7 +641,7 @@ namespace Pchp.Library
         /// <returns>Associative array with date information.</returns>
         static PhpArray GetDate(Context ctx, System_DateTime utc)
         {
-            PhpArray result = new PhpArray(1, 10);
+            PhpArray result = new PhpArray(11);
 
             var zone = PhpTimeZone.GetCurrentTimeZone(ctx);
             var local = TimeZoneInfo.ConvertTime(utc, zone);
@@ -697,7 +697,7 @@ namespace Pchp.Library
 
         internal static PhpArray GetTimeOfDay(System_DateTime utc, TimeZoneInfo/*!*/ zone)
         {
-            var result = new PhpArray(0, 4);
+            var result = new PhpArray(4);
 
             var local = TimeZoneInfo.ConvertTime(utc, zone);
 
@@ -784,13 +784,11 @@ namespace Pchp.Library
 
         internal static PhpArray GetLocalTime(TimeZoneInfo currentTz, System_DateTime utc, bool returnAssociative)
         {
-            PhpArray result;
-
             var local = TimeZoneInfo.ConvertTime(utc, currentTz);
+            var result = new PhpArray(9);
 
             if (returnAssociative)
             {
-                result = new PhpArray(0, 9);
                 result["tm_sec"] = PhpValue.Create(local.Second);
                 result["tm_min"] = PhpValue.Create(local.Minute);
                 result["tm_hour"] = PhpValue.Create(local.Hour);
@@ -803,7 +801,6 @@ namespace Pchp.Library
             }
             else
             {
-                result = new PhpArray(9, 0);
                 result.AddValue(PhpValue.Create(local.Second));
                 result.AddValue(PhpValue.Create(local.Minute));
                 result.AddValue(PhpValue.Create(local.Hour));
@@ -864,44 +861,44 @@ namespace Pchp.Library
         /// <summary>
         /// Parses a string containing an English date format into a UNIX timestamp relative to the current time.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="time">String containing time definition</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
-        public static int strtotime(string time)
+        public static int strtotime(Context ctx, string time)
         {
-            return StringToTime(time, System_DateTime.UtcNow);
+            return StringToTime(ctx, time, System_DateTime.UtcNow);
         }
 
         /// <summary>
         /// Parses a string containing an English date format into a UNIX timestamp relative to a specified time.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="time">String containing time definition.</param>
         /// <param name="start">Timestamp (seconds from 1970) to which is the new timestamp counted.</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
-        public static int strtotime(string time, int start)
+        public static int strtotime(Context ctx, string time, int start)
         {
-            return StringToTime(time, DateTimeUtils.UnixTimeStampToUtc(start));
+            return StringToTime(ctx, time, DateTimeUtils.UnixTimeStampToUtc(start));
         }
 
         /// <summary>
         /// Implementation of <see cref="StringToTime(string,int)"/> function.
         /// </summary>
-        static int StringToTime(string time, System_DateTime startUtc)
+        static int StringToTime(Context ctx, string time, System_DateTime startUtc)
         {
-            //if (time == null) return false;
-            //time = time.Trim();
-            //if (time.Length == 0) return false;
+            if (time == null) return -1;
+            time = time.Trim();
+            if (time.Length == 0) return -1;
 
-            //string error = null;
-            //int result = StrToTime.DateInfo.Parse(time, startUtc, out error);
-            //if (error != null)
-            //{
-            //    PhpException.Throw(PhpError.Warning, error);
-            //    return false;
-            //}
+            string error = null;
+            int result = DateInfo.Parse(ctx, time, startUtc, out error);
+            if (error != null)
+            {
+                PhpException.Throw(PhpError.Warning, error);
+                return -1;
+            }
 
-            //return result;
-
-            throw new NotImplementedException();
+            return result;
         }
 
         #endregion

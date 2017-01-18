@@ -10,7 +10,8 @@ namespace Pchp.Library
     /// <summary>
     /// Manages association of PHP option names and flags.
     /// </summary>
-    internal static class StandardPhpOptions
+    [PhpHidden]
+    public static class StandardPhpOptions
     {
         public delegate PhpValue GetSetDelegate(IPhpConfigurationService config, string option, PhpValue value, IniAction action);
 
@@ -229,28 +230,22 @@ namespace Pchp.Library
             // option not found:
             if (def.Gsr == null)
             {
-                // TODO: Err
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("unknown_option", name));
-                //return PhpValue.Null;
-                throw new ArgumentException("unknown_option");
+                PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.unknown_option, name));
+                return PhpValue.Null;
             }
 
             // the option is known but not supported:
             if ((def.Flags & IniFlags.Supported) == 0)
             {
-                // TODO: Err
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("option_not_supported", name));
-                //return PhpValue.Null;
-                throw new ArgumentException("option_not_supported");
+                PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.option_not_supported, name));
+                return PhpValue.Null;
             }
 
             // the option is global thus cannot be changed:
             if ((def.Flags & IniFlags.Local) == 0 && action != IniAction.Get)
             {
-                // TODO: Err
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("option_readonly", name));
-                //return PhpValue.Null;
-                throw new ArgumentException("option_readonly");
+                PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.option_readonly, name));
+                return PhpValue.Null;
             }
 
             error = false;
@@ -437,5 +432,12 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        /// <summary>
+        /// Gets the current configuration setting of magic_quotes_gpc.
+        /// Always returns <c>false</c>.
+        /// </summary>
+        /// <returns>Always <c>false</c>.</returns>
+        public static bool get_magic_quotes_gpc() => false;
     }
 }

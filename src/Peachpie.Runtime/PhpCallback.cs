@@ -31,7 +31,7 @@ namespace Pchp.Core
     /// <param name="ctx">Current runtime context. Cannot be <c>null</c>.</param>
     /// <param name="arguments">List of arguments to be passed to called routine.</param>
     /// <returns>Result of the invocation.</returns>
-    public delegate PhpValue PhpCallable(Context ctx, PhpValue[] arguments);
+    public delegate PhpValue PhpCallable(Context ctx, params PhpValue[] arguments);
 
     /// <summary>
     /// Delegate for dynamic method invocation.

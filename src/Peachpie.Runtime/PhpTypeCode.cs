@@ -70,6 +70,11 @@ namespace Pchp.Core
         /// A resource object.
         /// </summary>
         Resource,
+
+        /// <summary>
+        /// <c>NULL</c> value.
+        /// </summary>
+        Null,
     }
 
     /// <summary>

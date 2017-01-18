@@ -309,7 +309,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.TypeKind == TypeKind.Array;
         }
 
-        public static bool IsSZArray(this TypeSymbol type)
+        public static bool IsSZArray(this ITypeSymbol type)
         {
             Debug.Assert((object)type != null);
             return type.TypeKind == TypeKind.Array && ((ArrayTypeSymbol)type).IsSZArray;

@@ -38,25 +38,25 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Well known types associated with this compilation.
         /// </summary>
-        public CoreTypes CoreTypes => _coreTypes;
+        internal CoreTypes CoreTypes => _coreTypes;
         readonly CoreTypes _coreTypes;
 
         /// <summary>
         /// Well known methods associated with this compilation.
         /// </summary>
-        public CoreMethods CoreMethods => _coreMethods;
+        internal CoreMethods CoreMethods => _coreMethods;
         readonly CoreMethods _coreMethods;
 
         #endregion
 
         #region PHP Type Hierarchy
 
-        GlobalSemantics _model;
+        GlobalSymbolProvider _model;
 
         /// <summary>
         /// Gets global semantics. To be replaced once we implement SyntaxNode (<see cref="CommonGetSemanticModel"/>).
         /// </summary>
-        internal GlobalSemantics GlobalSemantics => _model ?? (_model = new GlobalSemantics(this));
+        internal GlobalSymbolProvider GlobalSemantics => _model ?? (_model = new GlobalSymbolProvider(this));
 
         /// <summary>
         /// Merges two CLR types into one, according to PCHP type hierarchy.
@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis
         /// <param name="first">First type.</param>
         /// <param name="second">Second type.</param>
         /// <returns>One type convering both <paramref name="first"/> and <paramref name="second"/> types.</returns>
-        public TypeSymbol Merge(TypeSymbol first, TypeSymbol second)
+        internal TypeSymbol Merge(TypeSymbol first, TypeSymbol second)
         {
             Contract.ThrowIfNull(first);
             Contract.ThrowIfNull(second);
@@ -109,9 +109,22 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Merges CLR type to be nullable.
+        /// </summary>
+        internal TypeSymbol MergeNull(TypeSymbol t)
+        {
+            if (t.IsReferenceType)
+            {
+                return t;
+            }
+
+            return CoreTypes.PhpValue;
+        }
+
+        /// <summary>
         /// Determines whether given type is treated as a PHP number (<c>int</c> or <c>double</c>).
         /// </summary>
-        public bool IsNumber(TypeSymbol type)
+        internal bool IsNumber(TypeSymbol type)
         {
             Contract.ThrowIfNull(type);
 
@@ -125,7 +138,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Determines given type is treated as a string (UTF16 string or PHP string builder).
         /// </summary>
-        public bool IsAString(TypeSymbol type)
+        internal bool IsAString(TypeSymbol type)
         {
             Contract.ThrowIfNull(type);
 
@@ -143,7 +156,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         /// <param name="tref">Type reference.</param>
         /// <returns>Resolved symbol.</returns>
-        public TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref)
+        internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref)
         {
             if (tref != null)
             {
@@ -175,7 +188,7 @@ namespace Pchp.CodeAnalysis
                     }
                     return result;
                 }
-                else if (tref is AST.NullableTypeRef) throw new NotImplementedException(); // ?((AST.NullableTypeRef)tref).TargetType
+                else if (tref is AST.NullableTypeRef) MergeNull(GetTypeFromTypeRef(((AST.NullableTypeRef)tref).TargetType)); // ?((AST.NullableTypeRef)tref).TargetType
                 else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
                 else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
             }
@@ -443,7 +456,7 @@ namespace Pchp.CodeAnalysis
         {
             if (typeMask.IsRef)
             {
-                return CoreTypes.PhpAlias;
+                return CoreTypes.PhpValue;  // even we know the type, since there is an alias to the value, it can be anything
             }
 
             if (!typeMask.IsAnyType)
@@ -453,6 +466,20 @@ namespace Pchp.CodeAnalysis
                     return CoreTypes.Void;
                 }
 
+                // remember the value is nullable
+                var maybenull = typeCtx.IsNull(typeMask);
+                if (maybenull)
+                {
+                    typeMask = typeCtx.WithoutNull(typeMask);
+                    if (typeMask.IsVoid)
+                    {
+                        return CoreTypes.Object;
+                    }
+                }
+
+                Debug.Assert(!typeCtx.IsNull(typeMask));
+
+                //
                 var types = typeCtx.GetTypes(typeMask);
                 Debug.Assert(types.Count != 0);
 
@@ -508,6 +535,7 @@ namespace Pchp.CodeAnalysis
                 case PhpTypeCode.PhpArray: return CoreTypes.PhpArray;
                 case PhpTypeCode.Callable: return CoreTypes.PhpValue;   // array|object|string
                 case PhpTypeCode.Resource: return CoreTypes.PhpResource;
+                case PhpTypeCode.Null: return CoreTypes.Object; // object // when merging, NULL must be handled specially (e.g. PhpValue|NULL -> PhpValue)
                 default:
                     throw new NotImplementedException();
             }

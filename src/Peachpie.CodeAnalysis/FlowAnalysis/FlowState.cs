@@ -215,6 +215,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        internal bool MaybeVarUninitialized(string name)
+        {
+            return MaybeVarUninitialized(_flowCtx.GetVarIndex(new VariableName(name)));
+        }
+
+        internal bool MaybeVarUninitialized(int varindex)
+        {
+            return
+                varindex < 0 ||
+                varindex >= FlowContext.BitsCount ||
+                (_initializedMask & ((ulong)1 << varindex)) == 0;
+        }
+
         public void SetVar(string name, TypeRefMask type)
         {
             SetVar(_flowCtx.GetVarIndex(new VariableName(name)), type);

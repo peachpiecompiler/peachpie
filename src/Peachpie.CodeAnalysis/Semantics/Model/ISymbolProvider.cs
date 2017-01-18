@@ -14,13 +14,8 @@ namespace Pchp.CodeAnalysis.Semantics
     /// Used to query semantic questions about the compilation in specific context.
     /// </summary>
     /// <remarks>Use <see cref="SemanticModel"/> once we implement <see cref="SyntaxTree"/>.</remarks>
-    internal interface ISemanticModel
+    internal interface ISymbolProvider
     {
-        /// <summary>
-        /// Gets next semantics in the chain. Can be <c>null</c>.
-        /// </summary>
-        ISemanticModel Next { get; }
-
         // TODO: variable
 
         /// <summary>

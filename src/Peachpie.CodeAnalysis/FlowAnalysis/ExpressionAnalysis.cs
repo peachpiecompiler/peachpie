@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     {
         #region Fields
 
-        readonly ISemanticModel _model;
+        readonly ISymbolProvider _model;
 
         /// <summary>
         /// Reference to corresponding source routine.
@@ -120,6 +120,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 State.LTInt64Max(varname, lt);
         }
 
+        void Eq(BoundReferenceExpression r, Optional<object> value)
+        {
+            //var varname = AsVariableName(r);
+            //if (varname != null)
+            //{
+            //    if (value.IsNull())
+            //    {
+
+            //    }
+            //}
+        }
+
+        void NotEq(BoundReferenceExpression r, Optional<object> value)
+        {
+            var varname = AsVariableName(r);
+            if (varname != null && TypeCtx.IsNull(r.TypeRefMask) && value.IsNull())
+            {
+                // varname != NULL
+                State.SetVar(varname, TypeCtx.WithoutNull(r.TypeRefMask));
+            }
+        }
+
         /// <summary>
         /// In case of a local variable or parameter, gets its name.
         /// </summary>
@@ -177,7 +199,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Construction
 
-        public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISemanticModel model)
+        public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISymbolProvider model)
             : base(worklist)
         {
             Contract.ThrowIfNull(model);
@@ -211,6 +233,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 else
                 {
                     State.LTInt64Max(name, false);
+                    State.SetVar(name, TypeCtx.GetNullTypeMask() | oldtype);
                 }
             }
         }
@@ -341,6 +364,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         State.SetVarInitialized(name);
                         State.SetVar(name, vartype);
                     }
+                    else
+                    {
+                        if (State.MaybeVarUninitialized(name))
+                        {
+                            vartype |= TypeCtx.GetNullTypeMask();
+                        }
+                    }
 
                     x.TypeRefMask = vartype;
                 }
@@ -378,9 +408,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (x.Access.IsUnset)
                 {
-                    State.SetVar(name, 0);
+                    x.TypeRefMask = TypeCtx.GetNullTypeMask();
+                    State.SetVar(name, x.TypeRefMask);
                     State.LTInt64Max(name, false);
-                    x.TypeRefMask = 0;
                 }
             }
             else
@@ -722,7 +752,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     if (branch == ConditionBranch.ToTrue)
                     {
                         if (x.Operation == Operations.LessThan && IsLongOnly(x.Right))
-                            LTInt64Max(x.Left as BoundReferenceExpression, true);   // $x < LONG
+                        {
+                            // $x < LONG
+                            LTInt64Max(x.Left as BoundReferenceExpression, true);
+                        }
+
+                        if (x.Operation == Operations.Equal)
+                        {
+                            Eq(x.Left as BoundReferenceExpression, x.Right.ConstantValue);
+                            Eq(x.Right as BoundReferenceExpression, x.Left.ConstantValue);
+                        }
+                        else if (x.Operation == Operations.NotEqual)
+                        {
+                            NotEq(x.Left as BoundReferenceExpression, x.Right.ConstantValue);
+                            NotEq(x.Right as BoundReferenceExpression, x.Left.ConstantValue);
+                        }
                     }
 
                     return TypeCtx.GetBooleanTypeMask();
@@ -877,15 +921,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     // analyze TargetMethod with x.Arguments
                     // require method result type if access != none
-                    var enqueued = this.Worklist.EnqueueRoutine(m, CurrentBlock, args);
-                    if (enqueued)   // => target has to be reanalysed
+                    if (x.Access.IsRead)
                     {
-                        // note: continuing current block may be waste of time
+                        var enqueued = this.Worklist.EnqueueRoutine(m, CurrentBlock, args);
+                        if (enqueued)   // => target has to be reanalysed
+                        {
+                            // note: continuing current block may be waste of time
+                        }
                     }
 
                     // process arguments by ref
                     var expectedparams = m.GetExpectedArguments(this.TypeCtx);
-                    for (int i = 0; i < expectedparams.Length; i ++)
+                    for (int i = 0; i < expectedparams.Length; i++)
                     {
                         if (i < args.Length)
                         {
@@ -899,6 +946,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                     {
                                         refexpr.Access = refexpr.Access.WithWrite(expectedparams[i].Type);
                                         Worklist.Enqueue(CurrentBlock);
+                                    }
+
+                                    if (ep.IsAlias)
+                                    {
+                                        SemanticsBinder.BindReadRefAccess(refexpr);
                                     }
 
                                     var refvar = refexpr as BoundVariableRef;
@@ -931,6 +983,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             }
                         }
                     }
+
+                    //
+                    Routine.Flags |= m.InvocationFlags();
 
                     //
                     result_type |= m.GetResultType(TypeCtx);
@@ -1206,38 +1261,43 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         if (x.FieldName.IsDirect)
                         {
                             // TODO: visibility and resolution (model)
-
-                            var field = t.LookupMember<FieldSymbol>(x.FieldName.NameValue.Value);
-                            if (field != null)
+                            var member = t.ResolveInstanceProperty(x.FieldName.NameValue.Value);
+                            if (member != null)
                             {
-                                x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
-                                x.TypeRefMask = field.GetResultType(TypeCtx);
-                                return;
-                            }
-                            else
-                            {
-                                var prop = t.LookupMember<PropertySymbol>(x.FieldName.NameValue.Value);
-                                if (prop != null)
+                                Debug.Assert(member is FieldSymbol || member is PropertySymbol);
+                                if (member is FieldSymbol)
                                 {
+                                    var field = (FieldSymbol)member;
+                                    x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
+                                    x.TypeRefMask = field.GetResultType(TypeCtx);
+                                }
+                                else if (member is PropertySymbol)
+                                {
+                                    var prop = (PropertySymbol)member;
                                     x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
                                     x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
-                                    return;
                                 }
                                 else
                                 {
-                                    // TODO: use runtime fields directly, __get, __set, etc.,
-                                    // do not fallback to BoundIndirectFieldPlace
+                                    throw ExceptionUtilities.UnexpectedValue(member);
                                 }
+
+                                Debug.Assert(x.BoundReference != null);
+                                return; // bound
+                            }
+                            else
+                            {
+                                // TODO: use runtime fields directly, __get, __set, etc.,
+                                // do not fallback to BoundIndirectFieldPlace
                             }
                         }
                     }
-
                 }
 
                 // dynamic behavior
                 // indirect field access ...
 
-                x.BoundReference = new BoundIndirectFieldPlace(x.Instance, x.FieldName, x.Access);
+                x.BoundReference = new BoundIndirectFieldPlace(x);
                 x.TypeRefMask = TypeRefMask.AnyType;
                 return;
             }

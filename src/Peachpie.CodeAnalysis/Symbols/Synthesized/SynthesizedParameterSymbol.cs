@@ -18,6 +18,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private readonly TypeSymbol _type;
         private readonly int _ordinal;
         private readonly string _name;
+        private readonly bool _isParams;
         private readonly ImmutableArray<CustomModifier> _customModifiers;
         private readonly ushort _countOfCustomModifiersPrecedingByRef;
         private readonly RefKind _refKind;
@@ -29,6 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
             int ordinal,
             RefKind refKind,
             string name = "",
+            bool isParams = false,
             ImmutableArray<CustomModifier> customModifiers = default(ImmutableArray<CustomModifier>),
             ushort countOfCustomModifiersPrecedingByRef = 0,
             ConstantValue explicitDefaultConstantValue = null)
@@ -42,6 +44,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _ordinal = ordinal;
             _refKind = refKind;
             _name = name;
+            _isParams = isParams;
             _customModifiers = customModifiers.NullToEmpty();
             _countOfCustomModifiersPrecedingByRef = countOfCustomModifiersPrecedingByRef;
             _explicitDefaultConstantValue = explicitDefaultConstantValue;
@@ -82,6 +85,18 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return _customModifiers; }
         }
 
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            if (IsParams)
+            {
+                yield return new SynthesizedAttributeData(
+                    (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ParamArrayAttribute__ctor),
+                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            yield break;
+        }
+
         public override int Ordinal
         {
             get { return _ordinal; }
@@ -89,7 +104,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsParams
         {
-            get { return false; }
+            get { return _isParams; }
         }
 
         //internal override bool IsMetadataOptional
@@ -99,7 +114,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsImplicitlyDeclared
         {
-            get { return SpecialParameterSymbol.IsContextParameter(this) || base.IsImplicitlyDeclared; }
+            get { return SpecialParameterSymbol.IsContextParameter(this) || this.IsParams || base.IsImplicitlyDeclared; }
         }
 
         internal override ConstantValue ExplicitDefaultConstantValue => _explicitDefaultConstantValue;
@@ -187,7 +202,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 //same properties as the old one, just change the owner
                 builder.Add(new SynthesizedParameterSymbol(destinationMethod, oldParam.Type, oldParam.Ordinal,
-                    oldParam.RefKind, oldParam.Name, oldParam.CustomModifiers, oldParam.CountOfCustomModifiersPrecedingByRef));
+                    oldParam.RefKind, oldParam.Name, false, oldParam.CustomModifiers, oldParam.CountOfCustomModifiersPrecedingByRef));
             }
 
             return builder.ToImmutableAndFree();

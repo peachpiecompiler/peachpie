@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Library.Resources;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -601,9 +602,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ArgumentNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull("array");
+                return false;
             }
 
             array.Shuffle(PhpMath.Generator);
@@ -667,22 +667,22 @@ namespace Pchp.Library
         {
             if (source == null)
             {
-                // TODO: PhpException.ArgumentNull("array");
+                PhpException.ArgumentNull(nameof(source));
                 return false;
             }
             if (result == null)
             {
-                // TODO: PhpException.ArgumentNull("result");
+                PhpException.ArgumentNull(nameof(result));
                 return false;
             }
             if (generator == null)
             {
-                // TODO: PhpException.ArgumentNull("generator");
+                PhpException.ArgumentNull(nameof(generator));
                 return false;
             }
             if (count < 1 || count > source.Count)
             {
-                // TODO: PhpException.InvalidArgument("count", LibResources.GetString("number_of_items_not_between_one_and_item_count", count, source.Count));
+                PhpException.InvalidArgument(nameof(count), string.Format(LibResources.number_of_items_not_between_one_and_item_count, count, source.Count));
                 return false;
             }
 
@@ -721,7 +721,7 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                // TODO: PhpException.ArgumentNull("array");
+                PhpException.ArgumentNull(nameof(array));
                 return false;
             }
 
@@ -767,7 +767,7 @@ namespace Pchp.Library
 
             if (haystack == null)
             {
-                // TODO: PhpException.ArgumentNull("haystack");
+                PhpException.ArgumentNull(nameof(haystack));
                 return PhpValue.False;
             }
 
@@ -815,11 +815,11 @@ namespace Pchp.Library
         {
             if (count <= 0)
             {
-                // TODO: PhpException.InvalidArgument("count", LibResources.GetString("arg:negative_or_zero"));
+                PhpException.InvalidArgument("count", LibResources.arg_negative_or_zero);
                 return null;
             }
 
-            PhpArray result = new PhpArray(count, 0);
+            PhpArray result = new PhpArray(count);
             int last = startIndex + count;
             for (int i = startIndex; i < last; i++)
                 result.Add(i, value);
@@ -833,9 +833,8 @@ namespace Pchp.Library
         {
             if (keys == null)
             {
-                // PhpException.ArgumentNull("keys");
-                // return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull("keys");
+                return null;
             }
 
             var result = new PhpArray(keys.Count);
@@ -869,9 +868,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                // PhpException.ArgumentNull("array");
-                // return null;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull("array");
+                return null;
             }
 
             // number of items to add:
@@ -926,7 +924,7 @@ namespace Pchp.Library
         {
             if (step == 0)
             {
-                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg_zero"));
                 //return null;
                 throw new ArgumentException();
             }
@@ -959,7 +957,7 @@ namespace Pchp.Library
         {
             if (step == 0)
             {
-                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg_zero"));
                 //return null;
                 throw new ArgumentException();
             }
@@ -992,14 +990,14 @@ namespace Pchp.Library
         {
             if (step == 0)
             {
-                //PhpException.InvalidArgument("step", LibResources.GetString("arg:zero"));
+                //PhpException.InvalidArgument("step", LibResources.GetString("arg_zero"));
                 //step = 1;
                 throw new ArgumentException();
             }
 
             if (step < 0) step = -step;
 
-            PhpArray result = new PhpArray(Math.Abs(high - low) / step + 1, 0);
+            PhpArray result = new PhpArray(Math.Abs(high - low) / step + 1);
             if (high >= low)
             {
                 for (int i = 0; low <= high; i++, low = unchecked((char)(low + step))) result.Add(i, low.ToString());
@@ -1944,7 +1942,7 @@ namespace Pchp.Library
 
             if (arrays == null || arrays.Length == 0)
             {
-                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg:null_or_empty"));
+                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg_null_or_empty"));
                 //return null;
                 throw new ArgumentException();
             }
@@ -2267,7 +2265,7 @@ namespace Pchp.Library
             }
             if (size <= 0)
             {
-                //PhpException.InvalidArgument("array", LibResources.GetString("arg:negative_or_zero"));
+                //PhpException.InvalidArgument("array", LibResources.GetString("arg_negative_or_zero"));
                 //return null;
                 throw new ArgumentException(nameof(size));
             }
@@ -2280,7 +2278,7 @@ namespace Pchp.Library
             int count = (array.Count - 1) / size + 1; // = ceil(Count/size):
 
             PhpArray chunk;
-            PhpArray result = new PhpArray(count, 0);
+            PhpArray result = new PhpArray(count);
 
             IEnumerator<KeyValuePair<IntStringKey, PhpValue>> iterator = array.GetEnumerator();
 
@@ -2293,7 +2291,7 @@ namespace Pchp.Library
             // all chunks except for the last one:
             for (int i = 0; i < count - 1; i++)
             {
-                chunk = new PhpArray(size, 0);
+                chunk = new PhpArray(size);
 
                 if (preserveKeys)
                 {
@@ -2310,7 +2308,7 @@ namespace Pchp.Library
             }
 
             // the last chunk:
-            chunk = new PhpArray((size <= array.Count) ? size : array.Count, 0);
+            chunk = new PhpArray((size <= array.Count) ? size : array.Count);
 
             if (preserveKeys)
             {
@@ -3031,12 +3029,11 @@ namespace Pchp.Library
         /// <returns>A delegate returning <see cref="PhpArray"/> containing items on the stack (passed as arguments).</returns>
         private static readonly IPhpCallable _mapIdentity = PhpCallback.Create((ctx, args) =>
         {
-            PhpArray result = new PhpArray(args.Length);
+            var result = new PhpArray(args.Length);
 
-            for (int i = 0; i <= args.Length; i++)
+            for (int i = 0; i < args.Length; i++)
             {
-                // TODO: result.Add(PhpVariable.Copy(args[i], CopyReason.PassedByCopy));
-                result.Add(args[i]);
+                result.Add(args[i].DeepCopy());
             }
 
             return PhpValue.Create(result);
@@ -3073,9 +3070,8 @@ namespace Pchp.Library
             //if (!PhpArgument.CheckCallback(map, caller, "map", 0, true)) return null;
             if (arrays == null || arrays.Length == 0)
             {
-                //PhpException.InvalidArgument("arrays", LibResources.GetString("arg:null_or_emtpy"));
-                //return null;
-                throw new ArgumentException();
+                PhpException.InvalidArgument(nameof(arrays), LibResources.arg_null_or_empty);
+                return null;
             }
 
             // if callback has not been specified uses the default one:
@@ -3098,21 +3094,16 @@ namespace Pchp.Library
 
                 if (array == null)
                 {
-                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));// +2 (first arg is callback) 
-                    //return null;
-                    throw new ArgumentException();
+                    PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));// +2 (first arg is callback) 
+                    return null;
                 }
 
-                args[i] = PhpValue.CreateAlias();
                 iterators[i] = array.GetFastEnumerator();
                 if (array.Count > max_count) max_count = array.Count;
             }
 
             // keys are preserved in a case of a single array and re-indexed otherwise:
-            if (preserve_keys)
-                result = new PhpArray(arrays[0].IntegerCount, arrays[0].StringCount);
-            else
-                result = new PhpArray(max_count, 0);
+            result = new PhpArray(arrays[0].Count);
 
             for (;;)
             {
@@ -3121,17 +3112,21 @@ namespace Pchp.Library
                 // fills args[] with items from arrays:
                 for (int i = 0; i < arrays.Length; i++)
                 {
-                    if (iterators[i].IsValid)
+                    if (!iterators[i].IsDefault)
                     {
-                        hasvalid = true;
+                        if (iterators[i].MoveNext())
+                        {
+                            hasvalid = true;
 
-                        // note: deep copy is not necessary since a function copies its arguments if needed:
-                        args[i].Alias.Value = iterators[i].CurrentValue.GetValue();
-                        // TODO: throws if the current Value is PhpReference
-                    }
-                    else
-                    {
-                        args[i].Alias.Value = PhpValue.Null;
+                            // note: deep copy is not necessary since a function copies its arguments if needed:
+                            args[i] = iterators[i].CurrentValue;
+                            // TODO: throws if the CurrentValue is an alias
+                        }
+                        else
+                        {
+                            args[i] = PhpValue.Null;
+                            iterators[i] = default(OrderedDictionary.FastEnumerator);   // IsDefault
+                        }
                     }
                 }
 
@@ -3142,9 +3137,13 @@ namespace Pchp.Library
 
                 // return value is not deeply copied:
                 if (preserve_keys)
+                {
                     result.Add(iterators[0].CurrentKey, return_value);
+                }
                 else
+                {
                     result.Add(return_value);
+                }
 
                 // loads new values (callback may modify some by ref arguments):
                 for (int i = 0; i < arrays.Length; i++)
@@ -3154,15 +3153,12 @@ namespace Pchp.Library
                         var item = iterators[i].CurrentValue;
                         if (item.IsAlias)
                         {
-                            item.Alias.Value = args[i].Alias.Value;
+                            item.Alias.Value = args[i].GetValue();
                         }
                         else
                         {
-                            iterators[i].CurrentValue = args[i].Alias.Value;
+                            iterators[i].CurrentValue = args[i].GetValue();
                         }
-
-                        //
-                        iterators[i].MoveNext();
                     }
                 }
             }

@@ -20,7 +20,7 @@ namespace Pchp.Core
             {
                 _textSink = Console.Out;
                 _streamSink = Console.OpenStandardOutput();
-                _rootPath = Directory.GetCurrentDirectory() + "\\";
+                _rootPath = ScriptsMap.NormalizeSlashes(Directory.GetCurrentDirectory());
                 IsOutputBuffered = false;   // initializes Output
 
                 // Globals

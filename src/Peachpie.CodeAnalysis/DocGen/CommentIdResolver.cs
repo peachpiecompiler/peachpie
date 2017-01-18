@@ -15,14 +15,22 @@ namespace Pchp.CodeAnalysis.DocGen
 
         public static string GetId(SourceRoutineSymbol routine) => "M:" + TypeId(routine.ContainingType) + "." + RoutineSignatureId(routine);
 
-        static string TypeId(NamedTypeSymbol type)
+        static string TypeId(TypeSymbol type)
         {
-            var ns = type.NamespaceName.Replace("<", "&lt;").Replace(">", "&gt;");
-            var name = TypeNameId(type);
-            return string.IsNullOrEmpty(ns) ? name : (ns + "." + name);
+            if (type is ArrayTypeSymbol)
+            {
+                var arrtype = (ArrayTypeSymbol)type;
+                return TypeId(arrtype.ElementType) + "[]";  // TODO: MDSize
+            }
+            else
+            {
+                var ns = ((NamedTypeSymbol)type).NamespaceName.Replace("<", "&lt;").Replace(">", "&gt;");
+                var name = TypeNameId(type);
+                return string.IsNullOrEmpty(ns) ? name : (ns + "." + name);
+            }
         }
 
-        static string TypeNameId(NamedTypeSymbol type)
+        static string TypeNameId(TypeSymbol type)
         {
             return GetEscapedMetadataName(type.MetadataName);
         }
@@ -49,7 +57,7 @@ namespace Pchp.CodeAnalysis.DocGen
                     builder.Append(',');
                 }
 
-                builder.Append(TypeId((NamedTypeSymbol)parameter.Type));
+                builder.Append(TypeId(parameter.Type));
 
                 // ref and out params are suffixed with @
                 if (parameter.RefKind != RefKind.None)

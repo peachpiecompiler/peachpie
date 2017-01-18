@@ -110,5 +110,35 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             return result.ToArray();
         }
+
+        /// <summary>
+        /// Gets additional flags of the caller routine.
+        /// </summary>
+        public static RoutineFlags InvocationFlags(this IPhpRoutineSymbol routine)
+        {
+            RoutineFlags f = RoutineFlags.None;
+
+            var ps = routine.Parameters;
+            foreach (var p in ps)
+            {
+                if (p.IsImplicitlyDeclared)
+                {
+                    if (SpecialParameterSymbol.IsLocalsParameter(p))
+                    {
+                        f |= RoutineFlags.UsesLocals;
+                    }
+                    else if (SpecialParameterSymbol.IsCallerArgsParameter(p))
+                    {
+                        f |= RoutineFlags.UsesArgs;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return f;
+        }
     }
 }

@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
             
             var moduleBuilder = new ArrayBuilder<ModuleSymbol>(1);
 
-            moduleBuilder.Add(new SourceModuleSymbol(this, compilation.SourceSymbolTables, moduleName));
+            moduleBuilder.Add(new SourceModuleSymbol(this, compilation.SourceSymbolCollection, moduleName));
 
             //var importOptions = (compilation.Options.MetadataImportOptions == MetadataImportOptions.All) ?
             //    MetadataImportOptions.All : MetadataImportOptions.Internal;
@@ -233,7 +233,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override NamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
         {
-            return SourceModule.SymbolTables.GetType(NameUtils.MakeQualifiedName(fullyQualifiedMetadataName.Replace('.', Devsense.PHP.Syntax.QualifiedName.Separator), true));
+            return SourceModule.SymbolCollection.GetType(NameUtils.MakeQualifiedName(fullyQualifiedMetadataName.Replace('.', Devsense.PHP.Syntax.QualifiedName.Separator), true));
         }
     }
 }

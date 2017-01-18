@@ -199,7 +199,6 @@ namespace Pchp.Library.Streams
                 return null;
 
             return wrapper.Open(ctx, ref path, mode, options, context);
-
         }
 
         #endregion
@@ -279,7 +278,7 @@ namespace Pchp.Library.Streams
                 // The file wrapper expects an absolute path w/o the scheme, others expect the scheme://url.
                 if (scheme != "file")
                 {
-                    path = String.Format("{0}://{1}", scheme, path);
+                    path = string.Format("{0}://{1}", scheme, path);
                 }
             }
 
@@ -1609,7 +1608,7 @@ namespace Pchp.Library.Streams
         /// <param name="closing"><c>true</c> when this method is called from <c>close()</c>
         /// to prune all the pending filters with closing set to <c>true</c>.</param>
         /// <returns>Number of character entities successfully written or <c>-1</c> on an error.</returns>
-        protected int WriteData(TextElement data, bool closing = false)
+        public int WriteData(TextElement data, bool closing = false)
         {
             // Set file access to writing
             CurrentAccess = FileAccess.Write;
@@ -2207,15 +2206,15 @@ namespace Pchp.Library.Streams
         /// </remarks>
         public readonly StreamWrapper Wrapper;
 
-        //       /// <summary>
-        //       /// PHP wrapper specific data. See GetMetaData, wrapper_data array item.
-        //       /// Can be null.
-        //       /// </summary>
-        //       public object WrapperSpecificData
-        //       {
-        //           get;
-        //           internal set;
-        //       }
+        /// <summary>
+        /// PHP wrapper specific data. See wrapper_data array item.
+        /// Can be <c>null</c>.
+        /// </summary>
+        public object WrapperSpecificData
+        {
+            get;
+            internal set;
+        }
 
         /// <summary>
         /// The absolute path to the resource.

@@ -96,7 +96,11 @@ namespace Pchp.Core.Reflection
         {
             // TODO: W lock
 
-            var info = TypeInfoHolder<T>.TypeInfo;
+            DeclareType(TypeInfoHolder<T>.TypeInfo);
+        }
+
+        public void DeclareType(PhpTypeInfo info)
+        {
             var index = info.Index;
             if (index == 0)
             {
@@ -120,6 +124,31 @@ namespace Pchp.Core.Reflection
             }
 
             Debug.Assert(info.Index > 0);
+
+            //
+            if (_contextTypes.Length < index)
+            {
+                Array.Resize(ref _contextTypes, index * 2);
+            }
+
+            DeclareType(ref _contextTypes[index - 1], info);
+        }
+
+        public void DeclareTypeAlias(PhpTypeInfo info, string name)
+        {
+            int index;
+            if (_nameToIndex.TryGetValue(name, out index))
+            {
+                if (index < 0)  // redeclaring over an app context type
+                {
+                    _redeclarationCallback(info);
+                }
+            }
+            else
+            {
+                index = _contextTypesCounter.GetNewIndex() + 1;
+                _nameToIndex[name] = index;
+            }
 
             //
             if (_contextTypes.Length < index)

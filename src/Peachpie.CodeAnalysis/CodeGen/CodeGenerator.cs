@@ -17,7 +17,7 @@ using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
-    internal partial class CodeGenerator
+    internal partial class CodeGenerator : IDisposable
     {
         #region BoundBlockOrdinalComparer
 
@@ -221,12 +221,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         public SourceRoutineSymbol Routine => _routine;
 
         /// <summary>
-        /// Type context of currently emitted expressions.
-        /// Can be nested since we are emitting expressions analysed in context of another routine (like parameter default value).
+        /// Type context of currently emitted expressions. Can be <c>null</c>.
         /// </summary>
-        internal TypeRefContext TypeRefContext => (_emitTypeRefContext.Count == 0) ? this.Routine?.TypeRefContext : _emitTypeRefContext.Peek();
-        Stack<TypeRefContext> _emitTypeRefContext = new Stack<TypeRefContext>();
-
+        internal TypeRefContext TypeRefContext => this.Routine?.TypeRefContext;
+        
         public DiagnosticBag Diagnostics => _diagnostics;
 
         /// <summary>
@@ -287,6 +285,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             _factory = new DynamicOperationFactory(this, container);
 
             _emitPdbSequencePoints = emittingPdb;
+        }
+
+        /// <summary>
+        /// Copy ctor with different routine content (and TypeRefContext).
+        /// Used for emitting in a context of a different routine (parameter initializer).
+        /// </summary>
+        public CodeGenerator(CodeGenerator cg, SourceRoutineSymbol routine)
+            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt)
+        {
+            Contract.ThrowIfNull(routine);
+
+            _routine = routine;
+            _emmittedTag = cg._emmittedTag;
+            _localsPlaceOpt = cg._localsPlaceOpt;
         }
 
         public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
@@ -406,6 +418,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(block);
             return block.Tag == _emmittedTag;
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        void IDisposable.Dispose()
+        {
+
         }
 
         #endregion

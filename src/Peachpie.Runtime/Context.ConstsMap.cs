@@ -20,7 +20,6 @@ namespace Pchp.Core
         {
             public class ConstNameComparer : IEqualityComparer<ConstName>
             {
-
                 public bool Equals(ConstName x, ConstName y) => x.Equals(y);
 
                 public int GetHashCode(ConstName obj) => obj.GetHashCode();
@@ -66,6 +65,11 @@ namespace Pchp.Core
             readonly static Dictionary<ConstName, int> _map = new Dictionary<ConstName, int>(new ConstName.ConstNameComparer());
 
             /// <summary>
+            /// Lock mechanism for accessing statics.
+            /// </summary>
+            readonly static ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+
+            /// <summary>
             /// Maps constant ID to its actual value, accross all contexts (application wide).
             /// </summary>
             static PhpValue[] _valuesApp = new PhpValue[32];
@@ -98,16 +102,30 @@ namespace Pchp.Core
                 var cname = new ConstName(name, ignorecase);
                 int idx;
 
-                if (!_map.TryGetValue(cname, out idx))
+                _rwLock.EnterUpgradeableReadLock();
+                try
                 {
-                    // TODO: W lock
+                    if (!_map.TryGetValue(cname, out idx))
+                    {
+                        _rwLock.EnterWriteLock();
+                        try
+                        {
+                            // new constant ID, non zero
+                            idx = appConstant
+                                ? -(++_countApp)    // app constants are negative
+                                : (++_countCtx);    //
 
-                    // new constant ID, non zero
-                    idx = appConstant
-                        ? -(++_countApp)    // app constants are negative
-                        : (++_countCtx);    //
-
-                    _map.Add(cname, idx);
+                            _map.Add(cname, idx);
+                        }
+                        finally
+                        {
+                            _rwLock.ExitWriteLock();
+                        }
+                    }
+                }
+                finally
+                {
+                    _rwLock.ExitUpgradeableReadLock();
                 }
 
                 //
@@ -116,7 +134,7 @@ namespace Pchp.Core
 
             public static void DefineAppConstant(string name, PhpValue value, bool ignorecase = false)
             {
-                // TODO: Assert value.IsScalar
+                Debug.Assert(value.IsScalar);
 
                 var idx = -RegisterConstantId(name, ignorecase, true);
                 Debug.Assert(idx != 0);
@@ -131,7 +149,7 @@ namespace Pchp.Core
 
             public bool DefineConstant(string name, PhpValue value, bool ignorecase = false)
             {
-                // TODO: Assert value.IsScalar
+                Debug.Assert(value.IsScalar);
 
                 var idx = RegisterConstantId(name, ignorecase, false);
                 Debug.Assert(idx != 0);
@@ -168,8 +186,15 @@ namespace Pchp.Core
             {
                 if (idx == 0)
                 {
-                    // TODO: R lock
-                    _map.TryGetValue(new ConstName(name), out idx);
+                    _rwLock.EnterReadLock();
+                    try
+                    {
+                        _map.TryGetValue(new ConstName(name), out idx);
+                    }
+                    finally
+                    {
+                        _rwLock.ExitReadLock();
+                    }
                 }
 
                 return GetConstant(idx);
@@ -181,7 +206,17 @@ namespace Pchp.Core
             public PhpValue GetConstant(string name)
             {
                 int idx;
-                _map.TryGetValue(new ConstName(name), out idx);
+
+                _rwLock.EnterReadLock();
+                try
+                {
+                    _map.TryGetValue(new ConstName(name), out idx);
+                }
+                finally
+                {
+                    _rwLock.ExitReadLock();
+                }
+
                 return GetConstant(idx);
             }
 
@@ -192,11 +227,7 @@ namespace Pchp.Core
                 => idx > 0 ? GetConstant(idx - 1, _valuesCtx) : GetConstant(-idx - 1, _valuesApp);
 
             static PhpValue GetConstant(int idx, PhpValue[] values)
-            {
-                return (idx >= 0 && idx < values.Length)
-                    ? values[idx]
-                    : PhpValue.Void;
-            }
+                => (idx >= 0 && idx < values.Length) ? values[idx] : PhpValue.Void;
 
             /// <summary>
             /// Gets value indicating whether given constant is defined.
@@ -208,15 +239,28 @@ namespace Pchp.Core
             /// </summary>
             public IEnumerator<KeyValuePair<string, PhpValue>> GetEnumerator()
             {
-                // TODO: R lock
-                foreach (var pair in _map)
+                var list = new List<KeyValuePair<string, PhpValue>>(_map.Count);
+
+                //
+                _rwLock.EnterReadLock();
+                try
                 {
-                    var value = GetConstant(pair.Value);
-                    if (value.IsSet)
+                    foreach (var pair in _map)
                     {
-                        yield return new KeyValuePair<string, PhpValue>(pair.Key.Name, value);
+                        var value = GetConstant(pair.Value);
+                        if (value.IsSet)
+                        {
+                            list.Add(new KeyValuePair<string, PhpValue>(pair.Key.Name, value));
+                        }
                     }
                 }
+                finally
+                {
+                    _rwLock.ExitReadLock();
+                }
+
+                //
+                return list.GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

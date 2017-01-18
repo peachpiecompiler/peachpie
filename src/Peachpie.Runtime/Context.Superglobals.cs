@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pchp.Core.Utilities;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,102 +32,15 @@ namespace Pchp.Core
             #region Helpers
 
             /// <summary>
-            /// Fixes top level variable name to not contain spaces and dots (as it is in PHP);
-            /// </summary>
-            static string EncodeTopLevelName(string/*!*/name)
-            {
-                Debug.Assert(name != null);
-
-                return name.Replace('.', '_').Replace(' ', '_');
-            }
-
-            static IPhpArray EnsureItemArray(IPhpArray array, string key)
-            {
-                if (string.IsNullOrEmpty(key))
-                {
-                    var newarr = new PhpArray();
-                    array.AddValue(PhpValue.Create(newarr));
-                    return newarr;
-                }
-                else
-                {
-                    return array.EnsureItemArray(new IntStringKey(key));
-                }
-            }
-
-            /// <summary>
             /// Adds a variable to auto-global array.
             /// </summary>
             /// <param name="array">The array.</param>
             /// <param name="name">A unparsed name of variable.</param>
             /// <param name="value">A value to be added.</param>
             /// <param name="subname">A name of intermediate array inserted before the value.</param>
-            public static void AddVariable(IPhpArray/*!*/ array, string name, string value, string subname)
+            public static void AddVariable(IPhpArray/*!*/ array, string name, string value, string subname = null)
             {
-                Debug.Assert(array != null);
-                Debug.Assert(name != null);
-                Debug.Assert(value != null);
-
-                string key;
-
-                // current left and right square brace positions:
-                int left, right;
-
-                // checks pattern {var_name}[{key1}][{key2}]...[{keyn}] where var_name is [^[]* and keys are [^]]*:
-                left = name.IndexOf('[');
-                if (left > 0 && left < name.Length - 1 && (right = name.IndexOf(']', left + 1)) >= 0)
-                {
-                    // the variable name is a key to the "array", dots are replaced by underscores in top-level name:
-                    key = EncodeTopLevelName(name.Substring(0, left));
-
-                    // ensures that all [] operators in the chain except for the last one are applied on an array:
-                    for (;;)
-                    {
-                        // adds a level keyed by "key":
-                        array = EnsureItemArray(array, key);
-
-                        // adds a level keyed by "subname" (once only):
-                        if (subname != null)
-                        {
-                            array = EnsureItemArray(array, subname);
-                            subname = null;
-                        }
-
-                        // next key:
-                        key = name.Substring(left + 1, right - left - 1);
-
-                        // breaks if ']' is not followed by '[':
-                        left = right + 1;
-                        if (left == name.Length || name[left] != '[') break;
-
-                        // the next right brace:
-                        right = name.IndexOf(']', left + 1);
-                    }
-
-                    if (string.IsNullOrEmpty(key))
-                    {
-                        array.AddValue(PhpValue.Create(value));
-                    }
-                    else
-                    {
-                        array.SetItemValue(new IntStringKey(key), PhpValue.Create(value));
-                    }
-                }
-                else
-                {
-                    // no array pattern in variable name, "name" is a top-level key:
-                    name = EncodeTopLevelName(name);
-
-                    // inserts a subname on the next level:
-                    if (subname != null)
-                    {
-                        EnsureItemArray(array, name).SetItemValue(new IntStringKey(subname), PhpValue.Create(value));
-                    }
-                    else
-                    {
-                        array.SetItemValue(new IntStringKey(name), PhpValue.Create(value));
-                    }
-                }
+                NameValueCollectionUtils.AddVariable(array, name, value, subname);
             }
 
             /// <summary>
@@ -166,10 +80,10 @@ namespace Pchp.Core
                 }
             }
 
-            public static void InitializeEGPCSForWeb(ref Superglobals superglobals, string registering_order = null)
+            public static void InitializeEGPCSForWeb(PhpArray globals, ref Superglobals superglobals, string registering_order = null)
             {
                 // adds EGPCS variables as globals:
-                var globals = superglobals.globals;
+                
                 // adds items in the order specified by RegisteringOrder config option (overwrites existing):
                 for (int i = 0; i < registering_order.Length; i++)
                 {
@@ -189,9 +103,9 @@ namespace Pchp.Core
                 }
             }
 
-            public static void InitializeEGPCSForConsole(ref Superglobals superglobals)
+            public static void InitializeEGPCSForConsole(PhpArray globals, ref Superglobals superglobals)
             {
-                AddVariables(superglobals.globals, superglobals.env);
+                AddVariables(globals, superglobals.env);
             }
 
             #endregion
@@ -226,15 +140,17 @@ namespace Pchp.Core
 
         void InitSuperglobals(ref Superglobals superglobals)
         {
+            var egpcs = this.Configuration.Core.RegisteringOrder;
+
             superglobals.env = Superglobals.StaticEnv.DeepCopy();
             superglobals.server = InitServerVariable();
-            superglobals.request = InitRequestVariable();
-            superglobals.get = new PhpArray();
-            superglobals.post = new PhpArray();
-            superglobals.files = new PhpArray();
+            superglobals.get = InitGetVariable();
+            superglobals.post = InitPostVariable();
+            superglobals.files = InitFilesVariable();
             superglobals.session = new PhpArray();
             superglobals.cookie = new PhpArray();
-            superglobals.globals = InitGlobals(null); // TODO: Configuration/EGPCS
+            superglobals.request = InitRequestVariable(superglobals.get, superglobals.post, superglobals.cookie, egpcs);   // after get, post, cookie
+            superglobals.globals = InitGlobals(egpcs);
         }
 
         /// <summary>
@@ -253,9 +169,13 @@ namespace Pchp.Core
             if (registering_order != null)
             {
                 if (IsWebApplication)
-                    Superglobals.InitializeEGPCSForWeb(ref _superglobals, registering_order);
+                {
+                    Superglobals.InitializeEGPCSForWeb(globals, ref _superglobals, registering_order);
+                }
                 else
-                    Superglobals.InitializeEGPCSForConsole(ref _superglobals);
+                {
+                    Superglobals.InitializeEGPCSForConsole(globals, ref _superglobals);
+                }
             }
 
             // adds auto-global variables (overwrites potential existing variables in $GLOBALS):
@@ -289,10 +209,44 @@ namespace Pchp.Core
         }
 
         /// <summary>Initialize $_SERVER global variable.</summary>
-        protected virtual PhpArray InitServerVariable() => new PhpArray();
+        protected virtual PhpArray InitServerVariable() => PhpArray.NewEmpty();
 
         /// <summary>Initialize $_REQUEST global variable.</summary>
-        protected virtual PhpArray InitRequestVariable() => new PhpArray();
+        protected PhpArray InitRequestVariable(PhpArray get, PhpArray post, PhpArray cookie, string gpcOrder)
+        {
+            Debug.Assert(get != null && post != null && cookie != null && gpcOrder != null);
+
+            if (IsWebApplication)
+            {
+                var requestArray = new PhpArray(get.Count + post.Count + cookie.Count);
+
+                // adds items from GET, POST, COOKIE arrays in the order specified by RegisteringOrder config option:
+                for (int i = 0; i < gpcOrder.Length; i++)
+                {
+                    switch (char.ToUpperInvariant(gpcOrder[i]))
+                    {
+                        case 'G': Superglobals.AddVariables(requestArray, get); break;
+                        case 'P': Superglobals.AddVariables(requestArray, post); break;
+                        case 'C': Superglobals.AddVariables(requestArray, cookie); break;
+                    }
+                }
+
+                return requestArray;
+            }
+            else
+            {
+                return PhpArray.NewEmpty();
+            }
+        }
+
+        /// <summary>Initialize $_GET global variable.</summary>
+        protected virtual PhpArray InitGetVariable() => PhpArray.NewEmpty();
+
+        /// <summary>Initialize $_POST global variable.</summary>
+        protected virtual PhpArray InitPostVariable() => PhpArray.NewEmpty();
+
+        /// <summary>Initialize $_FILES global variable.</summary>
+        protected virtual PhpArray InitFilesVariable() => PhpArray.NewEmpty();
 
         #region Properties
 
@@ -457,6 +411,12 @@ namespace Pchp.Core
                 _superglobals.cookie = value;
             }
         }
+
+        /// <summary>
+        /// Gets value of <c>$HTTP_RAW_POST_DATA</c> variable.
+        /// Note this variable has been removed in PHP 7.0 and should not be used.
+        /// </summary>
+        public virtual string HttpRawPostData { get { return string.Empty; } set { throw new NotImplementedException(); } }
 
         #endregion
     }

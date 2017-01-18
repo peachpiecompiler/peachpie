@@ -99,15 +99,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison,
-            ScriptAttribute, PhpTraitAttribute, ScriptDiedException,
+            ScriptAttribute, PhpTraitAttribute, PhpHiddenAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
-            CallBinderFactory, GetFieldBinder, SetFieldBinder, AccessFlags,
+            CallBinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpTypeInfoExtension, PhpTypeInfo,
-            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable,
+            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible,
             IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
-            stdClass;
+            stdClass, ArrayAccess;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -135,6 +135,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IPhpArray = Create("IPhpArray");
             IPhpEnumerable = Create("IPhpEnumerable");
             IPhpCallable = Create("IPhpCallable");
+            IPhpConvertible = Create("IPhpConvertible");
             IntStringKey = Create("IntStringKey");
             ScriptDiedException = Create("ScriptDiedException");
             Context = Create("Context");
@@ -144,11 +145,14 @@ namespace Pchp.CodeAnalysis.Symbols
             Convert = Create("Convert");
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create("PhpTraitAttribute");
+            PhpHiddenAttribute = Create("PhpHiddenAttribute");
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");
+            ArrayAccess = CreateFromFullName("ArrayAccess");
 
             CallBinderFactory = Create("Dynamic.CallBinderFactory");
+            GetClassConstBinder = Create("Dynamic.GetClassConstBinder");
             GetFieldBinder = Create("Dynamic.GetFieldBinder");
             SetFieldBinder = Create("Dynamic.SetFieldBinder");
             AccessFlags = Create("Dynamic.AccessFlags");

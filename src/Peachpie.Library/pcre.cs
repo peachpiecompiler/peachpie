@@ -1,9 +1,12 @@
 ﻿using Pchp.Core;
+using Pchp.Library.PerlRegex;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
@@ -127,7 +130,7 @@ namespace Pchp.Library
             return result;
         }
 
-        public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit = -1)
+        public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit = -1)
         {
             long count;
             return preg_replace(ctx, pattern, replacement, subject, limit, out count);
@@ -148,7 +151,7 @@ namespace Pchp.Library
         /// <param name="limit">The maximum possible replacements for each pattern in each subject string. Defaults to <c>-1</c> (no limit).</param>
         /// <param name="count">This variable will be filled with the number of replacements done.</param>
         /// <returns></returns>
-        public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, int limit, out long count)
+        public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit, out long count)
         {
             count = 0;
 
@@ -169,40 +172,128 @@ namespace Pchp.Library
                     // string pattern
                     // string replacement
 
-                    return preg_replace(ctx, pattern.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx), null, subject, limit, ref count);
+                    return PregReplaceInternal(ctx, pattern.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx), null, subject, (int)limit, ref count);
                 }
                 else
                 {
                     // string pattern and array replacement not allowed:
-                    throw new ArgumentException("replacement_array_pattern_not", nameof(replacement));
-                    // return PhpValue.Null;
+                    PhpException.InvalidArgument(nameof(replacement), LibResources.replacement_array_pattern_not);
+                    return PhpValue.Null;
                 }
             }
             else if (replacement_array == null)
             {
                 // array  pattern
                 // string replacement
+
+                using (var pattern_enumerator = pattern_array.GetFastEnumerator())
+                    while (pattern_enumerator.MoveNext())
+                    {
+                        subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx),
+                            null, subject, (int)limit, ref count);
+                    }
+
+                //
+                return subject;
             }
             else
             {
                 // array pattern
                 // array replacement
+
+                var replacement_enumerator = replacement_array.GetFastEnumerator();
+
+                bool replacement_valid = true;
+                string replacement_string;
+
+                using (var pattern_enumerator = pattern_array.GetFastEnumerator())
+                    while (pattern_enumerator.MoveNext())
+                    {
+                        // replacements are in array, move to next item and take it if possible, in other case take empty string:
+                        if (replacement_valid && replacement_enumerator.MoveNext())
+                        {
+                            replacement_string = replacement_enumerator.CurrentValue.ToStringOrThrow(ctx);
+                        }
+                        else
+                        {
+                            replacement_string = string.Empty;
+                            replacement_valid = false;  // end of replacement_enumerator, do not call MoveNext again!
+                        }
+
+                        subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement_string,
+                            null, subject, (int)limit, ref count);
+                    }
+
+                //
+                return subject;
+            }
+        }
+
+        public static PhpValue preg_replace_callback(Context ctx, PhpValue pattern, IPhpCallable callback, PhpValue subject, long limit = -1)
+        {
+            long count = 0;
+            return preg_replace_callback(ctx, pattern, callback, subject, limit, ref count);
+        }
+
+        public static PhpValue preg_replace_callback(Context ctx, PhpValue pattern, IPhpCallable callback, PhpValue subject, long limit, ref long count)
+        {
+            count = 0;
+
+            // PHP's behaviour for undocumented limit range
+            if (limit < -1)
+            {
+                limit = 0;
+            }
+
+            //
+            var pattern_array = pattern.AsArray();
+
+            if (pattern_array == null)
+            {
+                // string pattern
+                return PregReplaceInternal(ctx, pattern.ToStringOrThrow(ctx), null, callback, subject, (int)limit, ref count);
+            }
+            else
+            {
+                // array pattern
             }
 
             throw new NotImplementedException();
+
         }
 
-        static PhpValue preg_replace(Context ctx, string pattern, string replacement, PhpCallable callback, PhpValue subject, int limit, ref long count)
+        static PhpValue PregReplaceInternal(Context ctx, string pattern, string replacement, IPhpCallable callback, PhpValue subject, int limit, ref long count)
         {
             var regex = new PerlRegex.Regex(pattern);
 
             // TODO: count
-            // TODO: callback
 
+            // callback
+            PerlRegex.MatchEvaluator evaluator = null;
+            if (callback != null)
+            {
+                evaluator = (match) =>
+                {
+                    var matches_arr = new PhpArray(0);
+                    foreach (PerlRegex.Group g in match.Groups)
+                    {
+                        matches_arr.Add((PhpValue)g.Value);
+                    }
+
+                    return callback
+                        .Invoke(ctx, (PhpValue)matches_arr)
+                        .ToStringOrThrow(ctx);
+                };
+            }
+
+            //
             var subject_array = subject.AsArray();
             if (subject_array == null)
             {
-                return PhpValue.Create(regex.Replace(subject.ToStringOrThrow(ctx), replacement, limit));
+                return PhpValue.Create(
+                    evaluator == null
+                        ? regex.Replace(subject.ToStringOrThrow(ctx), replacement, limit)
+                        : regex.Replace(subject.ToStringOrThrow(ctx), evaluator, limit));
             }
             else
             {
@@ -210,7 +301,10 @@ namespace Pchp.Library
                 var enumerator = arr.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
-                    var newvalue = regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit);
+                    var newvalue = evaluator == null
+                        ? regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit)
+                        : regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), evaluator, limit);
+
                     enumerator.CurrentValue = PhpValue.Create(newvalue);
                 }
 
@@ -231,7 +325,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int preg_match_all(Context ctx, string pattern, string subject, out PhpArray matches, int flags = PREG_PATTERN_ORDER, int offset = 0)
         {
-            throw new NotImplementedException();
+            return Match(ctx, pattern, subject, out matches, flags, offset, true);
         }
 
         /// <summary>
@@ -250,7 +344,85 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int preg_match(Context ctx, string pattern, string subject, out PhpArray matches, int flags = 0, long offset = 0)
         {
-            throw new NotImplementedException();
+            return Match(ctx, pattern, subject, out matches, flags, offset, false);
+        }
+
+        /// <summary>
+        /// Perform a regular expression match.
+        /// </summary>
+        static int Match(Context ctx, string pattern, string subject, out PhpArray matches, int flags, long offset, bool matchAll)
+        {
+            var regex = new PerlRegex.Regex(pattern);
+            var m = regex.Match(subject);
+
+            if ((regex.PerlOptions & PerlRegex.PerlRegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
+            {
+                matches = new PhpArray();
+                return -1;
+            }
+
+            if (m.Success)
+            {
+                if (!matchAll || (flags & PREG_PATTERN_ORDER) != 0)
+                {
+                    matches = new PhpArray(m.Groups.Count);
+                }
+                else
+                    matches = new PhpArray();
+
+                if (!matchAll)
+                {
+                    // Preg numbers groups sequentially, both named and unnamed.
+                    // .Net only numbers unnamed groups.
+                    // So we name unnamed groups (see ConvertRegex) to map correctly.
+                    int lastSuccessfulGroupIndex = GetLastSuccessfulGroup(m.Groups);
+                    var indexGroups = new List<Group>(m.Groups.Count);
+                    var groupNameByIndex = new Dictionary<int, string>(m.Groups.Count);
+                    for (int i = 0; i <= lastSuccessfulGroupIndex; i++)
+                    {
+                        // All groups should be named.
+                        var groupName = GetGroupName(regex, i);
+                        var item = NewArrayItem(m.Groups[i].Value, m.Groups[i].Index, (flags & PREG_OFFSET_CAPTURE) != 0);
+
+                        if (!string.IsNullOrEmpty(groupName))
+                        {
+                            matches[groupName] = item.DeepCopy();
+                        }
+
+                        matches[i] = item;
+                    }
+
+                    return 1;
+                }
+
+                // store all other matches in PhpArray matches
+                if ((flags & PREG_SET_ORDER) != 0) // cannot test PatternOrder, it is 0, SetOrder must be tested
+                    return FillMatchesArrayAllSetOrder(regex, m, ref matches, (flags & PREG_OFFSET_CAPTURE) != 0);
+                else
+                    return FillMatchesArrayAllPatternOrder(regex, m, ref matches, (flags & PREG_OFFSET_CAPTURE) != 0);
+            }
+
+            // no match has been found
+            if (matchAll && (flags & PREG_SET_ORDER) == 0)
+            {
+                // in that case PHP returns an array filled with empty arrays according to parentheses count
+                matches = new PhpArray(m.Groups.Count);
+                for (int i = 0; i < regex.GetGroupNumbers().Length; i++)
+                {
+                    AddGroupNameToResult(regex, matches, i, (ms, groupName) =>
+                    {
+                        ms[groupName] = (PhpValue)new PhpArray();
+                    });
+
+                    matches[i] = (PhpValue)new PhpArray();
+                }
+            }
+            else
+            {
+                matches = new PhpArray(); // empty array
+            }
+
+            return 0;
         }
 
         /// <summary>
@@ -307,12 +479,102 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Split string by a regular expression.
+        /// Splits <paramref name="subject"/> along boundaries matched by <paramref name="pattern"/> and returns an array containing substrings.
+        /// 
+        /// <paramref name="limit"/> specifies the maximum number of strings returned in the resulting array. If (limit-1) matches is found
+        /// and there remain some characters to match whole remaining string is returned as the last element of the array.
+        /// 
+        /// Some flags may be specified. <see cref="PREG_SPLIT_NO_EMPTY"/> means no empty strings will be
+        /// in the resulting array. <see cref="PREG_SPLIT_DELIM_CAPTURE"/> adds also substrings matching
+        /// the delimiter and <see cref="PREG_SPLIT_OFFSET_CAPTURE"/> returns instead substrings the arrays
+        /// containing appropriate substring at index 0 and the offset of this substring in original
+        /// <paramref name="subject"/> at index 1.
         /// </summary>
+        /// <param name="pattern">Regular expression to match to boundaries.</param>
+        /// <param name="subject">String or string of bytes to split.</param>
+        /// <param name="limit">Max number of elements in the resulting array.</param>
+        /// <param name="flags">Flags affecting the returned array.</param>
+        /// <returns>An array containing substrings.</returns>
         [return: CastToFalse]
         public static PhpArray preg_split(string pattern, string subject, int limit = -1, int flags = 0)
         {
-            throw new NotImplementedException();
+            if (limit == 0) // 0 does not make sense, php's behavior is as it is -1
+                limit = -1;
+            if (limit < -1) // for all other negative values it seems that is as limit == 1
+                limit = 1;
+
+            var regex = new PerlRegex.Regex(pattern);
+            //if (!regex.IsValid) return null;
+
+            var m = regex.Match(subject);
+
+            bool offset_capture = (flags & PREG_SPLIT_OFFSET_CAPTURE) != 0;
+            PhpArray result = new PhpArray();
+            int last_index = 0;
+
+            while (m.Success && (limit == -1 || --limit > 0) && last_index < subject.Length)
+            {
+                // add part before match
+                int length = m.Index - last_index;
+                if (length > 0 || (flags & PREG_SPLIT_NO_EMPTY) == 0)
+                    result.Add(NewArrayItem(subject.Substring(last_index, length), last_index, offset_capture));
+
+                if (m.Value.Length > 0)
+                {
+                    if ((flags & PREG_SPLIT_DELIM_CAPTURE) != 0) // add all captures but not whole pattern match (start at 1)
+                    {
+                        List<object> lastUnsucessfulGroups = null;  // value of groups that was not successful since last succesful one
+                        for (int i = 1; i < m.Groups.Count; i++)
+                        {
+                            Group g = m.Groups[i];
+                            if (g.Length > 0 || (flags & PREG_SPLIT_NO_EMPTY) == 0)
+                            {
+                                // the value to be added into the result:
+                                object value = NewArrayItem(g.Value, g.Index, offset_capture);
+
+                                if (g.Success)
+                                {
+                                    // group {i} was matched:
+                                    // if there was some unsuccesfull matches before, add them now:
+                                    if (lastUnsucessfulGroups != null && lastUnsucessfulGroups.Count > 0)
+                                    {
+                                        foreach (var x in lastUnsucessfulGroups)
+                                            result.Add(x);
+                                        lastUnsucessfulGroups.Clear();
+                                    }
+                                    // add the matched group:
+                                    result.Add(value);
+                                }
+                                else
+                                {
+                                    // The match was unsuccesful, remember all the unsuccesful matches
+                                    // and add them only if some succesful match will follow.
+                                    // In PHP, unsuccessfully matched groups are trimmed by the end
+                                    // (regexp processing stops when other groups cannot be matched):
+                                    if (lastUnsucessfulGroups == null) lastUnsucessfulGroups = new List<object>();
+                                    lastUnsucessfulGroups.Add(value);
+                                }
+                            }
+                        }
+                    }
+
+                    last_index = m.Index + m.Length;
+                }
+                else // regular expression match an empty string => add one character
+                {
+                    // always not empty
+                    result.Add(NewArrayItem(subject.Substring(last_index, 1), last_index, offset_capture));
+                    last_index++;
+                }
+
+                m = m.NextMatch();
+            }
+
+            // add remaining string (might be empty)
+            if (last_index < subject.Length || (flags & PREG_SPLIT_NO_EMPTY) == 0)
+                result.Add(NewArrayItem(subject.Substring(last_index), last_index, offset_capture));
+
+            return result;
         }
 
         /// <summary>
@@ -325,5 +587,132 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        static void AddGroupNameToResult(Regex regex, PhpArray matches, int i, Action<PhpArray, string> action)
+        {
+            var groupName = GetGroupName(regex, i);
+            if (!string.IsNullOrEmpty(groupName))
+            {
+                action(matches, groupName);
+            }
+        }
+
+        /// <summary>
+        /// Goes through <paramref name="m"/> matches and fill <paramref name="matches"/> array with results
+        /// according to Pattern Order.
+        /// </summary>
+        /// <param name="r"><see cref="Regex"/> that produced the match</param>
+        /// <param name="m"><see cref="Match"/> to iterate through all matches by NextMatch() call.</param>
+        /// <param name="matches">Array for storing results.</param>
+        /// <param name="addOffsets">Whether or not add arrays with offsets instead of strings.</param>
+        /// <returns>Number of full pattern matches.</returns>
+        static int FillMatchesArrayAllPatternOrder(Regex r, Match m, ref PhpArray matches, bool addOffsets)
+        {
+            // second index, increases at each match in pattern order
+            int j = 0;
+            while (m.Success)
+            {
+                // add all groups
+                for (int i = 0; i < m.Groups.Count; i++)
+                {
+                    var arr = NewArrayItem(m.Groups[i].Value, m.Groups[i].Index, addOffsets);
+
+                    AddGroupNameToResult(r, matches, i, (ms, groupName) =>
+                    {
+                        if (j == 0) ms[groupName] = (PhpValue)new PhpArray();
+                        ((PhpArray)ms[groupName])[j] = arr;
+                    });
+
+                    if (j == 0) matches[i] = (PhpValue)new PhpArray();
+                    ((PhpArray)matches[i])[j] = arr;
+                }
+
+                j++;
+                m = m.NextMatch();
+            }
+
+            return j;
+        }
+
+        /// <summary>
+        /// Goes through <paramref name="m"/> matches and fill <paramref name="matches"/> array with results
+        /// according to Set Order.
+        /// </summary>
+        /// <param name="r"><see cref="Regex"/> that produced the match</param>
+        /// <param name="m"><see cref="Match"/> to iterate through all matches by NextMatch() call.</param>
+        /// <param name="matches">Array for storing results.</param>
+        /// <param name="addOffsets">Whether or not add arrays with offsets instead of strings.</param>
+        /// <returns>Number of full pattern matches.</returns>
+        static int FillMatchesArrayAllSetOrder(Regex r, Match m, ref PhpArray matches, bool addOffsets)
+        {
+            // first index, increases at each match in set order
+            int i = 0;
+
+            while (m.Success)
+            {
+                var pa = new PhpArray(m.Groups.Count);
+
+                // add all groups
+                for (int j = 0; j < m.Groups.Count; j++)
+                {
+                    var arr = NewArrayItem(m.Groups[j].Value, m.Groups[j].Index, addOffsets);
+
+                    AddGroupNameToResult(r, pa, j, (p, groupName) =>
+                    {
+                        p[groupName] = arr;
+                    });
+
+
+                    pa[j] = arr;
+                }
+
+                matches[i] = (PhpValue)pa;
+                i++;
+                m = m.NextMatch();
+            }
+
+            return i;
+        }
+
+        static int GetLastSuccessfulGroup(GroupCollection/*!*/ groups)
+        {
+            Debug.Assert(groups != null);
+
+            for (int i = groups.Count - 1; i >= 0; i--)
+            {
+                if (groups[i].Success)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        static string GetGroupName(Regex regex, int index)
+        {
+            return regex.GroupNameFromNumber(index);
+        }
+
+        /// <summary>
+        /// Used for handling Offset Capture flags. Returns just <paramref name="item"/> if
+        /// <paramref name="offsetCapture"/> is <B>false</B> or an <see cref="PhpArray"/> containing
+        /// <paramref name="item"/> at index 0 and <paramref name="index"/> at index 1.
+        /// </summary>
+        /// <param name="item">Item to add to return value.</param>
+        /// <param name="index">Index to specify in return value if <paramref name="offsetCapture"/> is
+        /// <B>true</B>.</param>
+        /// <param name="offsetCapture">Whether or not to make <see cref="PhpArray"/> with item and index.</param>
+        /// <returns></returns>
+        static PhpValue NewArrayItem(string item, int index, bool offsetCapture)
+        {
+            if (!offsetCapture)
+            {
+                return (PhpValue)item;
+            }
+
+            var arr = new PhpArray(2);
+            arr.AddValue((PhpValue)item);
+            arr.AddValue((PhpValue)index);
+            return (PhpValue)arr;
+        }
     }
 }

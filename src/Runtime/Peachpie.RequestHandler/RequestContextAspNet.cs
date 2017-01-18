@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +13,7 @@ using System.Web;
 
 namespace Pchp.Core
 {
-    sealed class RequestContextAspNet : Context // , IHttpPhpContext
+    sealed class RequestContextAspNet : Context, IHttpPhpContext
     {
         #region .cctor
 
@@ -23,20 +24,38 @@ namespace Pchp.Core
             LoadScriptReferences();
         }
 
+        static Assembly TryLoadAssemblyFromFile(string fname)
+        {
+            try
+            {
+                return Assembly.LoadFile(fname);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        static Type TryGetScriptType(Assembly ass)
+        {
+            return ass?.GetType(ScriptInfo.ScriptTypeName, false, false);
+        }
+
         /// <summary>
         /// Loads assemblies representing referenced scripts and reflects their symbols to be used by the runtime.
         /// </summary>
         static void LoadScriptReferences()
         {
-            var loaded = Directory.GetFiles(HttpRuntime.BinDirectory, "*.dll", SearchOption.TopDirectoryOnly).Select(fname => Assembly.LoadFile(fname));
-            //var loaded = AppDomain.CurrentDomain.GetAssemblies();   // asp.net should load assemblies in /Bin folder by itself or by proper configuration
-            foreach (var ass in loaded)
+            // try to load DLL files from /Bin folder containing PHP scripts
+            //var loaded = AppDomain.CurrentDomain.GetAssemblies();   // ?? // asp.net should load assemblies in /Bin folder by itself or by proper configuration
+            var scriptTypes = Directory.GetFiles(HttpRuntime.BinDirectory, "*.dll", SearchOption.TopDirectoryOnly)
+                .Select(TryLoadAssemblyFromFile)
+                .Select(TryGetScriptType)
+                .WhereNotNull();
+
+            foreach (var t in scriptTypes)
             {
-                var t = ass.GetType(ScriptInfo.ScriptTypeName, false, false);
-                if (t != null)
-                {
-                    AddScriptReference(t);
-                }
+                AddScriptReference(t);
             }
         }
 
@@ -44,11 +63,48 @@ namespace Pchp.Core
 
         #region IHttpPhpContext
 
-        // TODO
+        /// <summary>Gets value indicating HTTP headers were already sent.</summary>
+        public bool HeadersSent
+        {
+            get
+            {
+                var code = StatusCode;
+                try
+                {
+                    // a trick (StatusCodes's setter checks whether or not headers has been sent):
+                    StatusCode = code;
+                }
+                catch (HttpException)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, value); }
+
+        public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
+
+        public void RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+
+        /// <summary>
+        /// Gets or sets HTTP response status code.
+        /// </summary>
+        public int StatusCode
+        {
+            get { return _httpctx.Response.StatusCode; }
+            set { _httpctx.Response.StatusCode = value; }
+        }
+
+        /// <summary>
+        /// Stream with contents of the incoming HTTP entity body.
+        /// </summary>
+        public Stream InputStream => _httpctx.Request.InputStream;
 
         #endregion
 
-        public override IHttpPhpContext HttpPhpContext => null; // TODO
+        public override IHttpPhpContext HttpPhpContext => this;
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -59,7 +115,8 @@ namespace Pchp.Core
         /// <summary>
         /// Application physical root directory including trailing slash.
         /// </summary>
-        public override string RootPath => HttpRuntime.AppDomainAppPath;
+        public override string RootPath => _rootPath;
+        readonly string _rootPath;
 
         public RequestContextAspNet(HttpContext httpcontext)
         {
@@ -67,6 +124,7 @@ namespace Pchp.Core
             Debug.Assert(HttpRuntime.UsingIntegratedPipeline);
 
             _httpctx = httpcontext;
+            _rootPath = ScriptsMap.NormalizeSlashes(HttpRuntime.AppDomainAppPath).TrimEnd(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
 
             this.InitOutput(httpcontext.Response.OutputStream);
             this.InitSuperglobals();

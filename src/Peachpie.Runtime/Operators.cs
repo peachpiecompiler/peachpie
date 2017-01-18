@@ -165,21 +165,19 @@ namespace Pchp.Core
         #region Assignment
 
         /// <summary>
-        /// Assigns a PHP value according to the PHP semantics.
+        /// Assigns a PHP value by value according to the PHP semantics.
         /// </summary>
         /// <param name="target">Target of the assignment.</param>
-        /// <param name="value">Value to be assigned. Caller ensures the value is not an alias.</param>
+        /// <param name="value">Value to be assigned.</param>
         public static void SetValue(ref PhpValue target, PhpValue value)
         {
-            Debug.Assert(!value.IsAlias);
-
             if (target.IsAlias)
             {
-                target.Alias.Value = value;
+                target.Alias.Value = value.GetValue();
             }
             else
             {
-                target = value;
+                target = value.GetValue();
             }
         }
 
@@ -187,12 +185,10 @@ namespace Pchp.Core
         /// Assigns a PHP value to an aliased place.
         /// </summary>
         /// <param name="target">Target of the assignment.</param>
-        /// <param name="value">Value to be assigned. Caller ensures the value is not an alias.</param>
+        /// <param name="value">Value to be assigned.</param>
         public static void SetValue(PhpAlias target, PhpValue value)
         {
-            Debug.Assert(!value.IsAlias);
-
-            target.Value = value;
+            target.Value = value.GetValue();
         }
 
         #endregion
@@ -217,7 +213,7 @@ namespace Pchp.Core
         /// <summary>
         /// Implementation of PHP <c>isset</c> operator.
         /// </summary>
-        public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;
+        public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;   // TODO: !Alias.IsNull
 
         /// <summary>
         /// Implements <c>empty</c> operator.

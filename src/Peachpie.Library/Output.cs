@@ -209,9 +209,11 @@ namespace Pchp.Library
 
             if (full)
             {
-                result = new PhpArray(bo.Level, 0);
+                result = new PhpArray(bo.Level);
                 for (int i = 1; i <= bo.Level; i++)
+                {
                     result.Add(i, GetLevelStatus(bo, i));
+                }
             }
             else if (bo.Level > 0)
             {
@@ -220,7 +222,7 @@ namespace Pchp.Library
             }
             else
             {
-                result = new PhpArray(0, 0);
+                result = PhpArray.NewEmpty();
             }
 
             return result;
@@ -228,7 +230,7 @@ namespace Pchp.Library
 
         private static PhpArray/*!*/ GetLevelStatus(BufferedOutput/*!*/ bo, int index)
         {
-            PhpArray result = new PhpArray(0, 3);
+            var result = new PhpArray(3);
 
             Delegate filter;
             int size;
@@ -320,7 +322,7 @@ namespace Pchp.Library
         public static PhpArray ob_list_handlers(Context ctx)
         {
             BufferedOutput bo = ctx.BufferedOutput;
-            PhpArray result = new PhpArray(bo.Level, 0);
+            var result = new PhpArray(bo.Level);
 
             for (int i = 0; i < bo.Level; i++)
             {

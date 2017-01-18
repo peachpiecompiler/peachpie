@@ -75,13 +75,23 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Creates synthesized field.
         /// </summary>
-        public SynthesizedFieldSymbol/*!*/GetOrCreateSynthesizedField(NamedTypeSymbol container, TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly)
+        public SynthesizedFieldSymbol/*!*/GetOrCreateSynthesizedField(NamedTypeSymbol container, TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly, bool autoincrement = false)
         {
             var members = EnsureList(container);
 
-            var field = members
-                .OfType<SynthesizedFieldSymbol>()
-                .FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
+            if (autoincrement)
+            {
+                name += "`" + members.Count.ToString("x");
+            }
+
+            SynthesizedFieldSymbol field = null;
+
+            if (!autoincrement)
+            {
+                field = members
+                    .OfType<SynthesizedFieldSymbol>()
+                    .FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
+            }
 
             if (field == null)
             {

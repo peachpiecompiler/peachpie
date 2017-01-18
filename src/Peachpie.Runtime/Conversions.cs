@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -89,6 +90,11 @@ namespace Pchp.Core
         /// <summary>
         /// Gets string representation of a floating point number value.
         /// </summary>
+        public static string ToString(double value) => value.ToString("G", NumberFormatInfo.InvariantInfo);
+
+        /// <summary>
+        /// Gets string representation of a floating point number value.
+        /// </summary>
         public static string ToString(double value, Context ctx) => value.ToString("G", ctx.NumberFormat);
 
         #endregion
@@ -137,6 +143,11 @@ namespace Pchp.Core
             return value != null && ((convertible = value as IPhpConvertible) == null || convertible.ToBoolean());
         }
 
+        /// <summary>
+        /// Converts to boolean according to PHP.
+        /// </summary>
+        public static bool ToBoolean(IPhpConvertible value) => value != null && value.ToBoolean();
+
         #endregion
 
         #region AsObject, ToArray, ToClass, AsCallable
@@ -147,9 +158,35 @@ namespace Pchp.Core
         public static object AsObject(PhpValue value) => value.AsObject();
 
         /// <summary>
-        /// COnverts value to an array.
+        /// Converts value to an array.
         /// </summary>
         public static PhpArray ToArray(PhpValue value) => value.ToArray();
+
+        /// <summary>
+        /// Creates <see cref="PhpArray"/> from object's properties.
+        /// </summary>
+        /// <param name="obj">Object instance.</param>
+        /// <returns>Array containing given object properties keyed according to PHP specifications.</returns>
+        public static PhpArray ClassToArray(object obj)
+        {
+            if (object.ReferenceEquals(obj, null))
+            {
+                return PhpArray.NewEmpty();
+            }
+            else if (obj.GetType() == typeof(stdClass))
+            {
+                // special case,
+                // object is stdClass, we can simply copy its runtime fields
+                return ((stdClass)obj).GetRuntimeFields().DeepCopy();
+            }
+            else
+            {
+                // obj -> array
+                var arr = new PhpArray();
+                TypeMembersUtils.InstanceFieldsToPhpArray(obj, arr);
+                return arr;
+            }
+        }
 
         /// <summary>
         /// Converts given value to a class object.
@@ -215,6 +252,17 @@ namespace Pchp.Core
             var info = StringToNumber(str, out l, out d);
             number = ((info & NumberInfo.Double) != 0) ? PhpNumber.Create(d) : PhpNumber.Create(l);
             return info;
+        }
+
+        /// <summary>
+        /// Converts given string to a number.
+        /// </summary>
+        public static PhpNumber ToNumber(string str)
+        {
+            long l;
+            double d;
+            var info = StringToNumber(str, out l, out d);
+            return ((info & NumberInfo.Double) != 0) ? PhpNumber.Create(d) : PhpNumber.Create(l);
         }
 
         /// <summary>

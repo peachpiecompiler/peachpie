@@ -23,7 +23,7 @@ namespace Pchp.Core
         /// Union for possible value types.
         /// </summary>
         [StructLayout(LayoutKind.Explicit)]
-        private struct ValueField
+        struct ValueField
         {
             [FieldOffset(0)]
             public long Long;
@@ -42,17 +42,17 @@ namespace Pchp.Core
         /// <summary>
         /// Union for reference types.
         /// </summary>
-        [StructLayout(LayoutKind.Explicit)]
-        private struct ObjectField
+        //[StructLayout(LayoutKind.Explicit)]
+        struct ObjectField
         {
-            [FieldOffset(0)]
+            //[FieldOffset(0)]
             public object Obj;
-            [FieldOffset(0)]
-            public string String;
-            [FieldOffset(0)]
-            public PhpArray Array;
-            [FieldOffset(0)]
-            public PhpAlias Alias;
+            //[FieldOffset(0)]
+            public string String => (string)Obj;
+            //[FieldOffset(0)]
+            public PhpArray Array => (PhpArray)Obj;
+            //[FieldOffset(0)]
+            public PhpAlias Alias => (PhpAlias)Obj;
 
             public override int GetHashCode() => (Obj != null) ? Obj.GetHashCode() : 0;
         }
@@ -116,6 +116,32 @@ namespace Pchp.Core
         public bool IsBoolean => (TypeCode == PhpTypeCode.Boolean);
 
         /// <summary>
+        /// Gets value indicating this variable after dereferencing is a scalar variable.
+        /// </summary>
+        public bool IsScalar
+        {
+            get
+            {
+                switch (TypeCode)
+                {
+                    case PhpTypeCode.Boolean:
+                    case PhpTypeCode.Int32:
+                    case PhpTypeCode.Long:
+                    case PhpTypeCode.Double:
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                        return true;
+
+                    case PhpTypeCode.Alias:
+                        return Alias.Value.IsScalar;
+
+                    default:
+                        return false;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the long field of the value.
         /// Does not perform a conversion, expects the value is of type long.
         /// </summary>
@@ -137,7 +163,7 @@ namespace Pchp.Core
         /// Gets the object field of the value as string.
         /// Does not perform a conversion, expects the value is of type (readonly UTF16) string.
         /// </summary>
-        public string String { get { Debug.Assert(_obj.Obj is string); return _obj.String; } }
+        public string String { get { Debug.Assert(_obj.Obj is string || _obj.Obj == null); return _obj.String; } }
 
         /// <summary>
         /// Gets the object field of the value as PHP writable string.
@@ -215,7 +241,7 @@ namespace Pchp.Core
         public static PhpValue operator ^(PhpValue left, PhpValue right) => Operators.BitXor(ref left, ref right);
 
         /// <summary>
-        /// Division of <paramref name="left"/> and <paramref name="right"/> accorsing to PHP semantics.
+        /// Division of <paramref name="left"/> and <paramref name="right"/> according to PHP semantics.
         /// </summary>
         /// <param name="left">Left operand.</param>
         /// <param name="right">Right operand.</param>
@@ -245,7 +271,7 @@ namespace Pchp.Core
                 throw new NotImplementedException();     // PhpException
             }
 
-            return dx / ny.ToDouble();
+            return dx / ny;
         }
 
         public static explicit operator bool(PhpValue value) => value.ToBoolean();
@@ -385,6 +411,15 @@ namespace Pchp.Core
         /// </summary>
         public void Accept(PhpVariableVisitor visitor) => _type.Accept(ref this, visitor);
 
+        /// <summary>
+        /// Gets value converted to string using default configuration options.
+        /// </summary>
+        public override string ToString()
+        {
+            Debug.WriteLine("Use ToString(Context) instead!");
+            return _type.ToStringQuiet(ref this);
+        }
+
         #endregion
 
         #region IEquatable<PhpValue>
@@ -469,7 +504,12 @@ namespace Pchp.Core
         /// <summary>
         /// Creates value containing new <see cref="PhpAlias"/> pointing to <c>NULL</c> value.
         /// </summary>
-        public static PhpValue CreateAlias() => Create(new PhpAlias(Null));
+        public static PhpValue CreateAlias() => CreateAlias(Null);
+
+        /// <summary>
+        /// Creates value containing new <see cref="PhpAlias"/>.
+        /// </summary>
+        public static PhpValue CreateAlias(PhpValue value) => Create(new PhpAlias(value));
 
         public static PhpValue Create(IntStringKey value) => value.IsInteger ? Create(value.Integer) : Create(value.String);
 

@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace Pchp.Library
 {
@@ -203,7 +205,7 @@ namespace Pchp.Library
                 host = null;
             }
 
-            PhpArray result = new PhpArray(0, 8);
+            PhpArray result = new PhpArray(8);
 
             const char neutralChar = '_';
 
@@ -246,7 +248,7 @@ namespace Pchp.Library
                     case PHP_URL_USER: return array["user"].AsString();
 
                     default:
-                        //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg:invalid_value", "component", component));                        
+                        //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_invalid_value", "component", component));                        
                         throw new ArgumentException(nameof(component));
                 }
             }
@@ -262,23 +264,23 @@ namespace Pchp.Library
         /// <param name="result">The array to store the variable found in <paramref name="str"/> to.</param>
         public static void parse_str(string str, out PhpArray result)
         {
-            result = new PhpArray();
-            //AutoGlobals.LoadFromCollection(result, HttpUtility.ParseQueryString(str));
-            throw new NotImplementedException();    // see Microsoft.AspNetCore.WebUtilities/QueryHelpers.cs, ParseNullableQuery
+            parse_str(result = new PhpArray(), str);
         }
 
         /// <summary>
         /// Parses a string as if it were the query string passed via an URL and sets variables in the
         /// current scope.
         /// </summary>
+        /// <param name="locals">Array of local variables passed from runtime, will be filled with parsed variables. Must not be <c>null</c>.</param>
         /// <param name="str">The string to parse.</param>
-        public static void parse_str(string str)
+        public static void parse_str([ImportLocals]PhpArray locals, string str)
         {
-            if (str == null) return;
+            Debug.Assert(locals != null);
 
-            //PhpArray globals = (localVariables != null) ? null : ScriptContext.CurrentContext.GlobalVariables;
-            //AutoGlobals.LoadFromCollection(globals, HttpUtility.ParseQueryString(str));
-            throw new NotImplementedException();
+            if (!string.IsNullOrEmpty(str))
+            {
+                UriUtils.ParseQuery(str, locals.AddVariable);
+            }
         }
 
         #endregion
@@ -363,13 +365,20 @@ namespace Pchp.Library
             var webctx = ctx.HttpPhpContext;
             if (webctx != null)
             {
-                if (name != null)
+                try
                 {
-                    webctx.RemoveHeader(name);
+                    if (name != null)
+                    {
+                        webctx.RemoveHeader(name);
+                    }
+                    else
+                    {
+                        webctx.RemoveHeaders();
+                    }
                 }
-                else
+                catch
                 {
-                    webctx.RemoveHeaders();
+                    // can't remove, webctx.HeadersSent
                 }
 
                 // TODO: cookies, session
@@ -452,6 +461,62 @@ namespace Pchp.Library
             // TODO: cookies, session
 
             return list;
+        }
+
+        #endregion
+
+        #region rawurlencode, rawurldecode, urlencode, urldecode
+
+        /// <summary>
+        /// Decode URL-encoded strings
+        /// </summary>
+        /// <param name="str">The URL string (e.g. "hello%20from%20foo%40bar").</param>
+        /// <returns>Decoded string (e.g. "hello from foo@bar")</returns>
+        public static string rawurldecode(string str)
+        {
+            if (str == null) return null;
+            return WebUtility.UrlDecode(str.Replace("+", "%2B"));  // preserve '+'
+        }
+
+        /// <summary>
+        /// Encodes a URL string keeping spaces in it. Spaces are encoded as '%20'.
+        /// </summary>  
+        /// <param name="str">The string to be encoded.</param>
+        /// <returns>The encoded string.</returns>
+        public static string rawurlencode(string str)
+        {
+            if (str == null) return null;
+            return UpperCaseEncodedChars(WebUtility.UrlEncode(str)).Replace("+", "%20");   // ' ' => '+' => '%20'
+        }
+
+        /// <summary>
+        /// Decodes a URL string.
+        /// </summary>  
+        public static string urldecode(string str)
+        {
+            return WebUtility.UrlDecode(str);
+        }
+
+        /// <summary>
+        /// Encodes a URL string. Spaces are encoded as '+'.
+        /// </summary>  
+        public static string urlencode(string str)
+        {
+            return UpperCaseEncodedChars(WebUtility.UrlEncode(str));
+        }
+
+        static string UpperCaseEncodedChars(string encoded)
+        {
+            char[] temp = encoded.ToCharArray();
+            for (int i = 0; i < temp.Length; i++)
+            {
+                if (temp[i] == '%' && i < temp.Length - 2)
+                {
+                    temp[i + 1] = char.ToUpperInvariant(temp[i + 1]);
+                    temp[i + 2] = char.ToUpperInvariant(temp[i + 2]);
+                }
+            }
+            return new string(temp);
         }
 
         #endregion

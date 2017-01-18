@@ -81,7 +81,7 @@ namespace Pchp.Library.PerlRegex
             else
                 capnamelist = p._capnamelist.ToArray();
 
-            return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op);
+            return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op, pcreOptions);
         }
 
         /// <summary>
@@ -554,6 +554,12 @@ namespace Pchp.Library.PerlRegex
                         case '*':
                             min = 0;
                             max = int.MaxValue;
+
+                            if (CharsRight() > 0 && RightChar() == '+')
+                            {
+                                MoveRight();    // TODO: possesive quantifier
+                            }
+
                             break;
 
                         case '?':
@@ -564,6 +570,12 @@ namespace Pchp.Library.PerlRegex
                         case '+':
                             min = 1;
                             max = int.MaxValue;
+
+                            if (CharsRight() > 0 && RightChar() == '+')
+                            {
+                                MoveRight();    // TODO: possesive quantifier
+                            }
+
                             break;
 
                         case '{':

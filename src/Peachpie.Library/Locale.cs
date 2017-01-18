@@ -16,7 +16,7 @@ namespace Pchp.Library
     {
         public const int CHAR_MAX = 127;
 
-        private static readonly char[] CultureNameSeparators = new char[] { '-', '_' };
+        static readonly char[] CultureNameSeparators = new char[] { '-', '_' };
 
         #region Categorized Cultures
 
@@ -24,6 +24,7 @@ namespace Pchp.Library
         /// A locale categories.
         /// </summary>
         /// <exclude/>
+        [PhpHidden]
         public enum Category
         {
             /// <summary>
@@ -144,17 +145,16 @@ namespace Pchp.Library
         /// <summary>
         /// Converts .NET groups information to PHP array.
         /// </summary>
-        private static PhpArray GetGroupingArray(int[] groups)
+        static PhpArray GetGroupingArray(int[] groups)
         {
             Debug.Assert(groups != null);
 
             int length = groups.Length;
-            PhpArray result = new PhpArray(length, 0);
+            var result = new PhpArray(length);
             for (int i = 0; i < length; i++)
-                if (groups[i] == 0)
-                    result.Add(i, CHAR_MAX);
-                else
-                    result.Add(i, groups[i]);
+            {
+                result.Add(i, (PhpValue)(groups[i] == 0 ? CHAR_MAX : groups[i]));
+            }
 
             return result;
         }
@@ -165,7 +165,7 @@ namespace Pchp.Library
         /// <returns>The associative array of number and currency information.</returns>
         public static PhpArray localeconv(Context ctx)
         {
-            PhpArray result = new PhpArray(0, 18);
+            var result = new PhpArray(18);
             NumberFormatInfo number;
 
             number = GetCulture(ctx, Category.Numeric).NumberFormat;
@@ -211,43 +211,41 @@ namespace Pchp.Library
         /// <param name="moreLocales">If <paramref name="locale"/> is not of type <see cref="PhpArray"/> contains locales, ignored otherwise.</param>
         /// <returns>The culture string (e.g. "en-US").</returns>
         /// <remarks>
-        /// <para>
         /// Values specified in <paramref name="locale"/> and <paramref name="moreLocales"/> are converted to strings.
         /// Each value should have format "{language}-{region}" or "{language}_{region}" or "{language}" or special values "C" or empty string
         /// which represents the invariant culture or special values <B>null</B> or "0" which means no changes is made 
         /// by the method rather the current culture name is returned. 
         /// The first value containing am existing culture string is used.
-        /// </para>
         /// </remarks>
         /// <exception cref="PhpException"><paramref name="category"/> has an invalid or unsupported value. (Warning)</exception>
         [return: CastToFalse]
-        public static string setlocale(Context ctx, Category category, object locale, params object[] moreLocales)
+        public static string setlocale(Context ctx, Category category, PhpValue locale, params PhpValue[] moreLocales)
         {
-            //CultureInfo new_culture;
+            CultureInfo new_culture;
 
-            //if (GetFirstExistingCulture(locale, moreLocales, out new_culture))
-            //{
-            //    if ((int)category < 0 || (int)category >= Cultures.CulturesCount)
-            //    {
-            //        PhpException.InvalidArgument("category", LibResources.GetString("arg:invalid_value"));
-            //        return null;
-            //    }
+            if (GetFirstExistingCulture(ctx, locale, moreLocales, out new_culture))
+            {
+                if ((int)category < 0 || (int)category >= Cultures.CulturesCount)
+                {
+                    //PhpException.InvalidArgument("category", LibResources.GetString("arg_invalid_value"));
+                    //return null;
+                    throw new ArgumentOutOfRangeException(nameof(category)); // TODO: Err
+                }
 
-            //    // sets specific culture:
-            //    SetCulture(ctx, category, new_culture);
-            //}
-            //else
-            //{
-            //    new_culture = CultureInfo.CurrentCulture;
-            //}
+                // sets specific culture:
+                SetCulture(ctx, category, new_culture);
+            }
+            else
+            {
+                new_culture = CultureInfo.CurrentCulture;
+            }
 
-            //if (new_culture == CultureInfo.InvariantCulture)
-            //    return "C";
+            if (new_culture == CultureInfo.InvariantCulture)
+            {
+                return "C";
+            }
 
-            //return String.Format("{0}.{1}",
-            //  new_culture.EnglishName.Replace(" (", "_").Replace(")", ""),
-            //  new_culture.TextInfo.ANSICodePage);
-            throw new NotImplementedException();
+            return new_culture.Name.Replace('-', '_');  // TODO: ".Encoding"
         }
 
         /// <summary>
@@ -258,48 +256,65 @@ namespace Pchp.Library
         /// <param name="moreLocales">If <paramref name="locale"/> is not of type <see cref="PhpArray"/> contains locales, ignored otherwise.</param>
         /// <param name="culture">The resulting culture. A <B>null</B> reference means no culture has been found.</param>
         /// <returns>Whether a culture settings should be changed.</returns>
-        private static bool GetFirstExistingCulture(Context ctx, object locale, object[] moreLocales, out CultureInfo culture)
+        static bool GetFirstExistingCulture(Context ctx, PhpValue locale, PhpValue[] moreLocales, out CultureInfo culture)
         {
-            //PhpArray array;
-            //IEnumerator locales;
-            //culture = null;
+            PhpArray array;
+            IEnumerator<PhpValue> locales;
+            culture = null;
 
-            //if ((array = locale as PhpArray) != null)
-            //{
-            //    // locales are stored in the "locale" array:
-            //    locales = array.GetEnumerator();
-            //    locales.MoveNext();
-            //    locale = locales.Current;
-            //}
-            //else if (moreLocales != null)
-            //{
-            //    // locales are stored in the "locale" and "moreLocales":
-            //    locales = moreLocales.GetEnumerator();
-            //}
-            //else
-            //{
-            //    throw new ArgumentNullException("moreLocales");
-            //}
+            if ((array = locale.ArrayOrNull()) != null)
+            {
+                // locales are stored in the "locale" array:
+                locales = array.Values.GetEnumerator();
+                locales.MoveNext();
+                locale = locales.Current;
+            }
+            else if (moreLocales != null)
+            {
+                // locales are stored in the "locale" and "moreLocales":
+                locales = moreLocales.AsEnumerable().GetEnumerator();
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(moreLocales));
+            }
 
-            //// enumerates locales and finds out the first which is valid:
-            //for (;;)
-            //{
-            //    string name = (locale != null) ? Core.Convert.ObjectToString(locale) : null;
+            // enumerates locales and finds out the first which is valid:
+            for (;;)
+            {
+                var name = locale.IsNull ? null : locale.ToString(ctx);
 
-            //    culture = GetCultureByName(name);
+                culture = GetCultureByName(name);
 
-            //    // name is "empty" then the current culture is not changed:
-            //    if (name == null || name == "0") return false;
+                // name is "empty" then the current culture is not changed:
+                if (name == null || name == "0") return false;
 
-            //    // if culture exists and is specific then finish searching:
-            //    if (culture != null) return true;
+                // if culture exists and is specific then finish searching:
+                if (culture != null) return true;
 
-            //    // the next locale:
-            //    if (!locales.MoveNext()) return false;
+                // the next locale:
+                if (!locales.MoveNext()) return false;
 
-            //    locale = locales.Current;
-            //}
-            throw new NotImplementedException();
+                locale = locales.Current;
+            }
+        }
+
+        static CultureInfo TryCreateCulture(string name)
+        {
+            try
+            {
+                return new CultureInfo(name);
+            }
+            catch (ArgumentException)
+            {
+                var dash = name.IndexOf('-');
+                if (dash > 0)
+                {
+                    return TryCreateCulture(name.Remove(dash));
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -308,46 +323,27 @@ namespace Pchp.Library
         /// Recognizes "C", "", "0" and <B>null</B> as invariant culture.
         /// Note, PHP swaps language and country codes.
         /// </summary>
-        private static CultureInfo GetCultureByName(string name)
+        static CultureInfo GetCultureByName(string name)
         {
-            //// invariant culture:
-            //if (name == null || name == "0" || name == String.Empty || name == "C")
-            //    return CultureInfo.InvariantCulture;
+            // invariant culture:
+            if (string.IsNullOrEmpty(name) || name == "0" || name == "C")
+            {
+                return CultureInfo.InvariantCulture;
+            }
 
-            //int separator = name.IndexOfAny(CultureNameSeparators);
-            //if (separator < 0)
-            //{
-            //    try
-            //    {
-            //        return CultureInfo.CreateSpecificCulture(name);
-            //    }
-            //    catch (ArgumentException)
-            //    {
-            //    }
-            //}
-            //else
-            //{
-            //    string part1 = name.Substring(0, separator);
-            //    string part2 = name.Substring(separator + 1);
-            //    try
-            //    {
-            //        return CultureInfo.CreateSpecificCulture(String.Concat(part1, "-", part2));
-            //    }
-            //    catch (ArgumentException)
-            //    {
-            //        try
-            //        {
-            //            return CultureInfo.CreateSpecificCulture(String.Concat(part2, "-", part1));
-            //        }
-            //        catch (ArgumentException)
-            //        {
-            //        }
-            //    }
-            //}
+            int separator = name.IndexOfAny(CultureNameSeparators);
+            if (separator < 0)
+            {
+                return TryCreateCulture(name);
+            }
+            else
+            {
+                string part1 = name.Substring(0, separator);
+                string part2 = name.Substring(separator + 1);
 
-            //return null;
-
-            throw new NotImplementedException();
+                return TryCreateCulture(string.Concat(part1, "-", part2))
+                    ?? TryCreateCulture(string.Concat(part2, "-", part1));
+            }
         }
 
         /// <summary>
