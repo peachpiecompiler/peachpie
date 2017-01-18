@@ -551,24 +551,24 @@ namespace Pchp.CodeAnalysis.CodeGen
             var last = ps.LastOrDefault();
             var variadic = (last != null && last.IsParams && last.Type.IsSZArray()) ? last : null;  // optional params
             var variadic_element = (variadic?.Type as ArrayTypeSymbol)?.ElementType;
-            int hasthis = routine.HasThis ? 1 : 0;  // +1 when loading parameter value if there is @this
+            var variadic_place = variadic != null ? new ParamPlace(variadic) : null;
 
             ps = ps.Where(p => !p.IsImplicitlyDeclared).ToImmutableArray();  // parameters without implicitly declared parameters
 
             if (ps.Length == 0 && variadic_element == elementType)
             {
                 // == params
-                _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                variadic_place.EmitLoad(_il);
             }
             else
             {
                 // COUNT: (N + params.Length)
                 _il.EmitIntConstant(ps.Length);
 
-                if (variadic != null)
+                if (variadic_place != null)
                 {
                     // + params.Length
-                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    variadic_place.EmitLoad(_il);
                     EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
                     _il.EmitOpCode(ILOpCode.Add);
                 }
@@ -577,13 +577,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                 _il.EmitOpCode(ILOpCode.Newarr);
                 EmitSymbolToken(elementType, null);
 
+                // tmparr = <array>
+                var tmparr = this.GetTemporaryLocal(ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType));
+                _il.EmitLocalStore(tmparr);
+
                 // { p1, .., pN }
                 for (int i = 0; i < ps.Length; i++)
                 {
-                    _il.EmitOpCode(ILOpCode.Dup);   // <array>
+                    _il.EmitLocalLoad(tmparr);      // <array>
                     _il.EmitIntConstant(i);         // [i]
-                    _il.EmitLoadArgumentOpcode(ps[i].Ordinal + hasthis);
-                    EmitConvert(ps[i].Type, 0, elementType);
+                    EmitConvert(new ParamPlace(ps[i]).EmitLoad(_il), 0, elementType);
                     _il.EmitOpCode(ILOpCode.Stelem);
                     EmitSymbolToken(elementType, null);
                 }
@@ -592,14 +595,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // { params[0, .., paramsN] }
 
-                    // Template: for (i = 0; i < params.Length; i++) [i + N] = params[i]
+                    // Template: for (i = 0; i < params.Length; i++) <array>[i + N] = params[i]
 
                     var lbl_block = new object();
                     var lbl_cond = new object();
-
-                    // tmparr = <array>
-                    var tmparr = this.GetTemporaryLocal(ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType));
-                    _il.EmitLocalStore(tmparr);
 
                     // i = 0
                     var tmpi = GetTemporaryLocal(CoreTypes.Int32);
@@ -616,7 +615,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitLocalLoad(tmpi);        
                     _il.EmitOpCode(ILOpCode.Add);
 
-                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    variadic_place.EmitLoad(_il);
                     _il.EmitLocalLoad(tmpi);
                     _il.EmitOpCode(ILOpCode.Ldelem);
                     EmitSymbolToken(variadic_element, null);
@@ -634,17 +633,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // i < params.Length
                     _il.MarkLabel(lbl_cond);
                     _il.EmitLocalLoad(tmpi);
-                    _il.EmitLoadArgumentOpcode(variadic.Ordinal + hasthis);
+                    variadic_place.EmitLoad(_il);
                     EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
                     _il.EmitBranch(ILOpCode.Blt, lbl_block);
 
-                    // <array>
-                    _il.EmitLocalLoad(tmparr);   // <array>
-
                     //
-                    ReturnTemporaryLocal(tmparr);
                     ReturnTemporaryLocal(tmpi);
                 }
+
+                // <array>
+                _il.EmitLocalLoad(tmparr);   // <array>
+
+                //
+                ReturnTemporaryLocal(tmparr);
+                tmparr = null;
             }
         }
 
