@@ -1165,6 +1165,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 default:
 
+                    //// === NULL
+                    //if (right.ConstantValue.IsNull())
+                    //{
+                        // TODO 
+                    //}
+
                     // TODO: PhpArray, Object === ...
 
                     xtype = cg.EmitConvertToPhpValue(xtype, 0);

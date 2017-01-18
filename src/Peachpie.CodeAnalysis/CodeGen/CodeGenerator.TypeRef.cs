@@ -73,6 +73,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Gets value indicating the type can be <c>null</c>.
+        /// </summary>
+        internal bool CanBeNull(TypeRefMask tmask)
+        {
+            return tmask.IsAnyType || tmask.IsRef || tmask.IsUninitialized || this.TypeRefContext.IsNull(tmask);
+        }
+
+        /// <summary>
         /// Determines whether the type needs to be copied when passing by value.
         /// </summary>
         internal bool IsCopiable(TypeSymbol t)

@@ -116,20 +116,36 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
                         break;
                     }
-                    // TODO: IsOfType(IPhpConvertible) -> (IPhpConvertible).ToBoolean()
-                    else if (from == CoreTypes.PhpString)
+                    else if (from.IsOfType(CoreTypes.IPhpConvertible))
                     {
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
+                        // (IPhpConvertible).ToBoolean()
+                        if (CanBeNull(fromHint))
+                        {
+                            // Template: <value> != null && <value>.ToBoolean()
+                            EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_IPhpConvertible);
+                        }
+                        else
+                        {
+                            // Template: <value>.ToBoolean()
+                            EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToBoolean)
+                                .Expect(SpecialType.System_Boolean);
+                        }
                         break;
                     }
-                    else if (from.IsOfType(CoreTypes.IPhpArray))
-                    {
-                        // IPhpArray.Count != 0
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
-                        _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
-                        _il.EmitOpCode(negation ? ILOpCode.Ceq : ILOpCode.Cgt_un);
-                        return; // negation handled
-                    }
+                    //else if (from == CoreTypes.PhpString)
+                    //{
+                    //    EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
+                    //    break;
+                    //}
+                    //else if (from.IsOfType(CoreTypes.IPhpArray))
+                    //{
+                    //    // TODO: != null && .Count != 0
+                    //    // IPhpArray.Count != 0
+                    //    EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
+                    //    _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                    //    _il.EmitOpCode(negation ? ILOpCode.Ceq : ILOpCode.Cgt_un);
+                    //    return; // negation handled
+                    //}
                     else if (from.IsReferenceType)
                     {
                         goto case SpecialType.System_Object;

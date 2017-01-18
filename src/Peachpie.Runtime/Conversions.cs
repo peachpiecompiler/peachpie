@@ -143,6 +143,11 @@ namespace Pchp.Core
             return value != null && ((convertible = value as IPhpConvertible) == null || convertible.ToBoolean());
         }
 
+        /// <summary>
+        /// Converts to boolean according to PHP.
+        /// </summary>
+        public static bool ToBoolean(IPhpConvertible value) => value != null && value.ToBoolean();
+
         #endregion
 
         #region AsObject, ToArray, ToClass, AsCallable

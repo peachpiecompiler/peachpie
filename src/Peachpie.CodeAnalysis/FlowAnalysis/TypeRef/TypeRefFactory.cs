@@ -16,6 +16,7 @@ namespace Pchp.CodeAnalysis
     {
         #region Primitive Types
 
+        internal static readonly PrimitiveTypeRef/*!*/NullTypeRef = new PrimitiveTypeRef(PhpTypeCode.Null);
         internal static readonly PrimitiveTypeRef/*!*/BoolTypeRef = new PrimitiveTypeRef(PhpTypeCode.Boolean);
         internal static readonly PrimitiveTypeRef/*!*/LongTypeRef = new PrimitiveTypeRef(PhpTypeCode.Long);
         internal static readonly PrimitiveTypeRef/*!*/DoubleTypeRef = new PrimitiveTypeRef(PhpTypeCode.Double);
@@ -78,6 +79,7 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Double: return DoubleTypeRef;
                 case SpecialType.System_Boolean: return BoolTypeRef;
                 default:
+                    if (c.IsNull) return NullTypeRef;
                     throw new NotImplementedException();
             }
         }
@@ -90,7 +92,7 @@ namespace Pchp.CodeAnalysis
             {
                 case SpecialType.System_Void: return 0;
                 case SpecialType.System_Int64: return ctx.GetLongTypeMask();
-                case SpecialType.System_String: return ctx.GetStringTypeMask();
+                case SpecialType.System_String: return ctx.GetStringTypeMask() | ctx.GetNullTypeMask();
                 case SpecialType.System_Double: return ctx.GetDoubleTypeMask();
                 case SpecialType.System_Boolean: return ctx.GetBooleanTypeMask();
                 case SpecialType.None:
@@ -100,9 +102,9 @@ namespace Pchp.CodeAnalysis
                         if (t.Name == "PhpValue") return TypeRefMask.AnyType;
                         if (t.Name == "PhpAlias") return TypeRefMask.AnyType.WithRefFlag;
                         if (t.Name == "PhpNumber") return ctx.GetNumberTypeMask();
-                        if (t.Name == "PhpString") return ctx.GetWritableStringTypeMask();
-                        if (t.Name == "PhpArray") return ctx.GetArrayTypeMask();
-                        if (t.Name == "IPhpCallable") return ctx.GetCallableTypeMask();
+                        if (t.Name == "PhpString") return ctx.GetWritableStringTypeMask() | ctx.GetNullTypeMask();
+                        if (t.Name == "PhpArray") return ctx.GetArrayTypeMask() | ctx.GetNullTypeMask();
+                        if (t.Name == "IPhpCallable") return ctx.GetCallableTypeMask() | ctx.GetNullTypeMask();
                     }
 
                     break;
@@ -122,6 +124,11 @@ namespace Pchp.CodeAnalysis
             if (!tref.IsPrimitiveType && !tref.IsArray)
             {
                 result.IncludesSubclasses = true;
+            }
+
+            if (tref.IsObject)
+            {
+                result |= ctx.GetNullTypeMask();
             }
 
             return result;

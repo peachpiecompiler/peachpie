@@ -120,6 +120,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 State.LTInt64Max(varname, lt);
         }
 
+        void Eq(BoundReferenceExpression r, Optional<object> value)
+        {
+            //var varname = AsVariableName(r);
+            //if (varname != null)
+            //{
+            //    if (value.IsNull())
+            //    {
+
+            //    }
+            //}
+        }
+
+        void NotEq(BoundReferenceExpression r, Optional<object> value)
+        {
+            var varname = AsVariableName(r);
+            if (varname != null && TypeCtx.IsNull(r.TypeRefMask) && value.IsNull())
+            {
+                // varname != NULL
+                State.SetVar(varname, TypeCtx.WithoutNull(r.TypeRefMask));
+            }
+        }
+
         /// <summary>
         /// In case of a local variable or parameter, gets its name.
         /// </summary>
@@ -211,6 +233,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 else
                 {
                     State.LTInt64Max(name, false);
+                    State.SetVar(name, TypeCtx.GetNullTypeMask() | oldtype);
                 }
             }
         }
@@ -385,9 +408,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (x.Access.IsUnset)
                 {
-                    State.SetVar(name, 0);
+                    x.TypeRefMask = TypeCtx.GetNullTypeMask();
+                    State.SetVar(name, x.TypeRefMask);
                     State.LTInt64Max(name, false);
-                    x.TypeRefMask = 0;
                 }
             }
             else
@@ -729,7 +752,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     if (branch == ConditionBranch.ToTrue)
                     {
                         if (x.Operation == Operations.LessThan && IsLongOnly(x.Right))
-                            LTInt64Max(x.Left as BoundReferenceExpression, true);   // $x < LONG
+                        {
+                            // $x < LONG
+                            LTInt64Max(x.Left as BoundReferenceExpression, true);
+                        }
+
+                        if (x.Operation == Operations.Equal)
+                        {
+                            Eq(x.Left as BoundReferenceExpression, x.Right.ConstantValue);
+                            Eq(x.Right as BoundReferenceExpression, x.Left.ConstantValue);
+                        }
+                        else if (x.Operation == Operations.NotEqual)
+                        {
+                            NotEq(x.Left as BoundReferenceExpression, x.Right.ConstantValue);
+                            NotEq(x.Right as BoundReferenceExpression, x.Left.ConstantValue);
+                        }
                     }
 
                     return TypeCtx.GetBooleanTypeMask();
@@ -895,7 +932,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     // process arguments by ref
                     var expectedparams = m.GetExpectedArguments(this.TypeCtx);
-                    for (int i = 0; i < expectedparams.Length; i ++)
+                    for (int i = 0; i < expectedparams.Length; i++)
                     {
                         if (i < args.Length)
                         {

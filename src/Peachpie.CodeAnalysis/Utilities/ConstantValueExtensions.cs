@@ -36,5 +36,13 @@ namespace Pchp.CodeAnalysis
 
             return null;
         }
+
+        /// <summary>
+        /// Gets value indicating the constant value is set and its value is <c>null</c>.
+        /// </summary>
+        public static bool IsNull(this Optional<object> value)
+        {
+            return value.HasValue && value.Value == null;
+        }
     }
 }

@@ -103,7 +103,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpTypeInfoExtension, PhpTypeInfo,
-            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable,
+            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible,
             IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
@@ -135,6 +135,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IPhpArray = Create("IPhpArray");
             IPhpEnumerable = Create("IPhpEnumerable");
             IPhpCallable = Create("IPhpCallable");
+            IPhpConvertible = Create("IPhpConvertible");
             IntStringKey = Create("IntStringKey");
             ScriptDiedException = Create("ScriptDiedException");
             Context = Create("Context");

@@ -109,6 +109,19 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Merges CLR type to be nullable.
+        /// </summary>
+        internal TypeSymbol MergeNull(TypeSymbol t)
+        {
+            if (t.IsReferenceType)
+            {
+                return t;
+            }
+
+            return CoreTypes.PhpValue;
+        }
+
+        /// <summary>
         /// Determines whether given type is treated as a PHP number (<c>int</c> or <c>double</c>).
         /// </summary>
         internal bool IsNumber(TypeSymbol type)
@@ -175,7 +188,7 @@ namespace Pchp.CodeAnalysis
                     }
                     return result;
                 }
-                else if (tref is AST.NullableTypeRef) throw new NotImplementedException(); // ?((AST.NullableTypeRef)tref).TargetType
+                else if (tref is AST.NullableTypeRef) MergeNull(GetTypeFromTypeRef(((AST.NullableTypeRef)tref).TargetType)); // ?((AST.NullableTypeRef)tref).TargetType
                 else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
                 else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
             }
@@ -453,6 +466,20 @@ namespace Pchp.CodeAnalysis
                     return CoreTypes.Void;
                 }
 
+                // remember the value is nullable
+                var maybenull = typeCtx.IsNull(typeMask);
+                if (maybenull)
+                {
+                    typeMask = typeCtx.WithoutNull(typeMask);
+                    if (typeMask.IsVoid)
+                    {
+                        return CoreTypes.Object;
+                    }
+                }
+
+                Debug.Assert(!typeCtx.IsNull(typeMask));
+
+                //
                 var types = typeCtx.GetTypes(typeMask);
                 Debug.Assert(types.Count != 0);
 
@@ -508,6 +535,7 @@ namespace Pchp.CodeAnalysis
                 case PhpTypeCode.PhpArray: return CoreTypes.PhpArray;
                 case PhpTypeCode.Callable: return CoreTypes.PhpValue;   // array|object|string
                 case PhpTypeCode.Resource: return CoreTypes.PhpResource;
+                case PhpTypeCode.Null: return CoreTypes.Object; // object // when merging, NULL must be handled specially (e.g. PhpValue|NULL -> PhpValue)
                 default:
                     throw new NotImplementedException();
             }

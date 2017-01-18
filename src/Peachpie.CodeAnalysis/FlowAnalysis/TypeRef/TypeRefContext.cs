@@ -23,10 +23,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Bit masks initialized when such type is added to the context.
         /// Its bits corresponds to <see cref="_typeRefs"/> indices.
         /// </summary>
-        private ulong _isObjectMask, _isArrayMask, _isLongMask, _isDoubleMask, _isBoolMask, _isStringMask, _isWritableStringMask, _isPrimitiveMask, _isLambdaMask;
+        private ulong _isNullMask, _isObjectMask, _isArrayMask, _isLongMask, _isDoubleMask, _isBoolMask, _isStringMask, _isWritableStringMask, _isPrimitiveMask, _isLambdaMask;
         private ulong IsNumberMask { get { return _isLongMask | _isDoubleMask; } }
         private ulong IsAStringMask { get { return _isStringMask | _isWritableStringMask; } }
-        private ulong IsNullableMask { get { return _isObjectMask | _isArrayMask | IsAStringMask | _isLambdaMask; } }
+        private ulong IsNullableMask { get { return _isNullMask | _isObjectMask | _isArrayMask | IsAStringMask | _isLambdaMask; } }
 
         ///// <summary>
         ///// Allowed types for array key.
@@ -159,6 +159,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
                     case PhpTypeCode.String:
                         _isStringMask = mask;
+                        break;
+                    case PhpTypeCode.Null:
+                        _isNullMask = mask;
                         break;
                     case PhpTypeCode.WritableString:
                         _isWritableStringMask = mask;
@@ -370,11 +373,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
-        /// Gets type mask corresponding to <see cref="System.Object"/> and not including any subclasses.
+        /// Gets type mask corresponding to <c>NULL</c>.
         /// </summary>
         public TypeRefMask GetNullTypeMask()
         {
-            return GetTypeMask(NameUtils.SpecialNames.System_Object, false);
+            if (_isNullMask != 0)
+            {
+                return new TypeRefMask(_isNullMask);
+            }
+            else
+            {
+                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.NullTypeRef);
+            }
         }
 
         /// <summary>
@@ -695,6 +705,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsNumber(TypeRefMask mask) { return (mask.Mask & IsNumberMask) != 0; }
 
         /// <summary>
+        /// Gets value indicating the type represents <c>NULL</c>.
+        /// </summary>
+        public bool IsNull(TypeRefMask mask) { return (mask.Mask & _isNullMask) != 0; }
+
+        /// <summary>
         /// Gets value indicating whether given type mask represents a string type (readonly or writable).
         /// </summary>
         public bool IsAString(TypeRefMask mask) { return (mask.Mask & IsAStringMask) != 0; }
@@ -785,6 +800,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Remove <c>NULL</c> type from the given mask.
+        /// </summary>
+        public TypeRefMask WithoutNull(TypeRefMask mask)
+        {
+            if (IsNull(mask))
+            {
+                mask = mask & ~_isNullMask;
+            }
+
+            return mask;
         }
 
         #endregion

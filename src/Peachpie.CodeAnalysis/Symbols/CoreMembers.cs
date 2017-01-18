@@ -347,6 +347,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly PhpAliasHolder PhpAlias;
         public readonly PhpArrayHolder PhpArray;
         public readonly IPhpArrayHolder IPhpArray;
+        public readonly IPhpConvertibleHolder IPhpConvertible;
         public readonly PhpNumberHolder PhpNumber;
         public readonly OperatorsHolder Operators;
         public readonly PhpStringHolder PhpString;
@@ -363,6 +364,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpAlias = new PhpAliasHolder(types);
             PhpArray = new PhpArrayHolder(types);
             IPhpArray = new IPhpArrayHolder(types);
+            IPhpConvertible = new IPhpConvertibleHolder(types);
             PhpNumber = new PhpNumberHolder(types);
             PhpString = new PhpStringHolder(types);
             Operators = new OperatorsHolder(types);
@@ -397,6 +399,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
                 ToBoolean_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Boolean);
                 ToBoolean_Object = ct.Convert.Method("ToBoolean", ct.Object);
+                ToBoolean_IPhpConvertible = ct.Convert.Method("ToBoolean", ct.IPhpConvertible);
                 ToLong_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Long);
                 ToDouble_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Double);
                 ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
@@ -466,7 +469,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetItemValue_PhpValue_IntStringKey_Bool, EnsureItemAlias_PhpValue_IntStringKey_Bool,
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
-                ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object,
+                ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object, ToBoolean_IPhpConvertible,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
                 ToNumber_PhpValue, ToNumber_String,
                 AsObject_PhpValue, ToArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
@@ -718,6 +721,24 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreField
                 Default;
+        }
+
+        public struct IPhpConvertibleHolder
+        {
+            public IPhpConvertibleHolder(CoreTypes ct)
+            {
+                var t = ct.IPhpConvertible;
+
+                ToBoolean = t.Method("ToBoolean");
+                ToLong = t.Method("ToLong");
+                ToDouble = t.Method("ToDouble");
+                ToString_Context = t.Method("ToString", ct.Context);
+                ToNumber = t.Method("ToNumber");
+                ToClass = t.Method("ToClass");
+            }
+
+            public readonly CoreMethod
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToClass;
         }
 
         public struct PhpStringHolder
