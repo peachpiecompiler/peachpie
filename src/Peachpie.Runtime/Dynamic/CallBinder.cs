@@ -349,7 +349,7 @@ namespace Pchp.Core.Dynamic
         readonly string _name;
         readonly Type _classCtx;
 
-        public override bool HasTarget => _type == null;    // target is a type name
+        public override bool HasTarget => _type == null;    // target is a type name in case it is known in compile time
 
         internal CallStaticMethodBinder(RuntimeTypeHandle type, string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int genericParams)
             : base(returnType, genericParams)
@@ -362,7 +362,7 @@ namespace Pchp.Core.Dynamic
         Type ResolveType(Context ctx, Expression target)
         {
             Debug.Assert(ctx != null);
-            Debug.Assert(target == null || target.Type == typeof(string));
+            Debug.Assert(target == null || target.Type == typeof(PhpTypeInfo));
 
             var t = _type;
             if (t == null)

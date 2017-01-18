@@ -456,7 +456,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Div_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.PhpValue, ct.PhpValue);
                 Div_long_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.Long, ct.PhpValue);
-                Div_double_PhpValue = ct.PhpNumber.Method(WellKnownMemberNames.DivisionOperatorName, ct.Double, ct.PhpValue);
+                Div_double_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.Double, ct.PhpValue);
                 BitwiseOr_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseOrOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseAnd_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.BitwiseAndOperatorName, ct.PhpValue, ct.PhpValue);
                 BitwiseXor_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.ExclusiveOrOperatorName, ct.PhpValue, ct.PhpValue);
@@ -880,10 +880,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 OnInclude_TScript = ct.Context.Method("OnInclude");
                 Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
 
+                AssertTypeDeclared_PhpTypeInfo_string = ct.Context.Method("AssertTypeDeclared", ct.PhpTypeInfo, ct.String);
+
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
                 GetStatic_T = ct.Context.Method("GetStatic");
                 GetDeclaredType_string_bool = ct.Context.Method("GetDeclaredType", ct.String, ct.Boolean);
+                GetDeclaredTypeOrThrow_string_bool = ct.Context.Method("GetDeclaredTypeOrThrow", ct.String, ct.Boolean);
 
                 // properties
                 RootPath = ct.Context.Property("RootPath");
@@ -904,9 +907,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_RoutineInfo, DeclareType_T,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
+                AssertTypeDeclared_PhpTypeInfo_string,
                 GetConstant_string_int32,
                 GetStatic_T,
-                GetDeclaredType_string_bool,
+                GetDeclaredType_string_bool, GetDeclaredTypeOrThrow_string_bool,
                 Dispose;
 
             public readonly CoreProperty

@@ -271,7 +271,7 @@ namespace Pchp.Core
                 throw new NotImplementedException();     // PhpException
             }
 
-            return dx / ny.ToDouble();
+            return dx / ny;
         }
 
         public static explicit operator bool(PhpValue value) => value.ToBoolean();

@@ -2107,7 +2107,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected virtual string CallsiteName => null;
         protected virtual BoundExpression RoutineNameExpr => null;
-        protected virtual BoundExpression TypeNameExpr => null;
+        protected virtual BoundTypeRef TypeNameRef => null;
         protected virtual bool IsVirtualCall => true;
 
         internal virtual TypeSymbol EmitCallsiteCall(CodeGenerator cg)
@@ -2139,10 +2139,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 callsiteargs.Add(cg.Emit(Instance));   // instance
             }
-            else if (TypeNameExpr != null)
+            else if (TypeNameRef != null)
             {
-                cg.EmitConvert(TypeNameExpr, cg.CoreTypes.String);
-                callsiteargs.Add(cg.CoreTypes.String);   // type
+                callsiteargs.Add(TypeNameRef.EmitLoadTypeInfo(cg, true));   // PhpTypeInfo
             }
 
             callsiteargs.Add(cg.EmitLoadContext());     // ctx
@@ -2234,7 +2233,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
-        protected override BoundExpression TypeNameExpr => _typeRef.TypeExpression;
+        protected override BoundTypeRef TypeNameRef => (_typeRef.ResolvedType == null) ? _typeRef : null;
         protected override bool IsVirtualCall => false;
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)

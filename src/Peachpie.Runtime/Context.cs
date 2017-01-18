@@ -174,6 +174,19 @@ namespace Pchp.Core
             => _types.GetDeclaredType(name) ?? (autoload ? this.AutoloadService.AutoloadTypeByName(name) : null);
 
         /// <summary>
+        /// Gets runtime type information, or <c>null</c> if type with given is not declared.
+        /// </summary>
+        public PhpTypeInfo GetDeclaredTypeOrThrow(string name, bool autoload = false)
+        {
+            var tinfo = GetDeclaredType(name, autoload);
+            
+            // TODO: Err PhpException.Throw(PhpError.Error, Resources.ErrResources....
+            Debug.Assert(tinfo != null);
+
+            return tinfo;
+        }
+
+        /// <summary>
         /// Gets enumeration of all types declared in current context.
         /// </summary>
         public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => _types.GetDeclaredTypes();

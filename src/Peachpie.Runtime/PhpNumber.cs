@@ -799,7 +799,7 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Mul operator.
+        /// Divide operator.
         /// </summary>
         public static PhpNumber operator /(PhpNumber x, PhpValue y)
         {
@@ -813,6 +813,16 @@ namespace Pchp.Core
 
             //
             return x / ynumber;
+        }
+
+        /// <summary>
+        /// Divide operator.
+        /// </summary>
+        public static double operator /(double dx, PhpNumber y)
+        {
+            y.AssertTypeCode();
+
+            return dx / y.ToDouble();
         }
 
         /// <summary>
