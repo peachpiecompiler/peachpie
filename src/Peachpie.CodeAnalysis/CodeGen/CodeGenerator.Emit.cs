@@ -210,7 +210,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (expr.Access.IsRead)
                 {
-                    return EmitLoadConstant(expr.ConstantValue.Value, expr.Access.TargetType);
+                    return expr.ResultType = EmitLoadConstant(expr.ConstantValue.Value, expr.Access.TargetType);
                 }
             }
 

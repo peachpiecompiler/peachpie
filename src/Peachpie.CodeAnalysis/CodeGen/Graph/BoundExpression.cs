@@ -2988,6 +2988,7 @@ namespace Pchp.CodeAnalysis.Semantics
             //
 
             var t = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Array);
+            var intstrkey = true;
 
             // convert {t} to IPhpArray, string, System.Array
 
@@ -3015,6 +3016,11 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // ok
             }
+            else if (t.IsOfType(cg.CoreTypes.ArrayAccess))
+            {
+                // ok
+                intstrkey = false;  // do not convert to IntStringKey
+            }
             else
             {
                 throw new NotImplementedException($"LOAD {t.Name}[]");    // TODO: emit convert as PhpArray
@@ -3038,7 +3044,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
 
-            Debug.Assert(t.IsOfType(cg.CoreTypes.IPhpArray) || t.SpecialType == SpecialType.System_String || t.IsArray() || t == cg.CoreTypes.PhpValue);
+            Debug.Assert(
+                t.IsOfType(cg.CoreTypes.IPhpArray) ||
+                t.SpecialType == SpecialType.System_String ||
+                t.IsArray() ||
+                t.IsOfType(cg.CoreTypes.ArrayAccess) ||
+                t == cg.CoreTypes.PhpValue);
             PushEmittedArray(t);
 
             //
@@ -3049,7 +3060,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (this.Index != null)
             {
-                cg.EmitIntStringKey(this.Index);    // TODO: save Index into InstanceCacheHolder
+                if (intstrkey)
+                    cg.EmitIntStringKey(this.Index);    // TODO: save Index into InstanceCacheHolder
+                else
+                    cg.Emit(this.Index);
             }
         }
 
@@ -3164,6 +3178,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_IntStringKey_Bool);
                 }
+            }
+            else if (arrtype.IsOfType(cg.CoreTypes.ArrayAccess))
+            {
+                // Template: ArrayAccess.offsetGet(<index>)
+                cg.EmitConvert(this.Index.ResultType, this.Index.TypeRefMask, cg.CoreTypes.PhpValue);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetGet_ArrayAccess_PhpValue);
             }
             else if (arrtype.SpecialType == SpecialType.System_Void)
             {

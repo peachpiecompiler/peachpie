@@ -427,6 +427,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
 
+                offsetGet_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetGet", ct.PhpValue);
+
                 Ceq_long_double = ct.Comparison.Method("Ceq", ct.Long, ct.Double);
                 Ceq_long_bool = ct.Comparison.Method("Ceq", ct.Long, ct.Boolean);
                 Ceq_long_string = ct.Comparison.Method("Ceq", ct.Long, ct.String);
@@ -478,6 +480,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
+
+                offsetGet_ArrayAccess_PhpValue,
 
                 Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool, CeqNull_value,
                 Clt_long_double, Cgt_long_double,

@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IntStringKey,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
-            stdClass;
+            stdClass, ArrayAccess;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -149,6 +149,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");
+            ArrayAccess = CreateFromFullName("ArrayAccess");
 
             CallBinderFactory = Create("Dynamic.CallBinderFactory");
             GetClassConstBinder = Create("Dynamic.GetClassConstBinder");
