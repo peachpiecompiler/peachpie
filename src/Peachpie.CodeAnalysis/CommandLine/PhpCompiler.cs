@@ -127,7 +127,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             if (content != null)
             {
-                result = ParseFile(consoleOutput, parseOptions, scriptParseOptions, content, file, diagnostics);
+                result = ParseFile(parseOptions, scriptParseOptions, content, file.Path, diagnostics);
             }
 
             if (diagnostics.Count != 0)
@@ -140,18 +140,17 @@ namespace Pchp.CodeAnalysis.CommandLine
             return result;
         }
 
-        private static SourceUnit ParseFile(
-            TextWriter consoleOutput,
+        private static SourceUnit ParseFile(    // TODO: move to Syntax/SyntaxTreeFactory.ParseFile() : SyntaxTreeAdapter, which will have Diagnostics as its property
             PhpParseOptions parseOptions,
             PhpParseOptions scriptParseOptions,
             SourceText content,
-            CommandLineSourceFile file,
+            string fname,
             List<Diagnostic> diagnostics)
         {
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var unit = new CodeSourceUnit(content.ToString(), file.Path, Encoding.UTF8);
+            var unit = new CodeSourceUnit(content.ToString(), fname, Encoding.UTF8);
             var errorSink = new ErrorSink(diagnostics, unit);
             unit.Parse(new BasicNodesFactory(unit), errorSink);
 

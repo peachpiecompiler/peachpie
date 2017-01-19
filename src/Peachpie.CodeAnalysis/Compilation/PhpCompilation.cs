@@ -206,7 +206,7 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        internal static PhpCompilation Create(
+        public static PhpCompilation Create(
             string assemblyName,
             IEnumerable<SourceUnit> syntaxTrees = null,
             IEnumerable<MetadataReference> references = null,
