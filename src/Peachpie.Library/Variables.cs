@@ -882,7 +882,7 @@ namespace Pchp.Library
                 Accept(entry.Value);
                 _indent--;
 
-                if (entry.Value.IsArray)
+                if (entry.Value.ArrayOrNull() != null)
                 {
                     _output.Append(_nl);
                 }
