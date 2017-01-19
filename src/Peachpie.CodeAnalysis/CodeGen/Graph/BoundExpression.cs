@@ -2108,7 +2108,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var arguments = _arguments.Select(a => a.Value).ToImmutableArray();
 
-            return cg.EmitCall(opcode, method, this.Instance, arguments);
+            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, arguments), method, Access));
         }
 
         protected virtual string CallsiteName => null;

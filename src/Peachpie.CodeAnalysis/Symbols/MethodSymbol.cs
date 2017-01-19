@@ -251,10 +251,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual DllImportData GetDllImportData() => null;
 
-        public ImmutableArray<AttributeData> GetReturnTypeAttributes()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual ImmutableArray<AttributeData> GetReturnTypeAttributes() => ImmutableArray<AttributeData>.Empty;
 
         public virtual ITypeSymbol GetTypeInferredDuringReduction(ITypeParameterSymbol reducedFromTypeParameter)
         {
@@ -273,9 +270,13 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 // applies only if return type is int, long, double or a reference type
-                //return this.GetReturnTypeAttributes().Any(a => a.AttributeClass.MetadataName == "Pchp.Core.CastToFalse"); // TODO
-                return false;
+                return this.GetReturnTypeAttributes().Any(IsCastToFalse);
             }
+        }
+
+        static bool IsCastToFalse(AttributeData attr)
+        {
+            return attr.AttributeClass.MetadataName == "CastToFalse" && ((AssemblySymbol)attr.AttributeClass.ContainingAssembly).IsPchpCorLibrary;
         }
 
         /// <summary>

@@ -222,7 +222,7 @@ namespace Pchp.Core.Dynamic
             throw new NotImplementedException(source.FullName);
         }
 
-        private static Expression BindToValue(Expression expr)
+        public static Expression BindToValue(Expression expr)
         {
             var source = expr.Type;
 

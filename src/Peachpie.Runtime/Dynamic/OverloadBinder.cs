@@ -753,7 +753,7 @@ namespace Pchp.Core.Dynamic
             if (methods.Length == 1)
             {
                 // just this piece of code is enough:
-                invoke = ConvertExpression.Bind(BinderHelpers.BindToCall(target, methods[0], ctx, args), treturn, ctx);
+                invoke = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, methods[0], ctx, args), DoCastToFalse(methods[0], treturn)), treturn, ctx);
             }
             else
             {
@@ -846,7 +846,8 @@ namespace Pchp.Core.Dynamic
                 {
                     // (best == costI) mI(...) : ...
 
-                    var mcall = ConvertExpression.Bind(BinderHelpers.BindToCall(target, list[i].Method, ctx, args), treturn, ctx);
+                    var m = list[i].Method;
+                    var mcall = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, m, ctx, args), DoCastToFalse(m, treturn)), treturn, ctx);
                     invoke = Expression.Condition(Expression.Equal(expr_best, list[i].CostExpr), mcall, invoke);
                 }
             }
@@ -859,6 +860,60 @@ namespace Pchp.Core.Dynamic
 
             // return Block { ... ; invoke; }
             return Expression.Block(treturn, locals, body);
+        }
+
+        /// <summary>
+        /// In case the method has [return: CastToFalse],
+        /// the return value -1 or null is converted to false.
+        /// </summary>
+        static Expression BindCastToFalse(Expression expr, bool hasCastToFalse)
+        {
+            if (hasCastToFalse)
+            {
+                var x = Expression.Variable(expr.Type);
+                var assign = Expression.Assign(x, expr);    // x = <expr>
+                Expression test;
+
+                if (expr.Type == typeof(int) || expr.Type == typeof(long))
+                {
+                    // Template: test = x >= 0
+                    test = Expression.GreaterThanOrEqual(assign, Expression.Constant(0));
+                }
+                else if (expr.Type == typeof(double))
+                {
+                    // Template: test = x >= 0.0
+                    test = Expression.GreaterThanOrEqual(assign, Expression.Constant(0.0));
+                }
+                else if (expr.Type.GetTypeInfo().IsValueType == false)  // reference type
+                {
+                    // Template: test = x != null
+                    test = Expression.ReferenceNotEqual(assign, Expression.Constant(null, assign.Type));
+                }
+                else
+                {
+                    Debug.Fail($"[CastToFalse] for an unexpected type {expr.Type.ToString()}.");
+                    return expr;
+                }
+
+                // Template: test ? (PhpValue)x : PhpValue.False
+                expr = Expression.Condition(
+                    test,
+                    ConvertExpression.BindToValue(x),
+                    Expression.Property(null, Cache.Properties.PhpValue_False));
+
+                //
+                return Expression.Block(
+                    expr.Type,
+                    new[] { x },
+                    new[] { expr });
+            }
+
+            return expr;
+        }
+
+        static bool DoCastToFalse(MethodBase m, Type returntype)
+        {
+            return returntype != typeof(void) && m is MethodInfo && ((MethodInfo)m).ReturnTypeCustomAttributes.IsDefined(typeof(CastToFalse), false);
         }
     }
 }

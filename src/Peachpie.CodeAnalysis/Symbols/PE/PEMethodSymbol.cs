@@ -272,6 +272,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool RequiresSecurityObject => HasFlag(MethodAttributes.RequireSecObject);
 
+        public override ImmutableArray<AttributeData> GetReturnTypeAttributes() => Signature.ReturnParam.GetAttributes();
+
         public override bool IsExtern => HasFlag(MethodAttributes.PinvokeImpl);
 
         internal override bool IsExternal => IsExtern || (ImplementationAttributes & MethodImplAttributes.Runtime) != 0;

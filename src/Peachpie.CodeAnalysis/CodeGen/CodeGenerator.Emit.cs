@@ -912,6 +912,95 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits necessary conversion and copying of value returned from a method call.
+        /// </summary>
+        /// <param name="stack">Result value type on stack.</param>
+        /// <param name="method">Called method.</param>
+        /// <param name="access">Expression access.</param>
+        /// <returns>New type on stack.</returns>
+        internal TypeSymbol EmitMethodAccess(TypeSymbol stack, MethodSymbol method, BoundAccess access)
+        {
+            // copy the value on stack if necessary
+            if (access.IsReadCopy)
+            {
+                stack = EmitDeepCopy(stack);
+            }
+
+            // cast -1 or null to false (CastToFalse)
+            if (access.IsRead && method.CastToFalse)
+            {
+                stack = EmitCastToFalse(stack);
+            }
+
+            //
+            return stack;
+        }
+
+        /// <summary>
+        /// Converts <b>negative</b> number or <c>null</c> to <c>FALSE</c>.
+        /// </summary>
+        /// <param name="stack">Type of value on stack.</param>
+        /// <returns>New type of value on stack.</returns>
+        internal TypeSymbol EmitCastToFalse(TypeSymbol stack)
+        {
+            if (stack.SpecialType == SpecialType.System_Boolean)
+            {
+                return stack;
+            }
+
+            // Template: <stack> ?? FALSE
+
+            var lblfalse = new NamedLabel("CastToFalse:FALSE");
+            var lblend = new NamedLabel("CastToFalse:end");
+            
+            _il.EmitOpCode(ILOpCode.Dup);   // <stack>
+            
+            // emit branching to lblfalse
+            if (stack.SpecialType == SpecialType.System_Int32)
+            {
+                _il.EmitIntConstant(0);     // 0
+                _il.EmitBranch(ILOpCode.Blt, lblfalse);
+            }
+            else if (stack.SpecialType == SpecialType.System_Int64)
+            {
+                _il.EmitLongConstant(0);    // 0L
+                _il.EmitBranch(ILOpCode.Blt, lblfalse);
+            }
+            else if (stack.SpecialType == SpecialType.System_Double)
+            {
+                _il.EmitDoubleConstant(0.0);    // 0.0
+                _il.EmitBranch(ILOpCode.Blt, lblfalse);
+            }
+            else if (stack.IsReferenceType)
+            {
+                _il.EmitNullConstant(); // null
+                _il.EmitBranch(ILOpCode.Beq, lblfalse);
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(stack);
+            }
+
+            // test(<stack>) ? POP,FALSE : (PhpValue)<stack>
+            
+            // (PhpValue)<stack>
+            EmitConvertToPhpValue(stack, 0);
+            _il.EmitBranch(ILOpCode.Br, lblend);
+
+            // POP, PhpValue.False
+            _il.MarkLabel(lblfalse);
+            EmitPop(stack);
+            _il.EmitBoolConstant(false);
+            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+
+            //
+            _il.MarkLabel(lblend);
+
+            //
+            return CoreTypes.PhpValue;
+        }
+
+        /// <summary>
         /// Initializes place with a default value.
         /// This applies to structs without default ctor that won't work properly when uninitialized.
         /// </summary>
