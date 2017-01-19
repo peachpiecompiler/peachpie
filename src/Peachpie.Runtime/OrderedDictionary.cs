@@ -708,6 +708,11 @@ namespace Pchp.Core
             }
             public KeyValuePair<IntStringKey, PhpValue> Current => _table.entries[_currentEntry].KeyValuePair;
 
+            /// <summary>
+            /// Ensures current value is aliased and gets reference to it.
+            /// </summary>
+            public PhpAlias CurrentValueAliased => _table.entries[_currentEntry]._value.EnsureAlias();
+
             public void Reset()
             {
                 _currentEntry = -1;

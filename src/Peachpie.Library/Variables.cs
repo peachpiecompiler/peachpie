@@ -622,46 +622,7 @@ namespace Pchp.Library
             // unfortunately, type contains flags are combined with enumeration: 
             bool refs = (type & ExtractType.Refs) != 0;
             type &= ExtractType.NonFlags;
-
-            //
-            // construct the action used to set the variable into the locals/globals
-            //
-            Action<string/*name*/, PhpValue/*value*/> updateVariableFn;    // function that writes the value to locals/globals
-
-            #region select function that writes the variable
-
-            if (refs)
-            {
-                // makes a reference and writes it back (deep copy is not necessary, "no duplicate pointers" rule preserved):
-                updateVariableFn = (name, value) =>
-                {
-                    locals[name] = vars[name] = PhpValue.Create(value.EnsureAlias());
-                };
-            }
-            else
-            {
-                updateVariableFn = (name, value) =>
-                {
-                    // deep copy the value
-                    value = value.GetValue().DeepCopy();
-
-                    // put into locals
-                    var item = locals[name];
-                    if (item.IsAlias)
-                    {
-                        item.Alias.Value = value;
-                    }
-                    else
-                    {
-                        locals[name] = value;
-                    }
-                };
-            }
-
-            #endregion
-
-            Debug.Assert(updateVariableFn != null);
-
+            
             //
             //
             //
@@ -669,8 +630,11 @@ namespace Pchp.Library
             using (var enumerator = vars.GetFastEnumerator())
                 while (enumerator.MoveNext())
                 {
-                    var name = enumerator.CurrentValue.ToString(ctx);
-                    if (string.IsNullOrEmpty(name) && type != ExtractType.PrefixInvalid) continue;
+                    var name = enumerator.CurrentKey.ToString();
+                    if (string.IsNullOrEmpty(name) && type != ExtractType.PrefixInvalid)
+                    {
+                        continue;
+                    }
 
                     switch (type)
                     {
@@ -736,8 +700,17 @@ namespace Pchp.Library
                     // invalid names are skipped:
                     if (PhpVariable.IsValidName(name))
                     {
-                        // write the value to locals or globals:
-                        updateVariableFn(name, enumerator.CurrentValue);
+                        // write the value to locals:
+                        if (refs)
+                        {
+                            // makes a reference and writes it back (deep copy is not necessary, "no duplicate pointers" rule preserved):
+                            locals.SetItemAlias(new IntStringKey(name), enumerator.CurrentValueAliased);
+                        }
+                        else
+                        {
+                            // deep copy the value and write into locals
+                            locals.SetItemValue(new IntStringKey(name), enumerator.CurrentValue.GetValue().DeepCopy());
+                        }
 
                         extracted_count++;
                     }
