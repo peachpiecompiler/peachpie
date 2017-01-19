@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
@@ -727,11 +728,10 @@ namespace Pchp.Library
 
         private static bool SubstringCountInternalCheck(string needle)
         {
-            if (String.IsNullOrEmpty(needle))
+            if (string.IsNullOrEmpty(needle))
             {
-                //PhpException.InvalidArgument("needle", LibResources.GetString("arg:null_or_empty"));
-                //return false;
-                throw new ArgumentException();
+                PhpException.InvalidArgument(nameof(needle), Resources.LibResources.arg_null_or_empty);
+                return false;
             }
 
             return true;
@@ -740,15 +740,13 @@ namespace Pchp.Library
         {
             if (offset < 0)
             {
-                //PhpException.InvalidArgument("offset", LibResources.GetString("substr_count_offset_zero"));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, LibResources.substr_count_offset_zero);
+                return false;
             }
             if (offset > haystack.Length)
             {
-                //PhpException.InvalidArgument("offset", LibResources.GetString("substr_count_offset_exceeds", offset));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, string.Format(LibResources.substr_count_offset_exceeds, offset));
+                return false;
             }
 
             return true;
@@ -756,19 +754,19 @@ namespace Pchp.Library
         private static bool SubstringCountInternalCheck(string haystack, int offset, int length)
         {
             if (!SubstringCountInternalCheck(haystack, offset))
+            {
                 return false;
+            }
 
             if (length == 0)
             {
-                //PhpException.InvalidArgument("length", LibResources.GetString("substr_count_zero_length"));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, LibResources.substr_count_zero_length);
+                return false;
             }
             if (offset + length > haystack.Length)
             {
-                //PhpException.InvalidArgument("length", LibResources.GetString("substr_count_length_exceeds", length));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, string.Format(LibResources.substr_count_length_exceeds, length));
+                return false;
             }
 
             return true;
@@ -833,7 +831,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int substr_count(string haystack, string needle, int offset, int length)
         {
-            if (String.IsNullOrEmpty(haystack)) return 0;
+            if (string.IsNullOrEmpty(haystack)) return 0;
             if (!SubstringCountInternalCheck(needle)) return -1;
             if (!SubstringCountInternalCheck(haystack, offset, length)) return -1;
 
