@@ -534,8 +534,7 @@ namespace Pchp.Core
         /// </remarks>
         public void RestartIntrinsicEnumerator()
         {
-            if (_intrinsicEnumerator != null)
-                _intrinsicEnumerator.MoveFirst();
+            _intrinsicEnumerator?.MoveFirst();
         }
 
         /// <summary>
@@ -543,9 +542,17 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="aliasedValues">Whether the values returned by enumerator are assigned by reference.</param>
         /// <returns>The dictionary enumerator.</returns>
-        public IPhpEnumerator GetForeachEnumerator(bool aliasedValues) => aliasedValues
+        public IPhpEnumerator GetForeachEnumerator(bool aliasedValues)
+        {
+            if (aliasedValues)
+            {
+                EnsureWritable();
+            }
+
+            return aliasedValues
                 ? new OrderedDictionary.Enumerator(this)            // when enumerating aliases, changes are reflected to the enumerator
                 : new OrderedDictionary.ReadonlyEnumerator(this);   // when enumerating values, any upcoming changes to the array do not take effect to the enumerator
+        }
 
         /// <summary>
         /// Creates an enumerator used in foreach statement.

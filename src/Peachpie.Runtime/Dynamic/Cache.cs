@@ -63,6 +63,7 @@ namespace Pchp.Core.Dynamic
         {
             public static readonly FieldInfo PhpValue_Void = Types.PhpValue[0].GetTypeInfo().GetDeclaredField("Void");
             public static readonly FieldInfo PhpValue_Null = Types.PhpValue[0].GetTypeInfo().GetDeclaredField("Null");
+            public static readonly PropertyInfo PhpValue_False = Types.PhpValue[0].GetTypeInfo().GetDeclaredProperty("False");
         }
 
         public static class PhpString

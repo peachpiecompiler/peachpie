@@ -186,6 +186,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsVirtual => !IsSealed && !IsStatic;
 
+        public override bool CastToFalse => false;  // source routines never cast special values to FALSE
+
         public override MethodKind MethodKind
         {
             get

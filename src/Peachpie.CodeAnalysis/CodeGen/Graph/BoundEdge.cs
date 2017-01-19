@@ -166,7 +166,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             if (catchBlock.TypeRef.ResolvedType == null)
             {
-                throw new NotImplementedException("handle exception type dynamically"); // TODO: if (ex is ctx.ResolveType(ExceptionTypeName)) { ... }
+                Debug.WriteLine("Handle unknown exception types dynamically."); // TODO: if (ex is ctx.ResolveType(ExceptionTypeName)) { ... }
+                return;
             }
 
             var extype = catchBlock.TypeRef.ResolvedType;

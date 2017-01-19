@@ -702,8 +702,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal static TypeSymbol EmitShift(CodeGenerator cg, BoundExpression left, BoundExpression right, ILOpCode op)
         {
-            Debug.Assert(op == ILOpCode.Shl || op == ILOpCode.Shr);
             cg.EmitConvert(left, cg.CoreTypes.Long);
+            return EmitShift(cg, cg.CoreTypes.Long, right, op);
+        }
+
+        internal static TypeSymbol EmitShift(CodeGenerator cg, TypeSymbol xtype, BoundExpression right, ILOpCode op)
+        {
+            Debug.Assert(op == ILOpCode.Shl || op == ILOpCode.Shr);
+            cg.EmitConvert(xtype, 0, cg.CoreTypes.Long);
             cg.EmitConvert(right, cg.CoreTypes.Int32);
             cg.Builder.EmitOpCode(op);
 
@@ -2102,7 +2108,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var arguments = _arguments.Select(a => a.Value).ToImmutableArray();
 
-            return cg.EmitCall(opcode, method, this.Instance, arguments);
+            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, arguments), method, Access));
         }
 
         protected virtual string CallsiteName => null;
@@ -2617,9 +2623,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.AssignMul:
                     result_type = BoundBinaryEx.EmitMul(cg, xtype, Value, target_place.TypeOpt);
                     break;
-                //case Operations.AssignAnd:
-                //    binaryop = Operations.And;
-                //    break;
+                case Operations.AssignAnd:
+                    result_type = BoundBinaryEx.EmitBitAnd(cg, xtype, Value);
+                    break;
                 case Operations.AssignOr:
                     result_type = BoundBinaryEx.EmitBitOr(cg, xtype, Value);
                     break;
@@ -2629,12 +2635,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.AssignPow:
                     result_type = BoundBinaryEx.EmitPow(cg, xtype, /*this.Target.TypeRefMask*/0, Value);
                     break;
-                //case Operations.AssignShiftLeft:
-                //    binaryop = Operations.ShiftLeft;
-                //    break;
-                //case Operations.AssignShiftRight:
-                //    binaryop = Operations.ShiftRight;
-                //    break;
+                case Operations.AssignShiftLeft:
+                case Operations.AssignShiftRight:
+                    result_type = BoundBinaryEx.EmitShift(cg, xtype, Value, this.Operation == Operations.AssignShiftLeft ? ILOpCode.Shl : ILOpCode.Shr);
+                    break;
                 case Operations.AssignSub:
                     result_type = BoundBinaryEx.EmitSub(cg, xtype, Value, target_place.TypeOpt);
                     break;
