@@ -330,7 +330,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                valueVar.Access = valueVar.Access.WithWrite(elementType);
+                valueVar.Access = valueVar.Access.WithWrite(valueVar.Access.IsWriteRef ? elementType.WithRefFlag : elementType);
                 Accept(valueVar);
 
                 //

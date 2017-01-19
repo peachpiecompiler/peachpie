@@ -377,19 +377,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (x.Access.IsWrite)
                 {
-                    //
-                    State.SetVarInitialized(name);
-                    State.SetVar(name, x.Access.WriteMask);
-                    State.LTInt64Max(name, false);
-
                     x.TypeRefMask = x.Access.WriteMask;
 
-                    if (x.Access.IsWriteRef)
+                    if (x.Access.IsWriteRef || State.GetVarType(name).IsRef)    // <x> can be a referenced value
                     {
                         State.SetVarRef(name);
                         x.TypeRefMask = x.TypeRefMask.WithRefFlag;
                     }
 
+                    //
+                    State.SetVarInitialized(name);
+                    State.SetVar(name, x.TypeRefMask);
+                    State.LTInt64Max(name, false);
+                    
                     //
                     if (x.Variable.VariableKind == VariableKind.StaticVariable)
                     {
