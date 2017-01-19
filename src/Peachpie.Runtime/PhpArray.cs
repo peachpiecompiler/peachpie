@@ -534,8 +534,7 @@ namespace Pchp.Core
         /// </remarks>
         public void RestartIntrinsicEnumerator()
         {
-            if (_intrinsicEnumerator != null)
-                _intrinsicEnumerator.MoveFirst();
+            _intrinsicEnumerator?.MoveFirst();
         }
 
         /// <summary>
