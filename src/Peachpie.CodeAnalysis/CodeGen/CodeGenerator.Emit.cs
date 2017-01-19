@@ -1373,6 +1373,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     EmitIntStringKey((int)constant.Value);
                 }
+                else if (constant.Value is double)
+                {
+                    EmitIntStringKey((int)(double)constant.Value);
+                }
                 else
                 {
                     throw new NotSupportedException();
