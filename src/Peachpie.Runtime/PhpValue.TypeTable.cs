@@ -166,6 +166,7 @@ namespace Pchp.Core
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsNull;
             public override object EnsureObject(ref PhpValue me)
             {
+                // TODO: Err: Warning: Creating default object from empty value
                 var obj = ToClass(ref me);
                 me = PhpValue.FromClass(obj);
                 return obj;
@@ -450,7 +451,10 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override IPhpArray EnsureArray(ref PhpValue me)
             {
-                throw new NotImplementedException();  // Fatal Error: Cannot use object of type stdClass as array
+                // TODO: return new ArrayAccessWrapper(me.Object)
+                // TODO: Fatal error: Uncaught Error: Cannot use object of type {0} as array
+
+                throw new InvalidOperationException(string.Format(Resources.ErrResources.object_used_as_array, me.Object.GetType().Name));
             }
             public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet)
             {
