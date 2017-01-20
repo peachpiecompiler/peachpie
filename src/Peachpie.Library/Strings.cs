@@ -3340,7 +3340,7 @@ namespace Pchp.Library
                                     break;
 
                                 case 'C': // treat as integer, present as Unicode character
-                                    app = new String(unchecked((char)obj.ToLong()), 1);
+                                    app = new string(unchecked((char)obj.ToLong()), 1);
                                     break;
 
                                 case 'd': // treat as integer, present as signed decimal number
@@ -3362,8 +3362,8 @@ namespace Pchp.Library
                                         double dvalue = obj.ToDouble();
                                         if (dvalue < 0) sign = '-'; else if (dvalue >= 0 && plusSign) sign = '+';
 
-                                        string f = String.Concat("0.", new String('0', precision == -1 ? printfFloatPrecision : precision), "e+0");
-                                        app = Math.Abs(dvalue).ToString(f);
+                                        string f = string.Concat("0.", new string('0', precision == -1 ? printfFloatPrecision : precision), "e+0");
+                                        app = Math.Abs(dvalue).ToString(f, ctx.NumberFormat);
                                         break;
                                     }
 
@@ -3372,7 +3372,7 @@ namespace Pchp.Library
                                         double dvalue = obj.ToDouble();
                                         if (dvalue < 0) sign = '-'; else if (dvalue >= 0 && plusSign) sign = '+';
 
-                                        app = Math.Abs(dvalue).ToString("F" + (precision == -1 ? printfFloatPrecision : precision));
+                                        app = Math.Abs(dvalue).ToString("F" + (precision == -1 ? printfFloatPrecision : precision), ctx.NumberFormat);
                                         break;
                                     }
 
