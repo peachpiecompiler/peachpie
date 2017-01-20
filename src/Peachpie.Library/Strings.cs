@@ -61,46 +61,40 @@ namespace Pchp.Library
             return unchecked((char)charCode).ToString();
         }
 
-        ///// <summary>
-        ///// Converts a string of bytes into hexadecimal representation.
-        ///// </summary>
-        ///// <param name="bytes">The string of bytes.</param>
-        ///// <returns>Concatenation of hexadecimal values of bytes of <paramref name="bytes"/>.</returns>
-        ///// <example>
-        ///// The string "01A" is converted into string "303140" because ord('0') = 0x30, ord('1') = 0x31, ord('A') = 0x40.
-        ///// </example>
-        //public static string bin2hex(PhpString bytes)
-        //{
-        //    return (bytes == null) ? String.Empty : StringUtils.BinToHex(bytes.ReadonlyData, null);
-        //}
-
         /// <summary>
         /// Converts a string into hexadecimal representation.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="str">The string to be converted.</param>
         /// <returns>
-        /// The concatenated four-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
+        /// The concatenated two-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
         /// </returns>
-        public static string bin2hex(string str)
+        public static string bin2hex(Context ctx, PhpString str)
         {
-            if (str == null) return null;
-
-            int length = str.Length;
-            StringBuilder result = new StringBuilder(length * 4, length * 4);
-            result.Length = length * 4;
-
-            const string hex_digs = "0123456789abcdef";
-
-            for (int i = 0; i < length; i++)
+            if (str == null || str.IsEmpty)
             {
-                int c = (int)str[i];
-                result[4 * i + 0] = hex_digs[(c & 0xf000) >> 12];
-                result[4 * i + 1] = hex_digs[(c & 0x0f00) >> 8];
-                result[4 * i + 2] = hex_digs[(c & 0x00f0) >> 4];
-                result[4 * i + 3] = hex_digs[(c & 0x000f)];
+                return string.Empty;
             }
 
-            return result.ToString();
+            // UTF16 version:
+            //int length = str.Length;
+            //StringBuilder result = new StringBuilder(length * 4, length * 4);
+            //result.Length = length * 4;
+
+            //const string hex_digs = "0123456789abcdef";
+
+            //for (int i = 0; i < length; i++)
+            //{
+            //    int c = (int)str[i];
+            //    result[4 * i + 0] = hex_digs[(c & 0xf000) >> 12];
+            //    result[4 * i + 1] = hex_digs[(c & 0x0f00) >> 8];
+            //    result[4 * i + 2] = hex_digs[(c & 0x00f0) >> 4];
+            //    result[4 * i + 3] = hex_digs[(c & 0x000f)];
+            //}
+
+            //return result.ToString();
+
+            return StringUtils.BinToHex(str.ToBytes(ctx), null);
         }
 
         #endregion
