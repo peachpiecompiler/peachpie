@@ -441,13 +441,13 @@ namespace Pchp.Library
                     case 'l': // signed long (always 32 bit, machine byte order) 
                     case 'L': // unsigned long (always 32 bit, machine byte order) 
                         while (repeater-- > 0)
-                            PackNumber(BitConverter.GetBytes(args[a++].ToLong()), le, buffer, ref pos);
+                            PackNumber(BitConverter.GetBytes((int)args[a++].ToLong()), le, buffer, ref pos);
                         break;
 
                     case 'N': // unsigned long (always 32 bit, big endian byte order) 
                     case 'V': // unsigned long (always 32 bit, little endian byte order) 
                         while (repeater-- > 0)
-                            PackNumber(BitConverter.GetBytes(args[a++].ToLong()), specifier == 'V', buffer, ref pos);
+                            PackNumber(BitConverter.GetBytes((int)args[a++].ToLong()), specifier == 'V', buffer, ref pos);
                         break;
 
                     case 'f': // float (machine dependent size and representation - size is always 4B) 
