@@ -798,9 +798,7 @@ namespace Pchp.Library
 
             public override PhpString Serialize(PhpValue value)
             {
-                var output = base.Serialize(value);
-                output.Append(_nl);
-                return output;
+                return base.Serialize(value);
             }
 
             public override void Accept(bool obj) => _output.Append(obj ? "1" : string.Empty);
@@ -843,6 +841,8 @@ namespace Pchp.Library
                 {
                     _output.Append(" *RECURSION*");
                 }
+
+                _output.Append(_nl);
             }
 
             public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
@@ -854,11 +854,6 @@ namespace Pchp.Library
                 _indent++;
                 Accept(entry.Value);
                 _indent--;
-
-                if (entry.Value.ArrayOrNull() != null)
-                {
-                    _output.Append(_nl);
-                }
 
                 _output.Append(_nl);
             }
@@ -879,6 +874,8 @@ namespace Pchp.Library
 
                 _indent--;
                 _output.Append(")");
+
+                _output.Append(_nl);
             }
         }
 
