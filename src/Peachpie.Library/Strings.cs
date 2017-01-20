@@ -1011,7 +1011,7 @@ namespace Pchp.Library
             var enumerator = subject.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
-                result.AddValue(PhpValue.Create(str_replace(ctx, search, replace, enumerator.CurrentValue.ToStringOrThrow(ctx), ref count, compareType)));
+                result.SetItemValue(enumerator.CurrentKey, PhpValue.Create(str_replace(ctx, search, replace, enumerator.CurrentValue.ToStringOrThrow(ctx), ref count, compareType)));
             }
 
             return result;
@@ -1039,7 +1039,7 @@ namespace Pchp.Library
                 if (replaceArr != null)
                 {
                     // array -> array
-                    var replaceEnum = replaceArr.GetFastEnumerator();
+                    var replaceEnum = replaceArr.GetFastEnumerator().WithStop();
                     while (searchEnum.MoveNext())
                     {
                         var searchStr = searchEnum.CurrentValue.ToStringOrThrow(ctx);

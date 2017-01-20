@@ -718,6 +718,11 @@ namespace Pchp.Core
                 _currentEntry = -1;
             }
 
+            /// <summary>
+            /// Creates an enumerator that wont reset after unsuccessful <see cref="MoveNext"/>.
+            /// </summary>
+            public FastEnumeratorWithStop WithStop() => new FastEnumeratorWithStop(this);
+
             #region IDisposable
 
             public void Dispose()
@@ -845,6 +850,29 @@ namespace Pchp.Core
             }
 
             #endregion
+        }
+
+        /// <summary>
+        /// Helper enumerator that enumerates underlaying <see cref="FastEnumerator"/> and does not reset after an unsuccessful <b>MoveNext</b>.
+        /// </summary>
+        public struct FastEnumeratorWithStop : IDisposable
+        {
+            FastEnumerator _enumerator;
+            bool _valid;
+
+            internal FastEnumeratorWithStop(FastEnumerator enumerator)
+            {
+                _enumerator = enumerator;
+                _valid = true;
+            }
+
+            public bool MoveNext() => _valid && (_valid = _enumerator.MoveNext());
+
+            public IntStringKey CurrentKey => _enumerator.CurrentKey;
+
+            public PhpValue CurrentValue => _enumerator.CurrentValue;
+
+            public void Dispose() => _enumerator.Dispose();
         }
 
         #endregion
