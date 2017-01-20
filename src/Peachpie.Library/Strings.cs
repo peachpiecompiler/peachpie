@@ -867,26 +867,15 @@ namespace Pchp.Library
         /// </remarks>
         public static PhpValue substr_replace(Context ctx, PhpValue subject, PhpValue replacement, PhpValue offset, PhpValue length)
         {
-            IList<PhpValue> subject_list, replacement_list, offset_list, length_list;
-            string[] replacements = null, subjects = null;
+            IList<PhpValue> replacement_list, offset_list, length_list;
+            PhpArray subject_array;
+            string[] replacements = null;
             int[] offsets = null, lengths = null;
             int int_offset = 0, int_length = 0;
             string str_replacement = null;
 
             // prepares string array of subjects:
-            if ((subject_list = subject.Object as IList<PhpValue>) != null)
-            {
-                subjects = new string[subject_list.Count];
-                int i = 0;
-                foreach (var item in subject_list)
-                {
-                    subjects[i++] = item.ToString(ctx);
-                }
-            }
-            else
-            {
-                subjects = new string[] { subject.ToString(ctx) };
-            }
+            subject_array = subject.ArrayOrNull(); // otherwise subject is string
 
             // prepares string array of replacements:
             if ((replacement_list = replacement.Object as IList<PhpValue>) != null)
@@ -933,19 +922,40 @@ namespace Pchp.Library
                 int_length = (int)length.ToLong();
             }
 
-            for (int i = 0; i < subjects.Length; i++)
+            //
+            //
+
+            if (subject_array != null)
             {
-                if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
-                if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subjects[i].Length;
-                if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
+                var result_array = new PhpArray(subject_array.Count);
 
-                subjects[i] = SubstringReplace(subjects[i], str_replacement, int_offset, int_length);
+                using (var subjects = subject_array.GetFastEnumerator())
+                {
+                    int i = 0;
+                    while (subjects.MoveNext())
+                    {
+                        var subject_string = subjects.CurrentValue.ToStringOrThrow(ctx);
+
+                        if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
+                        if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subject_string.Length;
+                        if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
+
+                        result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length));
+                    }
+                }
+
+                return (PhpValue)result_array;
             }
-
-            if (subject_list != null)
-                return PhpValue.Create(new PhpArray(subjects));
             else
-                return PhpValue.Create(subjects[0]);
+            {
+                var subject_string = subject.ToStringOrThrow(ctx);
+
+                if (offset_list != null) int_offset = offsets.Length != 0 ? offsets[0] : 0;
+                if (length_list != null) int_length = lengths.Length != 0 ? lengths[0] : subject_string.Length;
+                if (replacement_list != null) str_replacement = replacements.Length != 0 ? replacements[0] : string.Empty;
+
+                return (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length);
+            }
         }
 
         /// <summary>
