@@ -208,7 +208,7 @@ namespace Pchp.CodeAnalysis
 
         public static PhpCompilation Create(
             string assemblyName,
-            IEnumerable<SourceUnit> syntaxTrees = null,
+            IEnumerable<SyntaxTree> syntaxTrees = null,
             IEnumerable<MetadataReference> references = null,
             PhpCompilationOptions options = null)
         {
@@ -221,7 +221,8 @@ namespace Pchp.CodeAnalysis
                 ValidateReferences<CompilationReference>(references));
 
             //
-            compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees);
+            var sourceUnitEnumerable = syntaxTrees.Cast<SyntaxTreeAdapter>().Select(tree => tree.Source);
+            compilation.SourceSymbolCollection.AddSyntaxTreeRange(sourceUnitEnumerable);
 
             //
             return compilation;

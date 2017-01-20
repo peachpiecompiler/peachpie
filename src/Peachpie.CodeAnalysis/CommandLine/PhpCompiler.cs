@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool hadErrors = false;
 
             var sourceFiles = Arguments.SourceFiles;
-            var trees = new SourceUnit[sourceFiles.Length];
+            var trees = new SyntaxTreeAdapter[sourceFiles.Length];
 
             if (Arguments.CompilationOptions.ConcurrentBuild)
             {
@@ -105,7 +105,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             return compilation;
         }
 
-        private SourceUnit ParseFile(
+        private SyntaxTreeAdapter ParseFile(
             TextWriter consoleOutput,
             PhpParseOptions parseOptions,
             PhpParseOptions scriptParseOptions,
@@ -122,39 +122,20 @@ namespace Pchp.CodeAnalysis.CommandLine
                 hadErrors = true;
             }
 
-            var diagnostics = new List<Diagnostic>();
-            SourceUnit result = null;
+            SyntaxTreeAdapter result = null;
 
             if (content != null)
             {
-                result = ParseFile(parseOptions, scriptParseOptions, content, file.Path, diagnostics);
+                result = SyntaxFactory.ParseSyntaxTree(content.ToString(), parseOptions, scriptParseOptions, file.Path);
             }
 
-            if (diagnostics.Count != 0)
+            if (result != null && result.Diagnostics.Length != 0)
             {
-                ReportErrors(diagnostics, consoleOutput, errorLogger);
+                ReportErrors(result.Diagnostics, consoleOutput, errorLogger);
                 hadErrors = true;
-                diagnostics.Clear();
             }
 
             return result;
-        }
-
-        private static SourceUnit ParseFile(    // TODO: move to Syntax/SyntaxTreeFactory.ParseFile() : SyntaxTreeAdapter, which will have Diagnostics as its property
-            PhpParseOptions parseOptions,
-            PhpParseOptions scriptParseOptions,
-            SourceText content,
-            string fname,
-            List<Diagnostic> diagnostics)
-        {
-            // TODO: new parser implementation based on Roslyn
-
-            // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var unit = new CodeSourceUnit(content.ToString(), fname, Encoding.UTF8);
-            var errorSink = new ErrorSink(diagnostics, unit);
-            unit.Parse(new BasicNodesFactory(unit), errorSink);
-
-            return unit;
         }
 
         public override void PrintHelp(TextWriter consoleOutput)

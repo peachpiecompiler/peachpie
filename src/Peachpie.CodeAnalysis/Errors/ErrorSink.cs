@@ -6,47 +6,42 @@ using Devsense.PHP.Errors;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Errors
 {
     /// <summary>
-    /// Receives errors from PHP parser and transforms them into Roslyn diagnostics using
-    /// <see cref="ParserMessageProvider"/>.
+    /// Stores errors from PHP parser.
     /// </summary>
     internal class ErrorSink : IErrorSink<Span>
     {
-        readonly List<Diagnostic> _diagnostics;
-        private SourceUnit _sourceUnit;
-        private SyntaxTree _lazySyntaxTree;
+        private List<ParserDiagnosticStub> _diagnosticStubs;
 
-        public ErrorSink(List<Diagnostic> diagnostics, SourceUnit sourceUnit)
+        public ErrorSink()
         {
-            Contract.ThrowIfNull(diagnostics);
-            _diagnostics = diagnostics;
-            _sourceUnit = sourceUnit;
         }
 
-        private SyntaxTree LazySyntaxTree
-        {
-            get
-            {
-                if (_lazySyntaxTree == null)
-                {
-                    _lazySyntaxTree = new SyntaxTreeAdapter(_sourceUnit);
-                }
-                return _lazySyntaxTree;
-            }
-        }
+        // Save an allocation if no errors were found
+        public IEnumerable<ParserDiagnosticStub> DiagnosticStubs =>
+            (IEnumerable<ParserDiagnosticStub>)_diagnosticStubs ?? ImmutableArray<ParserDiagnosticStub>.Empty;
 
         public void Error(Span span, ErrorInfo info, params string[] argsOpt)
         {
-            var location = new SourceLocation(
-                LazySyntaxTree,
-                new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
             ParserMessageProvider.Instance.RegisterError(info);
-            var diagnostic = ParserMessageProvider.Instance.CreateDiagnostic(
-                info.Severity == ErrorSeverity.WarningAsError, info.Id, location, argsOpt);
-            _diagnostics.Add(diagnostic);
+
+            var diagnosticStub = new ParserDiagnosticStub()
+            {
+                Span = span,
+                Info = info,
+                Args = argsOpt
+            };
+
+            if (_diagnosticStubs == null)
+            {
+                _diagnosticStubs = new List<ParserDiagnosticStub>();
+            }
+
+            _diagnosticStubs.Add(diagnosticStub);
         }
     }
 }
