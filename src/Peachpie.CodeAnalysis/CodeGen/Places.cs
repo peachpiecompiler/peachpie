@@ -1200,19 +1200,41 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // instance
             var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
-
+            
             //
-            if (Field.IsStatic && Instance != null)
+            if (_field.IsStatic)
             {
-                cg.EmitPop(instancetype);
+                if (instancetype != null)
+                {
+                    cg.EmitPop(instancetype);
+                }
             }
-            else if (!Field.IsStatic && Instance == null)
+            else
             {
-                throw new NotImplementedException();
-            }
-            else if (instancetype != null)
-            {
-                cg.EmitConvert(instancetype, Instance.TypeRefMask, _field.ContainingType);
+                var statics = _field.TryGetStatics();   // in case field is a PHP static field
+                if (statics != null)
+                {
+                    // PHP static field contained in a holder class
+                    if (instancetype != null)
+                    {
+                        cg.EmitPop(instancetype);
+                        instancetype = null;
+                    }
+
+                    statics = statics.ContainingType.EmitLoadStatics(cg);
+                    Debug.Assert(statics != null);
+                }
+                else
+                {
+                    if (instancetype != null)
+                    {
+                        cg.EmitConvert(instancetype, Instance.TypeRefMask, _field.ContainingType);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException($"Instance field {_field.ContainingType.Name}::${_field.MetadataName} accessed statically!");
+                    }
+                }
             }
         }
 
@@ -1224,6 +1246,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         public virtual TypeSymbol EmitLoad(CodeGenerator cg)
         {
             Debug.Assert(Access.IsRead);
+
+            if (Field.IsConst)
+            {
+                Debug.Assert(this.Access.IsRead && !this.Access.IsEnsure);
+                Debug.Assert(this.Field.HasConstantValue);
+
+                return cg.EmitLoadConstant(Field.ConstantValue);
+            }
 
             var type = Field.Type;
 
@@ -1520,51 +1550,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// Bound PHP static field declared in special container, <see cref="SynthesizedStaticFieldsHolder"/>.
-    /// </summary>
-    internal class BoundPhpStaticFieldPlace : BoundFieldPlace
-    {
-        public BoundPhpStaticFieldPlace(FieldSymbol field, BoundExpression boundref)
-            : base(null, field, boundref)
-        {
-        }
-
-        protected override void EmitLoadFieldInstance(CodeGenerator cg, InstanceCacheHolder instanceOpt)
-        {
-            Debug.Assert(this.Instance == null);
-
-            if (Field.IsStatic || Field.IsConst)
-            {
-                // real CLR static/constant field
-            }
-            else
-            {
-                // Template: <ctx>.GetStatics<_statics>().Field
-                var statics = InstanceCacheHolder.EmitInstance(instanceOpt, cg,
-                    () => this.Field.ContainingType.EmitLoadStatics(cg));
-
-                if (statics == null)
-                    throw new InvalidOperationException();
-            }
-        }
-
-        public override TypeSymbol EmitLoad(CodeGenerator cg)
-        {
-            if (Field.IsConst)
-            {
-                Debug.Assert(this.Access.IsRead);
-                Debug.Assert(this.Field.HasConstantValue);
-
-                return cg.EmitLoadConstant(Field.ConstantValue);
-            }
-            else
-            {
-                return base.EmitLoad(cg);
-            }
-        }
     }
 
     /// <summary>

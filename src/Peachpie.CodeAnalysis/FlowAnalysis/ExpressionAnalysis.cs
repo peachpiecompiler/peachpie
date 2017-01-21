@@ -1261,7 +1261,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         if (x.FieldName.IsDirect)
                         {
                             // TODO: visibility and resolution (model)
-                            var member = t.ResolveInstanceProperty(x.FieldName.NameValue.Value);
+                            var fldname = x.FieldName.NameValue.Value;
+                            var member = t.ResolveInstanceProperty(fldname) ?? t.ResolveStaticField(fldname);
                             if (member != null)
                             {
                                 Debug.Assert(member is FieldSymbol || member is PropertySymbol);
@@ -1335,7 +1336,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             // real.NET static member (CLR static fields) or
                             // the field may be contained in special __statics container (fields & constants)
-                            x.BoundReference = new BoundPhpStaticFieldPlace(field, x);
+                            x.BoundReference = new BoundFieldPlace(null, field, x);
                         }
 
                         x.TypeRefMask = field.GetResultType(TypeCtx);
