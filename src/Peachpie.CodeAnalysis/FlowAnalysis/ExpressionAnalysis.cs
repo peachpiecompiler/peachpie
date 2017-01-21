@@ -1333,9 +1333,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                         else
                         {
-                            x.BoundReference = field.IsStatic
-                                ? new BoundFieldPlace(null, field, x)        // the field is real .NET static member (CLR static fields)
-                                : new BoundPhpStaticFieldPlace(field, x);    // the field is contained in special __statics container (fields & constants)
+                            // real.NET static member (CLR static fields) or
+                            // the field may be contained in special __statics container (fields & constants)
+                            x.BoundReference = new BoundPhpStaticFieldPlace(field, x);
                         }
 
                         x.TypeRefMask = field.GetResultType(TypeCtx);

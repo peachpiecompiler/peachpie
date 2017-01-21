@@ -1149,7 +1149,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         readonly BoundExpression _boundref;
 
-        BoundAccess Access => _boundref.Access;
+        protected BoundAccess Access => _boundref.Access;
 
         public BoundFieldPlace(BoundExpression instance, FieldSymbol field, BoundExpression boundref)
         {
@@ -1221,7 +1221,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitLoadFieldInstance(cg, instanceOpt);
         }
 
-        public TypeSymbol EmitLoad(CodeGenerator cg)
+        public virtual TypeSymbol EmitLoad(CodeGenerator cg)
         {
             Debug.Assert(Access.IsRead);
 
@@ -1530,18 +1530,40 @@ namespace Pchp.CodeAnalysis.CodeGen
         public BoundPhpStaticFieldPlace(FieldSymbol field, BoundExpression boundref)
             : base(null, field, boundref)
         {
-            Debug.Assert(!field.IsStatic);
-            Debug.Assert(field.ContainingType.TryGetStatics() != null);
         }
 
         protected override void EmitLoadFieldInstance(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
-            // Template: <ctx>.GetStatics<_statics>().Field
-            var statics = InstanceCacheHolder.EmitInstance(instanceOpt, cg,
-                () => this.Field.ContainingType.EmitLoadStatics(cg));
+            Debug.Assert(this.Instance == null);
 
-            if (statics == null)
-                throw new InvalidOperationException();
+            if (Field.IsStatic || Field.IsConst)
+            {
+                // real CLR static/constant field
+            }
+            else
+            {
+                // Template: <ctx>.GetStatics<_statics>().Field
+                var statics = InstanceCacheHolder.EmitInstance(instanceOpt, cg,
+                    () => this.Field.ContainingType.EmitLoadStatics(cg));
+
+                if (statics == null)
+                    throw new InvalidOperationException();
+            }
+        }
+
+        public override TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            if (Field.IsConst)
+            {
+                Debug.Assert(this.Access.IsRead);
+                Debug.Assert(this.Field.HasConstantValue);
+
+                return cg.EmitLoadConstant(Field.ConstantValue);
+            }
+            else
+            {
+                return base.EmitLoad(cg);
+            }
         }
     }
 
