@@ -213,6 +213,26 @@ namespace Pchp.Core.Reflection
             //
             return result;
         }
+
+        /// <summary>
+        /// Enumerates self, all base types and all inherited interfaces.
+        /// </summary>
+        public static IEnumerable<PhpTypeInfo> EnumerateTypeHierarchy(this PhpTypeInfo phptype)
+        {
+            return EnumerateClassHierarchy(phptype).Concat( // phptype + base types
+                phptype.Type.GetTypeInfo().GetInterfaces().Select(GetPhpTypeInfo)); // inherited interfaces
+        }
+
+        /// <summary>
+        /// Enumerates self and all base types.
+        /// </summary>
+        static IEnumerable<PhpTypeInfo> EnumerateClassHierarchy(this PhpTypeInfo phptype)
+        {
+            for (; phptype != null; phptype = phptype.BaseType)
+            {
+                yield return phptype;
+            }
+        }
     }
 
 

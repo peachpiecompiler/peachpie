@@ -112,11 +112,21 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Lookups through the class inheritance.
         /// Does not handle member visibility.
         /// </summary>
-        public static FieldSymbol ResolveClassConstant(this INamedTypeSymbol t, string name)
+        public static FieldSymbol ResolveClassConstant(this INamedTypeSymbol type, string name)
         {
-            for (; t != null; t = t.BaseType)
+            for (var t = type; t != null; t = t.BaseType)
             {
                 var f = GetClassConstant(t, name);
+                if (f != null)
+                {
+                    return f;
+                }
+            }
+
+            // const on an interface
+            foreach (var iface in type.AllInterfaces)
+            {
+                var f = GetClassConstant(iface, name);
                 if (f != null)
                 {
                     return f;

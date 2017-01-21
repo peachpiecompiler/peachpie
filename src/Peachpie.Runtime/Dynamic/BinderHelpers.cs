@@ -570,6 +570,21 @@ namespace Pchp.Core.Dynamic
             return null;
         }
 
+        public static Expression BindClassConstant(PhpTypeInfo type, Type classCtx, string field, Expression ctx)
+        {
+            foreach (var t in type.EnumerateTypeHierarchy())    // types and interfaces
+            {
+                var expr = t.DeclaredFields.Bind(field, classCtx, null, ctx, TypeFields.FieldKind.Constant);
+                if (expr != null)
+                {
+                    return expr;
+                }
+            }
+
+            //
+            return null;
+        }
+
         /// <summary>
         /// Binds recursion check for property magic method.
         /// </summary>
