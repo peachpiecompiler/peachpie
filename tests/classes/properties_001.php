@@ -9,7 +9,7 @@ class X {
 
 	static $id = 0;
 
-	function X () {
+	function __construct () {
 		$this->id = 10;	// accessing static field with instance
 
 		$a = new Y();
