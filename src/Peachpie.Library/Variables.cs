@@ -1019,7 +1019,7 @@ namespace Pchp.Library
 
             public override void Accept(double obj)
             {
-                _output.Append(PhpVariable.TypeNameFloat);
+                _output.Append(PhpVariable.TypeNameDouble);
                 _output.Append("(");
                 _output.Append(Core.Convert.ToString(obj, _ctx));
                 _output.Append(")");

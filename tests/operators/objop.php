@@ -13,58 +13,58 @@ error_reporting(0);
 $x = new Foo();
 $y = new Bar();
 
-var_dump(!$x);
-var_dump(!$y);
+print_r(!$x);
+print_r(!$y);
 
-var_dump(-$x);
-var_dump(-$y);
+print_r(-$x);
+print_r(-$y);
 
-var_dump(+$x);
-var_dump(+$y);
+print_r(+$x);
+print_r(+$y);
 
 // not supported yet:
-// var_dump($x++);
-// var_dump($y++);
-// var_dump(++$x);
-// var_dump(++$y);
+// print_r($x++);
+// print_r($y++);
+// print_r(++$x);
+// print_r(++$y);
 
 
-var_dump( $x + 1);
-var_dump( $y + 1);
+print_r( $x + 1);
+print_r( $y + 1);
 
-var_dump( $x + 1.1);
-var_dump( $y + 1.1);
+print_r( $x + 1.1);
+print_r( $y + 1.1);
 
-var_dump( $x + $y);
+print_r( $x + $y);
 
-var_dump( $x - 1);
-var_dump( $y - 1);
+print_r( $x - 1);
+print_r( $y - 1);
 
-var_dump( $x - 1.1);
-var_dump( $y - 1.1);
+print_r( $x - 1.1);
+print_r( $y - 1.1);
 
-var_dump( $x - $y);
+print_r( $x - $y);
 
-var_dump( $x * 1);
-var_dump( $y * 1);
+print_r( $x * 1);
+print_r( $y * 1);
 
-var_dump( $x * 1.1);
-var_dump( $y * 1.1);
+print_r( $x * 1.1);
+print_r( $y * 1.1);
 
-var_dump( $x * $y);
+print_r( $x * $y);
 
-var_dump( $x / 1);
-var_dump( $y / 1);
+print_r( $x / 1);
+print_r( $y / 1);
 
-// var_dump( $x / 1.1);
-// var_dump( $y / 1.1);
+// print_r( $x / 1.1);
+// print_r( $y / 1.1);
 
-var_dump( $x / $y);
+print_r( $x / $y);
 
-var_dump( $x % 1);
-var_dump( $y % 1);
+print_r( $x % 1);
+print_r( $y % 1);
 
-var_dump( $x % 1.1);
-var_dump( $y % 1.1);
+print_r( $x % 1.1);
+print_r( $y % 1.1);
 
-var_dump( $x % $y);
+print_r( $x % $y);
