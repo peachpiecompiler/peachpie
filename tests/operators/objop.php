@@ -8,6 +8,8 @@ class Bar{
 	var $x = 1;
 }
 
+error_reporting(0);
+
 $x = new Foo();
 $y = new Bar();
 
