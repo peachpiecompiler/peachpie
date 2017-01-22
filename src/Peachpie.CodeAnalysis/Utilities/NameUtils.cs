@@ -227,6 +227,8 @@ namespace Pchp.CodeAnalysis
             return false;
         }
 
+        public static bool StringsEqual(this string str1, string str2, bool ignoreCase) => string.Equals(str1, str2, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
         /// <summary>
         /// Special PHP type and function names.
         /// </summary>

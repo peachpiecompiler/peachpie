@@ -206,7 +206,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return;
             }
 
-            var __tostring = this.GetMembers(SpecialMethodNames.Tostring.Value).OfType<MethodSymbol>().FirstOrDefault();
+            var __tostring = this.GetMembers(SpecialMethodNames.Tostring.Value, true).OfType<MethodSymbol>().FirstOrDefault();
             if (__tostring != null || this.Syntax.BaseClass == null)    // implement ToString if: there is __tostring() function or ToString is not overriden yet
             {
                 // public override string ToString()

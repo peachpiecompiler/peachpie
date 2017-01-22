@@ -279,12 +279,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
             for (var t = this; t != null; t = t.BaseType)
             {
-                set.UnionWith(t.GetMembers(name).OfType<MethodSymbol>());
+                set.UnionWith(t.GetMembers(name, true).OfType<MethodSymbol>());
             }
 
             foreach (var t in this.AllInterfaces)
             {
-                set.UnionWith(t.GetMembers(name).OfType<MethodSymbol>());
+                set.UnionWith(t.GetMembers(name, true).OfType<MethodSymbol>());
             }
 
             //

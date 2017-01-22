@@ -200,7 +200,7 @@ namespace Pchp.CodeAnalysis.Symbols
                  */
 
                 if (string.Equals(overriden.RoutineName, "ToString", StringComparison.OrdinalIgnoreCase) &&
-                    this.ContainingType.GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Tostring.Value).OfType<MethodSymbol>().Any())
+                    this.ContainingType.GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Tostring.Value, true).OfType<MethodSymbol>().Any())
                 {
                     /* Exception: __toString() already implements System.Object.ToString(),
                      * do not create ghost override for ToString then.

@@ -55,11 +55,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return ImmutableArray.Create<Symbol>(_constructor, _invoke);
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
             return
-                (name == _constructor.Name) ? ImmutableArray.Create<Symbol>(_constructor) :
-                (name == _invoke.Name) ? ImmutableArray.Create<Symbol>(_invoke) :
+                (name.StringsEqual(_constructor.Name, ignoreCase)) ? ImmutableArray.Create<Symbol>(_constructor) :
+                (name.StringsEqual(_invoke.Name, ignoreCase)) ? ImmutableArray.Create<Symbol>(_invoke) :
                 ImmutableArray<Symbol>.Empty;
         }
 

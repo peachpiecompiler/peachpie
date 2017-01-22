@@ -112,7 +112,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         public IEnumerable<IPhpRoutineSymbol> ResolveFunction(QualifiedName name)
         {
             // library functions, public static methods
-            var result = ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName())).OfType<MethodSymbol>().Where(IsFunction).OfType<IPhpRoutineSymbol>().ToList();
+            var result = ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName(), true)).OfType<MethodSymbol>().Where(IsFunction).OfType<IPhpRoutineSymbol>().ToList();
             if (result.Count == 0)
             {
                 // source functions
