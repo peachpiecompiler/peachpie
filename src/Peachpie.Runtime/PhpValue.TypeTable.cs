@@ -403,18 +403,7 @@ namespace Pchp.Core
             public override object ToClass(ref PhpValue me) => me.Object;
             public override string ToStringQuiet(ref PhpValue me) => me.Object.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => ToStringOrThrow(ref me, ctx);
-            public override string ToStringOrThrow(ref PhpValue me, Context ctx)
-            {
-                if (me.Object is IPhpConvertible)
-                {
-                    return ((IPhpConvertible)me.Object).ToStringOrThrow(ctx);
-                }
-                else
-                {
-                    // TODO: __toString() should override object.ToString()
-                    throw new NotImplementedException();
-                }
-            }
+            public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToStringOrThrow(me.Object, ctx);
             public override long ToLong(ref PhpValue me)
             {
                 if (me.Object is IPhpConvertible)

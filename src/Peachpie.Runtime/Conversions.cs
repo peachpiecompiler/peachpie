@@ -97,6 +97,21 @@ namespace Pchp.Core
         /// </summary>
         public static string ToString(double value, Context ctx) => value.ToString("G", ctx.NumberFormat);
 
+        /// <summary>
+        /// Converts class instance to a string.
+        /// </summary>
+        public static string ToStringOrThrow(object value, Context ctx)
+        {
+            if (value is IPhpConvertible)   // TODO: should be sufficient to call just ToString(), implementations of IPhpConvertible override ToString always
+            {
+                return ((IPhpConvertible)value).ToStringOrThrow(ctx);
+            }
+            else
+            {
+                return value.ToString();
+            }
+        }
+
         #endregion
 
         #region ToBoolean

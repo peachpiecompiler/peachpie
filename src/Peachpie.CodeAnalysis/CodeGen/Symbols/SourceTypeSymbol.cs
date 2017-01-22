@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using static Devsense.PHP.Syntax.Name;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -56,6 +57,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // .ctor
             EmitPhpCtor(PhpCtorMethodSymbol, module);
+
+            // System.ToString
+            EmitToString(module);
         }
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
@@ -193,6 +197,45 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.EmitRet(ctor.ReturnType);
 
             }, null, DiagnosticBag.GetInstance(), false));
+        }
+
+        void EmitToString(Emit.PEModuleBuilder module)
+        {
+            if (this.IsInterface)
+            {
+                return;
+            }
+
+            var __tostring = this.GetMembers(SpecialMethodNames.Tostring.Value).OfType<MethodSymbol>().FirstOrDefault();
+            if (__tostring != null || this.Syntax.BaseClass == null)    // implement ToString if: there is __tostring() function or ToString is not overriden yet
+            {
+                // public override string ToString()
+                // Note, there might be two ToString methods with same parameters only differing by their return type, CLR allows that
+                var tostring = new SynthesizedMethodSymbol(this, "ToString", false, true, DeclaringCompilation.CoreTypes.String, Accessibility.Public, isfinal: false)
+                {
+                    ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ToString),
+                };
+
+                module.SetMethodBody(tostring, MethodGenerator.GenerateMethodBody(module, tostring, il =>
+                {
+                    var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new FieldPlace(new ArgPlace(this, 0), this.ContextStore), new ArgPlace(this, 0));
+
+                    if (__tostring != null)
+                    {
+                        // __tostring().ToString()
+                        cg.EmitConvert(cg.EmitThisCall(__tostring, tostring), 0, tostring.ReturnType);
+                    }
+                    else
+                    {
+                        // TODO: Throw object_could_not_be_converted
+                        // return ""
+                        cg.Builder.EmitStringConstant(string.Empty);
+                    }
+                    cg.EmitRet(tostring.ReturnType);
+
+                }, null, DiagnosticBag.GetInstance(), false));
+                module.SynthesizedManager.AddMethod(this, tostring);
+            }
         }
     }
 }

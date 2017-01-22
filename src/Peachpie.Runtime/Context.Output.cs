@@ -133,13 +133,17 @@ namespace Pchp.Core
         public void Echo(object value)
         {
             if (value != null)
-                Echo(value.ToString());
+            {
+                Echo(Convert.ToStringOrThrow(value, this));
+            }
         }
 
         public void Echo(string value)
         {
             if (value != null)
+            {
                 Output.Write(value);
+            }
         }
 
         public void Echo(PhpString value) => value.Output(this);

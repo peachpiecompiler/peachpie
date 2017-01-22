@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
     class SynthesizedMethodSymbol : MethodSymbol
     {
         readonly TypeSymbol _type;
-        readonly bool _static, _virtual;
+        readonly bool _static, _virtual, _final;
         readonly string _name;
         TypeSymbol _return;
         readonly Accessibility _accessibility;
@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override IMethodSymbol OverriddenMethod => ExplicitOverride;
 
-        public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, params ParameterSymbol[] ps)
+        public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, bool isfinal = true, params ParameterSymbol[] ps)
         {
             _type = containingType;
             _name = name;
@@ -30,6 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _virtual = isvirtual;
             _return = returnType;
             _accessibility = accessibility;
+            _final = isfinal && isvirtual && !isstatic;
 
             SetParameters(ps);
         }
@@ -59,7 +60,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsOverride => OverriddenMethod != null;
 
-        public override bool IsSealed => IsVirtual && !IsStatic;
+        public override bool IsSealed => _final;
 
         public override bool IsStatic => _static;
 
