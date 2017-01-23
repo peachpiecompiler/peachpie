@@ -462,14 +462,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // 3. switch over strings, using C# static Dictionary and CIL switch
             // 4. PHP style switch which is just a bunch of IFs
 
-            if (this.CaseBlocks.Length == 0 || this.CaseBlocks[0].IsDefault)
+            if (this.CaseBlocks.Length == 0 || (this.CaseBlocks[0].IsDefault && this.CaseBlocks.Length == 1))
             {
                 Debug.Assert(this.CaseBlocks.Length <= 1);
 
                 // no SWITCH or IF needed
 
                 cg.EmitPop(this.SwitchValue.WithAccess(BoundAccess.None).Emit(cg)); // None Access, also using BoundExpression.Emit directly to avoid CodeGenerator type specialization which is not needed
-                if (this.CaseBlocks.Length == 1)
+                if (this.CaseBlocks.Length != 0)
                 {
                     cg.GenerateScope(this.CaseBlocks[0], NextBlock.Ordinal);
                 }

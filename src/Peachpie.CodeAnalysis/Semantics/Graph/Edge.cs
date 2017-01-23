@@ -360,9 +360,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override CaseBlock[] CaseBlocks => _caseBlocks;
 
         /// <summary>
-        /// GEts the case blocks representing a default section.
+        /// Gets the case blocks representing a default section.
         /// </summary>
-        public CaseBlock DefaultBlock => (_caseBlocks.Length != 0 && _caseBlocks.Last().IsDefault) ? _caseBlocks.Last() : null;
+        public CaseBlock DefaultBlock => _caseBlocks.FirstOrDefault(c => c.IsDefault);
 
         internal SwitchEdge(BoundBlock source, BoundExpression switchValue, CaseBlock[] caseBlocks, BoundBlock endBlock)
             : base(source)
