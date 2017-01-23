@@ -732,6 +732,8 @@ namespace Pchp.Library
             protected PhpString _output;
             protected int _indent;
 
+            protected const string RECURSION = "*RECURSION*";
+
             protected FormatterVisitor(Context ctx, string newline)
             {
                 Debug.Assert(ctx != null);
@@ -782,6 +784,7 @@ namespace Pchp.Library
         class PrintFormatter : FormatterVisitor
         {
             const int IndentSize = 4;
+            new const string RECURSION = " " + FormatterVisitor.RECURSION;
 
             void OutputIndent()
             {
@@ -836,13 +839,13 @@ namespace Pchp.Library
 
                     //
                     Leave(obj);
+
+                    _output.Append(_nl);
                 }
                 else
                 {
-                    _output.Append(" *RECURSION*");
+                    _output.Append(RECURSION);
                 }
-
-                _output.Append(_nl);
             }
 
             public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
@@ -1043,8 +1046,19 @@ namespace Pchp.Library
 
             public override void Accept(PhpAlias obj)
             {
-                _output.Append("&");
-                base.Accept(obj);
+                if (Enter(obj))
+                {
+                    _output.Append("&");
+                    base.Accept(obj);
+
+                    //
+                    Leave(obj);
+                }
+                else
+                {
+                    // *RECURSION*
+                    _output.Append(RECURSION);
+                }
             }
 
             public override void AcceptNull() => _output.Append(PhpVariable.TypeNameNull);
@@ -1054,31 +1068,20 @@ namespace Pchp.Library
                 // array
                 _output.Append(PhpArray.PhpTypeName);
 
-                if (Enter(obj))
-                {
-                    // (size=COUNT)
-                    // {
-                    _output.Append($"({obj.Count}) {{");
-                    _output.Append(_nl);
+                // (size=COUNT)
+                // {
+                _output.Append($"({obj.Count}) {{");
+                _output.Append(_nl);
 
-                    _indent++;
+                _indent++;
 
-                    base.Accept(obj);
+                base.Accept(obj);
 
-                    _indent--;
+                _indent--;
 
-                    // }
-                    OutputIndent();
-                    _output.Append("}");
-
-                    //
-                    Leave(obj);
-                }
-                else
-                {
-                    // <
-                    _output.Append("<");
-                }
+                // }
+                OutputIndent();
+                _output.Append("}");
             }
 
             public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
@@ -1098,7 +1101,18 @@ namespace Pchp.Library
 
             public override void AcceptObject(object obj)
             {
-                throw new NotImplementedException();
+                if (Enter(obj))
+                {
+                    throw new NotImplementedException();
+
+                    ////
+                    //Leave(obj);
+                }
+                else
+                {
+                    // *RECURSION*
+                    _output.Append(RECURSION);
+                }
             }
         }
 
@@ -1143,7 +1157,7 @@ namespace Pchp.Library
             var formatter = new DumpFormatter(ctx, "\n"); // TODO: HtmlDumpFormatter
             for (int i = 0; i < variables.Length; i++)
             {
-                ctx.Echo(formatter.Serialize(variables[i]));
+                ctx.Echo(formatter.Serialize(variables[i].GetValue()));
             }
         }
 
