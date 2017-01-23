@@ -511,7 +511,7 @@ namespace Pchp.CodeAnalysis
         {
             if (_lazyAssemblySymbol == null)
             {
-                _referenceManager.CreateSourceAssemblyForCompilation(this);
+                _lazyAssemblySymbol = _referenceManager.CreateSourceAssemblyForCompilation(this);
                 Debug.Assert(_lazyAssemblySymbol != null);
             }
 

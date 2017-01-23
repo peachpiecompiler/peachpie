@@ -150,11 +150,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal static bool IsPchpCor(PEAssembly ass) => ass.Identity.Name == "Peachpie.Runtime";
 
-        internal static PEAssemblySymbol Create(PortableExecutableReference reference)
+        internal static PEAssemblySymbol Create(PortableExecutableReference reference, PEAssembly ass = null)
         {
-            var data = (AssemblyMetadata)reference.GetMetadata();
-            //var data = AssemblyMetadata.CreateFromFile(reference.FilePath);
-            var ass = data.GetAssembly();
+            if (ass == null)
+            {
+                ass = ((AssemblyMetadata)reference.GetMetadata()).GetAssembly();
+            }
 
             return new PEAssemblySymbol(
                 ass, DocumentationProvider.Default, reference.FilePath, true,
