@@ -306,12 +306,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(routine);
 
-            if (routine.ControlFlowGraph == null)
-                throw new ArgumentException();
-
             _routine = routine;
             
-            _emmittedTag = routine.ControlFlowGraph.NewColor();
+            _emmittedTag = (routine.ControlFlowGraph != null) ? routine.ControlFlowGraph.NewColor() : -1;
             _localsPlaceOpt = GetLocalsPlace(routine);
 
             // Emit sequence points unless
@@ -352,6 +349,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal void Generate()
         {
+            Debug.Assert(_routine != null && _routine.ControlFlowGraph != null);
             GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
         }
 
