@@ -435,6 +435,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (x.Access.IsWrite)
                 {
                     State.SetAllInitialized();
+                    State.SetAllAnyType(x.Access.IsWriteRef);
                 }
 
                 if (x.Access.IsUnset)
