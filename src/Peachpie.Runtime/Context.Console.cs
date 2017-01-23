@@ -18,10 +18,10 @@ namespace Pchp.Core
 
             public ConsoleContext(params string[] args)
             {
-                _textSink = Console.Out;
-                _streamSink = Console.OpenStandardOutput();
                 _rootPath = ScriptsMap.NormalizeSlashes(Directory.GetCurrentDirectory());
-                IsOutputBuffered = false;   // initializes Output
+
+                //
+                InitOutput(Console.OpenStandardOutput(), Console.Out);
 
                 // Globals
                 InitSuperglobals();
