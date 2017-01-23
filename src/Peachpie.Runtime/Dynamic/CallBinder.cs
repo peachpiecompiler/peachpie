@@ -314,8 +314,7 @@ namespace Pchp.Core.Dynamic
         protected override Expression BindMissingMethod(DynamicMetaObject ctx, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
             var tinfo = target.RuntimeType.GetPhpTypeInfo();
-            var call = (PhpMethodInfo)tinfo.DeclaredMethods[TypeMethods.MagicMethods.__call];
-
+            var call = BinderHelpers.FindMagicMethod(tinfo, TypeMethods.MagicMethods.__call);
             if (call != null)
             {
                 if (_name == null)
@@ -392,8 +391,7 @@ namespace Pchp.Core.Dynamic
         protected override Expression BindMissingMethod(DynamicMetaObject ctx, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
             var tinfo = ResolveType((Context)ctx.Value, target?.Expression).GetPhpTypeInfo();
-            var call = (PhpMethodInfo)tinfo.DeclaredMethods[TypeMethods.MagicMethods.__callstatic];
-
+            var call = BinderHelpers.FindMagicMethod(tinfo, TypeMethods.MagicMethods.__callstatic);
             if (call != null)
             {
                 if (_name == null)
