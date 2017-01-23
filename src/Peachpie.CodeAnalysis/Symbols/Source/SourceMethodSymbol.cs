@@ -86,11 +86,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override bool IsAbstract => _syntax.Modifiers.IsAbstract() || _type.IsInterface;
+        public override bool IsAbstract => !IsStatic && (_syntax.Modifiers.IsAbstract() || _type.IsInterface);
 
         public override bool IsOverride => this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
 
-        public override bool IsSealed => _syntax.Modifiers.IsSealed();
+        public override bool IsSealed => !IsStatic && _syntax.Modifiers.IsSealed();
 
         public override bool IsStatic => _syntax.Modifiers.IsStatic();
 
