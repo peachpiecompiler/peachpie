@@ -478,7 +478,7 @@ namespace Pchp.Core
 
             #region IPhpEnumerator
 
-            public PhpValue CurrentValue => (_element >= 0) ? _table.entries[_element]._value.GetValue() : PhpValue.Void;
+            public virtual PhpValue CurrentValue => (_element >= 0) ? _table.entries[_element]._value.GetValue() : PhpValue.Void;
 
             public PhpValue CurrentKey => (_element >= 0) ? PhpValue.Create(_table.entries[_element]._key) : PhpValue.Void;
 
@@ -540,6 +540,8 @@ namespace Pchp.Core
             {
                 
             }
+
+            public override PhpValue CurrentValue => base.CurrentValue.DeepCopy();
 
             public override void Dispose()
             {
