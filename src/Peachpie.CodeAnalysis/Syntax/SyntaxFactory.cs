@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis
 {
     public static class SyntaxFactory
     {
-        public static SyntaxTreeAdapter ParseSyntaxTree(
+        public static PhpSyntaxTree ParseSyntaxTree(
             string content,
             PhpParseOptions parseOptions,
             PhpParseOptions scriptParseOptions,
@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis
             var errorSink = new ErrorSink();
             unit.Parse(new BasicNodesFactory(unit), errorSink);
 
-            var result = new SyntaxTreeAdapter(unit, errorSink.DiagnosticStubs);
+            var result = new PhpSyntaxTree(unit, errorSink.DiagnosticStubs);
 
             return result;
         }

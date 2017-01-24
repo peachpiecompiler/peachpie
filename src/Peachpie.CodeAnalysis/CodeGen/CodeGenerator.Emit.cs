@@ -414,7 +414,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // TODO: Reuse the existing one instead
                 if (_lazySyntaxTree == null)
-                    _lazySyntaxTree = new SyntaxTreeAdapter(_routine.ContainingFile.Syntax.ContainingSourceUnit, ImmutableArray<ParserDiagnosticStub>.Empty);
+                    _lazySyntaxTree = new PhpSyntaxTree(_routine.ContainingFile.Syntax.ContainingSourceUnit, ImmutableArray<ParserDiagnosticStub>.Empty);
 
                 _il.DefineSequencePoint(_lazySyntaxTree, new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
             }

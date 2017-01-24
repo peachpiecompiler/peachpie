@@ -14,13 +14,13 @@ using Devsense.PHP.Errors;
 namespace Pchp.CodeAnalysis
 {
     /// <summary>
-    /// Adapter providing <see cref="SyntaxTree"/> from <see cref="SourceUnit"/>.
+    /// Adapter providing <see cref="SyntaxTree"/> from <see cref="SourceUnit"/> and storing parse diagnostics.
     /// </summary>
-    public class SyntaxTreeAdapter : SyntaxTree
+    public class PhpSyntaxTree : SyntaxTree
     {
         readonly SourceUnit _source;
 
-        internal SyntaxTreeAdapter(SourceUnit source, IEnumerable<ParserDiagnosticStub> diagnosticStubs)
+        internal PhpSyntaxTree(SourceUnit source, IEnumerable<ParserDiagnosticStub> diagnosticStubs)
         {
             Contract.ThrowIfNull(source);
 

@@ -221,7 +221,7 @@ namespace Pchp.CodeAnalysis
                 ValidateReferences<CompilationReference>(references));
 
             //
-            var sourceUnitEnumerable = syntaxTrees.Cast<SyntaxTreeAdapter>().Select(tree => tree.Source);
+            var sourceUnitEnumerable = syntaxTrees.Cast<PhpSyntaxTree>().Select(tree => tree.Source);
             compilation.SourceSymbolCollection.AddSyntaxTreeRange(sourceUnitEnumerable);
 
             //

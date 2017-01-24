@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool hadErrors = false;
 
             var sourceFiles = Arguments.SourceFiles;
-            var trees = new SyntaxTreeAdapter[sourceFiles.Length];
+            var trees = new PhpSyntaxTree[sourceFiles.Length];
 
             if (Arguments.CompilationOptions.ConcurrentBuild)
             {
@@ -105,7 +105,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             return compilation;
         }
 
-        private SyntaxTreeAdapter ParseFile(
+        private PhpSyntaxTree ParseFile(
             TextWriter consoleOutput,
             PhpParseOptions parseOptions,
             PhpParseOptions scriptParseOptions,
@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 hadErrors = true;
             }
 
-            SyntaxTreeAdapter result = null;
+            PhpSyntaxTree result = null;
 
             if (content != null)
             {

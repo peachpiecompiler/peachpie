@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Pchp.CodeAnalysis.Errors
 {
     /// <summary>
-    /// Stores the parser errors, which are eventually turned into diagnostics in <see cref="SyntaxTreeAdapter"/>.
+    /// Stores the parser errors, which are eventually turned into diagnostics in <see cref="PhpSyntaxTree"/>.
     /// </summary>
     internal struct ParserDiagnosticStub
     {
