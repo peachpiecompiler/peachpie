@@ -15,33 +15,38 @@ namespace Pchp.CodeAnalysis.Errors
     /// </summary>
     internal class ErrorSink : IErrorSink<Span>
     {
-        private List<ParserDiagnosticStub> _diagnosticStubs;
+        private PhpSyntaxTree _syntaxTree;
+        private List<Diagnostic> _diagnostics;
 
-        public ErrorSink()
+        public ErrorSink(PhpSyntaxTree syntaxTree)
         {
+            _syntaxTree = syntaxTree;
         }
 
         // Save an allocation if no errors were found
-        public IEnumerable<ParserDiagnosticStub> DiagnosticStubs =>
-            (IEnumerable<ParserDiagnosticStub>)_diagnosticStubs ?? ImmutableArray<ParserDiagnosticStub>.Empty;
+        public ImmutableArray<Diagnostic> Diagnostics =>
+            _diagnostics?.ToImmutableArray() ?? ImmutableArray<Diagnostic>.Empty;
 
         public void Error(Span span, ErrorInfo info, params string[] argsOpt)
         {
             ParserMessageProvider.Instance.RegisterError(info);
 
-            var diagnosticStub = new ParserDiagnosticStub()
-            {
-                Span = span,
-                Info = info,
-                Args = argsOpt
-            };
+            var location = new SourceLocation(
+                _syntaxTree,
+                new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
 
-            if (_diagnosticStubs == null)
+            var diagnostic = ParserMessageProvider.Instance.CreateDiagnostic(
+                info.Severity == ErrorSeverity.WarningAsError,
+                info.Id,
+                location,
+                argsOpt);
+
+            if (_diagnostics == null)
             {
-                _diagnosticStubs = new List<ParserDiagnosticStub>();
+                _diagnostics = new List<Diagnostic>();
             }
 
-            _diagnosticStubs.Add(diagnosticStub);
+            _diagnostics.Add(diagnostic);
         }
     }
 }

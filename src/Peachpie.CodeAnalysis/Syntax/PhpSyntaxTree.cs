@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Text;
 using System.Threading;
 using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Errors;
 using Devsense.PHP.Errors;
@@ -20,15 +21,33 @@ namespace Pchp.CodeAnalysis
     {
         readonly SourceUnit _source;
 
-        internal PhpSyntaxTree(SourceUnit source, IEnumerable<ParserDiagnosticStub> diagnosticStubs)
+        internal PhpSyntaxTree(SourceUnit source)
         {
             Contract.ThrowIfNull(source);
 
             _source = source;
-            Diagnostics = diagnosticStubs.Select(ConvertStubToDiagnostic).ToImmutableArray();
         }
 
-        public ImmutableArray<Diagnostic> Diagnostics { get; }
+        public static PhpSyntaxTree ParseCode(
+            string content,
+            PhpParseOptions parseOptions,
+            PhpParseOptions scriptParseOptions,
+            string fname)
+        {
+            // TODO: new parser implementation based on Roslyn
+
+            // TODO: file.IsScript ? scriptParseOptions : parseOptions
+            var unit = new CodeSourceUnit(content.ToString(), fname, Encoding.UTF8);
+            var result = new PhpSyntaxTree(unit);
+
+            var errorSink = new ErrorSink(result);
+            unit.Parse(new BasicNodesFactory(unit), errorSink);
+            result.Diagnostics = errorSink.Diagnostics;
+
+            return result;
+        }
+
+        public ImmutableArray<Diagnostic> Diagnostics { get; private set; }
 
         public override Encoding Encoding => Encoding.UTF8;
 
@@ -158,25 +177,6 @@ namespace Pchp.CodeAnalysis
         protected override bool TryGetRootCore(out SyntaxNode root)
         {
             throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Processes errors from PHP parser transforming them into Roslyn diagnostics using
-        /// <see cref="ParserMessageProvider"/>.
-        /// </summary>
-        private Diagnostic ConvertStubToDiagnostic(ParserDiagnosticStub stub)
-        {
-            var location = new SourceLocation(
-                this,
-                new TextSpan(stub.Span.Start, stub.Span.Length));
-
-            var diagnostic = ParserMessageProvider.Instance.CreateDiagnostic(
-                stub.Info.Severity == ErrorSeverity.WarningAsError,
-                stub.Info.Id,
-                location,
-                stub.Args);
-
-            return diagnostic;
         }
     }
 }

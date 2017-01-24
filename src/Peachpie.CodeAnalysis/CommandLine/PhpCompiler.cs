@@ -126,7 +126,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             if (content != null)
             {
-                result = SyntaxFactory.ParseSyntaxTree(content.ToString(), parseOptions, scriptParseOptions, file.Path);
+                result = PhpSyntaxTree.ParseCode(content.ToString(), parseOptions, scriptParseOptions, file.Path);
             }
 
             if (result != null && result.Diagnostics.Length != 0)

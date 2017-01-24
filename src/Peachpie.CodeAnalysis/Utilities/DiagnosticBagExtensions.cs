@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis
         public static void Add(this DiagnosticBag diagnostics, IPhpOperation operation, ErrorCode code, params object[] args)
         {
             // TODO: Reuse the existing one instead
-            var tree = new PhpSyntaxTree(operation.PhpSyntax.ContainingSourceUnit, ImmutableArray<ParserDiagnosticStub>.Empty);
+            var tree = new PhpSyntaxTree(operation.PhpSyntax.ContainingSourceUnit);
             var span = operation.PhpSyntax.Span;
             var location = new SourceLocation(tree, new TextSpan(span.Start, span.Length));
             diagnostics.Add(location, code, args);
