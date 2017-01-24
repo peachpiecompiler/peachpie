@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Pchp.Library.Resources;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -116,132 +117,65 @@ namespace Pchp.Library
             Array.Reverse(chars);
             return new string(chars);
         }
+        
+        /// <summary>
+        /// Finds a length of a segment consisting entirely of specified characters.
+        /// </summary>
+        /// <param name="str">The string to be searched in.</param>
+        /// <param name="acceptedChars">Accepted characters.</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <returns>
+        /// The length of the substring consisting entirely of characters in <paramref name="acceptedChars"/> or 
+        /// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
+        /// (see <see cref="PhpMath.AbsolutizeRange"/> and takes at most absolutized <paramref name="length"/> characters.
+        /// </returns>
+        public static int strspn(string str, string acceptedChars, int offset = 0, int length = int.MaxValue)
+            => StrSpnInternal(str, acceptedChars, offset, length, false);
 
-        ///// <summary>
-        ///// Finds a length of an initial segment consisting entirely of specified characters.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <returns>
-        ///// The length of the initial segment consisting entirely of characters in <paramref name="acceptedChars"/>
-        ///// or zero if any argument is null.
-        ///// </returns>
-        //[ImplementsFunction("strspn")]
-        //public static int StrSpn(string str, string acceptedChars)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, 0, int.MaxValue, false);
-        //}
+        /// <summary>
+        /// Finds a length of a segment consisting entirely of any characters except for specified ones.
+        /// </summary>
+        /// <param name="str">The string to be searched in.</param>
+        /// <param name="acceptedChars">Accepted characters.</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <returns>
+        /// The length of the substring consisting entirely of characters not in <paramref name="acceptedChars"/> or 
+        /// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
+        /// (see <see cref="PhpMath.AbsolutizeRange"/> and takes at most absolutized <paramref name="length"/> characters.
+        /// </returns>
+        public static int strcspn(string str, string acceptedChars, int offset = 0, int length = int.MaxValue)
+            => StrSpnInternal(str, acceptedChars, offset, length, true);
 
-        ///// <summary>
-        ///// Finds a length of a segment consisting entirely of specified characters.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <param name="offset">The relativized offset of the first item of the slice.</param>
-        ///// <returns>
-        ///// The length of the substring consisting entirely of characters in <paramref name="acceptedChars"/> or 
-        ///// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
-        ///// (see <see cref="PhpMath.AbsolutizeRange"/> where <c>length</c> is infinity).
-        ///// </returns>
-        //[ImplementsFunction("strspn")]
-        //public static int StrSpn(string str, string acceptedChars, int offset)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, offset, int.MaxValue, false);
-        //}
+        /// <summary>
+        /// Internal version of <see cref="strspn"/> (complement off) and <see cref="strcspn"/> (complement on).
+        /// </summary>
+        static int StrSpnInternal(string str, string acceptedChars, int offset, int length, bool complement)
+        {
+            if (str == null || acceptedChars == null)
+            {
+                return 0;
+            }
 
-        ///// <summary>
-        ///// Finds a length of a segment consisting entirely of specified characters.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <param name="offset">The relativized offset of the first item of the slice.</param>
-        ///// <param name="length">The relativized length of the slice.</param>
-        ///// <returns>
-        ///// The length of the substring consisting entirely of characters in <paramref name="acceptedChars"/> or 
-        ///// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
-        ///// (see <see cref="PhpMath.AbsolutizeRange"/> and takes at most absolutized <paramref name="length"/> characters.
-        ///// </returns>
-        //[ImplementsFunction("strspn")]
-        //public static int StrSpn(string str, string acceptedChars, int offset, int length)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, offset, length, false);
-        //}
+            PhpMath.AbsolutizeRange(ref offset, ref length, str.Length);
 
-        ///// <summary>
-        ///// Finds a length of an initial segment consisting entirely of any characters excpept for specified ones.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <returns>
-        ///// The length of the initial segment consisting entirely of characters not in <paramref name="acceptedChars"/>
-        ///// or zero if any argument is null.
-        ///// </returns>
-        //[ImplementsFunction("strcspn")]
-        //public static int StrCSpn(string str, string acceptedChars)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, 0, int.MaxValue, true);
-        //}
+            char[] chars = acceptedChars.ToCharArray();
+            Array.Sort(chars);
 
-        ///// <summary>
-        ///// Finds a length of a segment consisting entirely of any characters excpept for specified ones.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <param name="offset">The relativized offset of the first item of the slice.</param>
-        ///// <returns>
-        ///// The length of the substring consisting entirely of characters not in <paramref name="acceptedChars"/> or 
-        ///// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
-        ///// (see <see cref="PhpMath.AbsolutizeRange"/> where <c>length</c> is infinity).
-        ///// </returns>
-        //[ImplementsFunction("strcspn")]
-        //public static int StrCSpn(string str, string acceptedChars, int offset)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, offset, int.MaxValue, true);
-        //}
+            int j = offset;
 
-        ///// <summary>
-        ///// Finds a length of a segment consisting entirely of any characters except for specified ones.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <param name="offset">The relativized offset of the first item of the slice.</param>
-        ///// <param name="length">The relativized length of the slice.</param>
-        ///// <returns>
-        ///// The length of the substring consisting entirely of characters not in <paramref name="acceptedChars"/> or 
-        ///// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
-        ///// (see <see cref="PhpMath.AbsolutizeRange"/> and takes at most absolutized <paramref name="length"/> characters.
-        ///// </returns>
-        //[ImplementsFunction("strcspn")]
-        //public static int StrCSpn(string str, string acceptedChars, int offset, int length)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, offset, length, true);
-        //}
+            if (complement)
+            {
+                while (length > 0 && ArrayUtils.BinarySearch(chars, str[j]) < 0) { j++; length--; }
+            }
+            else
+            {
+                while (length > 0 && ArrayUtils.BinarySearch(chars, str[j]) >= 0) { j++; length--; }
+            }
 
-        ///// <summary>
-        ///// Internal version of <see cref="StrSpn"/> (complement off) and <see cref="StrCSpn"/> (complement on).
-        ///// </summary>
-        //internal static int StrSpnInternal(string str, string acceptedChars, int offset, int length, bool complement)
-        //{
-        //    if (str == null || acceptedChars == null) return 0;
-
-        //    PhpMath.AbsolutizeRange(ref offset, ref length, str.Length);
-
-        //    char[] chars = acceptedChars.ToCharArray();
-        //    Array.Sort(chars);
-
-        //    int j = offset;
-
-        //    if (complement)
-        //    {
-        //        while (length > 0 && ArrayUtils.BinarySearch(chars, str[j]) < 0) { j++; length--; }
-        //    }
-        //    else
-        //    {
-        //        while (length > 0 && ArrayUtils.BinarySearch(chars, str[j]) >= 0) { j++; length--; }
-        //    }
-
-        //    return j - offset;
-        //}
+            return j - offset;
+        }
 
         #endregion
 
