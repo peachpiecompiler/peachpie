@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
 {
@@ -17,19 +18,14 @@ namespace Pchp.Core.Dynamic
     internal static class OverloadResolver
     {
         /// <summary>
-        /// Selects all method candidates.
-        /// </summary>
-        public static IEnumerable<MethodBase> SelectCandidates(this Type type)
-        {
-            return type.GetRuntimeMethods();
-        }
-
-        /// <summary>
         /// Selects only candidates of given name.
         /// </summary>
-        public static IEnumerable<MethodBase> SelectByName(this IEnumerable<MethodBase> candidates, string name)
+        public static MethodInfo[] SelectRuntimeMethods(this PhpTypeInfo tinfo, string name)
         {
-            return candidates.Where(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var routine = (PhpMethodInfo)tinfo?.RuntimeMethods[name];
+            return (routine != null)
+                ? routine.Methods
+                : Array.Empty<MethodInfo>();
         }
 
         /// <summary>

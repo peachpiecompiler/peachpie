@@ -33,17 +33,6 @@ namespace Pchp.Core
         public PhpValue Call(string function, params object[] arguments) => PhpCallback.Create(function).Invoke(this, PhpValue.FromClr(arguments));
 
         /// <summary>
-        /// Call the object magic method.
-        /// </summary>
-        /// <typeparam name="T">Object type.</typeparam>
-        /// <param name="target">Object instance.</param>
-        /// <param name="method">Magic method to be called.</param>
-        /// <param name="arguments">Provided arguments.</param>
-        /// <returns>__invoke return value.</returns>
-        public PhpValue Call<T>(T target, TypeMethods.MagicMethods method, params PhpValue[] arguments) where T : class  // TODO: check magic exists
-            => ((PhpMethodInfo)TypeInfoHolder<T>.TypeInfo.DeclaredMethods[method]).PhpInvokable(this, target, arguments);
-
-        /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
         /// </summary>
         /// <typeparam name="T">Object type.</typeparam>

@@ -1174,7 +1174,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     //// === NULL
                     //if (right.ConstantValue.IsNull())
                     //{
-                        // TODO 
+                    // TODO 
                     //}
 
                     // TODO: PhpArray, Object === ...
@@ -2116,6 +2116,24 @@ namespace Pchp.CodeAnalysis.Semantics
         protected virtual BoundTypeRef TypeNameRef => null;
         protected virtual bool IsVirtualCall => true;
 
+        /// <summary>
+        /// Optional. Emits instance on which the method is invoked.
+        /// In case of instance function call, it is the instance expression,
+        /// in case of static method, it is reference to <c>$this</c> which may be needed in some cases.
+        /// </summary>
+        /// <returns>Type left on stack. Can be <c>null</c> if no target was emitted.</returns>
+        internal virtual TypeSymbol EmitTarget(CodeGenerator cg)
+        {
+            if (Instance != null)
+            {
+                return cg.Emit(Instance);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         internal virtual TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
             // callsite
@@ -2141,16 +2159,18 @@ namespace Pchp.CodeAnalysis.Semantics
             // (callsite, [target], ctx, [name], ...)
             fldPlace.EmitLoad(cg.Builder);
 
-            if (Instance != null)
+            callsiteargs.Add(cg.EmitLoadContext());     // ctx
+
+            var t = EmitTarget(cg);
+            if (t != null)
             {
-                callsiteargs.Add(cg.Emit(Instance));   // instance
+                callsiteargs.Add(t);   // instance
             }
-            else if (TypeNameRef != null)
+
+            if (TypeNameRef != null)
             {
                 callsiteargs.Add(TypeNameRef.EmitLoadTypeInfo(cg, true));   // PhpTypeInfo
             }
-
-            callsiteargs.Add(cg.EmitLoadContext());     // ctx
 
             if (RoutineNameExpr != null)
             {
@@ -2241,6 +2261,11 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
         protected override BoundTypeRef TypeNameRef => (_typeRef.ResolvedType == null) ? _typeRef : null;
         protected override bool IsVirtualCall => false;
+
+        internal override TypeSymbol EmitTarget(CodeGenerator cg)
+        {
+            return cg.EmitThisOrNull();
+        }
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
@@ -2549,7 +2574,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 throw ExceptionUtilities.UnexpectedValue(Access);
             }
-            
+
             target_place.EmitStore(cg, t_value);
 
             //
@@ -3498,7 +3523,7 @@ namespace Pchp.CodeAnalysis.Semantics
         private static TypeSymbol Emit(CodeGenerator cg, TypeSymbol t)
         {
             var il = cg.Builder;
-            
+
             //
             switch (t.SpecialType)
             {

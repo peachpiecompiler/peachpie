@@ -338,16 +338,7 @@ namespace Pchp.Core.Dynamic
 
         public static PhpMethodInfo FindMagicMethod(PhpTypeInfo type, TypeMethods.MagicMethods magic)
         {
-            for (var t = type; t != null; t = t.BaseType)
-            {
-                var m = (PhpMethodInfo)t.DeclaredMethods[magic];
-                if (m != null)
-                {
-                    return m;
-                }
-            }
-
-            return null;
+            return (PhpMethodInfo)type.RuntimeMethods[magic];
         }
 
         static Expression BindMagicMethod(PhpTypeInfo type, Type classCtx, Expression target, Expression ctx, TypeMethods.MagicMethods magic, string field, Expression rvalue = null)
@@ -718,7 +709,7 @@ namespace Pchp.Core.Dynamic
                 instance = Expression.Convert(instance, method.DeclaringType);
             }
 
-            if (instance != null && method.IsVirtual)
+            if (instance != null && method.IsVirtual)   // NOTE: only needed for parent::foo(), static::foo() and self::foo() ?
             {
                 // Ugly hack here,
                 // we NEED to call the method nonvirtually, but LambdaCompiler emits .callvirt always and there is no way how to change it (except we can emit all the stuff by ourselfs).

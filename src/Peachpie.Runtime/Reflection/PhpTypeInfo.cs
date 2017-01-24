@@ -120,10 +120,10 @@ namespace Pchp.Core.Reflection
         Flags _flags;
 
         /// <summary>
-        /// Gets collection of PHP methods in this type.
+        /// Gets collection of PHP methods in this type and base types.
         /// </summary>
-        public TypeMethods DeclaredMethods => _declaredMethods ?? (_declaredMethods = new TypeMethods(_type));
-        TypeMethods _declaredMethods;
+        public TypeMethods RuntimeMethods => _runtimeMethods ?? (_runtimeMethods = new TypeMethods(_type));
+        TypeMethods _runtimeMethods;
 
         /// <summary>
         /// Gets collection of PHP fields, static fields and constants declared in this type.

@@ -124,6 +124,7 @@ namespace Pchp.Core
             public MethodCallback(string @class, string method)
             {
                 _class = @class;
+                // TODO: reserved types: self, parent, static - needs caller
                 _method = method;
             }
 
@@ -131,12 +132,18 @@ namespace Pchp.Core
 
             protected override PhpCallable BindCore(Context ctx)
             {
-                for (var tinfo = ctx.GetDeclaredType(_class); tinfo != null; tinfo = tinfo.BaseType)
+                var tinfo = ctx.GetDeclaredType(_class);
+                var routine = (PhpMethodInfo)tinfo?.RuntimeMethods[_method];
+                if (routine != null)
                 {
-                    var method = (Reflection.PhpMethodInfo)tinfo.DeclaredMethods[_method];
-                    if (method != null)
+                    return routine.PhpInvokable.Bind(null);
+                }
+                else if (tinfo != null)
+                {
+                    routine = (PhpMethodInfo)tinfo.RuntimeMethods[TypeMethods.MagicMethods.__callstatic];
+                    if (routine != null)
                     {
-                        return method.PhpInvokable.Bind(null);
+                        return routine.PhpInvokable.BindMagicCall(null, _method);
                     }
                 }
 
@@ -167,24 +174,39 @@ namespace Pchp.Core
             protected override PhpCallable BindCore(Context ctx)
             {
                 PhpTypeInfo tinfo;
-                
+                object target = null;
+
                 if (_item1.IsObject)
                 {
-                    tinfo = _item1.Object.GetType().GetPhpTypeInfo();
+                    target = _item1.Object;
+                    tinfo = target.GetType().GetPhpTypeInfo();
                 }
                 else
                 {
+                    target = null;
                     tinfo = ctx.GetDeclaredType(_item1.ToString(ctx));
                 }
 
-                var method = _item2.ToString(ctx);
-
-                for (; tinfo != null; tinfo = tinfo.BaseType)
+                if (tinfo != null)
                 {
-                    var routine = (PhpMethodInfo)tinfo.DeclaredMethods[method];
+                    var method = _item2.ToString(ctx);
+                    var routine = (PhpMethodInfo)tinfo.RuntimeMethods[method];
                     if (routine != null)
                     {
-                        return routine.PhpInvokable.Bind(_item1.IsObject ? _item1.Object : null);
+                        return routine.PhpInvokable.Bind(target);
+                    }
+                    else
+                    {
+                        // __call
+                        // __callStatic
+                        routine = (PhpMethodInfo)tinfo.RuntimeMethods[(target != null)
+                            ? TypeMethods.MagicMethods.__call
+                            : TypeMethods.MagicMethods.__callstatic];
+
+                        if (routine != null)
+                        {
+                            return routine.PhpInvokable.BindMagicCall(target, method);
+                        }
                     }
                 }
 
@@ -301,5 +323,11 @@ namespace Pchp.Core
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> by fixing the target argument.
         /// </summary>
         internal static PhpCallable Bind(this PhpInvokable invokable, object target) => (ctx, arguments) => invokable(ctx, target, arguments);
+
+        /// <summary>
+        /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> while wrapping arguments to a single argument of type <see cref="PhpArray"/>.
+        /// </summary>
+        internal static PhpCallable BindMagicCall(this PhpInvokable invokable, object target, string name)
+            => (ctx, arguments) => invokable(ctx, target, new[] { (PhpValue)name, (PhpValue)PhpArray.New(arguments) });
     }
 }

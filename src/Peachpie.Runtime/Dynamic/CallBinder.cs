@@ -50,31 +50,76 @@ namespace Pchp.Core.Dynamic
         }
 
         /// <summary>
-        /// Gets value indicating whether the function has a target (instance or type). Otherwise <c>target</c> is actually a context.
+        /// Gets value indicating whether the function has a target (instance or type).
         /// </summary>
         public abstract bool HasTarget { get; }
+
+        /// <summary>
+        /// Resolves indirect function name.
+        /// </summary>
+        protected abstract DynamicMetaObject PopNameExpression(/*in, out*/IList<DynamicMetaObject> args, ref BindingRestrictions restrictions);
+
+        protected virtual PhpTypeInfo PopTypeInfoOrNull(/*in, out*/IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Gets known functio name.
+        /// </summary>
+        protected abstract string NameValue { get; }
 
         /// <summary>
         /// Resolves methods to be called.
         /// </summary>
         /// <param name="ctx">Actual context.</param>
+        /// <param name="tinfo">Type as resolved by <see cref="PopTypeInfoOrNull"/>.</param>
+        /// <param name="nameExpr">Name as resolved by <see cref="PopNameExpression"/>.</param>
         /// <param name="target">Target expression.</param>
         /// <param name="args">Argument expressions.
         /// If some arguments are special and used to resolve methods, they shall be removed from the list.
         /// Remaining arguments are used as actual method call arguments.</param>
         /// <param name="restrictions">Binding restictions.</param>
         /// <returns>Array of methods.</returns>
-        protected abstract MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, /*in, out*/IList<DynamicMetaObject> args, ref BindingRestrictions restrictions);
+        protected abstract MethodBase[] ResolveMethods(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameExpr, ref DynamicMetaObject target, /*in, out*/IList<DynamicMetaObject> args, ref BindingRestrictions restrictions);
 
-        protected virtual Expression BindMissingMethod(DynamicMetaObject ctx, DynamicMetaObject target, /*in, out*/IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        protected virtual Expression BindMissingMethod(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameExpr, DynamicMetaObject target, /*in, out*/IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
+            string nameText = NameValue;
+
+            if (nameText == null)
+            {
+                if (nameExpr != null)
+                {
+                    nameText = nameExpr.Value.ToString();
+                }
+                else
+                {
+                    nameText = "<unknown>";
+                }
+            }
+
             // TODO: ErrCode method not found
-            throw new ArgumentException("Function not found!");
+            throw new ArgumentException(string.Format("Function '{0}' not found!", nameText));
         }
 
         protected void Combine(ref BindingRestrictions restrictions, BindingRestrictions restriction)
         {
             restrictions = restrictions.Merge(restriction);
+        }
+
+        DynamicMetaObject PopTargetOrNull(/*in, out*/IList<DynamicMetaObject> args)
+        {
+            DynamicMetaObject target = null;
+
+            if (HasTarget)
+            {
+                Debug.Assert(args.Count != 0);
+                target = args[0];
+                args.RemoveAt(0);
+            }
+
+            return target;
         }
 
         #region DynamicMetaObjectBinder
@@ -84,33 +129,29 @@ namespace Pchp.Core.Dynamic
             var restrictions = BindingRestrictions.Empty;
             var argsList = new List<DynamicMetaObject>(args);
 
-            // get target and context
+            // ctx, [Target], [TypeName], [RoutineName], [args...]
+            Debug.Assert(target?.Value is Context);
 
-            DynamicMetaObject ctx;
-
-            if (HasTarget)
-            {
-                ctx = args[0];
-                argsList.RemoveAt(0);
-            }
-            else
-            {
-                ctx = target;
-                target = null;
-            }
+            var ctx = target;
+            target = PopTargetOrNull(argsList);
+            var tinfo = PopTypeInfoOrNull(argsList, ref restrictions);
+            var nameExpr = PopNameExpression(argsList, ref restrictions);
 
             //
             Expression invocation;
 
-            var methods = ResolveMethods(ctx, ref target, argsList, ref restrictions);
+            //
+            var methods = ResolveMethods(ctx, tinfo, nameExpr, ref target, argsList, ref restrictions);
             if (methods != null && methods.Length != 0)
             {
+                // TODO: visibility
+
                 var expr_args = argsList.Select(x => x.Expression).ToArray();
                 invocation = OverloadBinder.BindOverloadCall(_returnType, target?.Expression, methods, ctx.Expression, expr_args);
             }
             else
             {
-                invocation = BindMissingMethod(ctx, target, argsList, ref restrictions);
+                invocation = BindMissingMethod(ctx, tinfo, nameExpr, target, argsList, ref restrictions);
             }
 
             // TODO: by alias or by value
@@ -139,24 +180,92 @@ namespace Pchp.Core.Dynamic
             _nameOpt = nameOpt;
         }
 
-        protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        protected override string NameValue => _name;
+
+        protected override DynamicMetaObject PopNameExpression(IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            if (_name == null)
+            {
+                // dynamic name, first args[0]
+                Debug.Assert(args.Count >= 1);
+                var nameExpr = args[0];
+                args.RemoveAt(0);
+
+                // dereference expression to a callable
+                return ResolveNameExpression(nameExpr, ref restrictions);
+            }
+
+            return null;
+        }
+
+        DynamicMetaObject ResolveNameExpression(DynamicMetaObject nameExpr, ref BindingRestrictions restrictions)
+        {
+            var nameObj = nameExpr.Value;
+            if (nameObj == null)
+            {
+                Combine(ref restrictions, BindingRestrictions.GetInstanceRestriction(nameExpr.Expression, Expression.Constant(null)));
+                // TODO: Err invalid callback
+                return null;
+            }
+
+            // see PhpCallback for options:
+
+            Combine(ref restrictions, BindingRestrictions.GetTypeRestriction(nameExpr.Expression, nameExpr.RuntimeType));
+
+            // string
+            if (nameObj is string)
+            {
+                // restriction: nameExpr == "name"  // TODO: ignore case
+                Combine(ref restrictions, BindingRestrictions.GetExpressionRestriction(Expression.Equal(nameExpr.Expression, Expression.Constant((string)nameObj))));
+                return nameExpr;
+            }
+
+            // array[2]
+
+            // object with __invoke
+
+            // IPhpCallable
+
+            // delegate
+
+            // PhpString
+
+            // PhpValue
+            if (nameObj is PhpValue)
+            {
+                var value = (PhpValue)nameObj;
+                if (value.Object != null)
+                {
+                    // ((PhpValue)name).Object
+                    return ResolveNameExpression(
+                        new DynamicMetaObject(
+                            Expression.Property(Expression.Convert(nameExpr.Expression, typeof(PhpValue)), "Object"),
+                            BindingRestrictions.Empty,
+                            value.Object),
+                        ref restrictions);
+                }
+            }
+
+            // PhpAlias
+
+            throw new NotImplementedException(nameObj.GetType().ToString());
+        }
+        
+        protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameExpr, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
             Debug.Assert(ctx != null);
             Debug.Assert(target == null);
             Debug.Assert(args != null);
 
-            if (_name != null)
+            object name = _name ?? nameExpr?.Value;
+
+            if (name is string)
             {
-                return ResolveMethods(ctx, ref target, _name, _nameOpt, ref restrictions);
+                return ResolveMethods(ctx, ref target, (string)name, _nameOpt, ref restrictions);
             }
             else
             {
-                // dynamic name, first args[0]
-                Debug.Assert(args.Count >= 1);
-                var nameObj = args[0];
-                args.RemoveAt(0);
-
-                return ResolveMethods(ctx, ref target, nameObj.Expression, nameObj.Value, ref restrictions);
+                throw new NotImplementedException();
             }
         }
 
@@ -197,54 +306,6 @@ namespace Pchp.Core.Dynamic
             //
             return routine.Methods;
         }
-
-        MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, Expression nameExpr, object nameObj, ref BindingRestrictions restrictions)
-        {
-            if (nameObj == null)
-            {
-                Combine(ref restrictions, BindingRestrictions.GetInstanceRestriction(nameExpr, Expression.Constant(null)));
-                // TODO: Err invalid callback
-                return null;
-            }
-
-            // see PhpCallback for options:
-
-            Combine(ref restrictions, BindingRestrictions.GetTypeRestriction(nameExpr, nameObj.GetType()));
-
-            // string
-            if (nameObj is string)
-            {
-                // restriction: nameExpr == "name"
-                Combine(ref restrictions, BindingRestrictions.GetExpressionRestriction(Expression.Equal(nameExpr, Expression.Constant((string)nameObj))));   // TODO: ignore case
-                return ResolveMethods(ctx, ref target, (string)nameObj, null, ref restrictions);
-            }
-
-            // array[2]
-
-            // object with __invoke
-
-            // IPhpCallable
-
-            // delegate
-
-            // PhpString
-
-            // PhpValue
-            if (nameObj is PhpValue)
-            {
-                var value = (PhpValue)nameObj;
-                if (value.Object != null)
-                {
-                    // ((PhpValue)name).Object
-                    var nameObjectExpr = Expression.Property(Expression.Convert(nameExpr, typeof(PhpValue)), "Object");
-                    return ResolveMethods(ctx, ref target, nameObjectExpr, value.Object, ref restrictions);
-                }
-            }
-
-            // PhpAlias
-
-            throw new NotImplementedException(nameObj.GetType().ToString());
-        }
     }
 
     #endregion
@@ -268,7 +329,29 @@ namespace Pchp.Core.Dynamic
             _classCtx = classContext.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(classContext);
         }
 
-        protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        protected override string NameValue => _name;
+
+        protected override DynamicMetaObject PopNameExpression(IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            if (_name == null)
+            {
+                // indirect function name
+
+                Debug.Assert(args.Count >= 1 && args[0].LimitType == typeof(string));
+                Debug.Assert(args[0].Value is string);
+
+                var nameExpr = args[0];
+                args.RemoveAt(0);
+
+                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(nameExpr.Expression, Expression.Constant(nameExpr.Value)))); // args[0] == "VALUE"
+
+                return nameExpr;
+            }
+
+            return null;
+        }
+
+        protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameExpr, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
             if (target.Value == null)
             {
@@ -291,36 +374,23 @@ namespace Pchp.Core.Dynamic
 
             target = new DynamicMetaObject(target_expr, target.Restrictions, target_value);
 
-            string name = _name;
-
-            if (_name == null)
-            {
-                // indirect function name
-
-                Debug.Assert(args.Count >= 1 && args[0].LimitType == typeof(string));
-                Debug.Assert(args[0].Value is string);
-
-                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[0].Expression, Expression.Constant(args[0].Value)))); // args[0] == "VALUE"
-
-                name = (string)args[0].Value;
-                args.RemoveAt(0);
-            }
+            string name = _name ?? (string)nameExpr.Value;
 
             // candidates:
-            var candidates = target.RuntimeType.SelectCandidates().SelectByName(name).SelectVisible(_classCtx).ToList();
+            var candidates = target.RuntimeType.GetPhpTypeInfo().SelectRuntimeMethods(name).SelectVisible(_classCtx).ToList();
             return candidates.ToArray();
         }
 
-        protected override Expression BindMissingMethod(DynamicMetaObject ctx, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        protected override Expression BindMissingMethod(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameMeta, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
-            var tinfo = target.RuntimeType.GetPhpTypeInfo();
+            Debug.Assert(target?.Value != null);
+
+            tinfo = target.RuntimeType.GetPhpTypeInfo();
+
             var call = BinderHelpers.FindMagicMethod(tinfo, TypeMethods.MagicMethods.__call);
             if (call != null)
             {
-                if (_name == null)
-                {
-                    throw new NotImplementedException();
-                }
+                var name_expr = (_name != null) ? Expression.Constant(_name) : nameMeta?.Expression;
 
                 // target.__call(name, array)
                 var call_args = new Expression[]
@@ -331,7 +401,7 @@ namespace Pchp.Core.Dynamic
                 return OverloadBinder.BindOverloadCall(_returnType, target.Expression, call.Methods, ctx.Expression, call_args);
             }
 
-            return base.BindMissingMethod(ctx, target, args, ref restrictions);
+            return base.BindMissingMethod(ctx, tinfo, nameMeta, target, args, ref restrictions);
         }
     }
 
@@ -348,7 +418,9 @@ namespace Pchp.Core.Dynamic
         readonly string _name;
         readonly Type _classCtx;
 
-        public override bool HasTarget => _type == null;    // target is a type name in case it is known in compile time
+        public override bool HasTarget => true; // there is caller instance or null as a target
+
+        protected override string NameValue => _name;
 
         internal CallStaticMethodBinder(RuntimeTypeHandle type, string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int genericParams)
             : base(returnType, genericParams)
@@ -358,28 +430,61 @@ namespace Pchp.Core.Dynamic
             _classCtx = classContext.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(classContext);
         }
 
-        Type ResolveType(Context ctx, Expression target)
+        protected override PhpTypeInfo PopTypeInfoOrNull(IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
-            Debug.Assert(ctx != null);
-            Debug.Assert(target == null || target.Type == typeof(PhpTypeInfo));
-
             var t = _type;
             if (t == null)
             {
-                throw new NotImplementedException();
+                Debug.Assert(args.Count >= 1);
+                Debug.Assert(args[0].LimitType == typeof(PhpTypeInfo));
+
+                var tExpr = args[0];
+                args.RemoveAt(0);
+
+                restrictions = restrictions.Merge(BindingRestrictions.GetInstanceRestriction(tExpr.Expression, tExpr.Value)); // args[0] == PhpTypeInfo
+
+                return (PhpTypeInfo)tExpr.Value;
             }
 
-            return t;
+            return t.GetPhpTypeInfo();
         }
 
-        protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        protected override DynamicMetaObject PopNameExpression(IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
-            var t = ResolveType((Context)ctx.Value, target?.Expression);
+            if (_name == null)
+            {
+                // args[0]
 
-            if (_name != null)
+                // indirect function name
+
+                Debug.Assert(args.Count >= 1 && args[0].LimitType == typeof(string));
+                Debug.Assert(args[0].Value is string);
+
+                var nameExpr = args[0];
+                args.RemoveAt(0);
+
+                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(nameExpr.Expression, Expression.Constant(nameExpr.Value)))); // args[0] == "VALUE"
+
+                return nameExpr;
+            }
+
+            return null;
+        }
+
+        protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameExpr, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        {
+            // check tinfo is assignable from target
+            if (target?.Value == null || !tinfo.Type.GetTypeInfo().IsAssignableFrom(target.LimitType))
+            {
+                target = null;
+            }
+
+            //
+            var nameStr = _name ?? (string)nameExpr.Value;
+            if (nameStr != null)
             {
                 // candidates:
-                var candidates = t.SelectCandidates().SelectByName(_name).SelectVisible(_classCtx).SelectStatic().ToList();
+                var candidates = tinfo.SelectRuntimeMethods(nameStr).SelectVisible(_classCtx).SelectStatic().ToList();
                 return candidates.ToArray();
             }
             else
@@ -388,28 +493,24 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        protected override Expression BindMissingMethod(DynamicMetaObject ctx, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
+        protected override Expression BindMissingMethod(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameMeta, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
-            var tinfo = ResolveType((Context)ctx.Value, target?.Expression).GetPhpTypeInfo();
-            var call = BinderHelpers.FindMagicMethod(tinfo, TypeMethods.MagicMethods.__callstatic);
+            var call = BinderHelpers.FindMagicMethod(tinfo, target == null ? TypeMethods.MagicMethods.__callstatic : TypeMethods.MagicMethods.__call);
             if (call != null)
             {
-                if (_name == null)
-                {
-                    throw new NotImplementedException();
-                }
-
+                var name_expr = (_name != null) ? Expression.Constant(_name) : nameMeta?.Expression;
+                
                 // T.__callStatic(name, array)
                 var call_args = new Expression[]
                 {
-                    Expression.Constant(_name),
+                    name_expr,
                     BinderHelpers.NewPhpArray(ctx.Expression, args.Select(a => a.Expression)),
                 };
-                return OverloadBinder.BindOverloadCall(_returnType, null, call.Methods, ctx.Expression, call_args);
+                return OverloadBinder.BindOverloadCall(_returnType, target?.Expression, call.Methods, ctx.Expression, call_args);
             }
 
             //
-            return base.BindMissingMethod(ctx, target, args, ref restrictions);
+            return base.BindMissingMethod(ctx, tinfo, nameMeta, target, args, ref restrictions);
         }
     }
 
