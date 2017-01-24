@@ -103,14 +103,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override IList<Statement> Statements => _file.Syntax.Statements;
+        internal override IList<Statement> Statements => _file.SyntaxTree.Source.Ast.Statements;
 
-        internal override AstNode Syntax => _file.Syntax;
+        internal override AstNode Syntax => _file.SyntaxTree.Source.Ast;
 
         internal override PHPDocBlock PHPDocBlock => null;
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_file.Syntax.ContainingSourceUnit, null);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_file.SyntaxTree.Source, null);
     }
 }
