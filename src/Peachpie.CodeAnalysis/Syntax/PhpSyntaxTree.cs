@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis
     {
         readonly SourceUnit _source;
 
-        internal PhpSyntaxTree(SourceUnit source)
+        private PhpSyntaxTree(SourceUnit source)
         {
             Contract.ThrowIfNull(source);
 

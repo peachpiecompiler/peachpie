@@ -295,7 +295,7 @@ namespace Pchp.CodeAnalysis
         public override ImmutableArray<Diagnostic> GetParseDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
             //return GetDiagnostics(CompilationStage.Parse, false, cancellationToken);
-            return ImmutableArray<Diagnostic>.Empty;
+            return _tables.GetFiles().SelectMany(file => file.SyntaxTree.Diagnostics).ToImmutableArray();
         }
 
         public override IEnumerable<ISymbol> GetSymbolsWithName(Func<string, bool> predicate, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))
