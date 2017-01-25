@@ -350,7 +350,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return builder.ToImmutableAndFree();
         //}
 
-        public sealed override ImmutableArray<Symbol> GetMembers(string name)
+        public sealed override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
             if (_unbound) return StaticCast<Symbol>.From(GetTypeMembers(name));
 
@@ -361,12 +361,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 return result;
             }
 
-            return GetMembersWorker(name);
+            return GetMembersWorker(name, ignoreCase);
         }
 
-        private ImmutableArray<Symbol> GetMembersWorker(string name)
+        private ImmutableArray<Symbol> GetMembersWorker(string name, bool ignoreCase)
         {
-            var originalMembers = _originalDefinition.GetMembers(name);
+            var originalMembers = _originalDefinition.GetMembers(name, ignoreCase);
             if (originalMembers.IsDefaultOrEmpty)
             {
                 return originalMembers;

@@ -8,6 +8,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Pchp.Library.Resources;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -60,46 +62,40 @@ namespace Pchp.Library
             return unchecked((char)charCode).ToString();
         }
 
-        ///// <summary>
-        ///// Converts a string of bytes into hexadecimal representation.
-        ///// </summary>
-        ///// <param name="bytes">The string of bytes.</param>
-        ///// <returns>Concatenation of hexadecimal values of bytes of <paramref name="bytes"/>.</returns>
-        ///// <example>
-        ///// The string "01A" is converted into string "303140" because ord('0') = 0x30, ord('1') = 0x31, ord('A') = 0x40.
-        ///// </example>
-        //public static string bin2hex(PhpString bytes)
-        //{
-        //    return (bytes == null) ? String.Empty : StringUtils.BinToHex(bytes.ReadonlyData, null);
-        //}
-
         /// <summary>
         /// Converts a string into hexadecimal representation.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="str">The string to be converted.</param>
         /// <returns>
-        /// The concatenated four-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
+        /// The concatenated two-characters long hexadecimal numbers each representing one character of <paramref name="str"/>.
         /// </returns>
-        public static string bin2hex(string str)
+        public static string bin2hex(Context ctx, PhpString str)
         {
-            if (str == null) return null;
-
-            int length = str.Length;
-            StringBuilder result = new StringBuilder(length * 4, length * 4);
-            result.Length = length * 4;
-
-            const string hex_digs = "0123456789abcdef";
-
-            for (int i = 0; i < length; i++)
+            if (str == null || str.IsEmpty)
             {
-                int c = (int)str[i];
-                result[4 * i + 0] = hex_digs[(c & 0xf000) >> 12];
-                result[4 * i + 1] = hex_digs[(c & 0x0f00) >> 8];
-                result[4 * i + 2] = hex_digs[(c & 0x00f0) >> 4];
-                result[4 * i + 3] = hex_digs[(c & 0x000f)];
+                return string.Empty;
             }
 
-            return result.ToString();
+            // UTF16 version:
+            //int length = str.Length;
+            //StringBuilder result = new StringBuilder(length * 4, length * 4);
+            //result.Length = length * 4;
+
+            //const string hex_digs = "0123456789abcdef";
+
+            //for (int i = 0; i < length; i++)
+            //{
+            //    int c = (int)str[i];
+            //    result[4 * i + 0] = hex_digs[(c & 0xf000) >> 12];
+            //    result[4 * i + 1] = hex_digs[(c & 0x0f00) >> 8];
+            //    result[4 * i + 2] = hex_digs[(c & 0x00f0) >> 4];
+            //    result[4 * i + 3] = hex_digs[(c & 0x000f)];
+            //}
+
+            //return result.ToString();
+
+            return StringUtils.BinToHex(str.ToBytes(ctx), null);
         }
 
         #endregion
@@ -121,132 +117,65 @@ namespace Pchp.Library
             Array.Reverse(chars);
             return new string(chars);
         }
+        
+        /// <summary>
+        /// Finds a length of a segment consisting entirely of specified characters.
+        /// </summary>
+        /// <param name="str">The string to be searched in.</param>
+        /// <param name="acceptedChars">Accepted characters.</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <returns>
+        /// The length of the substring consisting entirely of characters in <paramref name="acceptedChars"/> or 
+        /// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
+        /// (see <see cref="PhpMath.AbsolutizeRange"/> and takes at most absolutized <paramref name="length"/> characters.
+        /// </returns>
+        public static int strspn(string str, string acceptedChars, int offset = 0, int length = int.MaxValue)
+            => StrSpnInternal(str, acceptedChars, offset, length, false);
 
-        ///// <summary>
-        ///// Finds a length of an initial segment consisting entirely of specified characters.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <returns>
-        ///// The length of the initial segment consisting entirely of characters in <paramref name="acceptedChars"/>
-        ///// or zero if any argument is null.
-        ///// </returns>
-        //[ImplementsFunction("strspn")]
-        //public static int StrSpn(string str, string acceptedChars)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, 0, int.MaxValue, false);
-        //}
+        /// <summary>
+        /// Finds a length of a segment consisting entirely of any characters except for specified ones.
+        /// </summary>
+        /// <param name="str">The string to be searched in.</param>
+        /// <param name="acceptedChars">Accepted characters.</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <returns>
+        /// The length of the substring consisting entirely of characters not in <paramref name="acceptedChars"/> or 
+        /// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
+        /// (see <see cref="PhpMath.AbsolutizeRange"/> and takes at most absolutized <paramref name="length"/> characters.
+        /// </returns>
+        public static int strcspn(string str, string acceptedChars, int offset = 0, int length = int.MaxValue)
+            => StrSpnInternal(str, acceptedChars, offset, length, true);
 
-        ///// <summary>
-        ///// Finds a length of a segment consisting entirely of specified characters.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <param name="offset">The relativized offset of the first item of the slice.</param>
-        ///// <returns>
-        ///// The length of the substring consisting entirely of characters in <paramref name="acceptedChars"/> or 
-        ///// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
-        ///// (see <see cref="PhpMath.AbsolutizeRange"/> where <c>length</c> is infinity).
-        ///// </returns>
-        //[ImplementsFunction("strspn")]
-        //public static int StrSpn(string str, string acceptedChars, int offset)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, offset, int.MaxValue, false);
-        //}
+        /// <summary>
+        /// Internal version of <see cref="strspn"/> (complement off) and <see cref="strcspn"/> (complement on).
+        /// </summary>
+        static int StrSpnInternal(string str, string acceptedChars, int offset, int length, bool complement)
+        {
+            if (str == null || acceptedChars == null)
+            {
+                return 0;
+            }
 
-        ///// <summary>
-        ///// Finds a length of a segment consisting entirely of specified characters.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <param name="offset">The relativized offset of the first item of the slice.</param>
-        ///// <param name="length">The relativized length of the slice.</param>
-        ///// <returns>
-        ///// The length of the substring consisting entirely of characters in <paramref name="acceptedChars"/> or 
-        ///// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
-        ///// (see <see cref="PhpMath.AbsolutizeRange"/> and takes at most absolutized <paramref name="length"/> characters.
-        ///// </returns>
-        //[ImplementsFunction("strspn")]
-        //public static int StrSpn(string str, string acceptedChars, int offset, int length)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, offset, length, false);
-        //}
+            PhpMath.AbsolutizeRange(ref offset, ref length, str.Length);
 
-        ///// <summary>
-        ///// Finds a length of an initial segment consisting entirely of any characters excpept for specified ones.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <returns>
-        ///// The length of the initial segment consisting entirely of characters not in <paramref name="acceptedChars"/>
-        ///// or zero if any argument is null.
-        ///// </returns>
-        //[ImplementsFunction("strcspn")]
-        //public static int StrCSpn(string str, string acceptedChars)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, 0, int.MaxValue, true);
-        //}
+            char[] chars = acceptedChars.ToCharArray();
+            Array.Sort(chars);
 
-        ///// <summary>
-        ///// Finds a length of a segment consisting entirely of any characters excpept for specified ones.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <param name="offset">The relativized offset of the first item of the slice.</param>
-        ///// <returns>
-        ///// The length of the substring consisting entirely of characters not in <paramref name="acceptedChars"/> or 
-        ///// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
-        ///// (see <see cref="PhpMath.AbsolutizeRange"/> where <c>length</c> is infinity).
-        ///// </returns>
-        //[ImplementsFunction("strcspn")]
-        //public static int StrCSpn(string str, string acceptedChars, int offset)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, offset, int.MaxValue, true);
-        //}
+            int j = offset;
 
-        ///// <summary>
-        ///// Finds a length of a segment consisting entirely of any characters except for specified ones.
-        ///// </summary>
-        ///// <param name="str">The string to be searched in.</param>
-        ///// <param name="acceptedChars">Accepted characters.</param>
-        ///// <param name="offset">The relativized offset of the first item of the slice.</param>
-        ///// <param name="length">The relativized length of the slice.</param>
-        ///// <returns>
-        ///// The length of the substring consisting entirely of characters not in <paramref name="acceptedChars"/> or 
-        ///// zero if any argument is null. Search starts from absolutized <paramref name="offset"/>
-        ///// (see <see cref="PhpMath.AbsolutizeRange"/> and takes at most absolutized <paramref name="length"/> characters.
-        ///// </returns>
-        //[ImplementsFunction("strcspn")]
-        //public static int StrCSpn(string str, string acceptedChars, int offset, int length)
-        //{
-        //    return StrSpnInternal(str, acceptedChars, offset, length, true);
-        //}
+            if (complement)
+            {
+                while (length > 0 && ArrayUtils.BinarySearch(chars, str[j]) < 0) { j++; length--; }
+            }
+            else
+            {
+                while (length > 0 && ArrayUtils.BinarySearch(chars, str[j]) >= 0) { j++; length--; }
+            }
 
-        ///// <summary>
-        ///// Internal version of <see cref="StrSpn"/> (complement off) and <see cref="StrCSpn"/> (complement on).
-        ///// </summary>
-        //internal static int StrSpnInternal(string str, string acceptedChars, int offset, int length, bool complement)
-        //{
-        //    if (str == null || acceptedChars == null) return 0;
-
-        //    PhpMath.AbsolutizeRange(ref offset, ref length, str.Length);
-
-        //    char[] chars = acceptedChars.ToCharArray();
-        //    Array.Sort(chars);
-
-        //    int j = offset;
-
-        //    if (complement)
-        //    {
-        //        while (length > 0 && ArrayUtils.BinarySearch(chars, str[j]) < 0) { j++; length--; }
-        //    }
-        //    else
-        //    {
-        //        while (length > 0 && ArrayUtils.BinarySearch(chars, str[j]) >= 0) { j++; length--; }
-        //    }
-
-        //    return j - offset;
-        //}
+            return j - offset;
+        }
 
         #endregion
 
@@ -727,11 +656,10 @@ namespace Pchp.Library
 
         private static bool SubstringCountInternalCheck(string needle)
         {
-            if (String.IsNullOrEmpty(needle))
+            if (string.IsNullOrEmpty(needle))
             {
-                //PhpException.InvalidArgument("needle", LibResources.GetString("arg:null_or_empty"));
-                //return false;
-                throw new ArgumentException();
+                PhpException.InvalidArgument(nameof(needle), Resources.LibResources.arg_null_or_empty);
+                return false;
             }
 
             return true;
@@ -740,15 +668,13 @@ namespace Pchp.Library
         {
             if (offset < 0)
             {
-                //PhpException.InvalidArgument("offset", LibResources.GetString("substr_count_offset_zero"));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, LibResources.substr_count_offset_zero);
+                return false;
             }
             if (offset > haystack.Length)
             {
-                //PhpException.InvalidArgument("offset", LibResources.GetString("substr_count_offset_exceeds", offset));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, string.Format(LibResources.substr_count_offset_exceeds, offset));
+                return false;
             }
 
             return true;
@@ -756,19 +682,19 @@ namespace Pchp.Library
         private static bool SubstringCountInternalCheck(string haystack, int offset, int length)
         {
             if (!SubstringCountInternalCheck(haystack, offset))
+            {
                 return false;
+            }
 
             if (length == 0)
             {
-                //PhpException.InvalidArgument("length", LibResources.GetString("substr_count_zero_length"));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, LibResources.substr_count_zero_length);
+                return false;
             }
             if (offset + length > haystack.Length)
             {
-                //PhpException.InvalidArgument("length", LibResources.GetString("substr_count_length_exceeds", length));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, string.Format(LibResources.substr_count_length_exceeds, length));
+                return false;
             }
 
             return true;
@@ -833,7 +759,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int substr_count(string haystack, string needle, int offset, int length)
         {
-            if (String.IsNullOrEmpty(haystack)) return 0;
+            if (string.IsNullOrEmpty(haystack)) return 0;
             if (!SubstringCountInternalCheck(needle)) return -1;
             if (!SubstringCountInternalCheck(haystack, offset, length)) return -1;
 
@@ -869,26 +795,15 @@ namespace Pchp.Library
         /// </remarks>
         public static PhpValue substr_replace(Context ctx, PhpValue subject, PhpValue replacement, PhpValue offset, PhpValue length)
         {
-            IList<PhpValue> subject_list, replacement_list, offset_list, length_list;
-            string[] replacements = null, subjects = null;
+            IList<PhpValue> replacement_list, offset_list, length_list;
+            PhpArray subject_array;
+            string[] replacements = null;
             int[] offsets = null, lengths = null;
             int int_offset = 0, int_length = 0;
             string str_replacement = null;
 
             // prepares string array of subjects:
-            if ((subject_list = subject.Object as IList<PhpValue>) != null)
-            {
-                subjects = new string[subject_list.Count];
-                int i = 0;
-                foreach (var item in subject_list)
-                {
-                    subjects[i++] = item.ToString(ctx);
-                }
-            }
-            else
-            {
-                subjects = new string[] { subject.ToString(ctx) };
-            }
+            subject_array = subject.ArrayOrNull(); // otherwise subject is string
 
             // prepares string array of replacements:
             if ((replacement_list = replacement.Object as IList<PhpValue>) != null)
@@ -935,19 +850,40 @@ namespace Pchp.Library
                 int_length = (int)length.ToLong();
             }
 
-            for (int i = 0; i < subjects.Length; i++)
+            //
+            //
+
+            if (subject_array != null)
             {
-                if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
-                if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subjects[i].Length;
-                if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
+                var result_array = new PhpArray(subject_array.Count);
 
-                subjects[i] = SubstringReplace(subjects[i], str_replacement, int_offset, int_length);
+                using (var subjects = subject_array.GetFastEnumerator())
+                {
+                    int i = 0;
+                    while (subjects.MoveNext())
+                    {
+                        var subject_string = subjects.CurrentValue.ToStringOrThrow(ctx);
+
+                        if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
+                        if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subject_string.Length;
+                        if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
+
+                        result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length));
+                    }
+                }
+
+                return (PhpValue)result_array;
             }
-
-            if (subject_list != null)
-                return PhpValue.Create(new PhpArray(subjects));
             else
-                return PhpValue.Create(subjects[0]);
+            {
+                var subject_string = subject.ToStringOrThrow(ctx);
+
+                if (offset_list != null) int_offset = offsets.Length != 0 ? offsets[0] : 0;
+                if (length_list != null) int_length = lengths.Length != 0 ? lengths[0] : subject_string.Length;
+                if (replacement_list != null) str_replacement = replacements.Length != 0 ? replacements[0] : string.Empty;
+
+                return (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length);
+            }
         }
 
         /// <summary>
@@ -1003,7 +939,7 @@ namespace Pchp.Library
             var enumerator = subject.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
-                result.AddValue(PhpValue.Create(str_replace(ctx, search, replace, enumerator.CurrentValue.ToStringOrThrow(ctx), ref count, compareType)));
+                result.SetItemValue(enumerator.CurrentKey, PhpValue.Create(str_replace(ctx, search, replace, enumerator.CurrentValue.ToStringOrThrow(ctx), ref count, compareType)));
             }
 
             return result;
@@ -1031,7 +967,7 @@ namespace Pchp.Library
                 if (replaceArr != null)
                 {
                     // array -> array
-                    var replaceEnum = replaceArr.GetFastEnumerator();
+                    var replaceEnum = replaceArr.GetFastEnumerator().WithStop();
                     while (searchEnum.MoveNext())
                     {
                         var searchStr = searchEnum.CurrentValue.ToStringOrThrow(ctx);
@@ -3338,7 +3274,7 @@ namespace Pchp.Library
                                     break;
 
                                 case 'C': // treat as integer, present as Unicode character
-                                    app = new String(unchecked((char)obj.ToLong()), 1);
+                                    app = new string(unchecked((char)obj.ToLong()), 1);
                                     break;
 
                                 case 'd': // treat as integer, present as signed decimal number
@@ -3360,8 +3296,8 @@ namespace Pchp.Library
                                         double dvalue = obj.ToDouble();
                                         if (dvalue < 0) sign = '-'; else if (dvalue >= 0 && plusSign) sign = '+';
 
-                                        string f = String.Concat("0.", new String('0', precision == -1 ? printfFloatPrecision : precision), "e+0");
-                                        app = Math.Abs(dvalue).ToString(f);
+                                        string f = string.Concat("0.", new string('0', precision == -1 ? printfFloatPrecision : precision), "e+0");
+                                        app = Math.Abs(dvalue).ToString(f, ctx.NumberFormat);
                                         break;
                                     }
 
@@ -3370,7 +3306,7 @@ namespace Pchp.Library
                                         double dvalue = obj.ToDouble();
                                         if (dvalue < 0) sign = '-'; else if (dvalue >= 0 && plusSign) sign = '+';
 
-                                        app = Math.Abs(dvalue).ToString("F" + (precision == -1 ? printfFloatPrecision : precision));
+                                        app = Math.Abs(dvalue).ToString("F" + (precision == -1 ? printfFloatPrecision : precision), ctx.NumberFormat);
                                         break;
                                     }
 

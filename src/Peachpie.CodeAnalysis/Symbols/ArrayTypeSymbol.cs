@@ -250,7 +250,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return ImmutableArray<Symbol>.Empty;
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
             return ImmutableArray<Symbol>.Empty;
         }

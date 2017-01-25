@@ -57,7 +57,7 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
             throw new NotImplementedException();
         }
@@ -121,7 +121,7 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
             throw new NotImplementedException();
         }

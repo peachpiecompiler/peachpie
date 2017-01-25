@@ -435,6 +435,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (x.Access.IsWrite)
                 {
                     State.SetAllInitialized();
+                    State.SetAllAnyType(x.Access.IsWriteRef);
                 }
 
                 if (x.Access.IsUnset)
@@ -1261,7 +1262,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         if (x.FieldName.IsDirect)
                         {
                             // TODO: visibility and resolution (model)
-                            var member = t.ResolveInstanceProperty(x.FieldName.NameValue.Value);
+                            var fldname = x.FieldName.NameValue.Value;
+                            var member = t.ResolveInstanceProperty(fldname) ?? t.ResolveStaticField(fldname);
                             if (member != null)
                             {
                                 Debug.Assert(member is FieldSymbol || member is PropertySymbol);
@@ -1333,9 +1335,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                         else
                         {
-                            x.BoundReference = field.IsStatic
-                                ? new BoundFieldPlace(null, field, x)        // the field is real .NET static member (CLR static fields)
-                                : new BoundPhpStaticFieldPlace(field, x);    // the field is contained in special __statics container (fields & constants)
+                            // real.NET static member (CLR static fields) or
+                            // the field may be contained in special __statics container (fields & constants)
+                            x.BoundReference = new BoundFieldPlace(null, field, x);
                         }
 
                         x.TypeRefMask = field.GetResultType(TypeCtx);

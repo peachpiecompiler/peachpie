@@ -9,6 +9,7 @@ using Roslyn.Utilities;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Utilities;
 using Devsense.PHP.Syntax.Ast;
+using Pchp.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -183,7 +184,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return builder.ToImmutable();
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name) => GetMembers().Where(x => x.Name == name).ToImmutableArray();
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false) => GetMembers().Where(x => x.Name.StringsEqual(name, ignoreCase)).ToImmutableArray();
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 

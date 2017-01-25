@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return StaticCast<Symbol>.From(_types.Flatten());
         }
 
-        public sealed override ImmutableArray<Symbol> GetMembers(string name)
+        public sealed override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
             EnsureAllMembersLoaded();
 

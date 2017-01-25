@@ -18,8 +18,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal virtual IPlace GetContextPlace()
         {
-            Debug.Assert(_params[0] is SpecialParameterSymbol && _params[0].Name == SpecialParameterSymbol.ContextName);
-            return new ParamPlace(_params[0]);  // <ctx>
+            if (_params.Length != 0 && SpecialParameterSymbol.IsContextParameter(_params[0]))
+            {
+                return new ParamPlace(_params[0]);  // <ctx>
+            }
+            else
+            {
+                return null;
+            }
         }
 
         internal virtual IPlace GetThisPlace()
@@ -199,8 +205,37 @@ namespace Pchp.CodeAnalysis.Symbols
                  * }
                  */
 
+                if (string.Equals(overriden.RoutineName, "ToString", StringComparison.OrdinalIgnoreCase) &&
+                    this.ContainingType.GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Tostring.Value, true).OfType<MethodSymbol>().Any())
+                {
+                    /* Exception: __toString() already implements System.Object.ToString(),
+                     * do not create ghost override for ToString then.
+                     */
+                    return;
+                }
+
                 CreateGhostOverload(module, diagnostic, overriden.ReturnType, overriden.Parameters, overriden);
             }
+
+            // empty body for static abstract
+            if (this.ControlFlowGraph == null && this.IsStatic)
+            {
+                SynthesizeEmptyBody(module, diagnostic);
+            }
+        }
+
+        void SynthesizeEmptyBody(PEModuleBuilder module, DiagnosticBag diagnostic)
+        {
+            Debug.Assert(this.ControlFlowGraph == null);
+            Debug.Assert(this.IsAbstract == false);
+
+            module.SetMethodBody(this, MethodGenerator.GenerateMethodBody(module, this, (il) =>
+            {
+                var cg = new CodeGenerator(this, il, module, diagnostic, OptimizationLevel.Release, false);
+
+                // Template: return default(T)
+                cg.EmitRetDefault();
+            }, null, diagnostic, false));
         }
     }
 

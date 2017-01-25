@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using static Devsense.PHP.Syntax.Name;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -47,15 +48,17 @@ namespace Pchp.CodeAnalysis.Symbols
             // __statics.Init
             ((SynthesizedStaticFieldsHolder)this.StaticsContainer)?.EmitCtors(module);
 
-            // IPhpCallable.Invoke
-            EmitInvoke(EnsureInvokeMethod(module), module);
-            EmitToPhpValue(EnsureToPhpValueMethod(module), module);
+            // IPhpCallable { Invoke, ToPhpValue }
+            EmitPhpCallable(module, DiagnosticBag.GetInstance());
 
             // .phpnew
             EmitPhpNew((SynthesizedPhpNewMethodSymbol)InitializeInstanceMethod, module);
 
             // .ctor
             EmitPhpCtor(PhpCtorMethodSymbol, module);
+
+            // System.ToString
+            EmitToString(module);
         }
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
@@ -76,55 +79,114 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        void EmitInvoke(MethodSymbol invoke, Emit.PEModuleBuilder module)
+        void EmitPhpCallable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
-            if (invoke == null)
+            var __invoke = TryGetMagicInvoke();
+            if (__invoke == null || __invoke.OverriddenMethod != null)
             {
                 return;
             }
+
+            //
+            // IPhpCallable.Invoke(Context, PhpVaue[])
+            //
+            var invoke = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
+            {
+                ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("Invoke").Single(),
+            };
+            invoke.SetParameters(
+                new SpecialParameterSymbol(invoke, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
+                new SynthesizedParameterSymbol(invoke, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), 1, RefKind.None, "arguments"));
 
             module.SetMethodBody(invoke, MethodGenerator.GenerateMethodBody(module, invoke, il =>
             {
-                var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new ParamPlace(invoke.Parameters[0]), new ArgPlace(this, 0));
-                //var __invoke = (MethodSymbol)GetMembers(Pchp.Syntax.Name.SpecialMethodNames.Invoke.Value).Single(s => s is MethodSymbol);
+                var cg = new CodeGenerator(il, module, diagnostics, OptimizationLevel.Release, false, this, new ParamPlace(invoke.Parameters[0]), new ArgPlace(this, 0));
 
-                // TODO: call __invoke() directly
+                var argsplace = new ParamPlace(invoke.Parameters[1]);
+                var args_element = ((ArrayTypeSymbol)argsplace.TypeOpt).ElementType;
+                var ps = __invoke.Parameters;
 
-                // context.Call<T>(T, TypeMethods.MagicMethods, params PhpValue[])
-                var call_t = cg.CoreTypes.Context.Symbol.GetMembers("Call")
-                    .OfType<MethodSymbol>()
-                    .Where(s => s.Arity == 1 && s.ParameterCount == 3 && s.Parameters[2].IsParams)
-                    .Single()
-                    .Construct(this);
+                // Template: this.__invoke(args[0], args[1], ...)
 
-                // return context.Call<T>(this, __invoke, args)
-                cg.EmitLoadContext();
                 cg.EmitThis();
-                cg.Builder.EmitIntConstant((int)Core.Reflection.TypeMethods.MagicMethods.__invoke);
-                cg.Builder.EmitLoadArgumentOpcode(2);
-                cg.EmitCall(ILOpCode.Call, call_t);
+
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    var p = ps[i];
+
+                    // LOAD args[i]
+                    // Template: (i < args.Length) ? (T)args[i] : default(T)
+
+                    var lbldefault = new NamedLabel("args_default");
+                    var lblend = new NamedLabel("args_end");
+
+                    cg.Builder.EmitIntConstant(i);  // <i>
+                    argsplace.EmitLoad(cg.Builder); // <args>
+                    cg.EmitArrayLength();           // .Length
+                    cg.Builder.EmitBranch(ILOpCode.Bge, lbldefault);
+
+                    // (T)args[i]
+                    if (p.IsImplicitlyDeclared)
+                    {
+                        throw new NotImplementedException();
+                    }
+                    else if (p.Type == cg.CoreTypes.PhpAlias)
+                    {
+                        // args[i].EnsureAlias()
+                        argsplace.EmitLoad(cg.Builder); // <args>
+                        cg.Builder.EmitIntConstant(i);  // <i>
+                        cg.Builder.EmitOpCode(ILOpCode.Ldelema);    // ref args[i]
+                        cg.EmitSymbolToken(args_element, null);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias);
+                    }
+                    else
+                    {
+                        // (T)args[i]
+                        argsplace.EmitLoad(cg.Builder); // <args>
+                        cg.Builder.EmitIntConstant(i);  // <i>
+                        cg.Builder.EmitOpCode(ILOpCode.Ldelem); // args[i]
+                        cg.EmitSymbolToken(args_element, null);
+                        cg.EmitConvert(args_element, 0, p.Type);
+                    }
+
+                    cg.Builder.EmitBranch(ILOpCode.Br, lblend);
+
+                    // default(T)
+                    cg.Builder.MarkLabel(lbldefault);
+                    cg.EmitParameterDefaultValue(p);
+
+                    //
+                    cg.Builder.MarkLabel(lblend);
+                }
+
+                cg.EmitCall(ILOpCode.Callvirt, __invoke);
                 cg.EmitRet(invoke.ReturnType);
 
-            }, null, DiagnosticBag.GetInstance(), false));
-        }
+            }, null, diagnostics, false));
 
-        void EmitToPhpValue(MethodSymbol tophpvalue, Emit.PEModuleBuilder module)
-        {
-            if (tophpvalue == null)
+            module.SynthesizedManager.AddMethod(this, invoke);
+
+            //
+            // IPhpCallable.ToPhpValue()
+            //
+            var tophpvalue = new SynthesizedMethodSymbol(this, "IPhpCallable.ToPhpValue", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
             {
-                return;
-            }
+                ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("ToPhpValue").Single(),
+            };
 
+            //
             module.SetMethodBody(tophpvalue, MethodGenerator.GenerateMethodBody(module, tophpvalue, il =>
             {
                 var thisPlace = new ArgPlace(this, 0);
-                var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+                var cg = new CodeGenerator(il, module, diagnostics, OptimizationLevel.Release, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
 
                 // return PhpValue.FromClass(this)
                 cg.EmitThis();
                 cg.EmitRet(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.FromClass_Object));
 
-            }, null, DiagnosticBag.GetInstance(), false));
+            }, null, diagnostics, false));
+
+            module.SynthesizedManager.AddMethod(this, tophpvalue);
         }
 
         void EmitPhpNew(SynthesizedPhpNewMethodSymbol phpnew, Emit.PEModuleBuilder module)
@@ -193,6 +255,46 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.EmitRet(ctor.ReturnType);
 
             }, null, DiagnosticBag.GetInstance(), false));
+        }
+
+        void EmitToString(Emit.PEModuleBuilder module)
+        {
+            if (this.IsInterface)
+            {
+                return;
+            }
+
+            var __tostring = this.GetMembers(SpecialMethodNames.Tostring.Value, true).OfType<MethodSymbol>().FirstOrDefault();
+            if (__tostring != null || this.Syntax.BaseClass == null)    // implement ToString if: there is __tostring() function or ToString is not overriden yet
+            {
+                // public override string ToString()
+                // Note, there might be two ToString methods with same parameters only differing by their return type, CLR allows that
+                var tostring = new SynthesizedMethodSymbol(this, "ToString", false, true, DeclaringCompilation.CoreTypes.String, Accessibility.Public, isfinal: false)
+                {
+                    ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ToString),
+                };
+
+                module.SetMethodBody(tostring, MethodGenerator.GenerateMethodBody(module, tostring, il =>
+                {
+                    var thisPlace = new ArgPlace(this, 0);
+                    var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+
+                    if (__tostring != null)
+                    {
+                        // __tostring().ToString()
+                        cg.EmitConvert(cg.EmitThisCall(__tostring, tostring), 0, tostring.ReturnType);
+                    }
+                    else
+                    {
+                        // TODO: Throw object_could_not_be_converted
+                        // return ""
+                        cg.Builder.EmitStringConstant(string.Empty);
+                    }
+                    cg.EmitRet(tostring.ReturnType);
+
+                }, null, DiagnosticBag.GetInstance(), false));
+                module.SynthesizedManager.AddMethod(this, tostring);
+            }
         }
     }
 }

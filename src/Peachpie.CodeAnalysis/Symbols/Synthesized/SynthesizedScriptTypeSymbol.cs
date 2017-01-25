@@ -125,7 +125,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return list.AsImmutable();
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name) => GetMembers().Where(m => m.Name == name).AsImmutable();
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false) => GetMembers().Where(m => m.Name.StringsEqual(name, ignoreCase)).AsImmutable();
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => _lazyMembers.OfType<NamedTypeSymbol>().AsImmutable();
 

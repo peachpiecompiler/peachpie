@@ -151,10 +151,8 @@ namespace Pchp.Library
 
             if (match == null || !match.Success || match.Groups["port"].Value.Length > 5)   // not matching or port number too long
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_url", FileSystemUtils.StripPassword(url)));
-                //return null;
-                // TODO: Err
-                throw new ArgumentException();
+                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_url", FileSystemUtils.StripPassword(url))); // PHP 5.3.3+ does not emit warning
+                return null;
             }
 
             string scheme = ParseUrlMethods.MatchedString(match.Groups["scheme"]);
@@ -205,6 +203,14 @@ namespace Pchp.Library
                 host = null;
             }
 
+            // parse the port number,
+            // invalid port number causes the function to return FALSE
+            var port_int = port != null ? uint.Parse(port) : 0;
+            if (port_int > ushort.MaxValue || port_int < 0)
+            {
+                return null;
+            }
+
             PhpArray result = new PhpArray(8);
 
             const char neutralChar = '_';
@@ -212,7 +218,7 @@ namespace Pchp.Library
             // store segments into the array (same order as it is in PHP)
             if (scheme != null) result["scheme"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(scheme, neutralChar);
             if (host != null) result["host"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(host, neutralChar);
-            if (port != null) result["port"] = (PhpValue)unchecked((ushort)uint.Parse(port)); // PHP overflows in this way
+            if (port != null) result["port"] = (PhpValue)port_int;
             if (user != null) result["user"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(user, neutralChar);
             if (pass != null) result["pass"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(pass, neutralChar);
             if (path != null) result["path"] = (PhpValue)ParseUrlMethods.ReplaceControlCharset(path, neutralChar);

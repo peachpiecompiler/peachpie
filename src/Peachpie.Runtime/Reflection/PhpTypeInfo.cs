@@ -120,10 +120,10 @@ namespace Pchp.Core.Reflection
         Flags _flags;
 
         /// <summary>
-        /// Gets collection of PHP methods in this type.
+        /// Gets collection of PHP methods in this type and base types.
         /// </summary>
-        public TypeMethods DeclaredMethods => _declaredMethods ?? (_declaredMethods = new TypeMethods(_type));
-        TypeMethods _declaredMethods;
+        public TypeMethods RuntimeMethods => _runtimeMethods ?? (_runtimeMethods = new TypeMethods(_type));
+        TypeMethods _runtimeMethods;
 
         /// <summary>
         /// Gets collection of PHP fields, static fields and constants declared in this type.
@@ -212,6 +212,26 @@ namespace Pchp.Core.Reflection
 
             //
             return result;
+        }
+
+        /// <summary>
+        /// Enumerates self, all base types and all inherited interfaces.
+        /// </summary>
+        public static IEnumerable<PhpTypeInfo> EnumerateTypeHierarchy(this PhpTypeInfo phptype)
+        {
+            return EnumerateClassHierarchy(phptype).Concat( // phptype + base types
+                phptype.Type.GetTypeInfo().GetInterfaces().Select(GetPhpTypeInfo)); // inherited interfaces
+        }
+
+        /// <summary>
+        /// Enumerates self and all base types.
+        /// </summary>
+        static IEnumerable<PhpTypeInfo> EnumerateClassHierarchy(this PhpTypeInfo phptype)
+        {
+            for (; phptype != null; phptype = phptype.BaseType)
+            {
+                yield return phptype;
+            }
         }
     }
 

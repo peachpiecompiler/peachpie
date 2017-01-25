@@ -99,9 +99,6 @@ namespace Pchp.CodeAnalysis.Symbols
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
         SynthesizedStaticFieldsHolder/*!*/_staticsContainer; // class __statics { ... }
 
-        SynthesizedMethodSymbol _lazyInvokeSymbol; // IPhpCallable.Invoke(Context, PhpValue[]);
-        SynthesizedMethodSymbol _lazyToPhpValueSymbol; // IPhpCallable.ToPhpValue();
-
         /// <summary>
         /// Defined type members, methods, fields and constants.
         /// Does not include synthesized members.
@@ -192,59 +189,14 @@ namespace Pchp.CodeAnalysis.Symbols
             : ImmutableArray<MethodSymbol>.Empty;
 
         /// <summary>
-        /// Gets value indicating the class can be called (i.e. has <c>__invoke</c> magic method).
+        /// Gets magic <c>__invoke</c> method or <c>null</c>.
         /// </summary>
-        public bool IsInvokable
+        MethodSymbol TryGetMagicInvoke()
         {
-            get
-            {
-                if (_lazyInvokeSymbol != null)
-                {
-                    return true;
-                }
-
-                return GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Invoke.Value).Any(s => s is MethodSymbol);
-            }
-        }
-
-        /// <summary>
-        /// In case the class implements <c>__invoke</c> method, we create special Invoke() method that is compatible with IPhpCallable interface.
-        /// </summary>
-        internal SynthesizedMethodSymbol EnsureInvokeMethod(Emit.PEModuleBuilder module)
-        {
-            if (_lazyInvokeSymbol == null)
-            {
-                if (IsInvokable)
-                {
-                    // IPhpCallable.Invoke
-                    _lazyInvokeSymbol = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue)
-                    {
-                        ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("Invoke").Single(),
-                    };
-                    _lazyInvokeSymbol.SetParameters(
-                        new SpecialParameterSymbol(_lazyInvokeSymbol, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
-                        new SynthesizedParameterSymbol(_lazyInvokeSymbol, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), 1, RefKind.None, "arguments"));
-
-                    //
-                    module.SynthesizedManager.AddMethod(this, _lazyInvokeSymbol);
-
-                    // IPhpInvokable.ToPhpValue
-                    _lazyToPhpValueSymbol = new SynthesizedMethodSymbol(this, "IPhpCallable.ToPhpValue", false, true, DeclaringCompilation.CoreTypes.PhpValue)
-                    {
-                        ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("ToPhpValue").Single(),
-                    };
-
-                    //
-                    module.SynthesizedManager.AddMethod(this, _lazyToPhpValueSymbol);
-                }
-            }
-            return _lazyInvokeSymbol;
-        }
-
-        internal SynthesizedMethodSymbol EnsureToPhpValueMethod(Emit.PEModuleBuilder module)
-        {
-            EnsureInvokeMethod(module);
-            return _lazyToPhpValueSymbol;
+            return GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Invoke.Value, true)
+                .OfType<MethodSymbol>()
+                .Where(m => !m.IsStatic)
+                .SingleOrDefault();
         }
 
         public override NamedTypeSymbol BaseType
@@ -363,8 +315,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers() => EnsureMembers().AsImmutable();
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
-            => EnsureMembers().Where(s => s.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable();
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+            => EnsureMembers().Where(s => s.Name.StringsEqual(name, ignoreCase)).AsImmutable();
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
@@ -424,7 +376,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // __invoke => IPhpCallable
-            if (IsInvokable)
+            if (TryGetMagicInvoke() != null)
             {
                 ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
             }

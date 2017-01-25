@@ -185,8 +185,8 @@ namespace Peachpie.Web
 
             _httpctx = httpcontext;
             _rootPath = rootPath;
-
-            this.InitOutput(httpcontext.Response.Body);
+            
+            this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, StringEncoding));
             this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On

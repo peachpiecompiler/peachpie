@@ -633,7 +633,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.MarkLabel(lbl_cond);
                     _il.EmitLocalLoad(tmpi);
                     variadic_place.EmitLoad(_il);
-                    EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+                    EmitArrayLength();
                     _il.EmitBranch(ILOpCode.Blt, lbl_block);
 
                     //
@@ -661,6 +661,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             place.EmitStorePrepare(this);
             place.EmitStore(this, null);
+        }
+
+        /// <summary>
+        /// Emits <c>Array.Length</c> call expecting an array instance on top of the stack, returning <c>int</c>.
+        /// </summary>
+        internal void EmitArrayLength()
+        {
+            EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
         }
 
         /// <summary>
@@ -1162,7 +1170,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Puts value of target parameter's type.
         /// </summary>
         /// <param name="targetp">Parameter to emit its default value.</param>
-        void EmitParameterDefaultValue(ParameterSymbol targetp)
+        internal void EmitParameterDefaultValue(ParameterSymbol targetp)
         {
             Contract.ThrowIfNull(targetp);
 
@@ -1371,6 +1379,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else if (constant.Value is int)
                 {
                     EmitIntStringKey((int)constant.Value);
+                }
+                else if (constant.Value is double)
+                {
+                    EmitIntStringKey((int)(double)constant.Value);
                 }
                 else
                 {

@@ -92,7 +92,7 @@ namespace Pchp.CodeAnalysis
             string assemblyName,
             PhpCompilationOptions options,
             ImmutableArray<MetadataReference> references,
-            //ReferenceManager referenceManager,
+            ReferenceManager referenceManager = null,
             //SyntaxAndDeclarationManager syntaxAndDeclarations
             AsyncQueue<CompilationEvent> eventQueue = null
             )
@@ -101,7 +101,7 @@ namespace Pchp.CodeAnalysis
             _wellKnownMemberSignatureComparer = new WellKnownMembersSignatureComparer(this);
 
             _options = options;
-            _referenceManager = new ReferenceManager(options.SdkDirectory);
+            _referenceManager = referenceManager ?? new ReferenceManager(options.SdkDirectory);
             _tables = new SourceSymbolCollection(this);
             _coreTypes = new CoreTypes(this);
             _coreMethods = new CoreMethods(_coreTypes);
@@ -511,7 +511,7 @@ namespace Pchp.CodeAnalysis
         {
             if (_lazyAssemblySymbol == null)
             {
-                _referenceManager.CreateSourceAssemblyForCompilation(this);
+                _lazyAssemblySymbol = _referenceManager.CreateSourceAssemblyForCompilation(this);
                 Debug.Assert(_lazyAssemblySymbol != null);
             }
 

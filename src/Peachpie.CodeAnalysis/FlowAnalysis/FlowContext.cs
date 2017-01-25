@@ -103,6 +103,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return index;
         }
 
+        /// <summary>
+        /// Enumerates all known variables as pairs of their index and name.
+        /// </summary>
+        public IEnumerable<KeyValuePair<int, VariableName>> EnumerateVariables()
+        {
+            return _varsIndex.Select(pair => new KeyValuePair<int, VariableName>(pair.Value, pair.Key));
+        }
+
         public void SetReference(int varindex)
         {
             if (varindex >= 0 && varindex < BitsCount)

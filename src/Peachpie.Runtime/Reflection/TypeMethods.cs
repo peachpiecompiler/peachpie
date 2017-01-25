@@ -50,11 +50,20 @@ namespace Pchp.Core.Reflection
 
         internal TypeMethods(Type type)
         {
-            // collect available methods
-            foreach (var m in type.GetTypeInfo().DeclaredMethods.ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
+            // collect available methods (including methods on base classes)
+            foreach (var m in type.GetTypeInfo()
+                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
+                .ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
             {
+                if (!ReflectionUtils.IsAllowedPhpName(m.Key))   // .ctor, .phpnew, implicit interface implementation
+                {
+                    continue;
+                }
+
                 if (_methods == null)
+                {
                     _methods = new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
+                }
 
                 var info = new PhpMethodInfo(_methods.Count + 1, m.Key, m.ToArray());
 
@@ -84,7 +93,7 @@ namespace Pchp.Core.Reflection
             return result;
         }
 
-        static Func<MethodInfo, string> _MethodName = m => m.Name;
+        static readonly Func<MethodInfo, string> _MethodName = m => m.Name;
 
         #endregion
 

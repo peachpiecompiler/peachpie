@@ -62,7 +62,7 @@ namespace Pchp.Core.Dynamic
                 phptype = (PhpTypeInfo)target.Value;
 
                 // 
-                restrictions = restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, target_expr));
+                restrictions = restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, phptype));
             }
             else
             {
@@ -96,7 +96,7 @@ namespace Pchp.Core.Dynamic
 
             //
             var getter = IsClassConst
-                ? phptype.DeclaredFields.Bind(fldName, _classContext, null, ctx.Expression, TypeFields.FieldKind.Constant)
+                ? BinderHelpers.BindClassConstant(phptype, _classContext, fldName, ctx.Expression)
                 : BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, ctx.Expression, _access, null);
 
             if (getter != null)

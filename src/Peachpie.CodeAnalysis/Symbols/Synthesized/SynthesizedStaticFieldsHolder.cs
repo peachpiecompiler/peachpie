@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Symbol> GetMembers() => Fields.AsImmutable<Symbol>();
 
-        public override ImmutableArray<Symbol> GetMembers(string name) => Fields.Where(f => f.Name.EqualsOrdinalIgnoreCase(name)).AsImmutable<Symbol>();
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false) => Fields.Where(f => f.Name.StringsEqual(name, ignoreCase)).AsImmutable<Symbol>();
         
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => ImmutableArray<NamedTypeSymbol>.Empty;
 

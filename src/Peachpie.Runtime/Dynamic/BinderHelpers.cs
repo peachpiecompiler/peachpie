@@ -336,36 +336,36 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        public static PhpMethodInfo FindMagicMethod(PhpTypeInfo type, TypeMethods.MagicMethods magic)
+        {
+            return (PhpMethodInfo)type.RuntimeMethods[magic];
+        }
+
         static Expression BindMagicMethod(PhpTypeInfo type, Type classCtx, Expression target, Expression ctx, TypeMethods.MagicMethods magic, string field, Expression rvalue = null)
         {
-            for (var t = type; t != null; t = t.BaseType)
+            var m = FindMagicMethod(type, magic);
+            if (m != null)
             {
-                var m = (PhpMethodInfo)t.DeclaredMethods[magic];
-                if (m != null)
+                var methods = m.Methods.Length == 1
+                    ? (m.Methods[0].IsVisible(classCtx) ? m.Methods : Array.Empty<MethodInfo>())    // optimization for array[1]
+                    : m.Methods.Where(x => x.IsVisible(classCtx)).ToArray();
+
+                if (methods.Length != 0)
                 {
-                    var methods = m.Methods.Length == 1
-                        ? (m.Methods[0].IsVisible(classCtx) ? m.Methods : Array.Empty<MethodInfo>())    // optimization for array[1]
-                        : m.Methods.Where(x => x.IsVisible(classCtx)).ToArray();
-
-                    if (methods.Length != 0)
+                    switch (magic)
                     {
-                        switch (magic)
-                        {
-                            case TypeMethods.MagicMethods.__set:
-                                // __set(name, value)
-                                return OverloadBinder.BindOverloadCall(typeof(void), target, methods, ctx, new Expression[] { Expression.Constant(field), rvalue });
+                        case TypeMethods.MagicMethods.__set:
+                            // __set(name, value)
+                            return OverloadBinder.BindOverloadCall(typeof(void), target, methods, ctx, new Expression[] { Expression.Constant(field), rvalue });
 
-                            default:
-                                // __get(name), __unset(name), __isset(name)
-                                return OverloadBinder.BindOverloadCall(methods[0].ReturnType, target, methods, ctx, new Expression[] { Expression.Constant(field) });
-                        }
+                        default:
+                            // __get(name), __unset(name), __isset(name)
+                            return OverloadBinder.BindOverloadCall(methods[0].ReturnType, target, methods, ctx, new Expression[] { Expression.Constant(field) });
                     }
-                    else
-                    {
-                        // TODO: ERR inaccessible
-                    }
-
-                    break;
+                }
+                else
+                {
+                    // TODO: ERR inaccessible
                 }
             }
 
@@ -570,6 +570,21 @@ namespace Pchp.Core.Dynamic
             return null;
         }
 
+        public static Expression BindClassConstant(PhpTypeInfo type, Type classCtx, string field, Expression ctx)
+        {
+            foreach (var t in type.EnumerateTypeHierarchy())    // types and interfaces
+            {
+                var expr = t.DeclaredFields.Bind(field, classCtx, null, ctx, TypeFields.FieldKind.Constant);
+                if (expr != null)
+                {
+                    return expr;
+                }
+            }
+
+            //
+            return null;
+        }
+
         /// <summary>
         /// Binds recursion check for property magic method.
         /// </summary>
@@ -694,7 +709,7 @@ namespace Pchp.Core.Dynamic
                 instance = Expression.Convert(instance, method.DeclaringType);
             }
 
-            if (instance != null && method.IsVirtual)
+            if (instance != null && method.IsVirtual)   // NOTE: only needed for parent::foo(), static::foo() and self::foo() ?
             {
                 // Ugly hack here,
                 // we NEED to call the method nonvirtually, but LambdaCompiler emits .callvirt always and there is no way how to change it (except we can emit all the stuff by ourselfs).

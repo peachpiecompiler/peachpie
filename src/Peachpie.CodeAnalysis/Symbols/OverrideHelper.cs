@@ -53,7 +53,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-
             //
             return bestCandidate;
         }

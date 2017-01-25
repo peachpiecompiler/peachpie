@@ -228,6 +228,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 (_initializedMask & ((ulong)1 << varindex)) == 0;
         }
 
+        /// <summary>
+        /// Sets all variables type to <see cref="TypeRefMask.AnyType"/>.
+        /// </summary>
+        /// <param name="maybeRef">Whether to set <c>IsRef</c> flag for all variables.</param>
+        public void SetAllAnyType(bool maybeRef)
+        {
+            var tmask = maybeRef
+                ? TypeRefMask.AnyType.WithRefFlag
+                : TypeRefMask.AnyType;
+
+            foreach (var v in _flowCtx.EnumerateVariables())
+            {
+                SetVar(v.Key, tmask);
+            }
+        }
+
         public void SetVar(string name, TypeRefMask type)
         {
             SetVar(_flowCtx.GetVarIndex(new VariableName(name)), type);

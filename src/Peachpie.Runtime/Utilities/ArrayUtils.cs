@@ -98,6 +98,40 @@ namespace Pchp.Core.Utilities
                 array[i] = value;
             }
         }
+
+        /// <summary>
+        /// Searches for specified character in sorted array of characters.
+        /// Specialized version of <see cref="Array.BinarySearch{T}(T[], T)"/>.
+        /// </summary>
+        /// <param name="array">The array to search in.</param>
+        /// <param name="c">The character to search for.</param>
+        /// <returns>The position of the <paramref name="c"/> in <paramref name="array"/> or -1 if not found.</returns>
+        public static int BinarySearch(char[] array, char c)
+        {
+            if (array == null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            int i = 0;
+            int j = array.Length - 1;
+            while (i < j)
+            {
+                int m = (i + j) >> 1;
+                char cm = array[m];
+                if (c == cm) return m;
+
+                if (c > cm)
+                {
+                    i = m + 1;
+                }
+                else
+                {
+                    j = m - 1;
+                }
+            }
+            return (array[i] == c) ? i : -1;
+        }
     }
 
 }

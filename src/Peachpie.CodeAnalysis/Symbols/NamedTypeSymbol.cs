@@ -293,8 +293,8 @@ namespace Pchp.CodeAnalysis.Symbols
         internal MethodSymbol ResolvePhpCtor(bool recursive = false)
         {
             var ctor = 
-                this.GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value).OfType<MethodSymbol>().FirstOrDefault() ??
-                this.GetMembers(this.Name).OfType<MethodSymbol>().FirstOrDefault();
+                this.GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value, true).OfType<MethodSymbol>().FirstOrDefault() ??
+                this.GetMembers(this.Name, true).OfType<MethodSymbol>().FirstOrDefault();
 
             if (ctor == null && recursive)
             {

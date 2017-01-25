@@ -194,8 +194,9 @@ namespace Pchp.Core.Reflection
                 {
                     if (kind == FieldKind.StaticField)
                     {
-                        return Expression.Field(null, fld);
+                        // TODO: Err: static field accessed with instance
                     }
+                    return Expression.Field(null, fld);
                 }
 
                 if (kind == FieldKind.InstanceField)

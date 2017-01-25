@@ -15,11 +15,21 @@ namespace Pchp.Core
         /// Initialize output of this context.
         /// To be used by the context constructor.
         /// </summary>
-        /// <param name="output"></param>
-        protected void InitOutput(Stream output)
+        protected void InitOutput(Stream output, TextWriter textoutput = null)
         {
             // setups Output and OutputStream
-            _textSink = new StreamWriter(_streamSink = output ?? Stream.Null) { AutoFlush = true };
+            if (output != null)
+            {
+                _streamSink = output;
+                _textSink = textoutput ?? new StreamWriter(output);
+            }
+            else
+            {
+                _streamSink = Stream.Null;
+                _textSink = TextWriter.Null;
+            }
+
+            //
             IsOutputBuffered = false;
         }
 
@@ -133,13 +143,17 @@ namespace Pchp.Core
         public void Echo(object value)
         {
             if (value != null)
-                Echo(value.ToString());
+            {
+                Echo(Convert.ToStringOrThrow(value, this));
+            }
         }
 
         public void Echo(string value)
         {
             if (value != null)
+            {
                 Output.Write(value);
+            }
         }
 
         public void Echo(PhpString value) => value.Output(this);

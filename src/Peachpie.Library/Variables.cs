@@ -622,46 +622,7 @@ namespace Pchp.Library
             // unfortunately, type contains flags are combined with enumeration: 
             bool refs = (type & ExtractType.Refs) != 0;
             type &= ExtractType.NonFlags;
-
-            //
-            // construct the action used to set the variable into the locals/globals
-            //
-            Action<string/*name*/, PhpValue/*value*/> updateVariableFn;    // function that writes the value to locals/globals
-
-            #region select function that writes the variable
-
-            if (refs)
-            {
-                // makes a reference and writes it back (deep copy is not necessary, "no duplicate pointers" rule preserved):
-                updateVariableFn = (name, value) =>
-                {
-                    locals[name] = vars[name] = PhpValue.Create(value.EnsureAlias());
-                };
-            }
-            else
-            {
-                updateVariableFn = (name, value) =>
-                {
-                    // deep copy the value
-                    value = value.GetValue().DeepCopy();
-
-                    // put into locals
-                    var item = locals[name];
-                    if (item.IsAlias)
-                    {
-                        item.Alias.Value = value;
-                    }
-                    else
-                    {
-                        locals[name] = value;
-                    }
-                };
-            }
-
-            #endregion
-
-            Debug.Assert(updateVariableFn != null);
-
+            
             //
             //
             //
@@ -669,8 +630,11 @@ namespace Pchp.Library
             using (var enumerator = vars.GetFastEnumerator())
                 while (enumerator.MoveNext())
                 {
-                    var name = enumerator.CurrentValue.ToString(ctx);
-                    if (string.IsNullOrEmpty(name) && type != ExtractType.PrefixInvalid) continue;
+                    var name = enumerator.CurrentKey.ToString();
+                    if (string.IsNullOrEmpty(name) && type != ExtractType.PrefixInvalid)
+                    {
+                        continue;
+                    }
 
                     switch (type)
                     {
@@ -736,8 +700,17 @@ namespace Pchp.Library
                     // invalid names are skipped:
                     if (PhpVariable.IsValidName(name))
                     {
-                        // write the value to locals or globals:
-                        updateVariableFn(name, enumerator.CurrentValue);
+                        // write the value to locals:
+                        if (refs)
+                        {
+                            // makes a reference and writes it back (deep copy is not necessary, "no duplicate pointers" rule preserved):
+                            locals.SetItemAlias(new IntStringKey(name), enumerator.CurrentValueAliased);
+                        }
+                        else
+                        {
+                            // deep copy the value and write into locals
+                            locals.SetItemValue(new IntStringKey(name), enumerator.CurrentValue.GetValue().DeepCopy());
+                        }
 
                         extracted_count++;
                     }
@@ -758,6 +731,8 @@ namespace Pchp.Library
 
             protected PhpString _output;
             protected int _indent;
+
+            protected const string RECURSION = "*RECURSION*";
 
             protected FormatterVisitor(Context ctx, string newline)
             {
@@ -809,6 +784,7 @@ namespace Pchp.Library
         class PrintFormatter : FormatterVisitor
         {
             const int IndentSize = 4;
+            new const string RECURSION = " " + FormatterVisitor.RECURSION;
 
             void OutputIndent()
             {
@@ -825,9 +801,7 @@ namespace Pchp.Library
 
             public override PhpString Serialize(PhpValue value)
             {
-                var output = base.Serialize(value);
-                output.Append(_nl);
-                return output;
+                return base.Serialize(value);
             }
 
             public override void Accept(bool obj) => _output.Append(obj ? "1" : string.Empty);
@@ -865,10 +839,12 @@ namespace Pchp.Library
 
                     //
                     Leave(obj);
+
+                    _output.Append(_nl);
                 }
                 else
                 {
-                    _output.Append(" *RECURSION*");
+                    _output.Append(RECURSION);
                 }
             }
 
@@ -881,11 +857,6 @@ namespace Pchp.Library
                 _indent++;
                 Accept(entry.Value);
                 _indent--;
-
-                if (entry.Value.ArrayOrNull() != null)
-                {
-                    _output.Append(_nl);
-                }
 
                 _output.Append(_nl);
             }
@@ -906,6 +877,8 @@ namespace Pchp.Library
 
                 _indent--;
                 _output.Append(")");
+
+                _output.Append(_nl);
             }
         }
 
@@ -1049,7 +1022,7 @@ namespace Pchp.Library
 
             public override void Accept(double obj)
             {
-                _output.Append(PhpVariable.TypeNameFloat);
+                _output.Append(PhpVariable.TypeNameDouble);
                 _output.Append("(");
                 _output.Append(Core.Convert.ToString(obj, _ctx));
                 _output.Append(")");
@@ -1073,8 +1046,19 @@ namespace Pchp.Library
 
             public override void Accept(PhpAlias obj)
             {
-                _output.Append("&");
-                base.Accept(obj);
+                if (Enter(obj))
+                {
+                    _output.Append("&");
+                    base.Accept(obj);
+
+                    //
+                    Leave(obj);
+                }
+                else
+                {
+                    // *RECURSION*
+                    _output.Append(RECURSION);
+                }
             }
 
             public override void AcceptNull() => _output.Append(PhpVariable.TypeNameNull);
@@ -1084,31 +1068,20 @@ namespace Pchp.Library
                 // array
                 _output.Append(PhpArray.PhpTypeName);
 
-                if (Enter(obj))
-                {
-                    // (size=COUNT)
-                    // {
-                    _output.Append($"({obj.Count}) {{");
-                    _output.Append(_nl);
+                // (size=COUNT)
+                // {
+                _output.Append($"({obj.Count}) {{");
+                _output.Append(_nl);
 
-                    _indent++;
+                _indent++;
 
-                    base.Accept(obj);
+                base.Accept(obj);
 
-                    _indent--;
+                _indent--;
 
-                    // }
-                    OutputIndent();
-                    _output.Append("}");
-
-                    //
-                    Leave(obj);
-                }
-                else
-                {
-                    // <
-                    _output.Append("<");
-                }
+                // }
+                OutputIndent();
+                _output.Append("}");
             }
 
             public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
@@ -1128,7 +1101,18 @@ namespace Pchp.Library
 
             public override void AcceptObject(object obj)
             {
-                throw new NotImplementedException();
+                if (Enter(obj))
+                {
+                    throw new NotImplementedException();
+
+                    ////
+                    //Leave(obj);
+                }
+                else
+                {
+                    // *RECURSION*
+                    _output.Append(RECURSION);
+                }
             }
         }
 
@@ -1173,7 +1157,7 @@ namespace Pchp.Library
             var formatter = new DumpFormatter(ctx, "\n"); // TODO: HtmlDumpFormatter
             for (int i = 0; i < variables.Length; i++)
             {
-                ctx.Echo(formatter.Serialize(variables[i]));
+                ctx.Echo(formatter.Serialize(variables[i].GetValue()));
             }
         }
 

@@ -478,7 +478,7 @@ namespace Pchp.Core
 
             #region IPhpEnumerator
 
-            public PhpValue CurrentValue => (_element >= 0) ? _table.entries[_element]._value.GetValue() : PhpValue.Void;
+            public virtual PhpValue CurrentValue => (_element >= 0) ? _table.entries[_element]._value.GetValue() : PhpValue.Void;
 
             public PhpValue CurrentKey => (_element >= 0) ? PhpValue.Create(_table.entries[_element]._key) : PhpValue.Void;
 
@@ -540,6 +540,8 @@ namespace Pchp.Core
             {
                 
             }
+
+            public override PhpValue CurrentValue => base.CurrentValue.DeepCopy();
 
             public override void Dispose()
             {
@@ -708,10 +710,20 @@ namespace Pchp.Core
             }
             public KeyValuePair<IntStringKey, PhpValue> Current => _table.entries[_currentEntry].KeyValuePair;
 
+            /// <summary>
+            /// Ensures current value is aliased and gets reference to it.
+            /// </summary>
+            public PhpAlias CurrentValueAliased => _table.entries[_currentEntry]._value.EnsureAlias();
+
             public void Reset()
             {
                 _currentEntry = -1;
             }
+
+            /// <summary>
+            /// Creates an enumerator that wont reset after unsuccessful <see cref="MoveNext"/>.
+            /// </summary>
+            public FastEnumeratorWithStop WithStop() => new FastEnumeratorWithStop(this);
 
             #region IDisposable
 
@@ -840,6 +852,29 @@ namespace Pchp.Core
             }
 
             #endregion
+        }
+
+        /// <summary>
+        /// Helper enumerator that enumerates underlaying <see cref="FastEnumerator"/> and does not reset after an unsuccessful <b>MoveNext</b>.
+        /// </summary>
+        public struct FastEnumeratorWithStop : IDisposable
+        {
+            FastEnumerator _enumerator;
+            bool _valid;
+
+            internal FastEnumeratorWithStop(FastEnumerator enumerator)
+            {
+                _enumerator = enumerator;
+                _valid = true;
+            }
+
+            public bool MoveNext() => _valid && (_valid = _enumerator.MoveNext());
+
+            public IntStringKey CurrentKey => _enumerator.CurrentKey;
+
+            public PhpValue CurrentValue => _enumerator.CurrentValue;
+
+            public void Dispose() => _enumerator.Dispose();
         }
 
         #endregion

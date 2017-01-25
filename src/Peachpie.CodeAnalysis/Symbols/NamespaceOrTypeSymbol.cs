@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         /// <returns>An ImmutableArray containing all the members of this symbol with the given name. If there are
         /// no members with this name, returns an empty ImmutableArray. Never returns null.</returns>
-        public abstract ImmutableArray<Symbol> GetMembers(string name);
+        public abstract ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false);
 
         /// <summary>
         /// Get all the members of this symbol that are types.
@@ -133,7 +133,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     //}
                 }
 
-                symbols = namespaceOrType.GetMembers(name).OfType<NamespaceOrTypeSymbol>();
+                symbols = namespaceOrType.GetMembers(name, true).OfType<NamespaceOrTypeSymbol>();
             }
 
             return symbols;

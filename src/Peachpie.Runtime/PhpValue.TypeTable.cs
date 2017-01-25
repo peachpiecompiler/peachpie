@@ -166,6 +166,7 @@ namespace Pchp.Core
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsNull;
             public override object EnsureObject(ref PhpValue me)
             {
+                // TODO: Err: Warning: Creating default object from empty value
                 var obj = ToClass(ref me);
                 me = PhpValue.FromClass(obj);
                 return obj;
@@ -401,40 +402,45 @@ namespace Pchp.Core
             public override bool IsEmpty(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => me.Object;
             public override string ToStringQuiet(ref PhpValue me) => me.Object.ToString();
-            public override string ToString(ref PhpValue me, Context ctx)
+            public override string ToString(ref PhpValue me, Context ctx) => ToStringOrThrow(ref me, ctx);
+            public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToStringOrThrow(me.Object, ctx);
+            public override long ToLong(ref PhpValue me)
             {
                 if (me.Object is IPhpConvertible)
                 {
-                    return ((IPhpConvertible)me.Object).ToString(ctx);
+                    return ((IPhpConvertible)me.Object).ToLong();
                 }
                 else
                 {
-                    // TODO: magic function __toString()
-
-                    //
-                    return me.Object.ToString();
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, me.Object.GetType().Name, PhpVariable.TypeNameInt));
+                    return 1L;
                 }
-            }
-            public override string ToStringOrThrow(ref PhpValue me, Context ctx)
-            {
-                if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToStringOrThrow(ctx);
-                throw new NotImplementedException();
-            }
-            public override long ToLong(ref PhpValue me)
-            {
-                if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToLong();
-                throw new NotImplementedException();
             }
             public override double ToDouble(ref PhpValue me)
             {
-                if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToDouble();
-                throw new NotImplementedException();
+                if (me.Object is IPhpConvertible)
+                {
+                    return ((IPhpConvertible)me.Object).ToDouble();
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, me.Object.GetType().Name, PhpVariable.TypeNameDouble));
+                    return 1.0;
+                }
             }
             public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.Object);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number)
             {
-                if (me.Object is IPhpConvertible) return ((IPhpConvertible)me.Object).ToNumber(out number);
-                throw new NotImplementedException();
+                if (me.Object is IPhpConvertible)
+                {
+                    return ((IPhpConvertible)me.Object).ToNumber(out number);
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Notice, string.Format(Resources.ErrResources.object_could_not_be_converted, me.Object.GetType().Name, PhpVariable.TypeNameInt));
+                    number = PhpNumber.Create(1L);
+                    return Convert.NumberInfo.LongInteger;
+                }
             }
             public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new NotImplementedException(); }
@@ -450,7 +456,10 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override IPhpArray EnsureArray(ref PhpValue me)
             {
-                throw new NotImplementedException();  // Fatal Error: Cannot use object of type stdClass as array
+                // TODO: return new ArrayAccessWrapper(me.Object)
+                // TODO: Fatal error: Uncaught Error: Cannot use object of type {0} as array
+
+                throw new InvalidOperationException(string.Format(Resources.ErrResources.object_used_as_array, me.Object.GetType().Name));
             }
             public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet)
             {

@@ -129,7 +129,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region rand, srand, getrandmax, uniqid, lcg_value, random_int
+        #region rand, srand, getrandmax, uniqid, lcg_value, random_int, random_bytes
 
         /// <summary>
         /// Gets <c>0</c> or <c>1</c> randomly.
@@ -271,6 +271,24 @@ namespace Pchp.Library
 
             // TODO: use mcrypt, int64
             return rand((int)min, (int)max);
+        }
+
+        /// <summary>
+        /// Generates cryptographically secure pseudo-random bytes.
+        /// </summary>
+        public static PhpString random_bytes(int length)
+        {
+            if (length <= 0)
+            {
+                throw new Error(string.Format(Resources.LibResources.arg_negative_or_zero, nameof(length)));
+            }
+
+            var bytes = new byte[length];
+
+            // TODO: System.Security.Cryptography.RNGCryptoServiceProvider
+            System.Security.Cryptography.RandomNumberGenerator.Create().GetBytes(bytes);
+
+            return new PhpString(bytes);
         }
 
         #endregion

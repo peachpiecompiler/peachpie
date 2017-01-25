@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis
             ImmutableDictionary<IAssemblySymbol, MetadataReference> _metadataMap;
             AssemblySymbol _lazyCorLibrary, _lazyPhpCorLibrary;
 
-            readonly Dictionary<AssemblyIdentity, PEAssemblySymbol> _assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
+            Dictionary<AssemblyIdentity, PEAssemblySymbol> _assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
 
             readonly string _sdkdir;
 
@@ -61,31 +61,25 @@ namespace Pchp.CodeAnalysis
             }
 
             internal IEnumerable<IAssemblySymbol> ExplicitReferencesSymbols => ExplicitReferences.Select(r => _referencesMap[r]).WhereNotNull();
-
-            IEnumerable<string> CorLibReferences
-            {
-                get
-                {
-                    //// TODO: mscorlib + System.Core as System.Runtime + type forwards
-
-                    //// mscorlib
-                    //yield return @"mscorlib";
-
-                    //// System.Core // 
-                    //yield return @"System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
-
-                    //// pchpcor
-                    //yield return @"pchpcor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";
-
-                    //// pchplib
-                    //yield return @"pchplib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=5b4bee2bf1f98593";
-                    yield break;
-                }
-            }
-
+            
             public ReferenceManager(string sdkDir)
             {
                 _sdkdir = sdkDir;
+            }
+
+            public ReferenceManager Clone()
+            {
+                // clone cache of loaded assemblies
+
+                var clone = new ReferenceManager(_sdkdir)
+                {
+                    _lazyCorLibrary = _lazyCorLibrary,
+                    _lazyPhpCorLibrary = _lazyPhpCorLibrary,
+                    _assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>(_assembliesMap),
+                };
+                
+                //
+                return clone;
             }
 
             PEAssemblySymbol CreateAssemblyFromIdentity(MetadataReferenceResolver resolver, AssemblyIdentity identity, string basePath, List<PEModuleSymbol> modules)
@@ -144,20 +138,22 @@ namespace Pchp.CodeAnalysis
                 }
             }
 
-            internal void CreateSourceAssemblyForCompilation(PhpCompilation compilation)
+            internal SourceAssemblySymbol CreateSourceAssemblyForCompilation(PhpCompilation compilation)
             {
                 if (compilation._lazyAssemblySymbol != null)
-                    return;
+                {
+                    return compilation._lazyAssemblySymbol;
+                }
 
                 // TODO: lock
 
                 Debug.Assert(_lazyExplicitReferences.IsDefault);
-                Debug.Assert(_lazyCorLibrary == null);
-                Debug.Assert(_lazyPhpCorLibrary == null);
+                
+                var resolver = compilation.Options.MetadataReferenceResolver;
+                var moduleName = compilation.Options.ModuleName;
 
                 //
-                var externalRefs = CorLibReferences.SelectMany(reference => compilation.Options.MetadataReferenceResolver.ResolveReference(reference, null, new MetadataReferenceProperties()))
-                    .Concat(compilation.ExternalReferences).AsImmutable();
+                var externalRefs = compilation.ExternalReferences;
                 var assemblies = new List<AssemblySymbol>(externalRefs.Length);
 
                 var referencesMap = new Dictionary<MetadataReference, IAssemblySymbol>();
@@ -168,7 +164,9 @@ namespace Pchp.CodeAnalysis
                 
                 foreach (PortableExecutableReference pe in externalRefs)
                 {
-                    var symbol = PEAssemblySymbol.Create(pe);
+                    var peass = ((AssemblyMetadata)pe.GetMetadata()).GetAssembly();
+                    
+                    var symbol = _assembliesMap.TryGetOrDefault(peass.Identity) ?? PEAssemblySymbol.Create(pe, peass);
                     if (symbol != null)
                     {
                         assemblies.Add(symbol);
@@ -182,7 +180,7 @@ namespace Pchp.CodeAnalysis
                             _lazyPhpCorLibrary = symbol;
 
                         // cache bound assembly symbol
-                        _assembliesMap.Add(symbol.Identity, symbol);
+                        _assembliesMap[symbol.Identity] = symbol;
 
                         // list of modules to initialize later
                         refmodules.AddRange(symbol.Modules.Cast<PEModuleSymbol>());
@@ -200,10 +198,9 @@ namespace Pchp.CodeAnalysis
                 _referencesMap = referencesMap.ToImmutableDictionary();
 
                 //
-                var assembly = new SourceAssemblySymbol(compilation, compilation.Options.ModuleName, compilation.Options.ModuleName);
-                assembly.SetCorLibrary(_lazyCorLibrary);
-                compilation._lazyAssemblySymbol = assembly;
+                var assembly = new SourceAssemblySymbol(compilation, moduleName, moduleName);
 
+                assembly.SetCorLibrary(_lazyCorLibrary);                
                 assembly.SourceModule.SetReferences(new ModuleReferences<AssemblySymbol>(
                     assemblies.Select(x => x.Identity).AsImmutable(),
                     assemblies.AsImmutable(),
@@ -212,13 +209,16 @@ namespace Pchp.CodeAnalysis
                 assemblies.ForEach(ass => ass.SetCorLibrary(_lazyCorLibrary));
 
                 // recursively initialize references of referenced modules
-                SetReferencesOfReferencedModules(compilation.Options.MetadataReferenceResolver, refmodules);
+                SetReferencesOfReferencedModules(resolver, refmodules);
 
                 // set cor types for this compilation
                 if (_lazyPhpCorLibrary == null) throw new DllNotFoundException("Peachpie.Runtime not found");
                 if (_lazyCorLibrary == null) throw new DllNotFoundException("A corlib not found");
                 compilation.CoreTypes.Update(_lazyPhpCorLibrary);
                 compilation.CoreTypes.Update(_lazyCorLibrary);
+
+                //
+                return assembly;
             }
         }
     }

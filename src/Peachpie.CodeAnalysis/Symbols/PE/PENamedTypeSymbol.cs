@@ -874,7 +874,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyMembersInDeclarationOrder;
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name)
+        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
             EnsureAllMembersAreLoaded();
 
