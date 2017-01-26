@@ -95,11 +95,16 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Name of attribute class annotating trait declaration.
         /// </summary>
-        public const string PhpTraitAttributeName = "Pchp.core.PhpTraitAttribute";
+        public const string PhpTraitAttributeName = "Pchp.Core.PhpTraitAttribute";
+
+        /// <summary>
+        /// Full name of <c>PhpFieldsOnlyCtorAttribute</c> class.
+        /// </summary>
+        public const string PhpFieldsOnlyCtorAttributeName = "Pchp.Core.PhpFieldsOnlyCtorAttribute";
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison,
-            ScriptAttribute, PhpTraitAttribute, PhpHiddenAttribute, ScriptDiedException,
+            ScriptAttribute, PhpTraitAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
             PhpTypeInfoExtension, PhpTypeInfo,
@@ -146,6 +151,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create("PhpTraitAttribute");
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
+            PhpFieldsOnlyCtorAttribute = CreateFromFullName(PhpFieldsOnlyCtorAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");

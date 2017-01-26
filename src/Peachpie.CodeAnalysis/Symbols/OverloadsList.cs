@@ -101,7 +101,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             for (int i = methods.Count - 1; i >= 0; i--)
             {
-                if (!IsAccessible(methods[i], classCtx))
+                if (!IsAccessible(methods[i], classCtx) || methods[i].IsFieldsOnlyConstructor())
                 {
                     methods.RemoveAt(i);
                 }

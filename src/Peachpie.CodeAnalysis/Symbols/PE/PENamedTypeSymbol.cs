@@ -88,10 +88,9 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Optional.
-        /// A method <c>.phpnew</c> that ensures the initialization of the class without calling the base type constructor.
+        /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the type PHP constructor.
         /// </summary>
-        public MethodSymbol InitializeInstanceMethod => GetMembers(WellKnownPchpNames.PhpNewMethodName).OfType<MethodSymbol>().SingleOrDefault();
+        public MethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
 
         /// <summary>
         /// Optional.

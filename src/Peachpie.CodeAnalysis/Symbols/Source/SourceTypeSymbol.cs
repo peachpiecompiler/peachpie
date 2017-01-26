@@ -78,12 +78,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Optional.
-        /// A method <c>.phpnew</c> that ensures the initialization of the class without calling the base type constructor.
-        /// </summary>
-        public MethodSymbol InitializeInstanceMethod => (this.IsStatic || this.IsInterface) ? null : (_lazyPhpNewMethod ?? (_lazyPhpNewMethod = new SynthesizedPhpNewMethodSymbol(this)));
-
-        /// <summary>
-        /// Optional.
         /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
         /// </summary>
         public NamedTypeSymbol StaticsContainer => _staticsContainer;
@@ -94,7 +88,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SourceFileSymbol _file;
 
         NamedTypeSymbol _lazyBaseType;
-        MethodSymbol _lazyCtorMethod, _lazyPhpNewMethod;   // .ctor, .phpnew 
+        ImmutableArray<MethodSymbol> _lazyCtors;   // .ctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
         SynthesizedStaticFieldsHolder/*!*/_staticsContainer; // class __statics { ... }
@@ -178,15 +172,25 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// <c>.ctor</c> synthesized method. Only if type is not static.
+        /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the PHP constructor.
         /// </summary>
-        internal MethodSymbol PhpCtorMethodSymbol => (this.IsStatic || this.IsInterface) ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedPhpCtorSymbol(this)));
+        public MethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
-        public override ImmutableArray<MethodSymbol> InstanceConstructors => PhpCtorMethodSymbol != null
-            ? ImmutableArray.Create<MethodSymbol>(PhpCtorMethodSymbol)
-            : ImmutableArray<MethodSymbol>.Empty;
+        public override ImmutableArray<MethodSymbol> InstanceConstructors
+        {
+            get
+            {
+                var result = _lazyCtors;
+                if (result.IsDefault)
+                {
+                    _lazyCtors = result = SynthesizedPhpCtorSymbol.CreateCtors(this).ToImmutableArray();
+                }
+                
+                return result;
+            }
+        }
 
         /// <summary>
         /// Gets magic <c>__invoke</c> method or <c>null</c>.
@@ -389,22 +393,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
         {
-            foreach (var m in EnsureMembers().OfType<IMethodSymbol>())
-            {
-                yield return m;
-            }
-
-            // .ctor
-            if (PhpCtorMethodSymbol != null)
-            {
-                yield return PhpCtorMethodSymbol;
-            }
-
-            // .phpnew
-            if (InitializeInstanceMethod != null)
-            {
-                yield return InitializeInstanceMethod;
-            }
+            return EnsureMembers().OfType<IMethodSymbol>()
+                .Concat(InstanceConstructors);
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()

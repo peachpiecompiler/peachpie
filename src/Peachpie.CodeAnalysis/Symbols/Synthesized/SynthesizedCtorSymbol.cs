@@ -65,32 +65,129 @@ namespace Pchp.CodeAnalysis.Symbols
 
     #endregion
 
-    #region SynthesizedPhpNewMethodSymbol // generated .phpnew method
+    #region SynthesizedPhpCtorSymbol
 
     /// <summary>
-    /// <c>.phpnew</c> method instantiating the method without calling its constructor.
+    /// Synthesized <c>.ctor</c> method (instance constructor) for PHP classes.
     /// </summary>
-    internal class SynthesizedPhpNewMethodSymbol : SynthesizedMethodSymbol
+    internal class SynthesizedPhpCtorSymbol : SynthesizedMethodSymbol
     {
-        MethodSymbol _lazyBaseCtor;
-
-        public SynthesizedPhpNewMethodSymbol(SourceTypeSymbol container)
-            : base(container, WellKnownPchpNames.PhpNewMethodName, false, false, container.DeclaringCompilation.CoreTypes.Void, Accessibility.Public)
-        {
-            Debug.Assert(!container.IsStatic);
-            _parameters = default(ImmutableArray<ParameterSymbol>); // lazy initialized
-        }
-
-        public override bool IsAbstract => false;
-        public override bool IsVirtual => false;
-        public override bool IsStatic => false;
-        public override MethodKind MethodKind => MethodKind.Ordinary;
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
+        readonly MethodSymbol _basector;
+        readonly MethodSymbol _phpconstruct;
 
         /// <summary>
-        /// <c>__construct</c> in current class. Can be <c>null</c>.
+        /// Base <c>.ctor</c> to be called by this method.
         /// </summary>
-        private MethodSymbol PhpCtor => this.ContainingType.ResolvePhpCtor();
+        public MethodSymbol BaseCtor => _basector;
+
+        /// <summary>
+        /// Optional. PHP constructor <c>__construct</c> to be called by this method.
+        /// </summary>
+        public MethodSymbol PhpConstructor => _phpconstruct;
+
+        public bool IsInitFieldsOnly { get; private set; }
+
+        private SynthesizedPhpCtorSymbol(SourceTypeSymbol containingType, Accessibility accessibility,
+            bool isInitFieldsOnly,
+            MethodSymbol basector, MethodSymbol __construct, int paramsLimit = int.MaxValue)
+            : base(containingType, WellKnownMemberNames.InstanceConstructorName, false, false, containingType.DeclaringCompilation.CoreTypes.Void, accessibility)
+        {
+            if (basector == null) throw new ArgumentNullException(nameof(basector));
+
+            _basector = basector;
+            _phpconstruct = __construct;
+
+            this.IsInitFieldsOnly = isInitFieldsOnly;
+
+            // clone parameters from __construct ?? basector
+            var template = (__construct ?? basector).Parameters;
+            var ps = new List<ParameterSymbol>(template.Length)
+            {
+                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0) // Context <ctx>
+            };
+
+            // same parameters as PHP constructor
+            for (int i = 0; i < template.Length && i < paramsLimit; i++)
+            {
+                var p = template[i];
+                if (!SpecialParameterSymbol.IsContextParameter(p))
+                {
+                    ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name, p.IsParams,
+                        explicitDefaultConstantValue: p.ExplicitDefaultConstantValue));
+                }
+            }
+            
+            _parameters = ps.ToImmutableArray();
+        }
+
+        /// <summary>
+        /// Creates CLS constructors for a PHP class.
+        /// </summary>
+        /// <param name="type">PHP class.</param>
+        /// <returns>Enumeration of instance constructors for PHP class.</returns>
+        /// <remarks>
+        /// Constructors are created with respect to <c>base..ctor</c> and class PHP constructor function.
+        /// At least a single <c>.ctor</c> is created which initializes fields and calls <c>base..ctor</c>. This is main constructor needed to properly initialize the class.
+        /// In case there is a PHP constructor function:
+        /// - The first ctor is marked as protected and is used only by other ctors and by derived classes to initialize class without calling the PHP constructor function.
+        /// - Another ctor is created in order to call the main constructor and call PHP constructor function.
+        /// - Ghost stubs of the other ctor are created in order to pass default parameter values which cannot be stored in metadata (e.g. array()).
+        /// </remarks>
+        public static IEnumerable<MethodSymbol> CreateCtors(SourceTypeSymbol type)
+        {
+            if (type.IsStatic || type.IsInterface)
+            {
+                yield break;
+            }
+
+            // resolve php constructor
+            var phpconstruct = type.ResolvePhpCtor(); // this tells us what parameters are provided so we can select best overload for base..ctor() call
+
+            // resolve base .ctor that has to be called
+            var fieldsonlyctor = (type.BaseType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly;   // base..ctor() to be called if provided
+            var basectors = (fieldsonlyctor != null)
+                ? ImmutableArray.Create(fieldsonlyctor)
+                : type.BaseType.InstanceConstructors
+                    .OrderByDescending(c => c.ParameterCount)   // longest ctors first
+                    .AsImmutable();
+
+            // what parameters are provided
+            var givenparams = (phpconstruct != null) ? phpconstruct.Parameters.Where(p => !p.IsImplicitlyDeclared).ToArray() : Array.Empty<ParameterSymbol>();
+
+            // first declare .ctor that initializes fields only and calls base .ctor
+            var basector = ResolveBaseCtor(givenparams, basectors);
+            if (basector == null)
+            {
+                throw new NotImplementedException("Base constructor cannot be resolved. Base class either does not exist or constructor parameters do not match.");
+                // TODO: Err & ErrorMethodSymbol
+            }
+
+            // create .ctor(s)
+            if (phpconstruct == null)
+            {
+                yield return new SynthesizedPhpCtorSymbol(type, Accessibility.Public, false, basector, null);
+            }
+            else
+            {
+                var fieldsinitctor = new SynthesizedPhpCtorSymbol(type, Accessibility.Protected, true, basector, null);
+                yield return fieldsinitctor;
+
+                // generate .ctor(s) calling PHP __construct with optional overloads in case there is an optional parameter
+                var ps = phpconstruct.Parameters;
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    var p = ps[i] as SourceParameterSymbol;
+                    if (p != null && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                    {
+                        yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, false, fieldsinitctor, phpconstruct, i);
+                    }
+                }
+
+                yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, false, fieldsinitctor, phpconstruct);
+            }
+
+            yield break;
+        }
 
         static bool CanBePassedTo(ParameterSymbol[] givenparams, ParameterSymbol[] calledparams)
         {
@@ -112,177 +209,89 @@ namespace Pchp.CodeAnalysis.Symbols
             return true;
         }
 
-        void ResolveBaseCtorAndParameters()
+        static MethodSymbol ResolveBaseCtor(ParameterSymbol[] givenparams, ImmutableArray<MethodSymbol> candidates)
         {
-            if (!_parameters.IsDefaultOrEmpty)
-                return;
-
-            //
-            var phpctor = this.PhpCtor; // this tells us what parameters are provided to resolve base .ctor that can be called
-            var basephpnew = (this.ContainingType.BaseType as IPhpTypeSymbol)?.InitializeInstanceMethod;   // base..phpnew() to be called if provided
-            var basectors = (basephpnew != null)
-                ? ImmutableArray.Create(basephpnew)
-                : this.ContainingType.BaseType.InstanceConstructors
-                .Where(c => c.DeclaredAccessibility != Accessibility.Private)
-                .OrderByDescending(c => c.ParameterCount)   // longest ctors first
-                .AsImmutable();
-
-            // Context <ctx>
-            var ps = new List<ParameterSymbol>(1)
-            {
-                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0) // Context <ctx>
-            };
-
-            var givenparams = (phpctor != null)
-                ? phpctor.Parameters.Where(p => !p.IsImplicitlyDeclared).ToArray()
-                : EmptyArray<ParameterSymbol>.Instance;
-
             // find best matching basector
-            foreach (var c in basectors)
+            foreach (var c in candidates)
             {
                 var calledparams = c.Parameters.Where(p => !p.IsImplicitlyDeclared).ToArray();
 
-                if (CanBePassedTo(givenparams, calledparams))
+                if (CanBePassedTo(givenparams, calledparams) && !c.IsStatic && c.DeclaredAccessibility != Accessibility.Private)
                 {
                     // we have found base constructor with most parameters we can call with given parameters
-                    _lazyBaseCtor = c;
-                    break;
+                    return c;
                 }
             }
 
-            if (_lazyBaseCtor == null)
-            {
-                throw new InvalidOperationException("Base .ctor cannot be resolved with provided constructor.");
-            }
-
-            //
-            Debug.Assert(SpecialParameterSymbol.IsContextParameter(ps[0]));
-            Debug.Assert(_lazyBaseCtor != null && !_lazyBaseCtor.IsStatic);
-
-            foreach (var p in _lazyBaseCtor.Parameters)
-            {
-                if (SpecialParameterSymbol.IsContextParameter(p))
-                    continue;
-
-                ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name,
-                    explicitDefaultConstantValue: p.ExplicitDefaultConstantValue));
-            }
-
-            //
-            _parameters = ps.AsImmutable();
+            return null;
         }
 
-        /// <summary>
-        /// Base <c>.phpnew</c> or <c>.ctor</c> to be called by this <c>.phpnew</c> method.
-        /// </summary>
-        internal MethodSymbol BasePhpNew
+        #region .ctor metadata
+
+        public override bool HidesBaseMethodsByName => false;
+
+        internal override bool HasSpecialName => true;
+
+        public sealed override bool IsAbstract => false;
+
+        public sealed override bool IsExtern => false;
+
+        public sealed override bool IsOverride => false;
+
+        public sealed override bool IsSealed => false;
+
+        public sealed override bool IsVirtual => false;
+
+        public sealed override MethodKind MethodKind => MethodKind.Constructor;
+
+        internal override ObsoleteAttributeData ObsoleteAttributeData => null;
+
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => false;
+
+        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => false;
+
+        public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
             get
             {
-                if (_lazyBaseCtor == null)
-                {
-                    ResolveBaseCtorAndParameters();
-                }
-
-                Debug.Assert(_lazyBaseCtor != null);
-                return _lazyBaseCtor;
+                throw new NotImplementedException();
             }
         }
 
-        public override ImmutableArray<ParameterSymbol> Parameters
+        public override ImmutableArray<Location> Locations
         {
             get
             {
-                if (_parameters.IsDefault)
+                throw new NotImplementedException();
+            }
+        }
+
+        #endregion
+
+        BaseAttributeData _lazyPhpFieldsOnlyCtorAttribute;
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            var attrs = base.GetAttributes();
+
+            // IsInitFieldsOnly => InitFieldsOnlyCtorAttribute
+            if (IsInitFieldsOnly)
+            {
+                // [PhpFieldsOnlyCtorAttribute]
+                if (_lazyPhpFieldsOnlyCtorAttribute == null)
                 {
-                    ResolveBaseCtorAndParameters();
+                    _lazyPhpFieldsOnlyCtorAttribute = new SynthesizedAttributeData(
+                        DeclaringCompilation.CoreMethods.Ctors.PhpFieldsOnlyCtorAttribute,
+                        ImmutableArray<TypedConstant>.Empty,
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
 
-                return _parameters;
+                attrs = attrs.Add(_lazyPhpFieldsOnlyCtorAttribute);
             }
+
+            return attrs;
         }
     }
 
     #endregion
-
-    /// <summary>
-    /// CLR .ctor symbol calling .phpnew and PHP constructor.
-    /// </summary>
-    internal class SynthesizedPhpCtorSymbol : SynthesizedCtorSymbol
-    {
-        MethodSymbol _lazyPhpCtor;
-
-        public SynthesizedPhpCtorSymbol(SourceTypeSymbol/*!*/container)
-            : base(container)
-        {
-            _parameters = default(ImmutableArray<ParameterSymbol>); // lazy initialized
-        }
-
-        public override Accessibility DeclaredAccessibility
-        {
-            get
-            {
-                var phpctor = PhpCtor;
-
-                return phpctor != null
-                    ? phpctor.DeclaredAccessibility
-                    : Accessibility.Public;
-            }
-        }
-
-        /// <summary>
-        /// PHP constructor method in this class.
-        /// Can be <c>null</c>.
-        /// </summary>
-        internal MethodSymbol PhpCtor
-        {
-            get
-            {
-                if (_lazyPhpCtor == null)
-                {
-                    _lazyPhpCtor = this.ContainingType.ResolvePhpCtor(true);
-
-                    if (_lazyPhpCtor != null && _lazyPhpCtor.IsStatic)
-                    {
-                        // TODO: Err
-                    }
-                }
-
-                //
-                return _lazyPhpCtor;
-            }
-        }
-
-        public override ImmutableArray<ParameterSymbol> Parameters
-        {
-            get
-            {
-                if (_parameters.IsDefault)
-                {
-                    // Context <ctx>
-                    var ps = new List<ParameterSymbol>(1)
-                    {
-                        new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0) // Context <ctx>
-                    };
-
-                    if (this.PhpCtor != null)
-                    {
-                        // same parameters as PHP constructor
-                        foreach (var p in this.PhpCtor.Parameters)
-                        {
-                            if (SpecialParameterSymbol.IsContextParameter(p))
-                                continue;
-
-                            ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name, p.IsParams,
-                                explicitDefaultConstantValue: p.ExplicitDefaultConstantValue));
-                        }
-                    }
-
-                    _parameters = ps.AsImmutable();
-                }
-
-                return _parameters;
-            }
-        }
-    }
 }

@@ -1148,7 +1148,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // TODO: Err cannot instantiate a static class
                 }
 
-                var candidates = type.InstanceConstructors.ToArray();
+                var candidates = type.InstanceConstructors.ToArray(); // ignore fieldsinitonly ctor
 
                 //
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();

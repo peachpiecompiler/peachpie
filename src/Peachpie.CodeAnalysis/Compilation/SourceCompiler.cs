@@ -185,7 +185,7 @@ namespace Pchp.CodeAnalysis
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
             // __statics.Init, .phpnew, .ctor
-            WalkTypes(t => t.EmitInit(_moduleBuilder));
+            WalkTypes(t => t.EmitInit(_moduleBuilder, _diagnostics));
 
             // realize .cctor if any
             _moduleBuilder.RealizeStaticCtors();
