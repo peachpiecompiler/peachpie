@@ -304,6 +304,17 @@ namespace Pchp.CodeAnalysis
             return (NamedTypeSymbol)CommonGetSpecialType(specialType);
         }
 
+        internal override bool IsAttributeType(ITypeSymbol type)
+        {
+            HashSet<DiagnosticInfo> useSiteDiagnostics = null;
+            return ((TypeSymbol)type).IsDerivedFrom(GetWellKnownType(WellKnownType.System_Attribute), false, ref useSiteDiagnostics);
+        }
+
+        internal override bool IsSystemTypeReference(ITypeSymbol type)
+        {
+            return (TypeSymbol)type == GetWellKnownType(WellKnownType.System_Type);
+        }
+
         protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
         {
             return this.CorLibrary.GetSpecialType(specialType);

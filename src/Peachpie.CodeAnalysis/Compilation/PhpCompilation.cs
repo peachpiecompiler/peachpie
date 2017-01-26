@@ -54,12 +54,12 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// COR library containing base system types.
         /// </summary>
-        internal AssemblySymbol CorLibrary => ((ReferenceManager)GetBoundReferenceManager()).CorLibrary;
+        internal AssemblySymbol CorLibrary => GetBoundReferenceManager().CorLibrary;
 
         /// <summary>
         /// PHP COR library containing PHP runtime.
         /// </summary>
-        internal AssemblySymbol PhpCorLibrary => ((ReferenceManager)GetBoundReferenceManager()).PhpCorLibrary;
+        internal AssemblySymbol PhpCorLibrary => GetBoundReferenceManager().PhpCorLibrary;
 
         /// <summary>
         /// Tables containing all source symbols to be compiled.
@@ -92,21 +92,54 @@ namespace Pchp.CodeAnalysis
             string assemblyName,
             PhpCompilationOptions options,
             ImmutableArray<MetadataReference> references,
+            bool isSubmission,
             ReferenceManager referenceManager = null,
+            bool reuseReferenceManager = false,
             //SyntaxAndDeclarationManager syntaxAndDeclarations
             AsyncQueue<CompilationEvent> eventQueue = null
             )
-            : base(assemblyName, references, SyntaxTreeCommonFeatures(ImmutableArray<SyntaxTree>.Empty), false, eventQueue)
+            : base(assemblyName, references, SyntaxTreeCommonFeatures(ImmutableArray<SyntaxTree>.Empty), isSubmission, eventQueue)
         {
             _wellKnownMemberSignatureComparer = new WellKnownMembersSignatureComparer(this);
 
             _options = options;
-            _referenceManager = referenceManager ?? new ReferenceManager(options.SdkDirectory);
             _tables = new SourceSymbolCollection(this);
             _coreTypes = new CoreTypes(this);
             _coreMethods = new CoreMethods(_coreTypes);
-
             _anonymousTypeManager = new AnonymousTypeManager(this);
+
+            _referenceManager = reuseReferenceManager
+                ? referenceManager
+                : new ReferenceManager(MakeSourceAssemblySimpleName(), options.AssemblyIdentityComparer, referenceManager?.ObservedMetadata, options.SdkDirectory);
+        }
+
+        /// <summary>
+        /// Create a duplicate of this compilation with different symbol instances.
+        /// </summary>
+        public new PhpCompilation Clone()
+        {
+            return Update(_referenceManager, true, this.SyntaxTrees);
+        }
+
+        private PhpCompilation Update(
+            ReferenceManager referenceManager,
+            bool reuseReferenceManager,
+            IEnumerable<SyntaxTree> syntaxTrees)
+        {
+            var compilation = new PhpCompilation(
+                this.AssemblyName,
+                _options,
+                this.ExternalReferences,
+                //this.PreviousSubmission,
+                //this.SubmissionReturnType,
+                //this.HostObjectType,
+                this.IsSubmission,
+                referenceManager,
+                reuseReferenceManager);
+
+            // compilation.SourceSymbolCollection.AddSyntaxTreeRange(this.SyntaxTrees);
+
+            return compilation;
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences
@@ -153,7 +186,7 @@ namespace Pchp.CodeAnalysis
         {
             get
             {
-                throw new NotImplementedException();
+                return this.CoreTypes.Object.Symbol;
             }
         }
 
@@ -218,7 +251,8 @@ namespace Pchp.CodeAnalysis
             var compilation = new PhpCompilation(
                 assemblyName,
                 options,
-                ValidateReferences<CompilationReference>(references));
+                ValidateReferences<CompilationReference>(references),
+                false);
 
             //
             compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees.Cast<PhpSyntaxTree>());
@@ -380,7 +414,7 @@ namespace Pchp.CodeAnalysis
 
         protected override IArrayTypeSymbol CommonCreateArrayTypeSymbol(ITypeSymbol elementType, int rank)
         {
-            throw new NotImplementedException();
+            return ArrayTypeSymbol.CreateCSharpArray(SourceAssembly, (TypeSymbol)elementType, rank: rank);
         }
 
         protected override IPointerTypeSymbol CommonCreatePointerTypeSymbol(ITypeSymbol elementType)
@@ -465,7 +499,10 @@ namespace Pchp.CodeAnalysis
 
         protected override Compilation CommonRemoveAllSyntaxTrees()
         {
-            throw new NotImplementedException();
+            return Update(
+                _referenceManager,
+                reuseReferenceManager: true,
+                syntaxTrees: ImmutableArray<SyntaxTree>.Empty);
         }
 
         protected override Compilation CommonRemoveSyntaxTrees(IEnumerable<SyntaxTree> trees)
@@ -505,7 +542,10 @@ namespace Pchp.CodeAnalysis
             return new AnalyzerDriver<int>(analyzers, getKind, analyzerManager, isComment);
         }
 
-        internal override CommonReferenceManager CommonGetBoundReferenceManager() => GetBoundReferenceManager();
+        internal override CommonReferenceManager CommonGetBoundReferenceManager()
+        {
+            return GetBoundReferenceManager();
+        }
 
         internal new ReferenceManager GetBoundReferenceManager()
         {
@@ -527,7 +567,16 @@ namespace Pchp.CodeAnalysis
 
         internal override int CompareSourceLocations(Location loc1, Location loc2)
         {
-            throw new NotImplementedException();
+            Debug.Assert(loc1.IsInSource);
+            Debug.Assert(loc2.IsInSource);
+
+            var comparison = CompareSyntaxTreeOrdering(loc1.SourceTree, loc2.SourceTree);
+            if (comparison != 0)
+            {
+                return comparison;
+            }
+
+            return loc1.SourceSpan.Start - loc2.SourceSpan.Start;
         }
 
         internal override bool CompileImpl(CommonPEModuleBuilder moduleBuilder, Stream win32Resources, Stream xmlDocStream, bool emittingPdb, DiagnosticBag diagnostics, Predicate<ISymbol> filterOpt, CancellationToken cancellationToken)
@@ -783,18 +832,7 @@ namespace Pchp.CodeAnalysis
 
         internal override bool HasCodeToEmit()
         {
-            //foreach (var syntaxTree in this.SyntaxTrees)
-            //{
-            //    var unit = syntaxTree.GetCompilationUnitRoot();
-            //    if (unit.Members.Count > 0)
-            //    {
-            //        return true;
-            //    }
-            //}
-
-            //return false;
-
-            throw new NotImplementedException();
+            return SourceSymbolCollection.GetFiles().Any();
         }
 
         internal override bool HasSubmissionResult()
@@ -802,19 +840,16 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        internal override bool IsAttributeType(ITypeSymbol type)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal override bool IsSystemTypeReference(ITypeSymbol type)
-        {
-            throw new NotImplementedException();
-        }
-
         internal override void ValidateDebugEntryPoint(IMethodSymbol debugEntryPoint, DiagnosticBag diagnostics)
         {
-            throw new NotImplementedException();
+            Debug.Assert(debugEntryPoint != null);
+
+            // Debug entry point has to be a method definition from this compilation.
+            var methodSymbol = debugEntryPoint as MethodSymbol;
+            if (methodSymbol?.DeclaringCompilation != this || !methodSymbol.IsDefinition)
+            {
+                //diagnostics.Add(ErrorCode.ERR_DebugEntryPointNotSourceMethodDefinition, Location.None);
+            }
         }
 
         internal override Compilation WithEventQueue(AsyncQueue<CompilationEvent> eventQueue)
