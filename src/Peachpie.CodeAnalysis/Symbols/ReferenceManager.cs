@@ -21,8 +21,14 @@ namespace Pchp.CodeAnalysis
             ImmutableDictionary<IAssemblySymbol, MetadataReference> _metadataMap;
             AssemblySymbol _lazyCorLibrary, _lazyPhpCorLibrary;
 
-            Dictionary<AssemblyIdentity, PEAssemblySymbol> _assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
+            public Dictionary<AssemblyIdentity, PEAssemblySymbol> ObservedMetadata => _observedMetadata;
+            readonly Dictionary<AssemblyIdentity, PEAssemblySymbol> _observedMetadata;
 
+            public string SimpleAssemblyName => _simpleAssemblyName;
+            readonly string _simpleAssemblyName;
+
+            public AssemblyIdentityComparer IdentityComparer => _identityComparer;
+            readonly AssemblyIdentityComparer _identityComparer;
             readonly string _sdkdir;
 
             /// <summary>
@@ -62,37 +68,30 @@ namespace Pchp.CodeAnalysis
 
             internal IEnumerable<IAssemblySymbol> ExplicitReferencesSymbols => ExplicitReferences.Select(r => _referencesMap[r]).WhereNotNull();
             
-            public ReferenceManager(string sdkDir)
+            public ReferenceManager(
+                string simpleAssemblyName,
+                AssemblyIdentityComparer identityComparer,
+                Dictionary<AssemblyIdentity, PEAssemblySymbol> observedMetadata,
+                string sdkDir)
             {
+                _simpleAssemblyName = simpleAssemblyName;
+                _identityComparer = identityComparer ?? AssemblyIdentityComparer.Default;
                 _sdkdir = sdkDir;
-            }
-
-            public ReferenceManager Clone()
-            {
-                // clone cache of loaded assemblies
-
-                var clone = new ReferenceManager(_sdkdir)
-                {
-                    _lazyCorLibrary = _lazyCorLibrary,
-                    _lazyPhpCorLibrary = _lazyPhpCorLibrary,
-                    _assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>(_assembliesMap),
-                };
-                
-                //
-                return clone;
+                _observedMetadata = observedMetadata ?? new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
             }
 
             PEAssemblySymbol CreateAssemblyFromIdentity(MetadataReferenceResolver resolver, AssemblyIdentity identity, string basePath, List<PEModuleSymbol> modules)
             {
                 PEAssemblySymbol ass;
-                if (!_assembliesMap.TryGetValue(identity, out ass))
+                if (!_observedMetadata.TryGetValue(identity, out ass))
                 {
                     // temporary: lookup ignoring minor version number
-                    foreach (var pair in _assembliesMap)
+                    foreach (var pair in _observedMetadata)
                     {
+                        // TODO: _identityComparer
                         if (pair.Key.Name.Equals(identity.Name, StringComparison.OrdinalIgnoreCase) && pair.Key.Version.Major == identity.Version.Major)
                         {
-                            _assembliesMap[identity] = pair.Value;
+                            _observedMetadata[identity] = pair.Value;
                             return pair.Value;
                         }
                     }
@@ -105,12 +104,13 @@ namespace Pchp.CodeAnalysis
                     var pe = pes.FirstOrDefault();
                     if (pe != null)
                     {
-                        _assembliesMap[identity] = ass = PEAssemblySymbol.Create(pe);
+                        _observedMetadata[identity] = ass = PEAssemblySymbol.Create(pe);
                         ass.SetCorLibrary(_lazyCorLibrary);
                         modules.AddRange(ass.Modules.Cast<PEModuleSymbol>());
                     }
                     else
                     {
+                        // TODO: diagnostics
                         throw new DllNotFoundException(identity.GetDisplayName());
                     }
                 }
@@ -150,7 +150,7 @@ namespace Pchp.CodeAnalysis
                 Debug.Assert(_lazyExplicitReferences.IsDefault);
                 
                 var resolver = compilation.Options.MetadataReferenceResolver;
-                var moduleName = compilation.Options.ModuleName;
+                var moduleName = compilation.MakeSourceModuleName();
 
                 //
                 var externalRefs = compilation.ExternalReferences;
@@ -166,7 +166,7 @@ namespace Pchp.CodeAnalysis
                 {
                     var peass = ((AssemblyMetadata)pe.GetMetadata()).GetAssembly();
                     
-                    var symbol = _assembliesMap.TryGetOrDefault(peass.Identity) ?? PEAssemblySymbol.Create(pe, peass);
+                    var symbol = _observedMetadata.TryGetOrDefault(peass.Identity) ?? PEAssemblySymbol.Create(pe, peass);
                     if (symbol != null)
                     {
                         assemblies.Add(symbol);
@@ -180,7 +180,7 @@ namespace Pchp.CodeAnalysis
                             _lazyPhpCorLibrary = symbol;
 
                         // cache bound assembly symbol
-                        _assembliesMap[symbol.Identity] = symbol;
+                        _observedMetadata[symbol.Identity] = symbol;
 
                         // list of modules to initialize later
                         refmodules.AddRange(symbol.Modules.Cast<PEModuleSymbol>());
@@ -198,7 +198,7 @@ namespace Pchp.CodeAnalysis
                 _referencesMap = referencesMap.ToImmutableDictionary();
 
                 //
-                var assembly = new SourceAssemblySymbol(compilation, moduleName, moduleName);
+                var assembly = new SourceAssemblySymbol(compilation, this.SimpleAssemblyName, moduleName);
 
                 assembly.SetCorLibrary(_lazyCorLibrary);                
                 assembly.SourceModule.SetReferences(new ModuleReferences<AssemblySymbol>(
