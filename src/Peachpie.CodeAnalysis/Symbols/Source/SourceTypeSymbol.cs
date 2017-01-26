@@ -336,6 +336,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
+            var attrs = base.GetAttributes();
+
             if (this.IsTrait)
             {
                 // [PhpTraitAttribute()]
@@ -348,10 +350,10 @@ namespace Pchp.CodeAnalysis.Symbols
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
 
-                return ImmutableArray.Create<AttributeData>(_lazyPhpTraitAttribute);
+                attrs = attrs.Add(_lazyPhpTraitAttribute);
             }
 
-            return base.GetAttributes();
+            return attrs;
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()

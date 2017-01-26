@@ -54,12 +54,12 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// COR library containing base system types.
         /// </summary>
-        internal AssemblySymbol CorLibrary => ((ReferenceManager)GetBoundReferenceManager()).CorLibrary;
+        internal AssemblySymbol CorLibrary => GetBoundReferenceManager().CorLibrary;
 
         /// <summary>
         /// PHP COR library containing PHP runtime.
         /// </summary>
-        internal AssemblySymbol PhpCorLibrary => ((ReferenceManager)GetBoundReferenceManager()).PhpCorLibrary;
+        internal AssemblySymbol PhpCorLibrary => GetBoundReferenceManager().PhpCorLibrary;
 
         /// <summary>
         /// Tables containing all source symbols to be compiled.
