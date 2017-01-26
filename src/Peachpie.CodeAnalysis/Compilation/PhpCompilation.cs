@@ -92,12 +92,13 @@ namespace Pchp.CodeAnalysis
             string assemblyName,
             PhpCompilationOptions options,
             ImmutableArray<MetadataReference> references,
+            bool isSubmission,
             ReferenceManager referenceManager = null,
             bool reuseReferenceManager = false,
             //SyntaxAndDeclarationManager syntaxAndDeclarations
             AsyncQueue<CompilationEvent> eventQueue = null
             )
-            : base(assemblyName, references, SyntaxTreeCommonFeatures(ImmutableArray<SyntaxTree>.Empty), false, eventQueue)
+            : base(assemblyName, references, SyntaxTreeCommonFeatures(ImmutableArray<SyntaxTree>.Empty), isSubmission, eventQueue)
         {
             _wellKnownMemberSignatureComparer = new WellKnownMembersSignatureComparer(this);
 
@@ -110,6 +111,35 @@ namespace Pchp.CodeAnalysis
             _referenceManager = reuseReferenceManager
                 ? referenceManager
                 : new ReferenceManager(MakeSourceAssemblySimpleName(), options.AssemblyIdentityComparer, referenceManager?.ObservedMetadata, options.SdkDirectory);
+        }
+
+        /// <summary>
+        /// Create a duplicate of this compilation with different symbol instances.
+        /// </summary>
+        public new PhpCompilation Clone()
+        {
+            return Update(_referenceManager, true, this.SyntaxTrees);
+        }
+
+        private PhpCompilation Update(
+            ReferenceManager referenceManager,
+            bool reuseReferenceManager,
+            IEnumerable<SyntaxTree> syntaxTrees)
+        {
+            var compilation = new PhpCompilation(
+                this.AssemblyName,
+                _options,
+                this.ExternalReferences,
+                //this.PreviousSubmission,
+                //this.SubmissionReturnType,
+                //this.HostObjectType,
+                this.IsSubmission,
+                referenceManager,
+                reuseReferenceManager);
+
+            // compilation.SourceSymbolCollection.AddSyntaxTreeRange(this.SyntaxTrees);
+
+            return compilation;
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences
@@ -221,7 +251,8 @@ namespace Pchp.CodeAnalysis
             var compilation = new PhpCompilation(
                 assemblyName,
                 options,
-                ValidateReferences<CompilationReference>(references));
+                ValidateReferences<CompilationReference>(references),
+                false);
 
             //
             compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees);
@@ -468,7 +499,10 @@ namespace Pchp.CodeAnalysis
 
         protected override Compilation CommonRemoveAllSyntaxTrees()
         {
-            throw new NotImplementedException();
+            return Update(
+                _referenceManager,
+                reuseReferenceManager: true,
+                syntaxTrees: ImmutableArray<SyntaxTree>.Empty);
         }
 
         protected override Compilation CommonRemoveSyntaxTrees(IEnumerable<SyntaxTree> trees)
