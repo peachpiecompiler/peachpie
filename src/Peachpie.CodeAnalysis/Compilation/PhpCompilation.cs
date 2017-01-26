@@ -186,7 +186,7 @@ namespace Pchp.CodeAnalysis
         {
             get
             {
-                throw new NotImplementedException();
+                return this.CoreTypes.Object.Symbol;
             }
         }
 
