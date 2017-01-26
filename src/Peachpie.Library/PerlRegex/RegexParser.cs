@@ -893,10 +893,25 @@ namespace Pchp.Library.PerlRegex
 
             MoveRight();
 
+            // In perl regexps, named groups are written like this: "(?P<name> ... )"
+            //  (\k<name>...)
+            //  (\k'name'...)
+            //  (\k{name}...)
+            //  (\g{name}...)
+            //  (?'name'...)
+            //  (?<name>...)
+            //  (?P=name)
+            //  (?:...)
+
             for (;;)
             {
                 if (CharsRight() == 0)
                     break;
+
+                if (RightChar() == 'P') // (?P // named group, skip 'P'
+                {
+                    MoveRight();
+                }
 
                 switch (ch = MoveRightGetChar())
                 {
@@ -1862,6 +1877,10 @@ namespace Pchp.Library.PerlRegex
                                 // we have (?...
                                 MoveRight();
 
+                                // (?P // skip optional 'P'
+                                if (CharsRight() > 0 && RightChar() == 'P')
+                                    MoveRight();
+                                
                                 if (CharsRight() > 1 && (RightChar() == '<' || RightChar() == '\''))
                                 {
                                     // named group: (?<... or (?'...
