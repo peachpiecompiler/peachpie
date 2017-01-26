@@ -141,7 +141,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // resolve php constructor
-            var phpconstruct = type.ResolvePhpCtor(); // this tells us what parameters are provided so we can select best overload for base..ctor() call
+            var phpconstruct = type.ResolvePhpCtor(true); // this tells us what parameters are provided so we can select best overload for base..ctor() call
 
             // resolve base .ctor that has to be called
             var fieldsonlyctor = (type.BaseType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly;   // base..ctor() to be called if provided
