@@ -2,7 +2,7 @@
 
 class myclass {
     // constructor
-    function myclass(){}
+    function __construct(){}
 
     // method 1
     function myfunc1(){}
@@ -22,7 +22,7 @@ class C
     }
 }
 
-print_r(in_array('myclass', get_class_methods('myclass')));
+print_r(in_array('__construct', get_class_methods('myclass')));
 print_r(in_array('myfunc2', get_class_methods(new myclass)));
 print_r(in_array('privateMethod', get_class_methods(new C)));
 print_r(method_exists('C', 'privateMethod'));
