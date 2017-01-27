@@ -7,13 +7,14 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace Pchp.Core.Reflection
 {
     /// <summary>
     /// Collection of PHP type methods and magic methods.
     /// </summary>
-    public class TypeMethods
+    public class TypeMethods : IEnumerable<RoutineInfo>
     {
         /// <summary>
         /// Enumeration of magic methods.
@@ -97,6 +98,19 @@ namespace Pchp.Core.Reflection
 
         #endregion
 
+        #region IEnumerable<RoutineInfo>
+
+        IEnumerator<RoutineInfo> IEnumerable<RoutineInfo>.GetEnumerator()
+        {
+            return (_methods != null)
+                ? _methods.Values.GetEnumerator()
+                : Enumerable.Empty<RoutineInfo>().GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<RoutineInfo>)this).GetEnumerator();
+
+        #endregion
+        
         /// <summary>
         /// Gets routine by its name.
         /// Returns <c>null</c> in case method does not exist.
@@ -123,6 +137,32 @@ namespace Pchp.Core.Reflection
 
                 PhpMethodInfo m;
                 return (_magicMethods != null && _magicMethods.TryGetValue(magic, out m)) ? m : null;
+            }
+        }
+
+        /// <summary>
+        /// Gets enumeration of methods visible in given caller context.
+        /// </summary>
+        public IEnumerable<RoutineInfo> EnumerateVisible(Type typectx)
+        {
+            if (_methods != null)
+            {
+                Func<RoutineInfo, bool> predicate = (routine) =>
+                {
+                    var clrmethods = routine.Methods;
+                    for (int i = 0; i < clrmethods.Length; i++)
+                    {
+                        if (clrmethods[i].IsVisible(typectx)) return true;
+                    }
+
+                    return false;
+                };
+
+                return _methods.Values.Where(predicate);
+            }
+            else
+            {
+                return Enumerable.Empty<RoutineInfo>();
             }
         }
     }

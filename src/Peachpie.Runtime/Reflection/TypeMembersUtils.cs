@@ -181,5 +181,39 @@ namespace Pchp.Core.Reflection
 
             return caller != null && memberctx.GetTypeInfo().IsAssignableFrom(caller);
         }
+
+        /// <summary>
+        /// Selects only candidates visible from the current class context.
+        /// </summary>
+        public static bool IsVisible(this MethodBase m, Type classCtx)
+        {
+            if (m.IsPrivate)
+            {
+                return m.DeclaringType == classCtx;
+            }
+
+            if (m.IsFamily)
+            {
+                if (classCtx == null)
+                {
+                    return false;
+                }
+
+                if (m.DeclaringType == classCtx)
+                {
+                    return true;
+                }
+                else
+                {
+                    var m_type = m.DeclaringType.GetTypeInfo();
+                    var classCtx_type = classCtx.GetTypeInfo();
+
+                    return classCtx_type.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx_type);
+                }
+            }
+
+            //
+            return true;
+        }
     }
 }

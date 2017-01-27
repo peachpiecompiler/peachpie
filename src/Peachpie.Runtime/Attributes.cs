@@ -86,10 +86,10 @@ namespace Pchp.Core
 
     /// <summary>
     /// Denotates a function parameter that will be loaded with current class.
+    /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
     /// </summary>
     /// <remarks>
     /// The parameter is used to access calers' class context.
-    /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
     /// The parameter must be before regular parameters.</remarks>
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ImportCallerClassAttribute : Attribute
