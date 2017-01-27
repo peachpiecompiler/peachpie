@@ -6,46 +6,46 @@ using Devsense.PHP.Errors;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Errors
 {
     /// <summary>
-    /// Receives errors from PHP parser and transforms them into Roslyn diagnostics using
-    /// <see cref="ParserMessageProvider"/>.
+    /// Stores errors from PHP parser.
     /// </summary>
     internal class ErrorSink : IErrorSink<Span>
     {
-        readonly List<Diagnostic> _diagnostics;
-        private SourceUnit _sourceUnit;
-        private SyntaxTree _lazySyntaxTree;
+        private PhpSyntaxTree _syntaxTree;
+        private List<Diagnostic> _diagnostics;
 
-        public ErrorSink(List<Diagnostic> diagnostics, SourceUnit sourceUnit)
+        public ErrorSink(PhpSyntaxTree syntaxTree)
         {
-            Contract.ThrowIfNull(diagnostics);
-            _diagnostics = diagnostics;
-            _sourceUnit = sourceUnit;
+            _syntaxTree = syntaxTree;
         }
 
-        private SyntaxTree LazySyntaxTree
-        {
-            get
-            {
-                if (_lazySyntaxTree == null)
-                {
-                    _lazySyntaxTree = new SyntaxTreeAdapter(_sourceUnit);
-                }
-                return _lazySyntaxTree;
-            }
-        }
+        // Save an allocation if no errors were found
+        public ImmutableArray<Diagnostic> Diagnostics =>
+            _diagnostics?.ToImmutableArray() ?? ImmutableArray<Diagnostic>.Empty;
 
         public void Error(Span span, ErrorInfo info, params string[] argsOpt)
         {
-            var location = new SourceLocation(
-                LazySyntaxTree,
-                new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
             ParserMessageProvider.Instance.RegisterError(info);
+
+            var location = new SourceLocation(
+                _syntaxTree,
+                new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+
             var diagnostic = ParserMessageProvider.Instance.CreateDiagnostic(
-                info.Severity == ErrorSeverity.WarningAsError, info.Id, location, argsOpt);
+                info.Severity == ErrorSeverity.WarningAsError,
+                info.Id,
+                location,
+                argsOpt);
+
+            if (_diagnostics == null)
+            {
+                _diagnostics = new List<Diagnostic>();
+            }
+
             _diagnostics.Add(diagnostic);
         }
     }

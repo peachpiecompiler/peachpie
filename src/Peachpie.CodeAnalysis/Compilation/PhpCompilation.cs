@@ -241,7 +241,7 @@ namespace Pchp.CodeAnalysis
 
         public static PhpCompilation Create(
             string assemblyName,
-            IEnumerable<SourceUnit> syntaxTrees = null,
+            IEnumerable<SyntaxTree> syntaxTrees = null,
             IEnumerable<MetadataReference> references = null,
             PhpCompilationOptions options = null)
         {
@@ -255,7 +255,7 @@ namespace Pchp.CodeAnalysis
                 false);
 
             //
-            compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees);
+            compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees.Cast<PhpSyntaxTree>());
 
             //
             return compilation;
@@ -329,7 +329,7 @@ namespace Pchp.CodeAnalysis
         public override ImmutableArray<Diagnostic> GetParseDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
             //return GetDiagnostics(CompilationStage.Parse, false, cancellationToken);
-            return ImmutableArray<Diagnostic>.Empty;
+            return _tables.GetFiles().SelectMany(file => file.SyntaxTree.Diagnostics).ToImmutableArray();
         }
 
         public override IEnumerable<ISymbol> GetSymbolsWithName(Func<string, bool> predicate, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))

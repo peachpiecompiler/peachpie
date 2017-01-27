@@ -10,22 +10,27 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     internal class DiagnosingVisitor : GraphVisitor
     {
         private readonly DiagnosticBag _diagnostics;
+        private SourceRoutineSymbol _routine;
 
         private int _visitedColor;
 
-        public DiagnosingVisitor(DiagnosticBag diagnostics)
+        public DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
         {
             _diagnostics = diagnostics;
+            _routine = routine;
         }
 
         public override void VisitCFG(ControlFlowGraph x)
         {
+            Debug.Assert(x == _routine.ControlFlowGraph);
+
             _visitedColor = x.NewColor();
             base.VisitCFG(x);
         }
@@ -49,7 +54,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (x.TargetMethod == null && x.Name.IsDirect)
             {
-                _diagnostics.Add(x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
+                _diagnostics.Add(_routine, x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
             }
         }
     }

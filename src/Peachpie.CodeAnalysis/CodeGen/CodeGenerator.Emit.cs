@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Errors;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
@@ -411,13 +412,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (_emitPdbSequencePoints && span.IsValid)
             {
-                if (_lazySyntaxTree == null)
-                    _lazySyntaxTree = new SyntaxTreeAdapter(_routine.ContainingFile.Syntax.ContainingSourceUnit);
-
-                _il.DefineSequencePoint(_lazySyntaxTree, new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+                _il.DefineSequencePoint(
+                    _routine.ContainingFile.SyntaxTree,
+                    new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
             }
         }
-        SyntaxTree _lazySyntaxTree;
 
         public TypeSymbol EmitDereference(TypeSymbol t)
         {

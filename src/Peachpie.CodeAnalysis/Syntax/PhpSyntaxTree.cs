@@ -7,22 +7,47 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Text;
 using System.Threading;
 using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using System.Collections.Immutable;
+using Pchp.CodeAnalysis.Errors;
+using Devsense.PHP.Errors;
 
 namespace Pchp.CodeAnalysis
 {
     /// <summary>
-    /// Adapter providing <see cref="SyntaxTree"/> from <see cref="SourceUnit"/>.
+    /// Adapter providing <see cref="SyntaxTree"/> from <see cref="SourceUnit"/> and storing parse diagnostics.
     /// </summary>
-    class SyntaxTreeAdapter : SyntaxTree
+    public class PhpSyntaxTree : SyntaxTree
     {
         readonly SourceUnit _source;
 
-        public SyntaxTreeAdapter(SourceUnit source)
+        private PhpSyntaxTree(SourceUnit source)
         {
             Contract.ThrowIfNull(source);
 
             _source = source;
         }
+
+        public static PhpSyntaxTree ParseCode(
+            string content,
+            PhpParseOptions parseOptions,
+            PhpParseOptions scriptParseOptions,
+            string fname)
+        {
+            // TODO: new parser implementation based on Roslyn
+
+            // TODO: file.IsScript ? scriptParseOptions : parseOptions
+            var unit = new CodeSourceUnit(content.ToString(), fname, Encoding.UTF8);
+            var result = new PhpSyntaxTree(unit);
+
+            var errorSink = new ErrorSink(result);
+            unit.Parse(new BasicNodesFactory(unit), errorSink);
+            result.Diagnostics = errorSink.Diagnostics;
+
+            return result;
+        }
+
+        public ImmutableArray<Diagnostic> Diagnostics { get; private set; }
 
         public override Encoding Encoding => Encoding.UTF8;
 
@@ -45,6 +70,8 @@ namespace Pchp.CodeAnalysis
                 throw new NotImplementedException();
             }
         }
+
+        internal SourceUnit Source => _source;
 
         public override IList<TextSpan> GetChangedSpans(SyntaxTree syntaxTree)
         {
@@ -78,7 +105,7 @@ namespace Pchp.CodeAnalysis
 
         public override IEnumerable<Diagnostic> GetDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return Diagnostics;
         }
 
         public override FileLinePositionSpan GetLineSpan(TextSpan span, CancellationToken cancellationToken = default(CancellationToken))

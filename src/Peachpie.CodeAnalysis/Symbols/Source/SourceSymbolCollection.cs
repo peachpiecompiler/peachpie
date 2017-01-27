@@ -28,16 +28,20 @@ namespace Pchp.CodeAnalysis.Symbols
             readonly PhpCompilation _compilation;
 
             SourceFileSymbol _currentFile;
+            private PhpSyntaxTree _syntaxTree;
 
-            public BinderVisitor(PhpCompilation compilation, SourceSymbolCollection tables)
+            public BinderVisitor(PhpCompilation compilation, SourceSymbolCollection tables, PhpSyntaxTree syntaxTree)
             {
                 _tables = tables;
                 _compilation = compilation;
+                _syntaxTree = syntaxTree;
             }
 
             public override void VisitGlobalCode(GlobalCode x)
             {
-                _currentFile = new SourceFileSymbol(_compilation, x);
+                Debug.Assert(_syntaxTree.Source.Ast == x);
+
+                _currentFile = new SourceFileSymbol(_compilation, _syntaxTree);
                 _tables._files[_currentFile.RelativeFilePath] = _currentFile;
 
                 if (_tables.FirstScript == null)
@@ -213,16 +217,16 @@ namespace Pchp.CodeAnalysis.Symbols
             _functions = new SymbolsCache<QualifiedName, SourceFunctionSymbol>(this, f => f.Functions, f => f.QualifiedName, f => !f.IsConditional);
         }
 
-        public void AddSyntaxTreeRange(IEnumerable<SourceUnit> tree)
+        public void AddSyntaxTreeRange(IEnumerable<PhpSyntaxTree> trees)
         {
-            tree.ForEach(AddSyntaxTree);
+            trees.ForEach(AddSyntaxTree);
         }
 
-        public void AddSyntaxTree(SourceUnit tree)
+        public void AddSyntaxTree(PhpSyntaxTree tree)
         {
             Contract.ThrowIfNull(tree);
 
-            new BinderVisitor(_compilation, this).VisitGlobalCode(tree.Ast);
+            new BinderVisitor(_compilation, this, tree).VisitGlobalCode(tree.Source.Ast);
 
             _version++;
         }

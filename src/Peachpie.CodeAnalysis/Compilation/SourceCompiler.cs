@@ -162,7 +162,7 @@ namespace Pchp.CodeAnalysis
 
             if (routine.ControlFlowGraph != null)   // non-abstract method
             {
-                var diagnosingVisitor = new DiagnosingVisitor(_diagnostics);
+                var diagnosingVisitor = new DiagnosingVisitor(_diagnostics, routine);
                 diagnosingVisitor.VisitCFG(routine.ControlFlowGraph); 
             }
         }

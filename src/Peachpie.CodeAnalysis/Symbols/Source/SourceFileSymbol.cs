@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.Symbols
     sealed partial class SourceFileSymbol : NamedTypeSymbol
     {
         readonly PhpCompilation _compilation;
-        readonly GlobalCode _syntax;
+        readonly PhpSyntaxTree _syntaxTree;
 
         readonly SourceGlobalMethodSymbol _mainMethod;
 
@@ -47,17 +47,17 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly List<Symbol> _lazyMembers = new List<Symbol>();
         readonly List<SourceTypeSymbol> _containedTypes = new List<SourceTypeSymbol>();
         
-        public GlobalCode Syntax => _syntax;
+        public PhpSyntaxTree SyntaxTree => _syntaxTree;
 
         public SourceModuleSymbol SourceModule => _compilation.SourceModule;
 
-        public SourceFileSymbol(PhpCompilation compilation, GlobalCode syntax)
+        public SourceFileSymbol(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
         {
             Contract.ThrowIfNull(compilation);
-            Contract.ThrowIfNull(syntax);
+            Contract.ThrowIfNull(syntaxTree);
 
             _compilation = compilation;
-            _syntax = syntax;
+            _syntaxTree = syntaxTree;
             _mainMethod = new SourceGlobalMethodSymbol(this);
         }
 
@@ -75,7 +75,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _lazyMembers.Add(routine);
         }
 
-        internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntax.ContainingSourceUnit.FilePath, _compilation.Options.BaseDirectory);
+        internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntaxTree.Source.FilePath, _compilation.Options.BaseDirectory);
 
         /// <summary>
         /// Gets relative path excluding the file name and trailing slashes.
@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override string Name => PathUtilities.GetFileName(_syntax.ContainingSourceUnit.FilePath, true).Replace('.', '_');
+        public override string Name => PathUtilities.GetFileName(_syntaxTree.Source.FilePath, true).Replace('.', '_');
 
         public override string NamespaceName
         {
