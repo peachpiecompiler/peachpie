@@ -42,5 +42,21 @@ namespace Pchp.CodeAnalysis.Symbols
                 return NameUtils.MakeQualifiedName(ns + QualifiedName.Separator + type.Name, true);
             }
         }
+
+        public static bool IsAccessible(this Symbol symbol, TypeSymbol classCtx)
+        {
+            if (symbol.DeclaredAccessibility == Accessibility.Private)
+            {
+                return (symbol.ContainingType == classCtx);
+            }
+            else if (symbol.DeclaredAccessibility == Accessibility.Protected)
+            {
+                return classCtx != null && (
+                    symbol.ContainingType.IsEqualToOrDerivedFrom(classCtx) ||
+                    classCtx.IsEqualToOrDerivedFrom(symbol.ContainingType));
+            }
+
+            return true;
+        }
     }
 }

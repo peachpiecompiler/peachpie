@@ -153,9 +153,17 @@ namespace Pchp.Core.Reflection
                 (f.IsFamily && IsVisible(f.DeclaringType, caller));
         }
 
-        static bool IsVisible(Type membertype, RuntimeTypeHandle caller)
+        public static bool IsVisible(this FieldInfo f, Type caller)
         {
-            Debug.Assert(membertype != null);
+            return
+                (f.IsPublic) ||
+                (f.IsPrivate && f.DeclaringType.Equals(caller)) ||
+                (f.IsFamily && IsVisible(f.DeclaringType, caller));
+        }
+
+        static bool IsVisible(Type memberctx, RuntimeTypeHandle caller)
+        {
+            Debug.Assert(memberctx != null);
 
             if (caller.Equals(default(RuntimeTypeHandle)))
             {
@@ -163,9 +171,15 @@ namespace Pchp.Core.Reflection
             }
             else
             {
-                var tcaller = Type.GetTypeFromHandle(caller);
-                return tcaller != null && membertype.GetTypeInfo().IsAssignableFrom(tcaller);
+                return IsVisible(memberctx, Type.GetTypeFromHandle(caller));
             }
+        }
+
+        static bool IsVisible(Type memberctx, Type caller)
+        {
+            Debug.Assert(memberctx != null);
+
+            return caller != null && memberctx.GetTypeInfo().IsAssignableFrom(caller);
         }
     }
 }

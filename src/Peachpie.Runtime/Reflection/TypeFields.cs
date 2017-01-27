@@ -180,7 +180,7 @@ namespace Pchp.Core.Reflection
             FieldInfo fld;
 
             //
-            if (_fields != null && _fields.TryGetValue(name, out fld))
+            if (_fields != null && _fields.TryGetValue(name, out fld) && TypeMembersUtils.IsVisible(fld, classCtx))
             {
                 if (fld.IsPublic && fld.IsLiteral)
                 {
@@ -192,7 +192,7 @@ namespace Pchp.Core.Reflection
 
                 if (fld.IsStatic)
                 {
-                    if (kind == FieldKind.StaticField)
+                    if (kind == FieldKind.InstanceField)
                     {
                         // TODO: Err: static field accessed with instance
                     }

@@ -81,27 +81,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return (result2.Count == 1) ? result2[0] : null;
         }
 
-        static bool IsAccessible(MethodSymbol method, TypeSymbol classCtx)
-        {
-            if (method.DeclaredAccessibility == Accessibility.Private)
-            {
-                return (method.ContainingType == classCtx);
-            }
-            else if (method.DeclaredAccessibility == Accessibility.Protected)
-            {
-                return classCtx != null && (
-                    method.ContainingType.IsEqualToOrDerivedFrom(classCtx) ||
-                    classCtx.IsEqualToOrDerivedFrom(method.ContainingType));
-            }
-
-            return true;
-        }
-
         static void RemoveInaccessible(List<MethodSymbol> methods, TypeSymbol classCtx)
         {
             for (int i = methods.Count - 1; i >= 0; i--)
             {
-                if (!IsAccessible(methods[i], classCtx) || methods[i].IsFieldsOnlyConstructor())
+                if (!methods[i].IsAccessible(classCtx) || methods[i].IsFieldsOnlyConstructor())
                 {
                     methods.RemoveAt(i);
                 }
