@@ -267,7 +267,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         #region Construction
 
         public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
-            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace)
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null)
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
@@ -285,6 +285,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             _factory = new DynamicOperationFactory(this, container);
 
             _emitPdbSequencePoints = emittingPdb;
+
+            _routine = routine;
         }
 
         /// <summary>
@@ -292,22 +294,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Used for emitting in a context of a different routine (parameter initializer).
         /// </summary>
         public CodeGenerator(CodeGenerator cg, SourceRoutineSymbol routine)
-            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt)
+            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine)
         {
             Contract.ThrowIfNull(routine);
 
-            _routine = routine;
             _emmittedTag = cg._emmittedTag;
             _localsPlaceOpt = cg._localsPlaceOpt;
         }
 
         public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
-            :this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(), routine.GetThisPlace())
+            :this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(), routine.GetThisPlace(), routine)
         {
             Contract.ThrowIfNull(routine);
 
-            _routine = routine;
-            
             _emmittedTag = (routine.ControlFlowGraph != null) ? routine.ControlFlowGraph.NewColor() : -1;
             _localsPlaceOpt = GetLocalsPlace(routine);
 
