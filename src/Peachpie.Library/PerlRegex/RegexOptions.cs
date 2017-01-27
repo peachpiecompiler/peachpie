@@ -33,26 +33,26 @@ namespace Pchp.Library.PerlRegex
         PCRE_MULTILINE = Multiline,         // m
         PCRE_DOTALL = Singleline,           // s
         PCRE_EXTENDED = IgnorePatternWhitespace,      // x
-        PCRE_ANCHORED = 0xf010,             // A
-        PCRE_DOLLAR_ENDONLY = 0xf020,       // D
-        PCRE_UNGREEDY = 0xf040,             // U
-        PCRE_UTF8 = 0xf080,                 // u
-        PCRE_EXTRA = 0xf100,                // X
+        PCRE_ANCHORED = 0x0400,             // A
+        PCRE_DOLLAR_ENDONLY = 0x0800,       // D
+        PCRE_UNGREEDY = 0x1000,             // U
+        PCRE_UTF8 = 0x2000,                 // u
+        PCRE_EXTRA = 0x3000,                // X
 
         /// <summary>
         /// Spend more time studying the pattern - ignoring.
         /// </summary>
-        PCRE_S = 0xf200,                    // S
+        PCRE_S = 0x4000,                    // S
 
         ///// <summary>
         ///// Evaluate as PHP code.
         ///// Deprecated and removed.
         ///// </summary>
-        //PREG_REPLACE_EVAL = 0xf400,        // e
+        //PREG_REPLACE_EVAL = 0x8000,        // e
 
         /// <summary>
         /// An unknown option.
         /// </summary>
-        Unknown = 0xffff,
+        Unknown = 0x10000,
     }
 }
