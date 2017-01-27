@@ -803,14 +803,17 @@ namespace Pchp.Core.Dynamic
             return lambda.Compile();
         }
 
-        public static TObjectCreator BindToCreator(ConstructorInfo[] ctors)
+        public static TObjectCreator BindToCreator(Type type, ConstructorInfo[] ctors)
         {
+            Debug.Assert(ctors.All(ctor => ctor is ConstructorInfo));
+            Debug.Assert(ctors.All(ctor => ctor.DeclaringType == type));
+
             // (Context ctx, PhpValue[] arguments)
             var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
 
             // invoke targets
-            var invocation = OverloadBinder.BindOverloadCall(typeof(object), null, ctors, ps[0], ps[1]);
-            Debug.Assert(invocation.Type == typeof(object));
+            var invocation = OverloadBinder.BindOverloadCall(type, null, ctors, ps[0], ps[1]);
+            Debug.Assert(invocation.Type == type);
 
             // compile & create delegate
             var lambda = Expression.Lambda<TObjectCreator>(invocation, ctors[0].Name + "#" + ctors.Length, true, ps);

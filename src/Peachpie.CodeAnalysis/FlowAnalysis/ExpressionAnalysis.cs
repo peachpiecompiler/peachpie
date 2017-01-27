@@ -1143,12 +1143,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
             if (type != null)
             {
-                if (type.IsStatic)
+                if (type.IsStatic || type.IsInterface)
                 {
                     // TODO: Err cannot instantiate a static class
+                    throw new ArgumentException("cannot create instance of static or interface, type: " + type.MakeQualifiedName());
                 }
 
-                var candidates = type.InstanceConstructors.ToArray(); // ignore fieldsinitonly ctor
+                var candidates = type.InstanceConstructors.ToArray();
 
                 //
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value).ToImmutableArray();

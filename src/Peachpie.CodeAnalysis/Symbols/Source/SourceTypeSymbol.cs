@@ -211,12 +211,18 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (_syntax.BaseClass != null)
                     {
-                        _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(_syntax.BaseClass.ClassName.ClrName())
-                            ?? new MissingMetadataTypeSymbol(_syntax.BaseClass.ClassName.ClrName(), 0, false);
+                        var baseTypeName = _syntax.BaseClass.ClassName;
+                        if (baseTypeName == this.MakeQualifiedName())
+                        {
+                            // TODO: Err diagnostics
+                            throw new NotImplementedException($"cycle in class hierarchy, {this.MakeQualifiedName()} extends itself.");
+                        }
+                        _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(baseTypeName.ClrName())
+                            ?? new MissingMetadataTypeSymbol(baseTypeName.ClrName(), 0, false);
 
                         if (_lazyBaseType.Arity != 0)
                         {
-                            throw new NotImplementedException();    // generics
+                            throw new NotImplementedException($"Class {this.MakeQualifiedName()} extends a generic type {baseTypeName}.");    // generics not supported yet
                         }
                     }
                     else if (!IsStatic && !IsInterface)

@@ -76,7 +76,7 @@ namespace Pchp.Core.Reflection
                 if (_lazyCreator == null)
                 {
                     var ctors = _type.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
-                    _lazyCreator = Dynamic.BinderHelpers.BindToCreator(ctors);
+                    _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type, ctors);
                 }
             }
 
