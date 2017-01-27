@@ -24,5 +24,35 @@ namespace Pchp.Library.PerlRegex
 
         ECMAScript              = 0x0100, // "e"
         CultureInvariant        = 0x0200,
+
+        //
+        // Perl regular expression specific options.
+        //
+        
+        PCRE_CASELESS = IgnoreCase,         // i
+        PCRE_MULTILINE = Multiline,         // m
+        PCRE_DOTALL = Singleline,           // s
+        PCRE_EXTENDED = IgnorePatternWhitespace,      // x
+        PCRE_ANCHORED = 0xf010,             // A
+        PCRE_DOLLAR_ENDONLY = 0xf020,       // D
+        PCRE_UNGREEDY = 0xf040,             // U
+        PCRE_UTF8 = 0xf080,                 // u
+        PCRE_EXTRA = 0xf100,                // X
+
+        /// <summary>
+        /// Spend more time studying the pattern - ignoring.
+        /// </summary>
+        PCRE_S = 0xf200,                    // S
+
+        ///// <summary>
+        ///// Evaluate as PHP code.
+        ///// Deprecated and removed.
+        ///// </summary>
+        //PREG_REPLACE_EVAL = 0xf400,        // e
+
+        /// <summary>
+        /// An unknown option.
+        /// </summary>
+        Unknown = 0xffff,
     }
 }

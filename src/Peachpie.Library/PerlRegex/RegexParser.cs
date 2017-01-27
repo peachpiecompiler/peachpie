@@ -60,7 +60,7 @@ namespace Pchp.Library.PerlRegex
         internal static RegexTree Parse(string re, RegexOptions op)
         {
             int end;
-            var pcreOptions = TrimPcreRegexOption(re, out end);
+            op |= TrimPcreRegexOption(re, out end);
             var pattern = TrimDelimiters(re, end);
 
             RegexParser p;
@@ -81,7 +81,7 @@ namespace Pchp.Library.PerlRegex
             else
                 capnamelist = p._capnamelist.ToArray();
 
-            return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op, pcreOptions);
+            return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op);
         }
 
         /// <summary>
@@ -132,8 +132,6 @@ namespace Pchp.Library.PerlRegex
             throw new ArgumentException("regular_expression_empty");
         }
 
-        #region Options
-
         /// <summary>
         /// Trims PCRE options and gets new pattern end.
         /// The remaining string is the pattern enclosed in PCRE delimiters.
@@ -141,7 +139,7 @@ namespace Pchp.Library.PerlRegex
         /// <param name="pattern">Input pattern.</param>
         /// <param name="end">New pattern length.</param>
         /// <returns>PCRE options.</returns>
-        private static PerlRegexOptions TrimPcreRegexOption(string pattern, out int end)
+        private static RegexOptions TrimPcreRegexOption(string pattern, out int end)
         {
             // letters on right are PCRE options,
             // parse them and return new pattern end.
@@ -151,14 +149,14 @@ namespace Pchp.Library.PerlRegex
             Debug.Assert(pattern != null);
             end = pattern.Length;
 
-            PerlRegexOptions result = PerlRegexOptions.None;
+            RegexOptions result = RegexOptions.None;
 
             for (int i = pattern.Length - 1; i >= 0; i--)
             {
                 var ch = pattern[i];
                 if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
                 {
-                    result |= ParsePcreRegexOption(ch);
+                    result |= PcreOptionFromCode(ch);
                 }
                 else
                 {
@@ -169,56 +167,8 @@ namespace Pchp.Library.PerlRegex
             }
 
             // invalid regex, we didn't reach a delimiter
-            return PerlRegexOptions.None;
+            return RegexOptions.None;
         }
-
-        /// <summary>
-        /// Gets PCRE option value.
-        /// </summary>
-        public static PerlRegexOptions ParsePcreRegexOption(char option)
-        {
-            Debug.Assert(char.IsLetter(option));
-            switch (option)
-            {
-                case 'i': // PCRE_CASELESS
-                    return PerlRegexOptions.PCRE_CASELESS;
-
-                case 'm': // PCRE_MULTILINE
-                    return PerlRegexOptions.PCRE_MULTILINE;
-
-                case 's': // PCRE_DOTALL
-                    return PerlRegexOptions.PCRE_DOTALL;
-
-                case 'x': // PCRE_EXTENDED
-                    return PerlRegexOptions.PCRE_EXTENDED;
-
-                //case 'e': // PREG_REPLACE_EVAL // deprecated as of PHP 7.0
-                //    return PerlRegexOptions.PREG_REPLACE_EVAL;
-
-                case 'A': // PCRE_ANCHORED
-                    return PerlRegexOptions.PCRE_ANCHORED;
-
-                case 'D': // PCRE_DOLLAR_ENDONLY
-                    return PerlRegexOptions.PCRE_DOLLAR_ENDONLY;
-
-                case 'S': // spend more time studying the pattern - ignore
-                    return PerlRegexOptions.PCRE_S;
-
-                case 'U': // PCRE_UNGREEDY
-                    return PerlRegexOptions.PCRE_UNGREEDY;
-
-                case 'u': // PCRE_UTF8
-                    return PerlRegexOptions.PCRE_UTF8;
-
-                case 'X': // PCRE_EXTRA
-                    return PerlRegexOptions.PCRE_EXTRA;
-
-                default:
-                    return PerlRegexOptions.Unknown;
-            }
-        }
-
-        #endregion
 
         /*
          * This static call constructs a flat concatenation node given
@@ -1789,9 +1739,9 @@ namespace Pchp.Library.PerlRegex
             }
         }
 
-        /*
-         * Returns option bit from single-char (?cimsx) code.
-         */
+        /// <summary>
+        /// Returns option bit from single-char (?cimsx) code.
+        /// </summary>
         internal static RegexOptions OptionFromCode(char ch)
         {
             // case-insensitive
@@ -1820,6 +1770,54 @@ namespace Pchp.Library.PerlRegex
                     return RegexOptions.ECMAScript;
                 default:
                     return 0;
+            }
+        }
+
+        /// <summary>
+        /// Gets PCRE option value.
+        /// </summary>
+        /// <param name="option">PCRE option character. Case sensitive.</param>
+        public static RegexOptions PcreOptionFromCode(char option)
+        {
+            Debug.Assert(char.IsLetter(option));
+
+            switch (option)
+            {
+                case 'i': // PCRE_CASELESS
+                    return RegexOptions.PCRE_CASELESS;
+
+                case 'm': // PCRE_MULTILINE
+                    return RegexOptions.PCRE_MULTILINE;
+
+                case 's': // PCRE_DOTALL
+                    return RegexOptions.PCRE_DOTALL;
+
+                case 'x': // PCRE_EXTENDED
+                    return RegexOptions.PCRE_EXTENDED;
+
+                //case 'e': // PREG_REPLACE_EVAL // deprecated as of PHP 7.0
+                //    return PerlRegexOptions.PREG_REPLACE_EVAL;
+
+                case 'A': // PCRE_ANCHORED
+                    return RegexOptions.PCRE_ANCHORED;
+
+                case 'D': // PCRE_DOLLAR_ENDONLY
+                    return RegexOptions.PCRE_DOLLAR_ENDONLY;
+
+                case 'S': // spend more time studying the pattern - ignore
+                    return RegexOptions.PCRE_S;
+
+                case 'U': // PCRE_UNGREEDY
+                    return RegexOptions.PCRE_UNGREEDY;
+
+                case 'u': // PCRE_UTF8
+                    return RegexOptions.PCRE_UTF8;
+
+                case 'X': // PCRE_EXTRA
+                    return RegexOptions.PCRE_EXTRA;
+
+                default:
+                    return RegexOptions.Unknown;
             }
         }
 

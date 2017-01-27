@@ -355,7 +355,7 @@ namespace Pchp.Library
             var regex = new PerlRegex.Regex(pattern);
             var m = regex.Match(subject);
 
-            if ((regex.PerlOptions & PerlRegex.PerlRegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
+            if ((regex.Options & PerlRegex.RegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
             {
                 matches = new PhpArray();
                 return -1;
