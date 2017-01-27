@@ -376,14 +376,12 @@ namespace Pchp.Library
                     // .Net only numbers unnamed groups.
                     // So we name unnamed groups (see ConvertRegex) to map correctly.
                     int lastSuccessfulGroupIndex = GetLastSuccessfulGroup(m.Groups);
-                    var indexGroups = new List<Group>(m.Groups.Count);
-                    var groupNameByIndex = new Dictionary<int, string>(m.Groups.Count);
                     for (int i = 0; i <= lastSuccessfulGroupIndex; i++)
                     {
-                        // All groups should be named.
-                        var groupName = GetGroupName(regex, i);
                         var item = NewArrayItem(m.Groups[i].Value, m.Groups[i].Index, (flags & PREG_OFFSET_CAPTURE) != 0);
 
+                        // All groups should be named.
+                        var groupName = GetGroupName(regex, i);
                         if (!string.IsNullOrEmpty(groupName))
                         {
                             matches[groupName] = item.DeepCopy();
@@ -689,7 +687,15 @@ namespace Pchp.Library
 
         static string GetGroupName(Regex regex, int index)
         {
-            return regex.GroupNameFromNumber(index);
+            var name = regex.GroupNameFromNumber(index);
+
+            // anonymous groups and indexed groups:
+            if (string.IsNullOrEmpty(name) || name.Equals(index.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat)))
+            {
+                name = null;
+            }
+
+            return name;
         }
 
         /// <summary>
