@@ -357,7 +357,7 @@ namespace Pchp.Library
 
             if ((regex.Options & PerlRegex.RegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
             {
-                matches = new PhpArray();
+                matches = PhpArray.NewEmpty();
                 return -1;
             }
 
@@ -368,23 +368,22 @@ namespace Pchp.Library
                     matches = new PhpArray(m.Groups.Count);
                 }
                 else
+                {
                     matches = new PhpArray();
+                }
 
                 if (!matchAll)
                 {
-                    // Preg numbers groups sequentially, both named and unnamed.
-                    // .Net only numbers unnamed groups.
-                    // So we name unnamed groups (see ConvertRegex) to map correctly.
-                    int lastSuccessfulGroupIndex = GetLastSuccessfulGroup(m.Groups);
-                    for (int i = 0; i <= lastSuccessfulGroupIndex; i++)
+                    var groups = m.PcreGroups;
+                    for (int i = 0; i < groups.Count; i++)
                     {
-                        var item = NewArrayItem(m.Groups[i].Value, m.Groups[i].Index, (flags & PREG_OFFSET_CAPTURE) != 0);
+                        var g = groups[i];
+                        var item = NewArrayItem(g.Value, g.Index, (flags & PREG_OFFSET_CAPTURE) != 0);
 
                         // All groups should be named.
-                        var groupName = GetGroupName(regex, i);
-                        if (!string.IsNullOrEmpty(groupName))
+                        if (g.IsNamedGroup)
                         {
-                            matches[groupName] = item.DeepCopy();
+                            matches[g.Name] = item.DeepCopy();
                         }
 
                         matches[i] = item;
@@ -417,7 +416,7 @@ namespace Pchp.Library
             }
             else
             {
-                matches = new PhpArray(); // empty array
+                matches = PhpArray.NewEmpty(); // empty array
             }
 
             return 0;
@@ -659,7 +658,6 @@ namespace Pchp.Library
                     {
                         p[groupName] = arr;
                     });
-
 
                     pa[j] = arr;
                 }

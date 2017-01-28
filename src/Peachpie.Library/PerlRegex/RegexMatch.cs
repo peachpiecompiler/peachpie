@@ -39,6 +39,7 @@ namespace Pchp.Library.PerlRegex
     {
         internal static readonly Match s_empty = new Match(null, 1, string.Empty, 0, 0, 0);
         internal GroupCollection _groupcoll;
+        PcreGroupCollection _pcregroups;
 
         // input to the match
         internal Regex _regex;
@@ -64,8 +65,12 @@ namespace Pchp.Library.PerlRegex
             }
         }
 
+        protected virtual GroupCollection CreateGroupCollection() => new GroupCollection(this, null);
+
+        protected PcreGroupCollection CreatePcreGroupCollection() => new PcreGroupCollection(this);
+
         internal Match(Regex regex, int capcount, string text, int begpos, int len, int startpos)
-            : base(text, new int[2], 0, "0")
+            : base(text, new int[2], 0, "0", 0)
         {
             _regex = regex;
             _matchcount = new int[capcount];
@@ -101,14 +106,29 @@ namespace Pchp.Library.PerlRegex
             _balancing = false;
         }
 
-        public virtual GroupCollection Groups
+        public GroupCollection Groups
         {
             get
             {
                 if (_groupcoll == null)
-                    _groupcoll = new GroupCollection(this, null);
+                {
+                    _groupcoll = CreateGroupCollection();
+                }
 
                 return _groupcoll;
+            }
+        }
+
+        public PcreGroupCollection PcreGroups
+        {
+            get
+            {
+                if (_pcregroups.IsDefault)
+                {
+                    _pcregroups = CreatePcreGroupCollection();
+                }
+
+                return _pcregroups;
             }
         }
 
@@ -418,16 +438,7 @@ namespace Pchp.Library.PerlRegex
             _caps = caps;
         }
 
-        public override GroupCollection Groups
-        {
-            get
-            {
-                if (_groupcoll == null)
-                    _groupcoll = new GroupCollection(this, _caps);
-
-                return _groupcoll;
-            }
-        }
+        protected override GroupCollection CreateGroupCollection() => new GroupCollection(this, _caps);
 
 #if DEBUG
         internal override void Dump()
