@@ -22,34 +22,34 @@ namespace Pchp.Library.PerlRegex
 {
     internal sealed class RegexParser
     {
-        internal RegexNode _stack;
-        internal RegexNode _group;
-        internal RegexNode _alternation;
-        internal RegexNode _concatenation;
-        internal RegexNode _unit;
+        RegexNode _stack;
+        RegexNode _group;
+        RegexNode _alternation;
+        RegexNode _concatenation;
+        RegexNode _unit;
 
-        internal string _pattern;
-        internal int _currentPos;
-        internal CultureInfo _culture;
+        string _pattern;
+        int _currentPos;
+        CultureInfo _culture;
 
-        internal int _autocap;
-        internal int _capcount;
-        internal int _captop;
-        internal int _capsize;
+        int _autocap;
+        int _capcount;
+        int _captop;
+        int _capsize;
 
-        internal Dictionary<int, int> _caps;
-        internal Dictionary<string, int> _capnames;
+        Dictionary<int, int> _caps;
+        Dictionary<string, int> _capnames;
 
-        internal int[] _capnumlist;
-        internal List<string> _capnamelist;
+        int[] _capnumlist;
+        List<string> _capnamelist;
 
-        internal RegexOptions _options;
-        internal List<RegexOptions> _optionsStack;
+        RegexOptions _options;
+        List<RegexOptions> _optionsStack;
 
-        internal bool _ignoreNextParen = false;
+        bool _ignoreNextParen = false;
 
-        internal const int MaxValueDiv10 = int.MaxValue / 10;
-        internal const int MaxValueMod10 = int.MaxValue % 10;
+        const int MaxValueDiv10 = int.MaxValue / 10;
+        const int MaxValueMod10 = int.MaxValue % 10;
 
         /*
          * This static call constructs a RegexTree from a regular expression
@@ -994,6 +994,7 @@ namespace Pchp.Library.PerlRegex
 
                                 if ((capnum != -1 || uncapnum != -1) && CharsRight() > 0 && MoveRightGetChar() == close)
                                 {
+                                    _autocap++;
                                     return new RegexNode(RegexNode.Capture, _options, capnum, uncapnum);
                                 }
                                 goto BreakRecognize;
@@ -1891,9 +1892,14 @@ namespace Pchp.Library.PerlRegex
                                         //if (_ignoreNextParen)
                                         //    throw MakeException(SR.AlternationCantCapture);
                                         if (ch >= '1' && ch <= '9')
+                                        {
                                             NoteCaptureSlot(ScanDecimal(), pos);
+                                        }
                                         else
-                                            NoteCaptureName(ScanCapname(), pos);
+                                        {
+                                            NoteCaptureName(ScanCapname(), _autocap);
+                                            NoteCaptureSlot(_autocap++, pos);
+                                        }
                                     }
                                 }
                                 else
@@ -1997,14 +2003,14 @@ namespace Pchp.Library.PerlRegex
             {
                 for (int i = 0; i < _capnamelist.Count; i++)
                 {
-                    while (IsCaptureSlot(_autocap))
-                        _autocap++;
-                    string name = _capnamelist[i];
-                    int pos = (int)_capnames[name];
-                    _capnames[name] = _autocap;
-                    NoteCaptureSlot(_autocap, pos);
+                    //while (IsCaptureSlot(_autocap))
+                    //    _autocap++;
+                    //string name = _capnamelist[i];
+                    //int pos = (int)_capnames[name];
+                    //_capnames[name] = _autocap;
+                    //NoteCaptureSlot(_autocap, pos);
 
-                    _autocap++;
+                    //_autocap++;
                 }
             }
 

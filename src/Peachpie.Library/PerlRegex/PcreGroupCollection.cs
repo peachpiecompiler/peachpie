@@ -44,35 +44,29 @@ namespace Pchp.Library.PerlRegex
             {
                 var groups = match.Groups;
                 var indexes = new List<int>(groups.Count) { 0 };
-
+                var lastUnsuccessful = 0;
                 //
                 for (int i = 1; i < groups.Count; i++)
                 {
                     var g = groups[i];
                     if (g.Success)
                     {
+                        if (lastUnsuccessful != 0)
+                        {
+                            while (lastUnsuccessful < i) indexes.Add(lastUnsuccessful++);
+                            lastUnsuccessful = 0;
+                        }
+
                         indexes.Add(i);
+                    }
+                    else if (lastUnsuccessful == 0)
+                    {
+                        lastUnsuccessful = i;
                     }
                 }
 
                 // sort by match position & outer first
-                var arr = indexes.ToArray();
-                Array.Sort(arr, (a, b) =>
-                {
-                    var ga = groups[a];
-                    var gb = groups[b];
-                    var comparison = ga.Index - gb.Index;
-                    if (comparison == 0)
-                    {
-                        // outer matches first => longest first
-                        comparison = gb.Length - ga.Length;
-                    }
-
-                    return comparison;
-                });
-
-                //
-                return arr;
+                return indexes.ToArray();
             }
             else
             {
