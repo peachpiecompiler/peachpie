@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -260,6 +261,195 @@ namespace Pchp.Core
         /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
         public static PhpAlias EnsureItemAlias(PhpValue value, IntStringKey key, bool quiet = false) => value.EnsureItemAlias(key, quiet);
+
+        #endregion
+
+        #region GetForeachEnumerator
+
+        /// <summary>
+		/// Provides the <see cref="IPhpEnumerator"/> interface by wrapping a user-implemeted <see cref="Iterator"/>.
+		/// </summary>
+		/// <remarks>
+		/// Instances of this class are iterated when <c>foreach</c> is used on object of a class
+		/// that implements <see cref="Iterator"/> or <see cref="IteratorAggregate"/>.
+		/// </remarks>
+		private sealed class PhpIteratorEnumerator : IPhpEnumerator
+        {
+            readonly Iterator _iterator;
+            bool _hasmoved;
+
+            public PhpIteratorEnumerator(Iterator iterator)
+            {
+                Debug.Assert(iterator != null);
+                _iterator = iterator;
+                Reset();
+            }
+
+            public bool AtEnd
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            public KeyValuePair<PhpValue, PhpValue> Current => new KeyValuePair<PhpValue, PhpValue>(CurrentKey, CurrentValue);
+
+            public PhpValue CurrentKey => _iterator.key().DeepCopy();
+
+            public PhpValue CurrentValue => _iterator.current().DeepCopy();
+
+            public PhpAlias CurrentValueAliased => _iterator.current().EnsureAlias();
+
+            object IEnumerator.Current => Current;
+
+            public void Dispose() { }
+
+            public bool MoveFirst()
+            {
+                Reset();
+                return _iterator.valid();
+            }
+
+            public bool MoveLast()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool MoveNext()
+            {
+                if (_hasmoved)
+                {
+                    _iterator.next();
+                }
+                else
+                {
+                    _hasmoved = true;
+                }
+
+                return _iterator.valid();
+            }
+
+            public bool MovePrevious()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Reset()
+            {
+                _hasmoved = false;
+                _iterator.rewind();
+            }
+        }
+
+        /// <summary>
+        /// Provides <see cref="IPhpEnumerator"/> implementation enumerating class instance fields and runtime fields.
+        /// </summary>
+        private sealed class PhpFieldsEnumerator : IPhpEnumerator
+        {
+            readonly IEnumerator<KeyValuePair<IntStringKey, PhpValue>> _enumerator;
+            bool _valid;
+            KeyValuePair<IntStringKey, PhpValue> _current;
+
+            public PhpFieldsEnumerator(object obj, RuntimeTypeHandle caller)
+            {
+                Debug.Assert(obj != null);
+                _enumerator = TypeMembersUtils.EnumerateInstanceFields(obj, caller).GetEnumerator();
+                _valid = true;
+            }
+
+            public bool AtEnd => !_valid;
+
+            public KeyValuePair<PhpValue, PhpValue> Current
+            {
+                get
+                {
+                    var current = _enumerator.Current;
+                    return new KeyValuePair<PhpValue, PhpValue>(PhpValue.Create(current.Key), current.Value);
+                }
+            }
+
+            public PhpValue CurrentKey => PhpValue.Create(_enumerator.Current.Key);
+
+            public PhpValue CurrentValue => _enumerator.Current.Value.GetValue().DeepCopy();
+
+            public PhpAlias CurrentValueAliased => _enumerator.Current.Value.EnsureAlias();
+
+            object IEnumerator.Current => _enumerator.Current;
+
+            public void Dispose() => _enumerator.Dispose();
+
+            public bool MoveFirst()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool MoveLast()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool MoveNext()
+            {
+                return (_valid = _enumerator.MoveNext());
+            }
+
+            public bool MovePrevious()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Reset()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Resolves object enumerator.
+        /// </summary>
+        /// <exception cref="Exception">Object cannot be enumerated.</exception>
+        /// <returns>Instance of the object enumerator. Cannot be <c>null</c>.</returns>
+        public static IPhpEnumerator GetForeachEnumerator(object obj, bool aliasedValues, RuntimeTypeHandle caller)
+        {
+            Debug.Assert(obj != null);
+
+            if (obj is Iterator)
+            {
+                return new PhpIteratorEnumerator((Iterator)obj);
+            }
+            else if (obj is IteratorAggregate)
+            {
+                var last_obj = obj;
+
+                do
+                {
+                    obj = ((IteratorAggregate)obj).getIterator();
+                } while (obj is IteratorAggregate);
+
+                if (obj is Iterator)
+                {
+                    return new PhpIteratorEnumerator((Iterator)obj);
+                }
+                else
+                {
+                    var errmessage = string.Format(Resources.ErrResources.getiterator_must_return_traversable, last_obj.GetType().GetPhpTypeInfo().Name);
+                    // throw new (SPL)Exception(ctx, message, 0, null)
+                    //Library.SPL.Exception.ThrowSplException(
+                    //    _ctx => new Library.SPL.Exception(_ctx, true),
+                    //    context,
+                    //    string.Format(CoreResources.getiterator_must_return_traversable, last_obj.TypeName), 0, null);
+                    throw new ArgumentException(errmessage);
+                }
+            }
+            else
+            {
+                // TODO: CLR enumerators: IDictionaryEnumerator, IEnumerable
+
+                // PHP property enumeration
+                return new PhpFieldsEnumerator(obj, caller);
+            }
+        }
 
         #endregion
 

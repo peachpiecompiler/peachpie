@@ -250,7 +250,7 @@ namespace Pchp.Library
         /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="array"/>
         /// before the call.
         /// </returns>
-        //[return: CastToFalse, PhpDeepCopy]
+        [return: CastToFalse]
         public static PhpArray each(IPhpEnumerable array)
         {
             if (array == null)
@@ -260,17 +260,19 @@ namespace Pchp.Library
             }
 
             if (array.IntrinsicEnumerator.AtEnd)
+            {
                 return null;
+            }
 
             var entry = array.IntrinsicEnumerator.Current;
             array.IntrinsicEnumerator.MoveNext();
 
             // dereferences result since enumerator doesn't do so:
             var key = entry.Key;
-            var value = entry.Value; // PhpVariable.Dereference(entry.Value);
+            var value = entry.Value.GetValue().DeepCopy();
 
             // creates the resulting array:
-            PhpArray result = new PhpArray(2);
+            var result = new PhpArray(4);
             result.Add(1, value);
             result.Add("value", value);
             result.Add(0, key);
@@ -406,8 +408,7 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            PhpArray result = new PhpArray();
-
+            var result = new PhpArray(array.Count);
             var e = array.GetFastEnumerator();
 
             if (preserveKeys)
@@ -813,20 +814,26 @@ namespace Pchp.Library
 		/// <exception cref="PhpException">Thrown if <paramref name="count"/> is not positive.</exception>
 		public static PhpArray array_fill(int startIndex, int count, PhpValue value)
         {
-            if (count <= 0)
+            if (count < 0)
             {
-                PhpException.InvalidArgument("count", LibResources.arg_negative_or_zero);
+                PhpException.InvalidArgument("count", LibResources.arg_negative);
                 return null;
             }
+            else if (count == 0)
+            {
+                return PhpArray.NewEmpty();
+            }
+            else
+            {
+                var result = new PhpArray(count);
+                int last = startIndex + count;
+                for (int i = startIndex; i < last; i++)
+                {
+                    result.Add(i, value);
+                }
 
-            PhpArray result = new PhpArray(count);
-            int last = startIndex + count;
-            for (int i = startIndex; i < last; i++)
-                result.Add(i, value);
-
-            // makes deep copies of all added items:
-            //result.InplaceCopyOnReturn = true;
-            return result;
+                return result;
+            }
         }
 
         public static PhpArray array_fill_keys(PhpArray keys, PhpValue value)

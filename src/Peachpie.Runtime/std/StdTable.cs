@@ -13,7 +13,9 @@ namespace Pchp.Core.std
     {
         static readonly ILookup<string, Type> _types = new[]
         {
-            typeof(stdClass), typeof(__PHP_Incomplete_Class), typeof(ArrayAccess), typeof(Serializable)
+            typeof(stdClass), typeof(__PHP_Incomplete_Class),
+            typeof(Traversable), typeof(Iterator), typeof(IteratorAggregate),
+            typeof(ArrayAccess), typeof(Serializable)
         }.ToLookup(t => t.FullName);
 
         /// <summary>

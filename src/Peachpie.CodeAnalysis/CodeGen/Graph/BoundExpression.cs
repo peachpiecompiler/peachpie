@@ -2027,11 +2027,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
         void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            var rtype = cg.CoreTypes.IPhpArray;
-            cg.EmitConvert(valueType, 0, rtype);
+            var rtype = cg.EmitAsPhpArray(valueType);
 
             var tmp = cg.GetTemporaryLocal(rtype);
             cg.Builder.EmitLocalStore(tmp);
+
+            // Template: if (<tmp> != null) { ... }
+            var lblnull = new NamedLabel("<tmp> == null");
+            var lblend = new NamedLabel("<list> end");
+            cg.Builder.EmitLocalLoad(tmp);
+            cg.Builder.EmitBranch(ILOpCode.Brfalse, lblnull);
 
             // NOTE: since PHP7, variables are assigned from left to right
             var vars = this.Variables;
@@ -2040,6 +2045,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 var target = vars[i];
                 if (target == null)
                     continue;
+
+                // Template: <vars[i]> = <tmp>[i]
 
                 var boundtarget = target.BindPlace(cg);
                 boundtarget.EmitStorePrepare(cg);
@@ -2053,8 +2060,35 @@ namespace Pchp.CodeAnalysis.Semantics
                 boundtarget.EmitStore(cg, itemtype);
             }
 
+            cg.Builder.EmitBranch(ILOpCode.Br, lblend);
+
             //
             cg.ReturnTemporaryLocal(tmp);
+
+            // Template: <vars[i]> = NULL
+            cg.Builder.MarkLabel(lblnull);
+            for (int i = 0; i < vars.Length; i++)
+            {
+                var target = vars[i];
+                if (target == null)
+                    continue;
+
+                // Template: <vars[i]> = NULL
+
+                var boundtarget = target.BindPlace(cg);
+                boundtarget.EmitStorePrepare(cg);
+
+                // LOAD default<T> // = NULL
+                var t = boundtarget.TypeOpt ?? cg.CoreTypes.PhpValue;
+                cg.EmitLoadDefault(t, 0);
+                
+                // STORE vars[i]
+                boundtarget.EmitStore(cg, t);
+            }
+
+            //
+            cg.Builder.MarkLabel(lblend);
+
         }
 
         #endregion

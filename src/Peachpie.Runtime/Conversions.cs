@@ -178,6 +178,11 @@ namespace Pchp.Core
         public static PhpArray ToArray(PhpValue value) => value.ToArray();
 
         /// <summary>
+        /// Casts value to <see cref="PhpArray"/> or <c>null</c>.
+        /// </summary>
+        public static PhpArray AsArray(PhpValue value) => value.AsArray();
+
+        /// <summary>
         /// Creates <see cref="PhpArray"/> from object's properties.
         /// </summary>
         /// <param name="obj">Object instance.</param>

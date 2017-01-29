@@ -748,6 +748,42 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits conversion "As PhpArray", resulting in instance of <c>PhpArray</c> or <c>NULL</c> on stack.
+        /// </summary>
+        public TypeSymbol EmitAsPhpArray(TypeSymbol from)
+        {
+            if (from == CoreTypes.PhpAlias)
+            {
+                // <alias>.Value.Object
+                Emit_PhpAlias_GetValueAddr();
+                from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter);
+            }
+            else if (from == CoreTypes.PhpValue)
+            {
+                // AsArray(<value>)
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue);
+            }
+
+            //
+
+            if (from.IsReferenceType)
+            {
+                // <stack> as PhpArray
+                _il.EmitOpCode(ILOpCode.Isinst);
+                EmitSymbolToken(CoreTypes.PhpArray, null);
+            }
+            else
+            {
+                EmitPop(from);
+                _il.EmitNullConstant();
+            }
+
+            //
+
+            return CoreTypes.PhpArray;
+        }
+
+        /// <summary>
         /// Emits conversion to a class object.
         /// </summary>
         /// <param name="from">Type of value on top of the evaluation stack.</param>

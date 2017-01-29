@@ -927,16 +927,17 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on stack.</returns>
         internal TypeSymbol EmitMethodAccess(TypeSymbol stack, MethodSymbol method, BoundAccess access)
         {
-            // copy the value on stack if necessary
-            if (access.IsReadCopy)
-            {
-                stack = EmitDeepCopy(stack);
-            }
-
-            // cast -1 or null to false (CastToFalse)
+            // cast -1 or null to false (CastToFalse) 
+            // and copy the value on stack if necessary
             if (access.IsRead && method.CastToFalse)
             {
-                stack = EmitCastToFalse(stack);
+                // casts to false and copy the value
+                stack = EmitCastToFalse(stack, access.IsReadCopy);
+            }
+            else if (access.IsReadCopy)
+            {
+                // copy the value
+                stack = EmitDeepCopy(stack);
             }
 
             //
@@ -947,8 +948,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Converts <b>negative</b> number or <c>null</c> to <c>FALSE</c>.
         /// </summary>
         /// <param name="stack">Type of value on stack.</param>
+        /// <param name="deepcopy">Whether to deep copy returned non-FALSE value.</param>
         /// <returns>New type of value on stack.</returns>
-        internal TypeSymbol EmitCastToFalse(TypeSymbol stack)
+        internal TypeSymbol EmitCastToFalse(TypeSymbol stack, bool deepcopy)
         {
             if (stack.SpecialType == SpecialType.System_Boolean)
             {
@@ -989,7 +991,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // test(<stack>) ? POP,FALSE : (PhpValue)<stack>
-            
+
+            if (deepcopy)
+            {
+                // DeepCopy(<stack>)
+                stack = EmitDeepCopy(stack);
+            }
             // (PhpValue)<stack>
             EmitConvertToPhpValue(stack, 0);
             _il.EmitBranch(ILOpCode.Br, lblend);

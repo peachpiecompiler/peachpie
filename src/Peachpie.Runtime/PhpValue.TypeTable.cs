@@ -443,7 +443,7 @@ namespace Pchp.Core
                 }
             }
             public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
-            public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) { throw new NotImplementedException(); }
+            public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetForeachEnumerator(me.Object, aliasedValues, caller);
             public override int Compare(ref PhpValue me, PhpValue right)
             {
                 if (me.Object.Equals(right._obj.Obj)) return 0;
