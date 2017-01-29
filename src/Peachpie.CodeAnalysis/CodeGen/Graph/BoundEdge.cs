@@ -247,6 +247,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 // special PhpArray enumerator
 
+                //cg.EmitSequencePoint(valueVar.PhpSyntax);
+                var valueTarget = valueVar.BindPlace(cg);
+                valueTarget.EmitStorePrepare(cg);
+                valueTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentValue));
+
                 if (keyVar != null)
                 {
                     //cg.EmitSequencePoint(keyVar.PhpSyntax);
@@ -254,11 +259,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     keyTarget.EmitStorePrepare(cg);
                     keyTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentKey));
                 }
-
-                //cg.EmitSequencePoint(valueVar.PhpSyntax);
-                var valueTarget = valueVar.BindPlace(cg);
-                valueTarget.EmitStorePrepare(cg);
-                valueTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentValue));
             }
             else
             {

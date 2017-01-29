@@ -39,10 +39,7 @@ public class Exception : System.Exception, Throwable
         throw new NotImplementedException();
     }
 
-    public virtual string getMessage()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual string getMessage() => this.message;
 
     public virtual Throwable getPrevious()
     {
