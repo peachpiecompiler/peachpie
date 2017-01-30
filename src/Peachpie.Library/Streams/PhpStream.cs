@@ -441,7 +441,7 @@ namespace Pchp.Library.Streams
                 }
             }
 
-            // this.readTimeout = ScriptContext.CurrentContext.Config.FileSystem.DefaultSocketTimeout;
+            this.readTimeout = ctx.Configuration.Core.DefaultSocketTimeout;
         }
 
         /// <summary>

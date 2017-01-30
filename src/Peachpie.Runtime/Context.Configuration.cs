@@ -62,8 +62,6 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Fields & Properties
-
         /// <summary>
         /// The order in which global will be added to <c>$GLOBALS</c> and 
         /// <c>$_REQUEST</c> arrays. Can contain only a permutation of "EGPCS" string.
@@ -108,6 +106,41 @@ namespace Pchp.Core
             }
             return true;
         }
+
+        #region File System
+
+        /// <summary>
+        /// Whether file names can be specified as URL (and thus allows to use streams).
+        /// </summary>
+        public bool AllowUrlFopen = true;
+
+        /// <summary>
+        /// A user agent to send when communicating as client over HTTP.
+        /// </summary>
+        public string UserAgent = null;
+
+        /// <summary>
+        /// Default timeout for socket based streams.
+        /// </summary>
+        public int DefaultSocketTimeout = 60;
+
+        /// <summary>
+        /// A default file open mode used when it is not specified in <c>fopen</c> function explicitly. 
+        /// You can specify either "b" for binary mode or "t" for text mode. Any other value is treated as
+        /// if there is no default value.
+        /// </summary>
+        public string DefaultFileOpenMode = "b";
+
+        /// <summary>
+        /// A password used when logging to FTP server as an anonymous client.
+        /// </summary>
+        public string AnonymousFtpPassword = null;
+
+        /// <summary>
+        /// A list of semicolon-separated separated by ';' where file system functions and dynamic 
+        /// inclusion constructs searches for files. A <B>null</B> or an empty string means empty list.
+        /// </summary>
+        public string IncludePaths = ".";
 
         #endregion
     }
