@@ -102,6 +102,24 @@ namespace Pchp.Core
         /// </summary>
         public Stream InputStream => _httpctx.Request.InputStream;
 
+        public void AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false)
+        {
+            var cookie = new HttpCookie(name, value)
+            {
+                Path = path,
+                Domain = domain,
+                Secure = secure,
+                HttpOnly = httpOnly,
+            };
+
+            if (expires.HasValue)
+            {
+                cookie.Expires = expires.Value.UtcDateTime;
+            }
+
+            _httpctx.Response.AppendCookie(cookie);
+        }
+
         #endregion
 
         public override IHttpPhpContext HttpPhpContext => this;

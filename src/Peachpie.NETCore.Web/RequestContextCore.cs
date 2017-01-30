@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Peachpie.Web
 {
@@ -96,6 +97,18 @@ namespace Peachpie.Web
         /// </summary>
         public Stream InputStream => _httpctx.Request.Body;
 
+        public void AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false)
+        {
+            _httpctx.Response.Cookies.Append(name, value, new CookieOptions()
+            {
+                Expires = expires,
+                Path = path,
+                Domain = domain,
+                Secure = secure,
+                HttpOnly = httpOnly
+            });
+        }
+
         #endregion
 
         #region Request Lifecycle
@@ -140,17 +153,32 @@ namespace Peachpie.Web
 
             // set additional $_SERVER items
             AddServerScriptItems(script);
-            
+
             //
 
             try
             {
-                script.MainMethod(this, this.Globals, null);
+                if (Debugger.IsAttached)
+                {
+                    script.MainMethod(this, this.Globals, null);
+                }
+                else
+                {
+                    using (_requestTimer = new Timer(RequestTimeout, null, this.Configuration.Core.ExecutionTimeout, Timeout.Infinite))
+                    {
+                        script.MainMethod(this, this.Globals, null);
+                    }
+                }
             }
             catch (ScriptDiedException died)
             {
                 died.ProcessStatus(this);
             }
+        }
+
+        void RequestTimeout(object state)
+        {
+
         }
 
         void AddServerScriptItems(ScriptInfo script)
@@ -187,6 +215,11 @@ namespace Peachpie.Web
         /// </summary>
         readonly HttpContext _httpctx;
 
+        /// <summary>
+        /// Internal timer used to cancel execution upon timeout.
+        /// </summary>
+        Timer _requestTimer;
+
         public RequestContextCore(HttpContext httpcontext, string rootPath)
         {
             Debug.Assert(httpcontext != null);
@@ -196,7 +229,7 @@ namespace Peachpie.Web
 
             _httpctx = httpcontext;
             _rootPath = rootPath;
-            
+
             this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, StringEncoding));
             this.InitSuperglobals();
 

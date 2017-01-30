@@ -33,5 +33,10 @@ namespace Pchp.Core
         /// Stream with contents of the incoming HTTP entity body.
         /// </summary>
         Stream InputStream { get; }
+
+        /// <summary>
+        /// Adds a cookie into the response.
+        /// </summary>
+        void AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false);
     }
 }

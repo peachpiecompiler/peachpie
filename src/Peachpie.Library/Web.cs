@@ -291,6 +291,64 @@ namespace Pchp.Library
 
         #endregion
 
+        #region setcookie, setrawcookie
+
+        /// <summary>
+        /// Sends a cookie with specified name, value and expiration timestamp.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="name">The name of the cookie to send.</param>
+        /// <param name="value">The value of the cookie. The value will be <see cref="UrlEncode"/>d.</param>
+        /// <param name="expire">The time (Unix timestamp) when the cookie expires.</param>
+        /// <param name="path">The virtual path on server in which is the cookie valid.</param>
+        /// <param name="domain">The domain where the cookie is valid.</param>
+        /// <param name="secure">Whether to transmit the cookie securely (that is, over HTTPS only).</param>
+        /// <param name="httponly">When TRUE the cookie will be made accessible only through the HTTP protocol.
+        /// This means that the cookie won't be accessible by scripting languages, such as JavaScript.
+        /// This setting can effectively help to reduce identity theft through XSS attacks
+        /// (although it is not supported by all browsers).</param>
+        /// <returns>Whether a cookie has been successfully send.</returns>
+        public static bool setcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
+        {
+            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, false);
+        }
+
+        /// <summary>
+        /// The same as <see cref="setcookie(Context, string, string, int, string, string, bool, bool)"/> except for that value is not <see cref="UrlEncode"/>d.
+        /// </summary>
+        public static bool setrawcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
+        {
+            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, true);
+        }
+
+        /// <summary>
+        /// Internal version common for <see cref="setcookie"/> and <see cref="setrawcookie"/>.
+        /// </summary>
+        internal static bool SetCookieInternal(Context ctx, string name, string value, int expire, string path, string domain, bool secure, bool httponly, bool raw)
+        {
+            var httpctx = ctx.HttpPhpContext;
+            if (httpctx == null)
+            {
+                return false;
+            }
+            
+            DateTimeOffset? expires;
+            if (expire > 0)
+            {
+                expires = new DateTimeOffset(DateTimeUtils.UnixTimeStampToUtc(expire).ToLocalTime());
+            }
+            else
+            {
+                expires = null;
+            }
+
+            httpctx.AddCookie(name, raw ? value : urlencode(value), expires, path ?? "/", domain, secure, httponly);
+
+            return true;
+        }
+
+        #endregion
+
         #region header, header_remove
 
         /// <summary>
