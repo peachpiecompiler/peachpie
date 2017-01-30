@@ -65,7 +65,18 @@ namespace Peachpie.Web
             get { return _httpctx.Response.HasStarted; }
         }
 
-        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, new StringValues(value)); }
+        public void SetHeader(string name, string value)
+        {
+            StringValues newitem = new StringValues(value);
+            //StringValues olditem;
+            //if (_httpctx.Response.Headers.TryGetValue(name, out olditem))
+            //{
+            //    newitem = StringValues.Concat(olditem, newitem);
+            //}
+
+            //
+            _httpctx.Response.Headers[name] = newitem;
+        }
 
         public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
 
