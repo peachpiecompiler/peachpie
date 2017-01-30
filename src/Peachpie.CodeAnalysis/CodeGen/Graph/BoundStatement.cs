@@ -26,7 +26,20 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
-            // nop
+            if (cg.EmitPdbSequencePoints)
+            {
+                var span = _span;
+                //if (span.IsEmpty && PhpSyntax != null)
+                //{
+                //    span = PhpSyntax.Span.ToTextSpan();
+                //}
+
+                if (!span.IsEmpty)
+                {
+                    cg.EmitSequencePoint(_span);
+                    cg.Builder.EmitOpCode(ILOpCode.Nop);
+                }
+            }
         }
     }
 

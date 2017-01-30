@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -48,6 +49,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal override void Generate(CodeGenerator cg)
         {
             Contract.ThrowIfNull(Condition);
+
+            cg.EmitSequencePoint(this.Condition.PhpSyntax);
 
             if (IsLoop) // perf
             {
@@ -205,7 +208,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         LocalDefinition _enumeratorLoc;
         MethodSymbol _moveNextMethod, _disposeMethod;
         PropertySymbol _currentValue, _currentKey, _current;
-
+        
         static ILOpCode CallOpCode(MethodSymbol method, TypeSymbol declaringtype)
         {
             return method.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call;
@@ -247,14 +250,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 // special PhpArray enumerator
 
-                //cg.EmitSequencePoint(valueVar.PhpSyntax);
+                cg.EmitSequencePoint(valueVar.PhpSyntax);
                 var valueTarget = valueVar.BindPlace(cg);
                 valueTarget.EmitStorePrepare(cg);
                 valueTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentValue));
 
                 if (keyVar != null)
                 {
-                    //cg.EmitSequencePoint(keyVar.PhpSyntax);
+                    cg.EmitSequencePoint(keyVar.PhpSyntax);
                     var keyTarget = keyVar.BindPlace(cg);
                     keyTarget.EmitStorePrepare(cg);
                     keyTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentKey));
@@ -269,6 +272,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     throw new InvalidOperationException();
                 }
 
+                cg.EmitSequencePoint(valueVar.PhpSyntax);
                 var valueTarget = valueVar.BindPlace(cg);
                 valueTarget.EmitStorePrepare(cg);
                 var t = cg.EmitGetProperty(enumeratorPlace, _current);  // TOOD: PhpValue.FromClr
@@ -424,10 +428,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
              *  }
              */
 
-            var lblMoveNext = new object();
+            var lblMoveNext = new NamedLabel("MoveNext");
             var lblBody = new object();
-            
+
             //
+            cg.EmitSequencePoint(_moveSpan);
             cg.Builder.EmitBranch(ILOpCode.Br, lblMoveNext);
             cg.Builder.MarkLabel(lblBody);
 
@@ -439,7 +444,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // }
 
             // if (enumerator.MoveNext())
-            //cg.EmitSequencePoint(this.Condition.PhpSyntax);
+            cg.EmitSequencePoint(_moveSpan);
             cg.Builder.MarkLabel(lblMoveNext);
             this.EnumereeEdge.EmitMoveNext(cg); // bool
             cg.Builder.EmitBranch(ILOpCode.Brtrue, lblBody);

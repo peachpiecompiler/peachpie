@@ -1,4 +1,5 @@
 ﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
@@ -92,7 +93,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     .ToImmutableArray())
             { PhpSyntax = stmt };
             if (stmt is AST.ThrowStmt) return new BoundThrowStatement(BindExpression(((AST.ThrowStmt)stmt).Expression, BoundAccess.Read)) { PhpSyntax = stmt };
-            if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
+            if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement() { PhpSyntax = stmt };
 
             throw new NotImplementedException(stmt.GetType().FullName);
         }
@@ -504,6 +505,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 .ToArray();
 
             return new BoundListEx(vars).WithAccess(BoundAccess.Write);
+        }
+
+        public BoundStatement BindEmptyStmt(Span span)
+        {
+            return new BoundEmptyStatement(span.ToTextSpan());
         }
 
         static BoundExpression BindLiteral(AST.Literal expr)

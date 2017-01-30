@@ -410,11 +410,17 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
         internal void EmitSequencePoint(Span span)
         {
-            if (_emitPdbSequencePoints && span.IsValid)
+            if (_emitPdbSequencePoints && span.IsValid && !span.IsEmpty)
             {
-                _il.DefineSequencePoint(
-                    _routine.ContainingFile.SyntaxTree,
-                    new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+                EmitSequencePoint(new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+            }
+        }
+
+        internal void EmitSequencePoint(Microsoft.CodeAnalysis.Text.TextSpan span)
+        {
+            if (_emitPdbSequencePoints && span.Length > 0)
+            {
+                _il.DefineSequencePoint(_routine.ContainingFile.SyntaxTree, span);
             }
         }
 
@@ -611,7 +617,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // <array>[i+N] = (T)params[i]
                     _il.EmitLocalLoad(tmparr);   // <array>
                     _il.EmitIntConstant(ps.Length);
-                    _il.EmitLocalLoad(tmpi);        
+                    _il.EmitLocalLoad(tmpi);
                     _il.EmitOpCode(ILOpCode.Add);
 
                     variadic_place.EmitLoad(_il);

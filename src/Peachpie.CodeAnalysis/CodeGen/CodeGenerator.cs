@@ -233,6 +233,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public bool IsDebug => _optimizations == OptimizationLevel.Debug;
 
         /// <summary>
+        /// Whether to emit sequence points (PDB).
+        /// </summary>
+        public bool EmitPdbSequencePoints => _emitPdbSequencePoints;
+
+        /// <summary>
         /// Gets a reference to compilation object.
         /// </summary>
         public PhpCompilation DeclaringCompilation => _moduleBuilder.Compilation;

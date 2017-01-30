@@ -86,5 +86,15 @@ namespace Pchp.CodeAnalysis
 
             return false;
         }
+
+        /// <summary>
+        /// Wraps given <see cref="Devsense.PHP.Text.Span"/> into <see cref="Microsoft.CodeAnalysis.Text.TextSpan"/> representing the same value.
+        /// </summary>
+        public static Microsoft.CodeAnalysis.Text.TextSpan ToTextSpan(this Devsense.PHP.Text.Span span)
+        {
+            return span.IsValid
+                ? new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length)
+                : new Microsoft.CodeAnalysis.Text.TextSpan();
+        }
     }
 }
