@@ -204,6 +204,17 @@ namespace Pchp.Core
         public PhpArray DeepCopy() => new PhpArray(this, true);
 
         /// <summary>
+        /// Makes clone of this array with deeply copied values.
+        /// </summary>
+        /// <returns>Cloned instance of <see cref="PhpArray"/>.</returns>
+        public override object Clone()
+        {
+            var clone = DeepCopy();
+            clone.EnsureWritable();
+            return clone;
+        }
+
+        /// <summary>
         /// Gets PHP enumerator for this array.
         /// </summary>
         public new OrderedDictionary.Enumerator GetEnumerator() => new OrderedDictionary.Enumerator(this);
@@ -322,9 +333,9 @@ namespace Pchp.Core
             y.Visited = true;
 
             // it will be more effective to implement OrderedHashtable.ToOrderedList method and use it here (in future version):
-            sorted_x = (PhpArray)x.Clone();
+            sorted_x = x.DeepCopy();
             sorted_x.Sort(KeyComparer.ArrayKeys);
-            sorted_y = (PhpArray)y.Clone();
+            sorted_y = y.DeepCopy();
             sorted_y.Sort(KeyComparer.ArrayKeys);
 
             var iter_x = sorted_x.GetFastEnumerator();
