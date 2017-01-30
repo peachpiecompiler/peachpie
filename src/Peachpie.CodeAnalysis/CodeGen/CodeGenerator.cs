@@ -117,22 +117,26 @@ namespace Pchp.CodeAnalysis.CodeGen
                     throw new InvalidOperationException("block miss");
                 }
 
-                if (block.Ordinal < _to)    // is in
+                if (IsIn(block))
                 {
                     // TODO: avoid branching to a guarded scope // e.g. goto x; try { x: }
 
-                    if (_blocks != null)
-                        _blocks.Remove(block);
+                    if (_blocks == null || _blocks.Count == 0 || _blocks.Comparer.Compare(block, _blocks.First()) < 0)
+                    {
+                        if (_blocks != null)
+                        {
+                            _blocks.Remove(block);
+                        }
 
-                    // continue with the block
-                    _codegen.GenerateBlock(block);
+                        // continue with the block
+                        _codegen.GenerateBlock(block);
+                        return;
+                    }
                 }
-                else
-                {
-                    // forward edge:
-                    IL.EmitBranch(ILOpCode.Br, block);  // TODO: avoid branch instruction if block will follow immediately
-                    Parent.Enqueue(block);
-                }
+                
+                // forward edge:
+                IL.EmitBranch(ILOpCode.Br, block);  // TODO: avoid branch instruction if block will follow immediately
+                this.Enqueue(block);
             }
 
             internal BoundBlock Dequeue()

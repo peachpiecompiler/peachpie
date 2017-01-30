@@ -124,7 +124,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
-            var bound = BindExpressionCore(expr, access).WithAccess(access);
+            var bound = BindExpressionCore(expr, access);
             bound.PhpSyntax = expr;
 
             return bound;
@@ -355,6 +355,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var arrayAccess = BoundAccess.Read;
 
+            if (x.Index == null && (!access.IsEnsure && !access.IsWrite))   // READ variable[]
+                access = access.WithReadRef();                              // -> READREF variable[] // the only way new item will be ensured
+
             if (access.IsWrite || access.IsEnsure)
                 arrayAccess = arrayAccess.WithEnsureArray();
             if (access.IsQuiet)
@@ -382,7 +385,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (expr.IsMemberOf == null)
             {
-                return new BoundVariableRef(varname);
+                return new BoundVariableRef(varname).WithAccess(access);
             }
             else
             {
@@ -420,7 +423,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw ExceptionUtilities.UnexpectedValue(x);
             }
 
-            return BoundFieldRef.CreateStaticField(typeref, varname);
+            return BoundFieldRef.CreateStaticField(typeref, varname).WithAccess(access);
         }
 
         BoundExpression BindGlobalConstUse(AST.GlobalConstUse expr)
@@ -494,7 +497,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 target.Access = target.Access.WithRead();   // Read & Write on target
 
-                return new BoundCompoundAssignEx(target, value, expr.Operation);
+                return new BoundCompoundAssignEx(target, value, expr.Operation).WithAccess(access);
             }
         }
 
