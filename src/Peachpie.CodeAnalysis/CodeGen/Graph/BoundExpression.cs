@@ -2688,9 +2688,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.AssignOr:
                     result_type = BoundBinaryEx.EmitBitOr(cg, xtype, Value);
                     break;
-                //case Operations.AssignXor:
-                //    binaryop = Operations.Xor;
-                //    break;
+                case Operations.AssignXor:
+                    result_type = BoundBinaryEx.EmitBitXor(cg, xtype, Value);
+                    break;
                 case Operations.AssignPow:
                     result_type = BoundBinaryEx.EmitPow(cg, xtype, /*this.Target.TypeRefMask*/0, Value);
                     break;
@@ -3157,6 +3157,13 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // tmp = new stdClass();
                         tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.stdClass.Ctor()));
+                    }
+                    else if (Access.IsReadRef)
+                    {
+                        // tmp = new PhpAlias(NULL, 1)
+                        cg.Emit_PhpValue_Null();
+                        cg.Builder.EmitIntConstant(1);
+                        tmp = cg.GetTemporaryLocal(cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpAlias_PhpValue_int));
                     }
                     else
                     {
