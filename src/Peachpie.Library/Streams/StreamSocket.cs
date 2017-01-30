@@ -451,8 +451,15 @@ namespace Pchp.Library.Streams
                 IPAddress address;
                 if (!IPAddress.TryParse(remoteSocket, out address)) // if remoteSocket is not a valid IP address then lookup the DNS
                 {
-                    // address = System.Net.Dns.GetHostEntry(remoteSocket).AddressList[0];
-                    throw new ArgumentException(nameof(remoteSocket));
+                    var addresses = System.Net.Dns.GetHostAddressesAsync(remoteSocket).Result;
+                    if (addresses != null && addresses.Length != 0)
+                    {
+                        address = addresses[0];
+                    }
+                    else
+                    {
+                        throw new ArgumentException(nameof(remoteSocket));
+                    }
                 }
 
                 Socket socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
