@@ -107,6 +107,20 @@ namespace Pchp.Core
             return true;
         }
 
+        #region Request Control
+
+        /// <summary>
+        /// Execution timeout in seconds.
+        /// </summary>
+        public int ExecutionTimeout = 30;
+
+        /// <summary>
+        /// Whether not to abort on client disconnection.
+        /// </summary>
+        public bool IgnoreUserAbort = true;
+
+        #endregion
+
         #region File System
 
         /// <summary>
