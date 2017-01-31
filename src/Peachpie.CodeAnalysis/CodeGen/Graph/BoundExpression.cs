@@ -2594,6 +2594,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 t_value = cg.Emit(this.Value);
             }
 
+            if (t_value.SpecialType == SpecialType.System_Void)
+            {
+                // default<T>
+                t_value = target_place.TypeOpt ?? cg.CoreTypes.PhpValue; // T of PhpValue
+                cg.EmitLoadDefault(t_value, 0);
+            }
+
             //
             if (Access.IsNone)
             {
