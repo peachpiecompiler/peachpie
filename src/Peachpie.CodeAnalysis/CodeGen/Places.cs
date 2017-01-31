@@ -900,25 +900,28 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 Debug.Assert(_access.IsRead);
+                var p = ResolveSuperglobalProperty(cg);
                 cg.EmitLoadContext();
-                return cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).GetMethod);
+                return cg.EmitCall(p.GetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.GetMethod);
             }
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
+            var p = ResolveSuperglobalProperty(cg);
+
             if (_access.IsUnset)
             {
                 Debug.Assert(valueType == null);
-                cg.Builder.EmitNullConstant();
+                cg.EmitLoadDefault(p.Type, 0);
             }
             else
             {
                 Debug.Assert(_access.IsWrite);
-                cg.EmitConvertToPhpArray(valueType, 0);
+                cg.EmitConvert(valueType, 0, p.Type);
             }
 
-            cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).SetMethod);
+            cg.EmitCall(p.SetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.SetMethod);
         }
 
         #endregion
