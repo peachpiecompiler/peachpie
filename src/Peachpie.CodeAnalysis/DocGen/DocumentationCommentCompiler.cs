@@ -107,6 +107,7 @@ namespace Pchp.CodeAnalysis.DocGen
 
             _writer.WriteLine("<summary>");
             _writer.Write(XmlEncode(summary));
+            _writer.WriteLine();
             _writer.WriteLine("</summary>");
         }
 
