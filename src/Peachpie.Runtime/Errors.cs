@@ -140,6 +140,48 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Emitted to a library function call which has invalid actual argument count.
+        /// </summary>
+        public static void InvalidArgumentCount(string typeName, string methodName)
+        {
+            if (methodName != null)
+            {
+                if (typeName != null)
+                {
+                    Throw(PhpError.Warning, string.Format(ErrResources.invalid_argument_count_for_method, typeName, methodName));
+                }
+                else
+                {
+                    Throw(PhpError.Warning, string.Format(ErrResources.invalid_argument_count_for_function, methodName));
+                }
+            }
+            else
+            {
+                Throw(PhpError.Warning, ErrResources.invalid_argument_count);
+            }
+        }
+
+        /// <summary>
+        /// Emitted to the foreach statement if the variable to be enumerated doesn't implement 
+        /// the <see cref="IPhpEnumerable"/> interface.
+        /// </summary>
+        public static void InvalidForeachArgument()
+        {
+            Throw(PhpError.Warning, ErrResources.invalid_foreach_argument);
+        }
+
+        /// <summary>
+        /// Emitted to the function call if an argument cannot be implicitly casted.
+        /// </summary>
+        /// <param name="argument">The argument name which is casted.</param>
+        /// <param name="targetType">The type to which is casted.</param>
+        /// <param name="functionName">The name of the function called.</param>
+        public static void InvalidImplicitCast(string argument, string targetType, string functionName)
+        {
+            Throw(PhpError.Warning, string.Format(ErrResources.invalid_implicit_cast, argument, targetType, functionName));
+        }
+
+        /// <summary>
         /// Called function is not supported.
         /// </summary>
         /// <param name="function">Not supported function name.</param>

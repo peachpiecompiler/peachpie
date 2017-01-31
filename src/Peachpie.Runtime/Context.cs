@@ -320,7 +320,7 @@ namespace Pchp.Core
         /// <summary>
         /// Current working directory.
         /// </summary>
-        public virtual string WorkingDirectory { get; } = string.Empty;
+        public virtual string WorkingDirectory { get; set; } = string.Empty;
 
         /// <summary>
         /// Set of include paths to be used to resolve full file path.

@@ -1,8 +1,10 @@
-﻿using Pchp.Core;
+﻿using System.ComponentModel;
+using Pchp.Core;
 
 /// <summary>
 /// Interface to provide accessing objects as arrays.
 /// </summary>
+[EditorBrowsable(EditorBrowsableState.Advanced)]
 public interface ArrayAccess
 {
     /// <summary>

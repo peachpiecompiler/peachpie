@@ -1,4 +1,5 @@
-﻿using Pchp.Core;
+﻿using System.ComponentModel;
+using Pchp.Core;
 
 /// <summary>
 /// Interface for external iterators or objects that can iterate themselves internally.
@@ -8,6 +9,7 @@
 /// calling <c>rewind</c> positions the iterator on the first element, so <c>next</c>
 /// shall not be called until the first element is retrieved.
 /// </remarks>
+[EditorBrowsable(EditorBrowsableState.Advanced)]
 public interface Iterator : Traversable
 {
     /// <summary>
@@ -43,6 +45,7 @@ public interface Iterator : Traversable
 /// <remarks>
 /// This interface contains only arg-less stubs as signatures should not be restricted.
 /// </remarks>
+[EditorBrowsable(EditorBrowsableState.Advanced)]
 public interface IteratorAggregate : Traversable
 {
     /// <summary>
