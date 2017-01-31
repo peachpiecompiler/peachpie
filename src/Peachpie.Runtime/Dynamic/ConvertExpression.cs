@@ -498,6 +498,28 @@ namespace Pchp.Core.Dynamic
 
         public static ConversionCost ToDouble(PhpNumber value) => value.IsLong ? ConversionCost.ImplicitCast : ConversionCost.Pass;
 
+        public static ConversionCost ToBoolean(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Boolean:
+                    return ConversionCost.Pass;
+
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                case PhpTypeCode.Double:
+                case PhpTypeCode.WritableString:
+                case PhpTypeCode.String:
+                    return ConversionCost.LoosingPrecision;
+
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.Warning;
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
         public static ConversionCost ToInt32(PhpValue value) => ToInt64(value);
 
         public static ConversionCost ToInt64(PhpValue value)
