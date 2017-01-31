@@ -51,7 +51,7 @@ namespace runtests
 
         static IEnumerable<string> ExpandTestDir(string testdir)
         {
-            return Directory.EnumerateFiles(testdir, "*.php", SearchOption.AllDirectories);
+            return System.IO.Directory.EnumerateFiles(testdir, "*.php", SearchOption.AllDirectories);
         }
 
         static TestResult TestCore(string testpath, string phpexepath)

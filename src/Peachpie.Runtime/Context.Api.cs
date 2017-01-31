@@ -40,6 +40,12 @@ namespace Pchp.Core
         /// <returns>New instance of <typeparamref name="T"/>.</returns>
         public T Create<T>(params PhpValue[] arguments) => (T)TypeInfoHolder<T>.TypeInfo.Creator(this, arguments);
 
+
+        /// <summary>
+        /// Creates an instance of a type dynamically.
+        /// </summary>
+        public object Create(string classname) => Create(classname, Array.Empty<PhpValue>());
+
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
         /// </summary>
