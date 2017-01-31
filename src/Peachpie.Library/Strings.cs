@@ -1732,14 +1732,14 @@ namespace Pchp.Library
         /// <returns>The converted string.</returns>
         public static string htmlspecialchars(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = "ISO-8859-1", bool doubleEncode = true)
         {
-            if (!doubleEncode)
-            {
-                 PhpException.ArgumentValueNotSupported(nameof(doubleEncode), doubleEncode);
-            }
-
-            return HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet);
+            return HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet, !doubleEncode);
         }
 
+        /// <summary>
+        /// List of known HTML entities without leading <c>&amp;</c> character when checking double encoded entities.
+        /// </summary>
+        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "#039;", "quot;", "apos;" };
+        
         /// <summary>
         /// Converts special characters of substring to HTML entities.
         /// </summary>
@@ -1748,12 +1748,14 @@ namespace Pchp.Library
         /// <param name="length">Length of the substring to covert.</param>
         /// <param name="quoteStyle">Quote conversion.</param>
         /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
+        /// <param name="keepExisting">Whether to keep existing entities and do not encode them.</param>
         /// <returns>The converted substring.</returns>
-        static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string charSet)
+        static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string charSet, bool keepExisting)
         {
             if (str == null) return String.Empty;
 
-            Debug.Assert(index + length <= str.Length);
+            int maxi = index + length;
+            Debug.Assert(maxi <= str.Length);
 
             StringBuilder result = new StringBuilder(length);
 
@@ -1761,12 +1763,26 @@ namespace Pchp.Library
             string single_quote = (quoteStyle & QuoteStyle.SingleQuotes) != 0 ? "&#039;" : "'";
             string double_quote = (quoteStyle & QuoteStyle.DoubleQuotes) != 0 ? "&quot;" : "\"";
 
-            for (int i = index; i < index + length; i++)
+            for (int i = index; i < maxi; i++)
             {
                 char c = str[i];
                 switch (c)
                 {
-                    case '&': result.Append("&amp;"); break;
+                    case '&':
+                        if (keepExisting)
+                        {
+                            // check if follows a known HTML entity
+                            var entity = IsAtKnownEntity(str, i + 1);
+                            if (entity != null)
+                            {
+                                result.Append(str, i, 1 + entity.Length);
+                                i += entity.Length/* + 1 - 1*/;
+                                break;
+                            }
+                        }
+
+                        result.Append("&amp;");
+                        break;
                     case '"': result.Append(double_quote); break;
                     case '\'': result.Append(single_quote); break;
                     case '<': result.Append("&lt;"); break;
@@ -1776,6 +1792,24 @@ namespace Pchp.Library
             }
 
             return result.ToString();
+        }
+
+        static string IsAtKnownEntity(string str, int index)
+        {
+            if (index < str.Length - 3)
+            {
+                var entities = known_entities;
+                for (int i = 0; i < entities.Length; i++)
+                {
+                    var entity = entities[i];
+                    if (str.IndexOf(entity, index, entity.Length, StringComparison.Ordinal) == index)
+                    {
+                        return entity;
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
