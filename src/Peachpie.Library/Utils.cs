@@ -162,7 +162,7 @@ namespace Pchp.Library
         /// <param name="bytes">The string of bytes.</param>
         /// <param name="separator">The separator.</param>
         /// <returns>Concatenation of hexadecimal values of bytes of <paramref name="bytes"/> separated by <paramref name="separator"/>.</returns>
-        public static string BinToHex(byte[] bytes, string separator)
+        public static string BinToHex(byte[] bytes, string separator = null)
         {
             if (bytes == null) return null;
             if (bytes.Length == 0) return string.Empty;
