@@ -945,13 +945,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 {
                                     if (ep.IsByRef && !refexpr.Access.IsWrite)
                                     {
-                                        refexpr.Access = refexpr.Access.WithWrite(expectedparams[i].Type);
+                                        SemanticsBinder.BindWriteAccess(refexpr);
                                         Worklist.Enqueue(CurrentBlock);
                                     }
 
-                                    if (ep.IsAlias)
+                                    if (ep.IsAlias && !refexpr.Access.IsReadRef)
                                     {
                                         SemanticsBinder.BindReadRefAccess(refexpr);
+                                        Worklist.Enqueue(CurrentBlock);
                                     }
 
                                     var refvar = refexpr as BoundVariableRef;
