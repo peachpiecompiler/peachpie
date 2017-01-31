@@ -1579,6 +1579,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitLoadDefault(TypeSymbol type, TypeRefMask typemask)
         {
+            Debug.Assert(type != null);
+
             switch (type.SpecialType)
             {
                 case SpecialType.System_Void:

@@ -142,9 +142,7 @@ namespace Pchp.CodeAnalysis.Symbols
             /// <summary>
             /// Gets single visible symbol or null.
             /// </summary>
-            /// <param name="key"></param>
-            /// <returns></returns>
-            public TSymbol SingleOrNull(TKey key)
+            public TSymbol SingleOrDefault(TKey key)
             {
                 var single = default(TSymbol);
                 var values = this[key];
@@ -165,6 +163,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 return single;
+            }
+
+            public IEnumerable<TSymbol> GetAll(TKey key)
+            {
+                EnsureUpdated();
+                return _cacheDict[key];
             }
 
             /// <summary>
@@ -248,7 +252,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public IEnumerable<SourceFileSymbol> GetFiles() => _files.Values;
 
-        public MethodSymbol GetFunction(QualifiedName name) => _functions.SingleOrNull(name);
+        /// <summary>
+        /// Gets single function in case there is no ambiguity and the function is declared unconditionally.
+        /// </summary>
+        public MethodSymbol GetFunction(QualifiedName name)
+        {
+            var fncs = _functions.GetAll(name).AsImmutable();
+            return (fncs.Length == 1 && !fncs[0].IsConditional) ? fncs[0] : null;
+        }
 
         public IEnumerable<MethodSymbol> GetFunctions(QualifiedName name) => _functions[name];
 
@@ -270,7 +281,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public NamedTypeSymbol GetType(QualifiedName name) => _types.SingleOrNull(name);
+        public NamedTypeSymbol GetType(QualifiedName name) => _types.SingleOrDefault(name);
 
         public IEnumerable<SourceTypeSymbol> GetTypes() => _types.Symbols;
     }
