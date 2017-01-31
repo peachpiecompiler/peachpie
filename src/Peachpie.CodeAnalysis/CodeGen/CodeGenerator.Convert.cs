@@ -717,33 +717,30 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits conversion to <c>PhpArray</c>.
         /// </summary>
-        public void EmitConvertToPhpArray(TypeSymbol from, TypeRefMask fromHint)
+        public TypeSymbol EmitConvertToPhpArray(TypeSymbol from, TypeRefMask fromHint)
         {
             if (from.IsOfType(CoreTypes.PhpArray))
             {
-                return;
-            }
-            else if (from == CoreTypes.PhpValue)
-            {
-                EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArray_PhpValue);
+                return from;
             }
             else if (from == CoreTypes.PhpAlias)
             {
-                // <PhpAlias>.Value.ToArray()
+                // Template: <PhpAlias>.Value.ToArray()
                 this.Emit_PhpAlias_GetValueAddr();
-                this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
+                return this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
             }
             else if (   // TODO: helper method for builtin types
                 from.SpecialType != SpecialType.None ||
                 from.IsOfType(CoreTypes.PhpResource) || from == CoreTypes.PhpNumber || from == CoreTypes.PhpString)
             {
                 EmitConvertToPhpValue(from, fromHint);
-                EmitCall(ILOpCode.Call, CoreMethods.PhpArray.New_PhpValue);
+                return EmitCall(ILOpCode.Call, CoreMethods.PhpArray.New_PhpValue);
             }
             else
             {
-                // TODO: object to array (copy its fields to new instance)
-                throw new NotImplementedException($"(array){from.Name}");
+                // Template: ToArray((PhpValue)<from>)
+                EmitConvert(from, 0, CoreTypes.PhpValue);
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArray_PhpValue);
             }
         }
 
