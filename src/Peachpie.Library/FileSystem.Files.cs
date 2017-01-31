@@ -215,7 +215,7 @@ namespace Pchp.Library
             return
                 !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
                 ResolvePath(ctx, ref path, true, out wrapper) &&
-                HandleFileSystemInfo(false, path, p => File.Exists(p) || Directory.Exists(p));
+                HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p));
         }
 
         /// <summary>
