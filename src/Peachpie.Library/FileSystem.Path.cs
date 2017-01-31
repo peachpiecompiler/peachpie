@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -126,7 +127,7 @@ namespace Pchp.Library
         /// <param name="path">An absolute or relative path to a directory or an URL.</param>
         /// <returns>Canonicalized absolute path in case of a local directory or the original 
         /// <paramref name="path"/> in case of an URL.</returns>
-        internal static string AbsolutePath(string path)
+        internal static string AbsolutePath(Context ctx, string path)
         {
             // Don't combine remote file paths with CWD.
             try
@@ -137,19 +138,21 @@ namespace Pchp.Library
                 // Remove the file:// schema if any.
                 path = GetFilename(path);
 
-                //// Combine the path and simplify it.
-                //string combinedPath = Path.Combine(PhpDirectory.GetWorking(), path);
+                // Combine the path and simplify it.
+                string combinedPath = Path.Combine(PhpDirectory.getcwd(ctx), path);
 
-                //// Note: GetFullPath handles "C:" incorrectly
-                //if (combinedPath[combinedPath.Length - 1] == ':') combinedPath += PathUtils.DirectorySeparator;
-                //return Path.GetFullPath(combinedPath);
-                throw new NotImplementedException();
+                // Note: GetFullPath handles "C:" incorrectly
+                if (combinedPath[combinedPath.Length - 1] == ':')
+                {
+                    combinedPath += PathUtils.DirectorySeparator;
+                }
+
+                return Path.GetFullPath(combinedPath);
             }
             catch (System.Exception)
             {
-                //PhpException.Throw(PhpError.Notice, LibResources.GetString("invalid_path", FileSystemUtils.StripPassword(path)));
-                //return null;
-                throw;
+                PhpException.Throw(PhpError.Notice, string.Format(Resources.LibResources.invalid_path, FileSystemUtils.StripPassword(path)));
+                return null;
             }
         }
 
@@ -413,28 +416,30 @@ namespace Pchp.Library
         /// <summary>
         /// Returns canonicalized absolute path name.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="path">Arbitrary path.</param>
         /// <returns>
         /// The given <paramref name="path"/> combined with the current working directory or
         /// <B>null</B> (<B>false</B> in PHP) if the path is invalid or doesn't exists.
         /// </returns>
-        public static string realpath(string path)
+        public static string realpath(Context ctx, string path)
         {
             if (string.IsNullOrEmpty(path))
                 return null;
 
             // string ending slash
             if (path[path.Length - 1].IsDirectorySeparator())
+            {
                 path = path.Substring(0, path.Length - 1);
+            }
 
-            string realpath = AbsolutePath(path);
-            throw new NotImplementedException();
-            //if (!File.Exists(realpath) && !System.IO.Directory.Exists(realpath))
-            //{
-            //    return null;
-            //}
+            string realpath = AbsolutePath(ctx, path);
+            if (!File.Exists(realpath) && !System.IO.Directory.Exists(realpath))
+            {
+                return null;
+            }
 
-            //return realpath;
+            return realpath;
         }
 
         #endregion
