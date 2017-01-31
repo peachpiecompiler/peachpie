@@ -31,7 +31,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the type is an interface.
         /// </summary>
-        public bool IsInterface => _type.GetTypeInfo().IsInterface;
+        public bool IsInterface => _type.IsInterface;
 
         /// <summary>
         /// Gets the full type name in PHP syntax, cannot be <c>null</c> or empty.
@@ -42,14 +42,46 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// CLR type declaration.
         /// </summary>
-        public Type Type => _type;
-        readonly Type _type;
+        public TypeInfo Type => _type;
+        readonly TypeInfo _type;
 
         /// <summary>
         /// Dynamically constructed delegate for object creation.
         /// </summary>
         public TObjectCreator Creator => _lazyCreator ?? BuildCreator();
-        TObjectCreator _lazyCreator;
+
+        TObjectCreator Creator_private => _lazyCreatorPrivate ?? BuildCreatorPrivate();
+        TObjectCreator Creator_protected => _lazyCreatorProtected ?? BuildCreatorProtected();
+        TObjectCreator _lazyCreator, _lazyCreatorPrivate, _lazyCreatorProtected;
+
+        /// <summary>
+        /// Dynamically constructed delegate for object creation in specific type context.
+        /// </summary>
+        /// <param name="caller">Current type context in order to resolve only visible constructors.</param>
+        public TObjectCreator ResolveCreator(Type caller)
+        {
+            if (caller != null)
+            {
+                if (caller == _type.AsType())
+                {
+                    // creation including private|protected|public .ctors
+                    return this.Creator_private;
+                }
+
+                if (_lazyCreatorProtected == null || _lazyCreatorProtected != _lazyCreator) // in case protected creator == public creator, we can skip following checks
+                {
+                    var callerinfo = caller.GetTypeInfo();
+                    if (callerinfo.IsAssignableFrom(_type) || _type.IsAssignableFrom(callerinfo))
+                    {
+                        // creation including protected|public .ctors
+                        return this.Creator_protected;
+                    }
+                }
+            }
+
+            // creation using public .ctors
+            return this.Creator;
+        }
 
         /// <summary>
         /// Gets base type or <c>null</c> in case type does not extend another class.
@@ -60,7 +92,7 @@ namespace Pchp.Core.Reflection
             {
                 if ((_flags & Flags.BaseTypePopulated) == 0)
                 {
-                    var binfo = _type.GetTypeInfo().BaseType;
+                    var binfo = _type.BaseType;
                     _lazyBaseType = (binfo != null && binfo != typeof(object)) ? binfo.GetPhpTypeInfo() : null;
                     _flags |= Flags.BaseTypePopulated;
                 }
@@ -69,24 +101,83 @@ namespace Pchp.Core.Reflection
         }
         PhpTypeInfo _lazyBaseType;
 
+        /// <summary>
+        /// Build creation delegate using public .ctors.
+        /// </summary>
         TObjectCreator BuildCreator()
         {
             lock (this)
             {
                 if (_lazyCreator == null)
                 {
-                    var ctors = _type.GetTypeInfo().DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
-                    _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type, ctors);
+                    var ctors = _type.DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
+                    _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctors);
                 }
             }
 
             return _lazyCreator;
         }
 
+        /// <summary>
+        /// Build creation delegate using public, protected and private .ctors.
+        /// </summary>
+        TObjectCreator BuildCreatorPrivate()
+        {
+            lock (this)
+            {
+                if (_lazyCreatorPrivate == null)
+                {
+                    var ctorsList = new List<ConstructorInfo>();
+                    bool hasPrivate = false;
+                    foreach (var c in _type.DeclaredConstructors)
+                    {
+                        if (!c.IsStatic && !c.IsPhpFieldsOnlyCtor())
+                        {
+                            ctorsList.Add(c);
+                            hasPrivate |= c.IsPrivate;
+                        }
+                    }
+                    _lazyCreatorPrivate = hasPrivate
+                        ? Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctorsList.ToArray())
+                        : this.Creator_protected;
+                }
+            }
+
+            return _lazyCreatorPrivate;
+        }
+
+        /// <summary>
+        /// Build creation delegate using public and protected .ctors.
+        /// </summary>
+        TObjectCreator BuildCreatorProtected()
+        {
+            lock (this)
+            {
+                if (_lazyCreatorProtected == null)
+                {
+                    var ctorsList = new List<ConstructorInfo>();
+                    bool hasProtected = false;
+                    foreach (var c in _type.DeclaredConstructors)
+                    {
+                        if (!c.IsStatic && !c.IsPrivate && !c.IsPhpFieldsOnlyCtor())
+                        {
+                            ctorsList.Add(c);
+                            hasProtected |= c.IsFamily;
+                        }
+                    }
+                    _lazyCreatorProtected = hasProtected
+                        ? Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctorsList.ToArray())
+                        : this.Creator;
+                }
+            }
+
+            return _lazyCreatorProtected;
+        }
+
         internal PhpTypeInfo(Type t)
         {
             Debug.Assert(t != null);
-            _type = t;
+            _type = t.GetTypeInfo();
             _name = t.FullName  // full PHP type name instead of CLR type name
                 .Replace('.', '\\')     // namespace separator
                 .Replace('+', '\\');    // nested type separator
@@ -128,7 +219,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets collection of PHP fields, static fields and constants declared in this type.
         /// </summary>
-        public TypeFields DeclaredFields => _declaredfields ?? (_declaredfields = new TypeFields(_type));
+        public TypeFields DeclaredFields => _declaredfields ?? (_declaredfields = new TypeFields(_type.AsType()));
         TypeFields _declaredfields;
 
         /// <summary>
@@ -141,7 +232,7 @@ namespace Pchp.Core.Reflection
             {
                 if ((_flags & Flags.RuntimeFieldsHolderPopulated) == 0)
                 {
-                    _runtimeFieldsHolder = Dynamic.BinderHelpers.LookupRuntimeFields(_type);
+                    _runtimeFieldsHolder = Dynamic.BinderHelpers.LookupRuntimeFields(_type.AsType());
                     _flags |= Flags.RuntimeFieldsHolderPopulated;
                 }
                 return _runtimeFieldsHolder;
@@ -220,7 +311,7 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<PhpTypeInfo> EnumerateTypeHierarchy(this PhpTypeInfo phptype)
         {
             return EnumerateClassHierarchy(phptype).Concat( // phptype + base types
-                phptype.Type.GetTypeInfo().GetInterfaces().Select(GetPhpTypeInfo)); // inherited interfaces
+                phptype.Type.GetInterfaces().Select(GetPhpTypeInfo)); // inherited interfaces
         }
 
         /// <summary>

@@ -2324,28 +2324,35 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (_typeref.ResolvedType != null)
                 {
-                    // context.Create<T>(params)
+                    // context.Create<T>(caller, params)
                     var create_t = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
-                        .Where(s => s.Arity == 1 && s.ParameterCount == 1 && s.Parameters[0].IsParams)
+                        .Where(s => s.Arity == 1 && s.ParameterCount == 2 &&
+                            s.Parameters[1].IsParams &&
+                            SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single()
                         .Construct(_typeref.ResolvedType);
 
-                    cg.EmitLoadContext();   // Context
+                    cg.EmitLoadContext();               // Context
+                    cg.EmitCallerRuntimeTypeHandle();   // RuntimeTypeHandle
                     cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray());  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
                 }
                 else
                 {
-                    // ctx.Create(classname, params)
+                    // ctx.Create(caller, classname, params)
                     var create = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
-                        .Where(s => s.Arity == 0 && s.ParameterCount == 2 && s.Parameters[0].Type.PrimitiveTypeCode == Microsoft.Cci.PrimitiveTypeCode.String && s.Parameters[1].IsParams && ((ArrayTypeSymbol)s.Parameters[1].Type).ElementType == cg.CoreTypes.PhpValue)
+                        .Where(s => s.Arity == 0 && s.ParameterCount == 3 &&
+                            s.Parameters[1].Type.PrimitiveTypeCode == Microsoft.Cci.PrimitiveTypeCode.String &&
+                            s.Parameters[2].IsParams && ((ArrayTypeSymbol)s.Parameters[2].Type).ElementType == cg.CoreTypes.PhpValue &&
+                            SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single();
 
-                    cg.EmitLoadContext();   // Context
-                    _typeref.EmitClassName(cg);   // String
+                    cg.EmitLoadContext();               // Context
+                    cg.EmitCallerRuntimeTypeHandle();   // RuntimeTypeHandle
+                    _typeref.EmitClassName(cg);         // String
                     cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray());  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create);

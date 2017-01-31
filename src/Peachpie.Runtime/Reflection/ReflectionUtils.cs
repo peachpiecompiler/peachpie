@@ -27,5 +27,13 @@ namespace Pchp.Core.Reflection
                 (fld.Name == "__peach__runtimeFields" || fld.Name == "<runtime_fields>") &&
                 !fld.IsPublic && !fld.IsStatic && fld.FieldType == typeof(PhpArray);
         }
+
+        /// <summary>
+        /// Determines whether given constructor is <c>PhpFieldsOnlyCtorAttribute</c>.
+        /// </summary>
+        public static bool IsPhpFieldsOnlyCtor(this ConstructorInfo ctor)
+        {
+            return ctor.IsFamily && ctor.GetCustomAttribute<PhpFieldsOnlyCtorAttribute>() != null;
+        }
     }
 }

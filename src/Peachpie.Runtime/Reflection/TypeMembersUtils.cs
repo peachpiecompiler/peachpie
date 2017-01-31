@@ -28,7 +28,7 @@ namespace Pchp.Core.Reflection
         public static PhpArray GetRuntimeFields(this PhpTypeInfo tinfo, object instance)
         {
             Debug.Assert(instance != null);
-            Debug.Assert(instance.GetType() == tinfo.Type);
+            Debug.Assert(instance.GetType() == tinfo.Type.AsType());
 
             // PhpArray __runtime_fields
             if (tinfo.RuntimeFieldsHolder != null)

@@ -258,7 +258,7 @@ namespace Pchp.Core
             // value cannot be its instance because there is no way how to instantiate it
             // ignoring the case when object is passed from CLR
 
-            return obj != null && tinfo != null && tinfo.Type.GetTypeInfo().IsInstanceOfType(obj);
+            return obj != null && tinfo != null && tinfo.Type.IsInstanceOfType(obj);
         }
 
         #endregion

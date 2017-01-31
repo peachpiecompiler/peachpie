@@ -474,7 +474,7 @@ namespace Pchp.Core.Dynamic
         protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameExpr, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
             // check tinfo is assignable from target
-            if (target?.Value == null || !tinfo.Type.GetTypeInfo().IsAssignableFrom(target.LimitType))
+            if (target?.Value == null || !tinfo.Type.IsAssignableFrom(target.LimitType))
             {
                 target = null;
             }

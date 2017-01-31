@@ -49,10 +49,10 @@ namespace Pchp.Core.Reflection
 
         #region Initialization
 
-        internal TypeMethods(Type type)
+        internal TypeMethods(TypeInfo type)
         {
             // collect available methods (including methods on base classes)
-            foreach (var m in type.GetTypeInfo()
+            foreach (var m in type
                 .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
                 .ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
             {

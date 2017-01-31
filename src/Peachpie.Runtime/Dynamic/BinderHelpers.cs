@@ -811,13 +811,21 @@ namespace Pchp.Core.Dynamic
             // (Context ctx, PhpValue[] arguments)
             var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
 
-            // invoke targets
-            var invocation = OverloadBinder.BindOverloadCall(type, null, ctors, ps[0], ps[1]);
-            Debug.Assert(invocation.Type == type);
+            if (ctors.Length != 0)
+            {
+                // invoke targets
+                var invocation = OverloadBinder.BindOverloadCall(type, null, ctors, ps[0], ps[1]);
+                Debug.Assert(invocation.Type == type);
 
-            // compile & create delegate
-            var lambda = Expression.Lambda<TObjectCreator>(invocation, ctors[0].Name + "#" + ctors.Length, true, ps);
-            return lambda.Compile();
+                // compile & create delegate
+                var lambda = Expression.Lambda<TObjectCreator>(invocation, ctors[0].Name + "#" + ctors.Length, true, ps);
+                return lambda.Compile();
+            }
+            else
+            {
+                // TODO: lambda {error; NULL;}
+                throw new ArgumentException("No constructor accessible for " + type.FullName);
+            }
         }
     }
 }
