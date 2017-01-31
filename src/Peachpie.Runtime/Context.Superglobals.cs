@@ -148,7 +148,7 @@ namespace Pchp.Core
             superglobals.post = InitPostVariable();
             superglobals.files = InitFilesVariable();
             superglobals.session = new PhpArray();
-            superglobals.cookie = new PhpArray();
+            superglobals.cookie = InitCookieVariable();
             superglobals.request = InitRequestVariable(superglobals.get, superglobals.post, superglobals.cookie, egpcs);   // after get, post, cookie
             superglobals.globals = InitGlobals(egpcs);
         }
@@ -247,6 +247,9 @@ namespace Pchp.Core
 
         /// <summary>Initialize $_FILES global variable.</summary>
         protected virtual PhpArray InitFilesVariable() => PhpArray.NewEmpty();
+
+        /// <summary>Initialize $_COOKIE global variable.</summary>
+        protected virtual PhpArray InitCookieVariable() => PhpArray.NewEmpty();
 
         #region Properties
 

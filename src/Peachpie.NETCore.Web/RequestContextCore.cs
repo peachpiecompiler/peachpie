@@ -361,5 +361,22 @@ namespace Peachpie.Web
         {
             return base.InitFilesVariable();
         }
+
+        protected override PhpArray InitCookieVariable()
+        {
+            var result = PhpArray.NewEmpty();
+
+            var cookies = _httpctx.Request.Cookies;
+            if (cookies.Count != 0)
+            {
+                foreach (var c in cookies)
+                {
+                    Superglobals.AddVariable(result, c.Key, System.Net.WebUtility.UrlDecode(c.Value));
+                }
+            }
+
+            //
+            return result;
+        }
     }
 }
