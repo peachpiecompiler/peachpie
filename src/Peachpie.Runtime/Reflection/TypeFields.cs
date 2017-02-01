@@ -241,5 +241,19 @@ namespace Pchp.Core.Reflection
         /// Gets enumeration of class instance fields excluding eventual <c>__runtime_fields</c>.
         /// </summary>
         public IEnumerable<FieldInfo> InstanceFields => (_fields != null) ? _fields.Values.Where(_isInstanceField) : Array.Empty<FieldInfo>();
+
+        /// <summary>
+        /// Gets an instance field with given name declared on this type, or <c>null</c>.
+        /// </summary>
+        public FieldInfo TryGetInstanceField(string name)
+        {
+            FieldInfo fld;
+            if (_fields != null && _fields.TryGetValue(name, out fld) && !fld.IsStatic)
+            {
+                return fld;
+            }
+
+            return null;
+        }
     }
 }

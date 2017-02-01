@@ -306,6 +306,11 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of given object.
+        /// </summary>
+        public static PhpTypeInfo GetPhpTypeInfo(this object obj) => obj.GetType().GetPhpTypeInfo();
+
+        /// <summary>
         /// Enumerates self, all base types and all inherited interfaces.
         /// </summary>
         public static IEnumerable<PhpTypeInfo> EnumerateTypeHierarchy(this PhpTypeInfo phptype)

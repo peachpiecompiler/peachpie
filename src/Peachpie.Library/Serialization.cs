@@ -9,6 +9,7 @@ using System.Globalization;
 using Pchp.Library.Resources;
 using System.IO;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Pchp.Library
 {
@@ -102,7 +103,7 @@ namespace Pchp.Library
                 public const char Array = 'a';
                 public const char Object = 'O'; // instance of a class that does not implement SPL.Serializable
                 public const char ObjectSer = 'C'; // instance of a class that implements SPL.Serializable
-                
+
                 public const char Reference = 'R'; // &-like reference
                 public const char ObjectRef = 'r'; // same instance reference (PHP5 object semantics)
             }
@@ -124,23 +125,41 @@ namespace Pchp.Library
                 Dictionary<object, int> serializedRefs { get { return _serializedRefs ?? (_serializedRefs = new Dictionary<object, int>()); } }
                 Dictionary<object, int> _serializedRefs;
 
-                Encoding Encoding => Encoding.UTF8;
+                Encoding Encoding => _ctx.StringEncoding;
 
                 /// <summary>
                 /// Result data.
                 /// </summary>
                 readonly PhpString _result = new PhpString();
 
+                readonly Context _ctx;
+                readonly RuntimeTypeHandle _caller;
+
                 void Write(char ch) => Write(ch.ToString());
                 void Write(string str) => _result.Append(str);
                 void Write(byte[] bytes) => _result.Append(bytes);
+                void Write(PhpString str)
+                {
+                    if (!str.IsEmpty)
+                    {
+                        if (str.ContainsBinaryData)
+                            Write(str.ToBytes(Encoding));
+                        else
+                            Write(str.ToString(Encoding));
+                    }
+                }
 
-                private ObjectWriter() { }
+                private ObjectWriter(Context ctx, RuntimeTypeHandle caller)
+                {
+                    Debug.Assert(ctx != null);
+                    _ctx = ctx;
+                    _caller = caller;
+                }
 
-                public static PhpString Serialize(PhpValue variable)
+                public static PhpString Serialize(Context ctx, PhpValue variable, RuntimeTypeHandle caller)
                 {
                     ObjectWriter writer;
-                    variable.Accept(writer = new ObjectWriter());
+                    variable.Accept(writer = new ObjectWriter(ctx, caller));
                     return writer._result;
                 }
 
@@ -194,7 +213,14 @@ namespace Pchp.Library
 
                 public override void Accept(string value)
                 {
-                    Accept(this.Encoding.GetBytes(value));
+                    if (value == null)
+                    {
+                        AcceptNull();
+                    }
+                    else
+                    {
+                        Accept(this.Encoding.GetBytes(value));
+                    }
                 }
 
                 public override void Accept(PhpString obj)
@@ -279,8 +305,203 @@ namespace Pchp.Library
                         else
                         {
                             serializedRefs.Add(value, sequenceNumber);
-                            throw new NotImplementedException();
+                            SerializeObject(value);
                         }
+                    }
+                }
+
+                void SerializeObject(object obj)
+                {
+                    Debug.Assert(obj != null);
+
+                    var tinfo = obj.GetPhpTypeInfo();
+                    var classname = tinfo.Name;
+
+                    if (obj is __PHP_Incomplete_Class)
+                    {
+                        // classname = ((__PHP_Incomplete_Class)obj).ClassName ?? classname;
+                        throw new NotImplementedException();
+                    }
+
+                    var classnameBytes = Encoding.GetBytes(classname);
+
+                    byte[] serializedBytes = null;
+                    List<KeyValuePair<string, PhpValue>> serializedProperties = null;
+
+                    var serializable = obj as global::Serializable;
+                    if (serializable != null)
+                    {
+                        var res = serializable.serialize();
+                        if (res == null)
+                        {
+                            AcceptNull();
+                            return;
+                        }
+
+                        serializedBytes = res.ToBytes(Encoding);
+
+                        //if (resdata == null)
+                        //{
+                        //    // serialize did not return NULL nor a string -> throw an exception
+                        //    SPL.Exception.ThrowSplException(
+                        //        _ctx => new SPL.Exception(_ctx, true),
+                        //        context,
+                        //        string.Format(CoreResources.serialize_must_return_null_or_string, value.TypeName), 0, null);
+                        //}
+                    }
+                    else
+                    {
+                        // try to call the __sleep method
+                        // otherwise list object properties
+
+                        var __sleep = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__sleep];
+                        // TODO: __sleep accessibility -> ThrowMethodVisibilityError
+                        if (__sleep != null)
+                        {
+                            var sleep_result = __sleep.Invoke(_ctx, obj).ArrayOrNull();
+                            if (sleep_result == null)
+                            {
+                                PhpException.Throw(PhpError.Notice, Core.Resources.ErrResources.sleep_must_return_array);
+                                AcceptNull();
+                                return;
+                            }
+
+                            serializedProperties = EnumerateSerializableProperties(obj, tinfo, sleep_result).ToList();
+                        }
+                        else
+                        {
+                            serializedProperties = TypeMembersUtils.EnumerateSerializableProperties(obj, tinfo).ToList();
+                        }
+                    }
+
+                    Write((serializedBytes == null) ? Tokens.Object : Tokens.ObjectSer);
+                    Write(Tokens.Colon);
+
+                    // write out class name
+                    Write(classnameBytes.Length.ToString());
+                    Write(Tokens.Colon);
+                    Write(Tokens.Quote);
+
+                    Write(classnameBytes);
+                    Write(Tokens.Quote);
+                    Write(Tokens.Colon);
+
+                    if (serializedBytes != null)
+                    {
+                        Debug.Assert(serializedProperties == null);
+
+                        // write out the result of serialize
+                        Write(serializedBytes.Length.ToString());
+                        Write(Tokens.Colon);
+                        Write(Tokens.BraceOpen);
+
+                        // write serialized data
+                        Write(serializedBytes);
+                    }
+                    else
+                    {
+                        // write out property count
+                        Write(serializedProperties.Count.ToString());
+                        Write(Tokens.Colon);
+                        Write(Tokens.BraceOpen);
+
+                        // write out properties
+                        AcceptObjectProperties(serializedProperties);
+                    }
+
+                    //
+                    Write(Tokens.BraceClose);
+                }
+
+                IEnumerable<KeyValuePair<string, PhpValue>> EnumerateSerializableProperties(object obj, PhpTypeInfo tinfo, PhpArray properties)
+                {
+                    Debug.Assert(obj != null);
+                    Debug.Assert(tinfo != null);
+                    Debug.Assert(properties != null);
+
+                    PhpArray runtime_fields = null;
+
+                    var enumerator = properties.GetFastEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        // TODO: PhpFieldInfo instead of System.Reflection.FieldInfo
+
+                        FieldAttributes visibility;
+                        string name = enumerator.CurrentValue.ToStringOrThrow(_ctx);
+                        string declaring_type_name;
+                        string property_name = TypeMembersUtils.ParseSerializedPropertyName(name, out declaring_type_name, out visibility);
+
+                        PhpTypeInfo declarer;   // for visibility check
+                        if (declaring_type_name == null)
+                        {
+                            declarer = tinfo;
+                        }
+                        else
+                        {
+                            declarer = _ctx.GetDeclaredType(declaring_type_name);
+                            if (declarer == null)
+                            {
+                                // property name refers to an unknown class -> value will be null
+                                yield return new KeyValuePair<string, PhpValue>(name, PhpValue.Null);
+                                continue;
+                            }
+                        }
+
+                        // obtain the property desc and decorate the prop name according to its visibility and declaring class
+                        var fld = TypeMembersUtils.ResolveInstanceField(tinfo, name);
+                        if (fld != null && TypeMembersUtils.IsVisible(fld, declarer.Type.AsType()))
+                        {
+                            var fld_declarer = fld.DeclaringType;
+
+                            // if certain conditions are met, serialize the property as null
+                            // (this is to precisely mimic the PHP behavior)
+                            if ((visibility == (fld.Attributes & FieldAttributes.FieldAccessMask) && visibility != FieldAttributes.Public) ||
+                                (visibility == FieldAttributes.Private && declarer.Type.AsType() != fld_declarer))
+                            {
+                                yield return new KeyValuePair<string, PhpValue>(name, PhpValue.Null);
+                                continue;
+                            }
+
+                            name = TypeMembersUtils.FormatSerializedPropertyName(fld, property_name, fld_declarer.GetPhpTypeInfo());
+                        }
+                        else
+                        {
+                            fld = null; // field is not visible, try runtime fields
+                        }
+
+                        // obtain the property value
+                        PhpValue val;
+
+                        if (fld != null)
+                        {
+                            val = PhpValue.FromClr(fld.GetValue(obj));
+                        }
+                        else
+                        {
+                            if (runtime_fields == null)
+                            {
+                                runtime_fields = tinfo.GetRuntimeFields(obj) ?? PhpArray.Empty;
+                            }
+
+                            if (!runtime_fields.TryGetValue(name, out val))
+                            {
+                                // PHP 5.1+
+                                PhpException.Throw(PhpError.Notice, string.Format(Core.Resources.ErrResources.sleep_returned_bad_field, name));
+                            }
+                        }
+
+                        yield return new KeyValuePair<string, PhpValue>(name, val);
+                    }
+                }
+
+                void AcceptObjectProperties(IEnumerable<KeyValuePair<string, PhpValue>> properties)
+                {
+                    foreach (var pair in properties)
+                    {
+                        // write out the property name and the property value
+                        Accept(pair.Key);
+                        sequenceNumber--; // don't assign a seq number to property names
+                        Accept(pair.Value);
                     }
                 }
             }
@@ -538,7 +759,7 @@ namespace Pchp.Library
                 long ParseInteger()
                 {
                     Consume(Tokens.Colon);
-                    long i = ReadInteger();                    
+                    long i = ReadInteger();
                     Consume(Tokens.Semicolon);
 
                     //
@@ -674,7 +895,7 @@ namespace Pchp.Library
                         //
                         arr.Add(key.ToIntStringKey(), value);
                     }
-                    
+
                     Consume(Tokens.BraceClose);
 
                     //
@@ -690,7 +911,7 @@ namespace Pchp.Library
 
             protected override PhpString CommonSerialize(Context ctx, PhpValue variable, RuntimeTypeHandle caller)
             {
-                return ObjectWriter.Serialize(variable);
+                return ObjectWriter.Serialize(ctx, variable, caller);
             }
 
             protected override PhpValue CommonDeserialize(Context ctx, Stream stream, RuntimeTypeHandle caller)
