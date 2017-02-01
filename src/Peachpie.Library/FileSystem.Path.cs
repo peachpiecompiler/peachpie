@@ -124,6 +124,7 @@ namespace Pchp.Library
         /// (local files only). If the provided <paramref name="path"/>
         /// is absolute (rooted local path or an URL) it is returned unchanged.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="path">An absolute or relative path to a directory or an URL.</param>
         /// <returns>Canonicalized absolute path in case of a local directory or the original 
         /// <paramref name="path"/> in case of an URL.</returns>

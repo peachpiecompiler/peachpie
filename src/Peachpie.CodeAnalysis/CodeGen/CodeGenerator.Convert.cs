@@ -830,6 +830,27 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return;
             }
 
+            if (to.IsArray())
+            {
+                var arrt = (ArrayTypeSymbol)to;
+                if (arrt.IsSZArray)
+                {
+                    if (arrt.ElementType.SpecialType == SpecialType.System_Byte)
+                    {
+                        // byte[]
+
+                        // Template: (PhpString).ToBytes(Context)
+                        EmitConvertToPhpString(from, fromHint); // PhpString
+                        this.EmitLoadContext();                 // Context
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBytes_Context)
+                            .Expect(to);  // ToBytes()
+                        return;
+                    }
+                }
+
+                throw new NotImplementedException($"Conversion from {from.Name} to {to.Name} is not implemented.");
+            }
+
             switch (from.SpecialType)
             {
                 case SpecialType.System_Void:

@@ -45,7 +45,7 @@ namespace Pchp.Library
         /// <summary>
         /// Calculate the SHA1 hash of a string of bytes.
         /// </summary>
-        /// <param name="ctx">Runtime context used for unicode conversions.
+        /// <param name="ctx">Runtime context used for unicode conversions.</param>
         /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
         /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
         /// a sequence of hexadecimal numbers.</param>

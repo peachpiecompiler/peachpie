@@ -1717,8 +1717,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.Clone:
                     // Template: clone x
-                    Debug.WriteLine("TODO: clone(object)");
-                    returned_type = cg.Emit(Operand);   // TODO: clone
+                    returned_type = cg.EmitDeepCopy(cg.Emit(Operand), Operand.TypeRefMask);
                     break;
 
                 case Operations.LogicNegation:

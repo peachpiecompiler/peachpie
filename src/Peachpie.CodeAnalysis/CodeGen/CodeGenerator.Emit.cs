@@ -1779,9 +1779,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits copy of value from top of the stack if necessary.
         /// </summary>
-        public TypeSymbol EmitDeepCopy(TypeSymbol t)
+        public TypeSymbol EmitDeepCopy(TypeSymbol t, TypeRefMask thint = default(TypeRefMask))
         {
-            if (IsCopiable(t))
+            if (IsCopiable(t) && IsCopiable(thint))
             {
                 if (t == CoreTypes.PhpValue)
                 {

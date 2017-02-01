@@ -420,8 +420,7 @@ namespace Pchp.Core
         {
             readonly IEnumerator<KeyValuePair<IntStringKey, PhpValue>> _enumerator;
             bool _valid;
-            KeyValuePair<IntStringKey, PhpValue> _current;
-
+            
             public PhpFieldsEnumerator(object obj, RuntimeTypeHandle caller)
             {
                 Debug.Assert(obj != null);

@@ -755,6 +755,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble = ct.PhpString.Method("ToDouble");
                 ToString_Context = ct.PhpString.Method("ToString", ct.Context);
                 ToNumber = ct.PhpString.Method("ToNumber");
+                ToBytes_Context = ct.PhpString.Method("ToBytes", ct.Context);
 
                 Append_String = ct.PhpString.Method("Append", ct.String);
                 Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
@@ -763,7 +764,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToBytes_Context,
                 Append_String, Append_PhpString,
                 DeepCopy;
         }

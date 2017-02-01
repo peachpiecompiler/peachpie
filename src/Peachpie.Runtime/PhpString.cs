@@ -483,6 +483,11 @@ namespace Pchp.Core
 
             #region ToBytes
 
+            /// <summary>
+            /// Gets string encoded into array of bytes according to corrent string encoding.
+            /// </summary>
+            public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
+
             public byte[] ToBytes(Encoding encoding)
             {
                 var chunks = _chunks;
