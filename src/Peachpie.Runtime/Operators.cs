@@ -424,7 +424,7 @@ namespace Pchp.Core
             public PhpFieldsEnumerator(object obj, RuntimeTypeHandle caller)
             {
                 Debug.Assert(obj != null);
-                _enumerator = TypeMembersUtils.EnumerateInstanceFields(obj, caller).GetEnumerator();
+                _enumerator = TypeMembersUtils.EnumerateVisibleInstanceFields(obj, caller).GetEnumerator();
                 _valid = true;
             }
 

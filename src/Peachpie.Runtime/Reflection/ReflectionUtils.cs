@@ -33,7 +33,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public static bool IsPhpFieldsOnlyCtor(this ConstructorInfo ctor)
         {
-            return ctor.IsFamily && ctor.GetCustomAttribute<PhpFieldsOnlyCtorAttribute>() != null;
+            return ctor.IsFamily && !ctor.IsStatic && ctor.GetCustomAttribute<PhpFieldsOnlyCtorAttribute>() != null;
         }
     }
 }

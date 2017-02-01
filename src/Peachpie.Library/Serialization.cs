@@ -74,6 +74,56 @@ namespace Pchp.Library
             }
 
             protected abstract PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller);
+
+            /// <summary>
+            /// Sets property value dynamically on the newly instantiated object.
+            /// </summary>
+            protected static void SetProperty(object/*!*/ instance, PhpTypeInfo tinfo, string/*!*/ name, PhpValue value, Context/*!*/ context)
+            {
+                // the property name might encode its visibility and "classification" -> use these
+                // information for suitable property desc lookups
+                FieldAttributes visibility;
+                string type_name;
+                string property_name = Serialization.ParseSerializedPropertyName(name, out type_name, out visibility);
+
+                var declarer = (type_name == null)
+                    ? tinfo
+                    : context.GetDeclaredType(type_name, true) ?? tinfo;
+
+                // try to find a suitable field handle
+                var fld = TypeMembersUtils.ResolveInstanceField(tinfo, property_name);
+                if (fld != null && TypeMembersUtils.IsVisible(fld, declarer.Type.AsType()))
+                {
+                    if ((fld.IsPrivate && declarer.Type.AsType() != fld.DeclaringType))
+                    {
+                        // if certain conditions are met, don't use the handle even if it was found
+                        // (this is to precisely mimic the PHP behavior)
+                        fld = null;
+                    }
+                }
+
+                if (fld != null)
+                {
+                    fld.SetValue(instance, value);
+                }
+                else if (tinfo.RuntimeFieldsHolder != null)
+                {
+                    // suitable CT field not found -> add it to RT fields
+                    // (note: care must be taken so that the serialize(unserialize($x)) round
+                    // trip returns $x even if user classes specified in $x are not declared)
+                    var runtime_fields = tinfo.GetRuntimeFields(instance);
+                    if (runtime_fields == null)
+                    {
+                        runtime_fields = new PhpArray(1);
+                        tinfo.RuntimeFieldsHolder.SetValue(instance, runtime_fields);
+                    }
+                    runtime_fields[name] = value;
+                }
+                else
+                {
+                    throw new ArgumentException();
+                }
+            }
         }
 
         #endregion
@@ -370,7 +420,7 @@ namespace Pchp.Library
                         }
                         else
                         {
-                            serializedProperties = TypeMembersUtils.EnumerateSerializableProperties(obj, tinfo).ToList();
+                            serializedProperties = Serialization.EnumerateSerializableProperties(obj, tinfo).ToList();
                         }
                     }
 
@@ -429,7 +479,7 @@ namespace Pchp.Library
                         FieldAttributes visibility;
                         string name = enumerator.CurrentValue.ToStringOrThrow(_ctx);
                         string declaring_type_name;
-                        string property_name = TypeMembersUtils.ParseSerializedPropertyName(name, out declaring_type_name, out visibility);
+                        string property_name = Serialization.ParseSerializedPropertyName(name, out declaring_type_name, out visibility);
 
                         PhpTypeInfo declarer;   // for visibility check
                         if (declaring_type_name == null)
@@ -462,7 +512,7 @@ namespace Pchp.Library
                                 continue;
                             }
 
-                            name = TypeMembersUtils.FormatSerializedPropertyName(fld, property_name, fld_declarer.GetPhpTypeInfo());
+                            name = Serialization.FormatSerializedPropertyName(fld, property_name, fld_declarer.GetPhpTypeInfo());
                         }
                         else
                         {
@@ -703,6 +753,53 @@ namespace Pchp.Library
                 }
 
                 /// <summary>
+                /// Reads serialized string data in form <c>{length}:"{bytes}"</c>
+                /// </summary>
+                /// <returns></returns>
+                PhpValue ReadString()
+                {
+                    // <length>
+                    int length = (unchecked((int)ReadInteger()));
+                    if (length < 0) ThrowInvalidLength();
+
+                    if (length != 0)
+                    {
+                        var bytes = new byte[length];
+
+                        // :"<bytes>";
+                        Consume(Tokens.Colon);
+                        Consume(Tokens.Quote);
+                        if (_stream.Read(bytes, 0, length) != length)
+                        {
+                            ThrowEndOfStream();
+                        }
+                        Consume(Tokens.Quote);
+
+                        //
+                        try
+                        {
+                            // unicode string
+                            return PhpValue.Create(_ctx.StringEncoding.GetString(bytes));
+                        }
+                        catch (DecoderFallbackException)
+                        {
+                            // binary string
+                            return PhpValue.Create(new PhpString(bytes));
+                        }
+                    }
+                    else
+                    {
+                        // :"";
+                        Consume(Tokens.Colon);
+                        Consume(Tokens.Quote);
+                        Consume(Tokens.Quote);
+
+                        //
+                        return PhpValue.Create(string.Empty);
+                    }
+                }
+
+                /// <summary>
                 /// Deserializes object from given stream.
                 /// </summary>
                 public PhpValue Deserialize() => Parse();
@@ -717,8 +814,8 @@ namespace Pchp.Library
                         case Tokens.Double: return PhpValue.Create(ParseDouble());
                         case Tokens.String: return ParseString();
                         case Tokens.Array: return PhpValue.Create(ParseArray());
-                        case Tokens.Object: throw new NotImplementedException();
-                        case Tokens.ObjectSer: throw new NotImplementedException();
+                        case Tokens.Object: return PhpValue.FromClass(ParseObject(false));
+                        case Tokens.ObjectSer: return PhpValue.FromClass(ParseObject(true));
                         case Tokens.Reference: throw new NotImplementedException();
                         case Tokens.ObjectRef: throw new NotImplementedException();
 
@@ -833,47 +930,13 @@ namespace Pchp.Library
                     // :
                     Consume(Tokens.Colon);
 
-                    // <length>
-                    int length = (unchecked((int)ReadInteger()));
-                    if (length < 0) ThrowInvalidLength();
+                    // <length>:"string"
+                    var str = ReadString();
 
-                    if (length != 0)
-                    {
-                        var bytes = new byte[length];
+                    // ;
+                    Consume(Tokens.Semicolon);
 
-                        // :"<bytes>";
-                        Consume(Tokens.Colon);
-                        Consume(Tokens.Quote);
-                        if (_stream.Read(bytes, 0, length) != length)
-                        {
-                            ThrowEndOfStream();
-                        }
-                        Consume(Tokens.Quote);
-                        Consume(Tokens.Semicolon);
-
-                        //
-                        try
-                        {
-                            // unicode string
-                            return PhpValue.Create(_ctx.StringEncoding.GetString(bytes));
-                        }
-                        catch (DecoderFallbackException)
-                        {
-                            // binary string
-                            return PhpValue.Create(new PhpString(bytes));
-                        }
-                    }
-                    else
-                    {
-                        // :"";
-                        Consume(Tokens.Colon);
-                        Consume(Tokens.Quote);
-                        Consume(Tokens.Quote);
-                        Consume(Tokens.Semicolon);
-
-                        //
-                        return PhpValue.Create(string.Empty);
-                    }
+                    return str;
                 }
 
                 PhpArray ParseArray()
@@ -900,6 +963,95 @@ namespace Pchp.Library
 
                     //
                     return arr;
+                }
+
+                /// <summary>
+                /// Parses the <B>O</B> and <B>C</B> tokens.
+                /// </summary>
+                /// <param name="serializable">If <B>true</B>, the last token eaten was <B>C</B>, otherwise <B>O</B>.</param>
+                object ParseObject(bool serializable)
+                {
+                    // :{length}:"{classname}":
+                    Consume(Tokens.Colon);  // :
+                    string class_name = ReadString().AsString();   // <length>:"classname"
+                    var tinfo = _ctx.GetDeclaredType(class_name, true);
+
+                    // :{count}:
+                    Consume(Tokens.Colon);  // :
+                    var count = (unchecked((int)ReadInteger()));
+                    if (count < 0) ThrowInvalidLength();
+                    Consume(Tokens.Colon);
+
+                    // bind to the specified class
+                    var obj = tinfo.GetUninitializedInstance(_ctx);
+                    if (obj == null)
+                    {
+                        throw new ArgumentException(string.Format(LibResources.class_instantiation_failed, class_name));
+                    }
+
+                    Consume(Tokens.BraceOpen);
+
+                    if (serializable)
+                    {
+                        // check whether the instance is PHP5.1 Serializable
+                        if (!(obj is global::Serializable))
+                        {
+                            throw new ArgumentException(string.Format(LibResources.class_has_no_unserializer, class_name));
+                        }
+
+                        PhpString serializedBytes;
+                        if (count > 0)
+                        {
+                            // add serialized representation to be later passed to unserialize
+                            var buffer = new byte[count];
+                            if (_stream.Read(buffer, 0, count) < count)
+                            {
+                                ThrowEndOfStream();
+                            }
+
+                            serializedBytes = new PhpString(buffer);
+                        }
+                        else
+                        {
+                            serializedBytes = PhpString.Empty;
+                        }
+
+                        // Template: Serializable::unserialize(data)
+                        ((global::Serializable)obj).unserialize(serializedBytes);
+                    }
+                    else
+                    {
+                        // parse properties
+                        while (--count >= 0)
+                        {
+                            // parse property name
+                            var nameval = Parse();
+                            var pname = nameval.StringOrNull();
+                            if (pname == null)
+                            {
+                                if (!nameval.IsInteger()) ThrowInvalidDataType();
+                                pname = nameval.ToStringOrThrow(_ctx);
+                            }
+
+                            // parse property value
+                            var pvalue = Parse();
+
+                            // set property
+                            SetProperty(obj, tinfo, pname, pvalue, _ctx);
+                        }
+
+                        // __wakeup
+                        var __wakeup = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__wakeup];
+                        if (__wakeup != null)
+                        {
+                            __wakeup.Invoke(_ctx, obj);
+                        }
+                    }
+
+                    Consume(Tokens.BraceClose);
+
+                    //
+                    return obj;
                 }
             }
 
@@ -953,6 +1105,5 @@ namespace Pchp.Library
         }
 
         #endregion
-
     }
 }

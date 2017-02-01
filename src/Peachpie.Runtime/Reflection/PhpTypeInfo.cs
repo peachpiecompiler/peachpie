@@ -50,6 +50,20 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public TObjectCreator Creator => _lazyCreator ?? BuildCreator();
 
+        /// <summary>
+        /// Creates instance of the class without invoking its constructor.
+        /// </summary>
+        public object GetUninitializedInstance(Context ctx)
+        {
+            if (_lazyEmptyCreator == null)
+            {
+                _lazyEmptyCreator = TypeMembersUtils.BuildCreateEmptyObjectFunc(this);
+            }
+
+            return _lazyEmptyCreator(ctx);
+        }
+        Func<Context, object> _lazyEmptyCreator;
+
         TObjectCreator Creator_private => _lazyCreatorPrivate ?? BuildCreatorPrivate();
         TObjectCreator Creator_protected => _lazyCreatorProtected ?? BuildCreatorProtected();
         TObjectCreator _lazyCreator, _lazyCreatorPrivate, _lazyCreatorProtected;

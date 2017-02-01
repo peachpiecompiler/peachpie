@@ -215,7 +215,7 @@ namespace Pchp.Library
             {
                 var result = PhpArray.NewEmpty();
 
-                foreach (var pair in TypeMembersUtils.EnumerateInstanceFields(obj, caller))
+                foreach (var pair in TypeMembersUtils.EnumerateVisibleInstanceFields(obj, caller))
                 {
                     result.Add(pair.Key, pair.Value.DeepCopy());
                 }
