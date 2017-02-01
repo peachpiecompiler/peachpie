@@ -52,7 +52,7 @@ namespace Pchp.Core
         BufferedOutput _bufferedOutput;
 
         BufferedOutput EnsureBufferedOutput(bool enableBuffering)
-            => _bufferedOutput ?? (_bufferedOutput = new BufferedOutput(enableBuffering, _textSink, _streamSink, this.StringEncoding));
+            => _bufferedOutput ?? (_bufferedOutput = new BufferedOutput(this, enableBuffering, _textSink, _streamSink));
 
         /// <summary>
         /// Stream where text output will be sent.

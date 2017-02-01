@@ -454,13 +454,7 @@ namespace Pchp.Core
             }
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Object && right.Object == me.Object;
             public override object EnsureObject(ref PhpValue me) => me.Object;
-            public override IPhpArray EnsureArray(ref PhpValue me)
-            {
-                // TODO: return new ArrayAccessWrapper(me.Object)
-                // TODO: Fatal error: Uncaught Error: Cannot use object of type {0} as array
-
-                throw new InvalidOperationException(string.Format(Resources.ErrResources.object_used_as_array, me.Object.GetType().Name));
-            }
+            public override IPhpArray EnsureArray(ref PhpValue me) => Operators.EnsureArray(me.Object);
             public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet)
             {
                 // IPhpArray[]

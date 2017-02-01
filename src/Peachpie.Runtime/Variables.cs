@@ -416,6 +416,17 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// In case the value contains a php string with binary data, gets array of bytes. Otherwise <c>null</c>.
+        /// </summary>
+        public static byte[] GetBytesOrNull(this PhpValue value, Context ctx)
+        {
+            var phpstr = (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpString;
+            return (phpstr != null && phpstr.ContainsBinaryData)
+                ? phpstr.ToBytes(ctx)
+                : null;
+        }
+
+        /// <summary>
         /// In case given value contains an array (<see cref="PhpArray"/>),
         /// it is returned. Otherwise <c>null</c>.
         /// </summary>

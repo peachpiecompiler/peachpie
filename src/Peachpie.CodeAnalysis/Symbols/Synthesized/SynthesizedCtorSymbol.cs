@@ -144,10 +144,12 @@ namespace Pchp.CodeAnalysis.Symbols
             var phpconstruct = type.ResolvePhpCtor(true); // this tells us what parameters are provided so we can select best overload for base..ctor() call
 
             // resolve base .ctor that has to be called
-            var fieldsonlyctor = (type.BaseType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly;   // base..ctor() to be called if provided
+            var btype = type.BaseType;
+            Debug.Assert(!(btype is ErrorTypeSymbol));
+            var fieldsonlyctor = (btype as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly;   // base..ctor() to be called if provided
             var basectors = (fieldsonlyctor != null)
                 ? ImmutableArray.Create(fieldsonlyctor)
-                : type.BaseType.InstanceConstructors
+                : btype.InstanceConstructors
                     .OrderByDescending(c => c.ParameterCount)   // longest ctors first
                     .AsImmutable();
 

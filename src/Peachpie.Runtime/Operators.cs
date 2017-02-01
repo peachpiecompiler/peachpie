@@ -228,6 +228,77 @@ namespace Pchp.Core
         #region Array Access
 
         /// <summary>
+        /// Provides <see cref="IPhpArray"/> interface for <see cref="ArrayAccess"/> instance.
+        /// </summary>
+        sealed class ArrayAccessAsPhpArray : IPhpArray
+        {
+            readonly ArrayAccess _array;
+
+            public ArrayAccessAsPhpArray(ArrayAccess array)
+            {
+                Debug.Assert(array != null);
+                _array = array;
+            }
+
+            public int Count
+            {
+                get
+                {
+                    throw new NotSupportedException();
+                }
+            }
+
+            public void AddValue(PhpValue value)
+            {
+                throw new NotSupportedException();
+            }
+
+            public PhpAlias EnsureItemAlias(IntStringKey key)
+            {
+                return _array.offsetGet(PhpValue.Create(key)).EnsureAlias();
+            }
+
+            public IPhpArray EnsureItemArray(IntStringKey key)
+            {
+                return _array.offsetGet(PhpValue.Create(key)).EnsureArray();
+            }
+
+            public object EnsureItemObject(IntStringKey key)
+            {
+                return _array.offsetGet(PhpValue.Create(key)).EnsureObject();
+            }
+
+            public PhpValue GetItemValue(IntStringKey key)
+            {
+                return _array.offsetGet(PhpValue.Create(key));
+            }
+
+            public void RemoveKey(IntStringKey key)
+            {
+                _array.offsetUnset(PhpValue.Create(key));
+            }
+
+            public void SetItemAlias(IntStringKey key, PhpAlias alias)
+            {
+                _array.offsetSet(PhpValue.Create(key), PhpValue.Create(alias));
+            }
+
+            public void SetItemValue(IntStringKey key, PhpValue value)
+            {
+                _array.offsetSet(PhpValue.Create(key), value);
+            }
+        }
+
+        public static IPhpArray EnsureArray(object obj)
+        {
+            // ArrayAccess
+            if (obj is ArrayAccess) return new ArrayAccessAsPhpArray((ArrayAccess)obj);
+
+            // TODO: Fatal error: Uncaught Error: Cannot use object of type {0} as array
+            throw new InvalidOperationException(string.Format(Resources.ErrResources.object_used_as_array, obj.GetType().FullName));
+        }
+
+        /// <summary>
         /// Implements <c>[]</c> operator on <see cref="string"/>.
         /// </summary>
         /// <param name="value">String to be accessed as array.</param>

@@ -61,7 +61,7 @@ namespace Pchp.Library
         /// <param name="chunkSize">Not supported.</param>
         /// <param name="erase">Not supported.</param>
         /// <returns>Whether the filter is valid callback.</returns>
-        public static bool ob_start(Context ctx, Delegate filter = null, int chunkSize = 0, bool erase = true)
+        public static bool ob_start(Context ctx, IPhpCallable filter = null, int chunkSize = 0, bool erase = true)
         {
             if (chunkSize != 0)
                 //PhpException.ArgumentValueNotSupported("chunkSize", "!= 0");
@@ -232,14 +232,15 @@ namespace Pchp.Library
         {
             var result = new PhpArray(3);
 
-            Delegate filter;
+            IPhpCallable filter;
             int size;
-            bo.GetLevelInfo(index, out filter, out size);
+            string name;
+            bo.GetLevelInfo(index, out filter, out size, out name);
 
             if (filter != null)
             {
                 result.Add("type", 1);
-                result.Add("name", filter.ToString());
+                result.Add("name", name);
             }
             else
             {
