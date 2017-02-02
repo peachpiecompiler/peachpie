@@ -742,18 +742,6 @@ namespace Pchp.Library
 
         /// <summary>
         /// The localtime() function returns an array identical to that of the structure returned by the C function call.
-        /// Time specified by the parameter timestamp is used, regular numericaly indexed array is returned.
-        /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="timestamp">Number of seconds since 1970.</param>
-        /// <returns>Array containing values specifying the date and time.</returns>
-        public static PhpArray localtime(Context ctx, int timestamp)
-        {
-            return GetLocalTime(PhpTimeZone.GetCurrentTimeZone(ctx), DateTimeUtils.UnixTimeStampToUtc(timestamp), false);
-        }
-
-        /// <summary>
-        /// The localtime() function returns an array identical to that of the structure returned by the C function call.
         /// The first argument to localtime() is the timestamp. The second argument to the localtime() is
         /// the isAssociative, if this is set to <c>false</c> than the array is returned as a regular, numerically indexed array.
         /// If the argument is set to <c>true</c> then localtime() is an associative array containing all the different
@@ -777,7 +765,7 @@ namespace Pchp.Library
         /// <param name="timestamp"></param>
         /// <param name="returnAssociative"></param>
         /// <returns></returns>
-        public static PhpArray localtime(Context ctx, int timestamp, bool returnAssociative)
+        public static PhpArray localtime(Context ctx, int timestamp, bool returnAssociative = false)
         {
             return GetLocalTime(PhpTimeZone.GetCurrentTimeZone(ctx), DateTimeUtils.UnixTimeStampToUtc(timestamp), returnAssociative);
         }
@@ -929,62 +917,12 @@ namespace Pchp.Library
             Double = 2
         }
 
-        public static PhpValue date_sunrise(Context ctx, int timestamp)
-        {
-            return GetSunTime(ctx, timestamp, TimeFormats.String, Double.NaN, Double.NaN, Double.NaN, Double.NaN, true);
-        }
-
-        public static PhpValue date_sunrise(Context ctx, int timestamp, TimeFormats format)
-        {
-            return GetSunTime(ctx, timestamp, format, Double.NaN, Double.NaN, Double.NaN, Double.NaN, true);
-        }
-
-        public static PhpValue date_sunrise(Context ctx, int timestamp, TimeFormats format, double latitude)
-        {
-            return GetSunTime(ctx, timestamp, format, latitude, Double.NaN, Double.NaN, Double.NaN, true);
-        }
-
-        public static PhpValue date_sunrise(Context ctx, int timestamp, TimeFormats format, double latitude, double longitude)
-        {
-            return GetSunTime(ctx, timestamp, format, latitude, longitude, Double.NaN, Double.NaN, true);
-        }
-
-        public static PhpValue date_sunrise(Context ctx, int timestamp, TimeFormats format, double latitude, double longitude, double zenith)
-        {
-            return GetSunTime(ctx, timestamp, format, latitude, longitude, zenith, Double.NaN, true);
-        }
-
-        public static PhpValue date_sunrise(Context ctx, int timestamp, TimeFormats format, double latitude, double longitude, double zenith, double offset)
+        public static PhpValue date_sunrise(Context ctx, int timestamp, TimeFormats format = TimeFormats.String, double latitude = double.NaN, double longitude = double.NaN, double zenith = double.NaN, double offset = double.NaN)
         {
             return GetSunTime(ctx, timestamp, format, latitude, longitude, zenith, offset, true);
         }
 
-        public static PhpValue date_sunset(Context ctx, int timestamp)
-        {
-            return GetSunTime(ctx, timestamp, TimeFormats.String, Double.NaN, Double.NaN, Double.NaN, Double.NaN, false);
-        }
-
-        public static PhpValue date_sunset(Context ctx, int timestamp, TimeFormats format)
-        {
-            return GetSunTime(ctx, timestamp, format, Double.NaN, Double.NaN, Double.NaN, Double.NaN, false);
-        }
-
-        public static PhpValue date_sunset(Context ctx, int timestamp, TimeFormats format, double latitude)
-        {
-            return GetSunTime(ctx, timestamp, format, latitude, Double.NaN, Double.NaN, Double.NaN, false);
-        }
-
-        public static PhpValue date_sunset(Context ctx, int timestamp, TimeFormats format, double latitude, double longitude)
-        {
-            return GetSunTime(ctx, timestamp, format, latitude, longitude, Double.NaN, Double.NaN, false);
-        }
-
-        public static PhpValue date_sunset(Context ctx, int timestamp, TimeFormats format, double latitude, double longitude, double zenith)
-        {
-            return GetSunTime(ctx, timestamp, format, latitude, longitude, zenith, Double.NaN, false);
-        }
-
-        public static PhpValue date_sunset(Context ctx, int timestamp, TimeFormats format, double latitude, double longitude, double zenith, double offset)
+        public static PhpValue date_sunset(Context ctx, int timestamp, TimeFormats format = TimeFormats.String, double latitude = double.NaN, double longitude = double.NaN, double zenith = double.NaN, double offset = double.NaN)
         {
             return GetSunTime(ctx, timestamp, format, latitude, longitude, zenith, offset, false);
         }
