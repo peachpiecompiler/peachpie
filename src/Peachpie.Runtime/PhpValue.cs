@@ -130,7 +130,11 @@ namespace Pchp.Core
                     case PhpTypeCode.Double:
                     case PhpTypeCode.String:
                     case PhpTypeCode.WritableString:
+                    case PhpTypeCode.Null:
                         return true;
+
+                    case PhpTypeCode.Object:
+                        return this.Object == null; // Note: will be handled by PhpTypeCode.Null
 
                     case PhpTypeCode.Alias:
                         return Alias.Value.IsScalar;
