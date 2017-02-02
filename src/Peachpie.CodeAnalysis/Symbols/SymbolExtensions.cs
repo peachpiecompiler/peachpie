@@ -24,7 +24,27 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool IsPhpHidden(this Symbol s)
         {
             var attrs = s.GetAttributes();
-            return attrs.Length != 0 && attrs.Any(a => a.AttributeClass.MetadataName == "PhpHidden");
+            return attrs.Length != 0 && attrs.Any(a => a.AttributeClass.MetadataName == "PhpHiddenAttribute");
+        }
+
+        public static bool IsPhpTypeName(this PENamedTypeSymbol s) => GetPhpTypeNameOrNull(s) != null;
+
+        public static string GetPhpTypeNameOrNull(this PENamedTypeSymbol s)
+        {
+            var attrs = s.GetAttributes();
+            if (attrs.Length != 0)
+            {
+                for (int i = 0; i < attrs.Length; i++)
+                {
+                    if (attrs[i].AttributeClass.MetadataName == "PhpTypeAttribute")
+                    {
+                        var tname = attrs[i].ConstructorArguments[0];
+                        return tname.IsNull ? s.MakeQualifiedName().ToString() : tname.DecodeValue<string>(SpecialType.System_String);
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

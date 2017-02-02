@@ -60,6 +60,20 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Marks public class or interface declaration as a PHP type visible to the scripts from extension libraries.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class PhpTypeAttribute : Attribute
+    {
+        readonly string _typename;
+
+        public PhpTypeAttribute(string phpTypeName = null)
+        {
+            _typename = phpTypeName;
+        }
+    }
+
+    /// <summary>
     /// Denotates a function parameter of type <see cref="PhpArray"/>
     /// that will be referenced to the array of local PHP variables.
     /// </summary>

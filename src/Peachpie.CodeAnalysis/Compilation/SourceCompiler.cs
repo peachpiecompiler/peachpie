@@ -227,6 +227,7 @@ namespace Pchp.CodeAnalysis
         void CompileReflectionEnumerators(CancellationToken cancellationToken)
         {
             _moduleBuilder.CreateEnumerateReferencedFunctions(_diagnostics);
+            _moduleBuilder.CreateEnumerateReferencedTypes(_diagnostics);
             _moduleBuilder.CreateEnumerateScriptsSymbol(_diagnostics);
             _moduleBuilder.CreateEnumerateConstantsSymbol(_diagnostics);
         }

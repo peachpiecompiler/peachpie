@@ -216,6 +216,40 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         /// <summary>
+        /// Emit body of enumeration of referenced types.
+        /// </summary>
+        internal void CreateEnumerateReferencedTypes(DiagnosticBag diagnostic)
+        {
+            var method = this.ScriptType.EnumerateReferencedTypesSymbol;
+            var types = this.Compilation.GlobalSemantics.GetReferencedTypes();
+
+            // void (Action<string, RuntimeTypeHandle> callback)
+            var body = MethodGenerator.GenerateMethodBody(this, method,
+                (il) =>
+                {
+                    var action_string_method = method.Parameters[0].Type;
+                    Debug.Assert(action_string_method.Name == "Action");
+                    var invoke = action_string_method.DelegateInvokeMethod();
+                    Debug.Assert(invoke != null);
+
+                    foreach (var t in types)
+                    {
+                        // callback.Invoke(t.Name, t)
+                        il.EmitLoadArgumentOpcode(0);
+                        il.EmitStringConstant(t.Name);
+                        il.EmitLoadToken(this, diagnostic, t, null);
+                        il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
+                    }
+
+                    //
+                    il.EmitRet(true);
+                },
+                null, diagnostic, false);
+
+            SetMethodBody(method, body);
+        }
+
+        /// <summary>
         /// Emit body of enumeration of scripts Main function.
         /// </summary>
         internal void CreateEnumerateScriptsSymbol(DiagnosticBag diagnostic)

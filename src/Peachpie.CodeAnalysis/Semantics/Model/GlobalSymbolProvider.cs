@@ -60,6 +60,18 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
         }
 
+        internal IEnumerable<NamedTypeSymbol> GetReferencedTypes()
+        {
+            var std = Core.std.StdTable.Types.Select(g => _compilation.PhpCorLibrary.GetTypeByMetadataName(g.Key));
+
+            return std;/*.Concat(
+                _compilation.GetBoundReferenceManager()
+                    .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>()
+                    .Where(s => s.IsExtensionLibrary)
+                    .SelectMany(s => s.PrimaryModule.GlobalNamespace.GetTypeMembers().OfType<PENamedTypeSymbol>())
+                    .Where(t => !t.IsStatic && t.DeclaredAccessibility == Accessibility.Public && t.IsPhpTypeName()));*/
+        }
+
         #region ISemanticModel
 
         public INamedTypeSymbol GetType(QualifiedName name)
