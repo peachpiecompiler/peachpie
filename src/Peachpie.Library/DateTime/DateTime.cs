@@ -13,6 +13,7 @@ using System_DateTime = System.DateTime;
 /// <summary>
 /// Representation of date and time.
 /// </summary>
+[PhpType("DateTime")]
 public class DateTime
 {
     #region Constants
