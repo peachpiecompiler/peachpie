@@ -887,7 +887,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (vref.Name.IsDirect)
                 {
                     // if (Variable is T) => variable is T in True branch state
-                    State.SetVar(vref.Name.NameValue.Value, TypeCtx.GetTypeMask(x.AsType.TypeRef, true));
+                    var vartype = TypeCtx.GetTypeMask(x.AsType.TypeRef, true);
+                    if (x.Operand.TypeRefMask.IsRef) vartype = vartype.WithRefFlag; // keep IsRef flag
+
+                    State.SetVar(vref.Name.NameValue.Value, vartype);
                 }
             }
 
