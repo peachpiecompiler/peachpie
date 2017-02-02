@@ -131,6 +131,11 @@ namespace Pchp.Core
             public virtual PhpValue DeepCopy(ref PhpValue me) => me;
 
             /// <summary>
+            /// Outputs current value to the <see cref="Context.Output"/> or <see cref="Context.OutputStream"/>.
+            /// </summary>
+            public abstract void Output(ref PhpValue me, Context ctx);
+
+            /// <summary>
             /// Debug textual representation of the value.
             /// </summary>
             public abstract string DisplayString(ref PhpValue me);
@@ -184,6 +189,7 @@ namespace Pchp.Core
                 return arr.EnsureItemAlias(key);
             }
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.NewEmpty();
+            public override void Output(ref PhpValue me, Context ctx) { }
             public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptNull();
         }
@@ -219,6 +225,7 @@ namespace Pchp.Core
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
+            public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Long);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Long);
         }
 
@@ -247,6 +254,7 @@ namespace Pchp.Core
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
+            public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Double);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Double);
         }
 
@@ -293,6 +301,7 @@ namespace Pchp.Core
             public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Boolean ? PhpVariable.True : PhpVariable.False;
+            public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Boolean);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Boolean);
         }
 
@@ -346,6 +355,7 @@ namespace Pchp.Core
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.String);
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
+            public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.String);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.String);
         }
 
@@ -392,6 +402,7 @@ namespace Pchp.Core
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me.DeepCopy());
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.WritableString.ToString());
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
+            public override void Output(ref PhpValue me, Context ctx) => me.WritableString.Output(ctx);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.WritableString);
         }
 
@@ -496,6 +507,7 @@ namespace Pchp.Core
                 throw new NotImplementedException();    // return PhpCallback.Create(obj);
             }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
+            public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(Convert.ToStringOrThrow(me.Object, ctx));
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptObject(me.Object);
         }
 
@@ -543,6 +555,7 @@ namespace Pchp.Core
                 }
             }
             public override string DisplayString(ref PhpValue me) => $"array(length = {me.Array.Count})";
+            public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Array.ToStringOrThrow(ctx));
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Array);
         }
 
@@ -572,6 +585,7 @@ namespace Pchp.Core
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
             public override IPhpCallable AsCallable(ref PhpValue me) => me.Alias.Value.AsCallable();
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
+            public override void Output(ref PhpValue me, Context ctx) => me.Alias.Value.Output(ctx);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Alias);
         }
     }

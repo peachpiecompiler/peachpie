@@ -158,10 +158,7 @@ namespace Pchp.Core
 
         public void Echo(PhpString value) => value.Output(this);
 
-        public void Echo(PhpValue value)
-        {
-            Output.Write(value.ToString(this)); // TODO: echo byte[] properly
-        }
+        public void Echo(PhpValue value) => value.Output(this);
 
         public void Echo(PhpNumber value)
         {

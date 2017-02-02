@@ -389,6 +389,12 @@ namespace Pchp.Core
         public PhpValue DeepCopy() => _type.DeepCopy(ref this);
 
         /// <summary>
+        /// Outputs current value to <see cref="Context"/>.
+        /// Handles byte (8bit) strings and allows for chunked text to be streamed without costly concatenation.
+        /// </summary>
+        public void Output(Context ctx) => _type.Output(ref this, ctx);
+
+        /// <summary>
         /// Gets underlaying value or object as <see cref="System.Object"/>.
         /// </summary>
         /// <returns></returns>
