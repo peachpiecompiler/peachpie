@@ -433,6 +433,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly TypeDefinitionHandle _handle;
         readonly NamespaceOrTypeSymbol _container;
         readonly TypeAttributes _flags;
+
+        ImmutableArray<AttributeData> _lazyCustomAttributes;
         readonly string _name;
         string _ns;
         readonly SpecialType _corTypeId;
@@ -607,6 +609,16 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
             throw new NotImplementedException();
+        }
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            if (_lazyCustomAttributes.IsDefault)
+            {
+                this.ContainingPEModule.LoadCustomAttributes(this.Handle, ref _lazyCustomAttributes);
+            }
+
+            return _lazyCustomAttributes;
         }
 
         public override SpecialType SpecialType => _corTypeId;
