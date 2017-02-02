@@ -781,6 +781,51 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits conversion "as object" keeping a reference type on stack or <c>null</c>.
+        /// </summary>
+        public TypeSymbol EmitAsObject(TypeSymbol from)
+        {
+            bool isnull;
+            return EmitAsObject(from, out isnull);
+        }
+
+        internal TypeSymbol EmitAsObject(TypeSymbol from, out bool isnull)
+        {
+            isnull = false;
+
+            // dereference
+            if (from == CoreTypes.PhpAlias)
+            {
+                // <alias>.Value.AsObject()
+                Emit_PhpAlias_GetValueAddr();
+                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject);
+            }
+
+            // PhpValue -> object
+            if (from == CoreTypes.PhpValue)
+            {
+                // Template: Operators.AsObject(value)
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.AsObject_PhpValue);
+            }
+
+            if (!from.IsReferenceType ||
+                from == CoreTypes.PhpArray ||
+                from.IsOfType(CoreTypes.PhpResource) ||
+                from == CoreTypes.PhpString ||
+                from.SpecialType == SpecialType.System_String)
+            {
+                EmitPop(from);
+                _il.EmitNullConstant();
+                isnull = true;
+                return CoreTypes.Object;
+            }
+            else
+            {
+                return from;
+            }
+        }
+
+        /// <summary>
         /// Emits conversion to a class object.
         /// </summary>
         /// <param name="from">Type of value on top of the evaluation stack.</param>

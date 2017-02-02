@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -17,8 +18,38 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateSerializableProperties(object/*!*/ instance, PhpTypeInfo tinfo)
         {
             return TypeMembersUtils.EnumerateInstanceFields(instance,
-                (f, d) => new IntStringKey(Serialization.FormatSerializedPropertyName(f, f.Name, d)),
-                (f) => true).Select(pair => new KeyValuePair<string, PhpValue>(pair.Key.ToString(), pair.Value));
+                (f, d) => Serialization.FormatSerializedPropertyName(f, f.Name, d),
+                (k) => k.ToString(),
+                (f) => true);
+        }
+
+        /// <summary>
+        /// Copies fields from <paramref name="source"/> object to <paramref name="target"/> object.
+        /// Types of both objects must be the same.
+        /// </summary>
+        /// <param name="tinfo">Type of both objects.</param>
+        /// <param name="source">Source instance.</param>
+        /// <param name="target">Target instance.</param>
+        public static void MemberwiseClone(PhpTypeInfo tinfo, object source, object target)
+        {
+            Debug.Assert(tinfo != null);
+            Debug.Assert(source != null);
+            Debug.Assert(target != null);
+            Debug.Assert(source.GetType() == target.GetType());
+            Debug.Assert(source.GetType() == tinfo.Type.AsType());
+
+            // copy CLR fields, skipping runtime fields
+            foreach (var fldvalue in TypeMembersUtils.EnumerateInstanceFields(source, (f, d) => f, null, null, true))
+            {
+                fldvalue.Key.SetValue(target, fldvalue.Value.DeepCopy());
+            }
+
+            // fast copy of runtime fields
+            var runtime_fields = tinfo.GetRuntimeFields(source);
+            if (runtime_fields != null && runtime_fields.Count != 0)
+            {
+                tinfo.RuntimeFieldsHolder.SetValue(target, runtime_fields.DeepCopy());
+            }
         }
 
         #region ParseSerializedPropertyName, FormatSerializedPropertyName

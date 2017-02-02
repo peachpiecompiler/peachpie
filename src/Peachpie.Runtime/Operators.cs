@@ -569,6 +569,45 @@ namespace Pchp.Core
         /// </summary>
         public static PhpValue DeepCopy(PhpValue value) => value.DeepCopy();
 
+        /// <summary>
+        /// Performs <c>clone</c> operation on given object.
+        /// </summary>
+        public static object Clone(Context ctx, object value)
+        {
+            if (value != null)
+            {
+                var tinfo = value.GetPhpTypeInfo();
+
+                // memberwise clone
+                var newobj = tinfo.GetUninitializedInstance(ctx);
+                if (newobj != null)
+                {
+                    Serialization.MemberwiseClone(tinfo, value, newobj);
+
+                    //
+                    value = newobj;
+
+                    // __clone()
+                    var __clone = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone];
+                    if (__clone != null)
+                    {
+                        // TODO: check __clone does not have parameters -> ErrResources.clone_cannot_take_arguments
+                        __clone.Invoke(ctx, value);
+                    }
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Error, Resources.ErrResources.class_instantiation_failed, tinfo.Name);
+                }
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Error, Resources.ErrResources.clone_called_on_non_object);
+            }
+
+            return value;
+        }
+
         #endregion
 
         #region Enumerator

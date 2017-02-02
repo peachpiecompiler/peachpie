@@ -806,7 +806,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetLongTypeMask();   // TODO: or byte[]
 
                 case Operations.Clone:
-                    return x.Operand.TypeRefMask;
+                    // result is always object, not aliased
+                    return TypeCtx.GetObjectsFromMask(x.Operand.TypeRefMask).IsVoid
+                        ? TypeCtx.GetSystemObjectTypeMask()                     // "object"
+                        : TypeCtx.GetObjectsFromMask(x.Operand.TypeRefMask);    // (object)T
 
                 case Operations.LogicNegation:
                     return TypeCtx.GetBooleanTypeMask();

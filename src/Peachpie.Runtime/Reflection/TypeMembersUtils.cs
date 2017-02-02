@@ -54,6 +54,7 @@ namespace Pchp.Core.Reflection
         {
             return EnumerateInstanceFields(instance,
                 (f, d) => new IntStringKey(f.Name),
+                (k) => k,
                 (f) => IsVisible(f, caller));
         }
 
@@ -65,8 +66,9 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateInstanceFieldsForPrint(object instance)
         {
             return EnumerateInstanceFields(instance,
-                (f, d) => new IntStringKey(FormatPropertyNameForPrint(f, d)),
-                (f) => true).Select(pair => new KeyValuePair<string, PhpValue>(pair.Key.ToString(), pair.Value));
+                (f, d) => FormatPropertyNameForPrint(f, d),
+                (k) => k.ToString(),
+                (f) => true);
         }
 
         static string FormatPropertyNameForPrint(FieldInfo f, PhpTypeInfo declarer)
@@ -80,10 +82,12 @@ namespace Pchp.Core.Reflection
         /// Enumerates instance fields of given object.
         /// </summary>
         /// <param name="instance">Object which fields will be enumerated.</param>
-        /// <param name="keyFormatter">Function converting field to a key.</param>
+        /// <param name="keyFormatter">Function converting field to a <typeparamref name="TKey"/>.</param>
+        /// <param name="keyFormatter2">Function converting </param>
         /// <param name="predicate">Optional. Predicate filtering instance fields.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
-        public static IEnumerable<KeyValuePair<IntStringKey, PhpValue>> EnumerateInstanceFields(object instance, Func<FieldInfo, PhpTypeInfo, IntStringKey> keyFormatter, Func<FieldInfo, bool> predicate = null)
+        /// <typeparam name="TKey">Enumerated pairs key. Usually <see cref="IntStringKey"/>.</typeparam>
+        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<FieldInfo, PhpTypeInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<FieldInfo, bool> predicate = null, bool ignoreRuntimeFields = false)
         {
             Debug.Assert(instance != null);
 
@@ -99,7 +103,7 @@ namespace Pchp.Core.Reflection
                     // perform visibility check
                     if (predicate == null || predicate(f))
                     {
-                        yield return new KeyValuePair<IntStringKey, PhpValue>(
+                        yield return new KeyValuePair<TKey, PhpValue>(
                             keyFormatter(f, t),
                             PhpValue.FromClr(f.GetValue(instance)));
                     }
@@ -109,16 +113,21 @@ namespace Pchp.Core.Reflection
             }
 
             // PhpArray __runtime_fields
-            var runtime_fields = tinfo.GetRuntimeFields(instance);
-            if (runtime_fields != null && runtime_fields.Count != 0)
+            if (ignoreRuntimeFields == false)
             {
-                // all runtime fields are considered public,
-                // no visibility check needed
+                Debug.Assert(keyFormatter2 != null);
 
-                var enumerator = runtime_fields.GetFastEnumerator();
-                while (enumerator.MoveNext())
+                var runtime_fields = tinfo.GetRuntimeFields(instance);
+                if (runtime_fields != null && runtime_fields.Count != 0)
                 {
-                    yield return enumerator.Current;
+                    // all runtime fields are considered public,
+                    // no visibility check needed
+
+                    var enumerator = runtime_fields.GetFastEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        yield return new KeyValuePair<TKey, PhpValue>(keyFormatter2(enumerator.CurrentKey), enumerator.CurrentValue);
+                    }
                 }
             }
         }

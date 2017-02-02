@@ -1717,7 +1717,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.Clone:
                     // Template: clone x
-                    returned_type = cg.EmitDeepCopy(cg.Emit(Operand), Operand.TypeRefMask);
+                    returned_type = EmitClone(cg);
                     break;
 
                 case Operations.LogicNegation:
@@ -1940,6 +1940,19 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitConvert(t, Operand.TypeRefMask, cg.CoreTypes.PhpValue);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BitwiseNot_PhpValue);
             }
+        }
+
+        TypeSymbol EmitClone(CodeGenerator cg)
+        {
+            // Template clone(Context, Object)
+            cg.EmitLoadContext();
+            var t = cg.EmitAsObject(cg.Emit(this.Operand));
+
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Clone_Context_Object)
+                .Expect(SpecialType.System_Object);
+
+            //
+            return t;
         }
     }
 
@@ -3441,25 +3454,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
-            // dereference
-            if (type == cg.CoreTypes.PhpAlias)
-            {
-                // <alias>.Value.AsObject()
-                cg.Emit_PhpAlias_GetValueAddr();
-                type = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsObject);
-            }
-
-            // PhpValue -> object
-            if (type == cg.CoreTypes.PhpValue)
-            {
-                // Template: Operators.AsObject(value) is T
-                type = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.AsObject_PhpValue);
-            }
+            bool isnull;
+            type = cg.EmitAsObject(type, out isnull);
+            Debug.Assert(type.IsReferenceType);
 
             //
             if (AsType.ResolvedType != null)
             {
-                if (type.IsReferenceType && type != cg.CoreTypes.PhpArray && type != cg.CoreTypes.PhpString)
+                if (!isnull)
                 {
                     // Template: value is T : object
                     cg.Builder.EmitOpCode(ILOpCode.Isinst);
