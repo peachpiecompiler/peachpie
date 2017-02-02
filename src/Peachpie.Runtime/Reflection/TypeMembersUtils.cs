@@ -85,6 +85,7 @@ namespace Pchp.Core.Reflection
         /// <param name="keyFormatter">Function converting field to a <typeparamref name="TKey"/>.</param>
         /// <param name="keyFormatter2">Function converting </param>
         /// <param name="predicate">Optional. Predicate filtering instance fields.</param>
+        /// <param name="ignoreRuntimeFields">Whether to ignore listing runtime fields.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
         /// <typeparam name="TKey">Enumerated pairs key. Usually <see cref="IntStringKey"/>.</typeparam>
         public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<FieldInfo, PhpTypeInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<FieldInfo, bool> predicate = null, bool ignoreRuntimeFields = false)

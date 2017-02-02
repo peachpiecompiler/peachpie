@@ -322,6 +322,85 @@ namespace Pchp.Library
             }
             return result;
         }
+
+        #region GetSet
+
+        /// <summary>
+        /// Gets or sets option.
+        /// </summary>
+        public static bool GetSet(ref bool option, bool defaultValue, PhpValue newValue, IniAction action)
+        {
+            var oldValue = option;
+
+            if (action == IniAction.Set)
+            {
+                option = newValue.ToBoolean();
+            }
+
+            return oldValue;
+        }
+
+        /// <summary>
+		/// Gets or sets option.
+		/// </summary>
+		public static int GetSet(ref int option, int defaultValue, PhpValue newValue, IniAction action)
+        {
+            var oldValue = option;
+
+            if (action == IniAction.Set)
+            {
+                option = (int)newValue.ToLong();
+            }
+
+            return oldValue;
+        }
+
+        /// <summary>
+		/// Gets or sets option.
+		/// </summary>
+		public static double GetSet(ref double option, int defaultValue, PhpValue newValue, IniAction action)
+        {
+            var oldValue = option;
+
+            if (action == IniAction.Set)
+            {
+                option = (int)newValue.ToDouble();
+            }
+
+            return oldValue;
+        }
+
+        /// <summary>
+		/// Gets or sets option.
+		/// </summary>
+		public static string GetSet(ref string option, string defaultValue, PhpValue newValue, IniAction action)
+        {
+            var oldValue = option;
+
+            if (action == IniAction.Set)
+            {
+                option = newValue.AsString();
+            }
+
+            return oldValue;
+        }
+
+        /// <summary>
+		/// Gets or sets option.
+		/// </summary>
+		public static IPhpCallable GetSet(ref IPhpCallable option, IPhpCallable defaultValue, PhpValue newValue, IniAction action)
+        {
+            var oldValue = option;
+
+            if (action == IniAction.Set)
+            {
+                option = newValue.AsCallable();
+            }
+
+            return oldValue;
+        }
+
+        #endregion
     }
 
     public static class Options

@@ -37,17 +37,26 @@ namespace Pchp.Core
         /// <summary>
         /// Extensions name.
         /// </summary>
-        public string[] Extensions => _extensions;
-        readonly string[] _extensions;
+        public string[] Extensions { get; private set; }
+
+        /// <summary>
+        /// Optional.
+        /// Type of class that will be instantiated in order to subscribe to <see cref="Context"/> events and/or perform one-time initialization.
+        /// </summary>
+        /// <remarks>
+        /// The object is used to handle one-time initialization and context life-cycle.
+        /// Implement initialization and subscription logic in .ctor.
+        /// </remarks>
+        public Type Registrator { get; set; }
 
         public PhpExtensionAttribute(params string[] extensions)
         {
-            _extensions = extensions;
+            this.Extensions = extensions;
         }
 
         public override string ToString()
         {
-            return $"Extension: {string.Join(", ", _extensions)}";
+            return $"Extension: {string.Join(", ", this.Extensions)}";
         }
     }
 
@@ -88,6 +97,7 @@ namespace Pchp.Core
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ImportLocalsAttribute : Attribute
     {
+
     }
 
     /// <summary>
@@ -112,6 +122,7 @@ namespace Pchp.Core
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ImportCallerClassAttribute : Attribute
     {
+
     }
 
     /// <summary>
