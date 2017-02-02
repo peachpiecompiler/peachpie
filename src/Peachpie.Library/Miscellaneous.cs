@@ -255,5 +255,10 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        public static bool gc_enabled()
+        {
+            return true;    // status of the circular reference collector
+        }
     }
 }

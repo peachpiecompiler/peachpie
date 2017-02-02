@@ -12,6 +12,26 @@ namespace Pchp.Library
     public static class Objects
     {
         /// <summary>
+		/// Tests whether the class given by <paramref name="classNameOrObject"/> is derived from a class given by <paramref name="baseClassName"/>.
+		/// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="classNameOrObject">The object or the name of a class (<see cref="string"/>).</param>
+		/// <param name="baseClassName">The name of the (base) class.</param>
+		/// <returns><B>true</B> if <paramref name="classNameOrObject"/> implements or extends <paramref name="baseClassName"/>, <B>false</B> otherwise.</returns>
+		public static bool is_subclass_of(Context ctx, PhpValue classNameOrObject, string baseClassName)
+        {
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
+            if (tinfo == null) return false;
+
+            // look for the class, do not use autoload (since PHP 5.1):
+            var base_tinfo = ctx.GetDeclaredType(baseClassName, false);
+            if (base_tinfo == null) return false;
+
+            //
+            return base_tinfo.Type.IsAssignableFrom(tinfo.Type);
+        }
+
+        /// <summary>
 		/// Tests whether a given class is defined.
 		/// </summary>
         /// <param name="ctx">Current runtime context.</param>
