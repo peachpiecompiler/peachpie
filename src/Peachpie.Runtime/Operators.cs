@@ -476,6 +476,40 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Implements empty enumeration.
+        /// </summary>
+        private sealed class PhpEmptyEnumerator : IPhpEnumerator
+        {
+            public static readonly IPhpEnumerator Instance = new PhpEmptyEnumerator();
+
+            private PhpEmptyEnumerator() { }
+
+            public bool AtEnd => false;
+
+            public KeyValuePair<PhpValue, PhpValue> Current => default(KeyValuePair<PhpValue, PhpValue>);
+
+            public PhpValue CurrentKey => PhpValue.Null;
+
+            public PhpValue CurrentValue => PhpValue.Null;
+
+            public PhpAlias CurrentValueAliased => new PhpAlias(PhpValue.Null);
+
+            object IEnumerator.Current => null;
+
+            public void Dispose() { }
+
+            public bool MoveFirst() => false;
+
+            public bool MoveLast() => false;
+
+            public bool MoveNext() => false;
+
+            public bool MovePrevious() => false;
+
+            public void Reset() { }
+        }
+
+        /// <summary>
         /// Resolves object enumerator.
         /// </summary>
         /// <exception cref="Exception">Object cannot be enumerated.</exception>
@@ -520,6 +554,11 @@ namespace Pchp.Core
                 return new PhpFieldsEnumerator(obj, caller);
             }
         }
+
+        /// <summary>
+        /// Gets PHP enumerator of <c>NULL</c> or <b>empty</b> value.
+        /// </summary>
+        public static IPhpEnumerator GetEmptyForeachEnumerator() => PhpEmptyEnumerator.Instance;
 
         #endregion
 
