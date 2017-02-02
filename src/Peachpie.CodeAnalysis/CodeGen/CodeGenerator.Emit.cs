@@ -574,7 +574,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // + params.Length
                     variadic_place.EmitLoad(_il);
-                    EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+                    EmitArrayLength();
                     _il.EmitOpCode(ILOpCode.Add);
                 }
 
@@ -640,7 +640,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitLocalLoad(tmpi);
                     variadic_place.EmitLoad(_il);
                     EmitArrayLength();
-                    _il.EmitBranch(ILOpCode.Blt, lbl_block);
+                    _il.EmitOpCode(ILOpCode.Clt);
+                    _il.EmitBranch(ILOpCode.Brtrue, lbl_block);
 
                     //
                     ReturnTemporaryLocal(tmpi);
@@ -674,7 +675,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal void EmitArrayLength()
         {
-            EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+            EmitOpCode(ILOpCode.Ldlen);
+            EmitOpCode(ILOpCode.Conv_i4);
         }
 
         /// <summary>
