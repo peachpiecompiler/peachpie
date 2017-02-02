@@ -112,6 +112,13 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
         }
 
+        public IEnumerable<IPhpValue> GetExportedConstants()
+        {
+            return ExtensionContainers
+                .SelectMany(t => t.GetMembers().OfType<FieldSymbol>())
+                .Where(IsConstantField);
+        }
+
         internal IEnumerable<NamedTypeSymbol> GetReferencedTypes()
         {
             return StandardTypes.Values.Concat(ExportedTypes.Values);
