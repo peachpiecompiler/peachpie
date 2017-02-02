@@ -370,7 +370,7 @@ namespace Pchp.Library
                     if (obj is __PHP_Incomplete_Class)
                     {
                         // classname = ((__PHP_Incomplete_Class)obj).ClassName ?? classname;
-                        throw new NotImplementedException();
+                        throw new NotImplementedException("__PHP_Incomplete_Class");
                     }
 
                     var classnameBytes = Encoding.GetBytes(classname);
@@ -983,10 +983,21 @@ namespace Pchp.Library
                     Consume(Tokens.Colon);
 
                     // bind to the specified class
-                    var obj = tinfo.GetUninitializedInstance(_ctx);
-                    if (obj == null)
+                    object obj;
+                    if (tinfo != null)
                     {
-                        throw new ArgumentException(string.Format(LibResources.class_instantiation_failed, class_name));
+                        obj = tinfo.GetUninitializedInstance(_ctx);
+                        if (obj == null)
+                        {
+                            throw new ArgumentException(string.Format(LibResources.class_instantiation_failed, class_name));
+                        }
+                    }
+                    else
+                    {
+                        // TODO: DeserializationCallback
+                        // __PHP_Incomplete_Class
+                        obj = new __PHP_Incomplete_Class();
+                        throw new NotImplementedException("__PHP_Incomplete_Class");
                     }
 
                     Consume(Tokens.BraceOpen);
