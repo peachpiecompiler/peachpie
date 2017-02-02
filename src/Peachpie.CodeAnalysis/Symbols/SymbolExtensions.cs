@@ -27,9 +27,16 @@ namespace Pchp.CodeAnalysis.Symbols
             return attrs.Length != 0 && attrs.Any(a => a.AttributeClass.MetadataName == "PhpHiddenAttribute");
         }
 
-        public static bool IsPhpTypeName(this PENamedTypeSymbol s) => GetPhpTypeNameOrNull(s) != null;
+        /// <summary>
+        /// Determines whethere given PE type symbol is an exported PHP type.
+        /// </summary>
+        public static bool IsPhpTypeName(this PENamedTypeSymbol s) => !s.IsStatic && !GetPhpTypeNameOrNull(s).IsEmpty();
 
-        public static string GetPhpTypeNameOrNull(this PENamedTypeSymbol s)
+        /// <summary>
+        /// Determines PHP type name of an exported PHP type.
+        /// Gets default&lt;QUalifiedName&gt; if type is not exported PHP type.
+        /// </summary>
+        public static QualifiedName GetPhpTypeNameOrNull(this PENamedTypeSymbol s)
         {
             var attrs = s.GetAttributes();
             if (attrs.Length != 0)
@@ -38,13 +45,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (attrs[i].AttributeClass.MetadataName == "PhpTypeAttribute")
                     {
-                        var tname = attrs[i].ConstructorArguments[0];
-                        return tname.IsNull ? s.MakeQualifiedName().ToString() : tname.DecodeValue<string>(SpecialType.System_String);
+                        var ctorargs = attrs[i].ConstructorArguments;
+                        var tname = ctorargs[0];
+                        return tname.IsNull ? s.MakeQualifiedName() : QualifiedName.Parse(tname.DecodeValue<string>(SpecialType.System_String), true);
                     }
                 }
             }
 
-            return null;
+            return default(QualifiedName);
         }
 
         /// <summary>

@@ -20,6 +20,16 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         ImmutableArray<NamedTypeSymbol> _lazyExtensionContainers;
 
+        /// <summary>
+        /// Types that are visible from extension libraries.
+        /// </summary>
+        Dictionary<QualifiedName, NamedTypeSymbol> _lazyExportedTypes;
+
+        /// <summary>
+        /// Standard (builtin) types from <c>Peachpie.Runtime</c>.
+        /// </summary>
+        Dictionary<QualifiedName, NamedTypeSymbol> _lazyStdTypes;
+
         #endregion
 
         public GlobalSymbolProvider(PhpCompilation compilation)
@@ -60,53 +70,83 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
         }
 
+        /// <summary>
+        /// Types in extension libraries.
+        /// </summary>
+        Dictionary<QualifiedName, NamedTypeSymbol> ExportedTypes
+        {
+            get
+            {
+                if (_lazyExportedTypes == null)
+                {
+                    var alltypes = _compilation.GetBoundReferenceManager()
+                        .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>()
+                        .Where(s => s.IsExtensionLibrary)
+                        .SelectMany(s => s.PrimaryModule.GlobalNamespace.GetTypeMembers().OfType<NamedTypeSymbol>())
+                        .Where(t => t.DeclaredAccessibility == Accessibility.Public);
+
+                    _lazyExportedTypes = alltypes
+                        .Where(t => ((PENamedTypeSymbol)t).IsPhpTypeName())
+                        .ToDictionary(t => ((PENamedTypeSymbol)t).FullName);
+                }
+
+                return _lazyExportedTypes;
+            }
+        }
+
+        /// <summary>
+        /// Standard types in Peachpie.Runtime.
+        /// </summary>
+        Dictionary<QualifiedName, NamedTypeSymbol> StandardTypes
+        {
+            get
+            {
+                if (_lazyStdTypes == null)
+                {
+                    _lazyStdTypes = Core.std.StdTable.Types
+                        .Select(tname => _compilation.PhpCorLibrary.GetTypeByMetadataName(tname))
+                        .ToDictionary(t => ((IPhpTypeSymbol)t).FullName);
+                }
+
+                return _lazyStdTypes;
+            }
+        }
+
         internal IEnumerable<NamedTypeSymbol> GetReferencedTypes()
         {
-            var std = Core.std.StdTable.Types.Select(g => _compilation.PhpCorLibrary.GetTypeByMetadataName(g.Key));
-
-            return std;/*.Concat(
-                _compilation.GetBoundReferenceManager()
-                    .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>()
-                    .Where(s => s.IsExtensionLibrary)
-                    .SelectMany(s => s.PrimaryModule.GlobalNamespace.GetTypeMembers().OfType<PENamedTypeSymbol>())
-                    .Where(t => !t.IsStatic && t.DeclaredAccessibility == Accessibility.Public && t.IsPhpTypeName()));*/
+            return StandardTypes.Values.Concat(ExportedTypes.Values);
         }
 
         #region ISemanticModel
 
         public INamedTypeSymbol GetType(QualifiedName name)
         {
-            var clrName = name.ClrName();
-
-            // std
-            if (Core.std.StdTable.Types.Contains(clrName))
-            {
-                return _compilation.PhpCorLibrary.GetTypeByMetadataName(clrName);
-            }
-
-            // TODO: reserved type names: self, parent, static
             Debug.Assert(!name.IsReservedClassName);
+            Debug.Assert(!name.IsEmpty());
 
-            // library types
+            return
+                StandardTypes.TryGetOrDefault(name) ??
+                ExportedTypes.TryGetOrDefault(name) ??
+                GetTypeFromNonExtensionAssemblies(name.ClrName()) ??
+                _next.GetType(name);
+        }
+
+        NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
+        {
             foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
             {
-                if (!ass.IsPchpCorLibrary)
+                var peass = ass as PEAssemblySymbol;
+                if (peass != null && !peass.IsPchpCorLibrary && !peass.IsExtensionLibrary)
                 {
                     var candidate = ass.GetTypeByMetadataName(clrName);
                     if (candidate != null && !candidate.IsErrorType())
                     {
-                        if (ass is PEAssemblySymbol && ((PEAssemblySymbol)ass).IsExtensionLibrary && candidate.IsStatic)
-                        {
-                            continue;
-                        }
-
                         return candidate;
                     }
                 }
             }
 
-            //
-            return _next.GetType(name);
+            return null;
         }
 
         public SourceFileSymbol GetFile(string path)

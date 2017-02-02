@@ -192,9 +192,7 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(t != null);
             _type = t.GetTypeInfo();
-            _name = t.FullName  // full PHP type name instead of CLR type name
-                .Replace('.', '\\')     // namespace separator
-                .Replace('+', '\\');    // nested type separator
+            _name = ResolvePhpTypeName(_type);
 
             // remove suffixed indexes (after a special metadata character)
             var idx = _name.IndexOfAny(_metadataSeparators);
@@ -202,6 +200,19 @@ namespace Pchp.Core.Reflection
             {
                 _name = _name.Remove(idx);
             }
+        }
+
+        /// <summary>
+        /// Resolves PHP-like type name.
+        /// </summary>
+        static string ResolvePhpTypeName(TypeInfo tinfo)
+        {
+            var attr = tinfo.GetCustomAttribute<PhpTypeAttribute>();
+            return attr?.ExplicitTypeName ??
+                // full PHP type name instead of CLR type name
+                tinfo.FullName
+                   .Replace('.', '\\')     // namespace separator
+                   .Replace('+', '\\');    // nested type separator
         }
 
         /// <summary>
@@ -291,7 +302,7 @@ namespace Pchp.Core.Reflection
             var handle = type.TypeHandle;
 
             // lookup cache first
-            lock (_cache)
+            lock (_cache)    // TODO: RW lock
             {
                 _cache.TryGetValue(handle, out result);
             }
@@ -317,6 +328,23 @@ namespace Pchp.Core.Reflection
 
             //
             return result;
+        }
+
+        /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of given <paramref name="handle"/>.
+        /// </summary>
+        /// <param name="handle">Type handle of the CLR type.</param>
+        public static PhpTypeInfo GetPhpTypeInfo(this RuntimeTypeHandle handle)
+        {
+            PhpTypeInfo result = null;
+
+            // lookup cache first
+            lock (_cache)   // TODO: RW lock
+            {
+                _cache.TryGetValue(handle, out result);
+            }
+
+            return result ?? GetPhpTypeInfo(Type.GetTypeFromHandle(handle));
         }
 
         /// <summary>

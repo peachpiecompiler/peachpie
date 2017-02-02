@@ -62,9 +62,13 @@ namespace Pchp.Core
     /// <summary>
     /// Marks public class or interface declaration as a PHP type visible to the scripts from extension libraries.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
     public sealed class PhpTypeAttribute : Attribute
     {
+        /// <summary>
+        /// Optional. Explicitly set type name.
+        /// </summary>
+        public string ExplicitTypeName => _typename;
         readonly string _typename;
 
         public PhpTypeAttribute(string phpTypeName = null)

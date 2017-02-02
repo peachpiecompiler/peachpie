@@ -8,6 +8,7 @@ using System.Diagnostics;
 /// <summary>
 /// The Seekable iterator.
 /// </summary>
+[PhpType]
 public interface SeekableIterator : Iterator
 {
     /// <summary>
@@ -19,6 +20,7 @@ public interface SeekableIterator : Iterator
 /// <summary>
 /// Classes implementing OuterIterator can be used to iterate over iterators.
 /// </summary>
+[PhpType]
 public interface OuterIterator : Iterator
 {
     /// <summary>
@@ -31,6 +33,7 @@ public interface OuterIterator : Iterator
 /// <summary>
 /// Classes implementing RecursiveIterator can be used to iterate over iterators recursively.
 /// </summary>
+[PhpType]
 public interface RecursiveIterator : Iterator
 {
     /// <summary>
@@ -53,6 +56,7 @@ public interface RecursiveIterator : Iterator
 /// and let it create ArrayIterator instances that refer to it either by using foreach or by calling
 /// its getIterator() method manually.
 /// </summary>
+[PhpType]
 public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterator, Countable
 {
     #region Fields & Properties
@@ -381,6 +385,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
 /// <summary>
 /// The EmptyIterator class for an empty iterator.
 /// </summary>
+[PhpType]
 public class EmptyIterator : Iterator, Traversable
 {
     public virtual void __construct()

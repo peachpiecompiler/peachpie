@@ -4,6 +4,7 @@ using Pchp.Core;
 /// <summary>
 /// <see cref="Exception"/> is the base class for all Exceptions in PHP 5, and the base class for all user exceptions in PHP 7.
 /// </summary>
+[PhpType("Exception")]
 public class Exception : System.Exception, Throwable
 {
     protected string message;

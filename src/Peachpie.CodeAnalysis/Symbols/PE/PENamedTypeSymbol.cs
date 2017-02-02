@@ -25,8 +25,20 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets fully qualified name of the class.
         /// </summary>
-        public QualifiedName FullName => new QualifiedName(new Name(_name), _ns.Split('.').Select(s => new Name(s)).ToArray(), true);
+        public QualifiedName FullName
+        {
+            get
+            {
+                var phpname = this.GetPhpTypeNameOrNull();
+                if (phpname.IsEmpty())
+                {
+                    phpname = new QualifiedName(new Name(_name), _ns.Split('.').Select(s => new Name(s)).ToArray(), true);
+                }
 
+                return phpname;
+            }
+        }
+        
         /// <summary>
         /// Optional.
         /// A field holding a reference to current runtime context.

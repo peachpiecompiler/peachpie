@@ -14,6 +14,7 @@ using Pchp.Library.Streams;
 /// Uses the PhpDiretory implementation upon PhpWrapper streams.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
+[PhpType("Directory")]
 public class Directory
 {
     #region Fields

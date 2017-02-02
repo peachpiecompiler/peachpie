@@ -107,6 +107,9 @@ namespace Pchp.Core
             tscriptinfo.GetDeclaredMethod("EnumerateReferencedFunctions")
                 .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(RoutinesAppContext.DeclareRoutine) });
 
+            tscriptinfo.GetDeclaredMethod("EnumerateReferencedTypes")
+                .Invoke(null, new object[] { new Action<string, RuntimeTypeHandle>(TypesAppContext.DeclareType) });
+
             tscriptinfo.GetDeclaredMethod("EnumerateScripts")
                 .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(ScriptsMap.DeclareScript) });
 

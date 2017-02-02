@@ -20,11 +20,22 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public static void DeclareType<T>()
         {
-            // TODO: W lock
+            DeclareType(TypeInfoHolder<T>.TypeInfo);            
+        }
 
-            var info = TypeInfoHolder<T>.TypeInfo;
+        public static void DeclareType(string phpname, RuntimeTypeHandle handle)
+        {
+            var info = handle.GetPhpTypeInfo();
+            Debug.Assert(phpname == info.Name);
+            DeclareType(info);
+        }
+
+        static void DeclareType(PhpTypeInfo info)
+        {
             if (info.Index == 0)
             {
+                // TODO: W lock
+
                 var name = info.Name;
                 int index;
                 if (NameToIndex.TryGetValue(name, out index))
@@ -94,8 +105,6 @@ namespace Pchp.Core.Reflection
 
         public void DeclareType<T>()
         {
-            // TODO: W lock
-
             DeclareType(TypeInfoHolder<T>.TypeInfo);
         }
 
@@ -104,6 +113,8 @@ namespace Pchp.Core.Reflection
             var index = info.Index;
             if (index == 0)
             {
+                // TODO: W lock
+
                 var name = info.Name;
                 if (_nameToIndex.TryGetValue(name, out index))
                 {
