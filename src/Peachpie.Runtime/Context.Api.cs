@@ -115,5 +115,10 @@ namespace Pchp.Core
         {
             return ExtensionsAppContext.ExtensionsTable.GetRoutinesByExtension(extension).Select(r => r.Name);
         }
+
+        /// <summary>
+        /// Gets enumeration of scripts that were included.
+        /// </summary>
+        public IEnumerable<ScriptInfo> GetIncludedScripts() => _scripts.GetIncludedScripts();
     }
 }

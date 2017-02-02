@@ -122,6 +122,8 @@ namespace Pchp.Core
 
             public bool IsIncluded<TScript>() => IsIncluded(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 
+            internal bool IsIncluded(ScriptInfo script) => script.IsValid && IsIncluded(script.Index);
+
             internal bool IsIncluded(int index) => array[index];
 
             public static ScriptInfo GetScript<TScript>()
@@ -214,7 +216,7 @@ namespace Pchp.Core
                     {
                         if (path[1].IsDirectorySeparator()) // ./
                             return exists(Path.Combine(cd, path.Substring(1)));
-                        
+
                         if (path[1] == '.' && path[2].IsDirectorySeparator())   // ../
                             return exists(Path.GetDirectoryName(cd) + path.Substring(2));
                     }
@@ -279,6 +281,14 @@ namespace Pchp.Core
 
                 //
                 return default(ScriptInfo);
+            }
+
+            /// <summary>
+            /// Gets enumeration of scripts that were included in current context.
+            /// </summary>
+            public IEnumerable<ScriptInfo> GetIncludedScripts()
+            {
+                return _scripts.Take(_scriptsMap.Count).Where(IsIncluded);
             }
         }
     }

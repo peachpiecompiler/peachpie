@@ -165,6 +165,15 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Loads extension dynamically.
+        /// </summary>
+        public static bool dl(string library)
+        {
+            PhpException.FunctionNotSupported("dl");
+            return false;
+        }
+
+        /// <summary>
         /// Find out whether an extension is loaded.
         /// </summary>
         /// <param name="name">The extension name.</param>
@@ -210,6 +219,33 @@ namespace Pchp.Library
             // gets NULL (FALSE) if there are no functions
             return result.Count != 0 ? result : null;
         }
+
+        #region get_required_files, get_included_files
+
+        /// <summary>
+        /// Returns an array of included file paths.
+        /// </summary>
+        /// <returns>The array of paths to included files (without duplicates).</returns>
+        public static PhpArray get_required_files(Context ctx) => get_included_files(ctx);
+
+        /// <summary>
+        /// Returns an array of included file paths.
+        /// </summary>
+        /// <returns>The array of paths to included files (without duplicates).</returns>
+        public static PhpArray get_included_files(Context ctx)
+        {
+            var result = new PhpArray();
+
+            foreach (var script in ctx.GetIncludedScripts())
+            {
+                result.Add((PhpValue)System.IO.Path.GetFullPath(System.IO.Path.Combine(ctx.RootPath, script.Path)));
+            }
+
+            //
+            return result;
+        }
+
+        #endregion
 
         #region set_time_limit, ignore_user_abort
 

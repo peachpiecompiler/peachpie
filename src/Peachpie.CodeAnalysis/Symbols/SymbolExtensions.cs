@@ -34,7 +34,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Determines PHP type name of an exported PHP type.
-        /// Gets default&lt;QUalifiedName&gt; if type is not exported PHP type.
+        /// Gets default&lt;QualifiedName&gt; if type is not exported PHP type.
         /// </summary>
         public static QualifiedName GetPhpTypeNameOrNull(this PENamedTypeSymbol s)
         {
