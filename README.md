@@ -29,7 +29,7 @@ Peachpie is a modern PHP compiler based on Roslyn by Microsoft and drawing from 
 
 -**Cross-platform development**: the project compiles legacy PHP code into portable class libraries, enabling developers to build cross-platform apps and libraries for Microsoft platforms.  
 
--**Full .NET compatibility**: in the future, Peachpie will be fully compatible with the PHP language.  
+-**Full .NET compatibility**: compiled programs run on reimplemented Peachpie runtime fully compatibly with the PHP runtime.
 
 -**Both-way interoperability**: the project allows for hybrid applications, where parts are written in C# and others in PHP. The parts will be entirely compatible and can communicate seamlessly, all within the .NET framework.  
 
