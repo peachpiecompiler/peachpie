@@ -464,27 +464,27 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Debug.Assert(!this.HasErrors);
 
-            TypedConstant ctorArgument = this.CommonConstructorArguments[0];
-            Debug.Assert(ctorArgument.Kind == TypedConstantKind.Enum || ctorArgument.Kind == TypedConstantKind.Primitive);
+            //TypedConstant ctorArgument = this.CommonConstructorArguments[0];
+            //Debug.Assert(ctorArgument.Kind == TypedConstantKind.Enum || ctorArgument.Kind == TypedConstantKind.Primitive);
 
-            ClassInterfaceType interfaceType = ctorArgument.Kind == TypedConstantKind.Enum ?
-                ctorArgument.DecodeValue<ClassInterfaceType>(SpecialType.System_Enum) :
-                (ClassInterfaceType)ctorArgument.DecodeValue<short>(SpecialType.System_Int16);
+            //ClassInterfaceType interfaceType = ctorArgument.Kind == TypedConstantKind.Enum ?
+            //    ctorArgument.DecodeValue<ClassInterfaceType>(SpecialType.System_Enum) :
+            //    (ClassInterfaceType)ctorArgument.DecodeValue<short>(SpecialType.System_Int16);
 
-            switch (interfaceType)
-            {
-                case ClassInterfaceType.None:
-                case ClassInterfaceType.AutoDispatch:
-                case ClassInterfaceType.AutoDual:
-                    break;
+            //switch (interfaceType)
+            //{
+            //    case ClassInterfaceType.None:
+            //    case ClassInterfaceType.AutoDispatch:
+            //    case ClassInterfaceType.AutoDual:
+            //        break;
 
-                default:
-                    throw new NotImplementedException();
-                    //// CS0591: Invalid value for argument to '{0}' attribute
-                    //Location attributeArgumentSyntaxLocation = this.GetAttributeArgumentSyntaxLocation(0, nodeOpt);
-                    //diagnostics.Add(ErrorCode.ERR_InvalidAttributeArgument, attributeArgumentSyntaxLocation, nodeOpt != null ? nodeOpt.GetErrorDisplayName() : "");
-                    //break;
-            }
+            //    default:
+            //        throw new NotImplementedException();
+            //        //// CS0591: Invalid value for argument to '{0}' attribute
+            //        //Location attributeArgumentSyntaxLocation = this.GetAttributeArgumentSyntaxLocation(0, nodeOpt);
+            //        //diagnostics.Add(ErrorCode.ERR_InvalidAttributeArgument, attributeArgumentSyntaxLocation, nodeOpt != null ? nodeOpt.GetErrorDisplayName() : "");
+            //        //break;
+            //}
         }
 
         internal void DecodeInterfaceTypeAttribute(SyntaxNode node, DiagnosticBag diagnostics)

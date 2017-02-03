@@ -29,27 +29,26 @@ namespace Peachpie.Library.MySql
             static PhpValue GetSetRestore(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
             {
                 var local = config.Get<MySqlConfiguration>();
-                var global = config.Parent.Get<MySqlConfiguration>();
-
+                
                 switch (option)
                 {
                     // local:
 
-                    case "mysql.connect_timeout": return (PhpValue)GetSet(ref local.ConnectTimeout, global.ConnectTimeout, value, action);
-                    case "mysql.default_port": return (PhpValue)GetSet(ref local.Port, global.Port, value, action);
-                    case "mysql.default_host": return (PhpValue)GetSet(ref local.Server, global.Server, value, action);
-                    case "mysql.default_user": return (PhpValue)GetSet(ref local.User, global.User, value, action);
-                    case "mysql.default_password": return (PhpValue)GetSet(ref local.Password, global.Password, value, action);
-                    case "mysql.default_command_timeout": return (PhpValue)GetSet(ref local.DefaultCommandTimeout, global.DefaultCommandTimeout, value, action);
+                    case "mysql.connect_timeout": return (PhpValue)GetSet(ref local.ConnectTimeout, 0, value, action);
+                    case "mysql.default_port": return (PhpValue)GetSet(ref local.Port, 3306, value, action);
+                    case "mysql.default_host": return (PhpValue)GetSet(ref local.Server, null, value, action);
+                    case "mysql.default_user": return (PhpValue)GetSet(ref local.User, "root", value, action);
+                    case "mysql.default_password": return (PhpValue)GetSet(ref local.Password, "", value, action);
+                    case "mysql.default_command_timeout": return (PhpValue)GetSet(ref local.DefaultCommandTimeout, -1, value, action);
                     case "mysql.connection_string": return (PhpValue)GetSet(ref local.ConnectionString, null, value, action);
 
                     // global:
 
                     case "mysql.max_links":
                         Debug.Assert(action == IniAction.Get);
-                        return (PhpValue)GetSet(ref global.MaxConnections, -1, value, action);
+                        return (PhpValue)GetSet(ref local.MaxConnections, -1, value, action);
                     case "mysql.max_pool_size":
-                        return (PhpValue)GetSet(ref global.MaxPoolSize, 100, value, action);
+                        return (PhpValue)GetSet(ref local.MaxPoolSize, 100, value, action);
                 }
 
                 Debug.Fail("Option '" + option + "' is supported but not implemented.");

@@ -146,7 +146,6 @@ namespace Pchp.Core
         /// <param name="enableBuffering">Whether to immediately enable buffering, i.e. increase the level.</param>
         /// <param name="charSink">A writer through which character data will be written.</param>
         /// <param name="byteSink">A stream through which binary data will be written.</param>
-        /// <param name="encoding">A encoding used to transform binary data to strings.</param>
         public BufferedOutput(Context ctx, bool enableBuffering, TextWriter charSink, Stream byteSink)
         {
             Debug.Assert(ctx != null);
@@ -158,7 +157,9 @@ namespace Pchp.Core
             _levels = new List<LevelElement>();
 
             if (enableBuffering)
+            {
                 IncreaseLevel();
+            }
         }
 
         ///// <summary>
