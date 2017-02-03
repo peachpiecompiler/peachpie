@@ -1420,6 +1420,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var field = f.EnsureRoutineInfoField(_moduleBuilder);
 
+            this.EmitSequencePoint(((FunctionDecl)f.Syntax).HeadingSpan);
+
             // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
             new FieldPlace(null, field).EmitLoad(_il);
@@ -1433,6 +1435,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitDeclareType(SourceTypeSymbol t)
         {
             Debug.Assert(t != null);
+
+            // 
+            this.EmitSequencePoint(t.Syntax.HeadingSpan);
 
             // <ctx>.DeclareType<T>()
             EmitLoadContext();
