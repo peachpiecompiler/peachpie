@@ -64,6 +64,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Double: return Compare((double)lx, y.Double);
                 case PhpTypeCode.String: return -Compare(y.String, lx);
                 case PhpTypeCode.WritableString: return -Compare(y.WritableString.ToString(), lx);
+                case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.Alias: return Compare(lx, y.Alias.Value);
                 case PhpTypeCode.Undefined: return (lx == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
@@ -83,6 +84,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Boolean: return Compare(dx != 0.0, y.Boolean);
                 case PhpTypeCode.String: return -Compare(y.String, dx);
                 case PhpTypeCode.WritableString: return -Compare(y.WritableString.ToString(), dx);
+                case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.Alias: return Compare(dx, y.Alias.Value);
                 case PhpTypeCode.Undefined: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Object:
@@ -107,6 +109,7 @@ namespace Pchp.Core
                 case PhpTypeCode.String: return Compare(sx, y.String);
                 case PhpTypeCode.WritableString: return Compare(sx, y.WritableString.ToString());
                 case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
+                case PhpTypeCode.PhpArray: return -1;   // - 1 * (array.CompareTo(string))
                 case PhpTypeCode.Undefined: return (sx.Length == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) return (sx.Length == 0) ? 0 : 1;
@@ -125,6 +128,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Double: return y.Double == 0 ? 0 : -1;
                 case PhpTypeCode.String: return y.String.Length == 0 ? 0 : -1;
                 case PhpTypeCode.WritableString: return y.WritableString.Length == 0 ? 0 : -1;
+                case PhpTypeCode.PhpArray: return -y.Array.Count;
                 case PhpTypeCode.Alias: return CompareNull(y.Alias.Value);
                 case PhpTypeCode.Object:
                     if (y.Object == null) return 0;

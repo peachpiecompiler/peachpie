@@ -277,9 +277,11 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
+                case PhpTypeCode.Null:
+                    return Count;
+
                 case PhpTypeCode.Object:
-                    if (value.Object == null) return Count;
-                    break;
+                    return (value.Object == null) ? Count : 1;
 
                 case PhpTypeCode.Boolean:
                     return (Count > 0 ? 2 : 1) - (value.Boolean ? 2 : 1);
