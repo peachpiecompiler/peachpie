@@ -1431,9 +1431,8 @@ namespace Pchp.Library
         {
             if (array == null)
             {
-                //PhpException.ReferenceNull("array");
-                //return false;
-                throw new ArgumentNullException();
+                PhpException.ArgumentNull(nameof(array));
+                return false;
             }
 
             array.Sort(new ValueComparer(new PhpNaturalComparer(ctx, true), false));

@@ -3888,6 +3888,21 @@ namespace Pchp.Library
 
         #endregion
 
+        #region strnatcmp, strnatcasecmp
+
+        /// <summary>
+        /// Compares two strings using the natural ordering.
+        /// </summary>
+        /// <example>NaturalCompare("page155", "page16") returns 1.</example>
+        public static int strnatcmp(string x, string y) => PhpNaturalComparer.CompareStrings(x, y, false);
+
+        /// <summary>
+        /// Compares two strings using the natural ordering. Ignores the case.
+        /// </summary>
+        public static int strnatcasecmp(string x, string y) => PhpNaturalComparer.CompareStrings(x, y, true);
+
+        #endregion
+
         #region str_pad
 
         /// <summary>
