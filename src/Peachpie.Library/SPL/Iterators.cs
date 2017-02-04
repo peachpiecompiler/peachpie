@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Pchp.Core.Reflection;
 
 /// <summary>
 /// The Seekable iterator.
@@ -68,7 +69,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
     bool isArrayIterator => _array != null;
 
     object _dobj = null;
-    IEnumerator<KeyValuePair<PhpValue, PhpValue>> dobjEnumerator = null;    // lazily instantiated so we can rewind() once when needed
+    IEnumerator<KeyValuePair<IntStringKey, PhpValue>> _dobjEnumerator = null;    // lazily instantiated so we can rewind() once when needed
     bool isObjectIterator => _dobj != null;
 
     bool _isValid = false;
@@ -92,10 +93,9 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
     void InitObjectIteratorHelper()
     {
         Debug.Assert(_dobj != null);
-
-        //this.dobjEnumerator = dobj.InstancePropertyIterator(null, false);   // we have to create new enumerator (or implement InstancePropertyIterator.Reset)
-        //this.isValid = this.dobjEnumerator.MoveNext();
-        throw new NotImplementedException();
+        
+        _dobjEnumerator = TypeMembersUtils.EnumerateVisibleInstanceFields(_dobj).GetEnumerator();   // we have to create new enumerator (or implement InstancePropertyIterator.Reset)
+        _isValid = _dobjEnumerator.MoveNext();
     }
 
     #endregion
@@ -126,10 +126,10 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
         {
             InitArrayIteratorHelper();  // instantiate now, avoid repetitous checks during iteration
         }
-        //else if ((this.dobj = array as DObject) != null)
-        //{
-        //    //InitObjectIteratorHelper();   // lazily to avoid one additional allocation
-        //}
+        else if ((_dobj = array.AsObject()) != null)
+        {
+            //InitObjectIteratorHelper();   // lazily to avoid one additional allocation
+        }
         else
         {
             throw new ArgumentException();
@@ -228,7 +228,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
 
     private void EnsureEnumeratorsHelper()
     {
-        if (isObjectIterator && dobjEnumerator == null)
+        if (isObjectIterator && _dobjEnumerator == null)
             InitObjectIteratorHelper();
 
         // arrayEnumerator initialized in __construct()
@@ -243,7 +243,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
         else if (isObjectIterator)
         {
             EnsureEnumeratorsHelper();
-            _isValid = dobjEnumerator.MoveNext();
+            _isValid = _dobjEnumerator.MoveNext();
         }
     }
 
@@ -262,7 +262,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
             if (isArrayIterator)
                 return _arrayEnumerator.CurrentKey;
             else if (isObjectIterator)
-                return dobjEnumerator.Current.Key;
+                return PhpValue.Create(_dobjEnumerator.Current.Key);
             else
                 Debug.Fail(null);
         }
@@ -279,7 +279,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
             if (isArrayIterator)
                 return _arrayEnumerator.CurrentValue;
             else if (isObjectIterator)
-                return dobjEnumerator.Current.Value;
+                return _dobjEnumerator.Current.Value;
             else
                 Debug.Fail(null);
         }
@@ -359,8 +359,8 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
     {
         if (isArrayIterator)
             return _array.Count;
-        //else if (isObjectIterator)
-        //    return _dobj.Count;
+        else if (isObjectIterator)
+            return TypeMembersUtils.FieldsCount(_dobj);
 
         return 0;
     }

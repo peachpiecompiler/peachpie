@@ -237,6 +237,38 @@ namespace Pchp.Core.Reflection
                 });
         }
 
+        /// <summary>
+		/// Gets the number of instance properties contained in this <see cref="object"/>.
+		/// </summary>
+		public static int FieldsCount(object instance)
+        {
+            Debug.Assert(instance != null);
+
+            int count = 0;
+
+            // PhpTypeInfo
+            var tinfo = instance.GetPhpTypeInfo();
+
+            // iterate through type and its base types
+            for (var t = tinfo; t != null; t = t.BaseType)
+            {
+                // iterate through instance fields
+                count += t.DeclaredFields.InstanceFields.Count();
+
+                // TODO: CLR properties
+            }
+
+            // PhpArray __runtime_fields
+            var runtime_fields = tinfo.GetRuntimeFields(instance);
+            if (runtime_fields != null)
+            {
+                count += runtime_fields.Count;
+            }
+
+            //
+            return count;
+        }
+
         static bool IsVisible(this FieldInfo f, RuntimeTypeHandle caller)
         {
             return

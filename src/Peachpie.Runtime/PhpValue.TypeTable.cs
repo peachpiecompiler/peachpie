@@ -455,14 +455,7 @@ namespace Pchp.Core
             }
             public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetForeachEnumerator(me.Object, aliasedValues, caller);
-            public override int Compare(ref PhpValue me, PhpValue right)
-            {
-                if (me.Object.Equals(right._obj.Obj)) return 0;
-                if (me.Object is IPhpComparable) return ((IPhpComparable)me.Object).Compare(right);
-                if (right._obj.Obj is IPhpComparable) return -((IPhpComparable)right._obj.Obj).Compare(me);
-
-                throw new ArgumentException("incomparable_objects_compared_exception");
-            }
+            public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Object, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Object && right.Object == me.Object;
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override IPhpArray EnsureArray(ref PhpValue me) => Operators.EnsureArray(me.Object);
