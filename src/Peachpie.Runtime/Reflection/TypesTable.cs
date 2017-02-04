@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Pchp.Core.Reflection
 {
@@ -13,6 +14,7 @@ namespace Pchp.Core.Reflection
         public static readonly Dictionary<string, int> NameToIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         public static readonly List<PhpTypeInfo> AppTypes = new List<PhpTypeInfo>();
         public static readonly TypesTable.TypesCount ContextTypesCounter = new TypesTable.TypesCount();
+        public static readonly ReaderWriterLockSlim RwLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Adds referenced symbol into the map.
@@ -20,7 +22,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public static void DeclareType<T>()
         {
-            DeclareType(TypeInfoHolder<T>.TypeInfo);            
+            DeclareType(TypeInfoHolder<T>.TypeInfo);
         }
 
         public static void DeclareType(string phpname, RuntimeTypeHandle handle)
@@ -34,8 +36,6 @@ namespace Pchp.Core.Reflection
         {
             if (info.Index == 0)
             {
-                // TODO: W lock
-
                 var name = info.Name;
                 int index;
                 if (NameToIndex.TryGetValue(name, out index))
@@ -103,6 +103,47 @@ namespace Pchp.Core.Reflection
             _redeclarationCallback = redeclarationCallback;
         }
 
+        int EnsureTypeIndex(PhpTypeInfo info)
+        {
+            if (info.Index == 0)
+            {
+                TypesAppContext.RwLock.EnterWriteLock();
+                try
+                {
+                    // double checked lock
+                    if (info.Index == 0)
+                    {
+                        int index;
+                        var name = info.Name;
+                        if (_nameToIndex.TryGetValue(name, out index))
+                        {
+                            if (index < 0)  // redeclaring over an app context type
+                            {
+                                _redeclarationCallback(info);
+                            }
+
+                            info.Index = index;
+                        }
+                        else
+                        {
+                            index = _contextTypesCounter.GetNewIndex() + 1;
+                            _nameToIndex[name] = index;
+                        }
+
+                        info.Index = index;
+                    }
+                }
+                finally
+                {
+                    TypesAppContext.RwLock.ExitWriteLock();
+                }
+            }
+
+            Debug.Assert(info.Index != 0);
+
+            return info.Index;
+        }
+
         public void DeclareType<T>()
         {
             DeclareType(TypeInfoHolder<T>.TypeInfo);
@@ -110,31 +151,8 @@ namespace Pchp.Core.Reflection
 
         public void DeclareType(PhpTypeInfo info)
         {
-            var index = info.Index;
-            if (index == 0)
-            {
-                // TODO: W lock
-
-                var name = info.Name;
-                if (_nameToIndex.TryGetValue(name, out index))
-                {
-                    if (index < 0)  // redeclaring over an app context type
-                    {
-                        _redeclarationCallback(info);
-                    }
-
-                    info.Index = index;
-                }
-                else
-                {
-                    index = _contextTypesCounter.GetNewIndex() + 1;
-                    _nameToIndex[name] = index;
-                }
-
-                info.Index = index;
-            }
-
-            Debug.Assert(info.Index > 0);
+            var index = EnsureTypeIndex(info);
+            Debug.Assert(index > 0);
 
             //
             if (_contextTypes.Length < index)
@@ -193,21 +211,27 @@ namespace Pchp.Core.Reflection
         public PhpTypeInfo GetDeclaredType(string name)
         {
             int index;
-            if (_nameToIndex.TryGetValue(name, out index))
+            TypesAppContext.RwLock.EnterReadLock();
+            try
             {
-                if (index > 0)
+                _nameToIndex.TryGetValue(name, out index);
+            }
+            finally
+            {
+                TypesAppContext.RwLock.ExitReadLock();
+            }
+
+            if (index > 0)
+            {
+                var types = _contextTypes;
+                if (index <= types.Length)
                 {
-                    var types = _contextTypes;
-                    if (index <= types.Length)
-                    {
-                        return types[index - 1];
-                    }
+                    return types[index - 1];
                 }
-                else
-                {
-                    Debug.Assert(index != 0);
-                    return _appTypes[-index - 1];
-                }
+            }
+            else if (index < 0)
+            {
+                return _appTypes[-index - 1];
             }
 
             return null;
@@ -216,7 +240,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets enumeration of types wisible in current context.
         /// </summary>
-        public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => _appTypes.Concat(_contextTypes).WhereNotNull();
+        public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => _appTypes.Concat(_contextTypes.WhereNotNull());
 
         internal bool IsDeclared(PhpTypeInfo type)
         {
