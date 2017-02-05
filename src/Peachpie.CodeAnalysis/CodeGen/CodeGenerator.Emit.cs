@@ -969,9 +969,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var lblfalse = new NamedLabel("CastToFalse:FALSE");
             var lblend = new NamedLabel("CastToFalse:end");
-            
+
             _il.EmitOpCode(ILOpCode.Dup);   // <stack>
-            
+
             // emit branching to lblfalse
             if (stack.SpecialType == SpecialType.System_Int32)
             {
@@ -1003,7 +1003,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (deepcopy)
             {
                 // DeepCopy(<stack>)
-                stack = EmitDeepCopy(stack);
+                stack = EmitDeepCopy(stack, false);
             }
             // (PhpValue)<stack>
             EmitConvertToPhpValue(stack, 0);
@@ -1783,29 +1783,65 @@ namespace Pchp.CodeAnalysis.CodeGen
             throw new NotImplementedException();
         }
 
+        public TypeSymbol EmitDeepCopy(TypeSymbol t, bool nullcheck)
+        {
+            if (IsCopiable(t))
+            {
+                object lblnull = null;
+                if (nullcheck && t.IsReferenceType)
+                {
+                    if (nullcheck)
+                    {
+                        // ?.
+                        var lbltrue = new object();
+                        lblnull = new object();
+
+                        _il.EmitOpCode(ILOpCode.Dup);
+                        _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
+                        _il.EmitOpCode(ILOpCode.Pop);
+                        _il.EmitNullConstant();
+                        _il.EmitBranch(ILOpCode.Br, lblnull);
+                        _il.MarkLabel(lbltrue);
+                    }
+                }
+
+                if (t == CoreTypes.PhpValue)
+                {
+                    EmitPhpValueAddr();
+                    t = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+                }
+                else if (t == CoreTypes.PhpString)
+                {
+                    t = EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.DeepCopy);
+                }
+                else if (t == CoreTypes.PhpArray)
+                {
+                    t = EmitCall(ILOpCode.Callvirt, CoreMethods.PhpArray.DeepCopy);
+                }
+
+                //
+                if (lblnull != null)
+                {
+                    _il.MarkLabel(lblnull);
+                }
+            }
+
+            return t;
+        }
+
         /// <summary>
         /// Emits copy of value from top of the stack if necessary.
         /// </summary>
         public TypeSymbol EmitDeepCopy(TypeSymbol t, TypeRefMask thint = default(TypeRefMask))
         {
-            if (IsCopiable(t) && IsCopiable(thint))
+            if (IsCopiable(thint))
             {
-                if (t == CoreTypes.PhpValue)
-                {
-                    EmitPhpValueAddr();
-                    return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
-                }
-                else if (t == CoreTypes.PhpString)
-                {
-                    return EmitCall(ILOpCode.Call, CoreMethods.PhpString.DeepCopy);
-                }
-                else if (t == CoreTypes.PhpArray)
-                {
-                    return EmitCall(ILOpCode.Call, CoreMethods.PhpArray.DeepCopy);
-                }
+                return EmitDeepCopy(t, thint.IsAnyType || thint.IsUninitialized || this.TypeRefContext.IsNull(thint));
             }
-
-            return t;
+            else
+            {
+                return t;
+            }
         }
     }
 

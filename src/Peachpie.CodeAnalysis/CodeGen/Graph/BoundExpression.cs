@@ -2649,7 +2649,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (Access.IsReadCopy)
                 {
                     // DeepCopy(<tmp>)
-                    t_value = cg.EmitDeepCopy(t_value);
+                    t_value = cg.EmitDeepCopy(t_value, this.Value.TypeRefMask);
                 }
             }
 
