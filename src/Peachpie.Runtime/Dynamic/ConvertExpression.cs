@@ -55,6 +55,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(object)) return BindToClass(arg);
             if (target == typeof(PhpArray)) return BindToArray(arg);
             if (target == typeof(IPhpArray)) return BindToArray(arg);   // TODO
+            if (target == typeof(IntStringKey)) return BindIntStringKey(arg);
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
             if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
             if (target == typeof(byte[])) return Expression.Call(BindToPhpString(arg, ctx), Cache.PhpString.ToBytes_Context, ctx);
@@ -202,6 +203,20 @@ namespace Pchp.Core.Dynamic
             throw new NotImplementedException(source.FullName);
         }
 
+        private static Expression BindIntStringKey(Expression expr)
+        {
+            var source = expr.Type;
+
+            if (source == typeof(int)) return Expression.New(Cache.IntStringKey.ctor_Int, expr);
+            if (source == typeof(long)) return Expression.New(Cache.IntStringKey.ctor_Int, Expression.Convert(expr, Cache.Types.Int[0]));
+            if (source == typeof(string)) return Expression.New(Cache.IntStringKey.ctor_String, expr);
+
+            // TODO: following conversions may fail, we should report it failed and throw an error
+            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToIntStringKey);
+
+            throw new NotImplementedException(source.FullName);
+        }
+
         private static Expression BindToNumber(Expression expr)
         {
             var source = expr.Type;
@@ -269,7 +284,7 @@ namespace Pchp.Core.Dynamic
             var source = expr.Type;
 
             if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_AsObject);
-            
+
             if (!source.GetTypeInfo().IsValueType) return expr;
 
             throw new NotImplementedException(source.FullName);
