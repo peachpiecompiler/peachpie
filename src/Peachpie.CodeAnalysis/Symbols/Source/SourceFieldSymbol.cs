@@ -59,6 +59,49 @@ namespace Pchp.CodeAnalysis.Symbols
         public BoundExpression Initializer => _initializer;
         readonly BoundExpression _initializer;
 
+        /// <summary>
+        /// Actual field symbol that should be used.
+        /// </summary>
+        public override FieldSymbol OriginalDefinition
+        {
+            get
+            {
+                if (_originaldefinition == null)
+                {
+                    // lookup base types whether this field declaration isn't a redefinition
+                    if (this.FieldKind == KindEnum.InstanceField)
+                    {
+                        for (var t = _containingType.BaseType; t != null; t = t.BaseType)
+                        {
+                            var candidates = t.GetMembers(_fieldName, false)
+                                .OfType<FieldSymbol>()
+                                .Where(f => f.IsStatic == this.IsStatic && f.DeclaredAccessibility != Accessibility.Private);
+
+                            foreach (var f in candidates)
+                            {
+                                // check accessibility
+                                if (this.DeclaredAccessibility != f.DeclaredAccessibility)
+                                {
+                                    // TODO: ERR
+                                    throw new ArgumentException($"Fatal error: Access level to ${_fieldName} must be {f.DeclaredAccessibility} (as in class {t.Name})");
+                                }
+
+                                //
+                                _originaldefinition = f.OriginalDefinition;
+                                return _originaldefinition;
+                            }
+                        }
+                    }
+
+                    //
+                    _originaldefinition = this;
+                }
+
+                return _originaldefinition;
+            }
+        }
+        private FieldSymbol _originaldefinition;
+
         public SourceFieldSymbol(SourceTypeSymbol type, string name, Accessibility accessibility, PHPDocBlock phpdoc, KindEnum kind, BoundExpression initializer = null)
         {
             Contract.ThrowIfNull(type);

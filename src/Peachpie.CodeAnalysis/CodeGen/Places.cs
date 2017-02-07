@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(field);
 
             _holder = holder;
-            _field = (FieldSymbol)field;
+            _field = ((FieldSymbol)field).OriginalDefinition;
 
             Debug.Assert(holder != null || field.IsStatic);
             Debug.Assert(holder == null || holder.TypeOpt.IsOfType(_field.ContainingType));
@@ -1199,9 +1199,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <param name="code">ld* or st* OP code.</param>
         void EmitOpCode(CodeGenerator cg, ILOpCode code)
         {
-            Debug.Assert(Field != null);
+            Debug.Assert(_field != null);
             cg.Builder.EmitOpCode(code);
-            cg.EmitSymbolToken(Field, null);
+            cg.EmitSymbolToken(_field.OriginalDefinition, null);
         }
 
         public bool HasAddress => true;

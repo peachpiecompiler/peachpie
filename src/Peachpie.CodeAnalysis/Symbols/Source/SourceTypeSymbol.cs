@@ -187,7 +187,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     _lazyCtors = result = SynthesizedPhpCtorSymbol.CreateCtors(this).ToImmutableArray();
                 }
-                
+
                 return result;
             }
         }
@@ -209,30 +209,46 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyBaseType == null)
                 {
-                    if (_syntax.BaseClass != null)
-                    {
-                        var baseTypeName = _syntax.BaseClass.ClassName;
-                        if (baseTypeName == this.MakeQualifiedName())
-                        {
-                            // TODO: Err diagnostics
-                            throw new NotImplementedException($"cycle in class hierarchy, {this.MakeQualifiedName()} extends itself.");
-                        }
-                        _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(baseTypeName.ClrName())
-                            ?? new MissingMetadataTypeSymbol(baseTypeName.ClrName(), 0, false);
-
-                        if (_lazyBaseType.Arity != 0)
-                        {
-                            throw new NotImplementedException($"Class {this.MakeQualifiedName()} extends a generic type {baseTypeName}.");    // generics not supported yet
-                        }
-                    }
-                    else if (!IsStatic && !IsInterface)
-                    {
-                        _lazyBaseType = DeclaringCompilation.CoreTypes.Object.Symbol;
-                    }
+                    _lazyBaseType = ResolveBaseType(DiagnosticBag.GetInstance());
                 }
 
                 return _lazyBaseType;
             }
+        }
+
+        NamedTypeSymbol ResolveBaseType(DiagnosticBag diagnostics)
+        {
+            NamedTypeSymbol btype;
+
+            if (_syntax.BaseClass != null)
+            {
+                var baseTypeName = _syntax.BaseClass.ClassName;
+                if (baseTypeName == this.MakeQualifiedName())
+                {
+                    // TODO: Err diagnostics
+                    throw new NotImplementedException($"cycle in class hierarchy, {this.MakeQualifiedName()} extends itself.");
+                }
+
+                btype = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(baseTypeName.ClrName())
+                    ?? new MissingMetadataTypeSymbol(baseTypeName.ClrName(), 0, false);
+
+                if (btype.Arity != 0)
+                {
+                    // TODO: Err diagnostics
+                    throw new NotImplementedException($"Class {this.MakeQualifiedName()} extends a generic type {baseTypeName}.");    // generics not supported yet
+                }
+            }
+            else if (!IsStatic && !IsInterface)
+            {
+                btype = DeclaringCompilation.CoreTypes.Object.Symbol;
+            }
+            else
+            {
+                btype = null;
+            }
+
+            //
+            return btype;
         }
 
         /// <summary>
@@ -407,6 +423,12 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             foreach (var f in EnsureMembers().OfType<IFieldSymbol>())
             {
+                if (f.OriginalDefinition != f)
+                {
+                    // field redeclares its parent member, discard
+                    continue;
+                }
+
                 var srcf = f as SourceFieldSymbol;
                 if (srcf.RequiresHolder)
                 {

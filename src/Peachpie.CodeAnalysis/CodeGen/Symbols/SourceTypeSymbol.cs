@@ -220,7 +220,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         }
 
                         // initialize class fields
-                        foreach (var fld in this.GetFieldsToEmit().OfType<SourceFieldSymbol>().Where(fld => !fld.RequiresHolder && !fld.IsStatic && !fld.IsConst))
+                        foreach (var fld in this.EnsureMembers().OfType<SourceFieldSymbol>().Where(fld => !fld.RequiresHolder && !fld.IsStatic && !fld.IsConst))
                         {
                             fld.EmitInit(cg);
                         }
