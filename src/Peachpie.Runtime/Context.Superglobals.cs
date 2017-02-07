@@ -82,25 +82,31 @@ namespace Pchp.Core
 
             public static void InitializeEGPCSForWeb(PhpArray globals, ref Superglobals superglobals, string registering_order = null)
             {
-                // adds EGPCS variables as globals:
+                // deprecated:
+
+                //// adds EGPCS variables as globals:
+                //if (registering_order == null)
+                //{
+                //    return;
+                //}
                 
-                // adds items in the order specified by RegisteringOrder config option (overwrites existing):
-                for (int i = 0; i < registering_order.Length; i++)
-                {
-                    switch (registering_order[i])
-                    {
-                        case 'E': AddVariables(globals, superglobals.env); break;
-                        case 'G': AddVariables(globals, superglobals.get); break;
+                //// adds items in the order specified by RegisteringOrder config option (overwrites existing):
+                //for (int i = 0; i < registering_order.Length; i++)
+                //{
+                //    switch (registering_order[i])
+                //    {
+                //        case 'E': AddVariables(globals, superglobals.env); break;
+                //        case 'G': AddVariables(globals, superglobals.get); break;
 
-                        case 'P':
-                            AddVariables(globals, superglobals.post);
-                            AddFileVariablesToGlobals(globals, superglobals.files);
-                            break;
+                //        case 'P':
+                //            AddVariables(globals, superglobals.post);
+                //            AddFileVariablesToGlobals(globals, superglobals.files);
+                //            break;
 
-                        case 'C': AddVariables(globals, superglobals.cookie); break;
-                        case 'S': AddVariables(globals, superglobals.server); break;
-                    }
-                }
+                //        case 'C': AddVariables(globals, superglobals.cookie); break;
+                //        case 'S': AddVariables(globals, superglobals.server); break;
+                //    }
+                //}
             }
 
             public static void InitializeEGPCSForConsole(PhpArray globals, ref Superglobals superglobals)
@@ -140,15 +146,16 @@ namespace Pchp.Core
 
         void InitSuperglobals(ref Superglobals superglobals)
         {
+            var var_order = this.Configuration.Core.VariablesOrder; // TODO
             var egpcs = this.Configuration.Core.RegisteringOrder;
 
             superglobals.env = Superglobals.StaticEnv.DeepCopy();
-            superglobals.server = InitServerVariable();
             superglobals.get = InitGetVariable();
             superglobals.post = InitPostVariable();
+            superglobals.cookie = InitCookieVariable();
+            superglobals.server = InitServerVariable();
             superglobals.files = InitFilesVariable();
             superglobals.session = new PhpArray();
-            superglobals.cookie = InitCookieVariable();
             superglobals.request = InitRequestVariable(superglobals.get, superglobals.post, superglobals.cookie, egpcs);   // after get, post, cookie
             superglobals.globals = InitGlobals(egpcs);
         }
@@ -170,7 +177,7 @@ namespace Pchp.Core
             {
                 if (IsWebApplication)
                 {
-                    Superglobals.InitializeEGPCSForWeb(globals, ref _superglobals, registering_order);
+                    Superglobals.InitializeEGPCSForWeb(globals, ref _superglobals);
                 }
                 else
                 {

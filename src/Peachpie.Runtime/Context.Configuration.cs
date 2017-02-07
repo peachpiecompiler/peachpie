@@ -107,6 +107,11 @@ namespace Pchp.Core
             return true;
         }
 
+        /// <summary>
+        /// <c>variables_order</c> directive.
+        /// </summary>
+        public string VariablesOrder { get; set; } = "EGPCS";
+
         #region Request Control
 
         /// <summary>
