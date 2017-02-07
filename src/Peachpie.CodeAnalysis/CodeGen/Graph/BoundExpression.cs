@@ -3234,9 +3234,16 @@ namespace Pchp.CodeAnalysis.Semantics
                 else
                 {
                     Debug.Assert(Access.IsRead);
-                    return isphparr
+                    var t = isphparr
                         ? cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey)
                         : cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
+
+                    if (Access.IsReadCopy)
+                    {
+                        t = cg.EmitReadCopy(Access.TargetType, t);
+                    }
+
+                    return t;
                 }
             }
             else if (arrtype.SpecialType == SpecialType.System_String)
@@ -3272,14 +3279,28 @@ namespace Pchp.CodeAnalysis.Semantics
                     Debug.Assert(Access.IsRead);
                     // PhpValue.GetItemValue(IntStringKey, bool)
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_IntStringKey_Bool);
+                    var t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_IntStringKey_Bool);
+
+                    if (Access.IsReadCopy)
+                    {
+                        t = cg.EmitReadCopy(Access.TargetType, t);
+                    }
+
+                    return t;
                 }
             }
             else if (arrtype.IsOfType(cg.CoreTypes.ArrayAccess))
             {
                 // Template: ArrayAccess.offsetGet(<index>)
                 cg.EmitConvert(this.Index.ResultType, this.Index.TypeRefMask, cg.CoreTypes.PhpValue);
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetGet_ArrayAccess_PhpValue);
+                var t = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetGet_ArrayAccess_PhpValue);
+
+                if (Access.IsReadCopy)
+                {
+                    t = cg.EmitReadCopy(Access.TargetType, t);
+                }
+
+                return t;
             }
             else if (arrtype.SpecialType == SpecialType.System_Void)
             {

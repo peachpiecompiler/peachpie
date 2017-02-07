@@ -202,6 +202,38 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Reports an error when a variable should be PHP object but it is not.
+        /// </summary>
+        /// <param name="reference">Whether a reference modifier (=&amp;) is used.</param>
+        /// <param name="var">The variable which was misused.</param>
+        /// <exception cref="PhpException"><paramref name="var"/> is <see cref="PhpArray"/> (Warning).</exception>
+        /// <exception cref="PhpException"><paramref name="var"/> is scalar type (Warning).</exception>
+        /// <exception cref="PhpException"><paramref name="var"/> is a string (Warning).</exception>
+        public static void VariableMisusedAsObject(PhpValue var, bool reference)
+        {
+            if (var.IsEmpty)
+            {
+                Throw(PhpError.Notice, ErrResources.empty_used_as_object);
+            }
+            else if (var.IsArray)
+            {
+                Throw(PhpError.Warning, ErrResources.array_used_as_object);
+            }
+            else if (var.TypeCode == PhpTypeCode.String || var.TypeCode == PhpTypeCode.WritableString)
+            {
+                Throw(PhpError.Warning, reference ? ErrResources.string_item_used_as_reference : ErrResources.string_used_as_object);
+            }
+            else if (var.IsAlias)
+            {
+                VariableMisusedAsObject(var.Alias.Value, reference);
+            }
+            else
+            {
+                Throw(PhpError.Warning, ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(var));
+            }
+        }
+
+        /// <summary>
         /// Converts exception message (ending by dot) to error message (not ending by a dot).
         /// </summary>
         /// <param name="exceptionMessage">The exception message.</param>

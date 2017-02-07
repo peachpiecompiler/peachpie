@@ -491,28 +491,28 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Debug.Assert(!this.HasErrors);
 
-            TypedConstant ctorArgument = this.CommonConstructorArguments[0];
-            Debug.Assert(ctorArgument.Kind == TypedConstantKind.Enum || ctorArgument.Kind == TypedConstantKind.Primitive);
+            //TypedConstant ctorArgument = this.CommonConstructorArguments[0];
+            //Debug.Assert(ctorArgument.Kind == TypedConstantKind.Enum || ctorArgument.Kind == TypedConstantKind.Primitive);
 
-            ComInterfaceType interfaceType = ctorArgument.Kind == TypedConstantKind.Enum ?
-                ctorArgument.DecodeValue<ComInterfaceType>(SpecialType.System_Enum) :
-                (ComInterfaceType)ctorArgument.DecodeValue<short>(SpecialType.System_Int16);
+            //ComInterfaceType interfaceType = ctorArgument.Kind == TypedConstantKind.Enum ?
+            //    ctorArgument.DecodeValue<ComInterfaceType>(SpecialType.System_Enum) :
+            //    (ComInterfaceType)ctorArgument.DecodeValue<short>(SpecialType.System_Int16);
 
-            switch (interfaceType)
-            {
-                case ComInterfaceType.InterfaceIsDual:
-                case ComInterfaceType.InterfaceIsIDispatch:
-                case ComInterfaceType.InterfaceIsIInspectable:
-                case ComInterfaceType.InterfaceIsIUnknown:
-                    break;
+            //switch (interfaceType)
+            //{
+            //    case ComInterfaceType.InterfaceIsDual:
+            //    case ComInterfaceType.InterfaceIsIDispatch:
+            //    case ComInterfaceType.InterfaceIsIInspectable:
+            //    case ComInterfaceType.InterfaceIsIUnknown:
+            //        break;
 
-                default:
-                    throw new NotImplementedException();
-                    //// CS0591: Invalid value for argument to '{0}' attribute
-                    //CSharpSyntaxNode attributeArgumentSyntax = this.GetAttributeArgumentSyntax(0, node);
-                    //diagnostics.Add(ErrorCode.ERR_InvalidAttributeArgument, attributeArgumentSyntax.Location, node.GetErrorDisplayName());
-                    //break;
-            }
+            //    default:
+            //        throw new NotImplementedException();
+            //        //// CS0591: Invalid value for argument to '{0}' attribute
+            //        //CSharpSyntaxNode attributeArgumentSyntax = this.GetAttributeArgumentSyntax(0, node);
+            //        //diagnostics.Add(ErrorCode.ERR_InvalidAttributeArgument, attributeArgumentSyntax.Location, node.GetErrorDisplayName());
+            //        //break;
+            //}
         }
 
         internal string DecodeGuidAttribute(SyntaxNode nodeOpt, DiagnosticBag diagnostics)

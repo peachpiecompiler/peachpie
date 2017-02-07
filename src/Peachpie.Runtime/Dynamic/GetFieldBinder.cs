@@ -72,12 +72,17 @@ namespace Pchp.Core.Dynamic
 
                 if (target_value == null)
                 {
-                    if (_access.Quiet())
+                    var defaultexpr = ConvertExpression.BindDefault(_returnType);
+
+                    if (!_access.Quiet())
                     {
-                        return new DynamicMetaObject(ConvertExpression.BindDefault(_returnType), restrictions);
+                        // PhpException.VariableMisusedAsObject(target, _access.ReadRef)
+                        var throwcall = Expression.Call(typeof(PhpException), "VariableMisusedAsObject", Array.Empty<Type>(),
+                            ConvertExpression.BindToValue(target.Expression), Expression.Constant(_access.EnsureAlias()));
+                        defaultexpr = Expression.Block(throwcall, defaultexpr);
                     }
 
-                    throw new ArgumentNullException();
+                    return new DynamicMetaObject(defaultexpr, restrictions);
                 }
 
                 var runtime_type = target_value.GetType();

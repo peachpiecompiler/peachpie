@@ -1843,6 +1843,40 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return t;
             }
         }
+
+        /// <summary>
+        /// Emit dereference and deep copy if necessary.
+        /// </summary>
+        public TypeSymbol EmitReadCopy(TypeSymbol targetOpt, TypeSymbol type, TypeRefMask thint = default(TypeRefMask))
+        {
+            // dereference & copy
+
+            // if target type is not a copiable type, we don't have to perform deep copy since the result will be converted to a value anyway
+            var deepcopy = IsCopiable(thint) && (targetOpt == null || IsCopiable(targetOpt));
+            if (!deepcopy)
+            {
+                return type;
+            }
+
+            // dereference
+
+            if (type == CoreTypes.PhpValue)
+            {
+                // ref.GetValue().DeepCopy()
+                EmitPhpValueAddr();
+                type = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetValue);
+            }
+            else if (type == CoreTypes.PhpAlias)
+            {
+                // ref.Value.DeepCopy()
+                Emit_PhpAlias_GetValueAddr();
+                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+            }
+
+            // copy
+
+            return EmitDeepCopy(type);
+        }
     }
 
     internal static class ILBuilderExtension
