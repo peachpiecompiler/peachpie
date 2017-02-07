@@ -353,17 +353,16 @@ namespace Pchp.Core.Dynamic
 
         protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameExpr, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
-            if (target.Value == null)
-            {
-                Combine(ref restrictions, BindingRestrictions.GetInstanceRestriction(target.Expression, Expression.Constant(null)));
-                // TODO: Err instance is null
-                return null;
-            }
-
             // resolve target expression:
             Expression target_expr;
             object target_value;
             BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
+
+            // (NULL)->
+            if (target_value == null)
+            {
+                return null;    // no methods
+            }
 
             // target restrictions
             if (target_value != null && !target_expr.Type.GetTypeInfo().IsSealed)
@@ -383,19 +382,34 @@ namespace Pchp.Core.Dynamic
 
         protected override Expression BindMissingMethod(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameMeta, DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
-            Debug.Assert(target?.Value != null);
+            var name_expr = (_name != null) ? Expression.Constant(_name) : nameMeta?.Expression;
 
-            tinfo = target.RuntimeType.GetPhpTypeInfo();
+            // resolve target expression:
+            Expression target_expr;
+            object target_value;
+            BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
 
+            if (target_value == null)
+            {
+                /* Template:
+                 * PhpException.MethodOnNonObject(name_expr); // aka PhpException.Throw(Error, method_called_on_non_object, name_expr)
+                 * return NULL;
+                 */
+                var throwcall = Expression.Call(typeof(PhpException), "MethodOnNonObject", Array.Empty<Type>(), ConvertExpression.Bind(name_expr, typeof(string), ctx.Expression));
+                return Expression.Block(throwcall, ConvertExpression.BindDefault(this.ReturnType));
+            }
+
+            Debug.Assert(ReflectionUtils.IsClassType(target_value.GetType().GetTypeInfo()));
+
+            tinfo = target_value.GetPhpTypeInfo();
+            
             var call = BinderHelpers.FindMagicMethod(tinfo, TypeMethods.MagicMethods.__call);
             if (call != null)
             {
-                var name_expr = (_name != null) ? Expression.Constant(_name) : nameMeta?.Expression;
-
                 // target.__call(name, array)
                 var call_args = new Expression[]
                 {
-                    Expression.Constant(_name),
+                    name_expr,
                     BinderHelpers.NewPhpArray(ctx.Expression, args.Select(a => a.Expression)),
                 };
                 return OverloadBinder.BindOverloadCall(_returnType, target.Expression, call.Methods, ctx.Expression, call_args);
