@@ -193,6 +193,15 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Call to a member function <paramref name="methodName"/>() on a non-object.
+        /// </summary>
+        /// <param name="methodName">The method name.</param>
+        public static void MethodOnNonObject(string methodName)
+        {
+            Throw(PhpError.Error, ErrResources.method_called_on_non_object, methodName);
+        }
+
+        /// <summary>
         /// Converts exception message (ending by dot) to error message (not ending by a dot).
         /// </summary>
         /// <param name="exceptionMessage">The exception message.</param>

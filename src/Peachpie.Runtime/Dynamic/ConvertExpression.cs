@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
 {
@@ -323,7 +324,7 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        private static Expression VoidAsConstant(Expression expr, object value, Type type)
+        internal static Expression VoidAsConstant(Expression expr, object value, Type type)
         {
             Debug.Assert(expr.Type == typeof(void));
 
@@ -340,8 +341,8 @@ namespace Pchp.Core.Dynamic
 
         public static Expression BindDefault(Type t)
         {
-            if (t == typeof(PhpValue)) return Expression.Field(null, typeof(PhpValue), "Void");
-            if (t == typeof(PhpNumber)) return Expression.Field(null, typeof(PhpNumber), "Default");
+            if (t == typeof(PhpValue)) return Expression.Field(null, Cache.Properties.PhpValue_Void);
+            if (t == typeof(PhpNumber)) return Expression.Field(null, Cache.Properties.PhpNumber_Default);
 
             return Expression.Default(t);
         }
@@ -404,6 +405,13 @@ namespace Pchp.Core.Dynamic
             if (target_type.IsEnum)
             {
                 return Expression.Call(typeof(CostOf).GetMethod("ToInt64", arg.Type), arg);
+            }
+
+            //
+            if (ReflectionUtils.IsClassType(target_type))
+            {
+                var toclass_T = typeof(CostOf).GetTypeInfo().GetDeclaredMethod("ToClass").MakeGenericMethod(target);
+                return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(arg)
             }
 
             // fallback
@@ -674,6 +682,32 @@ namespace Pchp.Core.Dynamic
 
                 case PhpTypeCode.PhpArray:
                     return ConversionCost.Pass;
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
+        public static ConversionCost ToClass<T>(PhpValue value) where T : class
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Null:
+                    return ConversionCost.ImplicitCast;
+
+                case PhpTypeCode.Object:
+                    if (value.Object is T)
+                    {
+                        return ConversionCost.Pass;
+                    }
+                    else
+                    {
+                        if (value.IsNull) goto case PhpTypeCode.Null;
+                        return ConversionCost.NoConversion;
+                    }
+
+                case PhpTypeCode.Alias:
+                    return ToClass<T>(value.Alias.Value);
 
                 default:
                     return ConversionCost.NoConversion;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -34,6 +35,18 @@ namespace Pchp.Core.Reflection
         public static bool IsPhpFieldsOnlyCtor(this ConstructorInfo ctor)
         {
             return ctor.IsFamily && !ctor.IsStatic && ctor.GetCustomAttribute<PhpFieldsOnlyCtorAttribute>() != null;
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type is a type of a class instance excluding builtin PHP value types.
+        /// </summary>
+        public static bool IsClassType(TypeInfo tinfo)
+        {
+            Debug.Assert(tinfo != null);
+            Debug.Assert(tinfo.AsType() != typeof(PhpAlias));
+
+            var t = tinfo.AsType();
+            return !tinfo.IsValueType && t != typeof(PhpArray) && t != typeof(string) && t != typeof(PhpString);
         }
     }
 }

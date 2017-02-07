@@ -80,7 +80,8 @@ namespace Pchp.Core.Dynamic
 
             if (target_value == null)
             {
-                throw new NotImplementedException();    // TODO: call on NULL
+                restrictions =  restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, Expression.Constant(null)));
+                return;
             }
 
             for (;;)
