@@ -99,7 +99,7 @@ namespace Pchp.Library.PerlRegex
 
                 if (char.IsLetterOrDigit(end_delimiter) || end_delimiter == '\\')
                 {
-                    throw new ArgumentException("delimiter_alnum_backslash");
+                    throw new ArgumentException(Resources.LibResources.delimiter_alnum_backslash);
                 }
 
                 char start_delimiter;
@@ -124,12 +124,12 @@ namespace Pchp.Library.PerlRegex
                     }
                     else
                     {
-                        throw new ArgumentException("preg_no_end_delimiter");
+                        throw new ArgumentException(string.Format(Resources.LibResources.preg_no_end_delimiter, start_delimiter));
                     }
                 }
             }
 
-            throw new ArgumentException("regular_expression_empty");
+            throw new ArgumentException(Resources.LibResources.regular_expression_empty);
         }
 
         /// <summary>
@@ -160,9 +160,12 @@ namespace Pchp.Library.PerlRegex
                 }
                 else
                 {
-                    // reached a delimiter
-                    end = i + 1;
-                    return result;
+                    if (!char.IsWhiteSpace(ch)) // ignore trailing whitespaces
+                    {
+                        // reached a delimiter
+                        end = i + 1;
+                        return result;
+                    }
                 }
             }
 
@@ -497,19 +500,13 @@ namespace Pchp.Library.PerlRegex
                 {
                     int min;
                     int max;
-                    bool lazy;
+                    bool lazy, possessive;
 
                     switch (ch)
                     {
                         case '*':
                             min = 0;
                             max = int.MaxValue;
-
-                            if (CharsRight() > 0 && RightChar() == '+')
-                            {
-                                MoveRight();    // TODO: possesive quantifier
-                            }
-
                             break;
 
                         case '?':
@@ -520,12 +517,6 @@ namespace Pchp.Library.PerlRegex
                         case '+':
                             min = 1;
                             max = int.MaxValue;
-
-                            if (CharsRight() > 0 && RightChar() == '+')
-                            {
-                                MoveRight();    // TODO: possesive quantifier
-                            }
-
                             break;
 
                         case '{':
@@ -550,8 +541,7 @@ namespace Pchp.Library.PerlRegex
                                     Textto(startpos - 1);
                                     goto ContinueOuterScan;
                                 }
-                            }
-
+                            }                            
                             break;
 
                         default:
@@ -560,18 +550,20 @@ namespace Pchp.Library.PerlRegex
 
                     ScanBlank();
 
-                    if (CharsRight() == 0 || RightChar() != '?')
-                        lazy = false;
-                    else
+                    lazy = CharsRight() != 0 && RightChar() == '?';
+                    possessive = CharsRight() != 0 && RightChar() == '+';
+                    
+                    if (lazy || possessive)
                     {
                         MoveRight();
-                        lazy = true;
                     }
 
                     if (min > max)
+                    {
                         throw MakeException(SR.IllegalRange);
-
-                    AddConcatenate(lazy, min, max);
+                    }
+                    
+                    AddConcatenate(lazy, possessive, min, max);
                 }
 
                 ContinueOuterScan:
@@ -853,14 +845,16 @@ namespace Pchp.Library.PerlRegex
             //  (?P=name)
             //  (?:...)
 
+            if (CharsRight() >= 4 /*P<>)*/ && RightChar() == 'P' && RightChar(1) == '<') // (?P<name> // named group
+            {
+                MoveRight();    // skip 'P' in (?P<name>, continue as it would be (?<name>
+            }
+
             for (;;)
             {
                 if (CharsRight() == 0)
-                    break;
-
-                if (RightChar() == 'P') // (?P // named group, skip 'P'
                 {
-                    MoveRight();
+                    break;
                 }
 
                 switch (ch = MoveRightGetChar())
@@ -2355,9 +2349,18 @@ namespace Pchp.Library.PerlRegex
         /*
          * Finish the current quantifiable (when a quantifier is found)
          */
-        internal void AddConcatenate(bool lazy, int min, int max)
+        internal void AddConcatenate(bool lazy, bool possessive, int min, int max)
         {
-            _concatenation.AddChild(_unit.MakeQuantifier(lazy, min, max));
+            Debug.Assert(!(lazy && possessive));
+
+            var child = _unit.MakeQuantifier(lazy, min, max);
+
+            if (possessive)
+            {
+                child = child.MakePossessive();
+            }
+
+            _concatenation.AddChild(child);
             _unit = null;
         }
 
