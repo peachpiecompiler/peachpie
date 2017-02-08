@@ -201,7 +201,7 @@ namespace Pchp.CodeAnalysis
         public static bool IsGlobalVar(ItemUse itemUse)
         {
             if (itemUse != null &&
-                itemUse.IsMemberOf == null && itemUse.Array.IsMemberOf == null &&
+                itemUse.IsMemberOf == null && (itemUse.Array as VarLikeConstructUse)?.IsMemberOf == null &&
                 itemUse.Array is DirectVarUse)
             {
                 // $GLOBALS[...]

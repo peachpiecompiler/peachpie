@@ -48,7 +48,7 @@ namespace Pchp.Library.PerlRegex
 
         // *********** } match timeout fields ***********
 
-        protected internal RegexRunnerFactory factory;
+        protected internal RegexRunnerFactory factory = null;
 
         protected internal Dictionary<int, int> caps;          // if captures are sparse, this is the hashtable capnum->index
         protected internal Dictionary<string, int> capnames;      // if named captures are used, this maps names->index

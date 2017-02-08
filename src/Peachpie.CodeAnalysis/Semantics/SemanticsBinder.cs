@@ -345,14 +345,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindItemUse(AST.ItemUse x, BoundAccess access)
         {
-            if (x.IsMemberOf != null)
-            {
-                Debug.Assert(x.Array.IsMemberOf == null);
-                // fix this phalanger ast weirdness:
-                x.Array.IsMemberOf = x.IsMemberOf;
-                x.IsMemberOf = null;
-            }
-
+            AstUtils.PatchItemUse(x);
+            
             var arrayAccess = BoundAccess.Read;
 
             if (x.Index == null && (!access.IsEnsure && !access.IsWrite))   // READ variable[]
