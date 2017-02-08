@@ -49,10 +49,5 @@ namespace Pchp.Library.PerlRegex
         ///// Deprecated and removed.
         ///// </summary>
         //PREG_REPLACE_EVAL = 0x8000,        // e
-
-        /// <summary>
-        /// An unknown option.
-        /// </summary>
-        Unknown = 0x10000,
     }
 }

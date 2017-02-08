@@ -115,7 +115,7 @@ namespace Pchp.Library.PerlRegex
                 {
                     i++;
                 }
-                
+
                 if (i < end)
                 {
                     if (re[i] == start_delimiter)
@@ -156,7 +156,15 @@ namespace Pchp.Library.PerlRegex
                 var ch = pattern[i];
                 if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
                 {
-                    result |= PcreOptionFromCode(ch);
+                    var opt = PcreOptionFromCode(ch);
+                    if (opt != 0)
+                    {
+                        result |= opt;
+                    }
+                    else
+                    {
+                        Core.PhpException.Throw(Core.PhpError.Notice, Resources.LibResources.modifier_unknown, ch.ToString());
+                    }
                 }
                 else
                 {
@@ -541,7 +549,7 @@ namespace Pchp.Library.PerlRegex
                                     Textto(startpos - 1);
                                     goto ContinueOuterScan;
                                 }
-                            }                            
+                            }
                             break;
 
                         default:
@@ -552,17 +560,27 @@ namespace Pchp.Library.PerlRegex
 
                     lazy = CharsRight() != 0 && RightChar() == '?';
                     possessive = CharsRight() != 0 && RightChar() == '+';
-                    
+
                     if (lazy || possessive)
                     {
                         MoveRight();
+                    }
+
+                    if (UseOptionUngreedy() && !possessive)
+                    {
+                        /* This modifier inverts the "greediness" of the quantifiers so that they are not greedy by default, but become greedy if followed by '?'.
+                         * It is not compatible with Perl.
+                         * It can also be set by a(?U) modifier setting within the pattern or by a question mark behind a quantifier(e.g. .*?).
+                         */
+
+                        lazy = !lazy;
                     }
 
                     if (min > max)
                     {
                         throw MakeException(SR.IllegalRange);
                     }
-                    
+
                     AddConcatenate(lazy, possessive, min, max);
                 }
 
@@ -1739,6 +1757,12 @@ namespace Pchp.Library.PerlRegex
         /// </summary>
         internal static RegexOptions OptionFromCode(char ch)
         {
+            switch (ch)
+            {
+                case 'U':
+                    return RegexOptions.PCRE_UNGREEDY;
+            }
+
             // case-insensitive
             if (ch >= 'A' && ch <= 'Z')
                 ch += (char)('a' - 'A');
@@ -1763,6 +1787,7 @@ namespace Pchp.Library.PerlRegex
 #endif
                 case 'e':
                     return RegexOptions.ECMAScript;
+
                 default:
                     return 0;
             }
@@ -1812,7 +1837,7 @@ namespace Pchp.Library.PerlRegex
                     return RegexOptions.PCRE_EXTRA;
 
                 default:
-                    return RegexOptions.Unknown;
+                    return 0;
             }
         }
 
@@ -1873,7 +1898,7 @@ namespace Pchp.Library.PerlRegex
                                 // (?P // skip optional 'P'
                                 if (CharsRight() > 0 && RightChar() == 'P')
                                     MoveRight();
-                                
+
                                 if (CharsRight() > 1 && (RightChar() == '<' || RightChar() == '\''))
                                 {
                                     // named group: (?<... or (?'...
@@ -2142,6 +2167,11 @@ namespace Pchp.Library.PerlRegex
         internal bool UseOptionE()
         {
             return (_options & RegexOptions.ECMAScript) != 0;
+        }
+
+        internal bool UseOptionUngreedy()
+        {
+            return (_options & RegexOptions.PCRE_UNGREEDY) != 0;
         }
 
         internal const byte Q = 5;    // quantifier
