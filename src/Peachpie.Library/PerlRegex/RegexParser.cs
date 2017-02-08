@@ -156,15 +156,7 @@ namespace Pchp.Library.PerlRegex
                 var ch = pattern[i];
                 if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
                 {
-                    var opt = PcreOptionFromCode(ch);
-                    if (opt != 0)
-                    {
-                        result |= opt;
-                    }
-                    else
-                    {
-                        Core.PhpException.Throw(Core.PhpError.Notice, Resources.LibResources.modifier_unknown, ch.ToString());
-                    }
+                    result |= PcreOptionFromCode(ch);
                 }
                 else
                 {
@@ -1536,6 +1528,59 @@ namespace Pchp.Library.PerlRegex
             return i;
         }
 
+        /// <summary>
+        /// Scans hex digits enclosed in curly braces or scans two hexadecimal digits.
+        /// Parsing starts at opening curly brace and ends after the right curly brace.
+        /// </summary>
+        /// <returns>Unicode character.</returns>
+        char ScanHex2OrEnclosed()
+        {
+            if (CharsRight() >= 2)  // we need at least 2 characters
+            {
+                int d;
+                int i = 0;
+
+                var ch = MoveRightGetChar();
+                if (ch == '{')  // {FFFF}
+                {
+                    if (!UseOptionUtf8())
+                    {
+                        // TODO: this should only be allowed with this option
+                    }
+
+                    // scan 1 - 4 hex digits
+                    int c = 0;
+                    for (; c < 4 && CharsRight() != 0; c++)
+                    {
+                        ch = MoveRightGetChar();
+                        d = HexDigit(ch);
+                        if (d >= 0)
+                        {
+                            i *= 0x10;
+                            i += d;
+                        }
+                        else
+                        {
+                            MoveLeft();
+                            break;
+                        }
+                    }
+
+                    if (c != 0 && CharsRight() != 0 && MoveRightGetChar() == '}')
+                    {
+                        return (char)i;
+                    }
+                }
+                else
+                {
+                    MoveLeft();
+                    return ScanHex(2);
+                }
+            }
+
+            throw MakeException(SR.TooFewHex);
+        }
+
         /*
          * Scans exactly c hex digits (c=2 for \xFF, c=4 for \uFFFF)
          */
@@ -1667,7 +1712,7 @@ namespace Pchp.Library.PerlRegex
             switch (ch)
             {
                 case 'x':
-                    return ScanHex(2);
+                    return ScanHex2OrEnclosed();    // /xFF or /x{FFFF}
                 case 'u':
                     return ScanHex(4);
                 case 'a':
@@ -1837,6 +1882,7 @@ namespace Pchp.Library.PerlRegex
                     return RegexOptions.PCRE_EXTRA;
 
                 default:
+                    Core.PhpException.Throw(Core.PhpError.Notice, Resources.LibResources.modifier_unknown, option.ToString());
                     return 0;
             }
         }
@@ -2172,6 +2218,11 @@ namespace Pchp.Library.PerlRegex
         internal bool UseOptionUngreedy()
         {
             return (_options & RegexOptions.PCRE_UNGREEDY) != 0;
+        }
+
+        internal bool UseOptionUtf8()
+        {
+            return (_options & RegexOptions.PCRE_UTF8) != 0;
         }
 
         internal const byte Q = 5;    // quantifier
