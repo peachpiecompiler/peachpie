@@ -117,7 +117,7 @@ namespace Pchp.Library
             Array.Reverse(chars);
             return new string(chars);
         }
-        
+
         /// <summary>
         /// Finds a length of a segment consisting entirely of specified characters.
         /// </summary>
@@ -1738,8 +1738,8 @@ namespace Pchp.Library
         /// <summary>
         /// List of known HTML entities without leading <c>&amp;</c> character when checking double encoded entities.
         /// </summary>
-        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "#039;", "quot;", "apos;" };
-        
+        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;" };
+
         /// <summary>
         /// Converts special characters of substring to HTML entities.
         /// </summary>
@@ -1798,13 +1798,27 @@ namespace Pchp.Library
         {
             if (index < str.Length - 3)
             {
-                var entities = known_entities;
-                for (int i = 0; i < entities.Length; i++)
+                if (str[index] == '#')
                 {
-                    var entity = entities[i];
-                    if (str.IndexOf(entity, index, entity.Length, StringComparison.Ordinal) == index)
+                    // #123;
+                    if (index < str.Length - 4 && str[index + 4] == ';' &&
+                        char.IsDigit(str[index + 1]) &&
+                        char.IsDigit(str[index + 2]) &&
+                        char.IsDigit(str[index + 3]))
                     {
-                        return entity;
+                        return str.Substring(index, 5);
+                    }
+                }
+                else
+                {
+                    var entities = known_entities;
+                    for (int i = 0; i < entities.Length; i++)
+                    {
+                        var entity = entities[i];
+                        if (str.IndexOf(entity, index, entity.Length, StringComparison.Ordinal) == index)
+                        {
+                            return entity;
+                        }
                     }
                 }
             }
