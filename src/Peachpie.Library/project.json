@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0-*",
+  "version": "0.5.0-*",
 
   "packOptions": {
     "tags": [
@@ -19,7 +19,7 @@
 
   "dependencies": {
     "System.Collections": "4.3.0",
-    "System.Data.Common": "4.1.0",
+    "System.Data.Common": "4.3.0",
     "System.Net.NameResolution": "4.3.0",
     "Peachpie.Runtime": "*"
   },
@@ -27,16 +27,24 @@
   "frameworks": {
     "netstandard1.6": {
       "imports": "dnxcore50",
-      "dependencies": { "NETStandard.Library": "1.6.0" }
+      "dependencies": { "NETStandard.Library": "1.6.1" }
     },
     ".NETFramework,Version=v4.6": {
-      "dependencies": { "NETStandard.Library": "1.6.0" }
+      "dependencies": { "NETStandard.Library": "1.6.1" }
     },
     ".netcoreapp1.0": {
       "dependencies": {
         "Microsoft.NETCore.App": {
           "type": "platform",
           "version": "1.0.0"
+        }
+      }
+    },
+    ".netcoreapp1.1": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.1.0"
         }
       }
     }

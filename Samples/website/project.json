@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.0-*",
+  "version": "1.0.0",
 
   "buildOptions": {
     "compilerName": "php",
@@ -11,7 +11,7 @@
     "Peachpie.App": "*"
   },
   "tools": {
-    "Peachpie.Compiler.Tools": "0.4.0-dev"
+    "Peachpie.Compiler.Tools": "0.5.0-dev"
   },
   "frameworks": {
     "netcoreapp1.0": {

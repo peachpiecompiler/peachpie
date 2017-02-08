@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Text;
 using Devsense.PHP.Text;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis
 {
@@ -20,7 +21,13 @@ namespace Pchp.CodeAnalysis
         {
             if (item.IsMemberOf != null)
             {
-                item.Array.IsMemberOf = item.IsMemberOf;
+                var varlike = item.Array as VarLikeConstructUse;
+
+                Debug.Assert(varlike != null);
+                Debug.Assert(varlike.IsMemberOf == null);
+
+                // fix this ast weirdness:
+                varlike.IsMemberOf = item.IsMemberOf;
                 item.IsMemberOf = null;
             }
         }
