@@ -3,8 +3,9 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Pchp.Library.Parsers;
 
-namespace Pchp.Library.Parsers
+namespace Pchp.Library.Json
 {
     internal class JsonScanner : Json.Lexer, ITokenProvider<Json.SemanticValueType, Json.Position>
     {
