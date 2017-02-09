@@ -1085,6 +1085,95 @@ namespace Pchp.Library
 
         #endregion
 
+        #region JsonSerializer
+
+        internal sealed class JsonSerializer : Serializer
+        {
+            #region Tokens
+
+            /// <summary>
+            /// Contains definition of (one-character) tokens that constitute PHP serialized data.
+            /// </summary>
+            internal class Tokens
+            {
+                internal const char ObjectOpen = '{';
+                internal const char ObjectClose = '}';
+                internal const char ItemsSeparator = ',';
+                internal const char PropertyKeyValueSeparator = ':';
+
+                internal const char Quote = '"';
+                internal const char Escape = '\\';
+
+                internal const string EscapedNewLine = @"\n";
+                internal const string EscapedCR = @"\r";
+                internal const string EscapedTab = @"\t";
+                internal const string EscapedBackspace = @"\b";
+                internal const string EscapedQuote = "\\\"";
+                internal const string EscapedReverseSolidus = @"\\";
+                internal const string EscapedSolidus = @"\/";
+                internal const string EscapedFormFeed = @"\f";
+                internal const string EscapedUnicodeChar = @"\u";   // 4-digit number follows
+
+                internal const char ArrayOpen = '[';
+                internal const char ArrayClose = ']';
+
+                internal const string NullLiteral = "null";
+                internal const string TrueLiteral = "true";
+                internal const string FalseLiteral = "false";
+
+            }
+
+            #endregion
+
+            #region Serializer
+
+            public override string Name => "JSON";
+
+            protected override PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller)
+            {
+                throw new NotImplementedException();
+            }
+
+            protected override PhpString CommonSerialize(Context ctx, PhpValue variable, RuntimeTypeHandle caller)
+            {
+                throw new NotImplementedException();
+            }
+
+            #endregion
+
+            #region Options
+
+            /// <summary>
+            /// Encode (serialize) options. All false.
+            /// </summary>
+            public class EncodeOptions
+            {
+                public bool HexTag = false, HexAmp = false, HexApos = false, HexQuot = false, ForceObject = false, NumericCheck = false;
+            }
+
+            /// <summary>
+            /// Decode (unserialize) options.
+            /// </summary>
+            public class DecodeOptions
+            {
+                public bool BigIntAsString = false;
+
+                /// <summary>
+                /// When TRUE, returned object s will be converted into associative array s. 
+                /// </summary>
+                public bool Assoc = false;
+
+                /// <summary>
+                /// User specified recursion depth. 
+                /// </summary>
+                public int Depth = 512;
+            }
+
+            #endregion
+        }
+
+        #endregion
+
         #region serialize, unserialize
 
         /// <summary>
