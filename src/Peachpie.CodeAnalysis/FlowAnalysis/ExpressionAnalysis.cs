@@ -389,7 +389,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     State.SetVarInitialized(name);
                     State.SetVar(name, x.TypeRefMask);
                     State.LTInt64Max(name, false);
-                    
+
                     //
                     if (x.Variable.VariableKind == VariableKind.StaticVariable)
                     {
@@ -917,7 +917,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         void VisitRoutineCallEpilogue(BoundRoutineCall x)
         {
             //
-            if (x.TargetMethod != null)
+            if (!x.TargetMethod.IsErrorMethod())
             {
                 TypeRefMask result_type = 0;
 
@@ -1029,6 +1029,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             VisitRoutineCallEpilogue(x);
         }
 
+        MethodSymbol[] AsMethodOverloads(MethodSymbol method)
+        {
+            if (method is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)method).IsOverloadable)
+            {
+                return ((AmbiguousMethodSymbol)method).Ambiguities.ToArray();
+            }
+
+            return new[] { method };
+        }
+
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             Accept(x.Name.NameExpression);
@@ -1037,14 +1047,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (x.Name.IsDirect)
             {
-                var candidates = _model.ResolveFunction(x.Name.NameValue).Cast<MethodSymbol>().ToArray();
-                if (candidates.Length == 0 && x.NameOpt.HasValue)
+                var symbol = (MethodSymbol)_model.ResolveFunction(x.Name.NameValue);
+                if (symbol.IsMissingMethod() && x.NameOpt.HasValue)
                 {
-                    candidates = _model.ResolveFunction(x.NameOpt.Value).Cast<MethodSymbol>().ToArray();
+                    symbol = (MethodSymbol)_model.ResolveFunction(x.NameOpt.Value);
                 }
 
+                // symbol might be ErrorSymbol
+                
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, args, null);
+                x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, args, null);
             }
 
             VisitRoutineCallEpilogue(x);

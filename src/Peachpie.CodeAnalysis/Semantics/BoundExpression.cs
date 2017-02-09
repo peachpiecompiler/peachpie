@@ -515,7 +515,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundRoutineName Name => _name;
         readonly BoundRoutineName _name;
 
-        public override bool IsVirtual => this.TargetMethod == null || this.TargetMethod.IsVirtual;
+        public override bool IsVirtual => this.TargetMethod.IsErrorMethod() || this.TargetMethod.IsVirtual;
 
         public BoundInstanceFunctionCall(BoundExpression instance, QualifiedName name, ImmutableArray<BoundArgument> arguments)
             : this(instance, new BoundRoutineName(name), arguments)
@@ -635,7 +635,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Gets value indicating the target is resolved at compile time,
         /// so it will be called statically.
         /// </summary>
-        public bool IsResolved => Target != null;
+        public bool IsResolved => !Target.IsErrorMethod();
 
         /// <summary>
         /// In case the inclusion target is resolved, gets reference to the <c>Main</c> method of the included script.

@@ -168,17 +168,28 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return _next.GetFile(path);
         }
 
-        public IEnumerable<IPhpRoutineSymbol> ResolveFunction(QualifiedName name)
+        public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
         {
             // library functions, public static methods
-            var result = ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName(), true)).OfType<MethodSymbol>().Where(IsFunction).OfType<IPhpRoutineSymbol>().ToList();
-            if (result.Count == 0)
+            var methods = new List<MethodSymbol>();
+            foreach (var m in ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName(), true)).OfType<MethodSymbol>().Where(IsFunction))
             {
-                // source functions
-                result.AddRange(_next.ResolveFunction(name));
+                methods.Add(m);
             }
 
-            return result;
+            if (methods.Count == 0)
+            {
+                // source functions
+                return _next.ResolveFunction(name);
+            }
+            else if (methods.Count == 1)
+            {
+                return methods[0];
+            }
+            else
+            {
+                return new AmbiguousMethodSymbol(methods.AsImmutable(), true);
+            }
         }
 
         public IPhpValue ResolveConstant(string name)
