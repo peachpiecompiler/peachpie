@@ -16,6 +16,12 @@ namespace Pchp.Library
             public int LastError;
         }
 
+        internal static int GetLastJsonError(Context ctx)
+        {
+            var p = ctx.TryGetProperty<JsonLastError>();
+            return (p != null) ? p.LastError : 0;
+        }
+
         #endregion
 
         #region JsonSerializer
@@ -73,13 +79,17 @@ namespace Pchp.Library
 
             protected override PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller)
             {
+                var jsonerror = ctx.GetStatic<JsonLastError>();
+
                 var options = _decodeOptions ?? new DecodeOptions();
                 var scanner = new Json.JsonScanner(new StreamReader(data), options);
                 var parser = new Json.Parser(options) { Scanner = scanner };
 
+                jsonerror.LastError = JsonSerialization.JSON_ERROR_NONE;
+
                 if (!parser.Parse())
                 {
-                    ctx.GetStatic<JsonLastError>().LastError = JSON_ERROR_SYNTAX;
+                    jsonerror.LastError = JsonSerialization.JSON_ERROR_SYNTAX;
                     return PhpValue.Null;
                 }
 
@@ -135,7 +145,11 @@ namespace Pchp.Library
         }
 
         #endregion
+    }
 
+    [PhpExtension("json")]
+    public static class JsonSerialization
+    {
         #region Constants
 
         // 
@@ -243,7 +257,7 @@ namespace Pchp.Library
         public static PhpString json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default)
         {
             var encodeoptions = (options != JsonEncodeOptions.Default)
-                ? new JsonSerializer.EncodeOptions()
+                ? new PhpSerialization.JsonSerializer.EncodeOptions()
                 {
                     ForceObject = (options & JsonEncodeOptions.JSON_FORCE_OBJECT) != 0,
                     HexAmp = (options & JsonEncodeOptions.JSON_HEX_AMP) != 0,
@@ -254,36 +268,33 @@ namespace Pchp.Library
                 }
                 : null;
 
-            return new JsonSerializer(encodeOptions: encodeoptions).Serialize(ctx, value, default(RuntimeTypeHandle));
+            return new PhpSerialization.JsonSerializer(encodeOptions: encodeoptions).Serialize(ctx, value, default(RuntimeTypeHandle));
         }
 
         /// <summary>
-        /// 
+        /// Takes a JSON encoded string and converts it into a PHP variable.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="json"></param>
         /// <param name="assoc">When TRUE, returned object's will be converted into associative array s. </param>
         /// <param name="depth">User specified recursion depth. </param>
         /// <param name="options"></param>
-        /// <returns></returns>
+        /// <returns>Returns the value encoded in json in appropriate PHP type. Values true, false and null are returned as TRUE, FALSE and NULL respectively. NULL is returned if the json cannot be decoded or if the encoded data is deeper than the recursion limit.</returns>
         public static PhpValue json_decode(Context ctx, PhpString json, bool assoc = false, int depth = 512, JsonDecodeOptions options = JsonDecodeOptions.Default)
         {
             if (json.IsEmpty) return PhpValue.Null;
 
-            var decodeoptions = new JsonSerializer.DecodeOptions()
+            var decodeoptions = new PhpSerialization.JsonSerializer.DecodeOptions()
             {
                 Assoc = assoc,
                 Depth = depth,
                 BigIntAsString = (options & JsonDecodeOptions.JSON_BIGINT_AS_STRING) != 0
             };
 
-            return new JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, json, default(RuntimeTypeHandle));
+            return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, json, default(RuntimeTypeHandle));
         }
 
-        public static int json_last_error(Context ctx)
-        {
-            var lasterr = ctx.GetStatic<JsonLastError>();
-            return (lasterr != null) ? lasterr.LastError : 0;
-        }
+        public static int json_last_error(Context ctx) => PhpSerialization.GetLastJsonError(ctx);
 
         #endregion
     }
