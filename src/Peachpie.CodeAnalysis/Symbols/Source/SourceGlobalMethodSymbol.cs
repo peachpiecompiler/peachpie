@@ -55,7 +55,11 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var ps = this.Parameters;
-                return ps.First(p => p.Type.SpecialType == SpecialType.System_Object && p.Name == SpecialParameterSymbol.ThisName);
+                return ps.First(p =>
+                {
+                    Debug.Assert(p.Type != null);
+                    return (p.Name == SpecialParameterSymbol.ThisName && p.Type.SpecialType == SpecialType.System_Object);
+                });
             }
         }
 

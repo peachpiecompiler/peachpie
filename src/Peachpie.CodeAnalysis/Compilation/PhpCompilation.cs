@@ -313,14 +313,20 @@ namespace Pchp.CodeAnalysis
             return new MissingMetadataTypeSymbol(name, arity, false);
         }
 
-        public override ImmutableArray<Diagnostic> GetDeclarationDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
+        public override ImmutableArray<Diagnostic> GetParseDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.BindAndAnalyseTask().Result.AsImmutable();
+            //return GetDiagnostics(CompilationStage.Parse, false, cancellationToken);
+            return this.SyntaxTrees.SelectMany(tree => tree.Diagnostics).ToImmutableArray();
         }
 
-        public override ImmutableArray<Diagnostic> GetDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
+        public override ImmutableArray<Diagnostic> GetDeclarationDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return ImmutableArray<Diagnostic>.Empty;
+        }
+
+        public ImmutableArray<Diagnostic>GetBindingDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.BindAndAnalyseTask().Result.AsImmutable();
         }
 
         public override ImmutableArray<Diagnostic> GetMethodBodyDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
@@ -328,10 +334,9 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        public override ImmutableArray<Diagnostic> GetParseDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
+        public override ImmutableArray<Diagnostic> GetDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            //return GetDiagnostics(CompilationStage.Parse, false, cancellationToken);
-            return this.SyntaxTrees.SelectMany(tree => tree.Diagnostics).ToImmutableArray();
+            throw new NotImplementedException();
         }
 
         public override IEnumerable<ISymbol> GetSymbolsWithName(Func<string, bool> predicate, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))
