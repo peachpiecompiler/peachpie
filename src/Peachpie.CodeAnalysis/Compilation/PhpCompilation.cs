@@ -29,6 +29,8 @@ namespace Pchp.CodeAnalysis
         MethodSymbol _lazyMainMethod;
         readonly PhpCompilationOptions _options;
 
+        Task<IEnumerable<Diagnostic>> _lazyAnalysisTask;
+
         /// <summary>
         /// Manages anonymous types declared in this compilation. Unifies types that are structurally equivalent.
         /// </summary>
@@ -313,7 +315,7 @@ namespace Pchp.CodeAnalysis
 
         public override ImmutableArray<Diagnostic> GetDeclarationDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ImmutableArray<Diagnostic>.Empty;
+            return this.BindAndAnalyseTask().Result.AsImmutable();
         }
 
         public override ImmutableArray<Diagnostic> GetDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
@@ -604,6 +606,20 @@ namespace Pchp.CodeAnalysis
             }
 
             return loc1.SourceSpan.Start - loc2.SourceSpan.Start;
+        }
+
+        /// <summary>
+        /// Ensures semantic binding and flow analysis.
+        /// </summary>
+        /// <returns>The result of the task contains enumeration of diagnostics.</returns>
+        public async Task<IEnumerable<Diagnostic>> BindAndAnalyseTask()
+        {
+            if (_lazyAnalysisTask == null)
+            {
+                _lazyAnalysisTask = Task.Run(() => SourceCompiler.BindAndAnalyze(this));
+            }
+
+            return await _lazyAnalysisTask;
         }
 
         internal override bool CompileImpl(CommonPEModuleBuilder moduleBuilder, Stream win32Resources, Stream xmlDocStream, bool emittingPdb, DiagnosticBag diagnostics, Predicate<ISymbol> filterOpt, CancellationToken cancellationToken)
