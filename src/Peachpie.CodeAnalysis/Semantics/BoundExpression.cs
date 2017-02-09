@@ -944,7 +944,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public abstract partial class BoundReferenceExpression : BoundExpression, IReferenceExpression
     {
-
+        /// <summary>
+        /// Gets or sets value indicating the variable is used while it was not initialized in all code paths.
+        /// </summary>
+        public bool MaybeUninitialized { get; set; }
     }
 
     #endregion

@@ -368,6 +368,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         if (State.MaybeVarUninitialized(name))
                         {
+                            x.MaybeUninitialized = true;
                             vartype |= TypeCtx.GetNullTypeMask();
                         }
                     }
