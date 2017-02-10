@@ -31,5 +31,10 @@ namespace Pchp.Core
         /// If it is a console context or a class library context, the property gets a <c>null</c> reference.
         /// </summary>
         public virtual IHttpPhpContext HttpPhpContext => null;
+
+        /// <summary>
+        /// Gets the initial script file.
+        /// </summary>
+        public ScriptInfo MainScriptFile { get; protected set; }
     }
 }

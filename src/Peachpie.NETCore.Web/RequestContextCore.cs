@@ -154,6 +154,9 @@ namespace Peachpie.Web
             // set additional $_SERVER items
             AddServerScriptItems(script);
 
+            // remember the initial script file
+            this.MainScriptFile = script;
+
             //
 
             try
