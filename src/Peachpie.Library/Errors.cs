@@ -263,5 +263,56 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        /// <summary>
+        /// Generates a user-level error/warning/notice message.
+        /// </summary>
+        /// <remarks>
+        /// Used to trigger a user error condition, it can be used in conjunction with the built-in error handler,
+        /// or with a user defined function that has been set as the new error handler (set_error_handler()).
+        /// This function is useful when you need to generate a particular response to an exception at runtime.
+        /// </remarks>
+        public static bool trigger_error(Context ctx, string error_msg, int error_type = E_USER_NOTICE)
+        {
+            // not implemented
+
+            return true;
+        }
+
+        /// <summary>
+        /// Alias of <see cref="trigger_error"/>.
+        /// </summary>
+        public static bool user_error(Context ctx, string error_msg, int error_type = E_USER_NOTICE) => trigger_error(ctx, error_msg, error_type);
+
+        public const int DEBUG_BACKTRACE_PROVIDE_OBJECT = 1;
+        public const int DEBUG_BACKTRACE_IGNORE_ARGS = 2;
+
+        /// <summary>
+        /// Generates a backtrace.
+        /// </summary>
+        public static PhpArray debug_backtrace(int options = 0, int limit = 0)
+        {
+            // not implemented
+
+            return PhpArray.NewEmpty();
+        }
+
+        /// <summary>
+        /// Prints a backtrace.
+        /// </summary>
+        public static void debug_print_backtrace(Context ctx, int options = 0, int limit = 0)
+        {
+            // not implemented
+        }
+
+        /// <summary>
+        /// Send an error message to the defined error handling routines.
+        /// </summary>
+        public static bool error_log(string message, int message_type = 0, string destination = null, string extra_headers = null)
+        {
+            // not implemented
+
+            return false;
+        }
     }
 }
