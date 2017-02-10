@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
+using static Pchp.Library.JsonSerialization;
 
 namespace Pchp.Library
 {
@@ -82,17 +83,29 @@ namespace Pchp.Library
 
                 readonly Context _ctx;
                 readonly RuntimeTypeHandle _caller;
-                readonly EncodeOptions _encodeOptions;
+                readonly JsonEncodeOptions _encodeOptions;
 
-                private ObjectWriter(Context ctx, EncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                #region Options
+
+                bool HasForceObject => (_encodeOptions & JsonEncodeOptions.JSON_FORCE_OBJECT) != 0;
+                bool HasHexAmp => (_encodeOptions & JsonEncodeOptions.JSON_HEX_AMP) != 0;
+                bool HasHexApos => (_encodeOptions & JsonEncodeOptions.JSON_HEX_APOS) != 0;
+                bool HasHexQuot => (_encodeOptions & JsonEncodeOptions.JSON_HEX_QUOT) != 0;
+                bool HasHexTag => (_encodeOptions & JsonEncodeOptions.JSON_HEX_TAG) != 0;
+                bool HasNumericCheck => (_encodeOptions & JsonEncodeOptions.JSON_NUMERIC_CHECK) != 0;
+                bool HasPrettyPrint => (_encodeOptions & JsonEncodeOptions.JSON_PRETTY_PRINT) != 0;
+
+                #endregion
+
+                private ObjectWriter(Context ctx, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
                 {
                     Debug.Assert(ctx != null);
                     _ctx = ctx;
-                    _encodeOptions = encodeOptions ?? new EncodeOptions();
+                    _encodeOptions = encodeOptions;
                     _caller = caller;
                 }
 
-                public static PhpString Serialize(Context ctx, PhpValue variable, EncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                public static PhpString Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
                 {
                     ObjectWriter writer;
                     variable.Accept(writer = new ObjectWriter(ctx, encodeOptions, caller));
@@ -164,7 +177,7 @@ namespace Pchp.Library
                 {
                     if (PushObject(array))
                     {
-                        if (_encodeOptions.ForceObject || (array.StringCount != 0 || array.MaxIntegerKey + 1 != array.IntegerCount))
+                        if (HasForceObject || (array.StringCount != 0 || array.MaxIntegerKey + 1 != array.IntegerCount))
                         {
                             // array are encoded as objects or there are keyed values that has to be encoded as object
                             WriteObject(JsonArrayProperties(array));
@@ -185,6 +198,20 @@ namespace Pchp.Library
 
                 public override void AcceptObject(object obj)
                 {
+                    if (obj is JsonSerializable)
+                    {
+                        var data = ((JsonSerializable)obj).jsonSerialize();
+                        if ((obj = data.AsObject()) == null)
+                        {
+                            data.Accept(this);
+                            return;
+                        }
+                        else
+                        {
+                            // serialize `obj` without checking JsonSerializable interface ... 
+                        }
+                    }
+
                     if (obj is PhpResource)
                     {
                         WriteUnsupported(PhpResource.PhpTypeName);
@@ -237,16 +264,16 @@ namespace Pchp.Library
                             return true;
 
                         case '\'':
-                            return _encodeOptions.HexApos;
+                            return HasHexApos;
 
                         case '<':
-                            return _encodeOptions.HexTag;
+                            return HasHexTag;
 
                         case '>':
-                            return _encodeOptions.HexTag;
+                            return HasHexTag;
 
                         case '&':
-                            return _encodeOptions.HexAmp;
+                            return HasHexAmp;
 
                         default:
                             return !CharIsPrintable(c);
@@ -272,11 +299,11 @@ namespace Pchp.Library
                         case Tokens.Escape: return (Tokens.EscapedReverseSolidus);
                         case '\b': return (Tokens.EscapedBackspace);
                         case '\f': return (Tokens.EscapedFormFeed);
-                        case Tokens.Quote: return (_encodeOptions.HexQuot ? (Tokens.EscapedUnicodeChar + "0022") : Tokens.EscapedQuote);
-                        case '\'': return (_encodeOptions.HexApos ? (Tokens.EscapedUnicodeChar + "0027") : "'");
-                        case '<': return (_encodeOptions.HexTag ? (Tokens.EscapedUnicodeChar + "003C") : "<");
-                        case '>': return (_encodeOptions.HexTag ? (Tokens.EscapedUnicodeChar + "003E") : ">");
-                        case '&': return (_encodeOptions.HexAmp ? (Tokens.EscapedUnicodeChar + "0026") : "&");
+                        case Tokens.Quote: return (HasHexQuot ? (Tokens.EscapedUnicodeChar + "0022") : Tokens.EscapedQuote);
+                        case '\'': return (HasHexApos ? (Tokens.EscapedUnicodeChar + "0027") : "'");
+                        case '<': return (HasHexTag ? (Tokens.EscapedUnicodeChar + "003C") : "<");
+                        case '>': return (HasHexTag ? (Tokens.EscapedUnicodeChar + "003E") : ">");
+                        case '&': return (HasHexAmp ? (Tokens.EscapedUnicodeChar + "0026") : "&");
                         default:
                             {
                                 if (CharIsPrintable(c))
@@ -323,7 +350,7 @@ namespace Pchp.Library
                 /// <param name="value">The string.</param>
                 void WriteString(string value)
                 {
-                    if (_encodeOptions.NumericCheck)
+                    if (HasNumericCheck)
                     {
                         long l;
                         double d;
@@ -445,21 +472,13 @@ namespace Pchp.Library
 
             #endregion
 
-            public JsonSerializer(DecodeOptions decodeOptions = null, EncodeOptions encodeOptions = null)
+            public JsonSerializer(DecodeOptions decodeOptions = null, JsonEncodeOptions encodeOptions = JsonEncodeOptions.Default)
             {
                 _decodeOptions = decodeOptions;
                 _encodeOptions = encodeOptions;
             }
 
             #region Options
-
-            /// <summary>
-            /// Encode (serialize) options. All false.
-            /// </summary>
-            public class EncodeOptions
-            {
-                public bool HexTag = false, HexAmp = false, HexApos = false, HexQuot = false, ForceObject = false, NumericCheck = false;
-            }
 
             /// <summary>
             /// Decode (unserialize) options.
@@ -480,7 +499,7 @@ namespace Pchp.Library
             }
 
             readonly DecodeOptions _decodeOptions;
-            readonly EncodeOptions _encodeOptions;
+            readonly JsonEncodeOptions _encodeOptions;
 
             #endregion
         }
@@ -566,6 +585,11 @@ namespace Pchp.Library
             /// Encodes numeric strings as numbers. 
             /// </summary>
             JSON_NUMERIC_CHECK = 32,
+
+            /// <summary>
+            /// Use whitespace in returned data to format it.
+            /// </summary>
+            JSON_PRETTY_PRINT = 64,
         }
 
         public const int JSON_HEX_TAG = (int)JsonEncodeOptions.JSON_HEX_TAG;
@@ -574,6 +598,7 @@ namespace Pchp.Library
         public const int JSON_HEX_QUOT = (int)JsonEncodeOptions.JSON_HEX_QUOT;
         public const int JSON_FORCE_OBJECT = (int)JsonEncodeOptions.JSON_FORCE_OBJECT;
         public const int JSON_NUMERIC_CHECK = (int)JsonEncodeOptions.JSON_NUMERIC_CHECK;
+        public const int JSON_PRETTY_PRINT = (int)JsonEncodeOptions.JSON_PRETTY_PRINT;
 
         /// <summary>
         /// Options given to json_decode function.
@@ -597,19 +622,7 @@ namespace Pchp.Library
 
         public static PhpString json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default)
         {
-            var encodeoptions = (options != JsonEncodeOptions.Default)
-                ? new PhpSerialization.JsonSerializer.EncodeOptions()
-                {
-                    ForceObject = (options & JsonEncodeOptions.JSON_FORCE_OBJECT) != 0,
-                    HexAmp = (options & JsonEncodeOptions.JSON_HEX_AMP) != 0,
-                    HexApos = (options & JsonEncodeOptions.JSON_HEX_APOS) != 0,
-                    HexQuot = (options & JsonEncodeOptions.JSON_HEX_QUOT) != 0,
-                    HexTag = (options & JsonEncodeOptions.JSON_HEX_TAG) != 0,
-                    NumericCheck = (options & JsonEncodeOptions.JSON_NUMERIC_CHECK) != 0,
-                }
-                : null;
-
-            return new PhpSerialization.JsonSerializer(encodeOptions: encodeoptions).Serialize(ctx, value, default(RuntimeTypeHandle));
+            return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default(RuntimeTypeHandle));
         }
 
         /// <summary>
@@ -639,4 +652,20 @@ namespace Pchp.Library
 
         #endregion
     }
+}
+
+/// <summary>
+/// Objects implementing JsonSerializable can customize their JSON representation when encoded with <see cref="Pchp.Library.JsonSerialization.json_encode"/>.
+/// </summary>
+[PhpType("JsonSerializable")]
+public interface JsonSerializable
+{
+    /// <summary>
+    /// Serializes the object to a value that can be serialized natively by <see cref="Pchp.Library.JsonSerialization.json_encode"/>.
+    /// </summary>
+    /// <returns>
+    /// Returns data which can be serialized by <see cref="Pchp.Library.JsonSerialization.json_encode"/>,
+    /// which is a value of any type other than a resource.
+    /// </returns>
+    PhpValue jsonSerialize();
 }
