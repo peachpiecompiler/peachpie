@@ -595,7 +595,7 @@ namespace Pchp.Core.Dynamic
                                 return ConvertExpression.Bind(Expression.Constant(targetparam.DefaultValue), targetparam.ParameterType, _ctx);
                             }
 
-                            return Expression.Default(targetparam.ParameterType);
+                            return ConvertExpression.BindDefault(targetparam.ParameterType);
                         }
 
                         return Expression.Constant(null, typeof(object));
