@@ -207,7 +207,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         static string ResolvePhpTypeName(TypeInfo tinfo)
         {
-            var attr = tinfo.GetCustomAttribute<PhpTypeAttribute>();
+            var attr = tinfo.GetCustomAttribute<PhpTypeAttribute>(false);
             return attr?.ExplicitTypeName ??
                 // full PHP type name instead of CLR type name
                 tinfo.FullName
