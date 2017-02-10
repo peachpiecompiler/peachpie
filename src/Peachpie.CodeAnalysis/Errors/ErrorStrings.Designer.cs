@@ -60,6 +60,15 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to Error opening assembly file &apos;{0}&apos;: {1}.
+        /// </summary>
+        public static string ERR_ErrorOpeningAssemblyFile {
+            get {
+                return ResourceManager.GetString("ERR_ErrorOpeningAssemblyFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to Metadata file &apos;{0}&apos; could not be found.
         /// </summary>
         public static string ERR_MetadataFileNotFound {

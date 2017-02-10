@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Library
 {
@@ -68,7 +71,345 @@ namespace Pchp.Library
 
             sealed class ObjectWriter : PhpVariableVisitor
             {
+                Encoding Encoding => _ctx.StringEncoding;
 
+                readonly Stack<object> _recursionStack = new Stack<object>();
+
+                /// <summary>
+                /// Result data.
+                /// </summary>
+                readonly PhpString _result = new PhpString();
+
+                readonly Context _ctx;
+                readonly RuntimeTypeHandle _caller;
+                readonly EncodeOptions _encodeOptions;
+
+                private ObjectWriter(Context ctx, EncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                {
+                    Debug.Assert(ctx != null);
+                    _ctx = ctx;
+                    _encodeOptions = encodeOptions ?? new EncodeOptions();
+                    _caller = caller;
+                }
+
+                public static PhpString Serialize(Context ctx, PhpValue variable, EncodeOptions encodeOptions, RuntimeTypeHandle caller)
+                {
+                    ObjectWriter writer;
+                    variable.Accept(writer = new ObjectWriter(ctx, encodeOptions, caller));
+                    return writer._result;
+                }
+
+                bool PushObject(object obj)
+                {
+                    int count = 0;
+                    foreach (var x in _recursionStack)
+                    {
+                        if (x == obj) count++;
+                    }
+
+
+                    if (count < 2)
+                    {
+                        _recursionStack.Push(obj);
+                        return true;
+                    }
+                    else
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.LibResources.recursion_detected);
+                        return false;
+                    }
+                }
+
+                void PopObject(object obj)
+                {
+                    Debug.Assert(_recursionStack.Count != 0);
+                    var x = _recursionStack.Pop();
+                    Debug.Assert(x == obj);
+                }
+
+                void Write(string str) => _result.Append(str);
+                void Write(char ch) => _result.Append(ch.ToString());
+
+                public override void AcceptNull()
+                {
+                    WriteNull();
+                }
+
+                public override void Accept(bool obj)
+                {
+                    WriteBoolean(obj);
+                }
+
+                public override void Accept(long obj)
+                {
+                    Write(obj.ToString());
+                }
+
+                public override void Accept(string obj)
+                {
+                    WriteString(obj);
+                }
+
+                public override void Accept(PhpString obj)
+                {
+                    WriteString(obj.ToString(_ctx));
+                }
+
+                public override void Accept(double obj)
+                {
+                    Write(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                }
+
+                public override void Accept(PhpArray array)
+                {
+                    if (PushObject(array))
+                    {
+                        if (_encodeOptions.ForceObject || (array.StringCount != 0 || array.MaxIntegerKey + 1 != array.IntegerCount))
+                        {
+                            // array are encoded as objects or there are keyed values that has to be encoded as object
+                            WriteObject(JsonArrayProperties(array));
+                        }
+                        else
+                        {
+                            // we can write JSON array
+                            WriteArray(array);
+                        }
+
+                        PopObject(array);
+                    }
+                    else
+                    {
+                        WriteNull();
+                    }
+                }
+
+                public override void AcceptObject(object obj)
+                {
+                    if (obj is PhpResource)
+                    {
+                        WriteUnsupported(PhpResource.PhpTypeName);
+                        return;
+                    }
+
+                    if (PushObject(obj))
+                    {
+                        WriteObject(JsonObjectProperties(obj));
+                        PopObject(obj);
+                    }
+                    else
+                    {
+                        WriteNull();
+                    }
+                }
+
+                #region encoding strings
+
+                /// <summary>
+                /// Determines if given character is printable character. Otherwise it must be encoded.
+                /// </summary>
+                /// <param name="c"></param>
+                /// <returns></returns>
+                private static bool CharIsPrintable(char c)
+                {
+                    return
+                        (c <= 0x7f) &&   // ASCII
+                        (!char.IsControl(c)) && // not control
+                        (!(c >= 9 && c <= 13)); // not BS, HT, LF, Vertical Tab, Form Feed, CR
+                }
+
+                /// <summary>
+                /// Determines if given character should be encoded.
+                /// </summary>
+                /// <param name="c"></param>
+                /// <returns></returns>
+                private bool CharShouldBeEncoded(char c)
+                {
+                    switch (c)
+                    {
+                        case '\n':
+                        case '\r':
+                        case '\t':
+                        case '/':
+                        case Tokens.Escape:
+                        case '\b':
+                        case '\f':
+                        case Tokens.Quote:
+                            return true;
+
+                        case '\'':
+                            return _encodeOptions.HexApos;
+
+                        case '<':
+                            return _encodeOptions.HexTag;
+
+                        case '>':
+                            return _encodeOptions.HexTag;
+
+                        case '&':
+                            return _encodeOptions.HexAmp;
+
+                        default:
+                            return !CharIsPrintable(c);
+                    }
+                }
+
+                /// <summary>
+                /// Convert 16b character into json encoded character.
+                /// </summary>
+                /// <param name="value">The full string to be encoded.</param>
+                /// <param name="i">The index of character to be encoded. Can be increased if more characters are processed.</param>
+                /// <returns>The encoded part of string, from value[i] to value[i after method call]</returns>
+                private string EncodeStringIncremental(string value, ref int i)
+                {
+                    char c = value[i];
+
+                    switch (c)
+                    {
+                        case '\n': return (Tokens.EscapedNewLine);
+                        case '\r': return (Tokens.EscapedCR);
+                        case '\t': return (Tokens.EscapedTab);
+                        case '/': return (Tokens.EscapedSolidus);
+                        case Tokens.Escape: return (Tokens.EscapedReverseSolidus);
+                        case '\b': return (Tokens.EscapedBackspace);
+                        case '\f': return (Tokens.EscapedFormFeed);
+                        case Tokens.Quote: return (_encodeOptions.HexQuot ? (Tokens.EscapedUnicodeChar + "0022") : Tokens.EscapedQuote);
+                        case '\'': return (_encodeOptions.HexApos ? (Tokens.EscapedUnicodeChar + "0027") : "'");
+                        case '<': return (_encodeOptions.HexTag ? (Tokens.EscapedUnicodeChar + "003C") : "<");
+                        case '>': return (_encodeOptions.HexTag ? (Tokens.EscapedUnicodeChar + "003E") : ">");
+                        case '&': return (_encodeOptions.HexAmp ? (Tokens.EscapedUnicodeChar + "0026") : "&");
+                        default:
+                            {
+                                if (CharIsPrintable(c))
+                                {
+                                    int start = i++;
+                                    for (; i < value.Length && !CharShouldBeEncoded(value[i]); ++i)
+                                        ;
+
+                                    return value.Substring(start, (i--) - start);   // accumulate characters, mostly it is entire string value (faster)
+                                }
+                                else
+                                {
+                                    return (Tokens.EscapedUnicodeChar + ((int)c).ToString("X4"));
+                                }
+                            }
+                    }
+                }
+
+                #endregion
+
+                /// <summary>
+                /// Serializes null and throws an exception.
+                /// </summary>
+                /// <param name="TypeName"></param>
+                private void WriteUnsupported(string TypeName)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.LibResources.serialization_unsupported_type, TypeName);
+                    WriteNull();
+                }
+
+                void WriteNull()
+                {
+                    _result.Append(Tokens.NullLiteral);
+                }
+
+                void WriteBoolean(bool value)
+                {
+                    _result.Append(value ? Tokens.TrueLiteral : Tokens.FalseLiteral);
+                }
+
+                /// <summary>
+                /// Serializes JSON string.
+                /// </summary>
+                /// <param name="value">The string.</param>
+                void WriteString(string value)
+                {
+                    if (_encodeOptions.NumericCheck)
+                    {
+                        long l;
+                        double d;
+                        var result = Core.Convert.StringToNumber(value, out l, out d);
+                        if ((result & Core.Convert.NumberInfo.IsNumber) != 0)
+                        {
+                            if ((result & Core.Convert.NumberInfo.LongInteger) != 0) _result.Append(l.ToString());
+                            if ((result & Core.Convert.NumberInfo.Double) != 0) _result.Append(d.ToString());
+                            return;
+                        }
+                    }
+
+                    var strVal = new StringBuilder(value.Length + 2);
+
+                    strVal.Append(Tokens.Quote);
+
+                    for (int i = 0; i < value.Length; ++i)
+                    {
+                        strVal.Append(EncodeStringIncremental(value, ref i));
+                    }
+
+                    strVal.Append(Tokens.Quote);
+
+                    _result.Append(strVal.ToString());
+                }
+
+                void WriteArray(PhpHashtable array)
+                {
+                    // [
+                    Write(Tokens.ArrayOpen);
+
+                    bool bFirst = true;
+
+                    var enumerator = array.GetFastEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        // ,
+                        if (bFirst) bFirst = false;
+                        else Write(Tokens.ItemsSeparator);
+
+                        Debug.Assert(enumerator.CurrentKey.IsInteger);
+
+                        // value
+                        Accept(enumerator.CurrentValue);
+                    }
+
+                    // ]
+                    Write(Tokens.ArrayClose);
+                }
+
+                void WriteObject(IEnumerable<KeyValuePair<string, PhpValue>> properties)
+                {
+                    // {
+                    Write(Tokens.ObjectOpen);
+
+                    bool bFirst = true;
+                    foreach (var pair in properties)
+                    {
+                        // ,
+                        if (bFirst) bFirst = false;
+                        else Write(Tokens.ItemsSeparator);
+
+                        // "key":value
+                        WriteString(pair.Key);
+                        Write(Tokens.PropertyKeyValueSeparator);
+                        pair.Value.Accept(this);
+                    }
+
+                    // }
+                    Write(Tokens.ObjectClose);
+                }
+
+                IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
+                {
+                    var enumerator = array.GetFastEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        var current = enumerator.Current;
+                        yield return new KeyValuePair<string, PhpValue>(current.Key.ToString(), current.Value);
+                    }
+                }
+
+                IEnumerable<KeyValuePair<string, PhpValue>> JsonObjectProperties(object/*!*/obj)
+                {
+                    return TypeMembersUtils.EnumerateInstanceFields(obj, (f, d) => f.Name, (k) => k.ToString());
+                }
             }
 
             #endregion
@@ -99,7 +440,7 @@ namespace Pchp.Library
 
             protected override PhpString CommonSerialize(Context ctx, PhpValue variable, RuntimeTypeHandle caller)
             {
-                throw new NotImplementedException();
+                return ObjectWriter.Serialize(ctx, variable, _encodeOptions, caller);
             }
 
             #endregion

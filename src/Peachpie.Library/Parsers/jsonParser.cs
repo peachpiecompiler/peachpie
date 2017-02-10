@@ -118,7 +118,7 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
 				
 			foreach (var item in elements)
 			{
-				arr.Add( new IntStringKey(item.Key), item.Value );
+				arr.Add( Core.Convert.StringToArrayKey(item.Key), item.Value );
 			}
 					
 			if (decodeOptions.Assoc)
