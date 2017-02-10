@@ -3,15 +3,13 @@
 function test($obj, $opt = 0)
 {
 	print_r($obj);
-	echo "\n".( $x = json_encode($obj, $opt) ) . "\n";
+	echo( $x = json_encode($obj, $opt) ), "\n";
 	print_r( json_decode($x, true) );
 }
 
-test("string value with several special characters \"<>&'\"");
+test("special characters \"/#@<>&'\"");
 test(array(1,2,3,4,array(1,2,'x'=>'y')));
 test(array ('a'=>1,'b'=>2,'c'=>3,'d'=>4,'e'=>5));
-
-// examples from http://www.php.net/manual/en/function.json-encode.php
 
 $a = array('<foo>',"'bar'",'"baz"','&blong&');
 
