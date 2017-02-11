@@ -15,8 +15,6 @@
   },
   "frameworks": {
     "netstandard1.6": {},
-    ".NETFramework,Version=v4.6": {},
-    ".netcoreapp1.0": {},
-    ".netcoreapp1.1": {}
+    ".NETFramework,Version=v4.6": {}
   }
 }
