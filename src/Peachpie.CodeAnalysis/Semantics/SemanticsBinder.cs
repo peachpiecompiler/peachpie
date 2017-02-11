@@ -206,9 +206,27 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundIncludeEx(BindExpression(x.Target, BoundAccess.Read), x.InclusionType);
         }
 
-        BoundExpression BindConcatEx(AST.ConcatEx x)
+        BoundExpression BindConcatEx(AST.ConcatEx x) => BindConcatEx(x.Expressions);
+
+        BoundExpression BindConcatEx(AST.Expression[] args)
         {
-            return new BoundConcatEx(BindArguments(x.Expressions));
+            // bind expressions to bound arguments
+            var boundargs = new List<BoundArgument>(BindArguments(args));
+
+            // flattern concat arguments
+            for (int i = 0; i < boundargs.Count; i++)
+            {
+                var c = boundargs[i].Value as BoundConcatEx;
+                if (c != null)
+                {
+                    var subargs = c.ArgumentsInSourceOrder;
+                    boundargs.RemoveAt(i);
+                    boundargs.InsertRange(i, subargs);
+                }
+            }
+
+            //
+            return new BoundConcatEx(boundargs.AsImmutable());
         }
 
         BoundRoutineCall BindFunctionCall(AST.FunctionCall x, BoundAccess access)
@@ -346,7 +364,7 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundExpression BindItemUse(AST.ItemUse x, BoundAccess access)
         {
             AstUtils.PatchItemUse(x);
-            
+
             var arrayAccess = BoundAccess.Read;
 
             if (x.Index == null && (!access.IsEnsure && !access.IsWrite))   // READ variable[]
@@ -435,7 +453,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (expr.Operation == AST.Operations.Concat)
             {
-                return new BoundConcatEx(BindArguments(new[] { expr.LeftExpr, expr.RightExpr }));
+                return BindConcatEx(new[] { expr.LeftExpr, expr.RightExpr });
             }
             else
             {

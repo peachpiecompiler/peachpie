@@ -46,7 +46,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly MethodSymbol _symbol;
         readonly int _index;
         readonly string _name;
-        readonly object _type;
+        object _type;
 
         public SpecialParameterSymbol(MethodSymbol symbol, object type, string name, int index)
         {
@@ -94,11 +94,11 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
+                if (_type is CoreType)
+                    _type = ((CoreType)_type).Symbol;
+
                 if (_type is TypeSymbol)
                     return (TypeSymbol)_type;
-
-                if (_type is CoreType)
-                    return ((CoreType)_type).Symbol;
 
                 throw new ArgumentException();
             }

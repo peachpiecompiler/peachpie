@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace Pchp.Library
 {
-    public static class PhpSerialization
+    public static partial class PhpSerialization
     {
         #region Serializer
 

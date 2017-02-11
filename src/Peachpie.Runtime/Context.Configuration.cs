@@ -162,6 +162,18 @@ namespace Pchp.Core
         public string IncludePaths = ".";
 
         #endregion
+
+        #region Mailer
+
+        public string SmtpServer = null;
+
+        public int SmtpPort = 25;
+
+        public bool AddXHeader = false;
+
+        public string DefaultFromHeader = null;
+
+        #endregion
     }
 
     #endregion

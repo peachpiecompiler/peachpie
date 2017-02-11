@@ -2142,7 +2142,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            return (TargetMethod != null)
+            return !TargetMethod.IsErrorMethod()
                 ? EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod)
                 : EmitCallsiteCall(cg);
         }
@@ -2328,7 +2328,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            if (TargetMethod != null)
+            if (!TargetMethod.IsErrorMethod())
             {
                 return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);
             }

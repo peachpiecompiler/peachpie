@@ -1916,6 +1916,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(method);
             Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt || code == ILOpCode.Newobj);
+            Debug.Assert(!method.IsErrorMethod());
 
             var stack = method.GetCallStackBehavior();
 

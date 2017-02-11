@@ -25,20 +25,11 @@ public class Exception : System.Exception, Throwable
         this.code = code;
     }
 
-    public virtual int getCode()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual int getCode() => (int)this.code;
 
-    public virtual string getFile()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual string getFile() => this.file;
 
-    public virtual int getLine()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual int getLine() => this.line;
 
     public virtual string getMessage() => this.message;
 

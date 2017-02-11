@@ -41,8 +41,11 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 Debug.Assert(_syntaxTree.Source.Ast == x);
 
-                _currentFile = new SourceFileSymbol(_compilation, _syntaxTree);
-                _tables._files[_currentFile.RelativeFilePath] = _currentFile;
+                var fsymbol = new SourceFileSymbol(_compilation, _syntaxTree);
+
+                _currentFile = fsymbol;
+                _tables._files.Add(fsymbol.RelativeFilePath, fsymbol);
+                _tables._ordinalMap.Add(_syntaxTree, _tables._ordinalMap.Count);
 
                 if (_tables.FirstScript == null)
                 {
@@ -202,6 +205,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Set of files.
         /// </summary>
         readonly Dictionary<string, SourceFileSymbol> _files = new Dictionary<string, SourceFileSymbol>(StringComparer.Ordinal);
+        readonly Dictionary<SyntaxTree, int> _ordinalMap = new Dictionary<SyntaxTree, int>();
 
         readonly SymbolsCache<QualifiedName, SourceTypeSymbol> _types;
         readonly SymbolsCache<QualifiedName, SourceFunctionSymbol> _functions;
@@ -211,6 +215,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Used as a default entry script.
         /// </summary>
         public SourceFileSymbol FirstScript { get; private set; }
+
+        public IDictionary<SyntaxTree, int> OrdinalMap => _ordinalMap;
 
         public SourceSymbolCollection(PhpCompilation/*!*/compilation)
         {
@@ -250,15 +256,22 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SourceFileSymbol GetFile(string fname) => _files.TryGetOrDefault(fname);
 
+        /// <summary>
+        /// Gets compilation syntax trees.
+        /// </summary>
+        public IEnumerable<PhpSyntaxTree> SyntaxTrees => _files.Values.Select(f => f.SyntaxTree);
+
         public IEnumerable<SourceFileSymbol> GetFiles() => _files.Values;
 
         /// <summary>
-        /// Gets single function in case there is no ambiguity and the function is declared unconditionally.
+        /// Gets function symbol, may return <see cref="ErrorMethodSymbol"/> in case of ambiguity or a missing function.
         /// </summary>
         public MethodSymbol GetFunction(QualifiedName name)
         {
             var fncs = _functions.GetAll(name).AsImmutable();
-            return (fncs.Length == 1 && !fncs[0].IsConditional) ? fncs[0] : null;
+            if (fncs.Length == 1 && !fncs[0].IsConditional) return fncs[0];
+            if (fncs.Length == 0) return new MissingMethodSymbol(name.Name.Value);
+            return new AmbiguousMethodSymbol(fncs.AsImmutable<MethodSymbol>(), overloadable: false);
         }
 
         public IEnumerable<MethodSymbol> GetFunctions(QualifiedName name) => _functions[name];

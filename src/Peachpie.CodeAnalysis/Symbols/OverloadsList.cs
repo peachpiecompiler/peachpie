@@ -24,15 +24,31 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public MethodSymbol Resolve(TypeRefContext typeCtx, TypeRefMask[] args, TypeSymbol classCtx)
         {
+            if (_methods.Count == 0)
+            {
+                return new MissingMethodSymbol();
+            }
+
+            if (_methods.Count == 1 && _methods[0].IsErrorMethod())
+            {
+                return _methods[0];
+            }
+
             // see Pchp.Core.Dynamic.OverloadBinder
 
             var result = new List<MethodSymbol>(_methods);
 
-            //
             RemoveInaccessible(result, classCtx);
 
+            if (result.Count == 0)
+            {
+                return new InaccessibleMethodSymbol(_methods.AsImmutable());
+            }
+
             if (result.Count == 1)
+            {
                 return result[0];
+            }
 
             // TODO: cost of args convert operation
 
@@ -78,14 +94,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            return (result2.Count == 1) ? result2[0] : null;
+            return (result2.Count == 1) ? result2[0] : new AmbiguousMethodSymbol(result.AsImmutable(), true);
         }
 
         static void RemoveInaccessible(List<MethodSymbol> methods, TypeSymbol classCtx)
         {
             for (int i = methods.Count - 1; i >= 0; i--)
             {
-                if (!methods[i].IsAccessible(classCtx) || methods[i].IsFieldsOnlyConstructor())
+                if (methods[i].IsErrorMethod() && !methods[i].IsAccessible(classCtx) || methods[i].IsFieldsOnlyConstructor())
                 {
                     methods.RemoveAt(i);
                 }

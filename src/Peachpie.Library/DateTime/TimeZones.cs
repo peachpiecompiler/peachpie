@@ -419,9 +419,8 @@ namespace Pchp.Library
             var zone = GetTimeZone(zoneName);
             if (zone == null)
             {
-                //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_timezone", zoneName));
-                //return false;                
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Notice, Resources.LibResources.unknown_timezone, zoneName);
+                return false;
             }
 
             SetCurrentTimeZone(ctx, zone);
@@ -431,9 +430,7 @@ namespace Pchp.Library
         public static string date_default_timezone_get(Context ctx)
         {
             var timezone = GetCurrentTimeZone(ctx);
-
-            //return (timezone != null) ? timezone.Id : null;
-            throw new NotImplementedException();
+            return (timezone != null) ? timezone.Id : null;
         }
 
         #endregion

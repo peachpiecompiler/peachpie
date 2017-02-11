@@ -1738,7 +1738,7 @@ namespace Pchp.Library
         /// <summary>
         /// List of known HTML entities without leading <c>&amp;</c> character when checking double encoded entities.
         /// </summary>
-        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;" };
+        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;" };
 
         /// <summary>
         /// Converts special characters of substring to HTML entities.
@@ -1800,13 +1800,20 @@ namespace Pchp.Library
             {
                 if (str[index] == '#')
                 {
-                    // #123;
-                    if (index < str.Length - 4 && str[index + 4] == ';' &&
-                        char.IsDigit(str[index + 1]) &&
-                        char.IsDigit(str[index + 2]) &&
-                        char.IsDigit(str[index + 3]))
+                    for (int i = index + 1; i < str.Length; i++)
                     {
-                        return str.Substring(index, 5);
+                        var ch = str[i];
+                        if (!char.IsDigit(ch))
+                        {
+                            if (ch == ';' && i > index + 1)
+                            {
+                                return str.Substring(index, i - index + 1);
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
                     }
                 }
                 else

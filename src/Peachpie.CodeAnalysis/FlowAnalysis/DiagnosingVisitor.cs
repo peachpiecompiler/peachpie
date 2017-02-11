@@ -52,9 +52,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
         {
-            if (x.TargetMethod == null && x.Name.IsDirect)
+            if (x.Name.IsDirect && x.TargetMethod.IsErrorMethod())
             {
-                _diagnostics.Add(_routine, x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
+                var errmethod = (ErrorMethodSymbol)x.TargetMethod;
+                if (errmethod != null && errmethod.ErrorKind == ErrorMethodSymbol.ErrorMethodKind.Missing)
+                {
+                    _diagnostics.Add(_routine, x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
+                }
             }
         }
     }
