@@ -29,9 +29,7 @@
         "System.Threading.Tasks": "4.0.*"
       }
     },
-    "netstandard1.6": { "imports": [ "dnxcore50" ] },
-    ".netcoreapp1.0": {},
-    ".netcoreapp1.1": {}
+    "netstandard1.6": { "imports": [ "dnxcore50" ] }
   },
 
   "buildOptions": {
