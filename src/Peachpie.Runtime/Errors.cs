@@ -93,10 +93,7 @@ namespace Pchp.Core
     {
         public static void Throw(PhpError error, string formatString, params string[] args)
         {
-            Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, string.Format(formatString, args));   // assert in debug mode to handle exception
-
-            // TODO: get current Context from execution context
-            // TODO: throw error according to configuration
+            Context.DefaultErrorHandler?.Throw(error, formatString, args);
         }
 
         /// <summary>
