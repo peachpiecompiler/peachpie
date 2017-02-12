@@ -41,4 +41,40 @@ namespace Pchp.Core
             Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, string.Format(formatString, args));
         }
     }
+
+    /// <summary>
+    /// A custom error handler providing events to be subscribed to.
+    /// </summary>
+    public class CustomErrorHandler : IErrorHandler
+    {
+        void IErrorHandler.Throw(PhpError error, string message)
+        {
+            OnError?.Invoke(this, new ErrorEventArgs() { Error = error, Message = message });
+        }
+
+        void IErrorHandler.Throw(PhpError error, string formatString, params string[] args) => ((IErrorHandler)this).Throw(error, string.Format(formatString, args));
+
+        /// <summary>
+        /// Invoked when an error in PHP code occurs.
+        /// </summary>
+        public event EventHandler<ErrorEventArgs> OnError;
+    }
+
+    /// <summary>
+    /// <see cref="CustomErrorHandler.OnError"/> event arguments.
+    /// </summary>
+    public class ErrorEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Error category.
+        /// </summary>
+        public PhpError Error { get; set; }
+
+        /// <summary>
+        /// Error message.
+        /// </summary>
+        public string Message { get; set; }
+
+        // TODO: callstack
+    }
 }
