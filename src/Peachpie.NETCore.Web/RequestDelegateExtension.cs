@@ -12,9 +12,9 @@ namespace Peachpie.Web
         /// <summary>
         /// Installs request handler to compiled PHP scripts.
         /// </summary>
-        public static IApplicationBuilder UsePhp(this IApplicationBuilder builder)
+        public static IApplicationBuilder UsePhp(this IApplicationBuilder builder, PhpRequestOptions options = null)
         {
-            return builder.UseMiddleware<PhpHandlerMiddleware>();
+            return builder.UseMiddleware<PhpHandlerMiddleware>(options ?? new PhpRequestOptions());
         }
     }
 }

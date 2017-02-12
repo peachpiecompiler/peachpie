@@ -20,39 +20,6 @@ namespace Peachpie.Web
     [DebuggerDisplay("RequestContextCore({DebugRequestDisplay,nq})")]
     sealed class RequestContextCore : Context, IHttpPhpContext
     {
-        #region .cctor
-
-        static RequestContextCore()
-        {
-            LoadScriptReferences();
-        }
-
-        /// <summary>
-        /// Loads assemblies representing referenced scripts and reflects their symbols to be used by the runtime.
-        /// </summary>
-        static void LoadScriptReferences()
-        {
-            LoadScript(new System.Reflection.AssemblyName("website"));
-        }
-
-        static void LoadScript(System.Reflection.AssemblyName assname)
-        {
-            try
-            {
-                var ass = System.Reflection.Assembly.Load(assname);
-                if (ass != null)
-                {
-                    AddScriptReference(ass.GetType(ScriptInfo.ScriptTypeName));
-                }
-            }
-            catch
-            {
-            }
-
-        }
-
-        #endregion
-
         /// <summary>
         /// Debug display string.
         /// </summary>
