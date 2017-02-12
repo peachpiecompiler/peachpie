@@ -171,7 +171,8 @@ namespace Peachpie.Web
 
         public override IHttpPhpContext HttpPhpContext => this;
 
-        public override Encoding StringEncoding => Encoding.UTF8;
+        public override Encoding StringEncoding => _encoding;
+        readonly Encoding _encoding;
 
         /// <summary>
         /// Application physical root directory including trailing slash.
@@ -190,17 +191,19 @@ namespace Peachpie.Web
         /// </summary>
         Timer _requestTimer;
 
-        public RequestContextCore(HttpContext httpcontext, string rootPath)
+        public RequestContextCore(HttpContext httpcontext, string rootPath, Encoding encoding)
         {
             Debug.Assert(httpcontext != null);
             Debug.Assert(rootPath != null);
             Debug.Assert(rootPath == ScriptsMap.NormalizeSlashes(rootPath));
             Debug.Assert(rootPath.Length != 0 && rootPath[rootPath.Length - 1] != '/');
+            Debug.Assert(encoding != null);
 
             _httpctx = httpcontext;
             _rootPath = rootPath;
+            _encoding = encoding;
 
-            this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, StringEncoding));
+            this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On
