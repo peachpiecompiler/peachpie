@@ -3094,7 +3094,7 @@ namespace Pchp.Library
 
                 if (array == null)
                 {
-                    PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));// +2 (first arg is callback) 
+                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());// +2 (first arg is callback) 
                     return null;
                 }
 

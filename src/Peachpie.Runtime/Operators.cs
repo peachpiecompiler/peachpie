@@ -23,10 +23,10 @@ namespace Pchp.Core
         /// </summary>
         internal static PhpValue BitAnd(ref PhpValue x, ref PhpValue y)
         {
-            var bx = x.BytesOrNull();
+            var bx = x.ToBytesOrNull();
             if (bx != null)
             {
-                var by = y.BytesOrNull();
+                var by = y.ToBytesOrNull();
                 if (by != null)
                 {
                     throw new NotImplementedException();
@@ -42,10 +42,10 @@ namespace Pchp.Core
         /// </summary>
         internal static PhpValue BitOr(ref PhpValue x, ref PhpValue y)
         {
-            var bx = x.BytesOrNull();
+            var bx = x.ToBytesOrNull();
             if (bx != null)
             {
-                var by = y.BytesOrNull();
+                var by = y.ToBytesOrNull();
                 if (by != null)
                 {
                     throw new NotImplementedException();
@@ -61,10 +61,10 @@ namespace Pchp.Core
         /// </summary>
         internal static PhpValue BitXor(ref PhpValue x, ref PhpValue y)
         {
-            var bx = x.BytesOrNull();
+            var bx = x.ToBytesOrNull();
             if (bx != null)
             {
-                var by = y.BytesOrNull();
+                var by = y.ToBytesOrNull();
                 if (by != null)
                 {
                     return PhpValue.Create(new PhpString(BitXor(bx, by)));

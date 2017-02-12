@@ -255,25 +255,28 @@ namespace Pchp.Library
         /// <summary>
         /// Concatenates items of an array into a string separating them by a glue.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="pieces">The array to be impleded.</param>
         /// <returns>The glued string.</returns>
-        public static PhpString join(PhpArray pieces) => implode(pieces);
+        public static PhpString join(Context ctx, PhpArray pieces) => implode(ctx, pieces);
 
         /// <summary>
         /// Concatenates items of an array into a string separating them by a glue.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="pieces">The array to be impleded.</param>
         /// <param name="glue">The glue string.</param>
         /// <returns>The glued string.</returns>
         /// <exception cref="PhpException">Thrown if neither <paramref name="glue"/> nor <paramref name="pieces"/> is not null and of type <see cref="PhpArray"/>.</exception>
-        public static PhpString join(PhpValue glue, PhpValue pieces) => implode(glue, pieces);
+        public static PhpString join(Context ctx, PhpValue glue, PhpValue pieces) => implode(ctx, glue, pieces);
 
         /// <summary>
         /// Concatenates items of an array into a string.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="pieces">The <see cref="PhpArray"/> to be imploded.</param>
         /// <returns>The glued string.</returns>
-        public static PhpString implode(PhpArray pieces)
+        public static PhpString implode(Context ctx, PhpArray pieces)
         {
             if (pieces == null)
             {
@@ -282,36 +285,39 @@ namespace Pchp.Library
                 throw new ArgumentException();
             }
 
-            return ImplodeInternal(PhpValue.Void, pieces);
+            return ImplodeInternal(ctx, PhpValue.Void, pieces);
         }
 
         /// <summary>
         /// Concatenates items of an array into a string separating them by a glue.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="glue">The glue of type <see cref="string"/> or <see cref="PhpArray"/> to be imploded.</param>
         /// <param name="pieces">The <see cref="PhpArray"/> to be imploded or glue of type <see cref="string"/>.</param>
         /// <returns>The glued string.</returns>
         /// <exception cref="PhpException">Thrown if neither <paramref name="glue"/> nor <paramref name="pieces"/> is not null and of type <see cref="PhpArray"/>.</exception>
-        public static PhpString implode(PhpValue glue, PhpValue pieces)
+        public static PhpString implode(Context ctx, PhpValue glue, PhpValue pieces)
         {
             if (pieces != null && pieces.IsArray)
-                return ImplodeInternal(glue, pieces.AsArray());
+                return ImplodeInternal(ctx, glue, pieces.AsArray());
 
             if (glue.IsArray)
-                return ImplodeInternal(pieces, glue.AsArray());
+            {
+                return ImplodeInternal(ctx, pieces, glue.AsArray());
+            }
 
-            return ImplodeGenericEnumeration(glue, pieces);
+            return ImplodeGenericEnumeration(ctx, glue, pieces);
         }
 
-        private static PhpString ImplodeGenericEnumeration(PhpValue glue, PhpValue pieces)
+        private static PhpString ImplodeGenericEnumeration(Context ctx, PhpValue glue, PhpValue pieces)
         {
             IEnumerable enumerable;
 
             if (pieces.IsObject && (enumerable = pieces.Object as IEnumerable) != null)
-                return ImplodeInternal(glue, new PhpArray(enumerable));
+                return ImplodeInternal(ctx, glue, new PhpArray(enumerable));
 
             if (glue.IsObject && (enumerable = glue.Object as IEnumerable) != null)
-                return ImplodeInternal(pieces, new PhpArray(enumerable));
+                return ImplodeInternal(ctx, pieces, new PhpArray(enumerable));
 
             ////
             //PhpException.InvalidArgument("pieces");
@@ -322,73 +328,47 @@ namespace Pchp.Library
         /// <summary>
         /// Concatenates items of an array into a string separating them by a glue.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="glue">The glue string.</param>
         /// <param name="pieces">The enumeration to be imploded.</param>
         /// <returns>The glued string.</returns>           
         /// <remarks>
-        /// Items of <paramref name="pieces"/> are converted to strings in the manner of PHP 
-        /// (i.e. by <see cref="PHP.Core.Convert.ObjectToString"/>).
+        /// Items of <paramref name="pieces"/> are converted to strings in the manner of PHP.
+        /// Conversion to string is byte-safe, single-byte strings and unicode strings are maintained.
         /// </remarks>
         /// <exception cref="PhpException">Thrown if <paramref name="pieces"/> is null.</exception>
-        private static PhpString ImplodeInternal(PhpValue glue, PhpArray/*!*/pieces)
+        private static PhpString ImplodeInternal(Context ctx, PhpValue glue, PhpArray/*!*/pieces)
         {
             Debug.Assert(pieces != null);
 
             // handle empty pieces:
             if (pieces.Count == 0)
+            {
                 return PhpString.Empty;
-
-            // check whether we have to preserve a binary string
-            //bool binary = glue != null && glue.GetType() == typeof(PhpBytes);
-            //if (!binary)    // try to find any binary string within pieces:
-            //    using (var x = pieces.GetFastEnumerator())
-            //        while (x.MoveNext())
-            //            if (x.CurrentValue.IsBinaryString)
-            //            {
-            //                binary = true;
-            //                break;
-            //            }
-
-            // concatenate pieces and glue:
+            }
 
             bool not_first = false;                       // not the first iteration
 
-            //if (binary)
-            //{
-            //    Debug.Assert(pieces.Count > 0);
+            var glue_element = Streams.TextElement.FromValue(ctx, glue);    // convert it once
+            var result = new PhpString();
 
-            //    PhpBytes gluebytes = PHP.Core.Convert.ObjectToPhpBytes(glue);
-            //    PhpBytes[] piecesBytes = new PhpBytes[pieces.Count + pieces.Count - 1]; // buffer of PhpBytes to be concatenated
-            //    int p = 0;
-
-            //    using (var x = pieces.GetFastEnumerator())
-            //        while (x.MoveNext())
-            //        {
-            //            if (not_first) piecesBytes[p++] = gluebytes;
-            //            else not_first = true;
-
-            //            piecesBytes[p++] = PHP.Core.Convert.ObjectToPhpBytes(x.CurrentValue);
-            //        }
-
-            //    return PhpBytes.Concat(piecesBytes, 0, piecesBytes.Length);
-            //}
-            //else
-            {
-                string gluestr = glue.ToString();
-
-                var result = new PhpString(/*pieces.Count * 2*/);
-
-                using (var x = pieces.GetFastEnumerator())
-                    while (x.MoveNext())
+            using (var x = pieces.GetFastEnumerator())
+                while (x.MoveNext())
+                {
+                    if (not_first)
                     {
-                        if (not_first) result.Append(gluestr);
-                        else not_first = true;
-
-                        result.Append(x.CurrentValue.ToString());
+                        if (glue_element.IsText) result.Append(glue_element.GetText());
+                        else result.Append(glue_element.GetBytes());
+                    }
+                    else
+                    {
+                        not_first = true;
                     }
 
-                return result;
-            }
+                    result.Append(x.CurrentValue, ctx);
+                }
+
+            return result;
         }
 
         #endregion
@@ -4395,7 +4375,7 @@ namespace Pchp.Library
                 return -1;
             }
 
-            var str_needle = PhpVariable.StringOrNull(needle);
+            var str_needle = PhpVariable.ToStringOrNull(needle);
             if (str_needle != null)
             {
                 if (str_needle == String.Empty)
@@ -4428,7 +4408,7 @@ namespace Pchp.Library
                 //return -1;
             }
 
-            var str_needle = PhpVariable.StringOrNull(needle);
+            var str_needle = PhpVariable.ToStringOrNull(needle);
             if (offset < 0)
             {
                 end += offset + (str_needle != null ? str_needle.Length : 1);
@@ -4545,7 +4525,7 @@ namespace Pchp.Library
             if (haystack == null) return null;
 
             int index;
-            var str_needle = PhpVariable.StringOrNull(needle);
+            var str_needle = PhpVariable.ToStringOrNull(needle);
             if (str_needle != null)
             {
                 if (str_needle == String.Empty)
