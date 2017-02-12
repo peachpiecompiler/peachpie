@@ -203,6 +203,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 .SingleOrDefault();
         }
 
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
+
         public override NamedTypeSymbol BaseType
         {
             get

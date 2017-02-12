@@ -125,6 +125,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int Arity => 0;
 
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
+
         public override Symbol ContainingSymbol => _compilation.SourceModule;
 
         internal override IModuleSymbol ContainingModule => _compilation.SourceModule;

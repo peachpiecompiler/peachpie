@@ -639,6 +639,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string NamespaceName => _ns;
 
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
+
         internal PEModuleSymbol ContainingPEModule
         {
             get
