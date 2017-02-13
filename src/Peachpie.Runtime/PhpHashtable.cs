@@ -961,6 +961,11 @@ namespace Pchp.Core
             return Add(PhpValue.FromClr(value));
         }
 
+        public int Add(string value)
+        {
+            return Add(PhpValue.Create(value));
+        }
+
         public int Add(PhpValue value)
         {
             //if (MaxIntegerKey < int.MaxValue)

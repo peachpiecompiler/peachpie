@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Library.Streams;
@@ -165,289 +166,278 @@ namespace Pchp.Library
         #endregion
     }
 
-    ///// <summary>Functions working with DNS.</summary>
-	//public static class Dns
- //   {
- //       #region NS: dns_check_record, checkdnsrr
+    /// <summary>Functions working with DNS.</summary>
+	public static class PhpDns
+    {
+        //#region NS: dns_check_record, checkdnsrr
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("checkdnsrr", FunctionImplOptions.NotSupported)]
- //       public static int CheckRecordRows(string host)
- //       {
- //           return CheckRecords(host, "MX");
- //       }
+        //       /// <summary>
+        //       /// Not supported.
+        //       /// </summary>
+        //       [ImplementsFunction("checkdnsrr", FunctionImplOptions.NotSupported)]
+        //       public static int CheckRecordRows(string host)
+        //       {
+        //           return CheckRecords(host, "MX");
+        //       }
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("checkdnsrr", FunctionImplOptions.NotSupported)]
- //       public static int CheckRecordRows(string host, string type)
- //       {
- //           return CheckRecords(host, type);
- //       }
+        //       /// <summary>
+        //       /// Not supported.
+        //       /// </summary>
+        //       [ImplementsFunction("checkdnsrr", FunctionImplOptions.NotSupported)]
+        //       public static int CheckRecordRows(string host, string type)
+        //       {
+        //           return CheckRecords(host, type);
+        //       }
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("dns_check_record", FunctionImplOptions.NotSupported)]
- //       public static int CheckRecords(string host, string type)
- //       {
- //           PhpException.FunctionNotSupported();
- //           return 0;
- //       }
+        //       /// <summary>
+        //       /// Not supported.
+        //       /// </summary>
+        //       [ImplementsFunction("dns_check_record", FunctionImplOptions.NotSupported)]
+        //       public static int CheckRecords(string host, string type)
+        //       {
+        //           PhpException.FunctionNotSupported();
+        //           return 0;
+        //       }
 
 
- //       #endregion
+        //       #endregion
 
- //       #region NS: dns_get_record
+        //       #region NS: dns_get_record
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
- //       public static PhpArray GetRecord(string host)
- //       {
- //           return GetRecord(host, DnsRecordType.All);
- //       }
+        //       /// <summary>
+        //       /// Not supported.
+        //       /// </summary>
+        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
+        //       public static PhpArray GetRecord(string host)
+        //       {
+        //           return GetRecord(host, DnsRecordType.All);
+        //       }
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
- //       public static PhpArray GetRecord(string host, DnsRecordType type)
- //       {
- //           PhpException.FunctionNotSupported();
- //           return null;
- //       }
+        //       /// <summary>
+        //       /// Not supported.
+        //       /// </summary>
+        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
+        //       public static PhpArray GetRecord(string host, DnsRecordType type)
+        //       {
+        //           PhpException.FunctionNotSupported();
+        //           return null;
+        //       }
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
- //       public static PhpArray GetRecord(string host, DnsRecordType type, out PhpArray authNS, out PhpArray additional)
- //       {
- //           PhpException.FunctionNotSupported();
- //           authNS = null;
- //           additional = null;
- //           return null;
- //       }
+        //       /// <summary>
+        //       /// Not supported.
+        //       /// </summary>
+        //       [ImplementsFunction("dns_get_record", FunctionImplOptions.NotSupported)]
+        //       public static PhpArray GetRecord(string host, DnsRecordType type, out PhpArray authNS, out PhpArray additional)
+        //       {
+        //           PhpException.FunctionNotSupported();
+        //           authNS = null;
+        //           additional = null;
+        //           return null;
+        //       }
 
- //       #endregion
+        //       #endregion
 
- //       #region gethostbyaddr, gethostbyname, gethostbynamel
+        #region gethostbyaddr, gethostbyname, gethostbynamel
 
- //       /// <summary>
- //       /// Gets the Internet host name corresponding to a given IP address.
- //       /// </summary>
- //       /// <param name="ipAddress">The IP address.</param>
- //       /// <returns>The host name or unmodified <paramref name="ipAddress"/> on failure.</returns>
- //       [ImplementsFunction("gethostbyaddr")]
- //       public static string GetHostByAddress(string ipAddress)
- //       {
- //           try
- //           {
- //               return System.Net.Dns.GetHostEntry(ipAddress).HostName;
- //           }
- //           catch (System.Exception)
- //           {
- //               return ipAddress;
- //           }
- //       }
+        /// <summary>
+        /// Gets the Internet host name corresponding to a given IP address.
+        /// </summary>
+        /// <param name="ipAddress">The IP address.</param>
+        /// <returns>The host name or unmodified <paramref name="ipAddress"/> on failure.</returns>
+        public static string gethostbyaddr(string ipAddress)
+        {
+            try
+            {
+                return Dns.GetHostEntryAsync(ipAddress).Result.HostName;
+            }
+            catch (System.Exception)
+            {
+                return ipAddress;
+            }
+        }
 
- //       /// <summary>
- //       /// Gets the IP address corresponding to a given Internet host name.
- //       /// </summary>
- //       /// <param name="hostName">The host name.</param>
- //       /// <returns>The IP address or unmodified <paramref name="hostName"/> on failure.</returns>
- //       [ImplementsFunction("gethostbyname")]
- //       public static string GetHostByName(string hostName)
- //       {
- //           try
- //           {
- //               IPAddress[] addresses = System.Net.Dns.GetHostEntry(hostName).AddressList;
- //               return (addresses.Length > 0) ? addresses[0].ToString() : hostName;
- //           }
- //           catch (System.Exception)
- //           {
- //               return hostName;
- //           }
- //       }
+        /// <summary>
+        /// Gets the IP address corresponding to a given Internet host name.
+        /// </summary>
+        /// <param name="hostName">The host name.</param>
+        /// <returns>The IP address or unmodified <paramref name="hostName"/> on failure.</returns>
+        public static string gethostbyname(string hostName)
+        {
+            try
+            {
+                IPAddress[] addresses = Dns.GetHostEntryAsync(hostName).Result.AddressList;
+                return (addresses.Length > 0) ? addresses[0].ToString() : hostName;
+            }
+            catch (System.Exception)
+            {
+                return hostName;
+            }
+        }
 
- //       /// <summary>
- //       /// Gets a list of IP addresses corresponding to a given Internet host name.
- //       /// </summary>
- //       /// <param name="hostName">The host name.</param>
- //       /// <returns>The list of IP addresses to which the Internet host specified by <paramref name="hostName"/> resolves.
- //       /// </returns>
- //       [ImplementsFunction("gethostbynamel")]
- //       public static PhpArray GetHostByNameList(string hostName)
- //       {
- //           try
- //           {
- //               IPAddress[] addresses = System.Net.Dns.GetHostEntry(hostName).AddressList;
- //               PhpArray result = new PhpArray(addresses.Length, 0);
+        /// <summary>
+        /// Gets a list of IP addresses corresponding to a given Internet host name.
+        /// </summary>
+        /// <param name="hostName">The host name.</param>
+        /// <returns>The list of IP addresses to which the Internet host specified by <paramref name="hostName"/> resolves.
+        /// </returns>
+        [return: CastToFalse]
+        public static PhpArray gethostbynamel(string hostName)
+        {
+            try
+            {
 
- //               foreach (IPAddress address in addresses)
- //                   result.Add(address.ToString());
+                IPAddress[] addresses = Dns.GetHostEntryAsync(hostName).Result.AddressList;
+                var result = new PhpArray(addresses.Length);
 
- //               return result;
- //           }
- //           catch (System.Exception)
- //           {
- //               return null;
- //           }
- //       }
+                foreach (IPAddress address in addresses)
+                {
+                    result.Add(address.ToString());
+                }
 
- //       #endregion
+                return result;
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
+        }
 
- //       #region NS: getmxrr, dns_get_mx
+        #endregion
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("getmxrr")]
- //       public static bool GetMxRecordRow(string hostName, PhpArray mxHosts)
- //       {
- //           return GetMxRecord(hostName, mxHosts); ;
- //       }
+        #region getmxrr, dns_get_mx
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("getmxrr")]
- //       public static bool GetMxRecordRow(string hostName, PhpArray mxHosts, PhpArray weight)
- //       {
- //           return GetMxRecord(hostName, mxHosts, weight);
- //       }
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        public static bool getmxrr(string hostName, PhpArray mxHosts, PhpArray weight = null)
+        {
+            return dns_get_mx(hostName, mxHosts, weight);
+        }
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("dns_get_mx", FunctionImplOptions.NotSupported)]
- //       public static bool GetMxRecord(string hostName, PhpArray mxHosts)
- //       {
- //           PhpException.FunctionNotSupported();
- //           return false;
- //       }
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        public static bool dns_get_mx(string hostName, PhpArray mxHosts, PhpArray weight = null)
+        {
+            PhpException.FunctionNotSupported("dns_get_mx");
+            return false;
+        }
 
- //       /// <summary>
- //       /// Not supported.
- //       /// </summary>
- //       [ImplementsFunction("dns_get_mx", FunctionImplOptions.NotSupported)]
- //       public static bool GetMxRecord(string hostName, PhpArray mxHosts, PhpArray weight)
- //       {
- //           PhpException.FunctionNotSupported();
- //           return false;
- //       }
+        #endregion
 
- //       #endregion
+        #region getprotobyname, getprotobynumber, getservbyname, getservbyport
 
- //       #region getprotobyname, getprotobynumber, getservbyname, getservbyport, ip2long, long2ip
+        ///// <summary>
+        ///// Returns protocol number associated with a given protocol name.
+        ///// </summary>
+        ///// <param name="name">The protocol name.</param>
+        ///// <returns>The protocol number or <c>-1</c> if <paramref name="name"/> is not found.</returns>
+        //[return: CastToFalse]
+        //public static int getprotobyname(string name)
+        //{
+        //    if (string.IsNullOrEmpty(name)) return -1;
 
- //       /// <summary>
- //       /// Returns protocol number associated with a given protocol name.
- //       /// </summary>
- //       /// <param name="name">The protocol name.</param>
- //       /// <returns>The protocol number or <c>-1</c> if <paramref name="name"/> is not found.</returns>
- //       [ImplementsFunction("getprotobyname")]
- //       [return: CastToFalse]
- //       public static int GetProtocolByName(string name)
- //       {
- //           if (string.IsNullOrEmpty(name)) return -1;
+        //    NetworkUtils.ProtoEnt ent = NetworkUtils.GetProtocolByName(name);
+        //    if (ent == null) return -1;
+        //    return ent.p_proto;
+        //}
 
- //           NetworkUtils.ProtoEnt ent = NetworkUtils.GetProtocolByName(name);
- //           if (ent == null) return -1;
- //           return ent.p_proto;
- //       }
+        ///// <summary>
+        ///// Returns protocol name associated with a given protocol number.
+        ///// </summary>
+        ///// <param name="number">The protocol number.</param>
+        ///// <returns>The protocol name or <B>null</B> if <paramref name="number"/> is not found.</returns>
+        //[ImplementsFunction("getprotobynumber")]
+        //[return: CastToFalse]
+        //public static string GetProtocolByNumber(int number)
+        //{
+        //    NetworkUtils.ProtoEnt ent = NetworkUtils.GetProtocolByNumber(number);
+        //    if (ent == null) return null;
+        //    return ent.p_name;
+        //}
 
- //       /// <summary>
- //       /// Returns protocol name associated with a given protocol number.
- //       /// </summary>
- //       /// <param name="number">The protocol number.</param>
- //       /// <returns>The protocol name or <B>null</B> if <paramref name="number"/> is not found.</returns>
- //       [ImplementsFunction("getprotobynumber")]
- //       [return: CastToFalse]
- //       public static string GetProtocolByNumber(int number)
- //       {
- //           NetworkUtils.ProtoEnt ent = NetworkUtils.GetProtocolByNumber(number);
- //           if (ent == null) return null;
- //           return ent.p_name;
- //       }
+        ///// <summary>
+        ///// Returns port number associated with a given Internet service and protocol.
+        ///// </summary>
+        ///// <param name="service">The service.</param>
+        ///// <param name="protocol">The protocol.</param>
+        ///// <returns>The port number or <c>-1</c> if not found.</returns>
+        //[ImplementsFunction("getservbyname")]
+        //[return: CastToFalse]
+        //public static int GetServiceByName(string service, string protocol)
+        //{
+        //    if (service == null) return -1;
 
- //       /// <summary>
- //       /// Returns port number associated with a given Internet service and protocol.
- //       /// </summary>
- //       /// <param name="service">The service.</param>
- //       /// <param name="protocol">The protocol.</param>
- //       /// <returns>The port number or <c>-1</c> if not found.</returns>
- //       [ImplementsFunction("getservbyname")]
- //       [return: CastToFalse]
- //       public static int GetServiceByName(string service, string protocol)
- //       {
- //           if (service == null) return -1;
+        //    NetworkUtils.ServEnt ent = NetworkUtils.GetServiceByName(service, protocol);
+        //    if (ent == null) return -1;
+        //    return IPAddress.NetworkToHostOrder(ent.s_port);
+        //}
 
- //           NetworkUtils.ServEnt ent = NetworkUtils.GetServiceByName(service, protocol);
- //           if (ent == null) return -1;
- //           return IPAddress.NetworkToHostOrder(ent.s_port);
- //       }
+        ///// <summary>
+        ///// Returns an Internet service that corresponds to a given port and protocol.
+        ///// </summary>
+        ///// <param name="port">The port.</param>
+        ///// <param name="protocol">The protocol.</param>
+        ///// <returns>The service name or <B>null</B> if not found.</returns>
+        //[ImplementsFunction("getservbyport")]
+        //[return: CastToFalse]
+        //public static string GetServiceByPort(int port, string protocol)
+        //{
+        //    NetworkUtils.ServEnt ent = NetworkUtils.GetServiceByPort(IPAddress.HostToNetworkOrder(port), protocol);
+        //    if (ent == null) return null;
+        //    return ent.s_proto;
+        //}
 
- //       /// <summary>
- //       /// Returns an Internet service that corresponds to a given port and protocol.
- //       /// </summary>
- //       /// <param name="port">The port.</param>
- //       /// <param name="protocol">The protocol.</param>
- //       /// <returns>The service name or <B>null</B> if not found.</returns>
- //       [ImplementsFunction("getservbyport")]
- //       [return: CastToFalse]
- //       public static string GetServiceByPort(int port, string protocol)
- //       {
- //           NetworkUtils.ServEnt ent = NetworkUtils.GetServiceByPort(IPAddress.HostToNetworkOrder(port), protocol);
- //           if (ent == null) return null;
- //           return ent.s_proto;
- //       }
+        #endregion
 
- //       /// <summary>
- //       /// Converts a string containing an (IPv4) Internet Protocol dotted address into a proper address.
- //       /// </summary>
- //       /// <param name="ipAddress">The string representation of the address.</param>
- //       /// <returns>The integer representation of the address.</returns>
- //       [ImplementsFunction("ip2long")]
- //       [return: CastToFalse]
- //       public static int IPToInteger(string ipAddress)
- //       {
- //           if (string.IsNullOrEmpty(ipAddress)) return -1;
- //           IPAddress addr;
- //           try
- //           {
- //               addr = IPAddress.Parse(ipAddress);
- //           }
- //           catch (FormatException)
- //           {
- //               return -1;
- //           }
+        #region ip2long, long2ip
 
- //           if (addr.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork) return -1;
- //           return IPAddress.NetworkToHostOrder(BitConverter.ToInt32(addr.GetAddressBytes(), 0));
- //       }
+        /// <summary>
+        /// Converts a string containing an (IPv4) Internet Protocol dotted address into a proper address.
+        /// </summary>
+        /// <param name="ipAddress">The string representation of the address.</param>
+        /// <returns>The integer representation of the address.</returns>
+        [return: CastToFalse]
+        public static int ip2long(string ipAddress)
+        {
+            if (string.IsNullOrEmpty(ipAddress))
+            {
+                return -1;
+            }
 
- //       /// <summary>
- //       /// Converts an (IPv4) Internet network address into a string in Internet standard dotted format.
- //       /// </summary>
- //       /// <param name="properAddress">The integer representation of the address.</param>
- //       /// <returns>The string representation of the address.</returns>
- //       [ImplementsFunction("long2ip")]
- //       public static string IntegerToIP(int properAddress)
- //       {
- //           IPAddress addr;
- //           unchecked
- //           {
- //               addr = new IPAddress((long)(uint)IPAddress.HostToNetworkOrder(properAddress));
- //           }
- //           return addr.ToString();
- //       }
+            IPAddress addr;
+            try
+            {
+                addr = IPAddress.Parse(ipAddress);
+            }
+            catch (FormatException)
+            {
+                return -1;
+            }
 
- //       #endregion
- //   }
+            if (addr.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                return -1;
+            }
+
+            return IPAddress.NetworkToHostOrder(BitConverter.ToInt32(addr.GetAddressBytes(), 0));
+        }
+
+        /// <summary>
+        /// Converts an (IPv4) Internet network address into a string in Internet standard dotted format.
+        /// </summary>
+        /// <param name="properAddress">The integer representation of the address.</param>
+        /// <returns>The string representation of the address.</returns>
+        public static string long2ip(int properAddress)
+        {
+            IPAddress addr;
+            unchecked
+            {
+                addr = new IPAddress((long)(uint)IPAddress.HostToNetworkOrder(properAddress));
+            }
+            return addr.ToString();
+        }
+
+        #endregion
+    }
 }
