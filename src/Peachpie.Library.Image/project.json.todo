@@ -1,0 +1,33 @@
+{
+  "version": "0.5.0-*",
+
+  "packOptions": {
+    "tags": [
+      "peachpie",
+      "library",
+	  "image"
+    ],
+    "summary": "Peachpie library containing image functions.",
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+
+  "buildOptions": {
+    "xmlDoc": true,
+    "keyFile": "../../build/StrongKeys/core.snk",
+    "nowarn": [ "1591", "1574" ]
+  },
+
+  "dependencies": {
+    "Peachpie.Runtime": "*"
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "dependencies": { "NETStandard.Library": "1.6.1" }
+    },
+    ".NETFramework,Version=v4.6": {
+      "dependencies": { "NETStandard.Library": "1.6.1" }
+    }
+  }
+}
