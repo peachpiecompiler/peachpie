@@ -367,7 +367,199 @@ namespace Pchp.Library
 
             return new PhpString(result);
         }
-        
+
+        #endregion
+
+        #region count_chars
+
+        /// <summary>
+        /// Creates a histogram of Unicode character occurence in the given string.
+        /// </summary>
+        /// <param name="str">The string to be processed.</param>
+        /// <returns>The array of characters frequency (unsorted).</returns>
+        static PhpArray CountChars(string str)
+        {
+            PhpValue value;
+
+            var count = new PhpArray();
+            for (int i = str.Length - 1; i >= 0; i--)
+            {
+                int j = (int)str[i];
+                count[j] = (PhpValue)((count.TryGetValue(j, out value) ? value.Long : 0L) + 1);
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Creates a histogram of byte occurence in the given array of bytes.
+        /// </summary>
+        /// <param name="bytes">The array of bytes to be processed.</param>
+        /// <returns>The array of bytes frequency.</returns>
+        static int[] CountBytes(byte[] bytes)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+
+            int[] count = new int[256];
+
+            for (int i = bytes.Length - 1; i >= 0; i--)
+                count[bytes[i]]++;
+
+            return count;
+        }
+
+        /// <summary>
+        /// Creates a histogram of byte occurrence in specified string of bytes.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="bytes">Bytes to be processed.</param>
+        /// <returns>The array of characters frequency.</returns>
+        public static PhpArray count_chars(Context ctx, PhpString bytes)
+        {
+            if (bytes == null || bytes.IsEmpty)
+            {
+                return PhpArray.NewEmpty();
+            }
+
+            if (bytes.ContainsBinaryData)
+            {
+                return new PhpArray(CountBytes(bytes.ToBytes(ctx)), 0, 256);
+            }
+            else
+            {
+                return CountChars(bytes.ToString(ctx));
+            }
+        }
+
+        /// <summary>
+        /// Creates a histogram of character occurence in a string or string of bytes.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="data">The string or bytes to be processed.</param>
+        /// <param name="mode">Determines the type of result.</param>
+        /// <returns>Depending on <paramref name="mode"/> the following is returned:
+        /// <list type="bullet">
+        /// <item><term>0</term><description>an array with the character ordinals as key and their frequency as value,</description></item> 
+        /// <item><term>1</term><description>same as 0 but only characters with a frequency greater than zero are listed,</description></item>
+        /// <item><term>2</term><description>same as 0 but only characters with a frequency equal to zero are listed,</description></item> 
+        /// <item><term>3</term><description>a string containing all used characters is returned,</description></item> 
+        /// <item><term>4</term><description>a string containing all not used characters is returned.</description></item>
+        /// </list>
+        /// </returns>
+        /// <exception cref="PhpException">The <paramref name="mode"/> is invalid.</exception>
+        /// <exception cref="PhpException">The <paramref name="data"/> contains Unicode characters greater than '\u0800'.</exception>
+        public static PhpValue count_chars(Context ctx, PhpString data, int mode)
+        {
+            try
+            {
+                switch (mode)
+                {
+                    case 0: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256);
+                    case 1: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256, 0, true);
+                    case 2: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256, 0, false);
+                    case 3: return PhpValue.Create(new PhpString(GetBytesContained(data.ToBytes(ctx), 0, 255)));
+                    case 4: return PhpValue.Create(new PhpString(GetBytesNotContained(data.ToBytes(ctx), 0, 255)));
+                    default:
+                        PhpException.InvalidArgument(nameof(mode));
+                        return PhpValue.Null;
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                // thrown by char map:
+                PhpException.Throw(PhpError.Warning, LibResources.too_big_unicode_character);
+                return PhpValue.Null;
+            }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="String"/> containing all characters used in the specified <see cref="String"/>.
+        /// </summary>
+        /// <param name="str">The string to process.</param>
+        /// <param name="lower">The lower limit for returned chars.</param>
+        /// <param name="upper">The upper limit for returned chars.</param>
+        /// <returns>
+        /// The string containing characters used in <paramref name="str"/> which are sorted according to their ordinal values.
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"><paramref name="str"/> contains characters greater than '\u0800'.</exception>
+        static string GetCharactersContained(string str, char lower, char upper)
+        {
+            CharMap charmap = InitializeCharMap();
+
+            charmap.Add(str);
+            return charmap.ToString(lower, upper, false);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="String"/> containing all characters used in the specified <see cref="String"/>.
+        /// </summary>
+        /// <param name="str">The string to process.</param>
+        /// <param name="lower">The lower limit for returned chars.</param>
+        /// <param name="upper">The upper limit for returned chars.</param>
+        /// <returns>
+        /// The string containing characters used in <paramref name="str"/> which are sorted according to their ordinal values.
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"><paramref name="str"/> contains characters greater than '\u0800'.</exception>
+        static string GetCharactersNotContained(string str, char lower, char upper)
+        {
+            CharMap charmap = InitializeCharMap();
+
+            charmap.Add(str);
+            return charmap.ToString(lower, upper, true);
+        }
+
+        static BitArray CreateByteMap(byte[]/*!*/ bytes, out int count)
+        {
+            BitArray map = new BitArray(256);
+            map.Length = 256;
+
+            count = 0;
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                if (!map[bytes[i]])
+                {
+                    map[bytes[i]] = true;
+                    count++;
+                }
+            }
+            return map;
+        }
+
+        static byte[] GetBytesContained(byte[] bytes, byte lower, byte upper)
+        {
+            if (bytes == null) bytes = Array.Empty<byte>();
+
+            int count;
+            BitArray map = CreateByteMap(bytes, out count);
+
+            var result = new byte[count];
+            var j = 0;
+            for (int i = lower; i <= upper; i++)
+            {
+                if (map[i]) result[j++] = (byte)i;
+            }
+
+            return result;
+        }
+
+        static byte[] GetBytesNotContained(byte[] bytes, byte lower, byte upper)
+        {
+            if (bytes == null) bytes = Array.Empty<byte>();
+
+            int count;
+            BitArray map = CreateByteMap(bytes, out count);
+
+            byte[] result = new byte[map.Length - count];
+            int j = 0;
+            for (int i = lower; i <= upper; i++)
+            {
+                if (!map[i]) result[j++] = (byte)i;
+            }
+
+            return result;
+        }
+
         #endregion
 
         #region strrev, strspn, strcspn

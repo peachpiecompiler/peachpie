@@ -189,7 +189,7 @@ namespace Pchp.Core
             if (end > max) end = max;
 
             for (int i = index; i < end; i++)
-                Add(i, values.GetValue(i));
+                Add(i, PhpValue.FromClr(values.GetValue(i)));
         }
 
         /// <summary>
