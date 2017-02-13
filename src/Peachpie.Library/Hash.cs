@@ -1604,6 +1604,23 @@ namespace Pchp.Library
 
         #endregion
 
+        #region crc32, md5, md5_file, sha1, sha1_file, sha256, sha256_file
+
+        /// <summary>
+        /// Calculates the crc32 polynomial of a string of bytes.
+        /// </summary>
+        /// <param name="bytes">The string of bytes to compute crc32 of.</param>
+        /// <returns>The CRC32 of <paramref name="bytes"/>.</returns>
+        /// <remarks>
+        /// Generates the cyclic redundancy checksum polynomial of 32-bit lengths of the str. This is usually used to validate the integrity of data being transmitted.
+        /// On 64bit installations all crc32() results will be positive integers.
+        /// </remarks>
+        public static long crc32(byte[] bytes)
+        {
+            var crc_algo = new HashPhpResource.CRC32();
+            return (long)BitConverter.ToUInt32(crc_algo.ComputeHash(bytes), 0);
+        }
+
         /// <summary>
         /// Calculate the md5 hash of a string.
         /// </summary>
@@ -1616,6 +1633,19 @@ namespace Pchp.Library
             return raw_output
                 ? new PhpString(bytes)
                 : new PhpString(StringUtils.BinToHex(bytes, string.Empty));
+        }
+
+        /// <summary>
+        /// Calculates the md5 hash of a given file.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>MD5 of given <paramref name="fileName"/> content.</returns>
+        public static PhpString md5_file(Context ctx, string fileName, bool rawOutput = false)
+        {
+            return HashFromFile(ctx, MD5.Create(), fileName, rawOutput);
         }
 
         /// <summary>
@@ -1641,6 +1671,45 @@ namespace Pchp.Library
         public static PhpString sha1(Context ctx, PhpString bytes, bool rawOutput = false)
         {
             return HashBytes(ctx, SHA1.Create(), bytes, rawOutput);
+        }
+
+        /// <summary>
+        /// Calculates the SHA1 hash of a given file.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>SHA1 of <paramref name="fileName"/> content.</returns>
+        public static PhpString sha1_file(Context ctx, string fileName, bool rawOutput = false)
+        {
+            return HashFromFile(ctx, SHA1.Create(), fileName, rawOutput);
+        }
+
+        /// <summary>
+        /// Calculate the SHA256 hash of a string of bytes.
+        /// </summary>
+        /// <param name="ctx">Runtime context used for unicode conversions.</param>
+        /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>md5 of <paramref name="bytes"/>.</returns>
+        public static PhpString sha256(Context ctx, PhpString bytes, bool rawOutput = false)
+        {
+            return HashBytes(ctx, SHA256.Create(), bytes, rawOutput);
+        }
+
+        /// <summary>
+        /// Calculates the SHA256 hash of a given file.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="fileName">The file name.</param>
+        /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
+        /// a sequence of hexadecimal numbers.</param>
+        /// <returns>SHA1 of <paramref name="fileName"/> content.</returns>
+        public static PhpString sha256_file(Context ctx, string fileName, bool rawOutput = false)
+        {
+            return HashFromFile(ctx, SHA256.Create(), fileName, rawOutput);
         }
 
         /// <summary>
@@ -1696,6 +1765,8 @@ namespace Pchp.Library
                 ? new PhpString(hash)
                 : new PhpString(StringUtils.BinToHex(hash));
         }
+
+        #endregion
 
         #region hash_algos
 
