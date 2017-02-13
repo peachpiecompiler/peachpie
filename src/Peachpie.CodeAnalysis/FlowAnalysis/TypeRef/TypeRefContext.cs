@@ -235,6 +235,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             for (int i = 0; mask != 0; i++, mask = (mask & ~(ulong)1) >> 1)
                 if ((mask & 1) != 0)
                 {
+                    Debug.Assert(i < _typeRefs.Count);
                     result.Add(_typeRefs[i]);
                 }
 
@@ -707,7 +708,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets value indicating the type represents <c>NULL</c>.
         /// </summary>
-        public bool IsNull(TypeRefMask mask) { return (mask.Mask & _isNullMask) != 0; }
+        public bool IsNull(TypeRefMask mask) { return (mask.Mask & _isNullMask) != 0 && !mask.IsAnyType; }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a string type (readonly or writable).
@@ -809,6 +810,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (IsNull(mask))
             {
+                Debug.Assert(!mask.IsAnyType);
                 mask = mask & ~_isNullMask;
             }
 
