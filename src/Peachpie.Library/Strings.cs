@@ -3477,6 +3477,392 @@ namespace Pchp.Library
 
         #endregion
 
+        #region sscanf
+
+        /// <summary>
+        /// Parses input from a string according to a format. 
+        /// </summary>
+        /// <param name="str">The string to be parsed.</param>
+        /// <param name="format">The format. See <c>sscanf</c> C function for details.</param>
+        /// <param name="arg">A PHP reference which value is set to the first parsed value.</param>
+        /// <param name="arguments">PHP references which values are set to the next parsed values.</param>
+        /// <returns>The number of parsed values.</returns>
+        /// <remarks><seealso cref="ParseString"/>.</remarks>
+        public static int sscanf(string str, string format, PhpAlias arg, params PhpAlias[] arguments)
+        {
+            if (arg == null)
+                throw new ArgumentNullException("arg");
+            if (arguments == null)
+                throw new ArgumentNullException("arguments");
+
+            // assumes capacity same as the number of arguments:
+            var result = new List<PhpValue>(arguments.Length + 1);
+
+            // parses string and fills the result with parsed values:
+            ParseString(str, format, result);
+
+            // the number of specifiers differs from the number of arguments:
+            if (result.Count != arguments.Length + 1)
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.GetString("different_variables_and_specifiers", arguments.Length + 1, result.Count));
+                return -1;
+            }
+
+            // the number of non-null parsed values:
+            int count = 0;
+
+            if (result[0] != null)
+            {
+                arg.Value = result[0];
+                count = 1;
+            }
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                if (arguments[i] != null && result[i + 1] != null)
+                {
+                    arguments[i].Value = result[i + 1];
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Parses input from a string according to a format. 
+        /// </summary>
+        /// <param name="str">The string to be parsed.</param>
+        /// <param name="format">The format. See <c>sscanf</c> C function for details.</param>
+        /// <returns>A new instance of <see cref="PhpArray"/> containing parsed values indexed by integers starting from 0.</returns>
+        /// <remarks><seealso cref="ParseString"/>.</remarks>
+        public static PhpArray sscanf(string str, string format)
+        {
+            return (PhpArray)ParseString(str, format, new PhpArray());
+        }
+
+        /// <summary>
+        /// Parses a string according to a specified format.
+        /// </summary>
+        /// <param name="str">The string to be parsed.</param>
+        /// <param name="format">The format. See <c>sscanf</c> C function for details.</param>
+        /// <param name="result">A list which to fill with results.</param>
+        /// <returns><paramref name="result"/> for convenience.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="result"/> is a <B>null</B> reference.</exception>
+        /// <exception cref="PhpException">Invalid formatting specifier.</exception>
+        public static IList<PhpValue> ParseString(string str, string format, IList<PhpValue> result)
+        {
+            if (result == null)
+                throw new ArgumentNullException(nameof(result));
+
+            if (str == null || format == null)
+            {
+                return result;
+            }
+
+            int s = 0, f = 0;
+
+            while (f < format.Length)
+            {
+                char c = format[f++];
+
+                if (c == '%')
+                {
+                    if (f == format.Length) break;
+
+                    int width;   // max. parsed characters
+                    bool store;  // whether to store parsed item to the result
+
+                    // checks for asterisk which means matching value is not stored:
+                    if (format[f] == '*')
+                    {
+                        f++;
+                        if (f == format.Length) break;
+                        store = false;
+                    }
+                    else
+                    {
+                        store = true;
+                    }
+
+                    // parses width (a sequence of digits without sign):
+                    if (format[f] >= '0' && format[f] <= '9')
+                    {
+                        width = (int)Core.Convert.SubstringToLongStrict(format, -1, 10, Int32.MaxValue, ref f);
+                        if (width == 0) width = Int32.MaxValue;
+
+                        // format string ends with "%number"
+                        if (f == format.Length)
+                        {
+                            PhpException.Throw(PhpError.Warning, LibResources.invalid_scan_conversion_character, "null");
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        width = Int32.MaxValue;
+                    }
+
+                    // adds null if string parsing has been finished:
+                    if (s == str.Length)
+                    {
+                        if (store)
+                        {
+                            if (format[f] == 'n') result.Add(PhpValue.Create(s));
+                            else if (format[f] != '%') result.Add(PhpValue.Null);
+                        }
+                        continue;
+                    }
+
+                    // parses the string according to the format specifier:
+                    var item = ParseSubstring(format[f], width, str, ref s);
+
+                    // unknown specifier:
+                    if (item.IsNull)
+                    {
+                        if (format[f] == '%')
+                        {
+                            // stops string parsing if characters don't match:
+                            if (str[s++] != '%') s = str.Length;
+                        }
+                        else if (format[f] == '[')
+                        {
+                            bool complement;
+                            CharMap charmap = ParseRangeSpecifier(format, ref f, out complement);
+                            if (charmap != null)
+                            {
+                                int start = s;
+
+                                // skip characters contained in the specifier:
+                                if (complement)
+                                {
+                                    while (s < str.Length && !charmap.Contains(str[s])) s++;
+                                }
+                                else
+                                {
+                                    while (s < str.Length && charmap.Contains(str[s])) s++;
+                                }
+
+                                item = (PhpValue)str.Substring(start, s - start);
+                            }
+                            else
+                            {
+                                PhpException.Throw(PhpError.Warning, LibResources.unmathed_format_bracket);
+                                return null;
+                            }
+                        }
+                        else
+                        {
+                            PhpException.Throw(PhpError.Warning, LibResources.invalid_scan_conversion_character, c.ToString());
+                            return null;
+                        }
+                    }
+
+                    // stores the parsed value:
+                    if (store && item != null)
+                        result.Add(item);
+
+                    // shift:
+                    f++;
+                }
+                else if (Char.IsWhiteSpace(c))
+                {
+                    // skips additional white space in the format:
+                    while (f < format.Length && Char.IsWhiteSpace(format[f])) f++;
+
+                    // skips white space in the string:
+                    while (s < str.Length && Char.IsWhiteSpace(str[s])) s++;
+                }
+                else if (s < str.Length && c != str[s++])
+                {
+                    // stops string parsing if characters don't match:
+                    s = str.Length;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Extracts a range specifier from the formatting string.
+        /// </summary>
+        /// <param name="format">The formatting string.</param>
+        /// <param name="f">The position if the string pointing to the '[' at the beginning and to ']' at the end.</param>
+        /// <param name="complement">Whether '^' was stated as the first character in the specifier.</param>
+        /// <returns>
+        /// <see cref="CharMap"/> containing the characters belonging to the range or a <B>null</B> reference on error.
+        /// </returns>
+        /// <remarks>
+        /// Specifier should be enclosed to brackets '[', ']' and can contain complement character '^' at the beginning.
+        /// The first character after '[' or '^' can be ']'. In such a case the specifier continues to the next ']'.
+        /// </remarks>
+        private static CharMap ParseRangeSpecifier(string format, ref int f, out bool complement)
+        {
+            Debug.Assert(format != null && f > 0 && f < format.Length && format[f] == '[');
+
+            complement = false;
+
+            f++;
+            if (f < format.Length)
+            {
+                if (format[f] == '^')
+                {
+                    complement = true;
+                    f++;
+                }
+
+                if (f + 1 < format.Length)
+                {
+                    // search for ending bracket (the first symbol can be the bracket so skip it):
+                    int end = format.IndexOf(']', f + 1);
+                    if (end >= 0)
+                    {
+                        CharMap result = InitializeCharMap();
+                        result.AddUsingRegularMask(format, f, end, '-');
+                        f = end;
+                        return result;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Parses a string according to a given specifier.
+        /// </summary>
+        /// <param name="specifier">The specifier.</param>
+        /// <param name="width">A width of the maximal parsed substring.</param>
+        /// <param name="str">The string to be parsed.</param>
+        /// <param name="s">A current position in the string.</param>
+        /// <returns>The parsed value or a <B>null</B> reference on error.</returns>
+        static PhpValue ParseSubstring(char specifier, int width, string str, ref int s)
+        {
+            Debug.Assert(width >= 0 && str != null && s < str.Length);
+
+            PhpValue result;
+            int limit = (width < str.Length - s) ? s + width : str.Length;
+
+            switch (specifier)
+            {
+                case 'S':  // string
+                case 's':
+                    {
+                        // skips initial white spaces:
+                        while (s < limit && Char.IsWhiteSpace(str[s])) s++;
+
+                        int i = s;
+
+                        // skips black spaces:
+                        while (i < limit && !Char.IsWhiteSpace(str[i])) i++;
+
+                        // if s = length then i = s and substring returns an empty string:
+                        result = (PhpValue)str.Substring(s, i - s);
+
+                        // moves behind the substring:
+                        s = i;
+
+                    }
+                    break;
+
+                case 'C': // character
+                case 'c':
+                    {
+                        result = (PhpValue)str[s++].ToString();
+                        break;
+                    }
+
+                case 'X': // hexadecimal integer: [0-9A-Fa-f]*
+                case 'x':
+                    result = (PhpValue)Core.Convert.SubstringToLongStrict(str, width, 16, Int32.MaxValue, ref s);
+                    break;
+
+                case 'o': // octal integer: [0-7]*
+                    result = (PhpValue)Core.Convert.SubstringToLongStrict(str, width, 8, Int32.MaxValue, ref s);
+                    break;
+
+                case 'd': // decimal integer: [+-]?[0-9]*
+                    result = (PhpValue)Core.Convert.SubstringToLongStrict(str, width, 10, Int32.MaxValue, ref s);
+                    break;
+
+                case 'u': // unsigned decimal integer [+-]?[1-9][0-9]*
+                    result = (PhpValue)unchecked((uint)Core.Convert.SubstringToLongStrict(str, width, 10, Int32.MaxValue, ref s));
+                    break;
+
+                case 'i': // decimal (no prefix), hexadecimal (0[xX]...), or octal (0...) integer 
+                    {
+                        // sign:
+                        int sign = 0;
+                        if (str[s] == '-') { sign = -1; s++; }
+                        else
+                            if (str[s] == '+') { sign = +1; s++; }
+
+                        // string ends 
+                        if (s == limit)
+                        {
+                            result = (PhpValue)0;
+                            break;
+                        }
+
+                        if (str[s] != '0')
+                        {
+                            if (sign != 0) s--;
+                            result = (PhpValue)Core.Convert.SubstringToLongStrict(str, width, 10, Int32.MaxValue, ref s);
+                            break;
+                        }
+                        s++;
+
+                        // string ends 
+                        if (s == limit)
+                        {
+                            result = (PhpValue)0;
+                            break;
+                        }
+
+                        int number = 0;
+
+                        if (str[s] == 'x' || str[s] == 'X')
+                        {
+                            s++;
+
+                            // reads unsigned hexadecimal number starting from the next position:
+                            if (s < limit && str[s] != '+' && str[s] != '-')
+                                number = (int)Core.Convert.SubstringToLongStrict(str, width, 16, Int32.MaxValue, ref s);
+                        }
+                        else
+                        {
+                            // reads unsigned octal number starting from the current position:
+                            if (str[s] != '+' && str[s] != '-')
+                                number = (int)Core.Convert.SubstringToLongStrict(str, width, 8, Int32.MaxValue, ref s);
+                        }
+
+                        // minus sign has been stated:
+                        result = (PhpValue)((sign >= 0) ? +number : -number);
+                        break;
+                    }
+
+                case 'e': // float
+                case 'E':
+                case 'g':
+                case 'G':
+                case 'f':
+                    result = (PhpValue)Core.Convert.SubstringToDouble(str, width, ref s);
+                    break;
+
+                case 'n': // the number of read characters is placed into result:
+                    result = (PhpValue)s;
+                    break;
+
+                default:
+                    result = PhpValue.Null;
+                    break;
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region wordwrap
 
         /// <summary>

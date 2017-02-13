@@ -952,6 +952,64 @@ namespace Pchp.Core
             return dval;
         }
 
+        /// <summary>
+		/// Converts a substring to almost long integer in a specified base.
+		/// Stops parsing if result overflows unsigned integer.
+		/// </summary>
+		public static long SubstringToLongStrict(string str, int length, int @base, long maxValue, ref int position)
+        {
+            if (maxValue <= 0)
+                throw new ArgumentOutOfRangeException("maxValue");
+
+            if (@base < 2 || @base > 'Z' - 'A' + 1)
+            {
+                throw new ArgumentException(Resources.ErrResources.invalid_base, nameof(@base));
+            }
+
+            if (str == null) str = "";
+            if (position < 0) position = 0;
+            if (length < 0 || length > str.Length - position) length = str.Length - position;
+            if (length == 0) return 0;
+
+            long result = 0;
+            int sign = +1;
+
+            // reads a sign:
+            if (str[position] == '+')
+            {
+                position++;
+                length--;
+            }
+            else if (str[position] == '-')
+            {
+                position++;
+                length--;
+                sign = -1;
+            }
+
+            long max_div, max_rem;
+            max_div = Utilities.NumberUtils.DivRem(maxValue, @base, out max_rem);
+
+            while (length-- > 0)
+            {
+                int digit = AlphaNumericToDigit(str[position]);
+                if (digit >= @base) break;
+
+                if (!(result < max_div || (result == max_div && digit <= max_rem)))
+                {
+                    // reads remaining digits:
+                    while (length-- > 0 && AlphaNumericToDigit(str[position]) < @base) position++;
+
+                    return (sign == -1) ? Int64.MinValue : Int64.MaxValue;
+                }
+
+                result = result * @base + digit;
+                position++;
+            }
+
+            return result * sign;
+        }
+
         #endregion
     }
 
