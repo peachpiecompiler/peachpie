@@ -1788,5 +1788,290 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region hash_copy, hash_init, hash_update, hash_final, hash_update_file, hash_update_stream
+
+        /// <summary>
+        /// Gets instance of <see cref="HashPhpResource"/> or <c>null</c>.
+        /// If given argument is not an instance of <see cref="HashPhpResource"/>, PHP warning is reported.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        static HashPhpResource ValidateHashResource(PhpResource context)
+        {
+            var h = context as HashPhpResource;
+            if (h == null)
+            {
+                PhpException.InvalidArgumentType(nameof(context), PhpResource.PhpTypeName);
+            }
+
+            return h;
+        }
+
+        //[return: CastToFalse]
+        public static PhpResource hash_copy(PhpResource context)
+        {
+            return ValidateHashResource(context)?.Clone();
+        }
+
+        //[return: CastToFalse]
+        public static PhpResource hash_init(string algo, HashInitOptions options = HashInitOptions.HASH_DEFAULT, byte[] key = null)
+        {
+            bool hmac = (options & HashInitOptions.HASH_HMAC) != 0;
+
+            if (hmac && (key == null || key.Length == 0))
+            {
+                PhpException.Throw(PhpError.Warning, "HMAC requested without a key");   // TODO: to resources
+                return null;
+            }
+
+            HashPhpResource.HashAlgFactory algFactory;
+            if (!HashPhpResource.HashAlgorithms.TryGetValue(algo, out algFactory))
+            {
+                PhpException.Throw(PhpError.Warning, "Unknown hashing algorithm: " + algo);   // TODO: to resources
+                return null;
+            }
+
+            //
+            // create the hashing algorithm context
+            //
+            HashPhpResource h = algFactory();
+            h.options = options;
+
+            //
+            // HMAC
+            //
+            if (hmac)
+            {
+                // Take the given key and hash it in the context of newly created hashing context.
+
+                Debug.Assert(h.BlockSize > 0);
+                if (key.Length > h.BlockSize)
+                {
+                    // provided key is too long, hash it to obtain shorter key
+                    h.Update(key);
+                    key = h.Final();
+                    h.Init();// restart the algorithm
+                }
+                else
+                {
+                    key = (byte[])key.Clone();
+                }
+
+                if (key.Length != h.BlockSize)
+                {
+                    Debug.Assert(key.Length < h.BlockSize);
+                    byte[] KAligned = new byte[h.BlockSize];
+                    key.CopyTo(KAligned, 0);
+                    key = KAligned;
+                }
+
+                for (int i = 0; i < key.Length; ++i)
+                    key[i] ^= 0x36;
+
+                h.Update(key);
+                h.HMACkey = key;
+            }
+
+            return h;
+        }
+
+        public static bool hash_update(PhpResource context, byte[] data)
+        {
+            var h = ValidateHashResource(context);
+            if (h == null)
+            {
+                return false;
+            }
+            else
+            {
+                h.Update(data);
+                return true;
+            }
+        }
+        
+        //[return: CastToFalse]
+        public static PhpString hash_final(PhpResource context, bool raw_output = false)
+        {
+            var h = ValidateHashResource(context);
+            if (h == null)
+            {
+                return null;
+            }
+
+            byte[] hash = h.Final();
+
+            //
+            // HMAC
+            //
+            if (/*(h.options & HashInitOptions.HASH_HMAC) != 0 &&*/ h.HMACkey != null)
+            {
+                /* Convert K to opad -- 0x6A = 0x36 ^ 0x5C */
+                byte[] K = h.HMACkey;
+                for (int i = 0; i < K.Length; ++i)
+                    K[i] ^= 0x6A;
+
+                /* Feed this result into the outter hash */
+                h.Init();
+                h.Update(K);
+                h.Update(hash);
+                hash = h.Final();
+
+                /* Zero the key */
+                //Array.Clear(K, 0, K.Length);
+                h.HMACkey = null;
+            }
+
+            //
+            // output
+            //
+            return raw_output
+                ? new PhpString(hash)
+                : new PhpString(StringUtils.BinToHex(hash));
+        }
+
+        public static bool hash_update_file(Context ctx, PhpResource context, string filename, PhpResource stream_context = null)
+        {
+            // hashing context
+            var h = ValidateHashResource(context);
+            if (h == null)
+            {
+                return false;
+            }
+
+            // stream context
+            StreamContext sc = StreamContext.GetValid(stream_context, true);
+            if (sc == null)
+                return false;
+
+            // read data from file (or URL)
+            using (PhpStream stream = PhpStream.Open(ctx, filename, "rb", StreamOpenOptions.Empty, sc))
+            {
+                if (stream == null)
+                    return false;
+
+                if (HashUpdateFromStream(h, stream, -1) < 0)
+                    return false;
+            }
+
+            //
+            return true;
+        }
+        
+        [return: CastToFalse]
+        public static int hash_update_stream(PhpResource context, PhpResource handle, int length =-1)
+        {
+            // hashing context
+            var h = ValidateHashResource(context);
+            if (h == null)
+            {
+                return -1;
+            }
+
+            PhpStream stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return -1;
+            }
+
+            // read data from stream, return number of used bytes
+            return HashUpdateFromStream(h, stream, length);
+        }
+
+        /// <summary>
+        /// Pump data from valid PHP stream into the hashing incremental algorithm.
+        /// </summary>
+        /// <param name="context">Hash resource to be updated from given <paramref name="stream"/>. Cannot be null.</param>
+        /// <param name="stream">The <see cref="PhpStream"/> to read from. Cannot be null.</param>
+        /// <param name="length">Maximum number of bytes to read from <paramref name="stream"/>. Or <c>-1</c> to read entire stream.</param>
+        /// <returns>Number of bytes read from given <paramref name="stream"/>.</returns>
+        static int HashUpdateFromStream(HashPhpResource/*!*/context, PhpStream/*!*/stream, int length/*=-1*/)
+        {
+            Debug.Assert(context != null);
+            Debug.Assert(stream != null);
+
+            int n = 0;
+            bool done = false;
+
+            const int buffsize = 4096;
+
+            do
+            {
+                // read data from stream sub-sequentially to lower memory consumption
+                int bytestoread = (length < 0) ? buffsize : Math.Min(length - n, buffsize);   // read <buffsize> bytes, or up to <length> bytes
+                if (bytestoread == 0)
+                    break;
+
+                var bytes = stream.ReadBytes(bytestoread);
+                if (bytes == null)
+                    break;
+
+                // update the incremental hash
+                context.Update(bytes);
+
+                n += bytes.Length;
+                done = (bytes.Length < bytestoread);
+            } while (!done);
+
+            return n;
+        }
+
+        #endregion
+
+        #region hash, hash_file
+
+        [return: CastToFalse]
+        public static PhpString hash(string algo, byte[] data, bool raw_output = false)
+        {
+            var h = hash_init(algo);
+            if (h == null || !hash_update(h, data))
+            {
+                return null;
+            }
+
+            return hash_final(h, raw_output);
+        }
+
+        [return: CastToFalse]
+        public static PhpString hash_file(Context ctx, string algo, string filename, bool raw_output = false)
+        {
+            var h = hash_init(algo);
+            if (h == null || !hash_update_file(ctx, h, filename))
+            {
+                return null;
+            }
+
+            return hash_final(h, raw_output);
+        }
+
+        #endregion
+
+        #region hash_hmac, hash_hmac_file
+
+        [return: CastToFalse]
+        public static PhpString hash_hmac(string algo, byte[] data, byte[] key, bool raw_output = false)
+        {
+            var h = hash_init(algo, HashInitOptions.HASH_HMAC, key);
+            if (h == null || !hash_update(h, data))
+            {
+                return null;
+            }
+
+            return hash_final(h, raw_output);
+        }
+
+        [return: CastToFalse]
+        public static PhpString hash_hmac_file(Context ctx, string algo, string filename, byte[] key, bool raw_output = false)
+        {
+            var h = hash_init(algo, HashInitOptions.HASH_HMAC, key);
+            if (h == null || !hash_update_file(ctx, h, filename))
+            {
+                return null;
+            }
+
+            return hash_final(h, raw_output);
+        }
+
+        #endregion
     }
 }

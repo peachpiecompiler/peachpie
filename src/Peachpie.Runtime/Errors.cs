@@ -118,6 +118,16 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// An argument violates a type hint.
+        /// </summary>
+        /// <param name="argName">The name of the argument.</param>
+        /// <param name="typeName">The name of the hinted type.</param>
+        public static void InvalidArgumentType(string argName, string typeName)
+        {
+            Throw(PhpError.Error, ErrResources.invalid_argument_type, argName, typeName);
+        }
+
+        /// <summary>
         /// Argument null error. Thrown when argument can't be null but it is.
         /// </summary>
         /// <param name="argument">The name of the argument.</param>
