@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace Pchp.Library
 {
@@ -219,6 +220,115 @@ namespace Pchp.Library
             // gets NULL (FALSE) if there are no functions
             return result.Count != 0 ? result : null;
         }
+
+        #region gethostname, php_uname, memory_get_usage, php_sapi_name
+
+        /// <summary>
+        /// gethostname() gets the standard host name for the local machine. 
+        /// </summary>
+        /// <returns>Returns a string with the hostname on success, otherwise FALSE is returned. </returns>
+        [return: CastToFalse]
+        public static string gethostname()
+        {
+            string host = null;
+
+            try { host = System.Net.Dns.GetHostName(); }
+            catch { }
+
+            return host;
+        }
+
+        /// <summary>
+        /// Retrieves specific version information about OS.
+        /// </summary>
+        /// <param name="mode">
+        /// <list type="bullet">
+        /// <term>'a'</term><description>This is the default. Contains all modes in the sequence "s n r v m".</description>
+        /// <term>'s'</term><description>Operating system name, e.g. "Windows NT", "Windows 9x".</description>
+        /// <term>'n'</term><description>Host name, e.g. "www.php-compiler.net".</description>
+        /// <term>'r'</term><description>Release name, e.g. "5.1".</description>
+        /// <term>'v'</term><description>Version information. Varies a lot between operating systems, e.g. "build 2600".</description>
+        /// <term>'m'</term><description>Machine type. eg. "i586".</description>
+        /// </list>
+        /// </param>
+        /// <returns>OS version.</returns>
+        public static string php_uname(string mode = "a")
+        {
+            string system, host, release, version, machine;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) system = "Windows NT";
+            //else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) system = "OSX";
+            else system = "Unix";
+            
+            host = System.Net.Dns.GetHostName();
+
+            machine = System.Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+            if (machine == "x86") machine = "i586";    // TODO
+
+            release = "0"; // String.Concat(Environment.OSVersion.Version.Major, ".", Environment.OSVersion.Version.Minor);
+            version = "0"; // String.Concat("build ", Environment.OSVersion.Version.Build);
+
+            //
+            if (!string.IsNullOrEmpty(mode))
+            {
+                switch (mode[0])
+                {
+                    case 's': return system;
+                    case 'r': return release;
+                    case 'v': return version;
+                    case 'm': return machine;
+                    case 'n': return host;
+                }
+            }
+
+            //
+            return $"{system} {host} {release} {version} {machine}";
+        }
+
+        ///// <summary>
+        ///// Retrieves the size of the current process working set in bytes.
+        ///// </summary>
+        ///// <param name="real_usage">
+        ///// "Set this to TRUE to get the real size of memory allocated from system.
+        ///// If not set or FALSE only the memory used by emalloc() is reported."</param>
+        ///// <returns>The size.</returns>
+        //public static long memory_get_usage(bool real_usage = false)
+        //{
+        //    //if (real_usage == false)// TODO: real_usage = false
+        //    //    PhpException.ArgumentValueNotSupported("real_usage");
+
+        //    long ws = System.Diagnostics.Process.GetCurrentProcess().WorkingSet64;
+        //    if (ws > Int32.MaxValue) return Int32.MaxValue;
+        //    return (int)ws;
+        //}
+
+        ///// <summary>
+        ///// Returns the peak of memory, in bytes, that's been allocated to the PHP script.
+        ///// </summary>
+        ///// <param name="real_usage">
+        ///// Set this to TRUE to get the real size of memory allocated from system.
+        ///// If not set or FALSE only the memory used by emalloc() is reported.</param>
+        ///// <returns>The size.</returns>
+        //public static long memory_get_peak_usage(bool real_usage = false)
+        //{
+        //    //if (real_usage == false)// TODO: real_usage = false
+        //    //    PhpException.ArgumentValueNotSupported("real_usage");
+
+        //    long ws = System.Diagnostics.Process.GetCurrentProcess().NonpagedSystemMemorySize64;    // can't get current thread's memory
+        //    if (ws > Int32.MaxValue) return Int32.MaxValue;
+        //    return (int)ws;
+        //}
+
+        /// <summary>
+        /// Returns the type of interface between web server and Phalanger. 
+        /// </summary>
+        /// <returns>The "isapi" string if runned under webserver (ASP.NET works via ISAPI) or "cli" otherwise.</returns>
+        public static string php_sapi_name(Context ctx)
+        {
+            return (ctx.IsWebApplication) ? "isapi" : "cli";    // TODO: Context.SapiName
+        }
+
+        #endregion
 
         #region get_required_files, get_included_files
 
