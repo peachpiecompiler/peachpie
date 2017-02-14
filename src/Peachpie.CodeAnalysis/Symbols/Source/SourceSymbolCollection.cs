@@ -70,7 +70,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public override void VisitTypeDecl(TypeDecl x)
             {
-                var type = new SourceTypeSymbol(_currentFile, x);
+                var type = (x is AnonymousTypeDecl)
+                    ? new SourceAnonymousTypeSymbol(_currentFile, (AnonymousTypeDecl)x)
+                    : new SourceTypeSymbol(_currentFile, x);
 
                 x.SetProperty(type);    // remember bound type symbol
                 _currentFile.ContainedTypes.Add(type);
@@ -223,7 +225,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(compilation);
             _compilation = compilation;
 
-            _types = new SymbolsCache<QualifiedName, SourceTypeSymbol>(this, f => f.ContainedTypes, t => t.MakeQualifiedName(), t => !t.IsConditional);
+            _types = new SymbolsCache<QualifiedName, SourceTypeSymbol>(this, f => f.ContainedTypes, t => t.MakeQualifiedName(), t => !t.IsConditional || t.IsAnonymousType);
             _functions = new SymbolsCache<QualifiedName, SourceFunctionSymbol>(this, f => f.Functions, f => f.QualifiedName, f => !f.IsConditional);
         }
 

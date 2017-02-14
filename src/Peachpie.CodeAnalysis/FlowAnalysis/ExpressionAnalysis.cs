@@ -1065,7 +1065,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
-
             Accept(x.Instance);
             Accept(x.Name.NameExpression);
 
@@ -1148,6 +1147,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     tref.ResolvedType = (TypeSymbol)_model.GetType(qname);
                 }
+            }
+            else if (tref.TypeRef is AnonymousTypeRef)
+            {
+                var atqname = ((AnonymousTypeRef)tref.TypeRef).TypeDeclaration.GetAnonymousTypeQualifiedName();
+                tref.ResolvedType = (TypeSymbol)_model.GetType(atqname);
+                Debug.Assert(tref.ResolvedType != null);
             }
 
             Accept(tref.TypeExpression);

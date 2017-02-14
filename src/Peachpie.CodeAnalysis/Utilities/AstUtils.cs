@@ -103,5 +103,25 @@ namespace Pchp.CodeAnalysis
                 ? new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length)
                 : new Microsoft.CodeAnalysis.Text.TextSpan();
         }
+
+        /// <summary>
+        /// CLR compliant anonymous class name.
+        /// </summary>
+        public static string GetAnonymousTypeName(this AnonymousTypeDecl tdecl)
+        {
+            var fname = System.IO.Path.GetFileName(tdecl.ContainingSourceUnit.FilePath).Replace('.', '_');  // TODO: relative to app root
+            // PHP: class@anonymous\0{FULLPATH}{BUFFER_POINTER,X8}
+            return $"class@anonymous {fname}{tdecl.Span.Start.ToString("X4")}";
+        }
+
+        /// <summary>
+        /// Builds qualified name for an anonymous PHP class.
+        /// Instead of name provided by parser, we do create our own which is more readable and shorter.
+        /// </summary>
+        /// <remarks>Wherever <see cref="AnonymousTypeDecl.QualifiedName"/> would be used, use this method instead.</remarks>
+        public static QualifiedName GetAnonymousTypeQualifiedName(this AnonymousTypeDecl tdecl)
+        {
+            return new QualifiedName(new Name(GetAnonymousTypeName(tdecl)));
+        }
     }
 }

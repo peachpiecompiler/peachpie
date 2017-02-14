@@ -16,14 +16,14 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal sealed partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol
+    internal partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol
     {
         #region IPhpTypeSymbol
 
         /// <summary>
         /// Gets fully qualified name of the class.
         /// </summary>
-        public QualifiedName FullName => _syntax.QualifiedName;
+        public virtual QualifiedName FullName => _syntax.QualifiedName;
 
         /// <summary>
         /// Optional.
@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
-        readonly TypeDecl _syntax;
+        readonly protected TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
         NamedTypeSymbol _lazyBaseType;
@@ -268,10 +268,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
-        public override string Name => _syntax.Name.Name.Value;
+        public override string Name => FullName.Name.Value;
 
-        public override string NamespaceName
-            => (_syntax.ContainingNamespace != null) ? _syntax.ContainingNamespace.QualifiedName.QualifiedName.ClrName() : string.Empty;
+        public override string NamespaceName => string.Join(".", FullName.Namespaces);
 
         public override string MetadataName
         {
@@ -452,6 +451,30 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 yield return RuntimeFieldsStore;
             }
+        }
+    }
+
+    /// <summary>
+    /// Symbol representing a PHP anonymous class.
+    /// Builds a type similar to <b>internal sealed class [anonymous@class filename position]</b>.
+    /// </summary>
+    internal class SourceAnonymousTypeSymbol : SourceTypeSymbol
+    {
+        public new AnonymousTypeDecl Syntax => (AnonymousTypeDecl)_syntax;
+
+        public override QualifiedName FullName => Syntax.GetAnonymousTypeQualifiedName();
+
+        public override string MetadataName => Name;
+
+        public override bool IsSealed => true;
+
+        public override bool IsAnonymousType => true;
+
+        public override Accessibility DeclaredAccessibility => Accessibility.Internal;
+
+        public SourceAnonymousTypeSymbol(SourceFileSymbol file, AnonymousTypeDecl syntax)
+            : base(file, syntax)
+        {
         }
     }
 }

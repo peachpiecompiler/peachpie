@@ -332,7 +332,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
                 else if (tref is AST.INamedTypeRef) return GetTypeMask(((AST.INamedTypeRef)tref).ClassName, includesSubclasses);
                 else if (tref is AST.ReservedTypeRef) return GetTypeMaskOfReservedClassName(((AST.ReservedTypeRef)tref).QualifiedName.Value.Name); // NOTE: should be translated by parser to AliasedTypeRef
-                else if (tref is AST.AnonymousTypeRef) return GetTypeMask(((AST.AnonymousTypeRef)tref).TypeDeclaration.QualifiedName, false);
+                else if (tref is AST.AnonymousTypeRef) return GetTypeMask(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName(), false);
                 else if (tref is AST.MultipleTypeRef)
                 {
                     TypeRefMask result = 0;
