@@ -1055,7 +1055,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 // symbol might be ErrorSymbol
-                
+
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
                 x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, args, null);
             }
@@ -1072,25 +1072,30 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (x.Name.IsDirect)
             {
-                var typeref = TypeCtx.GetTypes(x.Instance.TypeRefMask);
-                if (typeref.Count > 1)
+                var resolvedtype = x.Instance.ResultType;
+                if (resolvedtype == null)
                 {
-                    // TODO: some common base ?
-                }
-
-                if (typeref.Count == 1)
-                {
-                    var classtype = typeref.Where(t => t.IsObject).AsImmutable().SingleOrDefault();
-                    if (classtype != null)
+                    var typeref = TypeCtx.GetTypes(x.Instance.TypeRefMask);
+                    if (typeref.Count > 1)
                     {
-                        var type = (NamedTypeSymbol)_model.GetType(classtype.QualifiedName);
-                        if (type != null)
+                        // TODO: some common base ?
+                    }
+
+                    if (typeref.Count == 1)
+                    {
+                        var classtype = typeref.Where(t => t.IsObject).AsImmutable().SingleOrDefault();
+                        if (classtype != null)
                         {
-                            var candidates = type.LookupMethods(x.Name.NameValue.Name.Value);
-                            var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
-                            x.TargetMethod = new OverloadsList(candidates.ToArray()).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
+                            resolvedtype = (NamedTypeSymbol)_model.GetType(classtype.QualifiedName);
                         }
                     }
+                }
+
+                if (resolvedtype != null)
+                {
+                    var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
+                    var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
+                    x.TargetMethod = new OverloadsList(candidates.ToArray()).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
                 }
             }
 
@@ -1277,47 +1282,50 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Debug.Assert(x.Instance.Access.IsRead);
 
                 // resolve field if possible
-                var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
-                if (typerefs.Count == 1 && typerefs[0].IsObject)
+                var resolvedtype = x.Instance.ResultType as NamedTypeSymbol;
+                if (resolvedtype == null)
                 {
-                    // TODO: x.Instance.ResultType instead of following
-
-                    var t = (NamedTypeSymbol)_model.GetType(typerefs[0].QualifiedName);
-                    if (t != null)
+                    var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
+                    if (typerefs.Count == 1 && typerefs[0].IsObject)
                     {
-                        if (x.FieldName.IsDirect)
-                        {
-                            // TODO: visibility and resolution (model)
-                            var fldname = x.FieldName.NameValue.Value;
-                            var member = t.ResolveInstanceProperty(fldname) ?? t.ResolveStaticField(fldname);
-                            if (member != null && member.IsAccessible(this.TypeCtx.ContainingType))
-                            {
-                                Debug.Assert(member is FieldSymbol || member is PropertySymbol);
-                                if (member is FieldSymbol)
-                                {
-                                    var field = (FieldSymbol)member;
-                                    x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
-                                    x.TypeRefMask = field.GetResultType(TypeCtx);
-                                }
-                                else if (member is PropertySymbol)
-                                {
-                                    var prop = (PropertySymbol)member;
-                                    x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
-                                    x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
-                                }
-                                else
-                                {
-                                    throw ExceptionUtilities.UnexpectedValue(member);
-                                }
+                        resolvedtype = (NamedTypeSymbol)_model.GetType(typerefs[0].QualifiedName);
+                    }
+                }
 
-                                Debug.Assert(x.BoundReference != null);
-                                return; // bound
+                if (resolvedtype != null)
+                {
+                    if (x.FieldName.IsDirect)
+                    {
+                        // TODO: visibility and resolution (model)
+                        var fldname = x.FieldName.NameValue.Value;
+                        var member = resolvedtype.ResolveInstanceProperty(fldname) ?? resolvedtype.ResolveStaticField(fldname);
+                        if (member != null && member.IsAccessible(this.TypeCtx.ContainingType))
+                        {
+                            Debug.Assert(member is FieldSymbol || member is PropertySymbol);
+                            if (member is FieldSymbol)
+                            {
+                                var field = (FieldSymbol)member;
+                                x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
+                                x.TypeRefMask = field.GetResultType(TypeCtx);
+                            }
+                            else if (member is PropertySymbol)
+                            {
+                                var prop = (PropertySymbol)member;
+                                x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
+                                x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
                             }
                             else
                             {
-                                // TODO: use runtime fields directly, __get, __set, etc.,
-                                // do not fallback to BoundIndirectFieldPlace
+                                throw ExceptionUtilities.UnexpectedValue(member);
                             }
+
+                            Debug.Assert(x.BoundReference != null);
+                            return; // bound
+                        }
+                        else
+                        {
+                            // TODO: use runtime fields directly, __get, __set, etc.,
+                            // do not fallback to BoundIndirectFieldPlace
                         }
                     }
                 }
