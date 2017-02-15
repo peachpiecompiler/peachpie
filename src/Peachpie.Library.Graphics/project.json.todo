@@ -19,6 +19,10 @@
   },
 
   "dependencies": {
+    "ImageSharp": "1.0.0-*",
+    "ImageSharp.Processing": "1.0.0-*",
+    "ImageSharp.Formats.Png": "1.0.0-*",
+    "Peachpie.Library": "*",
     "Peachpie.Runtime": "*"
   },
 

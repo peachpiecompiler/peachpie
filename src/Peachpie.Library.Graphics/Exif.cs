@@ -4,8 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core;
+using ImageSharp;
 
-namespace Peachpie.Library.Image
+namespace Peachpie.Library.Graphics
 {
     /// <summary>
     /// Implements PHP functions provided by EXIF extension.
@@ -305,14 +306,14 @@ namespace Peachpie.Library.Image
         #endregion
 
         #region read_exif_data
-        
+
         /// <summary>
         /// This is alternative alias of <see cref="exif_read_data(string,string,bool,bool)"/>.
         /// </summary>
         [return: CastToFalse]
-        public static PhpArray read_exif_data(string filename, string sections = null, bool arrays = false, bool thumbnail = false)
+        public static PhpArray read_exif_data(Context ctx, string filename, string sections = null, bool arrays = false, bool thumbnail = false)
         {
-            return exif_read_data(filename, sections, arrays, thumbnail);
+            return exif_read_data(ctx, filename, sections, arrays, thumbnail);
         }
 
         #endregion
@@ -322,6 +323,7 @@ namespace Peachpie.Library.Image
         /// <summary>
         /// Reads the EXIF headers from JPEG or TIFF
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="filename">The name of the image file being read. This cannot be an URL.</param>
         /// <param name="sections">Is a comma separated list of sections that need to be present in file to produce a result array. If none of the requested sections could be found the return value is FALSE.
         /// 
@@ -337,11 +339,11 @@ namespace Peachpie.Library.Image
         /// <returns>It returns an associative array where the array indexes are the header names and the array values are the values associated with those headers.
         /// If no data can be returned, <c>FALSE</c> is returned.</returns>
         [return: CastToFalse]
-        public static PhpArray exif_read_data(string filename, string sections = null, bool arrays = false, bool thumbnail = false)
+        public static PhpArray exif_read_data(Context ctx, string filename, string sections = null, bool arrays = false, bool thumbnail = false)
         {
             if (string.IsNullOrEmpty(filename))
             {
-                PhpException.Throw(PhpError.Warning, Image.Resources.filename_cannot_be_empty);
+                PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
                 return null;
             }
 
@@ -361,73 +363,77 @@ namespace Peachpie.Library.Image
             }
 
             PhpArray array = new PhpArray();
-            Bitmap image;
-            PhpBytes bytes;
 
-            bytes = Utils.ReadPhpBytes(filename);
 
+            var bytes = Utils.ReadPhpBytes(ctx, filename);
             if (bytes == null)
+            {
                 return null;
+            }
 
             array.Add("FileName", Path.GetFileName(filename));
             //array.Add("FileDateTime", (int)File.GetCreationTime(filename).ToOADate());
             array.Add("FileSize", (int)bytes.Length);
 
-            using (MemoryStream ms = new MemoryStream(bytes.ReadonlyData))
+            Image image;
+
+            using (var ms = new MemoryStream(bytes))
             {
                 try
                 {
-                    image = (Bitmap)Image.FromStream(ms);
+                    image = new Image(ms);
                 }
                 catch
                 {
                     return null;
                 }
 
-                System.Text.ASCIIEncoding encoding = new System.Text.ASCIIEncoding();
-                System.Text.UnicodeEncoding unicode = new System.Text.UnicodeEncoding();
+                var encoding = System.Text.Encoding.ASCII;
+                var unicode = System.Text.Encoding.Unicode;
 
-                foreach (var item in image.PropertyItems)
+                foreach (var item in image.MetaData.Properties)
                 {
-                    int i = Array.BinarySearch(IFDTagTable, new Tag(item.Id, null, TagValueType.Unknown));
+                    //int i = Array.BinarySearch(IFDTagTable, new Tag(item.Id, null, TagValueType.Unknown));
 
-                    if (i > 0)
-                    {
-                        var tag = IFDTagTable[i];
+                    //if (i > 0)
+                    //{
+                    //    var tag = IFDTagTable[i];
 
-                        switch (tag.type)
-                        {
-                            case TagValueType.String:
-                                array.Add(tag.name, encoding.GetString(item.Value));
-                                break;
-                            case TagValueType.UShort:
-                                array.Add(tag.name, (int)BitConverter.ToInt16(item.Value, 0));
-                                break;
-                            case TagValueType.UInt:
-                                array.Add(tag.name, BitConverter.ToInt32(item.Value, 0));
-                                break;
-                            case TagValueType.ULong:
-                                array.Add(tag.name, BitConverter.ToInt64(item.Value, 0));
-                                break;
-                            case TagValueType.URational:
-                                array.Add(tag.name,
-                                    BitConverter.ToUInt16(item.Value.Take(4).ToArray(), 0).ToString()
-                                    + "/" + BitConverter.ToUInt16(item.Value.Skip(4).ToArray(), 0).ToString()
-                                );
-                                break;
-                            case TagValueType.Unicode:
-                                array.Add(tag.name, unicode.GetString(item.Value));
-                                break;
-                            case TagValueType.Unknown:
-                            default:
-                                array.Add(tag.name, new PhpBytes(item.Value));
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        array.Add(item.Id.ToString(), new PhpBytes(item.Value));
-                    }
+                    //    switch (tag.type)
+                    //    {
+                    //        case TagValueType.String:
+                    //            array.Add(tag.name, encoding.GetString(item.Value));
+                    //            break;
+                    //        case TagValueType.UShort:
+                    //            array.Add(tag.name, (int)BitConverter.ToInt16(item.Value, 0));
+                    //            break;
+                    //        case TagValueType.UInt:
+                    //            array.Add(tag.name, BitConverter.ToInt32(item.Value, 0));
+                    //            break;
+                    //        case TagValueType.ULong:
+                    //            array.Add(tag.name, BitConverter.ToInt64(item.Value, 0));
+                    //            break;
+                    //        case TagValueType.URational:
+                    //            array.Add(tag.name,
+                    //                BitConverter.ToUInt16(item.Value.Take(4).ToArray(), 0).ToString()
+                    //                + "/" + BitConverter.ToUInt16(item.Value.Skip(4).ToArray(), 0).ToString()
+                    //            );
+                    //            break;
+                    //        case TagValueType.Unicode:
+                    //            array.Add(tag.name, unicode.GetString(item.Value));
+                    //            break;
+                    //        case TagValueType.Unknown:
+                    //        default:
+                    //            array.Add(tag.namem, new PhpBytes(item.Value));
+                    //            break;
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    array.Add(item.Id.ToString(), new PhpBytes(item.Value));
+                    //}
+
+                    array.Add(item.Name, item.Value);
                 }
 
                 image.Dispose();
@@ -466,18 +472,18 @@ namespace Peachpie.Library.Image
         /// </summary>
         /// <returns></returns>
         [return: CastToFalse]
-        public static int exif_imagetype(string filename)
+        public static int exif_imagetype(Context ctx, string filename)
         {
             if (string.IsNullOrEmpty(filename))
             {
-                PhpException.Throw(PhpError.Warning, Utils.Resources.GetString("filename_cannot_be_empty"));
+                PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
                 return -1;
             }
 
-            var stream = Utils.OpenStream(filename);
+            var stream = Utils.OpenStream(ctx, filename);
             if (stream == null)
             {
-                PhpException.Throw(PhpError.Warning, Utils.Resources.GetString("read_error"));
+                PhpException.Throw(PhpError.Warning, Resources.read_error);
                 return -1;
             }
 
@@ -487,13 +493,11 @@ namespace Peachpie.Library.Image
                 PhpImage.ImageSignature.ImageInfo info;
                 type = PhpImage.ImageSignature.ProcessImageType(stream, true, out info, false, false);
             }
-#if !DEBUG
             catch
             {
                 /*rw error*/
                 type = PhpImage.ImageType.Unknown;
             }
-#endif
             finally
             {
                 stream.Dispose();
@@ -507,40 +511,40 @@ namespace Peachpie.Library.Image
         #region exif_thumbnail
 
         //string exif_thumbnail ( string $filename [, int &$width [, int &$height [, int &$imagetype ]]] )
-        
+
         /// <summary>
         /// Retrieve the embedded thumbnail of a TIFF or JPEG image
         /// </summary>
         [return: CastToFalse]
-        public static PhpBytes exif_thumbnail(string filename, PhpReference width = null, PhpReference height = null, PhpReference imagetype = null)
+        public static PhpString exif_thumbnail(Context ctx, string filename, PhpAlias width = null, PhpAlias height = null, PhpAlias imagetype = null)
         {
             if (string.IsNullOrEmpty(filename))
             {
-                PhpException.Throw(PhpError.Warning, Utils.Resources.GetString("filename_cannot_be_empty"));
+                PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
                 return null;
             }
 
             if (imagetype != null)
             {
-                PhpException.ArgumentValueNotSupported("imagetype", "!=null");
+                PhpException.ArgumentValueNotSupported(nameof(imagetype), "!=null");
             }
 
-            Bitmap thumbnail = null;
-            PhpBytes bytes, result;
+            Image thumbnail = null;
+            byte[] result;
 
-            bytes = Utils.ReadPhpBytes(filename);
+            var bytes = Utils.ReadPhpBytes(ctx, filename);
 
             if (bytes == null)
                 return null;
 
             // get thumbnail from <filename>'s content:
-            using (MemoryStream ms = new MemoryStream(bytes.ReadonlyData))
+            using (var ms = new MemoryStream(bytes))
             {
                 try
                 {
-                    using (Bitmap image = (Bitmap)Image.FromStream(ms))
+                    using (var image = new Image(ms))
                     {
-                        thumbnail = (Bitmap)image.GetThumbnailImage(0, 0, () => true, IntPtr.Zero);
+                        //thumbnail = image.GetThumbnailImage(0, 0, () => true, IntPtr.Zero);
                     }
                 }
                 catch
@@ -550,24 +554,27 @@ namespace Peachpie.Library.Image
             }
 
             if (thumbnail == null)
+            {
                 return null;
+            }
 
             //
             if (width != null)
-                width.Value = thumbnail.Width;
+                width.Value = (PhpValue)thumbnail.Width;
 
             if (height != null)
-                height.Value = thumbnail.Height;
+                height.Value = (PhpValue)thumbnail.Height;
 
-            using (MemoryStream ms2 = new MemoryStream())
+            using (var ms2 = new MemoryStream())
             {
-                thumbnail.Save(ms2, ImageFormat.Png);
-                result = new PhpBytes(ms2.GetBuffer());
+                thumbnail.Save(ms2, new ImageSharp.Formats.PngEncoder());
+                result = ms2.ToArray();
             }
 
             thumbnail.Dispose();
 
-            return result;
+            //
+            return new PhpString(result);
         }
 
         #endregion
