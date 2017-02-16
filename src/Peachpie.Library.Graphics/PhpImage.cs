@@ -17,7 +17,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Image types enumeration, corresponds to IMAGETYPE_ PHP constants.
         /// </summary>
-        public enum ImageType
+        internal enum ImageType
         {
             /// <summary>
             /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
