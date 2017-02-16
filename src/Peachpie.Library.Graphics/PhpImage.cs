@@ -17,7 +17,8 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Image types enumeration, corresponds to IMAGETYPE_ PHP constants.
         /// </summary>
-        internal enum ImageType
+        [PhpHidden]
+        public enum ImageType
         {
             /// <summary>
             /// Image type constant used by the <see cref="image_type_to_mime_type"/> and <see cref="image_type_to_extension(int)"/> functions.
@@ -1193,6 +1194,344 @@ namespace Peachpie.Library.Graphics
             }
 
 
+        }
+
+        #endregion
+
+        #region getimagesize, getimagesizefromstring
+
+        static PhpArray getimagesize(Stream stream, PhpAlias imageinfo)
+        {
+            PhpArray exif;
+
+            var result = GetImageSize(stream, imageinfo != null, out exif);
+
+            if (imageinfo != null)
+            {
+                imageinfo.Value = PhpValue.Create(exif ?? new PhpArray());
+            }
+
+            return result;
+        }
+
+        static PhpArray GetImageSize(Stream/*!*/stream, bool exif, out PhpArray exifarray)
+        {
+            exifarray = null;
+
+            if (stream == null)
+                return null;
+
+            ImageSignature.ImageInfo info;
+            ImageType type;
+            try
+            {
+                type = ImageSignature.ProcessImageType(stream, false, out info, true, exif);
+            }
+            catch
+            {
+                /*rw error*/
+                type = ImageType.Unknown;
+                info.width = info.height = info.bits = info.channels = 0;
+                info.exif = null;
+            }
+            finally
+            {
+                stream.Dispose();
+            }
+
+            if (type != ImageType.Unknown)
+            {
+                var result = new PhpArray(7);
+
+                result.Add((int)info.width);
+                result.Add((int)info.height);
+                result.Add((int)type);
+                result.Add(string.Format($"width=\"{info.width}\" height=\"{info.height}\""));
+
+                if (info.bits != 0) result.Add("bits", (int)info.bits);
+                if (info.channels != 0) result.Add("channels", (int)info.channels);
+                result.Add("mime", image_type_to_mime_type(type));
+
+                exifarray = info.exif;
+                return result;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Get the size of an image.
+        /// </summary> 
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="filename">This parameter specifies the file you wish to retrieve information about. It can reference a local file or (configuration permitting) a remote file using one of the supported streams.</param>
+        /// <param name="imageinfo">This optional parameter allows you to extract some extended information from the image file.</param>
+        [return: CastToFalse]
+        public static PhpArray getimagesize(Context ctx, string filename, PhpAlias imageinfo = null)
+        {
+            if (string.IsNullOrEmpty(filename))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
+                return null;
+            }
+
+            return getimagesize(Utils.OpenStream(ctx, filename), imageinfo);
+        }
+
+        /// <summary>
+        /// Get the size of an image.
+        /// </summary>
+        /// <param name="bytes">Content of the image.</param>
+        /// <param name="imageinfo">This optional parameter allows you to extract some extended information from the image file.</param>
+        [return: CastToFalse]
+        public static PhpArray getimagesizefromstring(byte[] bytes, PhpAlias imageinfo = null)
+        {
+            if (bytes == null)
+                return null;
+
+            return getimagesize(new MemoryStream(bytes), imageinfo);
+        }
+
+        #endregion
+
+        #region iptcparse, iptcembed
+
+        /// <summary>
+        /// Parse a binary IPTC block into single tags.
+        /// </summary>
+        /// <param name="iptcblock">A binary IPTC block.</param>
+        /// <returns>Returns an array using the tagmarker as an index and the value as the value. It returns FALSE on error or if no IPTC data was found.</returns>
+        [return: CastToFalse]
+        public static PhpArray iptcparse(byte[] iptcblock)
+        {
+            // validate arguments:
+            if (iptcblock == null || iptcblock.Length == 0)
+                return null;
+
+            // parse IPTC block:
+            uint inx = 0, len;
+            var buffer = iptcblock;
+
+            // find 1st tag:
+            for (; inx < buffer.Length; ++inx)
+            {
+                if ((buffer[inx] == 0x1c) && ((buffer[inx + 1] == 0x01) || (buffer[inx + 1] == 0x02)))
+                    break;
+            }
+
+            PhpArray result = null;
+
+            // search for IPTC items:
+            while (inx < buffer.Length)
+            {
+                if (buffer[inx++] != 0x1c)
+                    break;   // we ran against some data which does not conform to IPTC - stop parsing!
+
+                if ((inx + 4) >= buffer.Length)
+                    break;
+
+                // data, recnum:
+                byte dataset = buffer[inx++];
+                byte recnum = buffer[inx++];
+
+                // len:
+                if ((buffer[inx] & (byte)0x80) != 0)
+                { // long tag
+                    len = (((uint)buffer[inx + 2]) << 24) | (((uint)buffer[inx + 3]) << 16) |
+                          (((uint)buffer[inx + 4]) << 8) | (((uint)buffer[inx + 5]));
+                    inx += 6;
+                }
+                else
+                { // short tag
+                    len = (((uint)buffer[inx + 0]) << 8) | (((uint)buffer[inx + 1]));
+                    inx += 2;
+                }
+
+                if ((len > buffer.Length) || (inx + len) > buffer.Length)
+                    break;
+
+                // snprintf(key, sizeof(key), "%d#%03d", (unsigned int) dataset, (unsigned int) recnum);
+                string key = string.Format("{0}#{1}", dataset, recnum.ToString("D3"));
+
+                // create result array lazily:
+                if (result == null)
+                    result = new PhpArray();
+
+                // parse out the data (buffer+inx)[len]:
+                var data = new byte[len];
+                Buffer.BlockCopy(buffer, (int)inx, data, 0, (int)len);
+
+                // add data into result[key][]:
+                var values = result[key].AsArray();
+                if (values == null)
+                {
+                    values = new PhpArray(1);
+                    result.Add(key, PhpValue.Create(values));
+                }
+
+                values.Add(data);
+
+                //
+                inx += len;
+            }
+
+            //
+            return result;  // null if no items were found
+        }
+
+        /// <summary>
+        /// Embeds binary IPTC data into a JPEG image.
+        /// </summary>
+        /// <param name="iptcdata">The data to be written.</param>
+        /// <param name="jpeg_file_name">Path to the JPEG image.</param>
+        /// <param name="spool">Spool flag. If the spool flag is over 2 then the JPEG will be returned as a string.</param>
+        /// <returns>If success and spool flag is lower than 2 then the JPEG will not be returned as a string, FALSE on errors.</returns>
+        [return: CastToFalse]
+        public static PhpValue iptcembed(byte[] iptcdata, string jpeg_file_name, int spool = 0)
+        {
+            PhpException.FunctionNotSupported("iptcembed");
+            return PhpValue.False;
+        }
+
+        #endregion
+
+        #region image_type_to_extension
+
+        /// <summary>
+        /// Get file extension for image type
+        /// </summary> 
+        [return: CastToFalse]
+        public static string image_type_to_extension(int imagetype, bool include_dot = true)
+        {
+            string extension;
+
+            switch (imagetype)
+            {
+                case (int)ImageType.GIF:
+                    extension = "gif";
+                    break;
+                case (int)ImageType.JPEG:
+                    extension = "jpeg";
+                    break;
+                case (int)ImageType.PNG:
+                    extension = "png";
+                    break;
+                case (int)ImageType.SWF:
+                    extension = "swf";
+                    break;
+                case (int)ImageType.PSD:
+                    extension = "psd";
+                    break;
+                case (int)ImageType.BMP:
+                    extension = "bmp";
+                    break;
+                case (int)ImageType.TIFF_II:
+                    extension = "tiff";
+                    break;
+                case (int)ImageType.TIFF_MM:
+                    extension = "tiff";
+                    break;
+                case (int)ImageType.JPC:
+                    extension = "jpc";
+                    break;
+                case (int)ImageType.JP2:
+                    extension = "jp2";
+                    break;
+                case (int)ImageType.JPX:
+                    extension = "jpx";
+                    break;
+                case (int)ImageType.JB2:
+                    extension = "jb2";
+                    break;
+                case (int)ImageType.SWC:
+                    extension = "swc";
+                    break;
+                case (int)ImageType.IFF:
+                    extension = "iff";
+                    break;
+                case (int)ImageType.WBMP:
+                    extension = "wbmp";
+                    break;
+                case (int)ImageType.XBM:
+                    extension = "xbm";
+                    break;
+                case (int)ImageType.ICO:
+                    extension = "ico";
+                    break;
+                default:
+                    return null;
+            }
+
+            return include_dot ? ("." + extension) : (extension);
+        }
+
+        #endregion
+
+        #region image_type_to_mime_type
+
+        /// <summary>
+        /// Get Mime-Type for image-type returned by getimagesize, exif_read_data, exif_thumbnail, exif_imagetype
+        /// </summary> 
+        [return: CastToFalse]
+        public static string image_type_to_mime_type(ImageType imagetype)
+        {
+            switch (imagetype)
+            {
+                case ImageType.GIF:
+                    return "image/gif";
+
+                case ImageType.JPEG:
+                    return "image/jpeg";
+
+                case ImageType.PNG:
+                    return "image/png";
+
+                case ImageType.SWF:
+                    return "application/x-shockwave-flash";
+
+                case ImageType.PSD:
+                    return "image/psd";
+
+                case ImageType.BMP:
+                    return "image/x-ms-bmp";
+
+                case ImageType.TIFF_II:
+                    return "image/tiff";
+
+                case ImageType.TIFF_MM:
+                    return "image/tiff";
+
+                case ImageType.JPC:
+                    return "application/octet-stream";
+
+                case ImageType.JP2:
+                    return "image/jp2";
+
+                case ImageType.JPX:
+                    return "application/octet-stream";
+
+                case ImageType.JB2:
+                    return "application/octet-stream";
+
+                case ImageType.SWC:
+                    return "application/x-shockwave-flash";
+
+                case ImageType.IFF:
+                    return "image/iff";
+
+                case ImageType.WBMP:
+                    return "image/vnd.wap.wbmp";
+
+                case ImageType.XBM:
+                    return "image/xbm";
+
+                case ImageType.ICO:
+                    return "image/vnd.microsoft.icon";
+
+                default:
+                    return "application/octet-stream"; // suppose binary format
+            }
         }
 
         #endregion
