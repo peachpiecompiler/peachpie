@@ -116,7 +116,7 @@ namespace Pchp.Core
                 GetScriptIndex(path, mainmethod.DeclaringType.GetTypeInfo());
             }
 
-            public static string NormalizeSlashes(string path) => path.Replace('\\', '/');
+            public static string NormalizeSlashes(string path) => path.Replace('\\', '/').Replace("//", "/");
 
             public void SetIncluded<TScript>() => array.SetTrue(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 

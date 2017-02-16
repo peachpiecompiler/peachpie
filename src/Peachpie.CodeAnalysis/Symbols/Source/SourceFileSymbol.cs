@@ -75,7 +75,9 @@ namespace Pchp.CodeAnalysis.Symbols
             _lazyMembers.Add(routine);
         }
 
-        internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntaxTree.Source.FilePath, _compilation.Options.BaseDirectory);
+        internal string RelativeFilePath =>
+            PhpFileUtilities.GetRelativePath(_syntaxTree.Source.FilePath, _compilation.Options.BaseDirectory)
+            .Replace(PathUtilities.DirectorySeparatorChar, PathUtilities.AltDirectorySeparatorChar);    // forward slashes by default
 
         /// <summary>
         /// Gets relative path excluding the file name and trailing slashes.
@@ -85,8 +87,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 return (PathUtilities.GetDirectoryName(this.RelativeFilePath) ?? string.Empty)
-                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar)     // NormalizeRelativeDirectoryPath
-                    .Replace(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
+                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar);     // NormalizeRelativeDirectoryPath
             }
         }
 
