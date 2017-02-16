@@ -15,7 +15,8 @@ namespace Pchp.Core.std
         {
             typeof(stdClass), typeof(__PHP_Incomplete_Class),
             typeof(Traversable), typeof(Iterator), typeof(IteratorAggregate),
-            typeof(ArrayAccess), typeof(Serializable)
+            typeof(ArrayAccess), typeof(Serializable),
+            typeof(Closure),
         };
 
         /// <summary>
