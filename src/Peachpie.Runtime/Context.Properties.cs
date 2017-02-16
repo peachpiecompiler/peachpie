@@ -36,5 +36,25 @@ namespace Pchp.Core
         /// Gets the initial script file.
         /// </summary>
         public ScriptInfo MainScriptFile { get; protected set; }
+
+        /// <summary>
+        /// Root directory (web root or console app root) where loaded scripts are relative to.
+        /// The root path does not end with directory separator.
+        /// </summary>
+        /// <remarks>
+        /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
+        /// </remarks>
+        public virtual string RootPath { get; } = string.Empty;
+
+        /// <summary>
+        /// Current working directory.
+        /// </summary>
+        public virtual string WorkingDirectory { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Set of include paths to be used to resolve full file path.
+        /// </summary>
+        public virtual string[] IncludePaths => _defaultIncludePaths;   // TODO:  => this.Config.FileSystem.IncludePaths
+        static readonly string[] _defaultIncludePaths = new[] { "." };
     }
 }
