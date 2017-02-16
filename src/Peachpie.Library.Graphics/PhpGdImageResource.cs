@@ -33,10 +33,12 @@ namespace Peachpie.Library.Graphics
         }
         private Image/*!*/image;
 
-        ///// <summary>
-        ///// Determine if the pixel format is indexed.
-        ///// </summary>
-        //public bool IsIndexed { get { return (image.PixelFormat & PixelFormat.Indexed) == PixelFormat.Indexed; } }
+        /// <summary>
+        /// Determine if the pixel format is indexed.
+        /// </summary>
+        public bool IsIndexed =>
+            image.CurrentImageFormat.Decoder is ImageSharp.Formats.JpegDecoder ||
+            image.CurrentImageFormat.Decoder is ImageSharp.Formats.PngDecoder;
 
         internal bool AlphaBlending = false;
         internal bool SaveAlpha = false;
