@@ -1449,10 +1449,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 throw ExceptionUtilities.UnexpectedValue(symbol);
             }
 
-            // bind use arguments
-            x.UseVars.ForEach(VisitArgument);
-            // TODO: bind x.UseVars[].Parameter
+            // bind arguments to parameters
+            var ps = symbol.Parameters;
+            int pi = 0;
+            // skip special parameters
+            while (pi < ps.Length && ps[pi] is SpecialParameterSymbol) pi++;    
+            // skip $this parameter
+            if (symbol.UseThis) { Debug.Assert(ps[pi].MetadataName == VariableName.ThisVariableName.Value); pi++; }
 
+            foreach (var v in x.UseVars)
+            {
+                v.Parameter = ps[pi++];
+            }
+
+            x.UseVars.ForEach(VisitArgument);
+            
             //
             x.BoundLambdaMethod = symbol;
             x.ResultType = (TypeSymbol)_model.GetType(NameUtils.SpecialNames.Closure);

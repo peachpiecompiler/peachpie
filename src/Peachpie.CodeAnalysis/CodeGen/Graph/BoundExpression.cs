@@ -2566,35 +2566,80 @@ namespace Pchp.CodeAnalysis.Semantics
         void EmitUseArray(CodeGenerator cg)
         {
             var count = (BoundLambdaMethod.UseThis ? 1 : 0) + UseVars.Length;
-
-            // new PhpArray(<count>)
-            cg.Builder.EmitIntConstant(count);
-            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
-
-            //
-            if (BoundLambdaMethod.UseThis)
+            if (count != 0)
             {
-                // <stack>.Add("this", this)
-                cg.Builder.EmitOpCode(ILOpCode.Dup);
-                cg.EmitIntStringKey(VariableName.ThisVariableName.Value);
-                cg.EmitConvertToPhpValue(cg.EmitThisOrNull(), 0);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                // new PhpArray(<count>)
+                cg.Builder.EmitIntConstant(count);
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
+
+                //
+                if (BoundLambdaMethod.UseThis)
+                {
+                    // <stack>.Add("this", this)
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.EmitIntStringKey(VariableName.ThisVariableName.Value);
+                    cg.EmitConvertToPhpValue(cg.EmitThisOrNull(), 0);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                }
+
+                // uses
+                foreach (var u in UseVars)
+                {
+                    // <stack>.SetItemValue|SetItemAlias(name, value)
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.EmitIntStringKey(u.Parameter.Name);
+
+                    if (u.Value.Access.IsReadRef)
+                    {
+                        // SetItemAlias(name, alias)
+                        cg.Emit(u.Value).Expect(cg.CoreTypes.PhpAlias);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                    }
+                    else
+                    {
+                        // SetItemValue(name, value)
+                        cg.EmitConvert(u.Value, cg.CoreTypes.PhpValue);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                    }
+                }
             }
-
-            // uses
-            foreach (var u in UseVars)
+            else
             {
-                // <stack>.Add("this", this)
-                cg.Builder.EmitOpCode(ILOpCode.Dup);
-                cg.EmitIntStringKey(u.Parameter.Name);
-                cg.EmitConvert(u.Value, cg.CoreTypes.PhpValue); // TODO: PhpAlias
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                // PhpArray.Empty
+                cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
+                cg.EmitSymbolToken(cg.CoreMethods.PhpArray.Empty, null);
             }
         }
 
         void EmitParametersArray(CodeGenerator cg)
         {
-            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
+            var ps = ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParams;
+            if (ps != null && ps.Length != 0)
+            {
+                // new PhpArray(<count>){ ... }
+                cg.Builder.EmitIntConstant(ps.Length);
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
+
+                foreach (var p in ps)
+                {
+                    var keyname = "$" + p.Name.Name.Value;
+                    if (p.PassedByRef) keyname = "&" + keyname;
+                    var value = (p.InitValue != null) ? "<optional>" : "<required>";
+
+                    // <stack>.SetItemValue("&$name", "<optional>"|"<required>")
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.EmitIntStringKey(keyname);
+                    cg.Builder.EmitStringConstant(value);
+                    cg.EmitConvertToPhpValue(cg.CoreTypes.String, 0);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                }
+            }
+            else
+            {
+                // PhpArray.Empty
+                cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
+                cg.EmitSymbolToken(cg.CoreMethods.PhpArray.Empty, null);
+            }
         }
     }
 
