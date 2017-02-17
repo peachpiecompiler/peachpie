@@ -15,14 +15,14 @@ public sealed class Closure : IPhpCallable
     readonly internal RoutineInfo routine;
 
     /// <summary>
+    /// Fixed (use) parameters to be passed to <see cref="routine"/>.
+    /// </summary>
+    readonly PhpArray @static;
+    
+    /// <summary>
     /// Anonymous function parameters, for dumping only.
     /// </summary>
     readonly PhpArray parameter;
-
-    /// <summary>
-    /// Fixed (use) parameters to be passed to <see cref="routine"/>.
-    /// </summary>
-    readonly internal PhpArray @static;
 
     /// <summary>
     /// Constructs the closure.
