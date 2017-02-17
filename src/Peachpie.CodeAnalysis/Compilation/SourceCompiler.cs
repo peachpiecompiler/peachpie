@@ -187,6 +187,9 @@ namespace Pchp.CodeAnalysis
             _compilation.SourceSymbolCollection.GetFunctions()
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
+            _compilation.SourceSymbolCollection.GetLambdas()
+                .ForEach(f => f.EmitInit(_moduleBuilder));
+
             // __statics.Init, .phpnew, .ctor
             WalkTypes(t => t.EmitInit(_moduleBuilder, _diagnostics));
 

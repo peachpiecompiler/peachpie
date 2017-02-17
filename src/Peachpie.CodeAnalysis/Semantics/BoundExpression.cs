@@ -697,19 +697,25 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     public partial class BoundLambda : BoundExpression, ILambdaExpression
     {
-        public IBlockStatement Body => (BountLambdaMethod != null) ? BountLambdaMethod.ControlFlowGraph.Start : null;
+        /// <summary>
+        /// Declared use variables.
+        /// </summary>
+        public ImmutableArray<BoundArgument> UseVars => _usevars;
+        ImmutableArray<BoundArgument> _usevars;
 
-        public IMethodSymbol Signature => BountLambdaMethod;
+        public IBlockStatement Body => (BoundLambdaMethod != null) ? BoundLambdaMethod.ControlFlowGraph.Start : null;
+
+        public IMethodSymbol Signature => BoundLambdaMethod;
 
         /// <summary>
         /// Reference to associated lambda method symbol.
         /// Bound during analysis.
         /// </summary>
-        internal SourceLambdaSymbol BountLambdaMethod { get; set; }
+        internal SourceLambdaSymbol BoundLambdaMethod { get; set; }
 
-        public BoundLambda()
+        public BoundLambda(ImmutableArray<BoundArgument> usevars)
         {
-
+            _usevars = usevars;
         }
 
         public override OperationKind Kind => OperationKind.LambdaExpression;

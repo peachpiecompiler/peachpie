@@ -17,6 +17,7 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     /// <summary>
     /// Binds syntax nodes (<see cref="AST.LangElement"/>) to semantic nodes (<see cref="IOperation"/>).
+    /// Creates unbound nodes.
     /// </summary>
     internal class SemanticsBinder
     {
@@ -61,9 +62,18 @@ namespace Pchp.CodeAnalysis.Semantics
             if (parameters.Any(p => p.IsUnpack || p.Ampersand))
                 throw new NotImplementedException();
 
-            return BindExpressions(parameters.Select(p => p.Expression))
-                .Select(x => new BoundArgument(x))
-                .ToImmutableArray();
+            return BindArguments(parameters.Select(p => p.Expression));
+        }
+
+        ImmutableArray<BoundArgument> BindLambdaUseArguments(IEnumerable<AST.FormalParam> usevars)
+        {
+            return usevars.Select(v =>
+            {
+                var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
+                return BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+            })
+            .Select(expr => new BoundArgument(expr))
+            .ToImmutableArray();
         }
 
         #endregion
@@ -149,9 +159,15 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
-            if (expr is AST.LambdaFunctionExpr) return new BoundLambda() { PhpSyntax = expr }.WithAccess(access);
+            if (expr is AST.LambdaFunctionExpr) return BindLambda((AST.LambdaFunctionExpr)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundLambda BindLambda(AST.LambdaFunctionExpr expr)
+        {
+            // Syntax is bound by caller, needed to resolve lambda symbol in analysis
+            return new BoundLambda(BindLambdaUseArguments(expr.UseParams));
         }
 
         BoundExpression BindConstUse(AST.ConstantUse x)

@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol
+    internal partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, ILambdaContainerSymbol
     {
         #region IPhpTypeSymbol
 
@@ -99,6 +99,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         List<Symbol> _lazyMembers;
 
+        List<SourceLambdaSymbol> _lambdas;
+
         /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
         BaseAttributeData _lazyPhpTraitAttribute;
 
@@ -113,6 +115,27 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             _staticsContainer = new SynthesizedStaticFieldsHolder(this);
+        }
+
+        void ILambdaContainerSymbol.AddLambda(SourceLambdaSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+            if (_lambdas == null) _lambdas = new List<SourceLambdaSymbol>();
+            _lambdas.Add(routine);
+        }
+
+        IEnumerable<SourceLambdaSymbol> ILambdaContainerSymbol.Lambdas
+        {
+            get
+            {
+                return (IEnumerable<SourceLambdaSymbol>)_lambdas ?? Array.Empty<SourceLambdaSymbol>();
+            }
+        }
+
+        SourceLambdaSymbol ILambdaContainerSymbol.ResolveLambdaSymbol(LambdaFunctionExpr expr)
+        {
+            if (expr == null) throw new ArgumentNullException(nameof(expr));
+            return _lambdas.First(s => s.Syntax == expr);
         }
 
         List<Symbol> EnsureMembers()
@@ -419,7 +442,8 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
         {
             return EnsureMembers().OfType<IMethodSymbol>()
-                .Concat(InstanceConstructors);
+                .Concat(InstanceConstructors)
+                .Concat(((ILambdaContainerSymbol)this).Lambdas);
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()

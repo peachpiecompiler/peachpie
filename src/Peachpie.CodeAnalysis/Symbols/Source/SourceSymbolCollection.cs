@@ -26,9 +26,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             readonly SourceSymbolCollection _tables;
             readonly PhpCompilation _compilation;
+            readonly Stack<NamedTypeSymbol> _containerStack = new Stack<NamedTypeSymbol>();
 
             SourceFileSymbol _currentFile;
-            private PhpSyntaxTree _syntaxTree;
+            PhpSyntaxTree _syntaxTree;
 
             public BinderVisitor(PhpCompilation compilation, SourceSymbolCollection tables, PhpSyntaxTree syntaxTree)
             {
@@ -52,7 +53,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     _tables.FirstScript = _currentFile;
                 }
 
+                _containerStack.Push(fsymbol);
+
                 base.VisitGlobalCode(x);
+
+                _containerStack.Pop();
 
                 _currentFile = null;
             }
@@ -78,7 +83,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 _currentFile.ContainedTypes.Add(type);
 
                 //
+
+                _containerStack.Push(type);
+
                 base.VisitTypeDecl(x);
+
+                _containerStack.Pop();
+            }
+
+            public override void VisitLambdaFunctionExpr(LambdaFunctionExpr x)
+            {
+                var container = _containerStack.Peek();
+                var lambdasymbol = new SourceLambdaSymbol(x, container, /*TODO: !x.IsStatic ?*/true);
+                Debug.Assert(container is ILambdaContainerSymbol);
+                ((ILambdaContainerSymbol)container).AddLambda(lambdasymbol);
+
+                //
+                base.VisitLambdaFunctionExpr(x);
             }
         }
 
@@ -278,21 +299,30 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public IEnumerable<MethodSymbol> GetFunctions(QualifiedName name) => _functions[name];
 
-        public IEnumerable<SourceFunctionSymbol> GetFunctions() => _functions.Symbols;
+        public IEnumerable<SourceFunctionSymbol> GetFunctions()
+        {
+            return _functions.Symbols;
+        }
+
+        public IEnumerable<SourceLambdaSymbol> GetLambdas()
+        {
+            return GetTypes().Cast<ILambdaContainerSymbol>().Concat(_files.Values).SelectMany(c => c.Lambdas);
+        }
 
         /// <summary>
         /// Gets enumeration of all routines (global code, functions and methods) in source code.
         /// </summary>
-        public IEnumerable<SourceRoutineSymbol> AllRoutines    // all functions + global code + methods
+        public IEnumerable<SourceRoutineSymbol> AllRoutines    // all functions + global code + methods + lambdas
         {
             get
             {
                 var funcs = GetFunctions().Cast<SourceRoutineSymbol>();
                 var mains = _files.Values.Select(f => f.MainMethod);
                 var methods = GetTypes().SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
-
+                var lambdas = GetLambdas();
+                
                 //
-                return funcs.Concat(mains).Concat(methods);
+                return funcs.Concat(mains).Concat(methods).Concat(lambdas);
             }
         }
 

@@ -1437,6 +1437,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region VisitLambda
+
+        public override void VisitLambda(BoundLambda x)
+        {
+            Debug.Assert(Routine.ContainingType is ILambdaContainerSymbol);
+            var container = (ILambdaContainerSymbol)Routine.ContainingType;
+            var symbol = container.ResolveLambdaSymbol((LambdaFunctionExpr)x.PhpSyntax);
+            if (symbol == null)
+            {
+                throw ExceptionUtilities.UnexpectedValue(symbol);
+            }
+
+            // bind use arguments
+            x.UseVars.ForEach(VisitArgument);
+            // TODO: bind x.UseVars[].Parameter
+
+            //
+            x.BoundLambdaMethod = symbol;
+            x.ResultType = (TypeSymbol)_model.GetType(NameUtils.SpecialNames.Closure);
+            Debug.Assert(x.ResultType != null);
+            x.TypeRefMask = TypeCtx.GetTypeMask(NameUtils.SpecialNames.Closure, false); // {Closure}, no null, no subclasses
+        }
+
+        #endregion
+
         #region Visit
 
         public override void VisitIsEmpty(BoundIsEmptyEx x)

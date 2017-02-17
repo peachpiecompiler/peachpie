@@ -251,7 +251,25 @@ namespace Pchp.CodeAnalysis.Symbols
 
             cctor.EmitStringConstant(this.QualifiedName.ToString());
             cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
-            cctor.EmitCall(module, DiagnosticBag.GetInstance(), System.Reflection.Metadata.ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
+            cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
+
+            field.EmitStore(cctor);
+        }
+    }
+
+    partial class SourceLambdaSymbol
+    {
+        internal void EmitInit(Emit.PEModuleBuilder module)
+        {
+            var cctor = module.GetStaticCtorBuilder(_container);
+            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module));
+
+            // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle)
+            field.EmitStorePrepare(cctor);
+
+            cctor.EmitStringConstant(this.MetadataName);
+            cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
+            cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
 
             field.EmitStore(cctor);
         }

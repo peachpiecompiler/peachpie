@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core;
@@ -8,12 +9,6 @@ using Pchp.Core.Reflection;
 [PhpType("Closure")]
 public sealed class Closure : IPhpCallable
 {
-    /// <summary>
-    /// Bound <c>$this</c> variable.
-    /// Can be <c>null</c> if anonymous function is static or wasn't bound in class instance context.
-    /// </summary>
-    internal object @this;
-
     /// <summary>
     /// Actual anonymous function.
     /// </summary>
@@ -32,9 +27,12 @@ public sealed class Closure : IPhpCallable
     /// <summary>
     /// Constructs the closure.
     /// </summary>
-    internal Closure(object @this, RoutineInfo routine, PhpArray parameter, PhpArray @static)
+    internal Closure(RoutineInfo routine, PhpArray parameter, PhpArray @static)
     {
-        this.@this = @this;
+        Debug.Assert(routine != null);
+        Debug.Assert(parameter != null);
+        Debug.Assert(@static != null);
+
         this.routine = routine;
         this.parameter = parameter;
         this.@static = @static;
@@ -50,7 +48,23 @@ public sealed class Closure : IPhpCallable
     /// </summary>
     public Closure bindTo(object newthis, string newscope = null)
     {
-        return new Closure(newthis, this.routine, this.parameter, this.@static);
+        // create new Closure with updated "this" fixed argument
+
+        PhpValue oldthis;
+        if (@static.TryGetValue("this", out oldthis))
+        {
+            if (!object.ReferenceEquals(oldthis.Object, newthis))
+            {
+                return new Closure(this.routine, this.parameter, this.@static);
+            }
+        }
+        else
+        {
+            // TODO: Err
+        }
+
+        // "this" was not changed
+        return this;
     }
 
     /// <summary>
@@ -66,21 +80,17 @@ public sealed class Closure : IPhpCallable
     /// </summary>
     public PhpValue __invoke(Context ctx, params PhpValue[] arguments)
     {
-        // { @this, ... @static, ... arguments }
+        // { ... @static, ... arguments }
 
-        var newargs = new PhpValue[1 + @static.Count + arguments.Length];
+        var newargs = new PhpValue[@static.Count + arguments.Length];
 
-        //
-        newargs[0] = PhpValue.FromClass(@this);
-
-        //
         if (@static.Count != 0)
         {
-            @static.CopyValuesTo(newargs, 1);
+            @static.CopyValuesTo(newargs, 0);
         }
 
         //
-        Array.Copy(arguments, 0, newargs, 1 + @static.Count, arguments.Length);
+        Array.Copy(arguments, 0, newargs, @static.Count, arguments.Length);
 
         //
         return this.routine.PhpCallable(ctx, newargs);

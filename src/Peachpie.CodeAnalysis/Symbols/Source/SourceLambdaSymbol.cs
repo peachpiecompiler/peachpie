@@ -11,17 +11,27 @@ using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed class SourceLambdaSymbol : SourceRoutineSymbol
+    internal sealed partial class SourceLambdaSymbol : SourceRoutineSymbol
     {
-        readonly SourceRoutineSymbol _routine;
+        readonly NamedTypeSymbol _container;
         readonly LambdaFunctionExpr _syntax;
+        readonly bool _useThis;
+
+        /// <summary>
+        /// Whether <c>$this</c> is pased to the routine (non static lambda).
+        /// </summary>
+        internal bool UseThis => _useThis;
 
         FieldSymbol _lazyRoutineInfoField;    // internal static RoutineInfo !name;
 
-        public SourceLambdaSymbol(LambdaFunctionExpr syntax, SourceRoutineSymbol containingroutine)
+        public SourceLambdaSymbol(LambdaFunctionExpr syntax, NamedTypeSymbol containing, bool useThis)
         {
-            _routine = containingroutine;
+            _container = containing;
             _syntax = syntax;
+            _useThis = useThis;
+
+            // TODO: lazily; when using late static binding in a static method, add special <static> parameter, where runtime passes late static bound type
+            _params = BuildParameters(syntax.Signature, syntax.PHPDoc).AsImmutable();
         }
 
         /// <summary>
@@ -33,7 +43,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyRoutineInfoField == null)
             {
                 _lazyRoutineInfoField = module.SynthesizedManager
-                    .GetOrCreateSynthesizedField(_routine.ContainingType, this.DeclaringCompilation.CoreTypes.RoutineInfo, $"[routine]{this.MetadataName}", Accessibility.Private, true, true, true);
+                    .GetOrCreateSynthesizedField(_container, this.DeclaringCompilation.CoreTypes.RoutineInfo, $"[routine]{this.MetadataName}", Accessibility.Private, true, true, true);
             }
 
             return _lazyRoutineInfoField;
@@ -47,16 +57,19 @@ namespace Pchp.CodeAnalysis.Symbols
             yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
 
             // System.Object @this
-            yield return new SourceParameterSymbol(this,
-                new FormalParam(
-                    Span.Invalid,
-                    SpecialParameterSymbol.ThisName,
-                    Span.Invalid,
-                    new Devsense.PHP.Syntax.Ast.ClassTypeRef(Span.Invalid, NameUtils.SpecialNames.System_Object),
-                    FormalParam.Flags.Default,
-                    null,
-                    new List<CustomAttribute>()),
-                index++, null);
+            if (_useThis)
+            {
+                yield return new SourceParameterSymbol(this,
+                    new FormalParam(
+                        Span.Invalid,
+                        SpecialParameterSymbol.ThisName,
+                        Span.Invalid,
+                        new Devsense.PHP.Syntax.Ast.ClassTypeRef(Span.Invalid, NameUtils.SpecialNames.System_Object),
+                        FormalParam.Flags.Default,
+                        null,
+                        new List<CustomAttribute>()),
+                    index++, null);
+            }
 
             // @static + parameters
             int pindex = 0;
@@ -81,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
 
-        internal override SourceFileSymbol ContainingFile => _routine.ContainingFile;
+        internal override SourceFileSymbol ContainingFile => (_container as SourceTypeSymbol)?.ContainingFile ?? (_container as SourceFileSymbol);
 
         public override string Name => "anonymous@function";
 
@@ -93,7 +106,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override Symbol ContainingSymbol => _routine;
+        public override Symbol ContainingSymbol => _container;
 
         public override ImmutableArray<Location> Locations
         {
@@ -117,8 +130,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsAbstract => false;
 
-        public override bool IsSealed => true;
+        public override bool IsSealed => false;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_syntax.ContainingSourceUnit, _routine.ContainingType as SourceTypeSymbol);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_syntax.ContainingSourceUnit, _container as SourceTypeSymbol);
     }
 }

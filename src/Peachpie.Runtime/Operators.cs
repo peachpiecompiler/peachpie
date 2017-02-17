@@ -615,7 +615,7 @@ namespace Pchp.Core
         /// <summary>
         /// Create <see cref="Closure"/> with specified anonymous function and used parameters.
         /// </summary>
-        public static Closure BuildClosure(object @this, RoutineInfo routine, PhpArray parameter, PhpArray @static) => new Closure(@this, routine, parameter, @static);
+        public static Closure BuildClosure(RoutineInfo routine, PhpArray parameter, PhpArray @static) => new Closure(routine, parameter, @static);
 
         #endregion
 
