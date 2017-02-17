@@ -68,7 +68,7 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 (f, d) => FormatPropertyNameForPrint(f, d),
                 (k) => k.ToString(),
-                (f) => true);
+                (f) => (f.Attributes & (FieldAttributes.Assembly)) != FieldAttributes.Assembly); // ignore "internal" fields
         }
 
         static string FormatPropertyNameForPrint(FieldInfo f, PhpTypeInfo declarer)
