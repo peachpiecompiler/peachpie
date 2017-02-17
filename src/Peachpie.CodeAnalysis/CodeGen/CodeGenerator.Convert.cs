@@ -230,6 +230,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Void:
                     Emit_PhpValue_Void(il, module, diagnostic);
                     break;
+                case SpecialType.System_String:
+                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_String)
+                        .Expect(compilation.CoreTypes.PhpValue);
+                    break;
                 default:
                     if (from == compilation.CoreTypes.PhpAlias)
                     {
@@ -240,12 +244,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (from == compilation.CoreTypes.PhpValue)
                     {
                         // nop
-                        break;
-                    }
-                    else if (from == compilation.CoreTypes.String)
-                    {
-                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_String)
-                            .Expect(compilation.CoreTypes.PhpValue);
                         break;
                     }
                     else if (from == compilation.CoreTypes.PhpString)
