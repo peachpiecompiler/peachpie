@@ -2543,6 +2543,106 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundLambda
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            if (this.BoundLambdaMethod == null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            // Template: BuildClosure(BoundLambdaMethod.EnsureRoutineInfoField(), [this, use1, use2, ...], [p1, p2, ...])
+
+            var idxfld = this.BoundLambdaMethod.EnsureRoutineInfoField(cg.Module);
+            new FieldPlace(null, idxfld).EmitLoad(cg.Builder);
+
+            EmitParametersArray(cg);
+            EmitUseArray(cg);
+
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_RoutineInfo_PhpArray_PhpArray);
+        }
+
+        void EmitUseArray(CodeGenerator cg)
+        {
+            var count = (BoundLambdaMethod.UseThis ? 1 : 0) + UseVars.Length;
+            if (count != 0)
+            {
+                // new PhpArray(<count>)
+                cg.Builder.EmitIntConstant(count);
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
+
+                //
+                if (BoundLambdaMethod.UseThis)
+                {
+                    // <stack>.Add("this", this)
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.EmitIntStringKey(VariableName.ThisVariableName.Value);
+                    cg.EmitConvertToPhpValue(cg.EmitThisOrNull(), 0);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                }
+
+                // uses
+                foreach (var u in UseVars)
+                {
+                    // <stack>.SetItemValue|SetItemAlias(name, value)
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.EmitIntStringKey(u.Parameter.Name);
+
+                    if (u.Value.Access.IsReadRef)
+                    {
+                        // SetItemAlias(name, alias)
+                        cg.Emit(u.Value).Expect(cg.CoreTypes.PhpAlias);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                    }
+                    else
+                    {
+                        // SetItemValue(name, value)
+                        cg.EmitConvert(u.Value, cg.CoreTypes.PhpValue);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                    }
+                }
+            }
+            else
+            {
+                // PhpArray.Empty
+                cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
+                cg.EmitSymbolToken(cg.CoreMethods.PhpArray.Empty, null);
+            }
+        }
+
+        void EmitParametersArray(CodeGenerator cg)
+        {
+            var ps = ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParams;
+            if (ps != null && ps.Length != 0)
+            {
+                // new PhpArray(<count>){ ... }
+                cg.Builder.EmitIntConstant(ps.Length);
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
+
+                foreach (var p in ps)
+                {
+                    var keyname = "$" + p.Name.Name.Value;
+                    if (p.PassedByRef) keyname = "&" + keyname;
+                    var value = (p.InitValue != null) ? "<optional>" : "<required>";
+
+                    // <stack>.SetItemValue("&$name", "<optional>"|"<required>")
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.EmitIntStringKey(keyname);
+                    cg.Builder.EmitStringConstant(value);
+                    cg.EmitConvertToPhpValue(cg.CoreTypes.String, 0);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                }
+            }
+            else
+            {
+                // PhpArray.Empty
+                cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
+                cg.EmitSymbolToken(cg.CoreMethods.PhpArray.Empty, null);
+            }
+        }
+    }
+
     partial class BoundExitEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

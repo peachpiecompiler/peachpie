@@ -16,9 +16,16 @@ namespace Pchp.Library.Streams
     /// <summary>
     /// Either <see cref="string"/> or <see cref="byte"/>[].
     /// </summary>
+    [DebuggerDisplay("{DebugType,nq}: {DebugDisplay}")]
     public struct TextElement
     {
         readonly object _data;
+
+        /// <summary>
+        /// Gets debuggable display string.
+        /// </summary>
+        string DebugDisplay => (_data == null) ? string.Empty : (IsText ? GetText() : Encoding.UTF8.GetString(GetBytes()));
+        string DebugType => (_data == null) ? "NULL" : (IsText ? "Unicode" : "Bytes");
 
         public bool IsNull => _data == null;
 

@@ -369,22 +369,22 @@ namespace Pchp.Core
         public static PhpArray ArrayOrNull(this PhpValue value) => AsArray(value);
 
         /// <summary>
-        /// Alias to <see cref="StringOrNull(PhpValue)"/>.
+        /// Alias to <see cref="ToStringOrNull(PhpValue)"/>.
         /// </summary>
-        public static string AsString(this PhpValue value) => StringOrNull(value);
+        public static string AsString(this PhpValue value) => ToStringOrNull(value);
 
         /// <summary>
         /// In case given value contains a string (<see cref="string"/> or <see cref="PhpString"/>),
         /// its string representation is returned.
         /// Otherwise <c>null</c>.
         /// </summary>
-        public static string StringOrNull(this PhpValue value)
+        public static string ToStringOrNull(this PhpValue value)
         {
             switch (value.TypeCode)
             {
                 case PhpTypeCode.String: return value.String;
                 case PhpTypeCode.WritableString: return value.WritableString.ToString();
-                case PhpTypeCode.Alias: return StringOrNull(value.Alias.Value);
+                case PhpTypeCode.Alias: return ToStringOrNull(value.Alias.Value);
                 default: return null;
             }
         }
@@ -394,13 +394,13 @@ namespace Pchp.Core
         /// its string representation is returned.
         /// Otherwise <c>null</c>.
         /// </summary>
-        public static byte[] BytesOrNull(this PhpValue value)
+        public static byte[] ToBytesOrNull(this PhpValue value)
         {
             switch (value.TypeCode)
             {
                 case PhpTypeCode.String: return Encoding.UTF8.GetBytes(value.String);
                 case PhpTypeCode.WritableString: return value.WritableString.ToBytes(Encoding.UTF8);
-                case PhpTypeCode.Alias: return BytesOrNull(value.Alias.Value);
+                case PhpTypeCode.Alias: return ToBytesOrNull(value.Alias.Value);
                 default: return null;
             }
         }
@@ -418,7 +418,7 @@ namespace Pchp.Core
         /// <summary>
         /// In case the value contains a php string with binary data, gets array of bytes. Otherwise <c>null</c>.
         /// </summary>
-        public static byte[] GetBytesOrNull(this PhpValue value, Context ctx)
+        public static byte[] AsBytesOrNull(this PhpValue value, Context ctx)
         {
             var phpstr = (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpString;
             return (phpstr != null && phpstr.ContainsBinaryData)

@@ -145,21 +145,9 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return StaticCast<TypeSymbol>.From(TypeParameters); }
         }
 
-        //internal override bool HasTypeArgumentsCustomModifiers
-        //{
-        //    get
-        //    {
-        //        return false;
-        //    }
-        //}
+        internal override bool HasTypeArgumentsCustomModifiers => false;
 
-        //internal override ImmutableArray<ImmutableArray<CustomModifier>> TypeArgumentsCustomModifiers
-        //{
-        //    get
-        //    {
-        //        return CreateEmptyTypeArgumentsCustomModifiers();
-        //    }
-        //}
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
 
         public override ImmutableArray<Symbol> GetMembers()
         {

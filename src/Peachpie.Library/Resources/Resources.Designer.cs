@@ -582,6 +582,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to Detected an illegal character in input string.
+        /// </summary>
+        public static string illegal_character {
+            get {
+                return ResourceManager.GetString("illegal_character", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to Type &apos;{0}&apos;: illegal hex digit &apos;{0}&apos;.
         /// </summary>
         public static string illegal_hex_digit {
@@ -1338,6 +1347,24 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to  # Copyright (C) 1999-2003 Free Software Foundation, Inc.
+        ///# This file is part of the GNU LIBICONV Library.
+        ///#
+        ///# The GNU LIBICONV Library is free software; you can redistribute it
+        ///# and/or modify it under the terms of the GNU Library General Public
+        ///# License as published by the Free Software Foundation; either version 2
+        ///# of the License, or (at your option) any later version.
+        ///#
+        ///# The GNU LIBICONV Library is distributed in the hope that it will be
+        ///# useful, but WITHOUT ANY WARRANTY; without even the im [rest of string was truncated]&quot;;.
+        /// </summary>
+        public static string translit {
+            get {
+                return ResourceManager.GetString("translit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to Unenclosed bracket expression.
         /// </summary>
         public static string unenclosed_bracket_expression {
@@ -1524,6 +1551,15 @@ namespace Pchp.Library.Resources {
         public static string wrappers_must_match {
             get {
                 return ResourceManager.GetString("wrappers_must_match", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Wrong charset &apos;{0}&apos;, conversion from &apos;{1}&apos; to &apos;{2}&apos; is not allowed.
+        /// </summary>
+        public static string wrong_charset {
+            get {
+                return ResourceManager.GetString("wrong_charset", resourceCulture);
             }
         }
         

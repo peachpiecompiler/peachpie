@@ -26,7 +26,7 @@ namespace Peachpie.Library.MySql
             /// <summary>
             /// Gets, sets, or restores a value of a legacy configuration option.
             /// </summary>
-            static PhpValue GetSetRestore(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+            static PhpValue GetSet(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
             {
                 var local = config.Get<MySqlConfiguration>();
                 
@@ -34,21 +34,21 @@ namespace Peachpie.Library.MySql
                 {
                     // local:
 
-                    case "mysql.connect_timeout": return (PhpValue)GetSet(ref local.ConnectTimeout, 0, value, action);
-                    case "mysql.default_port": return (PhpValue)GetSet(ref local.Port, 3306, value, action);
-                    case "mysql.default_host": return (PhpValue)GetSet(ref local.Server, null, value, action);
-                    case "mysql.default_user": return (PhpValue)GetSet(ref local.User, "root", value, action);
-                    case "mysql.default_password": return (PhpValue)GetSet(ref local.Password, "", value, action);
-                    case "mysql.default_command_timeout": return (PhpValue)GetSet(ref local.DefaultCommandTimeout, -1, value, action);
-                    case "mysql.connection_string": return (PhpValue)GetSet(ref local.ConnectionString, null, value, action);
+                    case "mysql.connect_timeout": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.ConnectTimeout, 0, value, action);
+                    case "mysql.default_port": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Port, 3306, value, action);
+                    case "mysql.default_host": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Server, null, value, action);
+                    case "mysql.default_user": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.User, "root", value, action);
+                    case "mysql.default_password": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Password, "", value, action);
+                    case "mysql.default_command_timeout": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.DefaultCommandTimeout, -1, value, action);
+                    case "mysql.connection_string": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.ConnectionString, null, value, action);
 
                     // global:
 
                     case "mysql.max_links":
                         Debug.Assert(action == IniAction.Get);
-                        return (PhpValue)GetSet(ref local.MaxConnections, -1, value, action);
+                        return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.MaxConnections, -1, value, action);
                     case "mysql.max_pool_size":
-                        return (PhpValue)GetSet(ref local.MaxPoolSize, 100, value, action);
+                        return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.MaxPoolSize, 100, value, action);
                 }
 
                 Debug.Fail("Option '" + option + "' is supported but not implemented.");
@@ -61,7 +61,7 @@ namespace Peachpie.Library.MySql
             static void RegisterLegacyOptions()
             {
                 const string s = "mysql";
-                GetSetDelegate d = new GetSetDelegate(GetSetRestore);
+                GetSetDelegate d = new GetSetDelegate(GetSet);
 
                 // local:
                 Register("mysql.trace_mode", IniFlags.Unsupported | IniFlags.Local, d, s);

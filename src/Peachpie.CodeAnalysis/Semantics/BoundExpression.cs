@@ -690,6 +690,45 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
+    #region BoundLambda
+
+    /// <summary>
+    /// Anonymous function expression.
+    /// </summary>
+    public partial class BoundLambda : BoundExpression, ILambdaExpression
+    {
+        /// <summary>
+        /// Declared use variables.
+        /// </summary>
+        public ImmutableArray<BoundArgument> UseVars => _usevars;
+        ImmutableArray<BoundArgument> _usevars;
+
+        public IBlockStatement Body => (BoundLambdaMethod != null) ? BoundLambdaMethod.ControlFlowGraph.Start : null;
+
+        public IMethodSymbol Signature => BoundLambdaMethod;
+
+        /// <summary>
+        /// Reference to associated lambda method symbol.
+        /// Bound during analysis.
+        /// </summary>
+        internal SourceLambdaSymbol BoundLambdaMethod { get; set; }
+
+        public BoundLambda(ImmutableArray<BoundArgument> usevars)
+        {
+            _usevars = usevars;
+        }
+
+        public override OperationKind Kind => OperationKind.LambdaExpression;
+        
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitLambda(this);
+
+        public override void Accept(OperationVisitor visitor) => visitor.VisitLambdaExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.VisitLambdaExpression(this, argument);
+    }
+
+    #endregion
+
     #region BoundLiteral
 
     public partial class BoundLiteral : BoundExpression, ILiteralExpression

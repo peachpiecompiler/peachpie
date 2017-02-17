@@ -560,7 +560,7 @@ namespace Pchp.Library
                 string name;
                 PhpArray array;
 
-                if ((name = PhpVariable.StringOrNull(names[i])) != null)
+                if ((name = PhpVariable.ToStringOrNull(names[i])) != null)
                 {
                     // if variable exists adds a copy of its current value to the result:
                     var value = locals[name];
@@ -576,7 +576,7 @@ namespace Pchp.Library
                     {
                         while (iterator.MoveNext())
                         {
-                            if ((name = PhpVariable.StringOrNull(iterator.Current.Value)) != null)
+                            if ((name = PhpVariable.ToStringOrNull(iterator.Current.Value)) != null)
                             {
                                 // if variable exists adds a copy of its current value to the result:
                                 var value = locals[name];

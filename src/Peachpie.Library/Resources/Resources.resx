@@ -607,4 +607,13 @@
   <data name="WindowsTZ" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>WindowsTZ.xml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="illegal_character" xml:space="preserve">
+    <value>Detected an illegal character in input string</value>
+  </data>
+  <data name="wrong_charset" xml:space="preserve">
+    <value>Wrong charset '{0}', conversion from '{1}' to '{2}' is not allowed</value>
+  </data>
+  <data name="translit" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>translit.def;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
 </root>

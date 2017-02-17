@@ -182,9 +182,9 @@ namespace Pchp.Core
     {
         #region StaticPhpConfigurationService, PhpConfigurationService
 
-        class StaticPhpConfigurationService : IPhpConfigurationService
+        class DefaultPhpConfigurationService : IPhpConfigurationService
         {
-            public static readonly StaticPhpConfigurationService Instance = new StaticPhpConfigurationService();
+            public static readonly DefaultPhpConfigurationService Instance = new DefaultPhpConfigurationService();
 
             public PhpCoreConfiguration Core => Get<PhpCoreConfiguration>();
 
@@ -211,7 +211,7 @@ namespace Pchp.Core
 
             public PhpCoreConfiguration Core => _core;
 
-            public IPhpConfigurationService Parent => StaticPhpConfigurationService.Instance;
+            public IPhpConfigurationService Parent => DefaultPhpConfigurationService.Instance;
 
             public virtual TOptions Get<TOptions>() where TOptions : class, IPhpConfiguration
             {
@@ -253,7 +253,7 @@ namespace Pchp.Core
                 throw new ArgumentNullException(nameof(defaults));
             }
 
-            _defaultConfigs.Add(typeof(TOptions), defaults);
+            _defaultConfigs[typeof(TOptions)] = defaults;
         }
 
         /// <summary>

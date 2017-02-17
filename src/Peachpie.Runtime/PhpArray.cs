@@ -84,6 +84,18 @@ namespace Pchp.Core
         /// <param name="length"></param>
         public PhpArray(Array values, int index, int length) : base(values, index, length) { }
 
+        /// <summary>
+		/// Initializes a new instance of the <see cref="PhpArray"/> class filled by values from specified array.
+		/// </summary>
+		/// <param name="values">An array of values to be added to the table.</param>
+		/// <param name="start">An index of the first item from <paramref name="values"/> to add.</param>
+		/// <param name="length">A number of items to add.</param>
+		/// <param name="value">A value to be filtered.</param>
+		/// <param name="doFilter">Wheter to add all items but <paramref name="value"/> (<b>true</b>) or 
+		/// all items with the value <paramref name="value"/> (<b>false</b>).</param>
+		public PhpArray(int[] values, int start, int length, int value, bool doFilter)
+            : base(values, start, length, value, doFilter) { }
+
         ///// <summary>
         ///// Initializes a new instance of the <see cref="PhpArray"/> class filled by values from specified array.
         ///// </summary>

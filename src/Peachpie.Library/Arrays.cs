@@ -104,8 +104,8 @@ namespace Pchp.Library
             if (array.IntrinsicEnumerator.AtEnd)
                 return PhpValue.False;
 
-            // TODO: dereferences result since enumerator doesn't do so:
-            return array.IntrinsicEnumerator.CurrentValue;
+            //
+            return array.IntrinsicEnumerator.CurrentValue.GetValue();
         }
 
         /// <summary>
@@ -166,8 +166,8 @@ namespace Pchp.Library
             // moves to the next item and returns false if there is no such item:
             if (!array.IntrinsicEnumerator.MoveNext()) return PhpValue.False;
 
-            // TODO: dereferences result since enumerator doesn't do so:
-            return array.IntrinsicEnumerator.CurrentValue;
+            //
+            return array.IntrinsicEnumerator.CurrentValue.GetValue();
         }
 
         /// <summary>
@@ -189,9 +189,8 @@ namespace Pchp.Library
             }
 
             // moves to the previous item and returns false if there is no such item:
-            // TODO: dereferences result since enumerator doesn't do so:
             return (array.IntrinsicEnumerator.MovePrevious())
-                ? array.IntrinsicEnumerator.CurrentValue
+                ? array.IntrinsicEnumerator.CurrentValue.GetValue()
                 : PhpValue.False;
         }
 
@@ -212,9 +211,8 @@ namespace Pchp.Library
             }
 
             // moves to the last item and returns false if there is no such item:
-            // TODO: dereferences result since enumerator doesn't do so:
             return (array.IntrinsicEnumerator.MoveLast())
-                ? array.IntrinsicEnumerator.CurrentValue
+                ? array.IntrinsicEnumerator.CurrentValue.GetValue()
                 : PhpValue.False;
         }
 
@@ -234,9 +232,8 @@ namespace Pchp.Library
             }
 
             // moves to the last item and returns false if there is no such item:
-            // TODO: dereferences result since enumerator doesn't do so:
             return (array.IntrinsicEnumerator.MoveFirst())
-                ? array.IntrinsicEnumerator.CurrentValue
+                ? array.IntrinsicEnumerator.CurrentValue.GetValue()
                 : PhpValue.False;
         }
 
@@ -279,7 +276,6 @@ namespace Pchp.Library
             result.Add("key", key);
 
             // keys and values should be inplace deeply copied:
-            // TODO: result.InplaceCopyOnReturn = true;
             return result;
         }
 
@@ -306,7 +302,7 @@ namespace Pchp.Library
             if (array.Count == 0) return PhpValue.Null;
 
             // dereferences result since the array doesn't do so:
-            var result = (array.RemoveLast().Value);    // TODO: PhpVariable.Dereference
+            var result = array.RemoveLast().Value.GetValue();
 
             array.RefreshMaxIntegerKey();
             array.RestartIntrinsicEnumerator();
@@ -356,7 +352,7 @@ namespace Pchp.Library
             if (array.Count == 0) return PhpValue.Null;
 
             // dereferences result since the array doesn't do so:
-            var result = array.RemoveFirst().Value;  // TODO: PhpVariable.Dereference
+            var result = array.RemoveFirst().Value.GetValue();
 
             // reindexes integer keys starting from zero:
             array.ReindexIntegers(0);
@@ -1685,7 +1681,7 @@ namespace Pchp.Library
                 var var = vars[i];
                 if ((arrays[i + 1] = vars[i].AsArray()) == null)
                 {
-                    // TODO: PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 3));
+                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 3).ToString());
                     return false;
                 }
             }
@@ -2362,23 +2358,21 @@ namespace Pchp.Library
             {
                 // dereferences value:
                 var val = iterator.CurrentValue.GetValue();
-                IntStringKey askey;
-
+                
                 switch (val.TypeCode)
                 {
                     case PhpTypeCode.Int32:
                     case PhpTypeCode.Long:
                     case PhpTypeCode.String:
                     case PhpTypeCode.WritableString:
-                        askey = val.ToIntStringKey();
+                        var askey = val.ToIntStringKey();
+                        var countval = result[askey].ToLong();  // 0 for nonexisting entry
+                        result[askey] = PhpValue.Create(countval + 1L);
                         break;
                     default:
-                        // TODO: PhpException.Throw(PhpError.Warning, LibResources.GetString("neither_string_nor_integer_value", "count"));
-                        throw new ArgumentException();
+                        PhpException.Throw(PhpError.Warning, LibResources.neither_string_nor_integer_value, "count");
+                        break;
                 }
-
-                var countval = result[askey].ToLong();  // 0 for nonexisting entry
-                result[askey] = PhpValue.Create(countval + 1L);
             }
 
             // no need to deep copy (values are ints):
@@ -3100,7 +3094,7 @@ namespace Pchp.Library
 
                 if (array == null)
                 {
-                    PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_array", i + 2));// +2 (first arg is callback) 
+                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());// +2 (first arg is callback) 
                     return null;
                 }
 

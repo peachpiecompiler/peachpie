@@ -39,10 +39,16 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             _next = new SourceSymbolProvider(compilation.SourceSymbolCollection);
         }
 
+        static IEnumerable<PEAssemblySymbol> GetExtensionLibraries(PhpCompilation compilation)
+            => compilation
+            .GetBoundReferenceManager()
+            .ExplicitReferencesSymbols
+            .OfType<PEAssemblySymbol>()
+            .Where(s => s.IsExtensionLibrary);
+
         internal static ImmutableArray<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
         {
-            return compilation.GetBoundReferenceManager()
-                .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>().Where(s => s.IsExtensionLibrary)
+            return GetExtensionLibraries(compilation)
                 .SelectMany(r => r.ExtensionContainers)
                 .ToImmutableArray();
         }
@@ -79,15 +85,25 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             {
                 if (_lazyExportedTypes == null)
                 {
-                    var alltypes = _compilation.GetBoundReferenceManager()
-                        .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>()
-                        .Where(s => s.IsExtensionLibrary)
-                        .SelectMany(s => s.PrimaryModule.GlobalNamespace.GetTypeMembers().OfType<NamedTypeSymbol>())
-                        .Where(t => t.DeclaredAccessibility == Accessibility.Public);
+                    var result = new Dictionary<QualifiedName, NamedTypeSymbol>();
 
-                    _lazyExportedTypes = alltypes
-                        .Where(t => ((PENamedTypeSymbol)t).IsPhpTypeName())
-                        .ToDictionary(t => ((PENamedTypeSymbol)t).FullName);
+                    foreach (var lib in GetExtensionLibraries(_compilation))
+                    {
+                        foreach (var t in lib.PrimaryModule.GlobalNamespace.GetTypeMembers().OfType<PENamedTypeSymbol>())
+                        {
+                            if (t.DeclaredAccessibility == Accessibility.Public)
+                            {
+                                var qname = t.GetPhpTypeNameOrNull();
+                                if (!qname.IsEmpty())
+                                {
+                                    result[qname] = t;
+                                }
+                            }
+                        }
+                    }
+                    
+                    //
+                    _lazyExportedTypes = result;
                 }
 
                 return _lazyExportedTypes;

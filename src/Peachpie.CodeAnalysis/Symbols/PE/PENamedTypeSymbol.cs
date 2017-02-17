@@ -639,6 +639,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string NamespaceName => _ns;
 
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
+
         internal PEModuleSymbol ContainingPEModule
         {
             get
@@ -904,7 +908,10 @@ namespace Pchp.CodeAnalysis.Symbols
             ImmutableArray<Symbol> m;
             if (!_lazyMembersByName.TryGetValue(name, out m))
             {
-                m = ImmutableArray<Symbol>.Empty;
+                if (!ignoreCase || !_lazyMembersByName.TryGetValue(name.ToLowerInvariant(), out m))
+                {
+                    m = ImmutableArray<Symbol>.Empty;
+                }
             }
 
             // nested types are not common, but we need to check just in case

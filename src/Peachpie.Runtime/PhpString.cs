@@ -741,6 +741,28 @@ namespace Pchp.Core
 
         public void Append(byte[] value) => EnsureWritable().Append(value);
 
+        public void Append(PhpValue value, Context ctx)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String:
+                    Append(value.String);
+                    break;
+
+                case PhpTypeCode.WritableString:
+                    Append(value.WritableString.DeepCopy());
+                    break;
+
+                case PhpTypeCode.Alias:
+                    Append(value.Alias.Value, ctx);
+                    break;
+
+                default:
+                    Append(value.ToStringOrThrow(ctx));
+                    break;
+            }
+        }
+
         public PhpString DeepCopy() => new PhpString(this);
 
         #endregion

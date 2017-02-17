@@ -93,10 +93,7 @@ namespace Pchp.Core
     {
         public static void Throw(PhpError error, string formatString, params string[] args)
         {
-            Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, string.Format(formatString, args));   // assert in debug mode to handle exception
-
-            // TODO: get current Context from execution context
-            // TODO: throw error according to configuration
+            Context.DefaultErrorHandler?.Throw(error, formatString, args);
         }
 
         /// <summary>
@@ -118,6 +115,16 @@ namespace Pchp.Core
         {
             Debug.Assert(message.Contains("{0}"));
             Throw(PhpError.Warning, ErrResources.invalid_argument_with_message + message, argument);
+        }
+
+        /// <summary>
+        /// An argument violates a type hint.
+        /// </summary>
+        /// <param name="argName">The name of the argument.</param>
+        /// <param name="typeName">The name of the hinted type.</param>
+        public static void InvalidArgumentType(string argName, string typeName)
+        {
+            Throw(PhpError.Error, ErrResources.invalid_argument_type, argName, typeName);
         }
 
         /// <summary>

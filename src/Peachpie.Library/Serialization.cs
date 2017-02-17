@@ -1037,7 +1037,7 @@ namespace Pchp.Library
                         {
                             // parse property name
                             var nameval = Parse();
-                            var pname = nameval.StringOrNull();
+                            var pname = nameval.ToStringOrNull();
                             if (pname == null)
                             {
                                 if (!nameval.IsInteger()) ThrowInvalidDataType();

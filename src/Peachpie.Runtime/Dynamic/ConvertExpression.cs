@@ -53,7 +53,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpNumber)) return BindToNumber(arg);
             if (target == typeof(PhpValue)) return BindToValue(arg);
             if (target == typeof(void)) return BindToVoid(arg);
-            if (target == typeof(object)) return BindToClass(arg);
+            if (target == typeof(object)) return BindAsObject(arg);
             if (target == typeof(PhpArray)) return BindToArray(arg);
             if (target == typeof(IPhpArray)) return BindToArray(arg);   // TODO
             if (target == typeof(IntStringKey)) return BindIntStringKey(arg);
@@ -284,11 +284,26 @@ namespace Pchp.Core.Dynamic
         {
             var source = expr.Type;
 
-            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_AsObject);
+            // PhpValue.AsObject
+            if (source == typeof(PhpValue))
+            {
+                return Expression.Call(expr, Cache.Operators.PhpValue_AsObject);
+            }
 
-            if (!source.GetTypeInfo().IsValueType) return expr;
+            var tinfo = source.GetTypeInfo();
 
-            throw new NotImplementedException(source.FullName);
+            // <expr>
+            if (!tinfo.IsValueType &&
+                !tinfo.IsSubclassOf(typeof(PhpResource)) &&
+                !tinfo.IsSubclassOf(typeof(IPhpArray)) &&
+                !tinfo.IsSubclassOf(typeof(PhpString))
+                )
+            {
+                return expr;
+            }
+
+            // NULL
+            return Expression.Constant(null, Cache.Types.Object[0]);
         }
 
         private static Expression BindToArray(Expression expr)

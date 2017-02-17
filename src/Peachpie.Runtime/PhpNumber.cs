@@ -350,7 +350,7 @@ namespace Pchp.Core
         {
             PhpNumber y_number;
 
-            var y_info = x.ToNumber(out y_number);
+            var y_info = y.ToNumber(out y_number);
             if ((y_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new NotImplementedException();    // TODO: PhpException; return 0
@@ -671,7 +671,7 @@ namespace Pchp.Core
         {
             PhpNumber y_number;
 
-            var y_info = x.ToNumber(out y_number);
+            var y_info = y.ToNumber(out y_number);
             if ((y_info & (Convert.NumberInfo.Unconvertible | Convert.NumberInfo.IsPhpArray)) != 0)
             {
                 throw new NotImplementedException();    // TODO: PhpException; return 0

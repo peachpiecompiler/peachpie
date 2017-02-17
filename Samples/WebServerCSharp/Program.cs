@@ -13,7 +13,7 @@ namespace WebServerCSharp
         {
             var host = new WebHostBuilder()
                 .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseContentRoot(System.IO.Directory.GetCurrentDirectory())
                 .UseUrls("http://*:5004/")
                 .UseStartup<Startup>()
                 .Build();

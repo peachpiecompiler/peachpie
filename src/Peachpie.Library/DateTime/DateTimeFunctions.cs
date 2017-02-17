@@ -46,6 +46,67 @@ namespace Pchp.Library
 
         #endregion
 
+        #region date_format, date_create, date_offset_get, date_modify
+
+        [return: CastToFalse]
+        public static string date_format(global::DateTime datetime, string format)
+        {
+            // TODO: format it properly
+            return FormatDate(format, datetime.Time, datetime.TimeZone);
+        }
+
+        /// <summary>
+        /// Alias of new <see cref="DateTime"/>
+        /// </summary>
+        //[return: CastToFalse]
+        public static global::DateTime date_create(Context/*!*/context, string time = null, DateTimeZone timezone = null)
+        {
+            return new global::DateTime(context, time, timezone);
+        }
+
+        /// <summary>
+        /// Returns new DateTime object formatted according to the specified format.
+        /// </summary>
+        /// <param name="context"><see cref="ScriptContext"/> reference.</param>
+        /// <param name="format">The format that the passed in string should be in.</param>
+        /// <param name="time">String representing the time.</param>
+        /// <param name="timezone">A DateTimeZone object representing the desired time zone.</param>
+        /// <returns></returns>
+        [return: CastToFalse]
+        public static global::DateTime date_create_from_format(Context/*!*/context, string format, string time, DateTimeZone timezone = null)
+        {
+            return global::DateTime.createFromFormat(context, format, time, timezone);
+        }
+
+        /// <summary>
+        /// Alias of DateTime::getOffset().
+        /// </summary>
+        [return: CastToFalse]
+        public static int date_offset_get(global::DateTime datetime)
+        {
+            if (datetime == null)
+            {
+                PhpException.ArgumentNull("datetime");
+                return -1;
+            }
+
+            if (datetime.TimeZone == null)
+                return -1;
+
+            return (int)datetime.TimeZone.BaseUtcOffset.TotalSeconds;
+        }
+
+        /// <summary>
+        /// Alias of DateTime::modify().
+        /// </summary>
+        [return: CastToFalse]
+        public static global::DateTime date_modify(Context/*!*/context, global::DateTime datetime, string modify)
+        {
+            return datetime.modify(modify);
+        }
+
+        #endregion
+
         #region date, idate, gmdate
 
         /// <summary>

@@ -264,9 +264,20 @@ namespace Pchp.Core
         /// <summary>
         /// Includes requested script file.
         /// </summary>
-        public void Include(HttpRequest req)
+        public bool Include(HttpRequest req)
         {
-            this.Include(string.Empty, req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length), false, true);
+            var relative_path = ScriptsMap.NormalizeSlashes(req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length));
+            var script = ScriptsMap.GetDeclaredScript(relative_path);
+            if (script.IsValid)
+            {
+                this.MainScriptFile = script;
+                script.MainMethod(this, this.Globals, null);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

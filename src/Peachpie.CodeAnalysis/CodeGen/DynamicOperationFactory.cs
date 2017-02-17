@@ -130,7 +130,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(refKinds.IsDefaultOrEmpty || refKinds.Length == loweredArguments.Length);
 
-            var callSiteType = _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);
+            var callSiteType = this.CallSite;
             if (callSiteType.IsErrorType())
             {
                 return null;

@@ -504,7 +504,7 @@ namespace Pchp.Core
                 var data = _level.filter.Invoke(_ctx, GetContent(), PhpValue.Create((int)(ChunkPosition.First | ChunkPosition.Middle | ChunkPosition.Last)));
                 if (!data.IsEmpty)
                 {
-                    var bytes = data.GetBytesOrNull(_ctx);
+                    var bytes = data.AsBytesOrNull(_ctx);
 
                     // writes data to the current level of buffering or to sinks depending on the level count:
                     if (_level.Index == 0)

@@ -17,6 +17,17 @@ namespace Pchp.Core.Utilities
             int i = unchecked((int)l);
             return (i == l);
         }
+
+        /// <summary>Calculates the quotient of two 32-bit signed integers and also returns the remainder in an output parameter.</summary>
+        /// <returns>The quotient of the specified numbers.</returns>
+        /// <param name="a">The dividend.</param>
+        /// <param name="b">The divisor.</param>
+        /// <param name="result">The remainder.</param>
+        public static long DivRem(long a, long b, out long result)
+        {
+            result = a % b;
+            return a / b;
+        }
     }
 
     #endregion

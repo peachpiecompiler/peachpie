@@ -534,6 +534,7 @@ namespace Pchp.Library
         /// <summary>
         /// Generates a URL-encoded query string from the associative (or indexed) array provided. 
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="formData">
         /// The array form may be a simple one-dimensional structure, or an array of arrays
         /// (who in turn may contain other arrays). 
@@ -550,10 +551,10 @@ namespace Pchp.Library
         /// </param>
         /// <param name="encType"></param>
         /// <returns>Returns a URL-encoded string </returns>
-        public static string http_build_query(PhpValue formData, string numericPrefix, string argSeparator, int encType = 0)
-            => http_build_query(formData, numericPrefix, argSeparator, encType, null);
+        public static string http_build_query(Context ctx, PhpValue formData, string numericPrefix = null, string argSeparator = null, int encType = 0)
+            => http_build_query(ctx, formData, numericPrefix, argSeparator, encType, null);
 
-        private static string http_build_query(PhpValue formData, string numericPrefix, string argSeparator, int encType = 0, string indexerPrefix = null)
+        private static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator = null, int encType = 0, string indexerPrefix = null)
         {
             var str_builder = new StringBuilder(64);  // statistically the length of the result
             var result = new System.IO.StringWriter(str_builder);
@@ -569,8 +570,8 @@ namespace Pchp.Library
                 // the query parameter name (key name)
                 // the parameter name is URL encoded
                 string keyName = key.IsInteger()
-                    ? urlencode(numericPrefix) + key.ToLong().ToString()
-                    : urlencode(key.ToString());
+                    ? (numericPrefix != null ? urlencode(numericPrefix) : null) + key.ToLong().ToString()
+                    : urlencode(key.ToStringOrThrow(ctx));
 
                 if (indexerPrefix != null)
                 {
@@ -584,7 +585,7 @@ namespace Pchp.Library
                 {
                     // value is an array, emit query recursively, use current keyName as an array variable name
 
-                    string queryStr = http_build_query((PhpValue)valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
+                    string queryStr = http_build_query(ctx, (PhpValue)valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
 
                     if (queryStr != null && queryStr.Length > 0)
                     {
@@ -603,7 +604,7 @@ namespace Pchp.Library
 
                     if (!value.IsEmpty)
                     {
-                        result.Write(keyName + "=" + urlencode(value.ToString()));    // == "keyName=keyValue"
+                        result.Write(keyName + "=" + urlencode(value.ToStringOrThrow(ctx)));    // == "keyName=keyValue"
                     }
                     else
                     {
