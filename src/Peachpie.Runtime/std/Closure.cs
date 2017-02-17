@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 
 [PhpType("Closure")]
 public sealed class Closure : IPhpCallable
@@ -16,7 +17,7 @@ public sealed class Closure : IPhpCallable
     /// <summary>
     /// Actual anonymous function.
     /// </summary>
-    readonly internal PhpInvokable invokable;
+    readonly internal RoutineInfo routine;
 
     /// <summary>
     /// Anonymous function parameters, for dumping only.
@@ -24,19 +25,19 @@ public sealed class Closure : IPhpCallable
     readonly PhpArray parameter;
 
     /// <summary>
-    /// Fixed (use) parameters to be passed to <see cref="invokable"/>.
+    /// Fixed (use) parameters to be passed to <see cref="routine"/>.
     /// </summary>
     readonly internal PhpArray @static;
 
     /// <summary>
     /// Constructs the closure.
     /// </summary>
-    internal Closure(object @this, PhpInvokable invokable, PhpArray parameter, PhpArray @static)
+    internal Closure(object @this, RoutineInfo routine, PhpArray parameter, PhpArray @static)
     {
         this.@this = @this;
+        this.routine = routine;
         this.parameter = parameter;
         this.@static = @static;
-        this.invokable = invokable;
     }
 
     /// <summary>
@@ -49,7 +50,7 @@ public sealed class Closure : IPhpCallable
     /// </summary>
     public Closure bindTo(object newthis, string newscope = null)
     {
-        return new Closure(newthis, this.invokable, this.parameter, this.@static);
+        return new Closure(newthis, this.routine, this.parameter, this.@static);
     }
 
     /// <summary>
@@ -57,24 +58,38 @@ public sealed class Closure : IPhpCallable
     /// </summary>
     public PhpValue call(Context ctx, object newthis, params PhpValue[] arguments)
     {
-        return ((IPhpCallable)bindTo(newthis)).Invoke(ctx, arguments);
+        return bindTo(newthis).__invoke(ctx, arguments);
+    }
+
+    /// <summary>
+    /// Magic method <c>__invoke</c> invokes the anonymous function with given arguments.
+    /// </summary>
+    public PhpValue __invoke(Context ctx, params PhpValue[] arguments)
+    {
+        // { @this, ... @static, ... arguments }
+
+        var newargs = new PhpValue[1 + @static.Count + arguments.Length];
+
+        //
+        newargs[0] = PhpValue.FromClass(@this);
+
+        //
+        if (@static.Count != 0)
+        {
+            @static.CopyValuesTo(newargs, 1);
+        }
+
+        //
+        Array.Copy(arguments, 0, newargs, 1 + @static.Count, arguments.Length);
+
+        //
+        return this.routine.PhpCallable(ctx, newargs);
     }
 
     /// <summary>
     /// Implementation of <see cref="IPhpCallable"/>, invokes the anonymous function.
     /// </summary>
-    PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments)
-    {
-        if (@static != null && @static.Count != 0)
-        {
-            var newargs = new PhpValue[@static.Count + arguments.Length];
-
-            @static.CopyValuesTo(newargs, 0);
-            Array.Copy(arguments, 0, newargs, @static.Count, arguments.Length);
-        }
-
-        return this.invokable(ctx, @this, arguments);
-    }
+    PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments) => __invoke(ctx, arguments);
 
     PhpValue IPhpCallable.ToPhpValue() => PhpValue.FromClass(this);
 }

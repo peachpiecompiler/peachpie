@@ -610,6 +610,15 @@ namespace Pchp.Core
 
         #endregion
 
+        #region BuildClosure
+
+        /// <summary>
+        /// Create <see cref="Closure"/> with specified anonymous function and used parameters.
+        /// </summary>
+        public static Closure BuildClosure(object @this, RoutineInfo routine, PhpArray parameter, PhpArray @static) => new Closure(@this, routine, parameter, @static);
+
+        #endregion
+
         #region Enumerator
 
         /// <summary>

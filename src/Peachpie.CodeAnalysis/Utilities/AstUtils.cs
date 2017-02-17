@@ -51,6 +51,10 @@ namespace Pchp.CodeAnalysis
                 var node = (MethodDecl)routine;
                 return (node.Body != null) ? node.Body.Span : Span.Invalid;
             }
+            if (routine is LambdaFunctionExpr)
+            {
+                return ((LambdaFunctionExpr)routine).Body.Span;
+            }
             else
             {
                 return Span.Invalid;

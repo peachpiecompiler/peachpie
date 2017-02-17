@@ -149,6 +149,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
+            if (expr is AST.LambdaFunctionExpr) return new BoundLambda() { PhpSyntax = expr }.WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }

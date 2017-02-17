@@ -429,6 +429,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
 
                 Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
+                BuildClosure = ct.Operators.Method("BuildClosure", ct.Object, ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
 
                 offsetGet_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetGet", ct.PhpValue);
 
@@ -485,6 +486,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
 
                 Clone_Context_Object,
+                BuildClosure,
 
                 offsetGet_ArrayAccess_PhpValue,
 
