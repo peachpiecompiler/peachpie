@@ -2579,7 +2579,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.Builder.EmitOpCode(ILOpCode.Dup);
                     cg.EmitIntStringKey(VariableName.ThisVariableName.Value);
                     cg.EmitConvertToPhpValue(cg.EmitThisOrNull(), 0);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
                 }
 
                 // uses
@@ -2633,7 +2633,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitIntStringKey(keyname);
                     cg.Builder.EmitStringConstant(value);
                     cg.EmitConvertToPhpValue(cg.CoreTypes.String, 0);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
                 }
             }
             else
