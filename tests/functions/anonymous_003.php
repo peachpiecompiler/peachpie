@@ -4,7 +4,7 @@ $message = 'hello';
 
 // Inherit $message
 $example = function () use ($message) {
-    var_dump($message);
+    print_r($message);
 };
 $example();
 
@@ -18,7 +18,7 @@ $message = 'hello';
 
 // Inherit by-reference
 $example = function () use (&$message) {
-    var_dump($message);
+    print_r($message);
 };
 $example();
 
@@ -29,6 +29,6 @@ $example();
 
 // Closures can also accept regular arguments
 $example = function ($arg) use ($message) {
-    var_dump($arg . ' ' . $message);
+    print_r($arg . ' ' . $message);
 };
 $example("hello");
