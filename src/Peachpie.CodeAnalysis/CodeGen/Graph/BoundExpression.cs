@@ -2591,16 +2591,18 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     if (u.Value.Access.IsReadRef)
                     {
-                        // SetItemAlias(name, alias)
-                        cg.Emit(u.Value).Expect(cg.CoreTypes.PhpAlias);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                        // PhpValue.Create( PhpAlias )
+                        cg.Emit(u.Value).Expect(cg.CoreTypes.PhpAlias); // PhpAlias
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);    // PhpValue.Create
                     }
                     else
                     {
-                        // SetItemValue(name, value)
+                        // PhpValue
                         cg.EmitConvert(u.Value, cg.CoreTypes.PhpValue);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
                     }
+
+                    // Add(name, value)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
                 }
             }
             else
