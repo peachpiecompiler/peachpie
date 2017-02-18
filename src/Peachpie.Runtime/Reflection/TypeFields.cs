@@ -129,6 +129,20 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public object GetConstantValue(Context ctx, string name)
         {
+            object value;
+            if (!TryGetConstantValue(ctx, name, out value))
+            {
+                throw new KeyNotFoundException();
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Resolves a constant value in given context.
+        /// </summary>
+        public bool TryGetConstantValue(Context ctx, string name, out object value)
+        {
             if (ctx == null)
             {
                 throw new ArgumentNullException("ctx");
@@ -141,7 +155,8 @@ namespace Pchp.Core.Reflection
             {
                 if (fld.IsPublic && fld.IsLiteral)
                 {
-                    return fld.GetValue(null);
+                    value = fld.GetValue(null);
+                    return true;
                 }
             }
 
@@ -150,11 +165,14 @@ namespace Pchp.Core.Reflection
             {
                 if (fld.IsPublic && fld.IsInitOnly)
                 {
-                    return fld.GetValue(EnsureStaticsGetter(fld.DeclaringType)(ctx));  // Context.GetStatics<_statics>().FIELD
+                    value = fld.GetValue(EnsureStaticsGetter(fld.DeclaringType)(ctx));  // Context.GetStatics<_statics>().FIELD
+                    return true;
                 }
             }
 
-            throw new ArgumentException();
+            //
+            value = null;
+            return false;
         }
 
         public enum FieldKind

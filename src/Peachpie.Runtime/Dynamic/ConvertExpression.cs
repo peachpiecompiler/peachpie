@@ -448,7 +448,7 @@ namespace Pchp.Core.Dynamic
 
         static ConversionCost BindCostFromLong(Expression arg, Type target)
         {
-            if (target == typeof(long)) return (ConversionCost.Pass);
+            if (target == typeof(int) || target == typeof(long)) return (ConversionCost.Pass);
             if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
             if (target == typeof(double)) return (ConversionCost.ImplicitCast);
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
