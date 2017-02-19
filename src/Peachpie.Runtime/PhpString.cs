@@ -483,6 +483,11 @@ namespace Pchp.Core
 
             #region ToBytes
 
+            /// <summary>
+            /// Gets string encoded into array of bytes according to corrent string encoding.
+            /// </summary>
+            public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
+
             public byte[] ToBytes(Encoding encoding)
             {
                 var chunks = _chunks;
@@ -735,6 +740,28 @@ namespace Pchp.Core
         public void Append(PhpString value) => EnsureWritable().Append(value);
 
         public void Append(byte[] value) => EnsureWritable().Append(value);
+
+        public void Append(PhpValue value, Context ctx)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String:
+                    Append(value.String);
+                    break;
+
+                case PhpTypeCode.WritableString:
+                    Append(value.WritableString.DeepCopy());
+                    break;
+
+                case PhpTypeCode.Alias:
+                    Append(value.Alias.Value, ctx);
+                    break;
+
+                default:
+                    Append(value.ToStringOrThrow(ctx));
+                    break;
+            }
+        }
 
         public PhpString DeepCopy() => new PhpString(this);
 

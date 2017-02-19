@@ -408,6 +408,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble_String = ct.Convert.Method("StringToDouble", ct.String);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
+                AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
                 ToArray_PhpValue = ct.Convert.Method("ToArray", ct.PhpValue);
                 ToClass_PhpValue = ct.Convert.Method("ToClass", ct.PhpValue);
                 ToClass_IPhpArray = ct.Convert.Method("ToClass", ct.IPhpArray);
@@ -426,6 +427,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Int32 = ct.Context.Method("Echo", ct.Int32);
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
+
+                Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
+                BuildClosure_RoutineInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
 
                 offsetGet_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetGet", ct.PhpValue);
 
@@ -474,12 +478,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object, ToBoolean_IPhpConvertible,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
                 ToNumber_PhpValue, ToNumber_String,
-                AsObject_PhpValue, ToArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
+                AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
+
+                Clone_Context_Object,
+                BuildClosure_RoutineInfo_PhpArray_PhpArray,
 
                 offsetGet_ArrayAccess_PhpValue,
 
@@ -754,6 +761,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble = ct.PhpString.Method("ToDouble");
                 ToString_Context = ct.PhpString.Method("ToString", ct.Context);
                 ToNumber = ct.PhpString.Method("ToNumber");
+                ToBytes_Context = ct.PhpString.Method("ToBytes", ct.Context);
 
                 Append_String = ct.PhpString.Method("Append", ct.String);
                 Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
@@ -762,7 +770,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToBytes_Context,
                 Append_String, Append_PhpString,
                 DeepCopy;
         }
@@ -819,6 +827,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemArray_IntStringKey = t.Method("EnsureItemArray", ct.IntStringKey);
                 EnsureItemAlias_IntStringKey = t.Method("EnsureItemAlias", ct.IntStringKey);
 
+                Add_IntStringKey_PhpValue = ct.PhpHashtable.Method("Add", ct.IntStringKey, ct.PhpValue);
+
                 New_PhpValue = t.Method("New", ct.PhpValue);
                 Union_PhpArray_PhpArray = t.Method("Union", ct.PhpArray, ct.PhpArray);
 
@@ -832,6 +842,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy, GetForeachEnumerator_Boolean,
+                Add_IntStringKey_PhpValue,
                 New_PhpValue, Union_PhpArray_PhpArray;
 
             public readonly CoreField
@@ -852,6 +863,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IntStringKey_string = ct.IntStringKey.Ctor(ct.String);
                 ScriptAttribute_string = ct.ScriptAttribute.Ctor(ct.String);
                 PhpTraitAttribute = ct.PhpTraitAttribute.Ctor();
+                PhpFieldsOnlyCtorAttribute = ct.PhpFieldsOnlyCtorAttribute.Ctor();
 
                 ScriptDiedException = ct.ScriptDiedException.Ctor();
                 ScriptDiedException_Long = ct.ScriptDiedException.Ctor(ct.Long);
@@ -863,7 +875,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpArray, PhpArray_int,
                 PhpString, PhpString_string, PhpString_string_string,
                 IntStringKey_int, IntStringKey_string,
-                ScriptAttribute_string, PhpTraitAttribute,
+                ScriptAttribute_string, PhpTraitAttribute, PhpFieldsOnlyCtorAttribute,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;
         }
 

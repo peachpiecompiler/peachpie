@@ -26,9 +26,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             readonly SourceSymbolCollection _tables;
             readonly PhpCompilation _compilation;
+            readonly Stack<NamedTypeSymbol> _containerStack = new Stack<NamedTypeSymbol>();
 
             SourceFileSymbol _currentFile;
-            private PhpSyntaxTree _syntaxTree;
+            PhpSyntaxTree _syntaxTree;
 
             public BinderVisitor(PhpCompilation compilation, SourceSymbolCollection tables, PhpSyntaxTree syntaxTree)
             {
@@ -41,15 +42,22 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 Debug.Assert(_syntaxTree.Source.Ast == x);
 
-                _currentFile = new SourceFileSymbol(_compilation, _syntaxTree);
-                _tables._files[_currentFile.RelativeFilePath] = _currentFile;
+                var fsymbol = new SourceFileSymbol(_compilation, _syntaxTree);
+
+                _currentFile = fsymbol;
+                _tables._files.Add(fsymbol.RelativeFilePath, fsymbol);
+                _tables._ordinalMap.Add(_syntaxTree, _tables._ordinalMap.Count);
 
                 if (_tables.FirstScript == null)
                 {
                     _tables.FirstScript = _currentFile;
                 }
 
+                _containerStack.Push(fsymbol);
+
                 base.VisitGlobalCode(x);
+
+                _containerStack.Pop();
 
                 _currentFile = null;
             }
@@ -67,13 +75,31 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public override void VisitTypeDecl(TypeDecl x)
             {
-                var type = new SourceTypeSymbol(_currentFile, x);
+                var type = (x is AnonymousTypeDecl)
+                    ? new SourceAnonymousTypeSymbol(_currentFile, (AnonymousTypeDecl)x)
+                    : new SourceTypeSymbol(_currentFile, x);
 
                 x.SetProperty(type);    // remember bound type symbol
                 _currentFile.ContainedTypes.Add(type);
 
                 //
+
+                _containerStack.Push(type);
+
                 base.VisitTypeDecl(x);
+
+                _containerStack.Pop();
+            }
+
+            public override void VisitLambdaFunctionExpr(LambdaFunctionExpr x)
+            {
+                var container = _containerStack.Peek();
+                var lambdasymbol = new SourceLambdaSymbol(x, container, /*TODO: !x.IsStatic ?*/true);
+                Debug.Assert(container is ILambdaContainerSymbol);
+                ((ILambdaContainerSymbol)container).AddLambda(lambdasymbol);
+
+                //
+                base.VisitLambdaFunctionExpr(x);
             }
         }
 
@@ -142,9 +168,7 @@ namespace Pchp.CodeAnalysis.Symbols
             /// <summary>
             /// Gets single visible symbol or null.
             /// </summary>
-            /// <param name="key"></param>
-            /// <returns></returns>
-            public TSymbol SingleOrNull(TKey key)
+            public TSymbol SingleOrDefault(TKey key)
             {
                 var single = default(TSymbol);
                 var values = this[key];
@@ -165,6 +189,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 return single;
+            }
+
+            public IEnumerable<TSymbol> GetAll(TKey key)
+            {
+                EnsureUpdated();
+                return _cacheDict[key];
             }
 
             /// <summary>
@@ -198,6 +228,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Set of files.
         /// </summary>
         readonly Dictionary<string, SourceFileSymbol> _files = new Dictionary<string, SourceFileSymbol>(StringComparer.Ordinal);
+        readonly Dictionary<SyntaxTree, int> _ordinalMap = new Dictionary<SyntaxTree, int>();
 
         readonly SymbolsCache<QualifiedName, SourceTypeSymbol> _types;
         readonly SymbolsCache<QualifiedName, SourceFunctionSymbol> _functions;
@@ -208,12 +239,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public SourceFileSymbol FirstScript { get; private set; }
 
+        public IDictionary<SyntaxTree, int> OrdinalMap => _ordinalMap;
+
         public SourceSymbolCollection(PhpCompilation/*!*/compilation)
         {
             Contract.ThrowIfNull(compilation);
             _compilation = compilation;
 
-            _types = new SymbolsCache<QualifiedName, SourceTypeSymbol>(this, f => f.ContainedTypes, t => t.MakeQualifiedName(), t => !t.IsConditional);
+            _types = new SymbolsCache<QualifiedName, SourceTypeSymbol>(this, f => f.ContainedTypes, t => t.MakeQualifiedName(), t => !t.IsConditional || t.IsAnonymousType);
             _functions = new SymbolsCache<QualifiedName, SourceFunctionSymbol>(this, f => f.Functions, f => f.QualifiedName, f => !f.IsConditional);
         }
 
@@ -246,31 +279,54 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SourceFileSymbol GetFile(string fname) => _files.TryGetOrDefault(fname);
 
+        /// <summary>
+        /// Gets compilation syntax trees.
+        /// </summary>
+        public IEnumerable<PhpSyntaxTree> SyntaxTrees => _files.Values.Select(f => f.SyntaxTree);
+
         public IEnumerable<SourceFileSymbol> GetFiles() => _files.Values;
 
-        public MethodSymbol GetFunction(QualifiedName name) => _functions.SingleOrNull(name);
+        /// <summary>
+        /// Gets function symbol, may return <see cref="ErrorMethodSymbol"/> in case of ambiguity or a missing function.
+        /// </summary>
+        public MethodSymbol GetFunction(QualifiedName name)
+        {
+            var fncs = _functions.GetAll(name).AsImmutable();
+            if (fncs.Length == 1 && !fncs[0].IsConditional) return fncs[0];
+            if (fncs.Length == 0) return new MissingMethodSymbol(name.Name.Value);
+            return new AmbiguousMethodSymbol(fncs.AsImmutable<MethodSymbol>(), overloadable: false);
+        }
 
         public IEnumerable<MethodSymbol> GetFunctions(QualifiedName name) => _functions[name];
 
-        public IEnumerable<SourceFunctionSymbol> GetFunctions() => _functions.Symbols;
+        public IEnumerable<SourceFunctionSymbol> GetFunctions()
+        {
+            return _functions.Symbols;
+        }
+
+        public IEnumerable<SourceLambdaSymbol> GetLambdas()
+        {
+            return GetTypes().Cast<ILambdaContainerSymbol>().Concat(_files.Values).SelectMany(c => c.Lambdas);
+        }
 
         /// <summary>
         /// Gets enumeration of all routines (global code, functions and methods) in source code.
         /// </summary>
-        public IEnumerable<SourceRoutineSymbol> AllRoutines    // all functions + global code + methods
+        public IEnumerable<SourceRoutineSymbol> AllRoutines    // all functions + global code + methods + lambdas
         {
             get
             {
                 var funcs = GetFunctions().Cast<SourceRoutineSymbol>();
                 var mains = _files.Values.Select(f => f.MainMethod);
                 var methods = GetTypes().SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
-
+                var lambdas = GetLambdas();
+                
                 //
-                return funcs.Concat(mains).Concat(methods);
+                return funcs.Concat(mains).Concat(methods).Concat(lambdas);
             }
         }
 
-        public NamedTypeSymbol GetType(QualifiedName name) => _types.SingleOrNull(name);
+        public NamedTypeSymbol GetType(QualifiedName name) => _types.SingleOrDefault(name);
 
         public IEnumerable<SourceTypeSymbol> GetTypes() => _types.Symbols;
     }

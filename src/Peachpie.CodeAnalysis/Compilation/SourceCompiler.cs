@@ -28,19 +28,20 @@ namespace Pchp.CodeAnalysis
         readonly PEModuleBuilder _moduleBuilder;
         readonly bool _emittingPdb;
         readonly DiagnosticBag _diagnostics;
+        readonly CancellationToken _cancellationToken;
 
         readonly Worklist<BoundBlock> _worklist;
 
-        private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics)
+        private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
             Contract.ThrowIfNull(compilation);
-            Contract.ThrowIfNull(moduleBuilder);
             Contract.ThrowIfNull(diagnostics);
 
             _compilation = compilation;
             _moduleBuilder = moduleBuilder;
             _emittingPdb = emittingPdb;
             _diagnostics = diagnostics;
+            _cancellationToken = cancellationToken;
 
             // parallel worklist algorithm
             _worklist = new Worklist<BoundBlock>(AnalyzeBlock);
@@ -169,6 +170,8 @@ namespace Pchp.CodeAnalysis
 
         internal void EmitMethodBodies()
         {
+            Debug.Assert(_moduleBuilder != null);
+
             // source routines
             this.WalkMethods(this.EmitMethodBody);
         }
@@ -184,8 +187,11 @@ namespace Pchp.CodeAnalysis
             _compilation.SourceSymbolCollection.GetFunctions()
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
+            _compilation.SourceSymbolCollection.GetLambdas()
+                .ForEach(f => f.EmitInit(_moduleBuilder));
+
             // __statics.Init, .phpnew, .ctor
-            WalkTypes(t => t.EmitInit(_moduleBuilder));
+            WalkTypes(t => t.EmitInit(_moduleBuilder, _diagnostics));
 
             // realize .cctor if any
             _moduleBuilder.RealizeStaticCtors();
@@ -207,11 +213,11 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        void CompileEntryPoint(CancellationToken cancellationToken)
+        void CompileEntryPoint()
         {
             if (_compilation.Options.OutputKind.IsApplication() && _moduleBuilder != null)
             {
-                var entryPoint = _compilation.GetEntryPoint(cancellationToken);
+                var entryPoint = _compilation.GetEntryPoint(_cancellationToken);
                 if (entryPoint != null)
                 {
                     // wrap call to entryPoint within real <Script>.EntryPointSymbol
@@ -224,22 +230,20 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        void CompileReflectionEnumerators(CancellationToken cancellationToken)
+        void CompileReflectionEnumerators()
         {
+            Debug.Assert(_moduleBuilder != null);
+
             _moduleBuilder.CreateEnumerateReferencedFunctions(_diagnostics);
+            _moduleBuilder.CreateEnumerateReferencedTypes(_diagnostics);
             _moduleBuilder.CreateEnumerateScriptsSymbol(_diagnostics);
             _moduleBuilder.CreateEnumerateConstantsSymbol(_diagnostics);
         }
 
-        public static void CompileSources(
-            PhpCompilation compilation,
-            PEModuleBuilder moduleBuilder,
-            bool emittingPdb,
-            bool hasDeclarationErrors,
-            DiagnosticBag diagnostics,
-            CancellationToken cancellationToken)
+        public static IEnumerable<Diagnostic> BindAndAnalyze(PhpCompilation compilation)
         {
-            var compiler = new SourceCompiler(compilation, moduleBuilder, emittingPdb, diagnostics);
+            var diagnostics = new DiagnosticBag();
+            var compiler = new SourceCompiler(compilation, null, true, diagnostics, CancellationToken.None);
 
             // 1.Bind Syntax & Symbols to Operations (CFG)
             //   a.equivalent to building CFG
@@ -255,15 +259,36 @@ namespace Pchp.CodeAnalysis
             compiler.AnalyzeMethods();
             compiler.DiagnoseMethods();
 
-            // 3. Emit method bodies
+            //
+            return diagnostics.AsEnumerable();
+        }
+
+        public static void CompileSources(
+            PhpCompilation compilation,
+            PEModuleBuilder moduleBuilder,
+            bool emittingPdb,
+            bool hasDeclarationErrors,
+            DiagnosticBag diagnostics,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(moduleBuilder != null);
+
+            // ensure flow analysis
+            var analysisdiagnostics = compilation.BindAndAnalyseTask().Result;
+            diagnostics.AddRange(analysisdiagnostics);
+
+            //
+            var compiler = new SourceCompiler(compilation, moduleBuilder, emittingPdb, diagnostics, cancellationToken);
+
+            // Emit method bodies
             //   a. declared routines
             //   b. synthesized symbols
             compiler.EmitMethodBodies();
             compiler.EmitSynthesized();
-            compiler.CompileReflectionEnumerators(cancellationToken);
+            compiler.CompileReflectionEnumerators();
 
-            // 4. Entry Point (.exe)
-            compiler.CompileEntryPoint(cancellationToken);
+            // Entry Point (.exe)
+            compiler.CompileEntryPoint();
         }
     }
 }

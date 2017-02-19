@@ -74,7 +74,7 @@ namespace Pchp.Core
             public List<BufferElement> buffers;          // the list of buffers where data are stored   // TODO: PhpString
             public bool containsByteData;      // whether any buffer in the buffers list is of type byte[]
             public bool containsCharData;      // whether any buffer in the buffers list is of type char[]
-            public Delegate filter;         // user supplied filtering callback
+            public IPhpCallable filter;        // user supplied filtering callback
             public object userData;            // arbitrary data supplied by the user
             public string levelName;           // the PHP name of the level, can be null
         }
@@ -111,14 +111,18 @@ namespace Pchp.Core
         /// <summary>
         /// Encoding used by <see cref="GetContentAsString"/> converting binary data to a string.
         /// </summary>
-        public override Encoding Encoding { get { return _encoding; } }
-        private Encoding _encoding;
-
+        public override Encoding Encoding { get { return _ctx.StringEncoding; } }
+        
         /// <summary>
         /// The buffered binary stream used as for loading binary data to buffers.
         /// </summary>
         public BufferedOutputStream Stream { get { return _stream; } }
         private BufferedOutputStream _stream;
+
+        /// <summary>
+        /// Runtime context.
+        /// </summary>
+        readonly Context _ctx;
 
         /// <summary>
         /// Current buffer level starting from 1. Zero if buffering is disabled.
@@ -138,20 +142,24 @@ namespace Pchp.Core
         /// <summary>
         /// Creates buffered output with specified sinks.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="enableBuffering">Whether to immediately enable buffering, i.e. increase the level.</param>
         /// <param name="charSink">A writer through which character data will be written.</param>
         /// <param name="byteSink">A stream through which binary data will be written.</param>
-        /// <param name="encoding">A encoding used to transform binary data to strings.</param>
-        public BufferedOutput(bool enableBuffering, TextWriter charSink, Stream byteSink, Encoding encoding)
+        public BufferedOutput(Context ctx, bool enableBuffering, TextWriter charSink, Stream byteSink)
         {
+            Debug.Assert(ctx != null);
+
+            _ctx = ctx;
             _charSink = charSink;
             _byteSink = byteSink;
-            _encoding = encoding;
             _stream = new BufferedOutputStream(this);
             _levels = new List<LevelElement>();
 
             if (enableBuffering)
+            {
                 IncreaseLevel();
+            }
         }
 
         ///// <summary>
@@ -319,7 +327,7 @@ namespace Pchp.Core
         /// <param name="levelIndex">The level of buffering which the filter to associate with.</param>
         /// <remarks>Data are filtered when flushed.</remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="levelIndex"/> is out of range.</exception>
-        public void SetFilter(Delegate filter, int levelIndex)
+        public void SetFilter(IPhpCallable filter, int levelIndex)
         {
             if (levelIndex < 0 || levelIndex >= _levels.Count)
                 throw new ArgumentOutOfRangeException("levelIndex");
@@ -334,7 +342,7 @@ namespace Pchp.Core
         /// <param name="filter">The filter. Null reference means no filter.</param>
         /// <remarks>Data are filtered when flushed.</remarks>
         /// <exception cref="InvalidOperationException">Output buffering is disabled.</exception>
-        public void SetFilter(Delegate filter)
+        public void SetFilter(IPhpCallable filter)
         {
             ThrowIfDisabled();
 
@@ -347,14 +355,14 @@ namespace Pchp.Core
         /// <param name="levelIndex">The level of buffering which the filter to associate with.</param>
         /// <returns>The callback or <B>null</B> if no filter has been defined.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="levelIndex"/> is out of range.</exception>
-        public Delegate GetFilter(int levelIndex) => _levels[levelIndex].filter;
+        public IPhpCallable GetFilter(int levelIndex) => _levels[levelIndex].filter;
 
         /// <summary>
         /// Gets the filtering callback defined on the current level of buffering.
         /// </summary>
         /// <returns>The callback or <B>null</B> if no filter has been defined.</returns>
         /// <exception cref="InvalidOperationException">Output buffering is disabled.</exception>
-        public Delegate GetFilter()
+        public IPhpCallable GetFilter()
         {
             ThrowIfDisabled();
 
@@ -381,19 +389,26 @@ namespace Pchp.Core
         /// <returns></returns>
         public string GetLevelName(int levelIndex)
         {
-            if (levelIndex < 0 || levelIndex >= Level)
-                throw new ArgumentOutOfRangeException("levelIndex");
-
-            var element = _levels[levelIndex];
-
-            string levelName = element.levelName;
-
-            if (levelName == null)
+            if (levelIndex >= 0 && levelIndex < Level)
             {
-                levelName = (element.filter != null) ? ((IPhpConvertible)element.filter).ToString() : "default output handler";
+                return GetLevelName(_levels[levelIndex]);
             }
+            else
+            {
+                throw new ArgumentOutOfRangeException("levelIndex");
+            }
+        }
 
-            return levelName;
+        private string GetLevelName(LevelElement element)
+        {
+            if (element.levelName != null)
+            {
+                return element.levelName;
+            }
+            else
+            {
+                return (element.filter != null) ? element.filter.ToPhpValue().ToString(_ctx) : "default output handler";
+            }
         }
 
         #endregion
@@ -486,24 +501,24 @@ namespace Pchp.Core
             else
             {
                 // gets data from user's callback:
-                var data = _level.filter.DynamicInvoke(GetContent(), ChunkPosition.First | ChunkPosition.Middle | ChunkPosition.Last);
-                if (data != null)
+                var data = _level.filter.Invoke(_ctx, GetContent(), PhpValue.Create((int)(ChunkPosition.First | ChunkPosition.Middle | ChunkPosition.Last)));
+                if (!data.IsEmpty)
                 {
-                    var bindata = data as byte[];
+                    var bytes = data.AsBytesOrNull(_ctx);
 
                     // writes data to the current level of buffering or to sinks depending on the level count:
                     if (_level.Index == 0)
                     {
                         // checks whether the filtered data are binary at first; if not so, converts them to a string:
-                        
-                        if (bindata != null)
+
+                        if (bytes != null)
                         {
-                            _byteSink.Write(bindata, 0, bindata.Length);
+                            _byteSink.Write(bytes, 0, bytes.Length);
                         }
                         else
                         {
                             // TODO: PhpString containing both string and byte[]
-                            _charSink.Write(data.ToString());
+                            _charSink.Write(data.ToString(_ctx));
                         }
                     }
                     else
@@ -513,14 +528,14 @@ namespace Pchp.Core
                         _level = _levels[_level.Index - 1];
 
                         // checks whether the filtered data are binary at first; if not so, converts them to a string:
-                        if (bindata != null)
+                        if (bytes != null)
                         {
-                            _stream.Write(bindata, 0, bindata.Length);
+                            _stream.Write(bytes, 0, bytes.Length);
                         }
                         else
                         {
                             // TODO: PhpString containing both string and byte[]
-                            this.Write(data.ToString());
+                            this.Write(data.ToString(_ctx));
                         }
 
                         // restore the level of buffering:
@@ -552,7 +567,7 @@ namespace Pchp.Core
 
                 byte[] bytes = element.data as byte[];
                 if (bytes != null)
-                    result.Append(_encoding.GetString(bytes, 0, element.size));
+                    result.Append(this.Encoding.GetString(bytes, 0, element.size));
                 else
                     result.Append((char[])element.data, 0, element.size);
             }
@@ -572,11 +587,11 @@ namespace Pchp.Core
             if (_level.size == 0)
                 return PhpValue.Create(string.Empty);
 
-             // TODO: return level.buffers directly once it is implemented as PhpString
+            // TODO: return level.buffers directly once it is implemented as PhpString
 
-            // contains characters only:
             if (!_level.containsByteData)
             {
+                // contains characters only:
                 StringBuilder result = new StringBuilder(_level.size, _level.size);
 
                 for (int i = 0; i < _level.buffers.Count; i++)
@@ -586,10 +601,9 @@ namespace Pchp.Core
                 }
                 return PhpValue.Create(result.ToString());
             }
-            else
-                // contains bytes only:
-                if (!_level.containsCharData)
+            else if (!_level.containsCharData)
             {
+                // contains bytes only:
                 var result = new byte[_level.size];
 
                 for (int i = 0, k = 0; i < _level.buffers.Count; i++)
@@ -598,13 +612,11 @@ namespace Pchp.Core
                     Array.Copy(element.data, 0, result, k, element.size);
                     k += element.size;
                 }
-                //return PhpValue.Create(result);
-                throw new NotImplementedException();
-
+                return PhpValue.Create(new PhpString(result));
             }
             else
-            // contains both bytes and characters:
             {
+                // contains both bytes and characters:
                 return PhpValue.Create(GetContentAsString());
             }
         }
@@ -765,14 +777,16 @@ namespace Pchp.Core
         /// <param name="levelIndex">Level index starting from 1.</param>
         /// <param name="filter">Filtering callback (if any).</param>
         /// <param name="size">Data size.</param>
-        public void GetLevelInfo(int levelIndex, out Delegate filter, out int size)
+        /// <param name="name">Optionally the level name.</param>
+        public void GetLevelInfo(int levelIndex, out IPhpCallable filter, out int size, out string name)
         {
             if (levelIndex < 1 || levelIndex > Level)
                 throw new ArgumentOutOfRangeException("levelIndex");
-
+            
             var element = _levels[levelIndex - 1];
             filter = element.filter;
             size = element.size;
+            name = GetLevelName(element);
         }
 
         /// <summary>
@@ -780,7 +794,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public int FindLevelByFilter(Delegate filter)
+        public int FindLevelByFilter(IPhpCallable filter)
         {
             if (_levels != null && filter != null)
                 for (int i = 0; i < Level; i++)

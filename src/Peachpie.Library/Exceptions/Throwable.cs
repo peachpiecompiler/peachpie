@@ -4,6 +4,7 @@
 /// Throwable is the base interface for any object that can be thrown via a throw statement in PHP 7,
 /// including Error and Exception.
 /// </summary>
+[PhpType("Throwable")]
 public interface Throwable
 {
     /// <summary>

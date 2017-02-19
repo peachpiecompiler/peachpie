@@ -11,14 +11,17 @@ namespace Pchp.Core.std
     /// </summary>
     public static class StdTable
     {
-        static readonly ILookup<string, Type> _types = new[]
+        static readonly Type[] _types = new[]
         {
-            typeof(stdClass), typeof(__PHP_Incomplete_Class), typeof(ArrayAccess), typeof(Serializable)
-        }.ToLookup(t => t.FullName);
+            typeof(stdClass), typeof(__PHP_Incomplete_Class),
+            typeof(Traversable), typeof(Iterator), typeof(IteratorAggregate),
+            typeof(ArrayAccess), typeof(Serializable),
+            typeof(Closure),
+        };
 
         /// <summary>
         /// Enumeration of built-in types.
         /// </summary>
-        public static ILookup<string, Type> Types => _types;
+        public static string[] Types => _types.Select(t => t.FullName).ToArray();
     }
 }

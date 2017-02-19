@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(field);
 
             _holder = holder;
-            _field = (FieldSymbol)field;
+            _field = ((FieldSymbol)field).OriginalDefinition;
 
             Debug.Assert(holder != null || field.IsStatic);
             Debug.Assert(holder == null || holder.TypeOpt.IsOfType(_field.ContainingType));
@@ -900,25 +900,28 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 Debug.Assert(_access.IsRead);
+                var p = ResolveSuperglobalProperty(cg);
                 cg.EmitLoadContext();
-                return cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).GetMethod);
+                return cg.EmitCall(p.GetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.GetMethod);
             }
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
+            var p = ResolveSuperglobalProperty(cg);
+
             if (_access.IsUnset)
             {
                 Debug.Assert(valueType == null);
-                cg.Builder.EmitNullConstant();
+                cg.EmitLoadDefault(p.Type, 0);
             }
             else
             {
                 Debug.Assert(_access.IsWrite);
-                cg.EmitConvertToPhpArray(valueType, 0);
+                cg.EmitConvert(valueType, 0, p.Type);
             }
 
-            cg.EmitCall(ILOpCode.Call, ResolveSuperglobalProperty(cg).SetMethod);
+            cg.EmitCall(p.SetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.SetMethod);
         }
 
         #endregion
@@ -1196,9 +1199,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <param name="code">ld* or st* OP code.</param>
         void EmitOpCode(CodeGenerator cg, ILOpCode code)
         {
-            Debug.Assert(Field != null);
+            Debug.Assert(_field != null);
             cg.Builder.EmitOpCode(code);
-            cg.EmitSymbolToken(Field, null);
+            cg.EmitSymbolToken(_field.OriginalDefinition, null);
         }
 
         public bool HasAddress => true;

@@ -99,6 +99,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             return
                 tmask.IsAnyType ||
                 tmask.IsUninitialized ||
+                tmask.IsRef ||
                 this.TypeRefContext.IsArray(tmask) ||
                 this.TypeRefContext.IsWritableString(tmask);
         }

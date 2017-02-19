@@ -945,7 +945,7 @@ namespace Pchp.Library.Streams
 
             try
             {
-                string[] listing = Directory.GetFileSystemEntries(path);
+                string[] listing = System.IO.Directory.GetFileSystemEntries(path);
                 bool root = Path.GetPathRoot(path) == path;
                 int index = root ? 0 : 2;
                 string[] rv = new string[listing.Length + index];
@@ -1027,7 +1027,7 @@ namespace Pchp.Library.Streams
 
                     // Parent must exist if not recursive.
                     string parent = path.Substring(0, pos);
-                    if (!Directory.Exists(parent))
+                    if (!System.IO.Directory.Exists(parent))
                     {
                         PhpException.Throw(PhpError.Warning, ErrResources.stream_directory_make_parent, FileSystemUtils.StripPassword(path));
                         return false;
@@ -1035,7 +1035,7 @@ namespace Pchp.Library.Streams
                 }
 
                 // Creates the whole path
-                Directory.CreateDirectory(path);
+                System.IO.Directory.CreateDirectory(path);
                 return true;
             }
             catch (UnauthorizedAccessException)
@@ -1061,7 +1061,7 @@ namespace Pchp.Library.Streams
             try
             {
                 // Deletes the directory (but not the contents - must be empty)
-                Directory.Delete(path, false);
+                System.IO.Directory.Delete(path, false);
                 return true;
             }
             catch (UnauthorizedAccessException)

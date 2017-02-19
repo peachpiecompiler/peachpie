@@ -177,7 +177,7 @@ namespace Pchp.CodeAnalysis
                 }
                 else if (tref is AST.INamedTypeRef) return (NamedTypeSymbol)GlobalSemantics.GetType(((AST.INamedTypeRef)tref).ClassName) ?? CoreTypes.Object.Symbol;
                 else if (tref is AST.ReservedTypeRef) throw new ArgumentException(); // NOTE: should be translated by parser to AliasedTypeRef
-                else if (tref is AST.AnonymousTypeRef) throw new ArgumentException(); // ((AST.AnonymousTypeRef)tref).TypeDeclaration.QualifiedName
+                else if (tref is AST.AnonymousTypeRef) return (NamedTypeSymbol)GlobalSemantics.GetType(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName());
                 else if (tref is AST.MultipleTypeRef)
                 {
                     TypeSymbol result = null;

@@ -44,7 +44,10 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public INamedTypeSymbol GetType(QualifiedName name) => _table.GetType(name);
 
-        public IEnumerable<IPhpRoutineSymbol> ResolveFunction(QualifiedName name) => _table.GetFunctions(name);
+        public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
+        {
+            return _table.GetFunction(name);
+        }
 
         public IPhpValue ResolveConstant(string name) => null;
 

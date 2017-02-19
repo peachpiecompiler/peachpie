@@ -132,6 +132,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string runtimeMetadataVersion = null; // will be read from cor library if not specified in cmd
             string compilationName = null;
             bool optimize = false;
+            bool concurrentBuild = true;
             PhpDocTypes phpdocTypes = PhpDocTypes.None;
             OutputKind outputKind = OutputKind.ConsoleApplication;
             bool optionsEnded = false;
@@ -224,6 +225,24 @@ namespace Pchp.CodeAnalysis.CommandLine
                             break;
 
                         optimize = false;
+                        continue;
+
+                    case "p":
+                    case "parallel":
+                    case "p+":
+                    case "parallel+":
+                        if (value != null)
+                            break;
+
+                        concurrentBuild = true;
+                        continue;
+
+                    case "p-":
+                    case "parallel-":
+                        if (value != null)
+                            break;
+
+                        concurrentBuild = false;
                         continue;
 
                     case "nologo":
@@ -386,7 +405,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 checkOverflow: false, // checkOverflow,
                                       //deterministic: deterministic,
-                concurrentBuild: false, //concurrentBuild,  // TODO: true in Release
+                concurrentBuild: concurrentBuild,
                                         //cryptoKeyContainer: keyContainerSetting,
                                         //cryptoKeyFile: keyFileSetting,
                                         //delaySign: delaySignSetting,

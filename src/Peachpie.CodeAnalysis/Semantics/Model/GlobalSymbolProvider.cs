@@ -20,6 +20,16 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         ImmutableArray<NamedTypeSymbol> _lazyExtensionContainers;
 
+        /// <summary>
+        /// Types that are visible from extension libraries.
+        /// </summary>
+        Dictionary<QualifiedName, NamedTypeSymbol> _lazyExportedTypes;
+
+        /// <summary>
+        /// Standard (builtin) types from <c>Peachpie.Runtime</c>.
+        /// </summary>
+        Dictionary<QualifiedName, NamedTypeSymbol> _lazyStdTypes;
+
         #endregion
 
         public GlobalSymbolProvider(PhpCompilation compilation)
@@ -29,10 +39,16 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             _next = new SourceSymbolProvider(compilation.SourceSymbolCollection);
         }
 
+        static IEnumerable<PEAssemblySymbol> GetExtensionLibraries(PhpCompilation compilation)
+            => compilation
+            .GetBoundReferenceManager()
+            .ExplicitReferencesSymbols
+            .OfType<PEAssemblySymbol>()
+            .Where(s => s.IsExtensionLibrary);
+
         internal static ImmutableArray<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
         {
-            return compilation.GetBoundReferenceManager()
-                .ExplicitReferencesSymbols.OfType<PEAssemblySymbol>().Where(s => s.IsExtensionLibrary)
+            return GetExtensionLibraries(compilation)
                 .SelectMany(r => r.ExtensionContainers)
                 .ToImmutableArray();
         }
@@ -60,41 +76,100 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
         }
 
+        /// <summary>
+        /// Types in extension libraries.
+        /// </summary>
+        Dictionary<QualifiedName, NamedTypeSymbol> ExportedTypes
+        {
+            get
+            {
+                if (_lazyExportedTypes == null)
+                {
+                    var result = new Dictionary<QualifiedName, NamedTypeSymbol>();
+
+                    foreach (var lib in GetExtensionLibraries(_compilation))
+                    {
+                        foreach (var t in lib.PrimaryModule.GlobalNamespace.GetTypeMembers().OfType<PENamedTypeSymbol>())
+                        {
+                            if (t.DeclaredAccessibility == Accessibility.Public)
+                            {
+                                var qname = t.GetPhpTypeNameOrNull();
+                                if (!qname.IsEmpty())
+                                {
+                                    result[qname] = t;
+                                }
+                            }
+                        }
+                    }
+                    
+                    //
+                    _lazyExportedTypes = result;
+                }
+
+                return _lazyExportedTypes;
+            }
+        }
+
+        /// <summary>
+        /// Standard types in Peachpie.Runtime.
+        /// </summary>
+        Dictionary<QualifiedName, NamedTypeSymbol> StandardTypes
+        {
+            get
+            {
+                if (_lazyStdTypes == null)
+                {
+                    _lazyStdTypes = Core.std.StdTable.Types
+                        .Select(tname => _compilation.PhpCorLibrary.GetTypeByMetadataName(tname))
+                        .ToDictionary(t => ((IPhpTypeSymbol)t).FullName);
+                }
+
+                return _lazyStdTypes;
+            }
+        }
+
+        public IEnumerable<IPhpValue> GetExportedConstants()
+        {
+            return ExtensionContainers
+                .SelectMany(t => t.GetMembers().OfType<FieldSymbol>())
+                .Where(IsConstantField);
+        }
+
+        internal IEnumerable<NamedTypeSymbol> GetReferencedTypes()
+        {
+            return StandardTypes.Values.Concat(ExportedTypes.Values);
+        }
+
         #region ISemanticModel
 
         public INamedTypeSymbol GetType(QualifiedName name)
         {
-            var clrName = name.ClrName();
-
-            // std
-            if (Core.std.StdTable.Types.Contains(clrName))
-            {
-                return _compilation.PhpCorLibrary.GetTypeByMetadataName(clrName);
-            }
-
-            // TODO: reserved type names: self, parent, static
             Debug.Assert(!name.IsReservedClassName);
+            Debug.Assert(!name.IsEmpty());
 
-            // library types
+            return
+                StandardTypes.TryGetOrDefault(name) ??
+                ExportedTypes.TryGetOrDefault(name) ??
+                GetTypeFromNonExtensionAssemblies(name.ClrName()) ??
+                _next.GetType(name);
+        }
+
+        NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
+        {
             foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
             {
-                if (!ass.IsPchpCorLibrary)
+                var peass = ass as PEAssemblySymbol;
+                if (peass != null && !peass.IsPchpCorLibrary && !peass.IsExtensionLibrary)
                 {
                     var candidate = ass.GetTypeByMetadataName(clrName);
                     if (candidate != null && !candidate.IsErrorType())
                     {
-                        if (ass is PEAssemblySymbol && ((PEAssemblySymbol)ass).IsExtensionLibrary && candidate.IsStatic)
-                        {
-                            continue;
-                        }
-
                         return candidate;
                     }
                 }
             }
 
-            //
-            return _next.GetType(name);
+            return null;
         }
 
         public SourceFileSymbol GetFile(string path)
@@ -109,17 +184,28 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return _next.GetFile(path);
         }
 
-        public IEnumerable<IPhpRoutineSymbol> ResolveFunction(QualifiedName name)
+        public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
         {
             // library functions, public static methods
-            var result = ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName(), true)).OfType<MethodSymbol>().Where(IsFunction).OfType<IPhpRoutineSymbol>().ToList();
-            if (result.Count == 0)
+            var methods = new List<MethodSymbol>();
+            foreach (var m in ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName(), true)).OfType<MethodSymbol>().Where(IsFunction))
             {
-                // source functions
-                result.AddRange(_next.ResolveFunction(name));
+                methods.Add(m);
             }
 
-            return result;
+            if (methods.Count == 0)
+            {
+                // source functions
+                return _next.ResolveFunction(name);
+            }
+            else if (methods.Count == 1)
+            {
+                return methods[0];
+            }
+            else
+            {
+                return new AmbiguousMethodSymbol(methods.AsImmutable(), true);
+            }
         }
 
         public IPhpValue ResolveConstant(string name)

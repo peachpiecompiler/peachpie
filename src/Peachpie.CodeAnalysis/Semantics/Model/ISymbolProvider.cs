@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Get global function symbol by its name in current context.
         /// Can be <c>null</c> if function could not be found.
         /// </summary>
-        IEnumerable<IPhpRoutineSymbol> ResolveFunction(QualifiedName name);
+        IPhpRoutineSymbol ResolveFunction(QualifiedName name);
 
         /// <summary>
         /// Resolves single global constant valid in current context.

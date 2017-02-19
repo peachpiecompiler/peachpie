@@ -40,7 +40,32 @@ namespace Pchp.Library
         /// <param name="name">The name of the constant.</param>
 		/// <returns>The value.</returns>
 		public static PhpValue constant(Context ctx, string name)
-            => ctx.GetConstant(name);
+        {
+            var sepidx = name.IndexOf(':');
+            if (sepidx < 0)
+            {
+                // a global constant
+                return ctx.GetConstant(name);
+            }
+            else
+            {
+                // a class constant
+                if (sepidx + 1 < name.Length && name[sepidx + 1] == ':')
+                {
+                    var cname = name.Substring(sepidx + 2);
+                    for (var tdecl = ctx.GetDeclaredType(name.Remove(sepidx), true); tdecl != null; tdecl = tdecl.BaseType)
+                    {
+                        object value;
+                        if (tdecl.DeclaredFields.TryGetConstantValue(ctx, cname, out value))
+                        {
+                            return PhpValue.FromClr(value);
+                        }
+                    }
+                }
+
+                return PhpValue.Void;
+            }
+        }
 
         /// <summary>
         /// Retrieves defined constants.

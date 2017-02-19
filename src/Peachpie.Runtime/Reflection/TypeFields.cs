@@ -129,6 +129,20 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public object GetConstantValue(Context ctx, string name)
         {
+            object value;
+            if (!TryGetConstantValue(ctx, name, out value))
+            {
+                throw new KeyNotFoundException();
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Resolves a constant value in given context.
+        /// </summary>
+        public bool TryGetConstantValue(Context ctx, string name, out object value)
+        {
             if (ctx == null)
             {
                 throw new ArgumentNullException("ctx");
@@ -141,7 +155,8 @@ namespace Pchp.Core.Reflection
             {
                 if (fld.IsPublic && fld.IsLiteral)
                 {
-                    return fld.GetValue(null);
+                    value = fld.GetValue(null);
+                    return true;
                 }
             }
 
@@ -150,11 +165,14 @@ namespace Pchp.Core.Reflection
             {
                 if (fld.IsPublic && fld.IsInitOnly)
                 {
-                    return fld.GetValue(EnsureStaticsGetter(fld.DeclaringType)(ctx));  // Context.GetStatics<_statics>().FIELD
+                    value = fld.GetValue(EnsureStaticsGetter(fld.DeclaringType)(ctx));  // Context.GetStatics<_statics>().FIELD
+                    return true;
                 }
             }
 
-            throw new ArgumentException();
+            //
+            value = null;
+            return false;
         }
 
         public enum FieldKind
@@ -180,7 +198,7 @@ namespace Pchp.Core.Reflection
             FieldInfo fld;
 
             //
-            if (_fields != null && _fields.TryGetValue(name, out fld))
+            if (_fields != null && _fields.TryGetValue(name, out fld) && TypeMembersUtils.IsVisible(fld, classCtx))
             {
                 if (fld.IsPublic && fld.IsLiteral)
                 {
@@ -192,7 +210,7 @@ namespace Pchp.Core.Reflection
 
                 if (fld.IsStatic)
                 {
-                    if (kind == FieldKind.StaticField)
+                    if (kind == FieldKind.InstanceField)
                     {
                         // TODO: Err: static field accessed with instance
                     }
@@ -241,5 +259,19 @@ namespace Pchp.Core.Reflection
         /// Gets enumeration of class instance fields excluding eventual <c>__runtime_fields</c>.
         /// </summary>
         public IEnumerable<FieldInfo> InstanceFields => (_fields != null) ? _fields.Values.Where(_isInstanceField) : Array.Empty<FieldInfo>();
+
+        /// <summary>
+        /// Gets an instance field with given name declared on this type, or <c>null</c>.
+        /// </summary>
+        public FieldInfo TryGetInstanceField(string name)
+        {
+            FieldInfo fld;
+            if (_fields != null && _fields.TryGetValue(name, out fld) && !fld.IsStatic)
+            {
+                return fld;
+            }
+
+            return null;
+        }
     }
 }

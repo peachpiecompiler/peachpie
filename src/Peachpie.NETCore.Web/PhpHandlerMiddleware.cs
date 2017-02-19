@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Pchp.Core.Utilities;
+using System.Diagnostics;
 
 namespace Peachpie.Web
 {
@@ -15,8 +16,9 @@ namespace Peachpie.Web
     {
         readonly RequestDelegate _next;
         readonly string _rootPath;
+        readonly PhpRequestOptions _options;
 
-        public PhpHandlerMiddleware(RequestDelegate next, IHostingEnvironment hostingEnv)
+        public PhpHandlerMiddleware(RequestDelegate next, IHostingEnvironment hostingEnv, PhpRequestOptions options)
         {
             if (next == null)
             {
@@ -29,8 +31,34 @@ namespace Peachpie.Web
             }
 
             _next = next;
+            _options = options;
             _rootPath = NormalizeRootPath(hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? System.IO.Directory.GetCurrentDirectory());
             // TODO: pass hostingEnv.ContentRootFileProvider to the Context for file system functions
+
+            // sideload script assemblies
+            LoadScriptAssemblies(options);
+        }
+
+        /// <summary>
+        /// Loads and reflects assemblies containing compiled PHP scripts.
+        /// </summary>
+        static void LoadScriptAssemblies(PhpRequestOptions options)
+        {
+            if (options.ScriptAssembliesName != null)
+            {
+                foreach (var assname in options.ScriptAssembliesName.Select(str => new System.Reflection.AssemblyName(str)))
+                {
+                    var ass = System.Reflection.Assembly.Load(assname);
+                    if (ass != null)
+                    {
+                        Pchp.Core.Context.AddScriptReference(ass);
+                    }
+                    else
+                    {
+                        Debug.Assert(false, $"Assembly '{assname}' couldn't be loaded.");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -49,13 +77,6 @@ namespace Peachpie.Web
             }
         }
 
-        /// <summary>
-        /// This examines the request to see if it matches a configured directory, and if there are any files with the
-        /// configured default names in that directory.  If so this will append the corresponding file name to the request
-        /// path for a later middleware to handle.
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
         public Task Invoke(HttpContext context)
         {
             var script = RequestContextCore.ResolveScript(context.Request);
@@ -63,7 +84,7 @@ namespace Peachpie.Web
             {
                 return Task.Run(() =>
                 {
-                    using (var phpctx = new RequestContextCore(context, _rootPath))
+                    using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
                     {
                         phpctx.ProcessScript(script);
                     }

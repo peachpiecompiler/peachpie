@@ -13,6 +13,7 @@ using System_DateTime = System.DateTime;
 /// <summary>
 /// Representation of date and time.
 /// </summary>
+[PhpType("DateTime")]
 public class DateTime
 {
     #region Constants
@@ -112,7 +113,7 @@ public class DateTime
         return (result >= 0) ? DateTimeUtils.UnixTimeStampToUtc(result) : System_DateTime.UtcNow;
     }
 
-    public virtual object setTimeZone(DateTimeZone timezone)
+    public virtual global::DateTime setTimeZone(DateTimeZone timezone)
     {
         if (timezone == null)
         {
@@ -126,7 +127,8 @@ public class DateTime
         return this;
     }
 
-    public virtual object format(string format)
+    [return:CastToFalse]
+    public virtual string format(string format)
     {
         if (format == null)
         {
@@ -135,13 +137,7 @@ public class DateTime
             throw new ArgumentNullException();
         }
 
-        string fm = format.ToString();
-        if (string.IsNullOrEmpty(fm))
-        {
-            return false;
-        }
-
-        return DateTimeFunctions.FormatDate(fm, this.Time, this.TimeZone);
+        return DateTimeFunctions.FormatDate(format, this.Time, this.TimeZone);
     }
 
     public virtual int getOffset()
@@ -167,7 +163,7 @@ public class DateTime
         return this;
     }
 
-    public static object createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
+    public static global::DateTime createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
     {
         // arguments
         var tz = (timezone != null) ? timezone.timezone : PhpTimeZone.GetCurrentTimeZone(ctx);
@@ -235,7 +231,7 @@ public class DateTime
         throw new NotImplementedException();
     }
 
-    public virtual object setDate(int year, int month, int day)
+    public virtual global::DateTime setDate(int year, int month, int day)
     {
         try
         {
@@ -258,7 +254,7 @@ public class DateTime
         return this;
     }
 
-    public virtual object setTime(int hour, int minute, int second)
+    public virtual global::DateTime setTime(int hour, int minute, int second)
     {
         try
         {

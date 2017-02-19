@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -279,7 +280,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     public sealed partial class ForeachMoveNextEdge : Edge
     {
         readonly BoundBlock _body, _end;
-        
+
+        /// <summary>
+        /// Span of the move expression to emit sequence point of <c>MoveNext</c> operation.
+        /// </summary>
+        readonly TextSpan _moveSpan;
+
         /// <summary>
         /// Content of the foreach.
         /// </summary>
@@ -308,7 +314,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public BoundReferenceExpression ValueVariable { get { return _valueVariable; } }
         readonly BoundReferenceExpression _valueVariable;
 
-        internal ForeachMoveNextEdge(BoundBlock/*!*/source, BoundBlock/*!*/body, BoundBlock/*!*/end, ForeachEnumereeEdge/*!*/enumereeEdge, BoundReferenceExpression keyVar, BoundReferenceExpression/*!*/valueVar)
+        internal ForeachMoveNextEdge(BoundBlock/*!*/source, BoundBlock/*!*/body, BoundBlock/*!*/end, ForeachEnumereeEdge/*!*/enumereeEdge, BoundReferenceExpression keyVar, BoundReferenceExpression/*!*/valueVar, TextSpan moveSpan)
             : base(source)
         {
             Contract.ThrowIfNull(body);
@@ -320,6 +326,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _enumereeEdge = enumereeEdge;
             _keyVariable = keyVar;
             _valueVariable = valueVar;
+            _moveSpan = moveSpan;
 
             Connect(source);
         }

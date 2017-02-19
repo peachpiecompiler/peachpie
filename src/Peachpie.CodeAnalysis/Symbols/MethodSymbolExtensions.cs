@@ -14,6 +14,12 @@ namespace Pchp.CodeAnalysis.Symbols
             return method.ParameterCount != 0 && method.Parameters[method.ParameterCount - 1].IsParams;
         }
 
+        public static bool IsErrorMethod(this MethodSymbol method) => method == null || method is ErrorMethodSymbol;
+
+        public static bool IsMissingMethod(this MethodSymbol method) =>
+            (method == null) ||
+            (method is ErrorMethodSymbol && ((ErrorMethodSymbol)method).ErrorKind == ErrorMethodSymbol.ErrorMethodKind.Missing);
+
         public static TypeSymbol[] ParametersType(this MethodSymbol method)
         {
             return method.Parameters.Select(p => p.Type).ToArray();
@@ -40,6 +46,21 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             return stack;
+        }
+
+        /// <summary>
+        /// Determines if given method is a special compiler generated constructor that only initializes fields.
+        /// </summary>
+        internal static bool IsFieldsOnlyConstructor(this MethodSymbol m)
+        {
+            // [PhpFieldsOnlyCtorAttribute] protected .ctor(...)
+            if (m != null && m.MethodKind == MethodKind.Constructor && !m.IsStatic && m.DeclaredAccessibility == Accessibility.Protected)
+            {
+                var attrs = m.GetAttributes();
+                return !attrs.IsEmpty && attrs.Any(attr => attr.AttributeClass.MetadataName == "PhpFieldsOnlyCtorAttribute");
+            }
+
+            return false;
         }
     }
 }

@@ -1,17 +1,12 @@
-﻿using Pchp.Core;
-using Pchp.Core.Dynamic;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Runtime.CompilerServices;
+using System.ComponentModel;
+using Pchp.Core;
 
 /// <summary>
 /// Generic empty class.
 /// Used for casting values to an <c>object</c>.
 /// </summary>
+[EditorBrowsable(EditorBrowsableState.Advanced)]
 public class stdClass
 {
     /// <summary>

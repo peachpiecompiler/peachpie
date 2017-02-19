@@ -17,7 +17,7 @@ namespace Pchp.Core.Utilities
 
         public static readonly byte[] EmptyBytes = Empty<byte>();
 
-        public static string[] EmptyStrings = Empty<string>();
+        public static string[] EmptyStrings => Array.Empty<string>();
 
         public static T[] Empty<T>() => Array.Empty<T>();
 

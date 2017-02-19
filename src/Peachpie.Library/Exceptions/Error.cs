@@ -7,6 +7,7 @@ using Pchp.Core;
 /// <summary>
 /// <see cref="Error"/> is the base class for all internal PHP errors.
 /// </summary>
+[PhpType("Error")]
 public class Error : System.Exception, Throwable
 {
     protected string message;

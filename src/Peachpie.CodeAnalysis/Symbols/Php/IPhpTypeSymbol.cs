@@ -39,10 +39,11 @@ namespace Pchp.CodeAnalysis.Symbols
         FieldSymbol RuntimeFieldsStore { get; }
 
         /// <summary>
-        /// Optional.
-        /// A method <c>.phpnew</c> that ensures the initialization of the class without calling the base type constructor.
+        /// Optional. A <c>.ctor</c> that does not make call to PHP constructor.
+        /// This method is expected to be declared with <b>protected</b> visibility and
+        /// used in context of a derived class constructor, since in PHP user calls PHP constructor explicitly.
         /// </summary>
-        MethodSymbol InitializeInstanceMethod { get; }
+        MethodSymbol InstanceConstructorFieldsOnly { get; }
 
         /// <summary>
         /// Optional.

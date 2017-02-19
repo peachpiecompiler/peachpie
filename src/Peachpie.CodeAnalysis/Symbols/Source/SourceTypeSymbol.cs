@@ -16,14 +16,14 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal sealed partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol
+    internal partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, ILambdaContainerSymbol
     {
         #region IPhpTypeSymbol
 
         /// <summary>
         /// Gets fully qualified name of the class.
         /// </summary>
-        public QualifiedName FullName => _syntax.QualifiedName;
+        public virtual QualifiedName FullName => _syntax.QualifiedName;
 
         /// <summary>
         /// Optional.
@@ -78,23 +78,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Optional.
-        /// A method <c>.phpnew</c> that ensures the initialization of the class without calling the base type constructor.
-        /// </summary>
-        public MethodSymbol InitializeInstanceMethod => (this.IsStatic || this.IsInterface) ? null : (_lazyPhpNewMethod ?? (_lazyPhpNewMethod = new SynthesizedPhpNewMethodSymbol(this)));
-
-        /// <summary>
-        /// Optional.
         /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
         /// </summary>
         public NamedTypeSymbol StaticsContainer => _staticsContainer;
 
         #endregion
 
-        readonly TypeDecl _syntax;
+        readonly protected TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
         NamedTypeSymbol _lazyBaseType;
-        MethodSymbol _lazyCtorMethod, _lazyPhpNewMethod;   // .ctor, .phpnew 
+        ImmutableArray<MethodSymbol> _lazyCtors;   // .ctor
         FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
         SynthesizedStaticFieldsHolder/*!*/_staticsContainer; // class __statics { ... }
@@ -104,6 +98,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Does not include synthesized members.
         /// </summary>
         List<Symbol> _lazyMembers;
+
+        List<SourceLambdaSymbol> _lambdas;
 
         /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
         BaseAttributeData _lazyPhpTraitAttribute;
@@ -119,6 +115,27 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             _staticsContainer = new SynthesizedStaticFieldsHolder(this);
+        }
+
+        void ILambdaContainerSymbol.AddLambda(SourceLambdaSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+            if (_lambdas == null) _lambdas = new List<SourceLambdaSymbol>();
+            _lambdas.Add(routine);
+        }
+
+        IEnumerable<SourceLambdaSymbol> ILambdaContainerSymbol.Lambdas
+        {
+            get
+            {
+                return (IEnumerable<SourceLambdaSymbol>)_lambdas ?? Array.Empty<SourceLambdaSymbol>();
+            }
+        }
+
+        SourceLambdaSymbol ILambdaContainerSymbol.ResolveLambdaSymbol(LambdaFunctionExpr expr)
+        {
+            if (expr == null) throw new ArgumentNullException(nameof(expr));
+            return _lambdas.First(s => s.Syntax == expr);
         }
 
         List<Symbol> EnsureMembers()
@@ -178,15 +195,25 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// <c>.ctor</c> synthesized method. Only if type is not static.
+        /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the PHP constructor.
         /// </summary>
-        internal MethodSymbol PhpCtorMethodSymbol => (this.IsStatic || this.IsInterface) ? null : (_lazyCtorMethod ?? (_lazyCtorMethod = new SynthesizedPhpCtorSymbol(this)));
+        public MethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
-        public override ImmutableArray<MethodSymbol> InstanceConstructors => PhpCtorMethodSymbol != null
-            ? ImmutableArray.Create<MethodSymbol>(PhpCtorMethodSymbol)
-            : ImmutableArray<MethodSymbol>.Empty;
+        public override ImmutableArray<MethodSymbol> InstanceConstructors
+        {
+            get
+            {
+                var result = _lazyCtors;
+                if (result.IsDefault)
+                {
+                    _lazyCtors = result = SynthesizedPhpCtorSymbol.CreateCtors(this).ToImmutableArray();
+                }
+
+                return result;
+            }
+        }
 
         /// <summary>
         /// Gets magic <c>__invoke</c> method or <c>null</c>.
@@ -199,30 +226,56 @@ namespace Pchp.CodeAnalysis.Symbols
                 .SingleOrDefault();
         }
 
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
+
         public override NamedTypeSymbol BaseType
         {
             get
             {
                 if (_lazyBaseType == null)
                 {
-                    if (_syntax.BaseClass != null)
-                    {
-                        _lazyBaseType = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(_syntax.BaseClass.ClassName.ClrName())
-                            ?? new MissingMetadataTypeSymbol(_syntax.BaseClass.ClassName.ClrName(), 0, false);
-
-                        if (_lazyBaseType.Arity != 0)
-                        {
-                            throw new NotImplementedException();    // generics
-                        }
-                    }
-                    else if (!IsStatic && !IsInterface)
-                    {
-                        _lazyBaseType = DeclaringCompilation.CoreTypes.Object.Symbol;
-                    }
+                    _lazyBaseType = ResolveBaseType(DiagnosticBag.GetInstance());
                 }
 
                 return _lazyBaseType;
             }
+        }
+
+        NamedTypeSymbol ResolveBaseType(DiagnosticBag diagnostics)
+        {
+            NamedTypeSymbol btype;
+
+            if (_syntax.BaseClass != null)
+            {
+                var baseTypeName = _syntax.BaseClass.ClassName;
+                if (baseTypeName == this.MakeQualifiedName())
+                {
+                    // TODO: Err diagnostics
+                    throw new NotImplementedException($"cycle in class hierarchy, {this.MakeQualifiedName()} extends itself.");
+                }
+
+                btype = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(baseTypeName.ClrName())
+                    ?? new MissingMetadataTypeSymbol(baseTypeName.ClrName(), 0, false);
+
+                if (btype.Arity != 0)
+                {
+                    // TODO: Err diagnostics
+                    throw new NotImplementedException($"Class {this.MakeQualifiedName()} extends a generic type {baseTypeName}.");    // generics not supported yet
+                }
+            }
+            else if (!IsStatic && !IsInterface)
+            {
+                btype = DeclaringCompilation.CoreTypes.Object.Symbol;
+            }
+            else
+            {
+                btype = null;
+            }
+
+            //
+            return btype;
         }
 
         /// <summary>
@@ -238,10 +291,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
-        public override string Name => _syntax.Name.Name.Value;
+        public override string Name => FullName.Name.Value;
 
-        public override string NamespaceName
-            => (_syntax.ContainingNamespace != null) ? _syntax.ContainingNamespace.QualifiedName.QualifiedName.ClrName() : string.Empty;
+        public override string NamespaceName => string.Join(".", FullName.Namespaces);
 
         public override string MetadataName
         {
@@ -389,28 +441,21 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
         {
-            foreach (var m in EnsureMembers().OfType<IMethodSymbol>())
-            {
-                yield return m;
-            }
-
-            // .ctor
-            if (PhpCtorMethodSymbol != null)
-            {
-                yield return PhpCtorMethodSymbol;
-            }
-
-            // .phpnew
-            if (InitializeInstanceMethod != null)
-            {
-                yield return InitializeInstanceMethod;
-            }
+            return EnsureMembers().OfType<IMethodSymbol>()
+                .Concat(InstanceConstructors)
+                .Concat(((ILambdaContainerSymbol)this).Lambdas);
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
             foreach (var f in EnsureMembers().OfType<IFieldSymbol>())
             {
+                if (f.OriginalDefinition != f)
+                {
+                    // field redeclares its parent member, discard
+                    continue;
+                }
+
                 var srcf = f as SourceFieldSymbol;
                 if (srcf.RequiresHolder)
                 {
@@ -430,6 +475,30 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 yield return RuntimeFieldsStore;
             }
+        }
+    }
+
+    /// <summary>
+    /// Symbol representing a PHP anonymous class.
+    /// Builds a type similar to <b>internal sealed class [anonymous@class filename position]</b>.
+    /// </summary>
+    internal class SourceAnonymousTypeSymbol : SourceTypeSymbol
+    {
+        public new AnonymousTypeDecl Syntax => (AnonymousTypeDecl)_syntax;
+
+        public override QualifiedName FullName => Syntax.GetAnonymousTypeQualifiedName();
+
+        public override string MetadataName => Name;
+
+        public override bool IsSealed => true;
+
+        public override bool IsAnonymousType => true;
+
+        public override Accessibility DeclaredAccessibility => Accessibility.Internal;
+
+        public SourceAnonymousTypeSymbol(SourceFileSymbol file, AnonymousTypeDecl syntax)
+            : base(file, syntax)
+        {
         }
     }
 }

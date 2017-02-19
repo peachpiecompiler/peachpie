@@ -216,6 +216,40 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         /// <summary>
+        /// Emit body of enumeration of referenced types.
+        /// </summary>
+        internal void CreateEnumerateReferencedTypes(DiagnosticBag diagnostic)
+        {
+            var method = this.ScriptType.EnumerateReferencedTypesSymbol;
+            var types = this.Compilation.GlobalSemantics.GetReferencedTypes();
+
+            // void (Action<string, RuntimeTypeHandle> callback)
+            var body = MethodGenerator.GenerateMethodBody(this, method,
+                (il) =>
+                {
+                    var action_string_method = method.Parameters[0].Type;
+                    Debug.Assert(action_string_method.Name == "Action");
+                    var invoke = action_string_method.DelegateInvokeMethod();
+                    Debug.Assert(invoke != null);
+
+                    foreach (var t in types)
+                    {
+                        // callback.Invoke(t.Name, t)
+                        il.EmitLoadArgumentOpcode(0);
+                        il.EmitStringConstant(t.Name);
+                        il.EmitLoadToken(this, diagnostic, t, null);
+                        il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
+                    }
+
+                    //
+                    il.EmitRet(true);
+                },
+                null, diagnostic, false);
+
+            SetMethodBody(method, body);
+        }
+
+        /// <summary>
         /// Emit body of enumeration of scripts Main function.
         /// </summary>
         internal void CreateEnumerateScriptsSymbol(DiagnosticBag diagnostic)
@@ -255,27 +289,48 @@ namespace Pchp.CodeAnalysis.Emit
         internal void CreateEnumerateConstantsSymbol(DiagnosticBag diagnostic)
         {
             var method = this.ScriptType.EnumerateConstantsSymbol;
-            // var consts = this.Compilation. ...
+            var consts = this.Compilation.GlobalSemantics.GetExportedConstants().Cast<FieldSymbol>();   // TODO: PropertySymbol
 
             // void (Action<string, RuntimeMethodHandle> callback)
             var body = MethodGenerator.GenerateMethodBody(this, method,
                 (il) =>
                 {
+                    var cg = new CodeGenerator(il, this, diagnostic, this.Compilation.Options.OptimizationLevel, false, this.ScriptType, null, null);
+
                     var action_string_method = method.Parameters[0].Type;
                     Debug.Assert(action_string_method.Name == "Action");
                     var invoke = action_string_method.DelegateInvokeMethod();
                     Debug.Assert(invoke != null);
 
-                    // TODO:
-                    //foreach (var c in consts)
-                    //{
-                    //    // callback.Invoke(c.Name, c.Value, c.IgnoreCase)
-                    //    il.EmitLoadArgumentOpcode(0);
-                    //    il.EmitStringConstant(c.Name);
-                    //    // c.Value
-                    //    // c.IgnoreCase
-                    //    il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
-                    //}
+                    foreach (var c in consts)
+                    {
+                        Debug.Assert(c.IsConst || (c.IsStatic && c.IsReadOnly));
+
+                        // callback.Invoke(c.Name, c.Value, c.IgnoreCase)
+                        il.EmitLoadArgumentOpcode(0);
+
+                        // string : name
+                        il.EmitStringConstant(c.MetadataName);
+
+                        // PhpValue : value
+                        TypeSymbol consttype;
+                        var constvalue = c.GetConstantValue(false);
+                        if (constvalue != null)
+                        {
+                            consttype = cg.EmitLoadConstant(constvalue.Value, cg.CoreTypes.PhpValue);
+                        }
+                        else
+                        {
+                            consttype = new FieldPlace(null, c).EmitLoad(il);
+                        }
+                        cg.EmitConvertToPhpValue(consttype, 0);
+
+                        // bool : ignore case
+                        il.EmitBoolConstant(false);
+
+                        // Invoke(...)
+                        il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
+                    }
 
                     //
                     il.EmitRet(true);

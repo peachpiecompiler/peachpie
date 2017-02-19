@@ -24,7 +24,35 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool IsPhpHidden(this Symbol s)
         {
             var attrs = s.GetAttributes();
-            return attrs.Length != 0 && attrs.Any(a => a.AttributeClass.MetadataName == "PhpHidden");
+            return attrs.Length != 0 && attrs.Any(a => a.AttributeClass.MetadataName == "PhpHiddenAttribute");
+        }
+
+        /// <summary>
+        /// Determines whethere given PE type symbol is an exported PHP type.
+        /// </summary>
+        public static bool IsPhpTypeName(this PENamedTypeSymbol s) => !s.IsStatic && !GetPhpTypeNameOrNull(s).IsEmpty();
+
+        /// <summary>
+        /// Determines PHP type name of an exported PHP type.
+        /// Gets default&lt;QualifiedName&gt; if type is not exported PHP type.
+        /// </summary>
+        public static QualifiedName GetPhpTypeNameOrNull(this PENamedTypeSymbol s)
+        {
+            var attrs = s.GetAttributes();
+            if (attrs.Length != 0)
+            {
+                for (int i = 0; i < attrs.Length; i++)
+                {
+                    if (attrs[i].AttributeClass.MetadataName == "PhpTypeAttribute")
+                    {
+                        var ctorargs = attrs[i].ConstructorArguments;
+                        var tname = ctorargs[0];
+                        return tname.IsNull ? s.MakeQualifiedName() : QualifiedName.Parse(tname.DecodeValue<string>(SpecialType.System_String), true);
+                    }
+                }
+            }
+
+            return default(QualifiedName);
         }
 
         /// <summary>
@@ -41,6 +69,22 @@ namespace Pchp.CodeAnalysis.Symbols
                 var ns = type.NamespaceName.Replace('.', QualifiedName.Separator);
                 return NameUtils.MakeQualifiedName(ns + QualifiedName.Separator + type.Name, true);
             }
+        }
+
+        public static bool IsAccessible(this Symbol symbol, TypeSymbol classCtx)
+        {
+            if (symbol.DeclaredAccessibility == Accessibility.Private)
+            {
+                return (symbol.ContainingType == classCtx);
+            }
+            else if (symbol.DeclaredAccessibility == Accessibility.Protected)
+            {
+                return classCtx != null && (
+                    symbol.ContainingType.IsEqualToOrDerivedFrom(classCtx) ||
+                    classCtx.IsEqualToOrDerivedFrom(symbol.ContainingType));
+            }
+
+            return true;
         }
     }
 }

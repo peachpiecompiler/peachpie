@@ -43,6 +43,23 @@ namespace Pchp.Core
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
         /// </summary>
+        /// <typeparam name="T">Object type.</typeparam>
+        /// <param name="caller">
+        /// Class context for resolving constructors visibility.
+        /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>New instance of <typeparamref name="T"/>.</returns>
+        public T Create<T>([ImportCallerClass]RuntimeTypeHandle caller, params PhpValue[] arguments)
+            => (T)TypeInfoHolder<T>.TypeInfo.ResolveCreator(Type.GetTypeFromHandle(caller))(this, arguments);
+
+        /// <summary>
+        /// Creates an instance of a type dynamically.
+        /// </summary>
+        public object Create(string classname) => Create(classname, Array.Empty<PhpValue>());
+
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
         /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
@@ -54,12 +71,23 @@ namespace Pchp.Core
         /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
-        public object Create(string classname, params PhpValue[] arguments)
+        public object Create(string classname, params PhpValue[] arguments) => Create(default(RuntimeTypeHandle), classname, arguments);
+
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
+        /// <param name="caller">
+        /// Class context for resolving constructors visibility.
+        /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
+        /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
+        public object Create([ImportCallerClass]RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
         {
             var tinfo = this.GetDeclaredType(classname, true);
             if (tinfo != null)
             {
-                return tinfo.Creator(this, arguments);
+                return tinfo.ResolveCreator(Type.GetTypeFromHandle(caller))(this, arguments);
             }
             else
             {
@@ -87,5 +115,10 @@ namespace Pchp.Core
         {
             return ExtensionsAppContext.ExtensionsTable.GetRoutinesByExtension(extension).Select(r => r.Name);
         }
+
+        /// <summary>
+        /// Gets enumeration of scripts that were included.
+        /// </summary>
+        public IEnumerable<ScriptInfo> GetIncludedScripts() => _scripts.GetIncludedScripts();
     }
 }

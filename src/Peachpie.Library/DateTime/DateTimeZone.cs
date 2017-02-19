@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 /// <summary>
 /// Representation of time zone.
 /// </summary>
+[PhpType("DateTimeZone")]
 public class DateTimeZone
 {
     internal TimeZoneInfo timezone;

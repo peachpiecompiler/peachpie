@@ -117,22 +117,26 @@ namespace Pchp.CodeAnalysis.CodeGen
                     throw new InvalidOperationException("block miss");
                 }
 
-                if (block.Ordinal < _to)    // is in
+                if (IsIn(block))
                 {
                     // TODO: avoid branching to a guarded scope // e.g. goto x; try { x: }
 
-                    if (_blocks != null)
-                        _blocks.Remove(block);
+                    if (_blocks == null || _blocks.Count == 0 || _blocks.Comparer.Compare(block, _blocks.First()) < 0)
+                    {
+                        if (_blocks != null)
+                        {
+                            _blocks.Remove(block);
+                        }
 
-                    // continue with the block
-                    _codegen.GenerateBlock(block);
+                        // continue with the block
+                        _codegen.GenerateBlock(block);
+                        return;
+                    }
                 }
-                else
-                {
-                    // forward edge:
-                    IL.EmitBranch(ILOpCode.Br, block);  // TODO: avoid branch instruction if block will follow immediately
-                    Parent.Enqueue(block);
-                }
+                
+                // forward edge:
+                IL.EmitBranch(ILOpCode.Br, block);  // TODO: avoid branch instruction if block will follow immediately
+                this.Enqueue(block);
             }
 
             internal BoundBlock Dequeue()
@@ -233,6 +237,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public bool IsDebug => _optimizations == OptimizationLevel.Debug;
 
         /// <summary>
+        /// Whether to emit sequence points (PDB).
+        /// </summary>
+        public bool EmitPdbSequencePoints => _emitPdbSequencePoints;
+
+        /// <summary>
         /// Gets a reference to compilation object.
         /// </summary>
         public PhpCompilation DeclaringCompilation => _moduleBuilder.Compilation;
@@ -267,7 +276,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         #region Construction
 
         public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
-            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace)
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null)
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
@@ -285,6 +294,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             _factory = new DynamicOperationFactory(this, container);
 
             _emitPdbSequencePoints = emittingPdb;
+
+            _routine = routine;
         }
 
         /// <summary>
@@ -292,22 +303,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Used for emitting in a context of a different routine (parameter initializer).
         /// </summary>
         public CodeGenerator(CodeGenerator cg, SourceRoutineSymbol routine)
-            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt)
+            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine)
         {
             Contract.ThrowIfNull(routine);
 
-            _routine = routine;
             _emmittedTag = cg._emmittedTag;
             _localsPlaceOpt = cg._localsPlaceOpt;
         }
 
         public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
-            :this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(), routine.GetThisPlace())
+            :this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(), routine.GetThisPlace(), routine)
         {
             Contract.ThrowIfNull(routine);
 
-            _routine = routine;
-            
             _emmittedTag = (routine.ControlFlowGraph != null) ? routine.ControlFlowGraph.NewColor() : -1;
             _localsPlaceOpt = GetLocalsPlace(routine);
 

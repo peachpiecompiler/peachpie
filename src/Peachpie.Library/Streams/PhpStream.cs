@@ -372,7 +372,7 @@ namespace Pchp.Library.Streams
                     break;
 
                 case CheckAccessMode.FileOrDirectory:
-                    if ((!Directory.Exists(filename)) && (!File.Exists(filename)))
+                    if ((!System.IO.Directory.Exists(filename)) && (!File.Exists(filename)))
                     {
                         if (!quiet) PhpException.Throw(PhpError.Warning, ErrResources.stream_path_not_exists, url);
                         return false;
@@ -380,7 +380,7 @@ namespace Pchp.Library.Streams
                     break;
 
                 case CheckAccessMode.Directory:
-                    if (!Directory.Exists(filename))
+                    if (!System.IO.Directory.Exists(filename))
                     {
                         if (!quiet) PhpException.Throw(PhpError.Warning, ErrResources.stream_directory_not_exists, url);
                         return false;
@@ -441,7 +441,7 @@ namespace Pchp.Library.Streams
                 }
             }
 
-            // this.readTimeout = ScriptContext.CurrentContext.Config.FileSystem.DefaultSocketTimeout;
+            this.readTimeout = ctx.Configuration.Core.DefaultSocketTimeout;
         }
 
         /// <summary>

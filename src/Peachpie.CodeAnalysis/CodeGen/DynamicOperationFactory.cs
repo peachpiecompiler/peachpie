@@ -54,7 +54,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var fldPlace = this.Place;
                 fldPlace.EmitStorePrepare(cctor);
 
-                var cctor_cg = new CodeGenerator(cctor, _factory._cg.Module, _factory._cg.Diagnostics, _factory._cg.DeclaringCompilation.Options.OptimizationLevel, false, _factory._container, null, null);
+                var cg = _factory._cg;
+                var cctor_cg = new CodeGenerator(cctor, cg.Module, cg.Diagnostics, cg.DeclaringCompilation.Options.OptimizationLevel, false, _factory._container, null, null, cg.Routine);
                 binder_builder(cctor_cg);
                 cctor.EmitCall(_factory._cg.Module, _factory._cg.Diagnostics, ILOpCode.Call, this.CallSite_Create);
 
@@ -129,7 +130,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(refKinds.IsDefaultOrEmpty || refKinds.Length == loweredArguments.Length);
 
-            var callSiteType = _compilation.GetWellKnownType(WellKnownType.System_Runtime_CompilerServices_CallSite);
+            var callSiteType = this.CallSite;
             if (callSiteType.IsErrorType())
             {
                 return null;

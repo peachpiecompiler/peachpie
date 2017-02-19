@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         object [Main](){ ... }
     ///     }
     /// }</remarks>
-    sealed partial class SourceFileSymbol : NamedTypeSymbol
+    sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol
     {
         readonly PhpCompilation _compilation;
         readonly PhpSyntaxTree _syntaxTree;
@@ -75,7 +75,29 @@ namespace Pchp.CodeAnalysis.Symbols
             _lazyMembers.Add(routine);
         }
 
-        internal string RelativeFilePath => PhpFileUtilities.GetRelativePath(_syntaxTree.Source.FilePath, _compilation.Options.BaseDirectory);
+        void ILambdaContainerSymbol.AddLambda(SourceLambdaSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+            _lazyMembers.Add(routine);
+        }
+
+        IEnumerable<SourceLambdaSymbol> ILambdaContainerSymbol.Lambdas
+        {
+            get
+            {
+                return _lazyMembers.OfType<SourceLambdaSymbol>();
+            }
+        }
+
+        SourceLambdaSymbol ILambdaContainerSymbol.ResolveLambdaSymbol(LambdaFunctionExpr expr)
+        {
+            if (expr == null) throw new ArgumentNullException(nameof(expr));
+            return _lazyMembers.OfType<SourceLambdaSymbol>().First(s => s.Syntax == expr);
+        }
+
+        internal string RelativeFilePath =>
+            PhpFileUtilities.GetRelativePath(_syntaxTree.Source.FilePath, _compilation.Options.BaseDirectory)
+            .Replace(PathUtilities.DirectorySeparatorChar, PathUtilities.AltDirectorySeparatorChar);    // forward slashes by default
 
         /// <summary>
         /// Gets relative path excluding the file name and trailing slashes.
@@ -85,8 +107,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 return (PathUtilities.GetDirectoryName(this.RelativeFilePath) ?? string.Empty)
-                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar)     // NormalizeRelativeDirectoryPath
-                    .Replace(PathUtilities.AltDirectorySeparatorChar, PathUtilities.DirectorySeparatorChar);
+                    .TrimEnd(PathUtilities.AltDirectorySeparatorChar);     // NormalizeRelativeDirectoryPath
             }
         }
 
@@ -124,6 +145,10 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public override int Arity => 0;
+
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
 
         public override Symbol ContainingSymbol => _compilation.SourceModule;
 

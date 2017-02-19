@@ -291,6 +291,64 @@ namespace Pchp.Library
 
         #endregion
 
+        #region setcookie, setrawcookie
+
+        /// <summary>
+        /// Sends a cookie with specified name, value and expiration timestamp.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="name">The name of the cookie to send.</param>
+        /// <param name="value">The value of the cookie. The value will be <see cref="UrlEncode"/>d.</param>
+        /// <param name="expire">The time (Unix timestamp) when the cookie expires.</param>
+        /// <param name="path">The virtual path on server in which is the cookie valid.</param>
+        /// <param name="domain">The domain where the cookie is valid.</param>
+        /// <param name="secure">Whether to transmit the cookie securely (that is, over HTTPS only).</param>
+        /// <param name="httponly">When TRUE the cookie will be made accessible only through the HTTP protocol.
+        /// This means that the cookie won't be accessible by scripting languages, such as JavaScript.
+        /// This setting can effectively help to reduce identity theft through XSS attacks
+        /// (although it is not supported by all browsers).</param>
+        /// <returns>Whether a cookie has been successfully send.</returns>
+        public static bool setcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
+        {
+            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, false);
+        }
+
+        /// <summary>
+        /// The same as <see cref="setcookie(Context, string, string, int, string, string, bool, bool)"/> except for that value is not <see cref="UrlEncode"/>d.
+        /// </summary>
+        public static bool setrawcookie(Context ctx, string name, string value = null, int expire = 0, string path = null, string domain = null, bool secure = false, bool httponly = false)
+        {
+            return SetCookieInternal(ctx, name, value, expire, path, domain, secure, httponly, true);
+        }
+
+        /// <summary>
+        /// Internal version common for <see cref="setcookie"/> and <see cref="setrawcookie"/>.
+        /// </summary>
+        internal static bool SetCookieInternal(Context ctx, string name, string value, int expire, string path, string domain, bool secure, bool httponly, bool raw)
+        {
+            var httpctx = ctx.HttpPhpContext;
+            if (httpctx == null)
+            {
+                return false;
+            }
+            
+            DateTimeOffset? expires;
+            if (expire > 0)
+            {
+                expires = new DateTimeOffset(DateTimeUtils.UnixTimeStampToUtc(expire).ToLocalTime());
+            }
+            else
+            {
+                expires = null;
+            }
+
+            httpctx.AddCookie(name, raw ? value : urlencode(value), expires, path ?? "/", domain, secure, httponly);
+
+            return true;
+        }
+
+        #endregion
+
         #region header, header_remove
 
         /// <summary>
@@ -467,6 +525,122 @@ namespace Pchp.Library
             // TODO: cookies, session
 
             return list;
+        }
+
+        #endregion
+
+        #region http_build_query, get_browser
+
+        /// <summary>
+        /// Generates a URL-encoded query string from the associative (or indexed) array provided. 
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="formData">
+        /// The array form may be a simple one-dimensional structure, or an array of arrays
+        /// (who in turn may contain other arrays). 
+        /// </param>
+        /// <param name="numericPrefix">
+        /// If numeric indices are used in the base array and this parameter is provided,
+        /// it will be prepended to the numeric index for elements in the base array only.
+        /// This is meant to allow for legal variable names when the data is decoded by PHP
+        /// or another CGI application later on.
+        /// </param>
+        /// <param name="argSeparator">
+        /// arg_separator.output is used to separate arguments, unless this parameter is
+        /// specified, and is then used. 
+        /// </param>
+        /// <param name="encType"></param>
+        /// <returns>Returns a URL-encoded string </returns>
+        public static string http_build_query(Context ctx, PhpValue formData, string numericPrefix = null, string argSeparator = null, int encType = 0)
+            => http_build_query(ctx, formData, numericPrefix, argSeparator, encType, null);
+
+        private static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator = null, int encType = 0, string indexerPrefix = null)
+        {
+            var str_builder = new StringBuilder(64);  // statistically the length of the result
+            var result = new System.IO.StringWriter(str_builder);
+
+            bool isNotFirst = false;
+
+            var enumerator = formData.GetForeachEnumerator(false, default(RuntimeTypeHandle));
+            while (enumerator.MoveNext())
+            {
+                var key = enumerator.CurrentKey;
+                var value = enumerator.CurrentValue;
+
+                // the query parameter name (key name)
+                // the parameter name is URL encoded
+                string keyName = key.IsInteger()
+                    ? (numericPrefix != null ? urlencode(numericPrefix) : null) + key.ToLong().ToString()
+                    : urlencode(key.ToStringOrThrow(ctx));
+
+                if (indexerPrefix != null)
+                {
+                    keyName = indexerPrefix + "%5B" + keyName + "%5D";  // == prefix[key] (url encoded brackets)
+                }
+
+                // write the query element
+
+                var valueArray = value.ArrayOrNull();
+                if (valueArray != null)
+                {
+                    // value is an array, emit query recursively, use current keyName as an array variable name
+
+                    string queryStr = http_build_query(ctx, (PhpValue)valueArray, null, argSeparator, encType, keyName);  // emit the query recursively
+
+                    if (queryStr != null && queryStr.Length > 0)
+                    {
+                        if (isNotFirst)
+                            result.Write(argSeparator);
+
+                        result.Write(queryStr);
+                    }
+                }
+                else
+                {
+                    // simple value, emit query in a form of (key=value), URL encoded !
+
+                    if (isNotFirst)
+                        result.Write(argSeparator);
+
+                    if (!value.IsEmpty)
+                    {
+                        result.Write(keyName + "=" + urlencode(value.ToStringOrThrow(ctx)));    // == "keyName=keyValue"
+                    }
+                    else
+                    {
+                        result.Write(keyName + "=");    // == "keyName="
+                    }
+                }
+
+                // separator will be used in next loop
+                isNotFirst = true;
+            }
+
+            result.Flush();
+
+            return str_builder.ToString();
+        }
+
+        /// <summary>
+        /// Attempts to determine the capabilities of the user's browser, by looking up the browser's information in the browscap.ini  file.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="user_agent">
+        /// The User Agent to be analyzed. By default, the value of HTTP User-Agent header is used; however, you can alter this (i.e., look up another browser's info) by passing this parameter.
+        /// You can bypass this parameter with a NULL value.
+        /// </param>
+        /// <param name="return_array">If set to TRUE, this function will return an array instead of an object . </param>
+        /// <returns>
+        ///  The information is returned in an object or an array which will contain various data elements representing,
+        ///  for instance, the browser's major and minor version numbers and ID string; TRUE/FALSE  values for features
+        ///  such as frames, JavaScript, and cookies; and so forth.
+        ///  The cookies value simply means that the browser itself is capable of accepting cookies and does not mean
+        ///  the user has enabled the browser to accept cookies or not. The only way to test if cookies are accepted is
+        ///  to set one with setcookie(), reload, and check for the value. 
+        /// </returns>
+        public static PhpValue get_browser(Context ctx, string user_agent = null, bool return_array = false)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

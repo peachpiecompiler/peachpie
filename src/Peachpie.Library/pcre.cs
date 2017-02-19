@@ -355,9 +355,9 @@ namespace Pchp.Library
             var regex = new PerlRegex.Regex(pattern);
             var m = regex.Match(subject);
 
-            if ((regex.PerlOptions & PerlRegex.PerlRegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
+            if ((regex.Options & PerlRegex.RegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
             {
-                matches = new PhpArray();
+                matches = PhpArray.NewEmpty();
                 return -1;
             }
 
@@ -368,25 +368,22 @@ namespace Pchp.Library
                     matches = new PhpArray(m.Groups.Count);
                 }
                 else
+                {
                     matches = new PhpArray();
+                }
 
                 if (!matchAll)
                 {
-                    // Preg numbers groups sequentially, both named and unnamed.
-                    // .Net only numbers unnamed groups.
-                    // So we name unnamed groups (see ConvertRegex) to map correctly.
-                    int lastSuccessfulGroupIndex = GetLastSuccessfulGroup(m.Groups);
-                    var indexGroups = new List<Group>(m.Groups.Count);
-                    var groupNameByIndex = new Dictionary<int, string>(m.Groups.Count);
-                    for (int i = 0; i <= lastSuccessfulGroupIndex; i++)
+                    var groups = m.PcreGroups;
+                    for (int i = 0; i < groups.Count; i++)
                     {
-                        // All groups should be named.
-                        var groupName = GetGroupName(regex, i);
-                        var item = NewArrayItem(m.Groups[i].Value, m.Groups[i].Index, (flags & PREG_OFFSET_CAPTURE) != 0);
+                        var g = groups[i];
+                        var item = NewArrayItem(g.Value, g.Index, (flags & PREG_OFFSET_CAPTURE) != 0);
 
-                        if (!string.IsNullOrEmpty(groupName))
+                        // All groups should be named.
+                        if (g.IsNamedGroup)
                         {
-                            matches[groupName] = item.DeepCopy();
+                            matches[g.Name] = item.DeepCopy();
                         }
 
                         matches[i] = item;
@@ -419,7 +416,7 @@ namespace Pchp.Library
             }
             else
             {
-                matches = new PhpArray(); // empty array
+                matches = PhpArray.NewEmpty(); // empty array
             }
 
             return 0;
@@ -662,7 +659,6 @@ namespace Pchp.Library
                         p[groupName] = arr;
                     });
 
-
                     pa[j] = arr;
                 }
 
@@ -689,7 +685,15 @@ namespace Pchp.Library
 
         static string GetGroupName(Regex regex, int index)
         {
-            return regex.GroupNameFromNumber(index);
+            var name = regex.GroupNameFromNumber(index);
+
+            // anonymous groups and indexed groups:
+            if (string.IsNullOrEmpty(name) || name.Equals(index.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat)))
+            {
+                name = null;
+            }
+
+            return name;
         }
 
         /// <summary>

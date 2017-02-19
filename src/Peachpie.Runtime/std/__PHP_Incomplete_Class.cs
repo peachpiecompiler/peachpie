@@ -5,10 +5,12 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.ComponentModel;
 
 /// <summary>
 /// Core class created by <c>unserialize</c> if an undefined class should be created.
 /// </summary>
+[EditorBrowsable(EditorBrowsableState.Advanced)]
 public sealed class __PHP_Incomplete_Class
 {
     /// <summary>

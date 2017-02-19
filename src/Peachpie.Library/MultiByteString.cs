@@ -178,6 +178,11 @@ namespace Pchp.Library
                 : value.ToString(ctx);  // no bytes have to be converted anyway
         }
 
+        static byte[] ToBytes(Context ctx, PhpString value, string forceencoding = null)
+        {
+            return value.ToBytes(GetEncoding(forceencoding) ?? ctx.StringEncoding);
+        }
+
         #endregion
 
         #region mb_substr, mb_strcut
@@ -269,6 +274,40 @@ namespace Pchp.Library
         {
             UriUtils.ParseQuery(encoded_string, ctx.Globals.AddVariable);
             return true;
+        }
+
+        #endregion
+
+        #region mb_convert_encoding 
+
+        public static string mb_convert_encoding(Context ctx, PhpString str, string to_encoding)
+        {
+            return mb_convert_encoding(ctx, str, to_encoding, PhpValue.Void /*mb_internal_encoding*/);
+        }
+
+        /// <summary>
+        /// Converts the character encoding of <paramref name="str"/> to <paramref name="to_encoding"/>.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="str">Input string.</param>
+        /// <param name="to_encoding">Target encoding.</param>
+        /// <param name="from_encoding">
+        /// Encodings to try for decoding <paramref name="str"/>.
+        /// It is either an array, or a comma separated enumerated list. If from_encoding is not specified, the internal encoding will be used.
+        /// </param>
+        /// <returns>Converted string.</returns>
+        public static string mb_convert_encoding(Context ctx, PhpString str , string to_encoding, PhpValue from_encoding)
+        {
+            PhpException.FunctionNotSupported("mb_convert_encoding");
+
+            if (from_encoding.IsNull)
+            {
+                // from_encoding = mb_internal_encoding;
+            }
+
+            var target_enc = GetEncoding(to_encoding) ?? ctx.StringEncoding;
+            var bytes = ToBytes(ctx, str/*, from_encoding*/);   // TODO: try all encodings in {from_encoding}
+            return target_enc.GetString(bytes);
         }
 
         #endregion

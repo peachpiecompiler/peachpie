@@ -3,6 +3,7 @@
 /// <summary>
 /// Classes implementing Countable can be used with the <c>count()</c> function.
 /// </summary>
+[PhpType]
 public interface Countable
 {
     /// <summary>

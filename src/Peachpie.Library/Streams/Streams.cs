@@ -9,6 +9,217 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Streams
 {
+    #region Stream Context functions
+
+    /// <summary>
+    /// Class containing implementations of PHP functions accessing the <see cref="StreamContext"/>s.
+    /// </summary>
+    /// <threadsafety static="true"/>
+    public static class PhpContexts
+    {
+        #region stream_context_create
+
+        /// <summary>Create a new stream context.</summary>
+        /// <param name="data">The 2-dimensional array in format "options[wrapper][option]".</param>
+        public static PhpResource stream_context_create(PhpArray data = null)
+        {
+            if (data == null)
+            {
+                return StreamContext.Default;
+            }
+
+            // OK, data lead to a valid stream-context.
+            if (CheckContextData(data))
+            {
+                return new StreamContext(data);
+            }
+
+            // Otherwise..
+            PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_context_resource);
+            return null;
+        }
+
+        /// <summary>
+        /// Check whether the provided argument is a valid stream-context data array.
+        /// </summary>
+        /// <param name="data">The data to be stored into context.</param>
+        /// <returns></returns>
+        static bool CheckContextData(PhpArray data)
+        {
+            // Check if the supplied data are correctly formed.
+            using (var enumerator = data.GetFastEnumerator())
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.CurrentValue.AsArray() == null)
+                    {
+                        return false;
+                    }
+
+                    // Invalid resource - not an array of arrays
+                }
+            return true;
+        }
+
+        /// <summary>
+        /// Get the StreamContext from a handle representing either an isolated context or a PhpStream.
+        /// </summary>
+        /// <param name="stream_or_context">The PhpResource of either PhpStream or StreamContext type.</param>
+        /// <param name="createContext">If true then a new context will be created at the place of <see cref="StreamContext.Default"/>.</param>
+        /// <returns>The respective StreamContext.</returns>
+        /// <exception cref="PhpException">If the first argument is neither a stream nor a context.</exception>
+        private static StreamContext FromResource(PhpResource stream_or_context, bool createContext)
+        {
+            if ((stream_or_context != null) && (stream_or_context.IsValid))
+            {
+                // Get the context out of the stream
+                PhpStream stream = stream_or_context as PhpStream;
+                if (stream != null)
+                {
+                    Debug.Assert(stream.Context != null);
+                    stream_or_context = stream.Context;
+                }
+
+                StreamContext context = stream_or_context as StreamContext;
+                if (context == StreamContext.Default)
+                {
+                    if (!createContext) return null;
+                    context = new StreamContext();
+                }
+                return context;
+            }
+            PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.context_expected);
+            return null;
+        }
+
+        private static PhpArray GetContextData(PhpResource stream_or_context)
+        {
+            // Always create a new context if there is the Default one.
+            StreamContext context = FromResource(stream_or_context, true);
+
+            // Now create the data if this is a "lazy context".
+            if (context != null)
+            {
+                if (context.Data == null)
+                {
+                    context.Data = new PhpArray(4);
+                }
+
+                return context.Data;
+                // Now it is OK.
+            }
+            return null;
+        }
+
+        #endregion
+
+        #region stream_context_get_options, stream_context_set_option, stream_context_set_params
+
+        /// <summary>
+        /// Retrieve options for a stream-wrapper or a context itself.
+        /// </summary>  
+        /// <param name="stream_or_context">The PhpResource of either PhpStream or StreamContext type.</param>
+        /// <returns>The contained PhpArray of options.</returns>
+        public static PhpArray stream_context_get_options(PhpResource stream_or_context)
+        {
+            // Do not create a new context if there is the Default one.
+            var context = FromResource(stream_or_context, false);
+            return context != null ? context.Data : null;
+        }
+
+        /// <summary>
+        /// Sets an option for a stream/wrapper/context.
+        /// </summary> 
+        /// <param name="stream_or_context">The PhpResource of either PhpStream or StreamContext type.</param>
+        /// <param name="wrapper">The first-level index to the options array.</param>
+        /// <param name="option">The second-level index to the options array.</param>
+        /// <param name="data">The data to be stored to the options array.</param>
+        /// <returns>True on success.</returns>
+        public static bool stream_context_set_option(PhpResource stream_or_context, string wrapper, string option, PhpValue data)
+        {
+            // OK, creates the context if Default, so that Data is always a PhpArray.
+            // Fails only if the first argument is not a stream nor context.
+            var context_data = GetContextData(stream_or_context);
+            if (context_data != null)
+            {
+                GetWrapperData(context_data, wrapper)[option] = data;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sets an option for a stream/wrapper/context.
+        /// </summary> 
+        /// <param name="stream_or_context">The PhpResource of either PhpStream or StreamContext type.</param>
+        /// <param name="options">The options to set for <paramref name="stream_or_context"/>.</param>
+        /// <returns>True on success.</returns>
+        public static bool stream_context_set_option(PhpResource stream_or_context, PhpArray options)
+        {
+            // OK, creates the context if Default, so that Data is always a PhpArray.
+            // Fails only if the first argument is not a stream nor context.
+            var context_data = GetContextData(stream_or_context);
+            if (context_data != null)
+            {
+                var e1 = options.GetFastEnumerator();
+                while (e1.MoveNext())
+                {
+                    var wrapper_options = e1.CurrentValue.AsArray();
+                    if (wrapper_options != null)
+                    {
+                        var wrapper_data = GetWrapperData(context_data, e1.CurrentKey.ToString());
+                        var e2 = wrapper_options.GetFastEnumerator();
+                        while (e2.MoveNext())
+                        {
+                            wrapper_data[e2.CurrentKey.ToString()] = e2.CurrentValue;
+                        }
+                    }
+                }
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        static PhpArray GetWrapperData(PhpArray context_data, string wrapper)
+        {
+            Debug.Assert(context_data != null);
+
+            PhpValue value;
+            if (!context_data.TryGetValue(wrapper, out value))
+            {
+                context_data[wrapper] = value = (PhpValue)new PhpArray();
+            }
+
+            return value.ArrayOrNull();
+        }
+
+        /// <summary>
+        /// Set parameters for a stream/wrapper/context.
+        /// </summary>
+        public static bool stream_context_set_params(PhpResource stream_or_context, PhpArray parameters)
+        {
+            // Create the context if the stream does not have one.
+            var context = FromResource(stream_or_context, true);
+            if (context != null && context.IsValid)
+            {
+                context.Parameters = parameters;
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+    }
+
+    #endregion
+
     public static class PhpStreams
     {
         #region Constants

@@ -421,13 +421,15 @@ namespace Pchp.Core
             return CompareStrings(x.ToString(_ctx), y.ToString(_ctx));
         }
 
+        public int CompareStrings(string x, string y) => CompareStrings(x, y, _caseInsensitive);
+
         /// <summary>
 		/// Compares two strings using the natural ordering.
 		/// </summary>
-		public int CompareStrings(string x, string y)
+        public static int CompareStrings(string x, string y, bool caseInsensitive)
         {
-            if (x == null) x = String.Empty;
-            if (y == null) y = String.Empty;
+            if (x == null) x = string.Empty;
+            if (y == null) y = string.Empty;
 
             int length_l = x.Length, length_g = y.Length;
             if (length_l == 0 || length_g == 0) return length_l - length_g;
@@ -438,18 +440,18 @@ namespace Pchp.Core
                 char lc = x[i], gc = y[j];
 
                 // skip white spaces
-                if (Char.IsWhiteSpace(lc))
+                if (char.IsWhiteSpace(lc))
                 {
                     i++;
                     continue;
                 }
-                if (Char.IsWhiteSpace(gc))
+                if (char.IsWhiteSpace(gc))
                 {
                     j++;
                     continue;
                 }
 
-                if (Char.IsDigit(lc) && Char.IsDigit(gc))
+                if (char.IsDigit(lc) && char.IsDigit(gc))
                 {
                     // compare numbers
                     int result = (lc == '0' || gc == '0') ? CompareLeft(x, y, ref i, ref j) :
@@ -460,10 +462,10 @@ namespace Pchp.Core
                 else
                 {
                     // compare letters
-                    if (_caseInsensitive)
+                    if (caseInsensitive)
                     {
-                        lc = Char.ToLowerInvariant(lc);
-                        gc = Char.ToLowerInvariant(gc);
+                        lc = char.ToLowerInvariant(lc);
+                        gc = char.ToLowerInvariant(gc);
                     }
 
                     if (lc < gc) return -1;
@@ -501,8 +503,8 @@ namespace Pchp.Core
 
             while (true)
             {
-                bool bl = (i == length_l || !Char.IsDigit(x[i]));
-                bool bg = (j == length_g || !Char.IsDigit(y[j]));
+                bool bl = (i == length_l || !char.IsDigit(x[i]));
+                bool bg = (j == length_g || !char.IsDigit(y[j]));
 
                 if (bl && bg) return 0;
                 if (bl) return -1;

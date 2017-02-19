@@ -4,54 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
-
-/// <summary>
-/// Built-in marker interface.
-/// </summary>
-public interface Traversable
-{
-}
-
-/// <summary>
-/// Interface for external iterators or objects that can iterate themselves internally.
-/// </summary>
-/// <remarks>
-/// Note that contrary to the .NET framework enumerating interfaces,
-/// calling <c>rewind</c> positions the iterator on the first element, so <c>next</c>
-/// shall not be called until the first element is retrieved.
-/// </remarks>
-public interface Iterator : Traversable
-{
-    /// <summary>
-    /// Rewinds the iterator to the first element.
-    /// </summary>
-    void rewind();
-
-    /// <summary>
-    /// Moves forward to next element.
-    /// </summary>
-    void next();
-
-    /// <summary>
-    /// Checks if there is a current element after calls to <see cref="rewind"/> or <see cref="next"/>.
-    /// </summary>
-    /// <returns><c>bool</c>.</returns>
-    bool valid();
-
-    /// <summary>
-    /// Returns the key of the current element.
-    /// </summary>
-    PhpValue key();
-
-    /// <summary>
-    /// Returns the current element (value).
-    /// </summary>
-    PhpValue current();
-}
+using Pchp.Core.Reflection;
 
 /// <summary>
 /// The Seekable iterator.
 /// </summary>
+[PhpType]
 public interface SeekableIterator : Iterator
 {
     /// <summary>
@@ -61,23 +19,9 @@ public interface SeekableIterator : Iterator
 }
 
 /// <summary>
-/// Interface to create an external iterator.
-/// </summary>
-/// <remarks>
-/// This interface contains only arg-less stubs as signatures should not be restricted.
-/// </remarks>
-public interface IteratorAggregate : Traversable
-{
-    /// <summary>
-    /// Returns an <see cref="Iterator"/> or another <see cref="IteratorAggregate"/> for
-    /// the implementing object.
-    /// </summary>
-    Traversable getIterator();
-}
-
-/// <summary>
 /// Classes implementing OuterIterator can be used to iterate over iterators.
 /// </summary>
+[PhpType]
 public interface OuterIterator : Iterator
 {
     /// <summary>
@@ -90,6 +34,7 @@ public interface OuterIterator : Iterator
 /// <summary>
 /// Classes implementing RecursiveIterator can be used to iterate over iterators recursively.
 /// </summary>
+[PhpType]
 public interface RecursiveIterator : Iterator
 {
     /// <summary>
@@ -112,6 +57,7 @@ public interface RecursiveIterator : Iterator
 /// and let it create ArrayIterator instances that refer to it either by using foreach or by calling
 /// its getIterator() method manually.
 /// </summary>
+[PhpType]
 public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterator, Countable
 {
     #region Fields & Properties
@@ -123,7 +69,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
     bool isArrayIterator => _array != null;
 
     object _dobj = null;
-    IEnumerator<KeyValuePair<PhpValue, PhpValue>> dobjEnumerator = null;    // lazily instantiated so we can rewind() once when needed
+    IEnumerator<KeyValuePair<IntStringKey, PhpValue>> _dobjEnumerator = null;    // lazily instantiated so we can rewind() once when needed
     bool isObjectIterator => _dobj != null;
 
     bool _isValid = false;
@@ -147,10 +93,9 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
     void InitObjectIteratorHelper()
     {
         Debug.Assert(_dobj != null);
-
-        //this.dobjEnumerator = dobj.InstancePropertyIterator(null, false);   // we have to create new enumerator (or implement InstancePropertyIterator.Reset)
-        //this.isValid = this.dobjEnumerator.MoveNext();
-        throw new NotImplementedException();
+        
+        _dobjEnumerator = TypeMembersUtils.EnumerateVisibleInstanceFields(_dobj).GetEnumerator();   // we have to create new enumerator (or implement InstancePropertyIterator.Reset)
+        _isValid = _dobjEnumerator.MoveNext();
     }
 
     #endregion
@@ -181,10 +126,10 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
         {
             InitArrayIteratorHelper();  // instantiate now, avoid repetitous checks during iteration
         }
-        //else if ((this.dobj = array as DObject) != null)
-        //{
-        //    //InitObjectIteratorHelper();   // lazily to avoid one additional allocation
-        //}
+        else if ((_dobj = array.AsObject()) != null)
+        {
+            //InitObjectIteratorHelper();   // lazily to avoid one additional allocation
+        }
         else
         {
             throw new ArgumentException();
@@ -283,7 +228,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
 
     private void EnsureEnumeratorsHelper()
     {
-        if (isObjectIterator && dobjEnumerator == null)
+        if (isObjectIterator && _dobjEnumerator == null)
             InitObjectIteratorHelper();
 
         // arrayEnumerator initialized in __construct()
@@ -298,7 +243,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
         else if (isObjectIterator)
         {
             EnsureEnumeratorsHelper();
-            _isValid = dobjEnumerator.MoveNext();
+            _isValid = _dobjEnumerator.MoveNext();
         }
     }
 
@@ -317,7 +262,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
             if (isArrayIterator)
                 return _arrayEnumerator.CurrentKey;
             else if (isObjectIterator)
-                return dobjEnumerator.Current.Key;
+                return PhpValue.Create(_dobjEnumerator.Current.Key);
             else
                 Debug.Fail(null);
         }
@@ -334,7 +279,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
             if (isArrayIterator)
                 return _arrayEnumerator.CurrentValue;
             else if (isObjectIterator)
-                return dobjEnumerator.Current.Value;
+                return _dobjEnumerator.Current.Value;
             else
                 Debug.Fail(null);
         }
@@ -414,8 +359,8 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
     {
         if (isArrayIterator)
             return _array.Count;
-        //else if (isObjectIterator)
-        //    return _dobj.Count;
+        else if (isObjectIterator)
+            return TypeMembersUtils.FieldsCount(_dobj);
 
         return 0;
     }
@@ -440,6 +385,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
 /// <summary>
 /// The EmptyIterator class for an empty iterator.
 /// </summary>
+[PhpType]
 public class EmptyIterator : Iterator, Traversable
 {
     public virtual void __construct()

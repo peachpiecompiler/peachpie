@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 using Pchp.Core;
 
 /// <summary>
@@ -19,6 +16,7 @@ using Pchp.Core;
 /// which had been serialized before the class implemeted the interface, is unserialized,
 /// __wakeup() is called instead of the serialize method, what might be useful for migration purposes.
 /// </remarks>
+[EditorBrowsable(EditorBrowsableState.Advanced)]
 public interface Serializable
 {
     /// <summary>

@@ -78,21 +78,13 @@ namespace Pchp.Library.Streams
         #endregion
 
         /// <summary>
-		/// Checks the context for validity, throws a warning it is not.
-		/// </summary>
-		/// <param name="resource">Resource which should contain a StreamContext.</param>
-		/// <returns>The given resource cast to <see cref="StreamContext"/> or <c>null</c> if invalid.</returns>
-		/// <exception cref="PhpException">In case the context is invalid.</exception>
-		public static StreamContext GetValid(PhpResource resource) => GetValid(resource, false);
-
-        /// <summary>
         /// Checks the context for validity, throws a warning it is not.
         /// </summary>
         /// <param name="resource">Resource which should contain a StreamContext.</param>
         /// <param name="allowNull"><c>True</c> to allow <c>NULL</c> context, that will be without any warning converted to Default <see cref="StreamContext"/>.</param>
         /// <returns>The given resource cast to <see cref="StreamContext"/> or <c>null</c> if invalid and <c>allowNull</c> is <c>false</c>.</returns>
         /// <exception cref="PhpException">In case the context is invalid.</exception>
-        public static StreamContext GetValid(PhpResource resource, bool allowNull)
+        public static StreamContext GetValid(PhpResource resource, bool allowNull = false)
         {
             // implicit default from NULL
             if (allowNull && resource == null)
@@ -103,9 +95,8 @@ namespace Pchp.Library.Streams
             if (result != null /* TODO: Why is default context disposed? && result.IsValid*/)
                 return result;
 
-            //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_context_resource"));
-            //return null;
-            throw new NotImplementedException();
+            PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_context_resource);
+            return null;
         }
 
         /// <summary>

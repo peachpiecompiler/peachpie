@@ -86,7 +86,7 @@ namespace Pchp.Library.PerlRegex
                 for (int i = 0; i < _groups.Length; i++)
                 {
                     string groupname = _match._regex.GroupNameFromNumber(i + 1);
-                    _groups[i] = new Group(_match._text, _match._matches[i + 1], _match._matchcount[i + 1], groupname);
+                    _groups[i] = new Group(_match._text, _match._matches[i + 1], _match._matchcount[i + 1], groupname, i + 1);
                 }
             }
 

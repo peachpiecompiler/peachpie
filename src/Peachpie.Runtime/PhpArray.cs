@@ -84,6 +84,18 @@ namespace Pchp.Core
         /// <param name="length"></param>
         public PhpArray(Array values, int index, int length) : base(values, index, length) { }
 
+        /// <summary>
+		/// Initializes a new instance of the <see cref="PhpArray"/> class filled by values from specified array.
+		/// </summary>
+		/// <param name="values">An array of values to be added to the table.</param>
+		/// <param name="start">An index of the first item from <paramref name="values"/> to add.</param>
+		/// <param name="length">A number of items to add.</param>
+		/// <param name="value">A value to be filtered.</param>
+		/// <param name="doFilter">Wheter to add all items but <paramref name="value"/> (<b>true</b>) or 
+		/// all items with the value <paramref name="value"/> (<b>false</b>).</param>
+		public PhpArray(int[] values, int start, int length, int value, bool doFilter)
+            : base(values, start, length, value, doFilter) { }
+
         ///// <summary>
         ///// Initializes a new instance of the <see cref="PhpArray"/> class filled by values from specified array.
         ///// </summary>
@@ -204,6 +216,17 @@ namespace Pchp.Core
         public PhpArray DeepCopy() => new PhpArray(this, true);
 
         /// <summary>
+        /// Makes clone of this array with deeply copied values.
+        /// </summary>
+        /// <returns>Cloned instance of <see cref="PhpArray"/>.</returns>
+        public override object Clone()
+        {
+            var clone = DeepCopy();
+            clone.EnsureWritable();
+            return clone;
+        }
+
+        /// <summary>
         /// Gets PHP enumerator for this array.
         /// </summary>
         public new OrderedDictionary.Enumerator GetEnumerator() => new OrderedDictionary.Enumerator(this);
@@ -266,9 +289,11 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
+                case PhpTypeCode.Null:
+                    return Count;
+
                 case PhpTypeCode.Object:
-                    if (value.Object == null) return Count;
-                    break;
+                    return (value.Object == null) ? Count : 1;
 
                 case PhpTypeCode.Boolean:
                     return (Count > 0 ? 2 : 1) - (value.Boolean ? 2 : 1);
@@ -322,9 +347,9 @@ namespace Pchp.Core
             y.Visited = true;
 
             // it will be more effective to implement OrderedHashtable.ToOrderedList method and use it here (in future version):
-            sorted_x = (PhpArray)x.Clone();
+            sorted_x = x.DeepCopy();
             sorted_x.Sort(KeyComparer.ArrayKeys);
-            sorted_y = (PhpArray)y.Clone();
+            sorted_y = y.DeepCopy();
             sorted_y.Sort(KeyComparer.ArrayKeys);
 
             var iter_x = sorted_x.GetFastEnumerator();

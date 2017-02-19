@@ -37,17 +37,26 @@ namespace Pchp.Core
         /// <summary>
         /// Extensions name.
         /// </summary>
-        public string[] Extensions => _extensions;
-        readonly string[] _extensions;
+        public string[] Extensions { get; private set; }
+
+        /// <summary>
+        /// Optional.
+        /// Type of class that will be instantiated in order to subscribe to <see cref="Context"/> events and/or perform one-time initialization.
+        /// </summary>
+        /// <remarks>
+        /// The object is used to handle one-time initialization and context life-cycle.
+        /// Implement initialization and subscription logic in .ctor.
+        /// </remarks>
+        public Type Registrator { get; set; }
 
         public PhpExtensionAttribute(params string[] extensions)
         {
-            _extensions = extensions;
+            this.Extensions = extensions;
         }
 
         public override string ToString()
         {
-            return $"Extension: {string.Join(", ", _extensions)}";
+            return $"Extension: {string.Join(", ", this.Extensions)}";
         }
     }
 
@@ -57,6 +66,24 @@ namespace Pchp.Core
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method)]
     public sealed class PhpHiddenAttribute : Attribute
     {
+    }
+
+    /// <summary>
+    /// Marks public class or interface declaration as a PHP type visible to the scripts from extension libraries.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface)]
+    public sealed class PhpTypeAttribute : Attribute
+    {
+        /// <summary>
+        /// Optional. Explicitly set type name.
+        /// </summary>
+        public string ExplicitTypeName => _typename;
+        readonly string _typename;
+
+        public PhpTypeAttribute(string phpTypeName = null)
+        {
+            _typename = phpTypeName;
+        }
     }
 
     /// <summary>
@@ -70,6 +97,7 @@ namespace Pchp.Core
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ImportLocalsAttribute : Attribute
     {
+
     }
 
     /// <summary>
@@ -86,14 +114,15 @@ namespace Pchp.Core
 
     /// <summary>
     /// Denotates a function parameter that will be loaded with current class.
+    /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
     /// </summary>
     /// <remarks>
     /// The parameter is used to access calers' class context.
-    /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
     /// The parameter must be before regular parameters.</remarks>
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ImportCallerClassAttribute : Attribute
     {
+
     }
 
     /// <summary>
@@ -116,6 +145,16 @@ namespace Pchp.Core
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class PhpTraitAttribute : Attribute
+    {
+
+    }
+
+    /// <summary>
+    /// Compiler generated attribute denoting constructor that initializes only fields and calls minimal base .ctor.
+    /// Such constructor is used for emitting derived class constructor that calls PHP constructor function by itself.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Constructor)]
+    public sealed class PhpFieldsOnlyCtorAttribute : Attribute
     {
 
     }

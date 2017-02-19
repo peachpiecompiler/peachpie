@@ -51,13 +51,13 @@ namespace runtests
 
         static IEnumerable<string> ExpandTestDir(string testdir)
         {
-            return Directory.EnumerateFiles(testdir, "*.php", SearchOption.AllDirectories);
+            return System.IO.Directory.EnumerateFiles(testdir, "*.php", SearchOption.AllDirectories);
         }
 
         static TestResult TestCore(string testpath, string phpexepath)
         {
             var testfname = Path.GetFileName(testpath);
-            var outputexe = Path.Combine(testfname + ".exe");   // current dir so it finds pchpcor.dll etc.
+            var outputexe = Path.Combine(testfname + ".exe");   // current dir so it finds Peachpie.Runtime.dll etc.
 
             File.Delete(outputexe);
 
@@ -67,11 +67,9 @@ namespace runtests
             // peach.exe /target:exe '/out:testpath.exe' 'testpath'
             var compileroutput = RunProcess("peach.exe", $"/target:exe \"/out:{outputexe}\" \"{testpath}\"");
 
-            // TODO: check compiler crashed
-
             // testpath.exe >> OUTPUT2
-            var output = RunProcess(outputexe, string.Empty);
-
+            var output = File.Exists(outputexe) ? RunProcess(outputexe, string.Empty) : compileroutput;
+            
             File.Delete(outputexe);
 
             if (output == phpoutput)
@@ -80,7 +78,10 @@ namespace runtests
             }
 
             // TODO: log details
+            Console.WriteLine();
+            Console.WriteLine("<<<< PEACHPIE");
             Console.WriteLine(output);
+            Console.WriteLine("<<<< PHP");
             Console.WriteLine(phpoutput);
             //
             return TestResult.Failed;

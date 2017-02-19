@@ -1,4 +1,5 @@
 ﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
@@ -16,6 +17,7 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     /// <summary>
     /// Binds syntax nodes (<see cref="AST.LangElement"/>) to semantic nodes (<see cref="IOperation"/>).
+    /// Creates unbound nodes.
     /// </summary>
     internal class SemanticsBinder
     {
@@ -60,9 +62,18 @@ namespace Pchp.CodeAnalysis.Semantics
             if (parameters.Any(p => p.IsUnpack || p.Ampersand))
                 throw new NotImplementedException();
 
-            return BindExpressions(parameters.Select(p => p.Expression))
-                .Select(x => new BoundArgument(x))
-                .ToImmutableArray();
+            return BindArguments(parameters.Select(p => p.Expression));
+        }
+
+        ImmutableArray<BoundArgument> BindLambdaUseArguments(IEnumerable<AST.FormalParam> usevars)
+        {
+            return usevars.Select(v =>
+            {
+                var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
+                return BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+            })
+            .Select(expr => new BoundArgument(expr))
+            .ToImmutableArray();
         }
 
         #endregion
@@ -92,7 +103,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     .ToImmutableArray())
             { PhpSyntax = stmt };
             if (stmt is AST.ThrowStmt) return new BoundThrowStatement(BindExpression(((AST.ThrowStmt)stmt).Expression, BoundAccess.Read)) { PhpSyntax = stmt };
-            if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
+            if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement() { PhpSyntax = stmt };
 
             throw new NotImplementedException(stmt.GetType().FullName);
         }
@@ -123,7 +134,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
-            var bound = BindExpressionCore(expr, access).WithAccess(access);
+            var bound = BindExpressionCore(expr, access);
             bound.PhpSyntax = expr;
 
             return bound;
@@ -148,8 +159,15 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
+            if (expr is AST.LambdaFunctionExpr) return BindLambda((AST.LambdaFunctionExpr)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundLambda BindLambda(AST.LambdaFunctionExpr expr)
+        {
+            // Syntax is bound by caller, needed to resolve lambda symbol in analysis
+            return new BoundLambda(BindLambdaUseArguments(expr.UseParams));
         }
 
         BoundExpression BindConstUse(AST.ConstantUse x)
@@ -205,9 +223,27 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundIncludeEx(BindExpression(x.Target, BoundAccess.Read), x.InclusionType);
         }
 
-        BoundExpression BindConcatEx(AST.ConcatEx x)
+        BoundExpression BindConcatEx(AST.ConcatEx x) => BindConcatEx(x.Expressions);
+
+        BoundExpression BindConcatEx(AST.Expression[] args)
         {
-            return new BoundConcatEx(BindArguments(x.Expressions));
+            // bind expressions to bound arguments
+            var boundargs = new List<BoundArgument>(BindArguments(args));
+
+            // flattern concat arguments
+            for (int i = 0; i < boundargs.Count; i++)
+            {
+                var c = boundargs[i].Value as BoundConcatEx;
+                if (c != null)
+                {
+                    var subargs = c.ArgumentsInSourceOrder;
+                    boundargs.RemoveAt(i);
+                    boundargs.InsertRange(i, subargs);
+                }
+            }
+
+            //
+            return new BoundConcatEx(boundargs.AsImmutable());
         }
 
         BoundRoutineCall BindFunctionCall(AST.FunctionCall x, BoundAccess access)
@@ -344,15 +380,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindItemUse(AST.ItemUse x, BoundAccess access)
         {
-            if (x.IsMemberOf != null)
-            {
-                Debug.Assert(x.Array.IsMemberOf == null);
-                // fix this phalanger ast weirdness:
-                x.Array.IsMemberOf = x.IsMemberOf;
-                x.IsMemberOf = null;
-            }
+            AstUtils.PatchItemUse(x);
 
             var arrayAccess = BoundAccess.Read;
+
+            if (x.Index == null && (!access.IsEnsure && !access.IsWrite))   // READ variable[]
+                access = access.WithReadRef();                              // -> READREF variable[] // the only way new item will be ensured
 
             if (access.IsWrite || access.IsEnsure)
                 arrayAccess = arrayAccess.WithEnsureArray();
@@ -381,7 +414,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (expr.IsMemberOf == null)
             {
-                return new BoundVariableRef(varname);
+                return new BoundVariableRef(varname).WithAccess(access);
             }
             else
             {
@@ -419,7 +452,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw ExceptionUtilities.UnexpectedValue(x);
             }
 
-            return BoundFieldRef.CreateStaticField(typeref, varname);
+            return BoundFieldRef.CreateStaticField(typeref, varname).WithAccess(access);
         }
 
         BoundExpression BindGlobalConstUse(AST.GlobalConstUse expr)
@@ -437,7 +470,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (expr.Operation == AST.Operations.Concat)
             {
-                return new BoundConcatEx(BindArguments(new[] { expr.LeftExpr, expr.RightExpr }));
+                return BindConcatEx(new[] { expr.LeftExpr, expr.RightExpr });
             }
             else
             {
@@ -493,7 +526,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 target.Access = target.Access.WithRead();   // Read & Write on target
 
-                return new BoundCompoundAssignEx(target, value, expr.Operation);
+                return new BoundCompoundAssignEx(target, value, expr.Operation).WithAccess(access);
             }
         }
 
@@ -504,6 +537,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 .ToArray();
 
             return new BoundListEx(vars).WithAccess(BoundAccess.Write);
+        }
+
+        public BoundStatement BindEmptyStmt(Span span)
+        {
+            return new BoundEmptyStatement(span.ToTextSpan());
         }
 
         static BoundExpression BindLiteral(AST.Literal expr)
@@ -527,6 +565,18 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr == null || expr.Access.IsReadRef) return;
 
             expr.Access = expr.Access.WithReadRef();
+            BindEnsureAccess(expr); // parent expression chain has to be updated as well
+        }
+
+        /// <summary>
+        /// Updates <paramref name="expr"/>'s <see cref="BoundAccess"/> to <see cref="BoundAccess.Write"/>.
+        /// </summary>
+        /// <param name="expr">Expression which access has to be updated.</param>
+        public static void BindWriteAccess(BoundReferenceExpression expr)
+        {
+            if (expr == null || expr.Access.IsWrite) return;
+
+            expr.Access = expr.Access.WithWrite(0);
             BindEnsureAccess(expr); // parent expression chain has to be updated as well
         }
 

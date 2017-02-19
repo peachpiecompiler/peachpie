@@ -100,6 +100,468 @@ namespace Pchp.Library
 
         #endregion
 
+        #region convert_cyr_string
+
+        #region cyrWin1251 (1251), cyrCp866 (20866), cyrIso88595 (28595), cyrMac (10007) conversion tables
+
+        private static class CyrTables
+        {
+            /// <summary>
+            /// Returns a Cyrillic translation table for a specified character set,
+            /// </summary>
+            /// <param name="code">The character set code. Can be one of 'k', 'w', 'i', 'a', 'd', 'm'.</param>
+            /// <returns>The translation table or null if no table is associated with given charset code.</returns>
+            public static byte[] GetCyrTableInternal(char code)
+            {
+                switch (char.ToUpperInvariant(code))
+                {
+                    case 'W':
+                        return cyrWin1251;
+
+                    case 'A':
+                    case 'D':
+                        return cyrCp866;
+
+                    case 'I':
+                        return cyrIso88595;
+
+                    case 'M':
+                        return cyrMac;
+
+                    case 'K':
+                        return null;
+
+                    default:
+                        return Array.Empty<byte>();
+                }
+            }
+
+            /// <summary>
+            /// Cyrillic translation table for Windows CP1251 character set.
+            /// </summary>
+            public static readonly byte[] cyrWin1251 = new byte[]
+            {
+                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+                48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
+                64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+                96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,
+                112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,
+
+                46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,
+                46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,46,
+                154,174,190,46,159,189,46,46,179,191,180,157,46,46,156,183,
+                46,46,182,166,173,46,46,158,163,152,164,155,46,46,46,167,
+                225,226,247,231,228,229,246,250,233,234,235,236,237,238,239,240,
+                242,243,244,245,230,232,227,254,251,253,255,249,248,252,224,241,
+                193,194,215,199,196,197,214,218,201,202,203,204,205,206,207,208,
+                210,211,212,213,198,200,195,222,219,221,223,217,216,220,192,209,
+
+                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+                48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
+                64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+                96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,
+                112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,
+
+                32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                32,32,32,184,186,32,179,191,32,32,32,32,32,180,162,32,
+                32,32,32,168,170,32,178,175,32,32,32,32,32,165,161,169,
+                254,224,225,246,228,229,244,227,245,232,233,234,235,236,237,238,
+                239,255,240,241,242,243,230,226,252,251,231,248,253,249,247,250,
+                222,192,193,214,196,197,212,195,213,200,201,202,203,204,205,206,
+                207,223,208,209,210,211,198,194,220,219,199,216,221,217,215,218,
+            };
+
+            /// <summary>
+            /// Cyrillic translation table for CP866 character set.
+            /// </summary>
+            public static readonly byte[] cyrCp866 = new byte[]
+            {
+                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+                48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
+                64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+                96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,
+                112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,
+
+                225,226,247,231,228,229,246,250,233,234,235,236,237,238,239,240,
+                242,243,244,245,230,232,227,254,251,253,255,249,248,252,224,241,
+                193,194,215,199,196,197,214,218,201,202,203,204,205,206,207,208,
+                35,35,35,124,124,124,124,43,43,124,124,43,43,43,43,43,
+                43,45,45,124,45,43,124,124,43,43,45,45,124,45,43,45,
+                45,45,45,43,43,43,43,43,43,43,43,35,35,124,124,35,
+                210,211,212,213,198,200,195,222,219,221,223,217,216,220,192,209,
+                179,163,180,164,183,167,190,174,32,149,158,32,152,159,148,154,
+
+                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+                48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
+                64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+                96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,
+                112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,
+
+                32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                205,186,213,241,243,201,32,245,187,212,211,200,190,32,247,198,
+                199,204,181,240,242,185,32,244,203,207,208,202,216,32,246,32,
+                238,160,161,230,164,165,228,163,229,168,169,170,171,172,173,174,
+                175,239,224,225,226,227,166,162,236,235,167,232,237,233,231,234,
+                158,128,129,150,132,133,148,131,149,136,137,138,139,140,141,142,
+                143,159,144,145,146,147,134,130,156,155,135,152,157,153,151,154,
+            };
+
+            /// <summary>
+            /// Cyrillic translation table for ISO88595 character set.
+            /// </summary>
+            public static readonly byte[] cyrIso88595 = new byte[]
+            {
+                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+                48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
+                64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+                96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,
+                112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,
+
+                32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                32,179,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                225,226,247,231,228,229,246,250,233,234,235,236,237,238,239,240,
+                242,243,244,245,230,232,227,254,251,253,255,249,248,252,224,241,
+                193,194,215,199,196,197,214,218,201,202,203,204,205,206,207,208,
+                210,211,212,213,198,200,195,222,219,221,223,217,216,220,192,209,
+                32,163,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+
+                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+                48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
+                64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+                96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,
+                112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,
+
+                32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,
+                32,32,32,241,32,32,32,32,32,32,32,32,32,32,32,32,
+                32,32,32,161,32,32,32,32,32,32,32,32,32,32,32,32,
+                238,208,209,230,212,213,228,211,229,216,217,218,219,220,221,222,
+                223,239,224,225,226,227,214,210,236,235,215,232,237,233,231,234,
+                206,176,177,198,180,181,196,179,197,184,185,186,187,188,189,190,
+                191,207,192,193,194,195,182,178,204,203,183,200,205,201,199,202,
+            };
+
+            /// <summary>
+            /// Cyrillic translation table for Mac character set.
+            /// </summary>
+            public static readonly byte[] cyrMac = new byte[]
+            {
+                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+                48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
+                64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+                96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,
+                112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,
+
+                225,226,247,231,228,229,246,250,233,234,235,236,237,238,239,240,
+                242,243,244,245,230,232,227,254,251,253,255,249,248,252,224,241,
+                160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,
+                176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,
+                128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,
+                144,145,146,147,148,149,150,151,152,153,154,155,156,179,163,209,
+                193,194,215,199,196,197,214,218,201,202,203,204,205,206,207,208,
+                210,211,212,213,198,200,195,222,219,221,223,217,216,220,192,255,
+
+                0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+                16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+                32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+                48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,
+                64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,
+                80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,
+                96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,
+                112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,
+
+                192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,
+                208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,
+                160,161,162,222,164,165,166,167,168,169,170,171,172,173,174,175,
+                176,177,178,221,180,181,182,183,184,185,186,187,188,189,190,191,
+                254,224,225,246,228,229,244,227,245,232,233,234,235,236,237,238,
+                239,223,240,241,242,243,230,226,252,251,231,248,253,249,247,250,
+                158,128,129,150,132,133,148,131,149,136,137,138,139,140,141,142,
+                143,159,144,145,146,147,134,130,156,155,135,152,157,153,151,154,
+            };
+        }
+
+        #endregion
+
+        public static PhpString convert_cyr_string(byte[] bytes, string srcCharset, string dstCharset)
+        {
+            if (bytes == null) return null;
+            if (bytes.Length == 0) return new PhpString();
+
+            // checks srcCharset argument:
+            if (srcCharset == null || srcCharset == String.Empty)
+            {
+                PhpException.InvalidArgument(nameof(srcCharset), LibResources.arg_null_or_empty);
+                return new PhpString();
+            }
+
+            // checks dstCharset argument:
+            if (dstCharset == null || dstCharset == String.Empty)
+            {
+                PhpException.InvalidArgument(nameof(dstCharset), LibResources.arg_null_or_empty);
+                return new PhpString();
+            }
+
+            // get and check source charset table:
+            byte[] fromTable = CyrTables.GetCyrTableInternal(srcCharset[0]);
+            if (fromTable != null && fromTable.Length < 256)
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.invalid_src_charset);
+                return new PhpString();
+            }
+
+            // get and check destination charset table:
+            byte[] toTable = CyrTables.GetCyrTableInternal(dstCharset[0]);
+            if (toTable != null && toTable.Length < 256)
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.invalid_dst_charset);
+                return new PhpString();
+            }
+
+            byte[] data = bytes;
+            byte[] result = new byte[data.Length];
+
+            // perform conversion:
+            if (fromTable == null)
+            {
+                if (toTable != null)
+                {
+                    for (int i = 0; i < data.Length; i++) result[i] = toTable[data[i] + 256];
+                }
+            }
+            else
+            {
+                if (toTable == null)
+                {
+                    for (int i = 0; i < data.Length; i++) result[i] = fromTable[data[i]];
+                }
+                else
+                {
+                    for (int i = 0; i < data.Length; i++) result[i] = toTable[fromTable[data[i]] + 256];
+                }
+            }
+
+            return new PhpString(result);
+        }
+
+        #endregion
+
+        #region count_chars
+
+        /// <summary>
+        /// Creates a histogram of Unicode character occurence in the given string.
+        /// </summary>
+        /// <param name="str">The string to be processed.</param>
+        /// <returns>The array of characters frequency (unsorted).</returns>
+        static PhpArray CountChars(string str)
+        {
+            PhpValue value;
+
+            var count = new PhpArray();
+            for (int i = str.Length - 1; i >= 0; i--)
+            {
+                int j = (int)str[i];
+                count[j] = (PhpValue)((count.TryGetValue(j, out value) ? value.Long : 0L) + 1);
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Creates a histogram of byte occurence in the given array of bytes.
+        /// </summary>
+        /// <param name="bytes">The array of bytes to be processed.</param>
+        /// <returns>The array of bytes frequency.</returns>
+        static int[] CountBytes(byte[] bytes)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+
+            int[] count = new int[256];
+
+            for (int i = bytes.Length - 1; i >= 0; i--)
+                count[bytes[i]]++;
+
+            return count;
+        }
+
+        /// <summary>
+        /// Creates a histogram of byte occurrence in specified string of bytes.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="bytes">Bytes to be processed.</param>
+        /// <returns>The array of characters frequency.</returns>
+        public static PhpArray count_chars(Context ctx, PhpString bytes)
+        {
+            if (bytes == null || bytes.IsEmpty)
+            {
+                return PhpArray.NewEmpty();
+            }
+
+            if (bytes.ContainsBinaryData)
+            {
+                return new PhpArray(CountBytes(bytes.ToBytes(ctx)), 0, 256);
+            }
+            else
+            {
+                return CountChars(bytes.ToString(ctx));
+            }
+        }
+
+        /// <summary>
+        /// Creates a histogram of character occurence in a string or string of bytes.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="data">The string or bytes to be processed.</param>
+        /// <param name="mode">Determines the type of result.</param>
+        /// <returns>Depending on <paramref name="mode"/> the following is returned:
+        /// <list type="bullet">
+        /// <item><term>0</term><description>an array with the character ordinals as key and their frequency as value,</description></item> 
+        /// <item><term>1</term><description>same as 0 but only characters with a frequency greater than zero are listed,</description></item>
+        /// <item><term>2</term><description>same as 0 but only characters with a frequency equal to zero are listed,</description></item> 
+        /// <item><term>3</term><description>a string containing all used characters is returned,</description></item> 
+        /// <item><term>4</term><description>a string containing all not used characters is returned.</description></item>
+        /// </list>
+        /// </returns>
+        /// <exception cref="PhpException">The <paramref name="mode"/> is invalid.</exception>
+        /// <exception cref="PhpException">The <paramref name="data"/> contains Unicode characters greater than '\u0800'.</exception>
+        public static PhpValue count_chars(Context ctx, PhpString data, int mode)
+        {
+            try
+            {
+                switch (mode)
+                {
+                    case 0: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256);
+                    case 1: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256, 0, true);
+                    case 2: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256, 0, false);
+                    case 3: return PhpValue.Create(new PhpString(GetBytesContained(data.ToBytes(ctx), 0, 255)));
+                    case 4: return PhpValue.Create(new PhpString(GetBytesNotContained(data.ToBytes(ctx), 0, 255)));
+                    default:
+                        PhpException.InvalidArgument(nameof(mode));
+                        return PhpValue.Null;
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                // thrown by char map:
+                PhpException.Throw(PhpError.Warning, LibResources.too_big_unicode_character);
+                return PhpValue.Null;
+            }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="String"/> containing all characters used in the specified <see cref="String"/>.
+        /// </summary>
+        /// <param name="str">The string to process.</param>
+        /// <param name="lower">The lower limit for returned chars.</param>
+        /// <param name="upper">The upper limit for returned chars.</param>
+        /// <returns>
+        /// The string containing characters used in <paramref name="str"/> which are sorted according to their ordinal values.
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"><paramref name="str"/> contains characters greater than '\u0800'.</exception>
+        static string GetCharactersContained(string str, char lower, char upper)
+        {
+            CharMap charmap = InitializeCharMap();
+
+            charmap.Add(str);
+            return charmap.ToString(lower, upper, false);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="String"/> containing all characters used in the specified <see cref="String"/>.
+        /// </summary>
+        /// <param name="str">The string to process.</param>
+        /// <param name="lower">The lower limit for returned chars.</param>
+        /// <param name="upper">The upper limit for returned chars.</param>
+        /// <returns>
+        /// The string containing characters used in <paramref name="str"/> which are sorted according to their ordinal values.
+        /// </returns>
+        /// <exception cref="IndexOutOfRangeException"><paramref name="str"/> contains characters greater than '\u0800'.</exception>
+        static string GetCharactersNotContained(string str, char lower, char upper)
+        {
+            CharMap charmap = InitializeCharMap();
+
+            charmap.Add(str);
+            return charmap.ToString(lower, upper, true);
+        }
+
+        static BitArray CreateByteMap(byte[]/*!*/ bytes, out int count)
+        {
+            BitArray map = new BitArray(256);
+            map.Length = 256;
+
+            count = 0;
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                if (!map[bytes[i]])
+                {
+                    map[bytes[i]] = true;
+                    count++;
+                }
+            }
+            return map;
+        }
+
+        static byte[] GetBytesContained(byte[] bytes, byte lower, byte upper)
+        {
+            if (bytes == null) bytes = Array.Empty<byte>();
+
+            int count;
+            BitArray map = CreateByteMap(bytes, out count);
+
+            var result = new byte[count];
+            var j = 0;
+            for (int i = lower; i <= upper; i++)
+            {
+                if (map[i]) result[j++] = (byte)i;
+            }
+
+            return result;
+        }
+
+        static byte[] GetBytesNotContained(byte[] bytes, byte lower, byte upper)
+        {
+            if (bytes == null) bytes = Array.Empty<byte>();
+
+            int count;
+            BitArray map = CreateByteMap(bytes, out count);
+
+            byte[] result = new byte[map.Length - count];
+            int j = 0;
+            for (int i = lower; i <= upper; i++)
+            {
+                if (!map[i]) result[j++] = (byte)i;
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region strrev, strspn, strcspn
 
         /// <summary>
@@ -117,7 +579,7 @@ namespace Pchp.Library
             Array.Reverse(chars);
             return new string(chars);
         }
-        
+
         /// <summary>
         /// Finds a length of a segment consisting entirely of specified characters.
         /// </summary>
@@ -255,25 +717,28 @@ namespace Pchp.Library
         /// <summary>
         /// Concatenates items of an array into a string separating them by a glue.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="pieces">The array to be impleded.</param>
         /// <returns>The glued string.</returns>
-        public static PhpString join(PhpArray pieces) => implode(pieces);
+        public static PhpString join(Context ctx, PhpArray pieces) => implode(ctx, pieces);
 
         /// <summary>
         /// Concatenates items of an array into a string separating them by a glue.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="pieces">The array to be impleded.</param>
         /// <param name="glue">The glue string.</param>
         /// <returns>The glued string.</returns>
         /// <exception cref="PhpException">Thrown if neither <paramref name="glue"/> nor <paramref name="pieces"/> is not null and of type <see cref="PhpArray"/>.</exception>
-        public static PhpString join(PhpValue glue, PhpValue pieces) => implode(glue, pieces);
+        public static PhpString join(Context ctx, PhpValue glue, PhpValue pieces) => implode(ctx, glue, pieces);
 
         /// <summary>
         /// Concatenates items of an array into a string.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="pieces">The <see cref="PhpArray"/> to be imploded.</param>
         /// <returns>The glued string.</returns>
-        public static PhpString implode(PhpArray pieces)
+        public static PhpString implode(Context ctx, PhpArray pieces)
         {
             if (pieces == null)
             {
@@ -282,36 +747,39 @@ namespace Pchp.Library
                 throw new ArgumentException();
             }
 
-            return ImplodeInternal(PhpValue.Void, pieces);
+            return ImplodeInternal(ctx, PhpValue.Void, pieces);
         }
 
         /// <summary>
         /// Concatenates items of an array into a string separating them by a glue.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="glue">The glue of type <see cref="string"/> or <see cref="PhpArray"/> to be imploded.</param>
         /// <param name="pieces">The <see cref="PhpArray"/> to be imploded or glue of type <see cref="string"/>.</param>
         /// <returns>The glued string.</returns>
         /// <exception cref="PhpException">Thrown if neither <paramref name="glue"/> nor <paramref name="pieces"/> is not null and of type <see cref="PhpArray"/>.</exception>
-        public static PhpString implode(PhpValue glue, PhpValue pieces)
+        public static PhpString implode(Context ctx, PhpValue glue, PhpValue pieces)
         {
             if (pieces != null && pieces.IsArray)
-                return ImplodeInternal(glue, pieces.AsArray());
+                return ImplodeInternal(ctx, glue, pieces.AsArray());
 
             if (glue.IsArray)
-                return ImplodeInternal(pieces, glue.AsArray());
+            {
+                return ImplodeInternal(ctx, pieces, glue.AsArray());
+            }
 
-            return ImplodeGenericEnumeration(glue, pieces);
+            return ImplodeGenericEnumeration(ctx, glue, pieces);
         }
 
-        private static PhpString ImplodeGenericEnumeration(PhpValue glue, PhpValue pieces)
+        private static PhpString ImplodeGenericEnumeration(Context ctx, PhpValue glue, PhpValue pieces)
         {
             IEnumerable enumerable;
 
             if (pieces.IsObject && (enumerable = pieces.Object as IEnumerable) != null)
-                return ImplodeInternal(glue, new PhpArray(enumerable));
+                return ImplodeInternal(ctx, glue, new PhpArray(enumerable));
 
             if (glue.IsObject && (enumerable = glue.Object as IEnumerable) != null)
-                return ImplodeInternal(pieces, new PhpArray(enumerable));
+                return ImplodeInternal(ctx, pieces, new PhpArray(enumerable));
 
             ////
             //PhpException.InvalidArgument("pieces");
@@ -322,73 +790,47 @@ namespace Pchp.Library
         /// <summary>
         /// Concatenates items of an array into a string separating them by a glue.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="glue">The glue string.</param>
         /// <param name="pieces">The enumeration to be imploded.</param>
         /// <returns>The glued string.</returns>           
         /// <remarks>
-        /// Items of <paramref name="pieces"/> are converted to strings in the manner of PHP 
-        /// (i.e. by <see cref="PHP.Core.Convert.ObjectToString"/>).
+        /// Items of <paramref name="pieces"/> are converted to strings in the manner of PHP.
+        /// Conversion to string is byte-safe, single-byte strings and unicode strings are maintained.
         /// </remarks>
         /// <exception cref="PhpException">Thrown if <paramref name="pieces"/> is null.</exception>
-        private static PhpString ImplodeInternal(PhpValue glue, PhpArray/*!*/pieces)
+        private static PhpString ImplodeInternal(Context ctx, PhpValue glue, PhpArray/*!*/pieces)
         {
             Debug.Assert(pieces != null);
 
             // handle empty pieces:
             if (pieces.Count == 0)
+            {
                 return PhpString.Empty;
-
-            // check whether we have to preserve a binary string
-            //bool binary = glue != null && glue.GetType() == typeof(PhpBytes);
-            //if (!binary)    // try to find any binary string within pieces:
-            //    using (var x = pieces.GetFastEnumerator())
-            //        while (x.MoveNext())
-            //            if (x.CurrentValue.IsBinaryString)
-            //            {
-            //                binary = true;
-            //                break;
-            //            }
-
-            // concatenate pieces and glue:
+            }
 
             bool not_first = false;                       // not the first iteration
 
-            //if (binary)
-            //{
-            //    Debug.Assert(pieces.Count > 0);
+            var glue_element = Streams.TextElement.FromValue(ctx, glue);    // convert it once
+            var result = new PhpString();
 
-            //    PhpBytes gluebytes = PHP.Core.Convert.ObjectToPhpBytes(glue);
-            //    PhpBytes[] piecesBytes = new PhpBytes[pieces.Count + pieces.Count - 1]; // buffer of PhpBytes to be concatenated
-            //    int p = 0;
-
-            //    using (var x = pieces.GetFastEnumerator())
-            //        while (x.MoveNext())
-            //        {
-            //            if (not_first) piecesBytes[p++] = gluebytes;
-            //            else not_first = true;
-
-            //            piecesBytes[p++] = PHP.Core.Convert.ObjectToPhpBytes(x.CurrentValue);
-            //        }
-
-            //    return PhpBytes.Concat(piecesBytes, 0, piecesBytes.Length);
-            //}
-            //else
-            {
-                string gluestr = glue.ToString();
-
-                var result = new PhpString(/*pieces.Count * 2*/);
-
-                using (var x = pieces.GetFastEnumerator())
-                    while (x.MoveNext())
+            using (var x = pieces.GetFastEnumerator())
+                while (x.MoveNext())
+                {
+                    if (not_first)
                     {
-                        if (not_first) result.Append(gluestr);
-                        else not_first = true;
-
-                        result.Append(x.CurrentValue.ToString());
+                        if (glue_element.IsText) result.Append(glue_element.GetText());
+                        else result.Append(glue_element.GetBytes());
+                    }
+                    else
+                    {
+                        not_first = true;
                     }
 
-                return result;
-            }
+                    result.Append(x.CurrentValue, ctx);
+                }
+
+            return result;
         }
 
         #endregion
@@ -1732,13 +2174,13 @@ namespace Pchp.Library
         /// <returns>The converted string.</returns>
         public static string htmlspecialchars(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = "ISO-8859-1", bool doubleEncode = true)
         {
-            if (!doubleEncode)
-            {
-                 PhpException.ArgumentValueNotSupported(nameof(doubleEncode), doubleEncode);
-            }
-
-            return HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet);
+            return HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet, !doubleEncode);
         }
+
+        /// <summary>
+        /// List of known HTML entities without leading <c>&amp;</c> character when checking double encoded entities.
+        /// </summary>
+        static readonly string[] known_entities = { "amp;", "lt;", "gt;", "quot;", "apos;", "hellip;" };
 
         /// <summary>
         /// Converts special characters of substring to HTML entities.
@@ -1748,12 +2190,14 @@ namespace Pchp.Library
         /// <param name="length">Length of the substring to covert.</param>
         /// <param name="quoteStyle">Quote conversion.</param>
         /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
+        /// <param name="keepExisting">Whether to keep existing entities and do not encode them.</param>
         /// <returns>The converted substring.</returns>
-        static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string charSet)
+        static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string charSet, bool keepExisting)
         {
             if (str == null) return String.Empty;
 
-            Debug.Assert(index + length <= str.Length);
+            int maxi = index + length;
+            Debug.Assert(maxi <= str.Length);
 
             StringBuilder result = new StringBuilder(length);
 
@@ -1761,12 +2205,26 @@ namespace Pchp.Library
             string single_quote = (quoteStyle & QuoteStyle.SingleQuotes) != 0 ? "&#039;" : "'";
             string double_quote = (quoteStyle & QuoteStyle.DoubleQuotes) != 0 ? "&quot;" : "\"";
 
-            for (int i = index; i < index + length; i++)
+            for (int i = index; i < maxi; i++)
             {
                 char c = str[i];
                 switch (c)
                 {
-                    case '&': result.Append("&amp;"); break;
+                    case '&':
+                        if (keepExisting)
+                        {
+                            // check if follows a known HTML entity
+                            var entity = IsAtKnownEntity(str, i + 1);
+                            if (entity != null)
+                            {
+                                result.Append(str, i, 1 + entity.Length);
+                                i += entity.Length/* + 1 - 1*/;
+                                break;
+                            }
+                        }
+
+                        result.Append("&amp;");
+                        break;
                     case '"': result.Append(double_quote); break;
                     case '\'': result.Append(single_quote); break;
                     case '<': result.Append("&lt;"); break;
@@ -1776,6 +2234,45 @@ namespace Pchp.Library
             }
 
             return result.ToString();
+        }
+
+        static string IsAtKnownEntity(string str, int index)
+        {
+            if (index < str.Length - 3)
+            {
+                if (str[index] == '#')
+                {
+                    for (int i = index + 1; i < str.Length; i++)
+                    {
+                        var ch = str[i];
+                        if (!char.IsDigit(ch))
+                        {
+                            if (ch == ';' && i > index + 1)
+                            {
+                                return str.Substring(index, i - index + 1);
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    var entities = known_entities;
+                    for (int i = 0; i < entities.Length; i++)
+                    {
+                        var entity = entities[i];
+                        if (str.IndexOf(entity, index, entity.Length, StringComparison.Ordinal) == index)
+                        {
+                            return entity;
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -3442,6 +3939,392 @@ namespace Pchp.Library
 
         #endregion
 
+        #region sscanf
+
+        /// <summary>
+        /// Parses input from a string according to a format. 
+        /// </summary>
+        /// <param name="str">The string to be parsed.</param>
+        /// <param name="format">The format. See <c>sscanf</c> C function for details.</param>
+        /// <param name="arg">A PHP reference which value is set to the first parsed value.</param>
+        /// <param name="arguments">PHP references which values are set to the next parsed values.</param>
+        /// <returns>The number of parsed values.</returns>
+        /// <remarks><seealso cref="ParseString"/>.</remarks>
+        public static int sscanf(string str, string format, PhpAlias arg, params PhpAlias[] arguments)
+        {
+            if (arg == null)
+                throw new ArgumentNullException("arg");
+            if (arguments == null)
+                throw new ArgumentNullException("arguments");
+
+            // assumes capacity same as the number of arguments:
+            var result = new List<PhpValue>(arguments.Length + 1);
+
+            // parses string and fills the result with parsed values:
+            ParseString(str, format, result);
+
+            // the number of specifiers differs from the number of arguments:
+            if (result.Count != arguments.Length + 1)
+            {
+                PhpException.Throw(PhpError.Warning, LibResources.GetString("different_variables_and_specifiers", arguments.Length + 1, result.Count));
+                return -1;
+            }
+
+            // the number of non-null parsed values:
+            int count = 0;
+
+            if (result[0] != null)
+            {
+                arg.Value = result[0];
+                count = 1;
+            }
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                if (arguments[i] != null && result[i + 1] != null)
+                {
+                    arguments[i].Value = result[i + 1];
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Parses input from a string according to a format. 
+        /// </summary>
+        /// <param name="str">The string to be parsed.</param>
+        /// <param name="format">The format. See <c>sscanf</c> C function for details.</param>
+        /// <returns>A new instance of <see cref="PhpArray"/> containing parsed values indexed by integers starting from 0.</returns>
+        /// <remarks><seealso cref="ParseString"/>.</remarks>
+        public static PhpArray sscanf(string str, string format)
+        {
+            return (PhpArray)ParseString(str, format, new PhpArray());
+        }
+
+        /// <summary>
+        /// Parses a string according to a specified format.
+        /// </summary>
+        /// <param name="str">The string to be parsed.</param>
+        /// <param name="format">The format. See <c>sscanf</c> C function for details.</param>
+        /// <param name="result">A list which to fill with results.</param>
+        /// <returns><paramref name="result"/> for convenience.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="result"/> is a <B>null</B> reference.</exception>
+        /// <exception cref="PhpException">Invalid formatting specifier.</exception>
+        public static IList<PhpValue> ParseString(string str, string format, IList<PhpValue> result)
+        {
+            if (result == null)
+                throw new ArgumentNullException(nameof(result));
+
+            if (str == null || format == null)
+            {
+                return result;
+            }
+
+            int s = 0, f = 0;
+
+            while (f < format.Length)
+            {
+                char c = format[f++];
+
+                if (c == '%')
+                {
+                    if (f == format.Length) break;
+
+                    int width;   // max. parsed characters
+                    bool store;  // whether to store parsed item to the result
+
+                    // checks for asterisk which means matching value is not stored:
+                    if (format[f] == '*')
+                    {
+                        f++;
+                        if (f == format.Length) break;
+                        store = false;
+                    }
+                    else
+                    {
+                        store = true;
+                    }
+
+                    // parses width (a sequence of digits without sign):
+                    if (format[f] >= '0' && format[f] <= '9')
+                    {
+                        width = (int)Core.Convert.SubstringToLongStrict(format, -1, 10, Int32.MaxValue, ref f);
+                        if (width == 0) width = Int32.MaxValue;
+
+                        // format string ends with "%number"
+                        if (f == format.Length)
+                        {
+                            PhpException.Throw(PhpError.Warning, LibResources.invalid_scan_conversion_character, "null");
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        width = Int32.MaxValue;
+                    }
+
+                    // adds null if string parsing has been finished:
+                    if (s == str.Length)
+                    {
+                        if (store)
+                        {
+                            if (format[f] == 'n') result.Add(PhpValue.Create(s));
+                            else if (format[f] != '%') result.Add(PhpValue.Null);
+                        }
+                        continue;
+                    }
+
+                    // parses the string according to the format specifier:
+                    var item = ParseSubstring(format[f], width, str, ref s);
+
+                    // unknown specifier:
+                    if (item.IsNull)
+                    {
+                        if (format[f] == '%')
+                        {
+                            // stops string parsing if characters don't match:
+                            if (str[s++] != '%') s = str.Length;
+                        }
+                        else if (format[f] == '[')
+                        {
+                            bool complement;
+                            CharMap charmap = ParseRangeSpecifier(format, ref f, out complement);
+                            if (charmap != null)
+                            {
+                                int start = s;
+
+                                // skip characters contained in the specifier:
+                                if (complement)
+                                {
+                                    while (s < str.Length && !charmap.Contains(str[s])) s++;
+                                }
+                                else
+                                {
+                                    while (s < str.Length && charmap.Contains(str[s])) s++;
+                                }
+
+                                item = (PhpValue)str.Substring(start, s - start);
+                            }
+                            else
+                            {
+                                PhpException.Throw(PhpError.Warning, LibResources.unmathed_format_bracket);
+                                return null;
+                            }
+                        }
+                        else
+                        {
+                            PhpException.Throw(PhpError.Warning, LibResources.invalid_scan_conversion_character, c.ToString());
+                            return null;
+                        }
+                    }
+
+                    // stores the parsed value:
+                    if (store && item != null)
+                        result.Add(item);
+
+                    // shift:
+                    f++;
+                }
+                else if (Char.IsWhiteSpace(c))
+                {
+                    // skips additional white space in the format:
+                    while (f < format.Length && Char.IsWhiteSpace(format[f])) f++;
+
+                    // skips white space in the string:
+                    while (s < str.Length && Char.IsWhiteSpace(str[s])) s++;
+                }
+                else if (s < str.Length && c != str[s++])
+                {
+                    // stops string parsing if characters don't match:
+                    s = str.Length;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Extracts a range specifier from the formatting string.
+        /// </summary>
+        /// <param name="format">The formatting string.</param>
+        /// <param name="f">The position if the string pointing to the '[' at the beginning and to ']' at the end.</param>
+        /// <param name="complement">Whether '^' was stated as the first character in the specifier.</param>
+        /// <returns>
+        /// <see cref="CharMap"/> containing the characters belonging to the range or a <B>null</B> reference on error.
+        /// </returns>
+        /// <remarks>
+        /// Specifier should be enclosed to brackets '[', ']' and can contain complement character '^' at the beginning.
+        /// The first character after '[' or '^' can be ']'. In such a case the specifier continues to the next ']'.
+        /// </remarks>
+        private static CharMap ParseRangeSpecifier(string format, ref int f, out bool complement)
+        {
+            Debug.Assert(format != null && f > 0 && f < format.Length && format[f] == '[');
+
+            complement = false;
+
+            f++;
+            if (f < format.Length)
+            {
+                if (format[f] == '^')
+                {
+                    complement = true;
+                    f++;
+                }
+
+                if (f + 1 < format.Length)
+                {
+                    // search for ending bracket (the first symbol can be the bracket so skip it):
+                    int end = format.IndexOf(']', f + 1);
+                    if (end >= 0)
+                    {
+                        CharMap result = InitializeCharMap();
+                        result.AddUsingRegularMask(format, f, end, '-');
+                        f = end;
+                        return result;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Parses a string according to a given specifier.
+        /// </summary>
+        /// <param name="specifier">The specifier.</param>
+        /// <param name="width">A width of the maximal parsed substring.</param>
+        /// <param name="str">The string to be parsed.</param>
+        /// <param name="s">A current position in the string.</param>
+        /// <returns>The parsed value or a <B>null</B> reference on error.</returns>
+        static PhpValue ParseSubstring(char specifier, int width, string str, ref int s)
+        {
+            Debug.Assert(width >= 0 && str != null && s < str.Length);
+
+            PhpValue result;
+            int limit = (width < str.Length - s) ? s + width : str.Length;
+
+            switch (specifier)
+            {
+                case 'S':  // string
+                case 's':
+                    {
+                        // skips initial white spaces:
+                        while (s < limit && Char.IsWhiteSpace(str[s])) s++;
+
+                        int i = s;
+
+                        // skips black spaces:
+                        while (i < limit && !Char.IsWhiteSpace(str[i])) i++;
+
+                        // if s = length then i = s and substring returns an empty string:
+                        result = (PhpValue)str.Substring(s, i - s);
+
+                        // moves behind the substring:
+                        s = i;
+
+                    }
+                    break;
+
+                case 'C': // character
+                case 'c':
+                    {
+                        result = (PhpValue)str[s++].ToString();
+                        break;
+                    }
+
+                case 'X': // hexadecimal integer: [0-9A-Fa-f]*
+                case 'x':
+                    result = (PhpValue)Core.Convert.SubstringToLongStrict(str, width, 16, Int32.MaxValue, ref s);
+                    break;
+
+                case 'o': // octal integer: [0-7]*
+                    result = (PhpValue)Core.Convert.SubstringToLongStrict(str, width, 8, Int32.MaxValue, ref s);
+                    break;
+
+                case 'd': // decimal integer: [+-]?[0-9]*
+                    result = (PhpValue)Core.Convert.SubstringToLongStrict(str, width, 10, Int32.MaxValue, ref s);
+                    break;
+
+                case 'u': // unsigned decimal integer [+-]?[1-9][0-9]*
+                    result = (PhpValue)unchecked((uint)Core.Convert.SubstringToLongStrict(str, width, 10, Int32.MaxValue, ref s));
+                    break;
+
+                case 'i': // decimal (no prefix), hexadecimal (0[xX]...), or octal (0...) integer 
+                    {
+                        // sign:
+                        int sign = 0;
+                        if (str[s] == '-') { sign = -1; s++; }
+                        else
+                            if (str[s] == '+') { sign = +1; s++; }
+
+                        // string ends 
+                        if (s == limit)
+                        {
+                            result = (PhpValue)0;
+                            break;
+                        }
+
+                        if (str[s] != '0')
+                        {
+                            if (sign != 0) s--;
+                            result = (PhpValue)Core.Convert.SubstringToLongStrict(str, width, 10, Int32.MaxValue, ref s);
+                            break;
+                        }
+                        s++;
+
+                        // string ends 
+                        if (s == limit)
+                        {
+                            result = (PhpValue)0;
+                            break;
+                        }
+
+                        int number = 0;
+
+                        if (str[s] == 'x' || str[s] == 'X')
+                        {
+                            s++;
+
+                            // reads unsigned hexadecimal number starting from the next position:
+                            if (s < limit && str[s] != '+' && str[s] != '-')
+                                number = (int)Core.Convert.SubstringToLongStrict(str, width, 16, Int32.MaxValue, ref s);
+                        }
+                        else
+                        {
+                            // reads unsigned octal number starting from the current position:
+                            if (str[s] != '+' && str[s] != '-')
+                                number = (int)Core.Convert.SubstringToLongStrict(str, width, 8, Int32.MaxValue, ref s);
+                        }
+
+                        // minus sign has been stated:
+                        result = (PhpValue)((sign >= 0) ? +number : -number);
+                        break;
+                    }
+
+                case 'e': // float
+                case 'E':
+                case 'g':
+                case 'G':
+                case 'f':
+                    result = (PhpValue)Core.Convert.SubstringToDouble(str, width, ref s);
+                    break;
+
+                case 'n': // the number of read characters is placed into result:
+                    result = (PhpValue)s;
+                    break;
+
+                default:
+                    result = PhpValue.Null;
+                    break;
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region wordwrap
 
         /// <summary>
@@ -3851,6 +4734,21 @@ namespace Pchp.Library
         {
             return HebrewReverseInternal(str, maxCharactersPerLine, true);
         }
+
+        #endregion
+
+        #region strnatcmp, strnatcasecmp
+
+        /// <summary>
+        /// Compares two strings using the natural ordering.
+        /// </summary>
+        /// <example>NaturalCompare("page155", "page16") returns 1.</example>
+        public static int strnatcmp(string x, string y) => PhpNaturalComparer.CompareStrings(x, y, false);
+
+        /// <summary>
+        /// Compares two strings using the natural ordering. Ignores the case.
+        /// </summary>
+        public static int strnatcasecmp(string x, string y) => PhpNaturalComparer.CompareStrings(x, y, true);
 
         #endregion
 
@@ -4325,7 +5223,7 @@ namespace Pchp.Library
                 return -1;
             }
 
-            var str_needle = PhpVariable.StringOrNull(needle);
+            var str_needle = PhpVariable.ToStringOrNull(needle);
             if (str_needle != null)
             {
                 if (str_needle == String.Empty)
@@ -4358,7 +5256,7 @@ namespace Pchp.Library
                 //return -1;
             }
 
-            var str_needle = PhpVariable.StringOrNull(needle);
+            var str_needle = PhpVariable.ToStringOrNull(needle);
             if (offset < 0)
             {
                 end += offset + (str_needle != null ? str_needle.Length : 1);
@@ -4475,7 +5373,7 @@ namespace Pchp.Library
             if (haystack == null) return null;
 
             int index;
-            var str_needle = PhpVariable.StringOrNull(needle);
+            var str_needle = PhpVariable.ToStringOrNull(needle);
             if (str_needle != null)
             {
                 if (str_needle == String.Empty)

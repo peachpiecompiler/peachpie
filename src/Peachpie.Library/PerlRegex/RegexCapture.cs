@@ -21,11 +21,11 @@ namespace Pchp.Library.PerlRegex
         internal int _index;
         internal int _length;
 
-        internal Capture(string text, int i, int l)
+        internal Capture(string text, int index, int length)
         {
             _text = text;
-            _index = i;
-            _length = l;
+            _index = index;
+            _length = length;
         }
 
         /*

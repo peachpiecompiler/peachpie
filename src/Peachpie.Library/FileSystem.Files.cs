@@ -88,9 +88,8 @@ namespace Pchp.Library
             if (string.IsNullOrEmpty(path))
             {
                 wrapper = null;
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_empty", "path"));
-                //return false;
-                throw new ArgumentException(nameof(path));
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.arg_empty, path);
+                return false;
             }
 
             return PhpStream.ResolvePath(ctx, ref path, out wrapper, CheckAccessMode.FileOrDirectory, quiet ? CheckAccessOptions.Quiet : CheckAccessOptions.Empty);
@@ -215,7 +214,7 @@ namespace Pchp.Library
             return
                 !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
                 ResolvePath(ctx, ref path, true, out wrapper) &&
-                HandleFileSystemInfo(false, path, p => File.Exists(p) || Directory.Exists(p));
+                HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p));
         }
 
         /// <summary>

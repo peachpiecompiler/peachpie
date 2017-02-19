@@ -560,6 +560,13 @@ namespace Pchp.Library.PerlRegex
             }
         }
 
+        internal RegexNode MakePossessive()
+        {
+            var result = new RegexNode(Greedy, _options);
+            result.AddChild(this);
+            return result;
+        }
+
         internal void AddChild(RegexNode newChild)
         {
             RegexNode reducedChild;

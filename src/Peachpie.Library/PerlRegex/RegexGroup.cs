@@ -18,21 +18,37 @@ namespace Pchp.Library.PerlRegex
     internal class Group : Capture
     {
         // the empty group object
-        internal static readonly Group s_emptyGroup = new Group(string.Empty, Array.Empty<int>(), 0, string.Empty);
+        internal static readonly Group s_emptyGroup = new Group(string.Empty, Array.Empty<int>(), 0, string.Empty, -1);
 
         internal readonly int[] _caps;
         internal int _capcount;
         internal CaptureCollection _capcoll;
         internal readonly string _name;
 
-        internal Group(string text, int[] caps, int capcount, string name)
+        /// <summary>
+        /// Index within containing <see cref="GroupCollection"/>.
+        /// </summary>
+        public int Id => _id;
+        readonly int _id;
 
-        : base(text, capcount == 0 ? 0 : caps[(capcount - 1) * 2],
-               capcount == 0 ? 0 : caps[(capcount * 2) - 1])
+        public bool IsNamedGroup
+        {
+            get
+            {
+                // whether Name is not a number ~ Id
+                return !_name.Equals(_id.ToString(System.Globalization.CultureInfo.InvariantCulture.NumberFormat));
+            }
+        }
+
+        internal Group(string text, int[] caps, int capcount, string name, int id)
+            : base(text,
+                  capcount == 0 ? 0 : caps[(capcount - 1) * 2],
+                  capcount == 0 ? 0 : caps[(capcount * 2) - 1])
         {
             _caps = caps;
             _capcount = capcount;
             _name = name;
+            _id = id;
         }
 
         /// <summary>

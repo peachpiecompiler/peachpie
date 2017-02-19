@@ -10,20 +10,49 @@ namespace Peachpie.Library.MySql
     {
         IPhpConfiguration IPhpConfiguration.Copy() => (MySqlConfiguration)this.MemberwiseClone();
 
-        public int ConnectTimeout { get; set; } = 0;
+        /// <summary>
+        /// Request timeout in seconds. Non-positive value means no timeout.
+        /// </summary>
+        public int ConnectTimeout = 0;
 
-        public int MaxPoolSize { get; set; } = 100;
+        /// <summary>
+        /// <c>Maximum Pool Size</c> value passed to the MySql Connector/Net Connection String.
+        /// </summary>
+        public int MaxPoolSize = 100;
 
-        public int DefaultCommandTimeout { get; set; } = -1;
+        /// <summary>
+        /// Command timeout, in seconds.
+        /// </summary>
+        public int DefaultCommandTimeout = -1;
 
-        public string Server { get; set; } = "localhost";
+        /// <summary>
+        /// Default server (host) name.
+        /// </summary>
+        public string Server = "localhost";
 
-        public int Port { get; set; } = 3306;
+        /// <summary>
+        /// Default port.
+        /// </summary>
+        public int Port = 3306;
 
-        public string User { get; set; } = "root";
+        /// <summary>
+        /// Default user name.
+        /// </summary>
+        public string User = "root";
 
-        public string Password { get; set; } = "";
+        /// <summary>
+        /// Default password.
+        /// </summary>
+        public string Password = "";
 
-        internal string ConnectionString { get; set; } = null;
+        /// <summary>
+        /// If not <c>null</c> reference, this connection string is used by parameterless <c>mysql_connect()</c> function call as MySql Connector/.NET connection string.
+        /// </summary>
+        internal string ConnectionString = null;
+
+        /// <summary>
+        /// Maximum number of connections per request. Negative value means no limit.
+        /// </summary>
+        public int MaxConnections = -1;
     }
 }

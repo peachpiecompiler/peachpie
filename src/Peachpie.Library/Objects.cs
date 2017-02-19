@@ -12,6 +12,26 @@ namespace Pchp.Library
     public static class Objects
     {
         /// <summary>
+		/// Tests whether the class given by <paramref name="classNameOrObject"/> is derived from a class given by <paramref name="baseClassName"/>.
+		/// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="classNameOrObject">The object or the name of a class (<see cref="string"/>).</param>
+		/// <param name="baseClassName">The name of the (base) class.</param>
+		/// <returns><B>true</B> if <paramref name="classNameOrObject"/> implements or extends <paramref name="baseClassName"/>, <B>false</B> otherwise.</returns>
+		public static bool is_subclass_of(Context ctx, PhpValue classNameOrObject, string baseClassName)
+        {
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
+            if (tinfo == null) return false;
+
+            // look for the class, do not use autoload (since PHP 5.1):
+            var base_tinfo = ctx.GetDeclaredType(baseClassName, false);
+            if (base_tinfo == null) return false;
+
+            //
+            return base_tinfo.Type.IsAssignableFrom(tinfo.Type);
+        }
+
+        /// <summary>
 		/// Tests whether a given class is defined.
 		/// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -109,6 +129,51 @@ namespace Pchp.Library
         public static PhpArray get_declared_interfaces(Context ctx) => get_declared_types(ctx, true);
 
         /// <summary>
+		/// Gets the name of the class from which class given by <paramref name="classNameOrObject"/>
+		/// inherits.
+		/// </summary>
+        /// <remarks>
+		/// If the class given by <paramref name="classNameOrObject"/> has no parent in PHP class hierarchy, this method returns <B>false</B>.
+		/// </remarks>
+		[return: CastToFalse]
+        public static string get_parent_class(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject)
+        {
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject, caller);
+
+            //
+            var btype = tinfo?.BaseType;
+            return btype?.Name;
+        }
+
+        /// <summary>
+		/// Returns a <see cref="PhpArray"/> with keys and values being names of a given class's
+		/// base classes.
+		/// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="caller">The caller of the method used in case <paramref name="classNameOrObject"/> is NULL.</param>
+        /// <param name="classNameOrObject">The object or class name to get base classes of.</param>
+		/// <param name="useAutoload"><B>True</B> if autoloading should be used.</param>
+		/// <returns>The <see cref="PhpArray"/> with base class names.</returns>
+		[return: CastToFalse]
+        public static PhpArray class_parents(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
+        {
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject, caller, useAutoload);
+
+            PhpArray result = null;
+
+            if (tinfo != null)
+            {
+                result = new PhpArray();
+                while ((tinfo = tinfo.BaseType) != null)
+                {
+                    result.Add(tinfo.Name, tinfo.Name);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
 		/// Tests whether <paramref name="obj"/>'s class is derived from a class given by <paramref name="class_name"/>.
 		/// </summary>
         /// <param name="ctx">Runtime context.</param>
@@ -170,13 +235,117 @@ namespace Pchp.Library
             {
                 var result = PhpArray.NewEmpty();
 
-                foreach (var pair in TypeMembersUtils.EnumerateInstanceFields(obj, caller))
+                foreach (var pair in TypeMembersUtils.EnumerateVisibleInstanceFields(obj, caller))
                 {
                     result.Add(pair.Key, pair.Value.DeepCopy());
                 }
 
                 return result;
             }
+        }
+
+        /// <summary>
+		/// Get <see cref="PhpTypeInfo"/> from either a class name or a class instance.
+        /// </summary>
+        /// <returns>Type info instance if object is valid class reference, otherwise <c>null</c>.</returns>
+        static PhpTypeInfo TypeNameOrObjectToType(Context ctx, PhpValue @object, RuntimeTypeHandle selftype = default(RuntimeTypeHandle), bool autoload = true)
+        {
+            object obj;
+            string str;
+
+            if ((obj = (@object.AsObject())) != null)
+            {
+                return obj.GetType().GetPhpTypeInfo();
+            }
+            else if ((str = PhpVariable.AsString(@object)) != null)
+            {
+                return ctx.GetDeclaredType(str, true);
+            }
+            else
+            {
+                // other @object types are not handled
+                return (selftype.Equals(default(RuntimeTypeHandle)) || !@object.IsNull)
+                    ? null
+                    : Type.GetTypeFromHandle(selftype)?.GetPhpTypeInfo();
+            }
+        }
+
+        /// <summary>
+        /// Checks if the class method exists in the given object.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="object">An object instance or a class name.</param>
+        /// <param name="methodName">The method name.</param>
+        /// <returns>Returns <c>TRUE</c> if the method given by <paramref name="methodName"/> has been defined for the given object, <c>FALSE</c> otherwise.</returns>
+        public static bool method_exists(Context ctx, PhpValue @object, string methodName)
+        {
+            if (@object.IsEmpty || string.IsNullOrEmpty(methodName))
+            {
+                return false;
+            }
+
+            var tinfo = TypeNameOrObjectToType(ctx, @object);
+
+            return tinfo != null && tinfo.RuntimeMethods[methodName] != null;
+        }
+
+        /// <summary>
+		/// Verifies whether a property has been defined for the given object object or class. 
+		/// </summary>
+        /// <remarks>
+		/// This function has different semantics than <see cref="method_exists"/>, which ignores visibility.
+		/// If an object is passed in the first parameter, the property is searched among runtime fields as well.
+		/// </remarks>
+		public static bool property_exists(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, string propertyName)
+        {
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
+            if (tinfo == null)
+            {
+                return false;
+            }
+
+            //DPropertyDesc property;
+            //if (type.GetProperty(new VariableName(propertyName), caller, out property) == GetMemberResult.OK)
+            //{
+            //    // CT property was found
+            //    return true;
+            //}
+            //else
+            //{
+            //    // search RT fields, if possible
+            //    DObject obj = classNameOrObject as DObject;
+            //    return (obj != null && obj.RuntimeFields != null && obj.RuntimeFields.ContainsKey(propertyName));
+            //}
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+		/// Returns all methods defined in the specified class or class of specified object, and its predecessors.
+		/// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="caller">The caller of the method to resolve visible properties properly. Can be UnknownTypeDesc.</param>
+		/// <param name="classNameOrObject">The object (<see cref="DObject"/>) or the name of a class
+		/// (<see cref="String"/>).</param>
+		/// <returns>Array of all methods defined in <paramref name="classNameOrObject"/>.</returns>
+		public static PhpArray get_class_methods(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject)
+        {
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
+            if (tinfo == null)
+            {
+                return null;
+            }
+
+            //
+
+            var result = new PhpArray();
+
+            foreach (var m in tinfo.RuntimeMethods.EnumerateVisible(Type.GetTypeFromHandle(caller)))
+            {
+                result.Add((PhpValue)m.Name);
+            }
+
+            return result;
         }
 
         /// <summary>

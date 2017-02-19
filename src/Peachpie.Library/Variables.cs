@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Library
 {
@@ -559,7 +560,7 @@ namespace Pchp.Library
                 string name;
                 PhpArray array;
 
-                if ((name = PhpVariable.StringOrNull(names[i])) != null)
+                if ((name = PhpVariable.ToStringOrNull(names[i])) != null)
                 {
                     // if variable exists adds a copy of its current value to the result:
                     var value = locals[name];
@@ -575,7 +576,7 @@ namespace Pchp.Library
                     {
                         while (iterator.MoveNext())
                         {
-                            if ((name = PhpVariable.StringOrNull(iterator.Current.Value)) != null)
+                            if ((name = PhpVariable.ToStringOrNull(iterator.Current.Value)) != null)
                             {
                                 // if variable exists adds a copy of its current value to the result:
                                 var value = locals[name];
@@ -622,7 +623,7 @@ namespace Pchp.Library
             // unfortunately, type contains flags are combined with enumeration: 
             bool refs = (type & ExtractType.Refs) != 0;
             type &= ExtractType.NonFlags;
-            
+
             //
             //
             //
@@ -757,6 +758,8 @@ namespace Pchp.Library
             /// </summary>
             HashSet<object> _visited;
 
+            protected void NewLine() => _output.Append(_nl);
+
             /// <summary>
             /// Remembers the object was visited and gets value indicating the object was not visited before.
             /// </summary>
@@ -864,21 +867,44 @@ namespace Pchp.Library
             public override void AcceptObject(object obj)
             {
                 // typename Object
-                // (
-                _output.Append(obj.GetType().FullName.Replace('.', '\\').Replace('+', '\\') + " ");
+                _output.Append(obj.GetPhpTypeInfo().Name);
+                _output.Append(" ");
                 _output.Append("Object");
-                _output.Append(_nl);
-                OutputIndent();
-                _output.Append("(");
 
-                _indent++;
+                if (Enter(obj))
+                {
+                    // (
+                    NewLine();
+                    OutputIndent();
+                    _output.Append("(");
+                    NewLine();
 
-                // TODO: object members
+                    _indent++;
 
-                _indent--;
-                _output.Append(")");
+                    // object members
+                    foreach (var fld in TypeMembersUtils.EnumerateInstanceFieldsForPrint(obj))
+                    {
+                        OutputIndent();
+                        _output.Append("[" + fld.Key + "] => ");
+                        _indent++;
+                        Accept(fld.Value);
+                        _indent--;
+                        NewLine();
+                    }
 
-                _output.Append(_nl);
+                    _indent--;
+                    OutputIndent();
+                    _output.Append(")");
+
+                    //
+                    Leave(obj);
+
+                    NewLine();
+                }
+                else
+                {
+                    _output.Append(RECURSION);
+                }
             }
         }
 

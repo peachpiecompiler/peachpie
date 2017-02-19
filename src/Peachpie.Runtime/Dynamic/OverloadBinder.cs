@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -82,6 +83,69 @@ namespace Pchp.Core.Dynamic
         }
 
         static Expression CombineCosts(IList<Expression> ops) => BinaryOr<ConversionCost>(ops, CostOf.Or, typeof(CostOf).GetMethod("Or", typeof(ConversionCost), typeof(ConversionCost)));
+
+        /// <summary>
+        /// Gets array of parameters indexes that have different type in provided methods.
+        /// Implicitly declared parameters are skipped, indexes start with first PHP parameter.
+        /// </summary>
+        /// <remarks>
+        /// This optimizes costof() operation for method overloads which have usually same leading parameters.</remarks>
+        static BitArray DifferentArgumentTypeIndexes(MethodBase[] methods)
+        {
+            int maxlength = 0;
+
+            // collect methods parameters
+            var mps = new ParameterInfo[methods.Length][];
+            for (int i = 0; i < methods.Length; i++)
+            {
+                var ps = methods[i].GetParameters();
+                var skip = ImplicitParametersCount(ps);
+
+                if (skip != 0)
+                {
+                    var newps = new ParameterInfo[ps.Length - skip];
+                    Array.Copy(ps, skip, newps, 0, newps.Length);
+                    ps = newps;
+                }
+
+                mps[i] = ps;
+                maxlength = Math.Max(maxlength, ps.Length);
+            }
+
+            var result = new BitArray(maxlength);
+
+            for (int i = 0; i < maxlength; i++)
+            {
+                // parameter {i}
+                Type pt = null;
+
+                for (int mi = 0; mi < mps.Length; mi++)
+                {
+                    var ps = mps[mi];
+                    if (i < ps.Length)
+                    {
+                        if (pt == null)
+                        {
+                            pt = ps[i].ParameterType;
+                        }
+                        else if (pt != ps[i].ParameterType)
+                        {
+                            // not matching type
+                            result[i] = true;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        result[i] = true;
+                        break;
+                    }
+                }
+            }
+
+            //
+            return result;
+        }
 
         #endregion
 
@@ -207,7 +271,7 @@ namespace Pchp.Core.Dynamic
             /// Gets expression representing cost of argument binding operation.
             /// The expression can be constant.
             /// </summary>
-            public virtual Expression BindCostOf(int srcarg, Type ptype, bool ismandatory)
+            public virtual Expression BindCostOf(int srcarg, Type ptype, bool ismandatory, bool ignorecost)
             {
                 var key = new TmpVarKey() { Priority = 100, ArgIndex = srcarg, TargetTypeOpt = ptype, Prefix = "costOf" + (ismandatory ? "" : "Opt") };
 
@@ -218,7 +282,7 @@ namespace Pchp.Core.Dynamic
                     // bind cost expression
                     value = new TmpVarValue();
 
-                    var expr_cost = ConvertExpression.BindCost(BindArgument(srcarg), ptype);
+                    var expr_cost = ignorecost ? Expression.Constant(ConversionCost.Pass) : ConvertExpression.BindCost(BindArgument(srcarg), ptype);
                     if (expr_cost is ConstantExpression)
                     {
                         value.Expression = expr_cost;
@@ -338,7 +402,7 @@ namespace Pchp.Core.Dynamic
                 ParameterExpression _lazyArgc = null;
 
                 public ArgsArrayBinder(Expression ctx, Expression argsarray)
-                    :base(ctx)
+                    : base(ctx)
                 {
                     if (argsarray == null) throw new ArgumentNullException();
                     if (!argsarray.Type.IsArray) throw new ArgumentException();
@@ -501,9 +565,9 @@ namespace Pchp.Core.Dynamic
             internal sealed class ArgsBinder : ArgumentsBinder
             {
                 readonly Expression[] _args;
-                
+
                 public ArgsBinder(Expression ctx, Expression[] args)
-                    :base(ctx)
+                    : base(ctx)
                 {
                     _args = args;
                 }
@@ -531,7 +595,7 @@ namespace Pchp.Core.Dynamic
                                 return ConvertExpression.Bind(Expression.Constant(targetparam.DefaultValue), targetparam.ParameterType, _ctx);
                             }
 
-                            return Expression.Default(targetparam.ParameterType);
+                            return ConvertExpression.BindDefault(targetparam.ParameterType);
                         }
 
                         return Expression.Constant(null, typeof(object));
@@ -545,7 +609,7 @@ namespace Pchp.Core.Dynamic
                     {
                         values.Add(ConvertExpression.Bind(_args[i], element_type, _ctx));
                     }
-                    
+
                     if (values.Count == 0)
                     {
                         // TODO: return static singleton with empty array
@@ -554,11 +618,11 @@ namespace Pchp.Core.Dynamic
                     return Expression.NewArrayInit(element_type, values);
                 }
 
-                public override Expression BindCostOf(int srcarg, Type ptype, bool ismandatory)
+                public override Expression BindCostOf(int srcarg, Type ptype, bool ismandatory, bool ignorecost)
                 {
                     if (srcarg < _args.Length)
                     {
-                        return base.BindCostOf(srcarg, ptype, ismandatory);
+                        return base.BindCostOf(srcarg, ptype, ismandatory, ignorecost);
                     }
                     else
                     {
@@ -577,9 +641,10 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         /// <param name="method">Method to calculate the cost.</param>
         /// <param name="args">Arguments provider.</param>
+        /// <param name="costofargs">Indexes of parameters which costof() have to be calculated.</param>
         /// <param name="minCost">Gets minimal compile-time cost of conversion.</param>
         /// <returns>Expression getting cost of conversion.</returns>
-        static Expression BindCostOf(MethodBase method, ArgumentsBinder args, out ConversionCost minCost)
+        static Expression BindCostOf(MethodBase method, ArgumentsBinder args, BitArray costofargs, out ConversionCost minCost)
         {
             if (method == null || args == null)
                 throw new ArgumentNullException();
@@ -604,7 +669,7 @@ namespace Pchp.Core.Dynamic
              * return result;
              */
 
-                    var expr_argc = args.BindArgsCount();
+            var expr_argc = args.BindArgsCount();
             int? argc_opt = (expr_argc is ConstantExpression) ? (int?)((ConstantExpression)expr_argc).Value : null;
 
             // parameters cost
@@ -625,7 +690,7 @@ namespace Pchp.Core.Dynamic
                     {
                         for (; im < argc_opt.Value; im++)
                         {
-                            expr_costs.Add(args.BindCostOf(im, element_type, false));
+                            expr_costs.Add(args.BindCostOf(im, element_type, false, false));
                         }
                     }
                     else
@@ -638,7 +703,7 @@ namespace Pchp.Core.Dynamic
                 }
 
                 //
-                expr_costs.Add(args.BindCostOf(im, p.ParameterType, im < nmandatory));
+                expr_costs.Add(args.BindCostOf(im, p.ParameterType, im < nmandatory, costofargs[im] == false));
             }
 
             if (hasparams == false)
@@ -677,7 +742,7 @@ namespace Pchp.Core.Dynamic
             {
                 result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsBinder(ctx, args));
             }
-            
+
             return result;
         }
 
@@ -758,12 +823,15 @@ namespace Pchp.Core.Dynamic
             else
             {
                 var list = new List<MethodCostInfo>();
-                
+
+                // collect arguments, that have same type across all provided methods => we don't have to check costof()
+                var makeCostOf = DifferentArgumentTypeIndexes(methods); // parameters which costof() have to be calculated and compared to others
+
                 // costX = CostOf(mX)
                 foreach (var m in methods)
                 {
                     ConversionCost mincost; // minimal cost resolved in compile time
-                    var expr_cost = BindCostOf(m, args, out mincost);
+                    var expr_cost = BindCostOf(m, args, makeCostOf, out mincost);
                     if (mincost >= ConversionCost.NoConversion)
                         continue;   // we don't have to try this overload
 

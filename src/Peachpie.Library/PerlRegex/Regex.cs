@@ -23,8 +23,7 @@ namespace Pchp.Library.PerlRegex
     {
         protected internal string pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;            // the top-level options from the options string
-        protected internal PerlRegexOptions poptions;       // perl regex options // TODO: merge with roptions
-
+        
         // *********** Match timeout fields { ***********
 
         // We need this because time is queried using Environment.TickCount for performance reasons
@@ -49,7 +48,7 @@ namespace Pchp.Library.PerlRegex
 
         // *********** } match timeout fields ***********
 
-        protected internal RegexRunnerFactory factory;
+        protected internal RegexRunnerFactory factory = null;
 
         protected internal Dictionary<int, int> caps;          // if captures are sparse, this is the hashtable capnum->index
         protected internal Dictionary<string, int> capnames;      // if named captures are used, this maps names->index
@@ -172,7 +171,6 @@ namespace Pchp.Library.PerlRegex
                 // Extract the relevant information
                 capnames = tree._capnames;
                 capslist = tree._capslist;
-                poptions = tree._poptions;
                 _code = RegexWriter.Write(tree);
                 caps = _code._caps;
                 capsize = _code._capsize;
@@ -189,7 +187,6 @@ namespace Pchp.Library.PerlRegex
                 capnames = cached._capnames;
                 capslist = cached._capslist;
                 capsize = cached._capsize;
-                poptions = cached._poptions;
                 _code = cached._code;
                 _runnerref = cached._runnerref;
                 _replref = cached._replref;
@@ -277,11 +274,6 @@ namespace Pchp.Library.PerlRegex
         {
             get { return roptions; }
         }
-
-        /// <summary>
-        /// Gets PERL specific options.
-        /// </summary>
-        public PerlRegexOptions PerlOptions => poptions;
 
         /// <summary>
         /// The match timeout used by this Regex instance.
@@ -951,7 +943,7 @@ namespace Pchp.Library.PerlRegex
                 // it wasn't in the cache, so we'll add a new one.  Shortcut out for the case where cacheSize is zero.
                 if (s_cacheSize != 0)
                 {
-                    newcached = new CachedCodeEntry(key, capnames, capslist, _code, poptions, caps, capsize, _runnerref, _replref);
+                    newcached = new CachedCodeEntry(key, capnames, capslist, _code, caps, capsize, _runnerref, _replref);
                     s_livecode.AddFirst(newcached);
                     if (s_livecode.Count > s_cacheSize)
                         s_livecode.RemoveLast();
@@ -1052,18 +1044,16 @@ namespace Pchp.Library.PerlRegex
         internal Dictionary<string, int> _capnames;
         internal string[] _capslist;
         internal int _capsize;
-        internal PerlRegexOptions _poptions;
         internal ExclusiveReference _runnerref;
         internal SharedReference _replref;
 
-        internal CachedCodeEntry(CachedCodeEntryKey key, Dictionary<string, int> capnames, string[] capslist, RegexCode code, PerlRegexOptions poptions, Dictionary<int, int> caps, int capsize, ExclusiveReference runner, SharedReference repl)
+        internal CachedCodeEntry(CachedCodeEntryKey key, Dictionary<string, int> capnames, string[] capslist, RegexCode code, Dictionary<int, int> caps, int capsize, ExclusiveReference runner, SharedReference repl)
         {
             _key = key;
             _capnames = capnames;
             _capslist = capslist;
 
             _code = code;
-            _poptions = poptions;
             _caps = caps;
             _capsize = capsize;
 

@@ -21,7 +21,7 @@ namespace Peachpie.NETCore.Compiler.Tools
             var rspfile = CreateRspFile(args);
 
             // compile
-            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, new[] { "@" + rspfile }, null, Directory.GetCurrentDirectory(), null, null, new SimpleAnalyzerAssemblyLoader(), Console.Out);
+            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, new[] { "@" + rspfile }, null, System.IO.Directory.GetCurrentDirectory(), null, null, new SimpleAnalyzerAssemblyLoader(), Console.Out);
         }
 
         #region ProcessArguments
@@ -40,7 +40,7 @@ namespace Peachpie.NETCore.Compiler.Tools
             var newargs = new List<string>();
             var sourcefiles = new List<string>();
 
-            string tmpoutput = Directory.GetCurrentDirectory(); // temp output to place new RSP file into
+            string tmpoutput = System.IO.Directory.GetCurrentDirectory(); // temp output to place new RSP file into
 
             while (todo.Count != 0)
             {

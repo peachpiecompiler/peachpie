@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -64,10 +66,12 @@ namespace Pchp.Core
                 case PhpTypeCode.Double: return Compare((double)lx, y.Double);
                 case PhpTypeCode.String: return -Compare(y.String, lx);
                 case PhpTypeCode.WritableString: return -Compare(y.WritableString.ToString(), lx);
+                case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.Alias: return Compare(lx, y.Alias.Value);
+                case PhpTypeCode.Null:
                 case PhpTypeCode.Undefined: return (lx == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
-                    if (y.Object == null) return (lx == 0) ? 0 : 1;
+                    if (y.Object == null) goto case PhpTypeCode.Null;
                     break;
             }
 
@@ -83,10 +87,12 @@ namespace Pchp.Core
                 case PhpTypeCode.Boolean: return Compare(dx != 0.0, y.Boolean);
                 case PhpTypeCode.String: return -Compare(y.String, dx);
                 case PhpTypeCode.WritableString: return -Compare(y.WritableString.ToString(), dx);
+                case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.Alias: return Compare(dx, y.Alias.Value);
+                case PhpTypeCode.Null:
                 case PhpTypeCode.Undefined: return (dx == 0.0) ? 0 : 1;
                 case PhpTypeCode.Object:
-                    if (y.Object == null) return (dx == 0.0) ? 0 : 1;
+                    if (y.Object == null) goto case PhpTypeCode.Null;
                     break;
             }
 
@@ -107,13 +113,82 @@ namespace Pchp.Core
                 case PhpTypeCode.String: return Compare(sx, y.String);
                 case PhpTypeCode.WritableString: return Compare(sx, y.WritableString.ToString());
                 case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
+                case PhpTypeCode.PhpArray: return -1;   // - 1 * (array.CompareTo(string))
+                case PhpTypeCode.Null:
                 case PhpTypeCode.Undefined: return (sx.Length == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
-                    if (y.Object == null) return (sx.Length == 0) ? 0 : 1;
+                    if (y.Object == null) goto case PhpTypeCode.Null;
                     break;
             }
 
             throw new NotImplementedException($"compare(String, {y.TypeCode})");
+        }
+
+        public static int Compare(object x, PhpValue y)
+        {
+            Debug.Assert(x != null);
+
+            if (x.Equals(y.Object)) return 0;
+            if (x is IPhpComparable) return ((IPhpComparable)x).Compare(y);
+            if (y.Object is IPhpComparable) return -((IPhpComparable)y.Object).Compare(PhpValue.FromClass(x));
+
+            switch (y.TypeCode)
+            {
+                case PhpTypeCode.Undefined:
+                case PhpTypeCode.Null: return 1;
+                case PhpTypeCode.Boolean: return y.Boolean ? 0 : 1;
+                case PhpTypeCode.Object:
+                    if (y.Object == null) goto case PhpTypeCode.Null;
+                    bool incomparable;
+                    var result = CompareObjects(x, y.Object, PhpComparer.Default, out incomparable);
+                    if (incomparable)
+                    {
+                        PhpException.Throw(PhpError.Warning,
+                            Resources.ErrResources.incomparable_objects_compared_exception,
+                            x.GetPhpTypeInfo().Name,
+                            y.Object.GetPhpTypeInfo().Name);
+                        return 1;
+                    }
+                    return result;
+                default: return 1;
+            }
+        }
+
+        /// <summary>
+		/// Compares two class instances.
+		/// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+		/// <param name="comparer">The comparer.</param>
+		/// <param name="incomparable">
+        /// Whether objects are incomparable while no difference is found before both objects enter an infinite recursion, returns zero.
+        /// </param>
+		static int CompareObjects(object x, object y, PhpComparer comparer, out bool incomparable)
+        {
+            Debug.Assert(x != null && y != null);
+
+            incomparable = false;
+
+            // check for same instance
+            if (ReferenceEquals(x, y)) return 0;
+
+            // check for different types
+            var type_x = x.GetType().GetTypeInfo();
+            var type_y = y.GetType().GetTypeInfo();
+            if (type_x != type_y)
+            {
+                if (type_x.IsSubclassOf(type_y.AsType())) return -1;
+                if (type_y.IsSubclassOf(type_x.AsType())) return 1;
+
+                incomparable = true;
+                return 1; // they really are incomparable
+            }
+
+            // check for different number of fields
+            int result = TypeMembersUtils.FieldsCount(x) - TypeMembersUtils.FieldsCount(y);
+            if (result != 0) return result;
+
+            throw new NotImplementedException();
         }
 
         public static int CompareNull(PhpValue y)
@@ -125,11 +200,12 @@ namespace Pchp.Core
                 case PhpTypeCode.Double: return y.Double == 0 ? 0 : -1;
                 case PhpTypeCode.String: return y.String.Length == 0 ? 0 : -1;
                 case PhpTypeCode.WritableString: return y.WritableString.Length == 0 ? 0 : -1;
+                case PhpTypeCode.PhpArray: return -y.Array.Count;
                 case PhpTypeCode.Alias: return CompareNull(y.Alias.Value);
+                case PhpTypeCode.Undefined:
+                case PhpTypeCode.Null: return 0;
                 case PhpTypeCode.Object:
-                    if (y.Object == null) return 0;
-                    break;
-                case PhpTypeCode.Undefined: return 0;
+                    return (y.Object == null) ? 0 : -1;
             }
 
             throw new NotImplementedException($"compare(null, {y.TypeCode})");

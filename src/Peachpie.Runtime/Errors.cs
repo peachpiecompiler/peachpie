@@ -93,10 +93,7 @@ namespace Pchp.Core
     {
         public static void Throw(PhpError error, string formatString, params string[] args)
         {
-            Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, string.Format(formatString, args));   // assert in debug mode to handle exception
-
-            // TODO: get current Context from execution context
-            // TODO: throw error according to configuration
+            Context.DefaultErrorHandler?.Throw(error, formatString, args);
         }
 
         /// <summary>
@@ -121,6 +118,16 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// An argument violates a type hint.
+        /// </summary>
+        /// <param name="argName">The name of the argument.</param>
+        /// <param name="typeName">The name of the hinted type.</param>
+        public static void InvalidArgumentType(string argName, string typeName)
+        {
+            Throw(PhpError.Error, ErrResources.invalid_argument_type, argName, typeName);
+        }
+
+        /// <summary>
         /// Argument null error. Thrown when argument can't be null but it is.
         /// </summary>
         /// <param name="argument">The name of the argument.</param>
@@ -140,6 +147,48 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Emitted to a library function call which has invalid actual argument count.
+        /// </summary>
+        public static void InvalidArgumentCount(string typeName, string methodName)
+        {
+            if (methodName != null)
+            {
+                if (typeName != null)
+                {
+                    Throw(PhpError.Warning, string.Format(ErrResources.invalid_argument_count_for_method, typeName, methodName));
+                }
+                else
+                {
+                    Throw(PhpError.Warning, string.Format(ErrResources.invalid_argument_count_for_function, methodName));
+                }
+            }
+            else
+            {
+                Throw(PhpError.Warning, ErrResources.invalid_argument_count);
+            }
+        }
+
+        /// <summary>
+        /// Emitted to the foreach statement if the variable to be enumerated doesn't implement 
+        /// the <see cref="IPhpEnumerable"/> interface.
+        /// </summary>
+        public static void InvalidForeachArgument()
+        {
+            Throw(PhpError.Warning, ErrResources.invalid_foreach_argument);
+        }
+
+        /// <summary>
+        /// Emitted to the function call if an argument cannot be implicitly casted.
+        /// </summary>
+        /// <param name="argument">The argument name which is casted.</param>
+        /// <param name="targetType">The type to which is casted.</param>
+        /// <param name="functionName">The name of the function called.</param>
+        public static void InvalidImplicitCast(string argument, string targetType, string functionName)
+        {
+            Throw(PhpError.Warning, string.Format(ErrResources.invalid_implicit_cast, argument, targetType, functionName));
+        }
+
+        /// <summary>
         /// Called function is not supported.
         /// </summary>
         /// <param name="function">Not supported function name.</param>
@@ -148,6 +197,47 @@ namespace Pchp.Core
             Debug.Assert(!string.IsNullOrEmpty(function));
 
             Throw(PhpError.Warning, ErrResources.notsupported_function_called, function);
+        }
+
+        /// <summary>
+        /// Call to a member function <paramref name="methodName"/>() on a non-object.
+        /// </summary>
+        /// <param name="methodName">The method name.</param>
+        public static void MethodOnNonObject(string methodName)
+        {
+            Throw(PhpError.Error, ErrResources.method_called_on_non_object, methodName);
+        }
+
+        /// <summary>
+        /// Reports an error when a variable should be PHP object but it is not.
+        /// </summary>
+        /// <param name="reference">Whether a reference modifier (=&amp;) is used.</param>
+        /// <param name="var">The variable which was misused.</param>
+        /// <exception cref="PhpException"><paramref name="var"/> is <see cref="PhpArray"/> (Warning).</exception>
+        /// <exception cref="PhpException"><paramref name="var"/> is scalar type (Warning).</exception>
+        /// <exception cref="PhpException"><paramref name="var"/> is a string (Warning).</exception>
+        public static void VariableMisusedAsObject(PhpValue var, bool reference)
+        {
+            if (var.IsEmpty)
+            {
+                Throw(PhpError.Notice, ErrResources.empty_used_as_object);
+            }
+            else if (var.IsArray)
+            {
+                Throw(PhpError.Warning, ErrResources.array_used_as_object);
+            }
+            else if (var.TypeCode == PhpTypeCode.String || var.TypeCode == PhpTypeCode.WritableString)
+            {
+                Throw(PhpError.Warning, reference ? ErrResources.string_item_used_as_reference : ErrResources.string_used_as_object);
+            }
+            else if (var.IsAlias)
+            {
+                VariableMisusedAsObject(var.Alias.Value, reference);
+            }
+            else
+            {
+                Throw(PhpError.Warning, ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(var));
+            }
         }
 
         /// <summary>

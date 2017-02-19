@@ -515,7 +515,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundRoutineName Name => _name;
         readonly BoundRoutineName _name;
 
-        public override bool IsVirtual => this.TargetMethod == null || this.TargetMethod.IsVirtual;
+        public override bool IsVirtual => this.TargetMethod.IsErrorMethod() || this.TargetMethod.IsVirtual;
 
         public BoundInstanceFunctionCall(BoundExpression instance, QualifiedName name, ImmutableArray<BoundArgument> arguments)
             : this(instance, new BoundRoutineName(name), arguments)
@@ -635,7 +635,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Gets value indicating the target is resolved at compile time,
         /// so it will be called statically.
         /// </summary>
-        public bool IsResolved => Target != null;
+        public bool IsResolved => !Target.IsErrorMethod();
 
         /// <summary>
         /// In case the inclusion target is resolved, gets reference to the <c>Main</c> method of the included script.
@@ -686,6 +686,45 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitExit(this);
+    }
+
+    #endregion
+
+    #region BoundLambda
+
+    /// <summary>
+    /// Anonymous function expression.
+    /// </summary>
+    public partial class BoundLambda : BoundExpression, ILambdaExpression
+    {
+        /// <summary>
+        /// Declared use variables.
+        /// </summary>
+        public ImmutableArray<BoundArgument> UseVars => _usevars;
+        ImmutableArray<BoundArgument> _usevars;
+
+        public IBlockStatement Body => (BoundLambdaMethod != null) ? BoundLambdaMethod.ControlFlowGraph.Start : null;
+
+        public IMethodSymbol Signature => BoundLambdaMethod;
+
+        /// <summary>
+        /// Reference to associated lambda method symbol.
+        /// Bound during analysis.
+        /// </summary>
+        internal SourceLambdaSymbol BoundLambdaMethod { get; set; }
+
+        public BoundLambda(ImmutableArray<BoundArgument> usevars)
+        {
+            _usevars = usevars;
+        }
+
+        public override OperationKind Kind => OperationKind.LambdaExpression;
+        
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitLambda(this);
+
+        public override void Accept(OperationVisitor visitor) => visitor.VisitLambdaExpression(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.VisitLambdaExpression(this, argument);
     }
 
     #endregion
@@ -944,7 +983,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public abstract partial class BoundReferenceExpression : BoundExpression, IReferenceExpression
     {
-
+        /// <summary>
+        /// Gets or sets value indicating the variable is used while it was not initialized in all code paths.
+        /// </summary>
+        public bool MaybeUninitialized { get; set; }
     }
 
     #endregion

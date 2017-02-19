@@ -29,30 +29,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// short-lived temporary local. If <paramref name="immediateReturn"/> is <c>false</c>, return the local
         /// to the pool of locals available for reuse by calling <see cref="ReturnTemporaryLocal"/>.
         /// </remarks>
-        public LocalDefinition/*!*/ GetTemporaryLocal(TypeSymbol/*!*/ type, bool immediateReturn)
+        public LocalDefinition/*!*/ GetTemporaryLocal(TypeSymbol/*!*/ type, bool immediateReturn = false)
         {
+            Debug.Assert(type.SpecialType != SpecialType.System_Void, "Variable cannot be of type 'void'!");
+
             var definition = _il.LocalSlotManager.AllocateSlot((Microsoft.Cci.ITypeReference)type, LocalSlotConstraints.None);
 
             if (immediateReturn)
+            {
                 _il.LocalSlotManager.FreeSlot(definition);
+            }
 
             return definition;
-        }
-
-        /// <summary>
-        /// Returns a <see cref="LocalDefinition"/> of a temporary local variable of a specified <see cref="TypeSymbol"/>.
-        /// </summary>
-        /// <param name="type">The requested <see cref="TypeSymbol"/> of the local.</param>
-        /// <returns>The <see cref="LocalDefinition"/>.</returns>
-        /// <remarks>
-        /// If a <see cref="LocalDefinition"/> of the given <see cref="TypeSymbol"/> has already been declared and returned
-        /// to the pool, this local is reused. Otherwise, a new local is declared. Use this method to obtain a
-        /// short-lived temporary local.
-        /// Return the local to the pool of locals available for reuse by calling <see cref="ReturnTemporaryLocal"/>.
-        /// </remarks>
-        public LocalDefinition/*!*/ GetTemporaryLocal(TypeSymbol/*!*/ type)
-        {
-            return GetTemporaryLocal(type, false);
         }
 
         /// <summary>

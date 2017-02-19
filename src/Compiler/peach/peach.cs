@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                  Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ResponseFileName),
                  CreateArgs(args),
                  AppDomain.CurrentDomain.BaseDirectory,
-                 Directory.GetCurrentDirectory(),
+                 System.IO.Directory.GetCurrentDirectory(),
                  System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(),
                  Environment.GetEnvironmentVariable("LIB") + @";C:\Windows\Microsoft.NET\assembly\GAC_MSIL",
                  analyzerLoader)

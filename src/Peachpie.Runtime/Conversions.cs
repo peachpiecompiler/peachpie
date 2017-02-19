@@ -178,6 +178,11 @@ namespace Pchp.Core
         public static PhpArray ToArray(PhpValue value) => value.ToArray();
 
         /// <summary>
+        /// Casts value to <see cref="PhpArray"/> or <c>null</c>.
+        /// </summary>
+        public static PhpArray AsArray(PhpValue value) => value.AsArray();
+
+        /// <summary>
         /// Creates <see cref="PhpArray"/> from object's properties.
         /// </summary>
         /// <param name="obj">Object instance.</param>
@@ -253,7 +258,7 @@ namespace Pchp.Core
             // value cannot be its instance because there is no way how to instantiate it
             // ignoring the case when object is passed from CLR
 
-            return obj != null && tinfo != null && tinfo.Type.GetTypeInfo().IsInstanceOfType(obj);
+            return obj != null && tinfo != null && tinfo.Type.IsInstanceOfType(obj);
         }
 
         #endregion
@@ -327,6 +332,82 @@ namespace Pchp.Core
                     key = default(IntStringKey);
                     return false;
             }
+        }
+
+        /// <summary>
+		/// Converts a string to an appropriate integer.
+		/// </summary>
+		/// <param name="str">The string in "{0 | -?[1-9][0-9]*}" format.</param>
+		/// <returns>The array key (integer or string).</returns>
+		public static IntStringKey StringToArrayKey(string/*!*/str)
+        {
+            Debug.Assert(str != null, "str == null");
+
+            // empty string:
+            if (str.Length == 0)
+                return new IntStringKey(string.Empty);
+
+            // starts with minus sign?
+            bool sign = false;
+            int index = 0;
+
+            // check first character:
+            switch (str[0])
+            {
+                case '-':
+                    // negative number starting with zero is always a string key (-0, -0123)
+                    if (str.Length == 1 || str[1] == '0')    // str = "-" or '-0' or '-0...'
+                        return new IntStringKey(str);
+
+                    // str = "-..." // continue to <int> parsing
+                    index = 1;
+                    sign = true;
+                    break;
+
+                case '0':
+                    // (non-negative) number starting with '0' is considered as a string,
+                    // iff there is more than just a '0'
+                    if (str.Length == 1)
+                        return new IntStringKey(0); // just a zero -> convert to int
+                    else
+                        return new IntStringKey(str);   // number starting with zero -> string key
+            }
+
+            Debug.Assert(index < str.Length, "str == {" + str + "}");
+
+            // simple <int> parser:
+            long result = (int)str[index] - '0';
+            Debug.Assert(result != 0, "str == {" + str + "}");
+
+            if (result < 0 || result > 9)   // not a number
+                return new IntStringKey(str);
+
+            while (++index < str.Length)
+            {
+                int c = (int)str[index] - '0';
+                if (c >= 0 && c <= 9)
+                {
+                    // update <result>
+                    result = unchecked(c + result * 10);
+
+                    // <int> range check
+                    if (Utilities.NumberUtils.IsInt32(result))
+                        continue;   // still in <int> range
+                }
+
+                //
+                return new IntStringKey(str);
+            }
+
+            if (sign)
+            {
+                result = -result;
+                if (!Utilities.NumberUtils.IsInt32(result))
+                    return new IntStringKey(str);
+            }
+
+            // <int> parsed properly:
+            return new IntStringKey(unchecked((int)result));
         }
 
         #endregion
@@ -869,6 +950,64 @@ namespace Pchp.Core
             IsNumber(str, position + length, position, out l, out position, out lval, out dval);
 
             return dval;
+        }
+
+        /// <summary>
+		/// Converts a substring to almost long integer in a specified base.
+		/// Stops parsing if result overflows unsigned integer.
+		/// </summary>
+		public static long SubstringToLongStrict(string str, int length, int @base, long maxValue, ref int position)
+        {
+            if (maxValue <= 0)
+                throw new ArgumentOutOfRangeException("maxValue");
+
+            if (@base < 2 || @base > 'Z' - 'A' + 1)
+            {
+                throw new ArgumentException(Resources.ErrResources.invalid_base, nameof(@base));
+            }
+
+            if (str == null) str = "";
+            if (position < 0) position = 0;
+            if (length < 0 || length > str.Length - position) length = str.Length - position;
+            if (length == 0) return 0;
+
+            long result = 0;
+            int sign = +1;
+
+            // reads a sign:
+            if (str[position] == '+')
+            {
+                position++;
+                length--;
+            }
+            else if (str[position] == '-')
+            {
+                position++;
+                length--;
+                sign = -1;
+            }
+
+            long max_div, max_rem;
+            max_div = Utilities.NumberUtils.DivRem(maxValue, @base, out max_rem);
+
+            while (length-- > 0)
+            {
+                int digit = AlphaNumericToDigit(str[position]);
+                if (digit >= @base) break;
+
+                if (!(result < max_div || (result == max_div && digit <= max_rem)))
+                {
+                    // reads remaining digits:
+                    while (length-- > 0 && AlphaNumericToDigit(str[position]) < @base) position++;
+
+                    return (sign == -1) ? Int64.MinValue : Int64.MaxValue;
+                }
+
+                result = result * @base + digit;
+                position++;
+            }
+
+            return result * sign;
         }
 
         #endregion

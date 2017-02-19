@@ -167,6 +167,11 @@ namespace Pchp.CodeAnalysis.Semantics
             x.VarReferences.ForEach(Accept);
         }
 
+        public virtual void VisitLambda(BoundLambda x)
+        {
+
+        }
+
         #endregion
 
         #region Statements

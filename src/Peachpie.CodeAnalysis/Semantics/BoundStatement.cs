@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -34,6 +35,16 @@ namespace Pchp.CodeAnalysis.Semantics
     public sealed partial class BoundEmptyStatement : BoundStatement
     {
         public override OperationKind Kind => OperationKind.EmptyStatement;
+
+        /// <summary>
+        /// Explicit text span used to generate sequence point.
+        /// </summary>
+        readonly TextSpan _span;
+
+        public BoundEmptyStatement(TextSpan span = default(TextSpan))
+        {
+            _span = span;
+        }
 
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitEmptyStatement(this);

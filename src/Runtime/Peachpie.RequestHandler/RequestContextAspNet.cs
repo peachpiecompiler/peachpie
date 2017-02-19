@@ -102,6 +102,24 @@ namespace Pchp.Core
         /// </summary>
         public Stream InputStream => _httpctx.Request.InputStream;
 
+        public void AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false)
+        {
+            var cookie = new HttpCookie(name, value)
+            {
+                Path = path,
+                Domain = domain,
+                Secure = secure,
+                HttpOnly = httpOnly,
+            };
+
+            if (expires.HasValue)
+            {
+                cookie.Expires = expires.Value.UtcDateTime;
+            }
+
+            _httpctx.Response.AppendCookie(cookie);
+        }
+
         #endregion
 
         public override IHttpPhpContext HttpPhpContext => this;
@@ -246,9 +264,20 @@ namespace Pchp.Core
         /// <summary>
         /// Includes requested script file.
         /// </summary>
-        public void Include(HttpRequest req)
+        public bool Include(HttpRequest req)
         {
-            this.Include(string.Empty, req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length), false, true);
+            var relative_path = ScriptsMap.NormalizeSlashes(req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length));
+            var script = ScriptsMap.GetDeclaredScript(relative_path);
+            if (script.IsValid)
+            {
+                this.MainScriptFile = script;
+                script.MainMethod(this, this.Globals, null);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

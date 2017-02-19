@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Peachpie.Web
 {
@@ -19,39 +20,6 @@ namespace Peachpie.Web
     [DebuggerDisplay("RequestContextCore({DebugRequestDisplay,nq})")]
     sealed class RequestContextCore : Context, IHttpPhpContext
     {
-        #region .cctor
-
-        static RequestContextCore()
-        {
-            LoadScriptReferences();
-        }
-
-        /// <summary>
-        /// Loads assemblies representing referenced scripts and reflects their symbols to be used by the runtime.
-        /// </summary>
-        static void LoadScriptReferences()
-        {
-            LoadScript(new System.Reflection.AssemblyName("website"));
-        }
-
-        static void LoadScript(System.Reflection.AssemblyName assname)
-        {
-            try
-            {
-                var ass = System.Reflection.Assembly.Load(assname);
-                if (ass != null)
-                {
-                    AddScriptReference(ass.GetType(ScriptInfo.ScriptTypeName));
-                }
-            }
-            catch
-            {
-            }
-
-        }
-
-        #endregion
-
         /// <summary>
         /// Debug display string.
         /// </summary>
@@ -65,7 +33,18 @@ namespace Peachpie.Web
             get { return _httpctx.Response.HasStarted; }
         }
 
-        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, new StringValues(value)); }
+        public void SetHeader(string name, string value)
+        {
+            StringValues newitem = new StringValues(value);
+            //StringValues olditem;
+            //if (_httpctx.Response.Headers.TryGetValue(name, out olditem))
+            //{
+            //    newitem = StringValues.Concat(olditem, newitem);
+            //}
+
+            //
+            _httpctx.Response.Headers[name] = newitem;
+        }
 
         public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
 
@@ -84,6 +63,18 @@ namespace Peachpie.Web
         /// Stream with contents of the incoming HTTP entity body.
         /// </summary>
         public Stream InputStream => _httpctx.Request.Body;
+
+        public void AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false)
+        {
+            _httpctx.Response.Cookies.Append(name, value, new CookieOptions()
+            {
+                Expires = expires,
+                Path = path,
+                Domain = domain,
+                Secure = secure,
+                HttpOnly = httpOnly
+            });
+        }
 
         #endregion
 
@@ -129,17 +120,35 @@ namespace Peachpie.Web
 
             // set additional $_SERVER items
             AddServerScriptItems(script);
-            
+
+            // remember the initial script file
+            this.MainScriptFile = script;
+
             //
 
             try
             {
-                script.MainMethod(this, this.Globals, null);
+                if (Debugger.IsAttached)
+                {
+                    script.MainMethod(this, this.Globals, null);
+                }
+                else
+                {
+                    using (_requestTimer = new Timer(RequestTimeout, null, this.Configuration.Core.ExecutionTimeout, Timeout.Infinite))
+                    {
+                        script.MainMethod(this, this.Globals, null);
+                    }
+                }
             }
             catch (ScriptDiedException died)
             {
                 died.ProcessStatus(this);
             }
+        }
+
+        void RequestTimeout(object state)
+        {
+
         }
 
         void AddServerScriptItems(ScriptInfo script)
@@ -162,7 +171,8 @@ namespace Peachpie.Web
 
         public override IHttpPhpContext HttpPhpContext => this;
 
-        public override Encoding StringEncoding => Encoding.UTF8;
+        public override Encoding StringEncoding => _encoding;
+        readonly Encoding _encoding;
 
         /// <summary>
         /// Application physical root directory including trailing slash.
@@ -176,17 +186,24 @@ namespace Peachpie.Web
         /// </summary>
         readonly HttpContext _httpctx;
 
-        public RequestContextCore(HttpContext httpcontext, string rootPath)
+        /// <summary>
+        /// Internal timer used to cancel execution upon timeout.
+        /// </summary>
+        Timer _requestTimer;
+
+        public RequestContextCore(HttpContext httpcontext, string rootPath, Encoding encoding)
         {
             Debug.Assert(httpcontext != null);
             Debug.Assert(rootPath != null);
             Debug.Assert(rootPath == ScriptsMap.NormalizeSlashes(rootPath));
             Debug.Assert(rootPath.Length != 0 && rootPath[rootPath.Length - 1] != '/');
+            Debug.Assert(encoding != null);
 
             _httpctx = httpcontext;
             _rootPath = rootPath;
-            
-            this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, StringEncoding));
+            _encoding = encoding;
+
+            this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On
@@ -316,6 +333,23 @@ namespace Peachpie.Web
         protected override PhpArray InitFilesVariable()
         {
             return base.InitFilesVariable();
+        }
+
+        protected override PhpArray InitCookieVariable()
+        {
+            var result = PhpArray.NewEmpty();
+
+            var cookies = _httpctx.Request.Cookies;
+            if (cookies.Count != 0)
+            {
+                foreach (var c in cookies)
+                {
+                    Superglobals.AddVariable(result, c.Key, System.Net.WebUtility.UrlDecode(c.Value));
+                }
+            }
+
+            //
+            return result;
         }
     }
 }

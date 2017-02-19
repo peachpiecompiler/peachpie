@@ -40,7 +40,7 @@ namespace Pchp.Core
     /// <param name="target">For instance methods, the target object.</param>
     /// <param name="arguments">List of arguments to be passed to called routine.</param>
     /// <returns>Result of the invocation.</returns>
-    internal delegate PhpValue PhpInvokable(Context ctx, object target, PhpValue[] arguments);
+    internal delegate PhpValue PhpInvokable(Context ctx, object target, params PhpValue[] arguments);
 
     /// <summary>
     /// Callable object representing callback to a routine.

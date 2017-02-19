@@ -4,6 +4,7 @@ using Pchp.Core;
 /// <summary>
 /// <see cref="Exception"/> is the base class for all Exceptions in PHP 5, and the base class for all user exceptions in PHP 7.
 /// </summary>
+[PhpType("Exception")]
 public class Exception : System.Exception, Throwable
 {
     protected string message;
@@ -24,25 +25,13 @@ public class Exception : System.Exception, Throwable
         this.code = code;
     }
 
-    public virtual int getCode()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual int getCode() => (int)this.code;
 
-    public virtual string getFile()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual string getFile() => this.file;
 
-    public virtual int getLine()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual int getLine() => this.line;
 
-    public virtual string getMessage()
-    {
-        throw new NotImplementedException();
-    }
+    public virtual string getMessage() => this.message;
 
     public virtual Throwable getPrevious()
     {

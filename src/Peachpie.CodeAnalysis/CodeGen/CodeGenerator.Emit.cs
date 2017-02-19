@@ -410,11 +410,17 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
         internal void EmitSequencePoint(Span span)
         {
-            if (_emitPdbSequencePoints && span.IsValid)
+            if (_emitPdbSequencePoints && span.IsValid && !span.IsEmpty)
             {
-                _il.DefineSequencePoint(
-                    _routine.ContainingFile.SyntaxTree,
-                    new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+                EmitSequencePoint(new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+            }
+        }
+
+        internal void EmitSequencePoint(Microsoft.CodeAnalysis.Text.TextSpan span)
+        {
+            if (_emitPdbSequencePoints && span.Length > 0)
+            {
+                _il.DefineSequencePoint(_routine.ContainingFile.SyntaxTree, span);
             }
         }
 
@@ -568,7 +574,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // + params.Length
                     variadic_place.EmitLoad(_il);
-                    EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+                    EmitArrayLength();
                     _il.EmitOpCode(ILOpCode.Add);
                 }
 
@@ -611,7 +617,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // <array>[i+N] = (T)params[i]
                     _il.EmitLocalLoad(tmparr);   // <array>
                     _il.EmitIntConstant(ps.Length);
-                    _il.EmitLocalLoad(tmpi);        
+                    _il.EmitLocalLoad(tmpi);
                     _il.EmitOpCode(ILOpCode.Add);
 
                     variadic_place.EmitLoad(_il);
@@ -634,7 +640,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitLocalLoad(tmpi);
                     variadic_place.EmitLoad(_il);
                     EmitArrayLength();
-                    _il.EmitBranch(ILOpCode.Blt, lbl_block);
+                    _il.EmitOpCode(ILOpCode.Clt);
+                    _il.EmitBranch(ILOpCode.Brtrue, lbl_block);
 
                     //
                     ReturnTemporaryLocal(tmpi);
@@ -668,7 +675,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal void EmitArrayLength()
         {
-            EmitCall(ILOpCode.Callvirt, (MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__get_Length));
+            EmitOpCode(ILOpCode.Ldlen);
+            EmitOpCode(ILOpCode.Conv_i4);
         }
 
         /// <summary>
@@ -927,16 +935,17 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on stack.</returns>
         internal TypeSymbol EmitMethodAccess(TypeSymbol stack, MethodSymbol method, BoundAccess access)
         {
-            // copy the value on stack if necessary
-            if (access.IsReadCopy)
-            {
-                stack = EmitDeepCopy(stack);
-            }
-
-            // cast -1 or null to false (CastToFalse)
+            // cast -1 or null to false (CastToFalse) 
+            // and copy the value on stack if necessary
             if (access.IsRead && method.CastToFalse)
             {
-                stack = EmitCastToFalse(stack);
+                // casts to false and copy the value
+                stack = EmitCastToFalse(stack, access.IsReadCopy);
+            }
+            else if (access.IsReadCopy)
+            {
+                // copy the value
+                stack = EmitDeepCopy(stack);
             }
 
             //
@@ -947,8 +956,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Converts <b>negative</b> number or <c>null</c> to <c>FALSE</c>.
         /// </summary>
         /// <param name="stack">Type of value on stack.</param>
+        /// <param name="deepcopy">Whether to deep copy returned non-FALSE value.</param>
         /// <returns>New type of value on stack.</returns>
-        internal TypeSymbol EmitCastToFalse(TypeSymbol stack)
+        internal TypeSymbol EmitCastToFalse(TypeSymbol stack, bool deepcopy)
         {
             if (stack.SpecialType == SpecialType.System_Boolean)
             {
@@ -959,9 +969,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var lblfalse = new NamedLabel("CastToFalse:FALSE");
             var lblend = new NamedLabel("CastToFalse:end");
-            
+
             _il.EmitOpCode(ILOpCode.Dup);   // <stack>
-            
+
             // emit branching to lblfalse
             if (stack.SpecialType == SpecialType.System_Int32)
             {
@@ -989,7 +999,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // test(<stack>) ? POP,FALSE : (PhpValue)<stack>
-            
+
+            if (deepcopy)
+            {
+                // DeepCopy(<stack>)
+                stack = EmitDeepCopy(stack, false);
+            }
             // (PhpValue)<stack>
             EmitConvertToPhpValue(stack, 0);
             _il.EmitBranch(ILOpCode.Br, lblend);
@@ -1405,6 +1420,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             var field = f.EnsureRoutineInfoField(_moduleBuilder);
 
+            this.EmitSequencePoint(((FunctionDecl)f.Syntax).HeadingSpan);
+
             // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
             new FieldPlace(null, field).EmitLoad(_il);
@@ -1418,6 +1435,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitDeclareType(SourceTypeSymbol t)
         {
             Debug.Assert(t != null);
+
+            // 
+            this.EmitSequencePoint(t.Syntax.HeadingSpan);
 
             // <ctx>.DeclareType<T>()
             EmitLoadContext();
@@ -1566,6 +1586,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitLoadDefault(TypeSymbol type, TypeRefMask typemask)
         {
+            Debug.Assert(type != null);
+
             switch (type.SpecialType)
             {
                 case SpecialType.System_Void:
@@ -1761,29 +1783,99 @@ namespace Pchp.CodeAnalysis.CodeGen
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Emits copy of value from top of the stack if necessary.
-        /// </summary>
-        public TypeSymbol EmitDeepCopy(TypeSymbol t)
+        public TypeSymbol EmitDeepCopy(TypeSymbol t, bool nullcheck)
         {
             if (IsCopiable(t))
             {
+                object lblnull = null;
+                if (nullcheck && t.IsReferenceType)
+                {
+                    if (nullcheck)
+                    {
+                        // ?.
+                        var lbltrue = new object();
+                        lblnull = new object();
+
+                        _il.EmitOpCode(ILOpCode.Dup);
+                        _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
+                        _il.EmitOpCode(ILOpCode.Pop);
+                        _il.EmitNullConstant();
+                        _il.EmitBranch(ILOpCode.Br, lblnull);
+                        _il.MarkLabel(lbltrue);
+                    }
+                }
+
                 if (t == CoreTypes.PhpValue)
                 {
                     EmitPhpValueAddr();
-                    return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+                    t = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
                 }
                 else if (t == CoreTypes.PhpString)
                 {
-                    return EmitCall(ILOpCode.Call, CoreMethods.PhpString.DeepCopy);
+                    t = EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.DeepCopy);
                 }
                 else if (t == CoreTypes.PhpArray)
                 {
-                    return EmitCall(ILOpCode.Call, CoreMethods.PhpArray.DeepCopy);
+                    t = EmitCall(ILOpCode.Callvirt, CoreMethods.PhpArray.DeepCopy);
+                }
+
+                //
+                if (lblnull != null)
+                {
+                    _il.MarkLabel(lblnull);
                 }
             }
 
             return t;
+        }
+
+        /// <summary>
+        /// Emits copy of value from top of the stack if necessary.
+        /// </summary>
+        public TypeSymbol EmitDeepCopy(TypeSymbol t, TypeRefMask thint = default(TypeRefMask))
+        {
+            if (IsCopiable(thint))
+            {
+                return EmitDeepCopy(t, thint.IsAnyType || thint.IsUninitialized || this.TypeRefContext.IsNull(thint));
+            }
+            else
+            {
+                return t;
+            }
+        }
+
+        /// <summary>
+        /// Emit dereference and deep copy if necessary.
+        /// </summary>
+        public TypeSymbol EmitReadCopy(TypeSymbol targetOpt, TypeSymbol type, TypeRefMask thint = default(TypeRefMask))
+        {
+            // dereference & copy
+
+            // if target type is not a copiable type, we don't have to perform deep copy since the result will be converted to a value anyway
+            var deepcopy = IsCopiable(thint) && (targetOpt == null || IsCopiable(targetOpt));
+            if (!deepcopy)
+            {
+                return type;
+            }
+
+            // dereference
+
+            if (type == CoreTypes.PhpValue)
+            {
+                // ref.GetValue().DeepCopy()
+                EmitPhpValueAddr();
+                type = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetValue);
+            }
+            else if (type == CoreTypes.PhpAlias)
+            {
+                // ref.Value.DeepCopy()
+                Emit_PhpAlias_GetValueAddr();
+                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+            }
+
+            // copy
+
+            return EmitDeepCopy(type);
         }
     }
 
@@ -1824,6 +1916,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(method);
             Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt || code == ILOpCode.Newobj);
+            Debug.Assert(!method.IsErrorMethod());
 
             var stack = method.GetCallStackBehavior();
 

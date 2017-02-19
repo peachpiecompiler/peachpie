@@ -39,6 +39,11 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public abstract PhpCallable PhpCallable { get; }
 
+        /// <summary>
+        /// Invokes the routine.
+        /// </summary>
+        public virtual PhpValue Invoke(Context ctx, object target, params PhpValue[] arguments) => PhpCallable(ctx, arguments);
+
         //ulong _aliasedParams; // bit field corresponding to parameters that are passed by reference
         //_routineFlags;    // routine requirements, accessibility
 
@@ -216,5 +221,7 @@ namespace Pchp.Core.Reflection
                 throw new NotSupportedException();
             }
         }
+
+        public override PhpValue Invoke(Context ctx, object target, params PhpValue[] arguments) => PhpInvokable(ctx, target, arguments);
     }
 }

@@ -29,25 +29,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
+
         //internal override ImmutableArray<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics
         //{
         //    get { return TypeParameters.Cast<TypeParameterSymbol, TypeSymbol>(); }
-        //}
-
-        //internal override bool HasTypeArgumentsCustomModifiers
-        //{
-        //    get
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        //internal override ImmutableArray<ImmutableArray<CustomModifier>> TypeArgumentsCustomModifiers
-        //{
-        //    get
-        //    {
-        //        return CreateEmptyTypeArgumentsCustomModifiers();
-        //    }
         //}
 
         public override NamedTypeSymbol ConstructedFrom
@@ -72,7 +60,7 @@ namespace Pchp.CodeAnalysis.Symbols
                    constructedFrom: constructedFrom, unbound: unbound)
         {
             bool hasTypeArgumentsCustomModifiers = false;
-            _typeArguments = typeArguments.SelectAsArray(a => 
+            _typeArguments = typeArguments.SelectAsArray(a =>
                                                             {
                                                                 if (!a.CustomModifiers.IsDefaultOrEmpty)
                                                                 {
@@ -102,6 +90,18 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 return _typeArguments;
             }
+        }
+
+        internal override bool HasTypeArgumentsCustomModifiers => _hasTypeArgumentsCustomModifiers;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal)
+        {
+            if (_hasTypeArgumentsCustomModifiers)
+            {
+                return TypeSubstitution.GetTypeArgumentsCustomModifiersFor(_constructedFrom.OriginalDefinition.TypeParameters[ordinal]);
+            }
+
+            return GetEmptyTypeArgumentCustomModifiers(ordinal);
         }
 
         //internal override ImmutableArray<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics

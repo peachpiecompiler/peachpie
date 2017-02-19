@@ -22,34 +22,34 @@ namespace Pchp.Library.PerlRegex
 {
     internal sealed class RegexParser
     {
-        internal RegexNode _stack;
-        internal RegexNode _group;
-        internal RegexNode _alternation;
-        internal RegexNode _concatenation;
-        internal RegexNode _unit;
+        RegexNode _stack;
+        RegexNode _group;
+        RegexNode _alternation;
+        RegexNode _concatenation;
+        RegexNode _unit;
 
-        internal string _pattern;
-        internal int _currentPos;
-        internal CultureInfo _culture;
+        string _pattern;
+        int _currentPos;
+        CultureInfo _culture;
 
-        internal int _autocap;
-        internal int _capcount;
-        internal int _captop;
-        internal int _capsize;
+        int _autocap;
+        int _capcount;
+        int _captop;
+        int _capsize;
 
-        internal Dictionary<int, int> _caps;
-        internal Dictionary<string, int> _capnames;
+        Dictionary<int, int> _caps;
+        Dictionary<string, int> _capnames;
 
-        internal int[] _capnumlist;
-        internal List<string> _capnamelist;
+        int[] _capnumlist;
+        List<string> _capnamelist;
 
-        internal RegexOptions _options;
-        internal List<RegexOptions> _optionsStack;
+        RegexOptions _options;
+        List<RegexOptions> _optionsStack;
 
-        internal bool _ignoreNextParen = false;
+        bool _ignoreNextParen = false;
 
-        internal const int MaxValueDiv10 = int.MaxValue / 10;
-        internal const int MaxValueMod10 = int.MaxValue % 10;
+        const int MaxValueDiv10 = int.MaxValue / 10;
+        const int MaxValueMod10 = int.MaxValue % 10;
 
         /*
          * This static call constructs a RegexTree from a regular expression
@@ -60,7 +60,7 @@ namespace Pchp.Library.PerlRegex
         internal static RegexTree Parse(string re, RegexOptions op)
         {
             int end;
-            var pcreOptions = TrimPcreRegexOption(re, out end);
+            op |= TrimPcreRegexOption(re, out end);
             var pattern = TrimDelimiters(re, end);
 
             RegexParser p;
@@ -81,7 +81,7 @@ namespace Pchp.Library.PerlRegex
             else
                 capnamelist = p._capnamelist.ToArray();
 
-            return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op, pcreOptions);
+            return new RegexTree(root, p._caps, p._capnumlist, p._captop, p._capnames, capnamelist, op);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Pchp.Library.PerlRegex
 
                 if (char.IsLetterOrDigit(end_delimiter) || end_delimiter == '\\')
                 {
-                    throw new ArgumentException("delimiter_alnum_backslash");
+                    throw new ArgumentException(Resources.LibResources.delimiter_alnum_backslash);
                 }
 
                 char start_delimiter;
@@ -115,7 +115,7 @@ namespace Pchp.Library.PerlRegex
                 {
                     i++;
                 }
-                
+
                 if (i < end)
                 {
                     if (re[i] == start_delimiter)
@@ -124,15 +124,13 @@ namespace Pchp.Library.PerlRegex
                     }
                     else
                     {
-                        throw new ArgumentException("preg_no_end_delimiter");
+                        throw new ArgumentException(string.Format(Resources.LibResources.preg_no_end_delimiter, start_delimiter));
                     }
                 }
             }
 
-            throw new ArgumentException("regular_expression_empty");
+            throw new ArgumentException(Resources.LibResources.regular_expression_empty);
         }
-
-        #region Options
 
         /// <summary>
         /// Trims PCRE options and gets new pattern end.
@@ -141,7 +139,7 @@ namespace Pchp.Library.PerlRegex
         /// <param name="pattern">Input pattern.</param>
         /// <param name="end">New pattern length.</param>
         /// <returns>PCRE options.</returns>
-        private static PerlRegexOptions TrimPcreRegexOption(string pattern, out int end)
+        private static RegexOptions TrimPcreRegexOption(string pattern, out int end)
         {
             // letters on right are PCRE options,
             // parse them and return new pattern end.
@@ -151,74 +149,29 @@ namespace Pchp.Library.PerlRegex
             Debug.Assert(pattern != null);
             end = pattern.Length;
 
-            PerlRegexOptions result = PerlRegexOptions.None;
+            RegexOptions result = RegexOptions.None;
 
             for (int i = pattern.Length - 1; i >= 0; i--)
             {
                 var ch = pattern[i];
                 if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
                 {
-                    result |= ParsePcreRegexOption(ch);
+                    result |= PcreOptionFromCode(ch);
                 }
                 else
                 {
-                    // reached a delimiter
-                    end = i + 1;
-                    return result;
+                    if (!char.IsWhiteSpace(ch)) // ignore trailing whitespaces
+                    {
+                        // reached a delimiter
+                        end = i + 1;
+                        return result;
+                    }
                 }
             }
 
             // invalid regex, we didn't reach a delimiter
-            return PerlRegexOptions.None;
+            return RegexOptions.None;
         }
-
-        /// <summary>
-        /// Gets PCRE option value.
-        /// </summary>
-        public static PerlRegexOptions ParsePcreRegexOption(char option)
-        {
-            Debug.Assert(char.IsLetter(option));
-            switch (option)
-            {
-                case 'i': // PCRE_CASELESS
-                    return PerlRegexOptions.PCRE_CASELESS;
-
-                case 'm': // PCRE_MULTILINE
-                    return PerlRegexOptions.PCRE_MULTILINE;
-
-                case 's': // PCRE_DOTALL
-                    return PerlRegexOptions.PCRE_DOTALL;
-
-                case 'x': // PCRE_EXTENDED
-                    return PerlRegexOptions.PCRE_EXTENDED;
-
-                //case 'e': // PREG_REPLACE_EVAL // deprecated as of PHP 7.0
-                //    return PerlRegexOptions.PREG_REPLACE_EVAL;
-
-                case 'A': // PCRE_ANCHORED
-                    return PerlRegexOptions.PCRE_ANCHORED;
-
-                case 'D': // PCRE_DOLLAR_ENDONLY
-                    return PerlRegexOptions.PCRE_DOLLAR_ENDONLY;
-
-                case 'S': // spend more time studying the pattern - ignore
-                    return PerlRegexOptions.PCRE_S;
-
-                case 'U': // PCRE_UNGREEDY
-                    return PerlRegexOptions.PCRE_UNGREEDY;
-
-                case 'u': // PCRE_UTF8
-                    return PerlRegexOptions.PCRE_UTF8;
-
-                case 'X': // PCRE_EXTRA
-                    return PerlRegexOptions.PCRE_EXTRA;
-
-                default:
-                    return PerlRegexOptions.Unknown;
-            }
-        }
-
-        #endregion
 
         /*
          * This static call constructs a flat concatenation node given
@@ -547,19 +500,13 @@ namespace Pchp.Library.PerlRegex
                 {
                     int min;
                     int max;
-                    bool lazy;
+                    bool lazy, possessive;
 
                     switch (ch)
                     {
                         case '*':
                             min = 0;
                             max = int.MaxValue;
-
-                            if (CharsRight() > 0 && RightChar() == '+')
-                            {
-                                MoveRight();    // TODO: possesive quantifier
-                            }
-
                             break;
 
                         case '?':
@@ -570,12 +517,6 @@ namespace Pchp.Library.PerlRegex
                         case '+':
                             min = 1;
                             max = int.MaxValue;
-
-                            if (CharsRight() > 0 && RightChar() == '+')
-                            {
-                                MoveRight();    // TODO: possesive quantifier
-                            }
-
                             break;
 
                         case '{':
@@ -601,7 +542,6 @@ namespace Pchp.Library.PerlRegex
                                     goto ContinueOuterScan;
                                 }
                             }
-
                             break;
 
                         default:
@@ -610,18 +550,30 @@ namespace Pchp.Library.PerlRegex
 
                     ScanBlank();
 
-                    if (CharsRight() == 0 || RightChar() != '?')
-                        lazy = false;
-                    else
+                    lazy = CharsRight() != 0 && RightChar() == '?';
+                    possessive = CharsRight() != 0 && RightChar() == '+';
+
+                    if (lazy || possessive)
                     {
                         MoveRight();
-                        lazy = true;
+                    }
+
+                    if (UseOptionUngreedy() && !possessive)
+                    {
+                        /* This modifier inverts the "greediness" of the quantifiers so that they are not greedy by default, but become greedy if followed by '?'.
+                         * It is not compatible with Perl.
+                         * It can also be set by a(?U) modifier setting within the pattern or by a question mark behind a quantifier(e.g. .*?).
+                         */
+
+                        lazy = !lazy;
                     }
 
                     if (min > max)
+                    {
                         throw MakeException(SR.IllegalRange);
+                    }
 
-                    AddConcatenate(lazy, min, max);
+                    AddConcatenate(lazy, possessive, min, max);
                 }
 
                 ContinueOuterScan:
@@ -893,10 +845,27 @@ namespace Pchp.Library.PerlRegex
 
             MoveRight();
 
+            // In perl regexps, named groups are written like this: "(?P<name> ... )"
+            //  (\k<name>...)
+            //  (\k'name'...)
+            //  (\k{name}...)
+            //  (\g{name}...)
+            //  (?'name'...)
+            //  (?<name>...)
+            //  (?P=name)
+            //  (?:...)
+
+            if (CharsRight() >= 4 /*P<>)*/ && RightChar() == 'P' && RightChar(1) == '<') // (?P<name> // named group
+            {
+                MoveRight();    // skip 'P' in (?P<name>, continue as it would be (?<name>
+            }
+
             for (;;)
             {
                 if (CharsRight() == 0)
+                {
                     break;
+                }
 
                 switch (ch = MoveRightGetChar())
                 {
@@ -1029,6 +998,7 @@ namespace Pchp.Library.PerlRegex
 
                                 if ((capnum != -1 || uncapnum != -1) && CharsRight() > 0 && MoveRightGetChar() == close)
                                 {
+                                    _autocap++;
                                     return new RegexNode(RegexNode.Capture, _options, capnum, uncapnum);
                                 }
                                 goto BreakRecognize;
@@ -1558,6 +1528,59 @@ namespace Pchp.Library.PerlRegex
             return i;
         }
 
+        /// <summary>
+        /// Scans hex digits enclosed in curly braces or scans two hexadecimal digits.
+        /// Parsing starts at opening curly brace and ends after the right curly brace.
+        /// </summary>
+        /// <returns>Unicode character.</returns>
+        char ScanHex2OrEnclosed()
+        {
+            if (CharsRight() >= 2)  // we need at least 2 characters
+            {
+                int d;
+                int i = 0;
+
+                var ch = MoveRightGetChar();
+                if (ch == '{')  // {FFFF}
+                {
+                    if (!UseOptionUtf8())
+                    {
+                        // TODO: this should only be allowed with this option
+                    }
+
+                    // scan 1 - 4 hex digits
+                    int c = 0;
+                    for (; c < 4 && CharsRight() != 0; c++)
+                    {
+                        ch = MoveRightGetChar();
+                        d = HexDigit(ch);
+                        if (d >= 0)
+                        {
+                            i *= 0x10;
+                            i += d;
+                        }
+                        else
+                        {
+                            MoveLeft();
+                            break;
+                        }
+                    }
+
+                    if (c != 0 && CharsRight() != 0 && MoveRightGetChar() == '}')
+                    {
+                        return (char)i;
+                    }
+                }
+                else
+                {
+                    MoveLeft();
+                    return ScanHex(2);
+                }
+            }
+
+            throw MakeException(SR.TooFewHex);
+        }
+
         /*
          * Scans exactly c hex digits (c=2 for \xFF, c=4 for \uFFFF)
          */
@@ -1689,7 +1712,7 @@ namespace Pchp.Library.PerlRegex
             switch (ch)
             {
                 case 'x':
-                    return ScanHex(2);
+                    return ScanHex2OrEnclosed();    // /xFF or /x{FFFF}
                 case 'u':
                     return ScanHex(4);
                 case 'a':
@@ -1774,11 +1797,17 @@ namespace Pchp.Library.PerlRegex
             }
         }
 
-        /*
-         * Returns option bit from single-char (?cimsx) code.
-         */
+        /// <summary>
+        /// Returns option bit from single-char (?cimsx) code.
+        /// </summary>
         internal static RegexOptions OptionFromCode(char ch)
         {
+            switch (ch)
+            {
+                case 'U':
+                    return RegexOptions.PCRE_UNGREEDY;
+            }
+
             // case-insensitive
             if (ch >= 'A' && ch <= 'Z')
                 ch += (char)('a' - 'A');
@@ -1803,7 +1832,57 @@ namespace Pchp.Library.PerlRegex
 #endif
                 case 'e':
                     return RegexOptions.ECMAScript;
+
                 default:
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// Gets PCRE option value.
+        /// </summary>
+        /// <param name="option">PCRE option character. Case sensitive.</param>
+        public static RegexOptions PcreOptionFromCode(char option)
+        {
+            Debug.Assert(char.IsLetter(option));
+
+            switch (option)
+            {
+                case 'i': // PCRE_CASELESS
+                    return RegexOptions.PCRE_CASELESS;
+
+                case 'm': // PCRE_MULTILINE
+                    return RegexOptions.PCRE_MULTILINE;
+
+                case 's': // PCRE_DOTALL
+                    return RegexOptions.PCRE_DOTALL;
+
+                case 'x': // PCRE_EXTENDED
+                    return RegexOptions.PCRE_EXTENDED;
+
+                //case 'e': // PREG_REPLACE_EVAL // deprecated as of PHP 7.0
+                //    return PerlRegexOptions.PREG_REPLACE_EVAL;
+
+                case 'A': // PCRE_ANCHORED
+                    return RegexOptions.PCRE_ANCHORED;
+
+                case 'D': // PCRE_DOLLAR_ENDONLY
+                    return RegexOptions.PCRE_DOLLAR_ENDONLY;
+
+                case 'S': // spend more time studying the pattern - ignore
+                    return RegexOptions.PCRE_S;
+
+                case 'U': // PCRE_UNGREEDY
+                    return RegexOptions.PCRE_UNGREEDY;
+
+                case 'u': // PCRE_UTF8
+                    return RegexOptions.PCRE_UTF8;
+
+                case 'X': // PCRE_EXTRA
+                    return RegexOptions.PCRE_EXTRA;
+
+                default:
+                    Core.PhpException.Throw(Core.PhpError.Notice, Resources.LibResources.modifier_unknown, option.ToString());
                     return 0;
             }
         }
@@ -1862,6 +1941,10 @@ namespace Pchp.Library.PerlRegex
                                 // we have (?...
                                 MoveRight();
 
+                                // (?P // skip optional 'P'
+                                if (CharsRight() > 0 && RightChar() == 'P')
+                                    MoveRight();
+
                                 if (CharsRight() > 1 && (RightChar() == '<' || RightChar() == '\''))
                                 {
                                     // named group: (?<... or (?'...
@@ -1874,9 +1957,14 @@ namespace Pchp.Library.PerlRegex
                                         //if (_ignoreNextParen)
                                         //    throw MakeException(SR.AlternationCantCapture);
                                         if (ch >= '1' && ch <= '9')
+                                        {
                                             NoteCaptureSlot(ScanDecimal(), pos);
+                                        }
                                         else
-                                            NoteCaptureName(ScanCapname(), pos);
+                                        {
+                                            NoteCaptureName(ScanCapname(), _autocap);
+                                            NoteCaptureSlot(_autocap++, pos);
+                                        }
                                     }
                                 }
                                 else
@@ -1980,14 +2068,14 @@ namespace Pchp.Library.PerlRegex
             {
                 for (int i = 0; i < _capnamelist.Count; i++)
                 {
-                    while (IsCaptureSlot(_autocap))
-                        _autocap++;
-                    string name = _capnamelist[i];
-                    int pos = (int)_capnames[name];
-                    _capnames[name] = _autocap;
-                    NoteCaptureSlot(_autocap, pos);
+                    //while (IsCaptureSlot(_autocap))
+                    //    _autocap++;
+                    //string name = _capnamelist[i];
+                    //int pos = (int)_capnames[name];
+                    //_capnames[name] = _autocap;
+                    //NoteCaptureSlot(_autocap, pos);
 
-                    _autocap++;
+                    //_autocap++;
                 }
             }
 
@@ -2125,6 +2213,16 @@ namespace Pchp.Library.PerlRegex
         internal bool UseOptionE()
         {
             return (_options & RegexOptions.ECMAScript) != 0;
+        }
+
+        internal bool UseOptionUngreedy()
+        {
+            return (_options & RegexOptions.PCRE_UNGREEDY) != 0;
+        }
+
+        internal bool UseOptionUtf8()
+        {
+            return (_options & RegexOptions.PCRE_UTF8) != 0;
         }
 
         internal const byte Q = 5;    // quantifier
@@ -2332,9 +2430,18 @@ namespace Pchp.Library.PerlRegex
         /*
          * Finish the current quantifiable (when a quantifier is found)
          */
-        internal void AddConcatenate(bool lazy, int min, int max)
+        internal void AddConcatenate(bool lazy, bool possessive, int min, int max)
         {
-            _concatenation.AddChild(_unit.MakeQuantifier(lazy, min, max));
+            Debug.Assert(!(lazy && possessive));
+
+            var child = _unit.MakeQuantifier(lazy, min, max);
+
+            if (possessive)
+            {
+                child = child.MakePossessive();
+            }
+
+            _concatenation.AddChild(child);
             _unit = null;
         }
 

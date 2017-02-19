@@ -231,7 +231,7 @@ namespace Pchp.Library
                     resultPath = path.Substring(_ctx.WorkingDirectory.Length + 1);
                 }
 
-                if (Directory.Exists(path))
+                if (System.IO.Directory.Exists(path))
                 {
                     if (Mark)
                         _result.Add(resultPath + Path.DirectorySeparatorChar.ToString());
@@ -319,7 +319,7 @@ namespace Pchp.Library
                 try
                 {
 
-                    foreach (string file in Directory.GetFileSystemEntries(baseDirectory, "*"))
+                    foreach (string file in System.IO.Directory.GetFileSystemEntries(baseDirectory, "*"))
                     {
                         string objectName = Path.GetFileName(file);
                         if (fnmatch(dirSegment, objectName, _fnMatchFlags))

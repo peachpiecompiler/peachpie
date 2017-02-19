@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -21,6 +22,11 @@ namespace Pchp.Core.Reflection
         /// Filled lazily. Cannot be <c>null</c>.
         /// </summary>
         readonly Dictionary<string, ICollection<ClrRoutineInfo>>/*!*/_routinesByExtension = new Dictionary<string, ICollection<ClrRoutineInfo>>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// Set of <see cref="PhpExtensionAttribute.Registrator"/> values being instantiated to avoid repetitious initializations.
+        /// </summary>
+        readonly HashSet<RuntimeTypeHandle>/*!*/_touchedRegistrators = new HashSet<RuntimeTypeHandle>();
 
         /// <summary>
         /// Assemblies already processed.
@@ -75,10 +81,14 @@ namespace Pchp.Core.Reflection
         {
             if (AddAssembly(ass.GetName()))
             {
-                var attr = ass.GetCustomAttribute<PhpExtensionAttribute>();
-                if (attr != null)
+                var attrs = ass.GetCustomAttributes<PhpExtensionAttribute>();
+                if (attrs != null)
                 {
-                    EnsureExtensions(attr.Extensions);
+                    foreach (var attr in attrs)
+                    {
+                        EnsureExtensions(attr.Extensions);
+                        VisitExtensionAttribute(attr);
+                    }
                 }
             }
         }
@@ -99,10 +109,14 @@ namespace Pchp.Core.Reflection
                 var tinfo = m.DeclaringType.GetTypeInfo();
 
                 //
-                var attr = tinfo.GetCustomAttribute<PhpExtensionAttribute>();
-                if (attr != null)
+                var attrs = tinfo.GetCustomAttributes<PhpExtensionAttribute>();
+                if (attrs != null)
                 {
-                    AddRoutine(attr, routine);
+                    foreach (var attr in attrs)
+                    {
+                        AddRoutine(attr, routine);
+                        VisitExtensionAttribute(attr);
+                    }
                 }
 
                 //
@@ -154,6 +168,13 @@ namespace Pchp.Core.Reflection
             return routines;
         }
 
-
+        void VisitExtensionAttribute(PhpExtensionAttribute attr)
+        {
+            if (attr.Registrator != null && _touchedRegistrators.Add(attr.Registrator.TypeHandle))
+            {
+                Activator.CreateInstance(attr.Registrator);
+                Debug.WriteLine($"Object of type {attr.Registrator.FullName} has been activated.");
+            }
+        }
     }
 }

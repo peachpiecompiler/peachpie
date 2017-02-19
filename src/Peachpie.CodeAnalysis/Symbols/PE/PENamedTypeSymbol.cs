@@ -25,8 +25,20 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets fully qualified name of the class.
         /// </summary>
-        public QualifiedName FullName => new QualifiedName(new Name(_name), _ns.Split('.').Select(s => new Name(s)).ToArray(), true);
+        public QualifiedName FullName
+        {
+            get
+            {
+                var phpname = this.GetPhpTypeNameOrNull();
+                if (phpname.IsEmpty())
+                {
+                    phpname = new QualifiedName(new Name(_name), _ns.Split('.').Select(s => new Name(s)).ToArray(), true);
+                }
 
+                return phpname;
+            }
+        }
+        
         /// <summary>
         /// Optional.
         /// A field holding a reference to current runtime context.
@@ -88,10 +100,9 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Optional.
-        /// A method <c>.phpnew</c> that ensures the initialization of the class without calling the base type constructor.
+        /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the type PHP constructor.
         /// </summary>
-        public MethodSymbol InitializeInstanceMethod => GetMembers(WellKnownPchpNames.PhpNewMethodName).OfType<MethodSymbol>().SingleOrDefault();
+        public MethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
 
         /// <summary>
         /// Optional.
@@ -434,6 +445,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly TypeDefinitionHandle _handle;
         readonly NamespaceOrTypeSymbol _container;
         readonly TypeAttributes _flags;
+
+        ImmutableArray<AttributeData> _lazyCustomAttributes;
         readonly string _name;
         string _ns;
         readonly SpecialType _corTypeId;
@@ -610,11 +623,25 @@ namespace Pchp.CodeAnalysis.Symbols
             throw new NotImplementedException();
         }
 
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            if (_lazyCustomAttributes.IsDefault)
+            {
+                this.ContainingPEModule.LoadCustomAttributes(this.Handle, ref _lazyCustomAttributes);
+            }
+
+            return _lazyCustomAttributes;
+        }
+
         public override SpecialType SpecialType => _corTypeId;
 
         public override string Name => _name;
 
         public override string NamespaceName => _ns;
+
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
 
         internal PEModuleSymbol ContainingPEModule
         {
@@ -881,7 +908,10 @@ namespace Pchp.CodeAnalysis.Symbols
             ImmutableArray<Symbol> m;
             if (!_lazyMembersByName.TryGetValue(name, out m))
             {
-                m = ImmutableArray<Symbol>.Empty;
+                if (!ignoreCase || !_lazyMembersByName.TryGetValue(name.ToLowerInvariant(), out m))
+                {
+                    m = ImmutableArray<Symbol>.Empty;
+                }
             }
 
             // nested types are not common, but we need to check just in case

@@ -42,6 +42,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override int Arity => 0;
 
+        internal override bool HasTypeArgumentsCustomModifiers => false;
+
+        public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
+
         public override NamedTypeSymbol BaseType => DeclaringCompilation.CoreTypes.Object;
 
         public override Symbol ContainingSymbol => _class;
