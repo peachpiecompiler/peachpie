@@ -18,13 +18,19 @@ namespace Peachpie.NETCore.Compiler.Tools
         /// <param name="args">Arguments passed from <c>dotnet build</c>.</param>
         public static int Main(string[] args)
         {
-            var rspfile = CreateRspFile(args);
+            string rspfile = CreateRspFile(args);
+
+            string sdkdir = null;
+#if NET46
+            sdkdir = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
+#endif
+            string libs = Environment.GetEnvironmentVariable("LIB") + @";C:\Windows\Microsoft.NET\assembly\GAC_MSIL";
 
             // compile
-            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, new[] { "@" + rspfile }, null, System.IO.Directory.GetCurrentDirectory(), null, null, new SimpleAnalyzerAssemblyLoader(), Console.Out);
+            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, new[] { "@" + rspfile }, null, System.IO.Directory.GetCurrentDirectory(), sdkdir, libs, new SimpleAnalyzerAssemblyLoader(), Console.Out);
         }
 
-        #region ProcessArguments
+#region ProcessArguments
 
         // TODO: CommonCompilerOptionsCommandLine:
 
@@ -155,9 +161,9 @@ namespace Peachpie.NETCore.Compiler.Tools
             }
         }
 
-        #endregion
+#endregion
 
-        #region SimpleAnalyzerAssemblyLoader (NotImplementedException)
+#region SimpleAnalyzerAssemblyLoader (NotImplementedException)
 
         class SimpleAnalyzerAssemblyLoader : Microsoft.CodeAnalysis.IAnalyzerAssemblyLoader
         {
@@ -172,6 +178,6 @@ namespace Peachpie.NETCore.Compiler.Tools
             }
         }
 
-        #endregion
+#endregion
     }
 }
