@@ -45,16 +45,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         internal override void Emit(CodeGenerator cg)
         {
+            cg.Builder.DefineInitialHiddenSequencePoint();
+
             // first brace sequence point
             var body = cg.Routine.Syntax.BodySpanOrInvalid();
             if (body.IsValid && cg.IsDebug)
             {
                 cg.EmitSequencePoint(new Span(body.Start, 1));
                 cg.EmitOpCode(ILOpCode.Nop);
-            }
-            else
-            {
-                cg.Builder.DefineInitialHiddenSequencePoint();
             }
 
             //

@@ -50,10 +50,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Contract.ThrowIfNull(Condition);
 
-            cg.EmitSequencePoint(this.Condition.PhpSyntax);
-
             if (IsLoop) // perf
             {
+                cg.Builder.DefineHiddenSequencePoint();
                 cg.Builder.EmitBranch(ILOpCode.Br, this.Condition);
 
                 // {
@@ -432,7 +431,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var lblBody = new object();
 
             //
-            cg.EmitSequencePoint(_moveSpan);
+            cg.Builder.DefineHiddenSequencePoint();
             cg.Builder.EmitBranch(ILOpCode.Br, lblMoveNext);
             cg.Builder.MarkLabel(lblBody);
 

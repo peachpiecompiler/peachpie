@@ -296,6 +296,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             _emitPdbSequencePoints = emittingPdb;
 
             _routine = routine;
+
+            if (routine != null)
+            {
+                il.SetInitialDebugDocument(routine.ContainingFile.SyntaxTree);
+            }
         }
 
         /// <summary>
