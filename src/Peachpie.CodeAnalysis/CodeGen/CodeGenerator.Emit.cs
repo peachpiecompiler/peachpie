@@ -518,13 +518,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void Emit_NewArray(TypeSymbol elementType, BoundExpression[] values)
         {
-            _il.EmitIntConstant(values.Length);
-            _il.EmitOpCode(ILOpCode.Newarr);
-            EmitSymbolToken(elementType, null);
-
             if (values.Length != 0)
             {
-                // new []{ argI, ..., argN }
+                // new []
+                _il.EmitIntConstant(values.Length);
+                _il.EmitOpCode(ILOpCode.Newarr);
+                EmitSymbolToken(elementType, null);
+
+                // { argI, ..., argN }
                 for (int i = 0; i < values.Length; i++)
                 {
                     _il.EmitOpCode(ILOpCode.Dup);   // <array>
@@ -537,8 +538,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 // empty array
-                // TODO: use static singleton
+                Emit_EmptyArray(elementType);
             }
+        }
+
+        void Emit_EmptyArray(TypeSymbol elementType)
+        {
+            var array_empty_T = ((MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__Empty))
+                .Construct(elementType);
+
+            EmitCall(ILOpCode.Call, array_empty_T);
         }
 
         /// <summary>
@@ -816,7 +825,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Debug.Assert(p.Type.IsArray());
 
                     // wrap remaining arguments to array
-                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).ToArray() : new BoundExpression[0];
+                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).ToArray() : Array.Empty<BoundExpression>();
                     arg_index += values.Length;
                     Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
                     break;  // p is last one
