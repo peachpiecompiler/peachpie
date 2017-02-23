@@ -127,8 +127,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // variadic (result[])
             if (_syntax.IsVariadic)
             {
-                // result = ArraySZSymbol.FromElement(result);
-                throw new NotImplementedException();
+                result = ArrayTypeSymbol.CreateSZArray(this.ContainingAssembly, result);
             }
 
             //

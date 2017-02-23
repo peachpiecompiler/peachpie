@@ -689,6 +689,69 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Builds <c>PhpArray</c> out from <c>System.Array</c>.
+        /// </summary>
+        public TypeSymbol ArrayToPhpArray(IPlace arrplace, bool deepcopy = false)
+        {
+            var tmparr = GetTemporaryLocal(CoreTypes.PhpArray);
+            var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+
+            // Template: tmparr = new PhpArray(arrplace.Length)
+            arrplace.EmitLoad(_il);
+            EmitArrayLength();
+            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray_int);
+            _il.EmitLocalStore(tmparr);
+
+            // Template: for (i = 0; i < params.Length; i++) <phparr>.Add(arrplace[i])
+
+            var lbl_block = new object();
+            var lbl_cond = new object();
+
+            // i = 0
+            var tmpi = GetTemporaryLocal(CoreTypes.Int32);
+            _il.EmitIntConstant(0);
+            _il.EmitLocalStore(tmpi);
+            _il.EmitBranch(ILOpCode.Br, lbl_cond);
+
+            // {body}
+            _il.MarkLabel(lbl_block);
+
+            // <array>.Add((T)arrplace[i])
+            _il.EmitLocalLoad(tmparr);   // <array>
+            
+            arrplace.EmitLoad(_il);
+            _il.EmitLocalLoad(tmpi);
+            _il.EmitOpCode(ILOpCode.Ldelem);
+            EmitSymbolToken(arr_element, null);
+            var t = (deepcopy) ? EmitDeepCopy(arr_element, true) : arr_element;
+            EmitConvert(t, 0, CoreTypes.PhpValue);    // (PhpValue)arrplace[i]
+
+            EmitPop(EmitCall(ILOpCode.Call, CoreMethods.PhpArray.Add_PhpValue));    // <array>.Add( value )
+
+            // i++
+            _il.EmitLocalLoad(tmpi);
+            _il.EmitIntConstant(1);
+            _il.EmitOpCode(ILOpCode.Add);
+            _il.EmitLocalStore(tmpi);
+
+            // i < params.Length
+            _il.MarkLabel(lbl_cond);
+            _il.EmitLocalLoad(tmpi);
+            arrplace.EmitLoad(_il);
+            EmitArrayLength();
+            _il.EmitOpCode(ILOpCode.Clt);
+            _il.EmitBranch(ILOpCode.Brtrue, lbl_block);
+
+            //
+            ReturnTemporaryLocal(tmpi);
+            ReturnTemporaryLocal(tmparr);
+
+            //
+            _il.EmitLocalLoad(tmparr);
+            return (TypeSymbol)tmparr.Type;
+        }
+
         public void EmitUnset(BoundReferenceExpression expr)
         {
             Debug.Assert(expr != null);
