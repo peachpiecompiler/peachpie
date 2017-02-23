@@ -516,6 +516,30 @@ namespace Pchp.CodeAnalysis.CodeGen
             return CoreTypes.PhpValue;
         }
 
+        /// <summary>
+        /// Creates new empty <c>PhpArray</c> where modifications are not expected.
+        /// </summary>
+        public TypeSymbol Emit_PhpArray_NewEmpty()
+        {
+            // PhpArray.NewEmpty()
+            var t = CoreTypes.PhpArray.Symbol;
+            return EmitCall(ILOpCode.Call, (MethodSymbol)t.GetMembers("NewEmpty").Single());
+        }
+
+        /// <summary>
+        /// Emits LOAD of <c>PhpArray.Empty</c> fields.
+        /// The loaded value must not be modified, use only in read-only context.
+        /// </summary>
+        public TypeSymbol Emit_PhpArray_Empty()
+        {
+            // PhpArray.Empty
+            Builder.EmitOpCode(ILOpCode.Ldsfld);
+            EmitSymbolToken(CoreMethods.PhpArray.Empty, null);
+
+            return CoreMethods.PhpArray.Empty.Symbol.Type
+                .Expect(CoreTypes.PhpArray);
+        }
+
         public void Emit_NewArray(TypeSymbol elementType, BoundExpression[] values)
         {
             if (values.Length != 0)

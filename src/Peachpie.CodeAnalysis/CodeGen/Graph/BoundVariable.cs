@@ -196,7 +196,7 @@ namespace Pchp.CodeAnalysis.Semantics
                             cg.EmitDeepCopy(cg.CoreTypes.PhpValue);
                         }
 
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
                     }
 
                     //

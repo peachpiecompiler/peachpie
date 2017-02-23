@@ -2093,7 +2093,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // LOAD default<T> // = NULL
                 var t = boundtarget.TypeOpt ?? cg.CoreTypes.PhpValue;
                 cg.EmitLoadDefault(t, 0);
-                
+
                 // STORE vars[i]
                 boundtarget.EmitStore(cg, t);
             }
@@ -2607,9 +2607,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                // PhpArray.Empty
-                cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
-                cg.EmitSymbolToken(cg.CoreMethods.PhpArray.Empty, null);
+                cg.Emit_PhpArray_Empty();
             }
         }
 
@@ -2639,8 +2637,7 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 // PhpArray.Empty
-                cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
-                cg.EmitSymbolToken(cg.CoreMethods.PhpArray.Empty, null);
+                cg.Emit_PhpArray_Empty();
             }
         }
     }
@@ -3057,7 +3054,11 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            // TODO: _items.Length == 0 => PhpArray.NewEmpty()
+            if (_items.Length == 0)
+            {
+                // PhpArray.NewEmpty()
+                return cg.Emit_PhpArray_NewEmpty();
+            }
 
             // new PhpArray(count)
             cg.Builder.EmitIntConstant(_items.Length);
@@ -3075,27 +3076,19 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitIntStringKey(x.Key);
                 }
 
-                // value | alias
+                // value
                 Debug.Assert(x.Value != null);
-
-                var byref = x.Value.Access.IsReadRef;
-                var valuetype = byref ? cg.CoreTypes.PhpAlias : cg.CoreTypes.PhpValue;
-                cg.EmitConvert(x.Value, valuetype);
+                cg.EmitConvert(x.Value, cg.CoreTypes.PhpValue);
 
                 if (x.Key != null)
                 {
-                    if (byref)  // .SetItemAlias( key, PhpAlias )
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
-                    else   // .SetItemValue( key, PhpValue )
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
+                    // <stack>.Add(key, value)
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
                 }
                 else
                 {
-                    if (byref)  // PhpValue.Create( PhpAlias )
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
-
-                    // .AddValue( PhpValue )
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                    // <stack>.Add(value) : int
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
                 }
             }
 
@@ -3227,9 +3220,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.Builder.EmitBranch(ILOpCode.Brtrue, lbl_notnull);
 
                     cg.Builder.EmitOpCode(ILOpCode.Pop);
-                    cg.Builder.EmitOpCode(ILOpCode.Ldsfld);
-                    cg.EmitSymbolToken(cg.CoreMethods.PhpArray.Empty, null);
-                    cg.EmitCastClass(cg.CoreMethods.PhpArray.Empty.Symbol.Type, t);
+                    cg.EmitCastClass(cg.Emit_PhpArray_Empty(), t);
 
                     cg.Builder.MarkLabel(lbl_notnull);
                 }
@@ -3304,7 +3295,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var tmp_type = (TypeSymbol)tmp.Type;
                     cg.EmitConvertToPhpValue(tmp_type, 0);
 
-                    if (isphparr) cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                    if (isphparr) cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
                     else cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
 
                     //
@@ -3514,7 +3505,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Create_PhpAlias);
 
                         if (isphparr)
-                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                            cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
                         else
                             cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
                     }
@@ -3547,7 +3538,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     else
                     {
                         if (isphparr)
-                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.AddValue_PhpValue);
+                            cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_PhpValue));
                         else
                             cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
                     }

@@ -974,7 +974,7 @@ namespace Pchp.Core
 
                 if (nextNewIndex < 0) RefreshMaxIntegerKeyInternal();
                 AddToEnd(value);
-                return 1;
+                return this.nextNewIndex;
             }
             //return 0;
         }

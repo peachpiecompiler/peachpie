@@ -821,12 +821,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 SetItemValue_IntStringKey_PhpValue = t.Method("SetItemValue", ct.IntStringKey, ct.PhpValue);
                 SetItemAlias_IntStringKey_PhpAlias = t.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
-                AddValue_PhpValue = t.Method("AddValue", ct.PhpValue);
 
                 EnsureItemObject_IntStringKey = t.Method("EnsureItemObject", ct.IntStringKey);
                 EnsureItemArray_IntStringKey = t.Method("EnsureItemArray", ct.IntStringKey);
                 EnsureItemAlias_IntStringKey = t.Method("EnsureItemAlias", ct.IntStringKey);
 
+                Add_PhpValue = ct.PhpHashtable.Method("Add", ct.PhpValue);
                 Add_IntStringKey_PhpValue = ct.PhpHashtable.Method("Add", ct.IntStringKey, ct.PhpValue);
 
                 New_PhpValue = t.Method("New", ct.PhpValue);
@@ -839,7 +839,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToClass, ToString_Context, ToBoolean,
                 RemoveKey_IntStringKey,
                 GetItemValue_IntStringKey,
-                SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
+                SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, Add_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy, GetForeachEnumerator_Boolean,
                 Add_IntStringKey_PhpValue,
