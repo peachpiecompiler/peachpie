@@ -591,7 +591,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var variadic_element = (variadic?.Type as ArrayTypeSymbol)?.ElementType;
             var variadic_place = variadic != null ? new ParamPlace(variadic) : null;
 
-            ps = ps.Where(p => !p.IsImplicitlyDeclared).ToImmutableArray();  // parameters without implicitly declared parameters
+            ps = ps.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();  // parameters without implicitly declared parameters
 
             if (ps.Length == 0 && variadic_element == elementType)
             {
