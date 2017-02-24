@@ -472,6 +472,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitOpCode(ILOpCode.Conv_r8);   // Int64 -> Double
                     return dtype;
 
+                case SpecialType.System_Single:
+                    _il.EmitOpCode(ILOpCode.Conv_r8);   // float -> Double
+                    return dtype;
+
                 case SpecialType.System_Double:
                     // nop
                     return dtype;

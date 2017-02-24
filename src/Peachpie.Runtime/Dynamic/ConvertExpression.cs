@@ -48,6 +48,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(long)) return BindToLong(arg);
             if (target == typeof(int)) return Expression.Convert(BindToLong(arg), target);
             if (target == typeof(double)) return BindToDouble(arg);
+            if (target == typeof(float)) return Expression.Convert(BindToDouble(arg), target);  // (float)double
             if (target == typeof(string)) return BindToString(arg, ctx);
             if (target == typeof(bool)) return BindToBool(arg);
             if (target == typeof(PhpNumber)) return BindToNumber(arg);
