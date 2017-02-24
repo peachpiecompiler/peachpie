@@ -416,7 +416,7 @@ namespace Pchp.CodeAnalysis
 
         protected override IPointerTypeSymbol CommonCreatePointerTypeSymbol(ITypeSymbol elementType)
         {
-            throw new NotImplementedException();
+            return new PointerTypeSymbol((TypeSymbol)elementType);
         }
 
         protected override ISymbol CommonGetAssemblyOrModuleSymbol(MetadataReference reference)

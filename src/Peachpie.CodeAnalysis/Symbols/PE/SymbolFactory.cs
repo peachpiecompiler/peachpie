@@ -49,8 +49,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return type;
             }
 
-            throw new NotImplementedException();
-            //return new PointerTypeSymbol(type, CSharpCustomModifier.Convert(customModifiers));
+            return new PointerTypeSymbol(type, CSharpCustomModifier.Convert(customModifiers));
         }
 
         internal override TypeSymbol GetEnumUnderlyingType(PEModuleSymbol moduleSymbol, TypeSymbol type)
