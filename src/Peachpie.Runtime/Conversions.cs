@@ -201,10 +201,19 @@ namespace Pchp.Core
             }
             else
             {
-                // obj -> array
-                var arr = new PhpArray();
-                TypeMembersUtils.InstanceFieldsToPhpArray(obj, arr);
-                return arr;
+                if (obj is Array)
+                {
+                    // [] -> array
+                    return new PhpArray((Array)obj);
+                }
+                // TODO: IList
+                else
+                {
+                    // obj -> array
+                    var arr = new PhpArray();
+                    TypeMembersUtils.InstanceFieldsToPhpArray(obj, arr);
+                    return arr;
+                }
             }
         }
 
