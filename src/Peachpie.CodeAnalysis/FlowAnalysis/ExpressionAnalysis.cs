@@ -352,11 +352,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             State.SetVarRef(name);
                             vartype.IsRef = true;
                         }
-                        if (x.Access.EnsureObject && !IsClassOnly(vartype))
+                        if (x.Access.EnsureObject && !TypeCtx.IsObject(vartype))
                         {
-                            vartype |= TypeCtx.GetSystemObjectTypeMask();
+                            vartype |= TypeCtx.GetSystemObjectTypeMask();   // TODO: stdClass instead of System.Object
                         }
-                        if (x.Access.EnsureArray && !IsArrayOnly(vartype))
+                        if (x.Access.EnsureArray && TypeCtx.IsNull(vartype))
                         {
                             vartype |= TypeCtx.GetArrayTypeMask();
                         }
@@ -1075,7 +1075,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var resolvedtype = x.Instance.ResultType;
                 if (resolvedtype == null)
                 {
-                    var typeref = TypeCtx.GetTypes(x.Instance.TypeRefMask);
+                    var typeref = TypeCtx.GetTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));    // ignore NULL, causes runtime exception anyway
                     if (typeref.Count > 1)
                     {
                         // TODO: some common base ?
@@ -1133,20 +1133,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var qname = ((INamedTypeRef)tref.TypeRef).ClassName;
                 if (qname.IsReservedClassName)
                 {
-                    if (qname.IsSelfClassName)
-                    {
-                        tref.ResolvedType = TypeCtx.ContainingType ?? new MissingMetadataTypeSymbol(qname.ToString(), 0, false);
-                    }
-                    else if (qname.IsParentClassName)
-                    {
-                        tref.ResolvedType = TypeCtx.ContainingType?.BaseType ?? new MissingMetadataTypeSymbol(qname.ToString(), 0, false);
-                    }
-                    else if (qname.IsStaticClassName)
-                    {
-                        this.Routine.Flags |= RoutineFlags.UsesLateStatic;
-
-                        throw new NotImplementedException("Late static bound type.");
-                    }
+                    throw ExceptionUtilities.UnexpectedValue(qname);
                 }
                 else
                 {
@@ -1158,6 +1145,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var atqname = ((AnonymousTypeRef)tref.TypeRef).TypeDeclaration.GetAnonymousTypeQualifiedName();
                 tref.ResolvedType = (TypeSymbol)_model.GetType(atqname);
                 Debug.Assert(tref.ResolvedType != null);
+            }
+            else if (tref.TypeRef is ReservedTypeRef)
+            {
+                // resolve types that parser skipped
+                switch (((ReservedTypeRef)tref.TypeRef).Type)
+                {
+                    case ReservedTypeRef.ReservedType.self:
+                        tref.ResolvedType = TypeCtx.ContainingType ?? new MissingMetadataTypeSymbol(tref.TypeRef.QualifiedName.ToString(), 0, false);
+                        break;
+
+                    case ReservedTypeRef.ReservedType.parent:
+                        tref.ResolvedType = TypeCtx.ContainingType?.BaseType ?? new MissingMetadataTypeSymbol(tref.TypeRef.QualifiedName.ToString(), 0, false);
+                        break;
+
+                    case ReservedTypeRef.ReservedType.@static:
+                        this.Routine.Flags |= RoutineFlags.UsesLateStatic;
+                        break;
+                }
             }
 
             Accept(tref.TypeExpression);
@@ -1285,7 +1290,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var resolvedtype = x.Instance.ResultType as NamedTypeSymbol;
                 if (resolvedtype == null)
                 {
-                    var typerefs = TypeCtx.GetTypes(x.Instance.TypeRefMask);
+                    var typerefs = TypeCtx.GetTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));   // ignore NULL, would cause runtime exception in read access, will be ensured to non-null in write access
                     if (typerefs.Count == 1 && typerefs[0].IsObject)
                     {
                         resolvedtype = (NamedTypeSymbol)_model.GetType(typerefs[0].QualifiedName);
@@ -1307,12 +1312,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 var field = (FieldSymbol)member;
                                 x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
                                 x.TypeRefMask = field.GetResultType(TypeCtx);
+                                x.ResultType = field.Type;
                             }
                             else if (member is PropertySymbol)
                             {
                                 var prop = (PropertySymbol)member;
                                 x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
                                 x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
+                                x.ResultType = prop.Type;
                             }
                             else
                             {

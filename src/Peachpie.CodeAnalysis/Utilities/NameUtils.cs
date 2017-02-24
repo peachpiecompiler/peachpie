@@ -29,7 +29,17 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         /// <param name="type">Type, cannot be <c>null</c>.</param>
         /// <returns>Qualified name of the type.</returns>
-        public static QualifiedName MakeQualifiedName(this TypeDecl type) => type.QualifiedName;
+        public static QualifiedName MakeQualifiedName(this TypeDecl type)
+        {
+            if (type is AnonymousTypeDecl)
+            {
+                return ((AnonymousTypeDecl)type).GetAnonymousTypeQualifiedName();
+            }
+            else
+            {
+                return type.QualifiedName;
+            }
+        }
 
         /// <summary>
         /// Make QualifiedName from the string like AAA\BBB\XXX

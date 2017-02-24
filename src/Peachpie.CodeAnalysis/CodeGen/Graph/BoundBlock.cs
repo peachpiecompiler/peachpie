@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // <ctx>.DeclareType()
                 cg.DeclaringCompilation.SourceSymbolCollection.GetTypes()
                     .OfType<Symbols.SourceTypeSymbol>()
-                    .Where(t => !t.Syntax.IsConditional && t.ContainingFile == cg.Routine.ContainingFile)   // non conditional declaration within this file
+                    .Where(t => !t.Syntax.IsConditional && t.ContainingFile == cg.Routine.ContainingFile && !t.IsAnonymousType)   // non conditional declaration within this file
                     .ForEach(cg.EmitDeclareType);
             }
             else

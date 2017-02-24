@@ -118,10 +118,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Contract.ThrowIfNull(typeRef);
             Debug.Assert(_typeRefs.IndexOf(typeRef) == -1);
-            
+
             int index = _typeRefs.Count;
             this.UpdateMasks(typeRef, index);
-            
+
             _typeRefs.Add(typeRef);
 
             //
@@ -230,7 +230,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var mask = typemask.Mask & bitmask & ~TypeRefMask.FlagsMask;
             if (mask == (ulong)0 || typemask.IsAnyType)
                 return EmptyArray<ITypeRef>.Instance;
-            
+
             var result = new List<ITypeRef>(1);
             for (int i = 0; mask != 0; i++, mask = (mask & ~(ulong)1) >> 1)
                 if ((mask & 1) != 0)
@@ -302,7 +302,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (qname.IsReservedClassName)
                 return GetTypeMaskOfReservedClassName(qname.Name);
-            
+
             return GetTypeMask(new ClassTypeRef(qname), includesSubclasses);
         }
 
@@ -569,14 +569,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetParentTypeMask()
         {
-            TypeRefMask result = TypeRefMask.AnyType;
-
             if (_containingType != null && _containingType.Syntax.BaseClass != null)
             {
-                result = GetTypeMask(new ClassTypeRef(_containingType.Syntax.BaseClass.ClassName), false);
+                return GetTypeMask(new ClassTypeRef(_containingType.Syntax.BaseClass.ClassName), false);
             }
-            
-            return result;
+            else
+            {
+                return TypeRefMask.AnyType;
+            }
         }
 
         /// <summary>
@@ -677,13 +677,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //var isNumber = (_isIntMask != 0 && _isDoubleMask != 0 && (mask & IsNumberMask) == IsNumberMask);
                 //if (isNumber)
                 //    mask &= ~IsNumberMask;
-                
+
                 //
                 types.AddRange(GetTypes(mask).Select(t => t.QualifiedName.ToString()));
 
                 //if (isNumber)
                 //    types.Add("number");
-                
+
                 //
                 if (types.Count != 0)
                 {
