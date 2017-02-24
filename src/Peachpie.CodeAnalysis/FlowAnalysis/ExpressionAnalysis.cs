@@ -816,9 +816,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.Minus:
-                    if (IsDoubleOnly(x.Operand))
-                        return TypeCtx.GetDoubleTypeMask(); // double in case operand is double
-                    return TypeCtx.GetNumberTypeMask();     // TODO: long in case operand is not a number
+                    var cvalue = ResolveUnaryMinus(x.Operand.ConstantValue.ToConstantValueOrNull());
+                    if (cvalue != null)
+                    {
+                        x.ConstantValue = new Optional<object>(cvalue.Value);
+                        return TypeCtx.GetTypeMask(TypeRefFactory.Create(cvalue), false);
+                    }
+                    else
+                    {
+                        if (IsDoubleOnly(x.Operand))
+                        {
+                            return TypeCtx.GetDoubleTypeMask(); // double in case operand is double
+                        }
+                        return TypeCtx.GetNumberTypeMask();     // TODO: long in case operand is not a number
+                    }
 
                 case Operations.ObjectCast:
                     if (IsClassOnly(x.Operand.TypeRefMask))
@@ -869,6 +880,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 default:
                     throw ExceptionUtilities.Unreachable;
             }
+        }
+
+        ConstantValue ResolveUnaryMinus(ConstantValue value)
+        {
+            if (value != null)
+            {
+                switch (value.SpecialType)
+                {
+                    case SpecialType.System_Double:
+                        return ConstantValue.Create(-value.DoubleValue);
+
+                    case SpecialType.System_Int64:
+                        return (value.Int64Value != long.MinValue)  // (- Int64.MinValue) overflows to double
+                            ? ConstantValue.Create(-value.Int64Value)
+                            : ConstantValue.Create(-(double)value.Int64Value);
+                    default:
+                        break;
+                }
+            }
+
+            return null;
         }
 
         #endregion
