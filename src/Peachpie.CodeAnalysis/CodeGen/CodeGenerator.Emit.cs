@@ -1673,6 +1673,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Builder.EmitDoubleConstant((double)value);
                     return CoreTypes.Double;
                 }
+                else if (value is float)
+                {
+                    Builder.EmitSingleConstant((float)value);
+                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Single);
+                }
                 else
                 {
                     throw ExceptionUtilities.UnexpectedValue(value);

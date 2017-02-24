@@ -1169,6 +1169,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Int64:
                     EmitConvertToLong(from, fromHint);
                     return;
+                case SpecialType.System_Single:
+                    EmitConvertToDouble(from, fromHint);
+                    _il.EmitOpCode(ILOpCode.Conv_r4);
+                    return;
                 case SpecialType.System_Double:
                     EmitConvertToDouble(from, fromHint);
                     return;
