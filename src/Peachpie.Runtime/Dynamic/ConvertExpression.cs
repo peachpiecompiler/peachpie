@@ -80,6 +80,11 @@ namespace Pchp.Core.Dynamic
                 return Expression.Convert(BindAsObject(arg), target);
             }
 
+            if (target == typeof(IntPtr))
+            {
+                return Expression.New(typeof(IntPtr).GetCtor(Cache.Types.Long), BindToLong(arg));
+            }
+
             //
             throw new NotImplementedException(target.ToString());
         }
@@ -727,6 +732,12 @@ namespace Pchp.Core.Dynamic
                 default:
                     return ConversionCost.NoConversion;
             }
+        }
+
+        public static ConversionCost ToIntPtr(PhpValue value)
+        {
+            // TODO: once we'll be able to store structs
+            return ConversionCost.NoConversion;
         }
 
         #endregion
