@@ -1678,6 +1678,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Builder.EmitSingleConstant((float)value);
                     return DeclaringCompilation.GetSpecialType(SpecialType.System_Single);
                 }
+                else if (value is uint)
+                {
+                    Builder.EmitIntConstant(unchecked((int)(uint)value));
+                    return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt32);
+                }
                 else
                 {
                     throw ExceptionUtilities.UnexpectedValue(value);

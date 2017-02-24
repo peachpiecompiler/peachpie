@@ -41,6 +41,7 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Int32:
                 case SpecialType.System_Int64: return LongTypeRef;
                 case SpecialType.System_String: return StringTypeRef;
+                case SpecialType.System_Single:
                 case SpecialType.System_Double: return DoubleTypeRef;
                 case SpecialType.System_Boolean: return BoolTypeRef;
                 case SpecialType.System_Object: return new ClassTypeRef(NameUtils.SpecialNames.System_Object);
