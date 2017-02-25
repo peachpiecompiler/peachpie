@@ -611,7 +611,7 @@ namespace Pchp.CodeAnalysis
             bool expandIncludes = false,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return "";
+            return string.Empty;
         }
 
         internal string GetDebuggerDisplay()

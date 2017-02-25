@@ -11,9 +11,17 @@ namespace Pchp.CodeAnalysis.DocGen
 {
     internal static class CommentIdResolver
     {
-        public static string GetId(NamedTypeSymbol type) => "T:" + TypeId(type);
+        public static string GetId(Symbol symbol)
+        {
+            if (symbol is MethodSymbol) return GetId((MethodSymbol)symbol);
+            if (symbol is TypeSymbol) return GetId((TypeSymbol)symbol);
 
-        public static string GetId(SourceRoutineSymbol routine) => "M:" + TypeId(routine.ContainingType) + "." + RoutineSignatureId(routine);
+            return null;
+        }
+
+        public static string GetId(TypeSymbol type) => "T:" + TypeId(type);
+
+        public static string GetId(MethodSymbol routine) => "M:" + TypeId(routine.ContainingType) + "." + MethodSignatureId(routine);
 
         static string TypeId(TypeSymbol type)
         {
@@ -35,7 +43,7 @@ namespace Pchp.CodeAnalysis.DocGen
             return GetEscapedMetadataName(type.MetadataName);
         }
 
-        static string RoutineSignatureId(SourceRoutineSymbol routine)
+        static string MethodSignatureId(MethodSymbol routine)
         {
             var builder = new StringBuilder();
 

@@ -101,6 +101,22 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal DocumentationProvider DocumentationProvider
+        {
+            get
+            {
+                var assembly = _assembly as PEAssemblySymbol;
+                if ((object)assembly != null)
+                {
+                    return assembly.DocumentationProvider;
+                }
+                else
+                {
+                    return DocumentationProvider.Default;
+                }
+            }
+        }
+
         #region Custom Attributes
 
         public override ImmutableArray<AttributeData> GetAttributes()
