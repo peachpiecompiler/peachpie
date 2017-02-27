@@ -85,6 +85,9 @@ namespace Pchp.Library
 
         #region XmlParserResource
 
+        /// <summary>
+        /// A resource object representing state of XML parsing.
+        /// </summary>
         sealed class XmlParserResource : PhpResource
         {
             enum ElementState
@@ -108,6 +111,10 @@ namespace Pchp.Library
 
             #region Fields & Properties
 
+            /// <summary>
+            /// Bound <see cref="Context"/>. Cannot be <c>null</c>.
+            /// </summary>
+            public Context Context => _ctx;
             readonly Context _ctx;
 
             private Encoding _outputEncoding;
@@ -164,13 +171,38 @@ namespace Pchp.Library
             internal static XmlParserResource ValidResource(PhpResource handle)
             {
                 var xmlParserResource = handle as XmlParserResource;
-                if (xmlParserResource != null)
+                if (xmlParserResource != null && xmlParserResource.IsValid)
                 {
                     return xmlParserResource;
                 }
 
                 PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_xmlresource);
                 return null;
+            }
+
+            /// <summary>
+            /// Convert value into <see cref="IPhpCallable"/> allowing method names declared on <see cref="HandlerObject"/>.
+            /// </summary>
+            internal IPhpCallable ToCallback(PhpValue value)
+            {
+                // empty variable
+                if (value.IsEmpty)
+                {
+                    return null;
+                }
+
+                // method name given as string:
+                if (this.HandlerObject != null)
+                {
+                    var name = value.ToStringOrNull();
+                    if (name != null)
+                    {
+                        return PhpCallback.Create(this.HandlerObject, name);
+                    }
+                }
+
+                // default PHP callback:
+                return value.AsCallable();
             }
 
             #endregion
@@ -260,7 +292,7 @@ namespace Pchp.Library
                     //these are usually required
                     _lastLineNumber = ((IXmlLineInfo)reader).LineNumber;
                     _lastColumnNumber = ((IXmlLineInfo)reader).LinePosition;
-                    
+
                     // we cannot do this - we could if we had underlying stream, but that would require
                     // encoding string -> byte[] which is pointless
 
@@ -469,7 +501,7 @@ namespace Pchp.Library
                 _outputEncoding = outputEncoding;
                 _processNamespaces = processNamespaces;
                 _namespaceSeparator = namespaceSeparator != null ? namespaceSeparator.Substring(0, 1) : ":";
-                
+
                 EnableCaseFolding = true;
                 EnableSkipWhitespace = false;
             }
@@ -557,6 +589,599 @@ namespace Pchp.Library
             return new PhpString(ISO_8859_1_Encoding.GetBytes(data));
         }
 
+        #endregion
+
+        #region xml_parser_create_ns, xml_parser_create, xml_parser_free
+
+        /// <summary>
+        /// Creates a new XML parser with XML namespace support and returns a resource handle referencing
+        /// it to be used by the other XML functions. 
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="encoding">
+        /// The optional encoding specifies the character encoding for the input/output in PHP 4. Starting
+        /// from PHP 5, the input encoding is automatically detected, so that the encoding parameter
+        /// specifies only the output encoding. In PHP 4, the default output encoding is the same as the
+        /// input charset. In PHP 5.0.0 and 5.0.1, the default output charset is ISO-8859-1, while in PHP
+        /// 5.0.2 and upper is UTF-8. The supported encodings are ISO-8859-1, UTF-8 and US-ASCII. 
+        /// </param>
+        /// <param name="namespaceSeparator">
+        /// With a namespace aware parser tag parameters passed to the various handler functions will 
+        /// consist of namespace and tag name separated by the string specified in seperator.
+        /// </param>
+        /// <returns>Returns a resource handle for the new XML parser.</returns>
+        public static PhpResource xml_parser_create_ns(Context ctx, string encoding = null, string namespaceSeparator = ":")
+        {
+            return new XmlParserResource(ctx, (encoding != null) ? Encoding.GetEncoding(encoding) : Encoding.UTF8, true, namespaceSeparator);
+        }
+
+        /// <summary>
+        /// Creates a new XML parser and returns a resource handle referencing it to be used by the other
+        /// XML functions. 
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="encoding">
+        /// The optional encoding specifies the character encoding for the input/output in PHP 4. Starting
+        /// from PHP 5, the input encoding is automatically detected, so that the encoding parameter
+        /// specifies only the output encoding. In PHP 4, the default output encoding is the same as the
+        /// input charset. If empty string is passed, the parser attempts to identify which encoding the
+        /// document is encoded in by looking at the heading 3 or 4 bytes. In PHP 5.0.0 and 5.0.1, the
+        /// default output charset is ISO-8859-1, while in PHP 5.0.2 and upper is UTF-8. The supported
+        /// encodings are ISO-8859-1, UTF-8 and US-ASCII. 
+        /// </param>
+        /// <returns>Returns a resource handle for the new XML parser.</returns>
+        public static PhpResource xml_parser_create(Context ctx, string encoding)
+        {
+            return xml_parser_create_ns(ctx, encoding);
+        }
+
+        /// <summary>
+        /// Frees the given XML parser. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to free.</param>
+        /// <returns>
+        /// This function returns FALSE if parser does not refer to a valid parser, or else it frees the 
+        /// parser and returns TRUE.
+        /// </returns>
+        public static bool xml_parser_free(PhpResource parser)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser == null)
+                return false;
+
+            // Since .NET hasn't online XML parser, we need the whole XML data to parse them properly.
+            // Notice user, he has to parse the XML by passing is_final=true to the last xml_parse function call.
+            if (!xmlParser.InputQueueIsEmpty)
+                PhpException.Throw(PhpError.Notice, Resources.LibResources.not_parsed_data_left);
+
+            xmlParser.Dispose();
+            return true;
+        }
+
+        #endregion
+
+        #region xml_parse, xml_parse_into_struct
+
+        /// <summary>
+        /// Parses an XML document. The handlers for the configured events are called as many times as 
+        /// necessary. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to use.</param>
+        /// <param name="data">
+        /// Chunk of data to parse. A document may be parsed piece-wise by calling xml_parse() several 
+        /// times with new data, as long as the is_final parameter is set and TRUE when the last data is 
+        /// parsed. 
+        /// </param>
+        /// <param name="is_final">If set and TRUE, data is the last piece of data sent in this parse.</param>
+        /// <returns>
+        /// <para>Returns 1 on success or 0 on failure.</para>
+        /// <para>
+        /// For unsuccessful parses, error information can be retrieved with xml_get_error_code(), 
+        /// xml_error_string(), xml_get_current_line_number(), xml_get_current_column_number() and 
+        /// xml_get_current_byte_index(). 
+        /// </para>
+        /// </returns>
+        public static int xml_parse(PhpResource parser, string data, bool is_final = false)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+
+            return (xmlParser != null && xmlParser.Parse(data, is_final)) ? 1 : 0;
+        }
+
+        /// <summary>
+        /// This function parses an XML string into 2 parallel array structures, one (index) containing
+        /// pointers to the location of the appropriate values in the values array. These last two 
+        /// parameters must be passed by reference. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser. </param>
+        /// <param name="data">A string containing the XML data. </param>
+        /// <param name="values">An array containing the values of the XML data.</param>
+        /// <param name="index">
+        /// An array containing pointers to the location of the appropriate values in the $values.
+        /// </param>
+        /// <returns>
+        /// Returns 0 for failure and 1 for success. This is not the same as FALSE and TRUE, be careful
+        /// with operators such as ===.
+        /// </returns>
+        public static int xml_parse_into_struct(PhpResource parser, string data, PhpAlias values, PhpAlias index = null)
+        {
+            if (values == null)
+            {
+                PhpException.Throw(PhpError.Warning, "values argument should not be null");
+                return 0;
+            }
+
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null)
+            {
+                var values_arr = new PhpArray();
+                values.Value = (PhpValue)values_arr;
+
+                PhpArray index_arr;
+                if (index != null)
+                {
+                    index.Value = (PhpValue)(index_arr = new PhpArray());
+                }
+                else
+                {
+                    index_arr = null;
+                }
+
+                return xmlParser.ParseIntoStruct(data, values_arr, index_arr) ? 1 : 0;
+            }
+
+            PhpException.Throw(PhpError.Warning, "parser argument should contain valid XML parser");
+            return 0;
+        }
+
+        #endregion
+
+        #region xml_parser_get_option, xml_parser_set_option
+
+        /// <summary>
+        /// Sets an option in an XML parser. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to set an option in. </param>
+        /// <param name="option">
+        /// One of the following options: XML_OPTION_CASE_FOLDING, XML_OPTION_SKIP_TAGSTART,
+        /// XML_OPTION_SKIP_WHITE, XML_OPTION_TARGET_ENCODING.
+        /// </param>
+        /// <param name="value">The option's new value. </param>
+        /// <returns>
+        /// This function returns FALSE if parser does not refer to a valid parser, or if the option could
+        /// not be set. Else the option is set and TRUE is returned.
+        /// </returns>
+        public static bool xml_parser_set_option(PhpResource parser, XmlOption option, PhpValue value)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null)
+            {
+                switch (option)
+                {
+                    case XmlOption.XML_OPTION_CASE_FOLDING:
+                        xmlParser.EnableCaseFolding = value.ToBoolean();
+                        return true;
+                    case XmlOption.XML_OPTION_SKIP_WHITE:
+                        xmlParser.EnableSkipWhitespace = value.ToBoolean();
+                        return true;
+                    case XmlOption.XML_OPTION_SKIP_TAGSTART:
+                    case XmlOption.XML_OPTION_TARGET_ENCODING:
+                    default:
+                        PhpException.Throw(PhpError.Warning, "invalid option value");
+                        return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets an option value from an XML parser. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to get an option from. </param>
+        /// <param name="option">
+        /// Which option to fetch. XML_OPTION_CASE_FOLDING and XML_OPTION_TARGET_ENCODING are available.
+        /// </param>
+        /// <returns>
+        /// This function returns FALSE if parser does not refer to a valid parser or if option isn't valid
+        /// (generates also a E_WARNING). Else the option's value is returned. 
+        /// </returns>
+        public static PhpValue xml_parser_get_option(PhpResource parser, int option)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null)
+            {
+                switch ((XmlOption)option)
+                {
+                    case XmlOption.XML_OPTION_CASE_FOLDING:
+                        return (PhpValue)xmlParser.EnableCaseFolding;
+                    case XmlOption.XML_OPTION_SKIP_WHITE:
+                        return (PhpValue)xmlParser.EnableSkipWhitespace;
+                    case XmlOption.XML_OPTION_SKIP_TAGSTART:
+                    case XmlOption.XML_OPTION_TARGET_ENCODING:
+                    default:
+                        PhpException.Throw(PhpError.Warning, "invalid option value");
+                        return PhpValue.False;
+                }
+            }
+            else
+            {
+                return PhpValue.False;
+            }
+        }
+
+        #endregion
+
+        #region xml_error_string, xml_get_error_code
+
+        /// <summary>
+        /// Gets the XML parser error string associated with the given code.
+        /// </summary>
+        /// <param name="code">An error code from xml_get_error_code().</param>
+        /// <returns>
+        /// Returns a string with a textual description of the error code, or FALSE if no description 
+        /// was found.
+        /// </returns>
+        [return: CastToFalse]
+        public static string xml_error_string(XmlParserError code)
+        {
+            switch (code)
+            {
+                case XmlParserError.XML_ERROR_GENERIC:
+                    return "Generic XML parser error - Phalanger does not currently support error strings.";
+
+                case XmlParserError.XML_ERROR_NONE:
+                    return "No Error.";
+
+                default:
+                    return "Unknown XML parser error.";
+            }
+        }
+
+        /// <summary>
+        /// Gets the XML parser error code. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to get error code from.</param>
+        /// <returns>
+        /// This function returns FALSE if parser does not refer to a valid parser, or else it returns 
+        /// one of the error codes.
+        /// </returns>
+        [return: CastToFalse]
+        public static int xml_get_error_code(PhpResource parser)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null)
+            {
+                return xmlParser.ErrorCode;
+            }
+
+            return -1;
+        }
+
+        #endregion
+
+        #region xml_get_current_byte_index, xml_get_current_column_number, xml_get_current_line_number
+
+        /// <summary>
+        /// Gets the current byte index of the given XML parser. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to get byte index from.</param>
+        /// <returns>
+        /// This function returns FALSE if parser does not refer to a valid parser, or else it returns 
+        /// which byte index the parser is currently at in its data buffer (starting at 0). 
+        /// </returns>
+        [return: CastToFalse]
+        public static int xml_get_current_byte_index(PhpResource parser)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null)
+            {
+                return xmlParser.CurrentByteIndex;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Gets the current column number of the given XML parser. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to get column number from. </param>
+        /// <returns>
+        /// This function returns FALSE if parser does not refer to a valid parser, or else it returns 
+        /// which column on the current line (as given by xml_get_current_line_number()) the parser is 
+        /// currently at. 
+        /// </returns>
+        [return: CastToFalse]
+        public static int xml_get_current_column_number(PhpResource parser)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null)
+            {
+                return xmlParser.CurrentColumnNumber;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Gets the current line number for the given XML parser. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to get line number from.</param>
+        /// <returns>
+        /// This function returns FALSE if parser does not refer to a valid parser, or else it returns 
+        /// which line the parser is currently at in its data buffer. 
+        /// </returns>
+        [return: CastToFalse]
+        public static int xml_get_current_line_number(PhpResource parser)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null)
+            {
+                return xmlParser.CurrentLineNumber;
+            }
+
+            return -1;
+        }
+
+        #endregion
+
+        #region xml_set_object
+
+        /// <summary>
+        /// This function allows to use parser inside object. All callback functions could be set with 
+        /// xml_set_element_handler() etc and assumed to be methods of object. 
+        /// </summary>
+        /// <param name="parser">A reference to the XML parser to use inside the object. </param>
+        /// <param name="objRef">The object where to use the XML parser.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool xml_set_object(PhpResource parser, PhpValue objRef)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null)
+            {
+                xmlParser.HandlerObject = objRef.AsObject();
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region xml_set_default_handler, xml_set_unparsed_entity_decl_handler
+
+        /// <summary>
+        /// Sets the default handler function for the XML parser parser.
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser to set up default handler function. 
+        /// </param>
+        /// <param name="default_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool xml_set_default_handler(PhpResource parser, PhpValue default_handler)
+        {
+            IPhpCallable callback;
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null && (callback = xmlParser.ToCallback(default_handler)) != null)
+            {
+                xmlParser.DefaultHandler = callback;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the unparsed entity declaration handler function for the XML parser parser. 
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser to set up unparsed entity declaration handler function. 
+        /// </param>
+        /// <param name="unparsed_entity_decl_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool SetUnparsedEntityDeclHandler(PhpResource parser, PhpValue unparsed_entity_decl_handler)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser == null)
+                return false;
+
+            PhpException.FunctionNotSupported("xml_set_unparsed_entity_decl_handler");
+            return false;
+        }
+
+        #endregion
+
+        #region xml_set_element_handler, xml_set_character_data_handler
+        /// <summary>
+        /// Sets the element handler functions for the XML parser. start_element_handler and 
+        /// end_element_handler are strings containing the names of functions that must exist 
+        /// when xml_parse() is called for parser.  
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser to set up start and end element handler functions. 
+        /// </param>
+        /// <param name="start_element_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <param name="end_element_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>        
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool xml_set_element_handler(PhpResource parser, PhpValue start_element_handler, PhpValue end_element_handler)
+        {
+            IPhpCallable callback_start, callback_end;
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null && (callback_start = xmlParser.ToCallback(start_element_handler)) != null && (callback_end = xmlParser.ToCallback(end_element_handler)) != null)
+            {
+                xmlParser.StartElementHandler = callback_start;
+                xmlParser.EndElementHandler = callback_end;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the character data handler function for the XML parser parser.  
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser to set up character data handler function.
+        /// </param>
+        /// <param name="character_data_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool xml_set_character_data_handler(PhpResource parser, PhpValue character_data_handler)
+        {
+            IPhpCallable callback;
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null && (callback = xmlParser.ToCallback(character_data_handler)) != null)
+            {
+                xmlParser.CharacterDataHandler = callback;
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region xml_set_start_namespace_decl_handler, xml_set_end_namespace_decl_handler
+
+        /// <summary>
+        /// Set a handler to be called when a namespace is declared. Namespace declarations occur 
+        /// inside start tags. But the namespace declaration start handler is called before the start 
+        /// tag handler for each namespace declared in that start tag.  
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser. 
+        /// </param>
+        /// <param name="start_namespace_decl_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool xml_set_start_namespace_decl_handler(PhpResource parser, PhpValue start_namespace_decl_handler)
+        {
+            IPhpCallable callback;
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null && (callback = xmlParser.ToCallback(start_namespace_decl_handler)) != null)
+            {
+                xmlParser.StartNamespaceDeclHandler = callback;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Set a handler to be called when leaving the scope of a namespace declaration. This will 
+        /// be called, for each namespace declaration, after the handler for the end tag of the 
+        /// element in which the namespace was declared. 
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser.
+        /// </param>
+        /// <param name="end_namespace_decl_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool xml_set_end_namespace_decl_handler(PhpResource parser, PhpValue end_namespace_decl_handler)
+        {
+            IPhpCallable callback;
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null && (callback = xmlParser.ToCallback(end_namespace_decl_handler)) != null)
+            {
+                xmlParser.EndNamespaceDeclHandler = callback;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region xml_set_notation_decl_handler, xml_set_processing_instruction_handler, xml_set_external_entity_ref_handler
+
+        /// <summary>
+        /// Sets the notation declaration handler function for the XML parser parser. 
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser to set up notation declaration handler function. 
+        /// </param>
+        /// <param name="notation_decl_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool xml_set_notation_decl_handler(PhpResource parser, PhpValue notation_decl_handler)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser == null)
+                return false;
+
+            PhpException.FunctionNotSupported("xml_set_notation_decl_handler");
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the processing instruction (PI) handler function for the XML parser parser. 
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser to set up processing instruction (PI) handler function.  
+        /// </param>
+        /// <param name="processing_instruction_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool xml_set_processing_instruction_handler(PhpResource parser, PhpValue processing_instruction_handler)
+        {
+            IPhpCallable callback;
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser != null && (callback = xmlParser.ToCallback(processing_instruction_handler)) != null)
+            {
+                xmlParser.ProcessingInstructionHandler = callback;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Sets the external entity reference handler function for the XML parser parser.  
+        /// </summary>
+        /// <param name="parser">
+        /// A reference to the XML parser to set up external entity reference handler function. 
+        /// </param>
+        /// <param name="external_entity_ref_handler">
+        /// String (or array) containing the name of a function that must exist when xml_parse() is 
+        /// called for parser. 
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure. </returns>
+        public static bool xml_set_external_entity_ref_handler(PhpResource parser, PhpValue external_entity_ref_handler)
+        {
+            var xmlParser = XmlParserResource.ValidResource(parser);
+            if (xmlParser == null)
+                return false;
+
+            PhpException.FunctionNotSupported("xml_set_external_entity_ref_handler");
+            return false;
+        }
         #endregion
     }
 }

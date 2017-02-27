@@ -280,6 +280,8 @@ namespace Pchp.Core
 
         public static PhpCallback Create(PhpValue item1, PhpValue item2) => new ArrayCallback(item1, item2);
 
+        public static PhpCallback Create(object targetInstance, string methodName) => new ArrayCallback(PhpValue.FromClass(targetInstance), (PhpValue)methodName);
+
         public static PhpCallback CreateInvalid() => new InvalidCallback();
 
         // TODO: Create(Delegate)
