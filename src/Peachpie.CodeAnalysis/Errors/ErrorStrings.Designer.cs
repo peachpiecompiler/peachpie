@@ -85,5 +85,14 @@ namespace Pchp.CodeAnalysis.Errors {
                 return ResourceManager.GetString("WRN_UndefinedFunctionCall", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Use of uninitialized variable &apos;{0}&apos;.
+        /// </summary>
+        public static string WRN_UninitializedVariableUse {
+            get {
+                return ResourceManager.GetString("WRN_UninitializedVariableUse", resourceCulture);
+            }
+        }
     }
 }

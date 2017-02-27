@@ -126,4 +126,7 @@
   <data name="WRN_UndefinedFunctionCall" xml:space="preserve">
     <value>Calling undefined function '{0}'</value>
   </data>
+  <data name="WRN_UninitializedVariableUse" xml:space="preserve">
+    <value>Use of uninitialized variable '{0}'</value>
+  </data>
 </root>

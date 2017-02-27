@@ -41,6 +41,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitGlobalFunctionCall(x);
         }
 
+        public override void VisitVariableRef(BoundVariableRef x)
+        {
+            CheckUninitializedVariableUse(x);
+            base.VisitVariableRef(x);
+        }
+
         protected override void VisitCFGBlockInternal(BoundBlock x)
         {
             if (x.Tag != _visitedColor)
@@ -59,6 +65,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     _diagnostics.Add(_routine, x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
                 }
+            }
+        }
+
+        private void CheckUninitializedVariableUse(BoundVariableRef x)
+        {
+            if (x.MaybeUninitialized)
+            {
+                _diagnostics.Add(_routine, x, ErrorCode.WRN_UninitializedVariableUse, x.Name.NameValue.ToString());
             }
         }
     }
