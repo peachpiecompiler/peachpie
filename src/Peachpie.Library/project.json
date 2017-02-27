@@ -21,6 +21,7 @@
     "System.Collections": "4.3.0",
     "System.Data.Common": "4.3.0",
     "System.Net.NameResolution": "4.3.0",
+    "System.Xml.ReaderWriter": "4.3.0",
     "Peachpie.Runtime": "*"
   },
 
