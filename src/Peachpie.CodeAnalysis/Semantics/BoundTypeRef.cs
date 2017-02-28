@@ -42,6 +42,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal BoundExpression TypeExpression { get; set; }
 
+        public bool IsDirect => TypeExpression == null;
+
         public BoundTypeRef(TypeRef tref)
         {
             _typeRef = tref;

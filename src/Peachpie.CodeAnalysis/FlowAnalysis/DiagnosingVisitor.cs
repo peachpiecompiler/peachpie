@@ -35,6 +35,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitCFG(x);
         }
 
+        public override void VisitCFGCatchBlock(CatchBlock catchBlock)
+        {
+            CheckUndefinedType(catchBlock.TypeRef);
+            base.VisitCFGCatchBlock(catchBlock);
+        }
+
+        public override void VisitTypeRef(BoundTypeRef typeRef)
+        {
+            CheckUndefinedType(typeRef);
+            base.VisitTypeRef(typeRef);
+        }
+
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             CheckUndefinedFunctionCall(x);
@@ -45,6 +57,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             CheckUninitializedVariableUse(x);
             base.VisitVariableRef(x);
+        }
+
+        public override void VisitFieldRef(BoundFieldRef fieldRef)
+        {
+            if (fieldRef.IsClassConstant || fieldRef.IsStaticField)
+            {
+                CheckUndefinedType(fieldRef.ParentType);
+            }
+
+            base.VisitFieldRef(fieldRef);
         }
 
         protected override void VisitCFGBlockInternal(BoundBlock x)
@@ -63,7 +85,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var errmethod = (ErrorMethodSymbol)x.TargetMethod;
                 if (errmethod != null && errmethod.ErrorKind == ErrorMethodSymbol.ErrorMethodKind.Missing)
                 {
-                    _diagnostics.Add(_routine, x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
                 }
             }
         }
@@ -72,7 +94,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (x.MaybeUninitialized)
             {
-                _diagnostics.Add(_routine, x, ErrorCode.WRN_UninitializedVariableUse, x.Name.NameValue.ToString());
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_UninitializedVariableUse, x.Name.NameValue.ToString());
+            }
+        }
+
+        private void CheckUndefinedType(BoundTypeRef typeRef)
+        {
+            // Ignore indirect types (e.g. $foo = new $className())
+            if (typeRef.IsDirect && (typeRef.ResolvedType == null || typeRef.ResolvedType.IsErrorType()))
+            {
+                string name = typeRef.TypeRef.QualifiedName?.ToString();
+                this._diagnostics.Add(this._routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
             }
         }
     }

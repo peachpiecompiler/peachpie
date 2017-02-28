@@ -63,6 +63,7 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_PdbUsingNameTooLong,
         WRN_UnableToLoadAnalyzer,
         WRN_UndefinedFunctionCall,
-        WRN_UninitializedVariableUse
+        WRN_UninitializedVariableUse,
+        WRN_UndefinedType
     }
 }

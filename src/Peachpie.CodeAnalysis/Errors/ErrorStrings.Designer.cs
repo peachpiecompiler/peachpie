@@ -87,6 +87,15 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to Undefined type &apos;{0}&apos;.
+        /// </summary>
+        public static string WRN_UndefinedType {
+            get {
+                return ResourceManager.GetString("WRN_UndefinedType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to Use of uninitialized variable &apos;{0}&apos;.
         /// </summary>
         public static string WRN_UninitializedVariableUse {
