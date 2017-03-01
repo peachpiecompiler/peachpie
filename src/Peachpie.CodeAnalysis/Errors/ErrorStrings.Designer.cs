@@ -78,7 +78,7 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Calling undefined function &apos;{0}&apos;.
+        ///    Looks up a localized string similar to Call to undefined function: &apos;{0}&apos;.
         /// </summary>
         public static string WRN_UndefinedFunctionCall {
             get {
@@ -96,7 +96,7 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Undefined type &apos;{0}&apos;.
+        ///    Looks up a localized string similar to Class &apos;{0}&apos; not found.
         /// </summary>
         public static string WRN_UndefinedType {
             get {
@@ -105,7 +105,7 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Use of uninitialized variable &apos;{0}&apos;.
+        ///    Looks up a localized string similar to Undefined variable: {0}.
         /// </summary>
         public static string WRN_UninitializedVariableUse {
             get {

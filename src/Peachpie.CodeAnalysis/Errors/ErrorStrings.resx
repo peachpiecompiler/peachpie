@@ -124,15 +124,15 @@
     <value>Metadata file '{0}' could not be found</value>
   </data>
   <data name="WRN_UndefinedFunctionCall" xml:space="preserve">
-    <value>Calling undefined function '{0}'</value>
+    <value>Call to undefined function: '{0}'</value>
   </data>
   <data name="WRN_UndefinedMethodCall" xml:space="preserve">
     <value>Call to undefined method: {0}::{1}()</value>
   </data>
   <data name="WRN_UndefinedType" xml:space="preserve">
-    <value>Undefined type '{0}'</value>
+    <value>Class '{0}' not found</value>
   </data>
   <data name="WRN_UninitializedVariableUse" xml:space="preserve">
-    <value>Use of uninitialized variable '{0}'</value>
+    <value>Undefined variable: {0}</value>
   </data>
 </root>
