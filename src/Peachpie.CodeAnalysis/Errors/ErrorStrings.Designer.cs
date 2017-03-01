@@ -87,6 +87,15 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to Call to undefined method: {0}::{1}().
+        /// </summary>
+        public static string WRN_UndefinedMethodCall {
+            get {
+                return ResourceManager.GetString("WRN_UndefinedMethodCall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to Undefined type &apos;{0}&apos;.
         /// </summary>
         public static string WRN_UndefinedType {

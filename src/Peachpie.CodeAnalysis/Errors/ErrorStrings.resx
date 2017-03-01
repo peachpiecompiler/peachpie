@@ -126,6 +126,9 @@
   <data name="WRN_UndefinedFunctionCall" xml:space="preserve">
     <value>Calling undefined function '{0}'</value>
   </data>
+  <data name="WRN_UndefinedMethodCall" xml:space="preserve">
+    <value>Call to undefined method: {0}::{1}()</value>
+  </data>
   <data name="WRN_UndefinedType" xml:space="preserve">
     <value>Undefined type '{0}'</value>
   </data>

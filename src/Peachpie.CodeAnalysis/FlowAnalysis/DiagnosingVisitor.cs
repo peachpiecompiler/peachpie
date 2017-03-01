@@ -50,6 +50,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitGlobalFunctionCall(x);
         }
 
+        public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
+        {
+            // TODO: Enable the diagnostic when several problems are solved (such as __call())
+            //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
+            base.VisitInstanceFunctionCall(call);
+        }
+
+        public override void VisitStaticFunctionCall(BoundStaticFunctionCall call)
+        {
+            // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
+            //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
+            base.VisitStaticFunctionCall(call);
+        }
+
         public override void VisitVariableRef(BoundVariableRef x)
         {
             CheckUninitializedVariableUse(x);
@@ -74,6 +88,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
                 }
+            }
+        }
+
+        private void CheckUndefinedMethodCall(BoundRoutineCall call, TypeSymbol type, BoundRoutineName name)
+        {
+            if (name.IsDirect && call.TargetMethod.IsErrorMethod() && type != null && !type.IsErrorType())
+            {
+                _diagnostics.Add(_routine, call.PhpSyntax, ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
             }
         }
 
