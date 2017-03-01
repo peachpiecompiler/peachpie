@@ -121,6 +121,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 {
                     _lazyStdTypes = Core.std.StdTable.Types
                         .Select(tname => _compilation.PhpCorLibrary.GetTypeByMetadataName(tname))
+                        .Where(t => t != null)
                         .ToDictionary(t => ((IPhpTypeSymbol)t).FullName);
                 }
 
