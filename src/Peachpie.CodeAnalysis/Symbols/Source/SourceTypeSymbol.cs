@@ -339,13 +339,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.MemberAttributes.IsStatic();
 
-        public override ImmutableArray<Location> Locations
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override ImmutableArray<Location> Locations => ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, _syntax.Span.ToTextSpan()));
 
         internal override bool ShouldAddWinRTMembers => false;
 
