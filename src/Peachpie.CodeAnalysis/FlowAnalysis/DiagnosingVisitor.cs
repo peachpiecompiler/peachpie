@@ -35,16 +35,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitCFG(x);
         }
 
-        public override void VisitCFGCatchBlock(CatchBlock catchBlock)
-        {
-            CheckUndefinedType(catchBlock.TypeRef);
-            base.VisitCFGCatchBlock(catchBlock);
-        }
-
         public override void VisitTypeRef(BoundTypeRef typeRef)
         {
-            CheckUndefinedType(typeRef);
-            base.VisitTypeRef(typeRef);
+            if (typeRef != null)
+            {
+                CheckUndefinedType(typeRef);
+                base.VisitTypeRef(typeRef);
+            }
         }
 
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
@@ -57,16 +54,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             CheckUninitializedVariableUse(x);
             base.VisitVariableRef(x);
-        }
-
-        public override void VisitFieldRef(BoundFieldRef fieldRef)
-        {
-            if (fieldRef.IsClassConstant || fieldRef.IsStaticField)
-            {
-                CheckUndefinedType(fieldRef.ParentType);
-            }
-
-            base.VisitFieldRef(fieldRef);
         }
 
         protected override void VisitCFGBlockInternal(BoundBlock x)
