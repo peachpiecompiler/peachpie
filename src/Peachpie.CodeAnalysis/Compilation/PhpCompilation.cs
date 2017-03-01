@@ -110,7 +110,7 @@ namespace Pchp.CodeAnalysis
             _coreMethods = new CoreMethods(_coreTypes);
             _anonymousTypeManager = new AnonymousTypeManager(this);
 
-            _referenceManager = reuseReferenceManager
+            _referenceManager = (reuseReferenceManager && referenceManager != null)
                 ? referenceManager
                 : new ReferenceManager(MakeSourceAssemblySimpleName(), options.AssemblyIdentityComparer, referenceManager?.ObservedMetadata, options.SdkDirectory);
         }
@@ -416,7 +416,7 @@ namespace Pchp.CodeAnalysis
 
         protected override IPointerTypeSymbol CommonCreatePointerTypeSymbol(ITypeSymbol elementType)
         {
-            throw new NotImplementedException();
+            return new PointerTypeSymbol((TypeSymbol)elementType);
         }
 
         protected override ISymbol CommonGetAssemblyOrModuleSymbol(MetadataReference reference)
@@ -585,7 +585,10 @@ namespace Pchp.CodeAnalysis
         {
             if (_lazyAssemblySymbol == null)
             {
-                _lazyAssemblySymbol = _referenceManager.CreateSourceAssemblyForCompilation(this);
+                lock (_referenceManager)
+                {
+                    _lazyAssemblySymbol = _referenceManager.CreateSourceAssemblyForCompilation(this);
+                }
                 Debug.Assert(_lazyAssemblySymbol != null);
             }
 

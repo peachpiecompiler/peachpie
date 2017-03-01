@@ -45,7 +45,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             else if (symbol is ParameterSymbol)
             {
-                t = ((ParameterSymbol)symbol).Type;
+                var ps = (ParameterSymbol)symbol;
+                t = ps.Type;
+
+                if (ps.IsParams)
+                {
+                    Debug.Assert(t.IsSZArray());
+                    return ctx.GetArrayTypeMask(TypeRefFactory.CreateMask(ctx, ((ArrayTypeSymbol)t).ElementType));
+                }
             }
             else
             {

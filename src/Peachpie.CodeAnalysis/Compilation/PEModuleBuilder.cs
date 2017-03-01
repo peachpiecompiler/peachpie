@@ -45,11 +45,12 @@ namespace Pchp.CodeAnalysis.Emit
                     var ctx_loc = il.LocalSlotManager.AllocateSlot(types.Context.Symbol, LocalSlotConstraints.None);
 
                     // ctx_loc = Context.Create***(args)
-                    args_place.EmitLoad(il);
-                    MethodSymbol create_method = (_compilation.Options.OutputKind == OutputKind.ConsoleApplication)
-                        ? _compilation.CoreTypes.Context.Symbol.LookupMember<MethodSymbol>("CreateConsole")
-                        : null;
+                    var createMethodName = (_compilation.Options.OutputKind == OutputKind.ConsoleApplication) ? "CreateConsole" : "CreateEmpty";
+                    MethodSymbol create_method = _compilation.CoreTypes.Context.Symbol.LookupMember<MethodSymbol>(createMethodName);
                     Debug.Assert(create_method != null);
+                    Debug.Assert(create_method.ParameterCount == 1);
+                    Debug.Assert(create_method.Parameters[0].Type == args_place.TypeOpt);
+                    args_place.EmitLoad(il);
                     il.EmitOpCode(ILOpCode.Call, +1);
                     il.EmitToken(create_method, null, diagnostic);
                     il.EmitLocalStore(ctx_loc);

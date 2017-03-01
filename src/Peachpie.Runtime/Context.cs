@@ -37,11 +37,20 @@ namespace Pchp.Core
         /// <summary>
         /// Create default context with no output.
         /// </summary>
-        public static Context CreateEmpty()
+        /// <param name="cmdargs">
+        /// Optional arguments to be passed to PHP <c>$argv</c> and <c>$argc</c> global variables.
+        /// If the array is empty, variables are not created.
+        /// </param>
+        public static Context CreateEmpty(params string[] cmdargs)
         {
             var ctx = new Context();
             ctx.InitOutput(null);
             ctx.InitSuperglobals();
+
+            if (cmdargs != null && cmdargs.Length != 0)
+            {
+                ctx.IntializeArgvArgc(cmdargs);
+            }
 
             //
             return ctx;

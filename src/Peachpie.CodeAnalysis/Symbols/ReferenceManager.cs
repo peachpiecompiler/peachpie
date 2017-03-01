@@ -67,7 +67,7 @@ namespace Pchp.CodeAnalysis
             }
 
             internal IEnumerable<IAssemblySymbol> ExplicitReferencesSymbols => ExplicitReferences.Select(r => _referencesMap[r]).WhereNotNull();
-            
+
             public ReferenceManager(
                 string simpleAssemblyName,
                 AssemblyIdentityComparer identityComparer,
@@ -145,75 +145,85 @@ namespace Pchp.CodeAnalysis
                     return compilation._lazyAssemblySymbol;
                 }
 
-                // TODO: lock
-
-                Debug.Assert(_lazyExplicitReferences.IsDefault);
-                
                 var resolver = compilation.Options.MetadataReferenceResolver;
                 var moduleName = compilation.MakeSourceModuleName();
 
-                //
-                var externalRefs = compilation.ExternalReferences;
-                var assemblies = new List<AssemblySymbol>(externalRefs.Length);
+                var assemblies = new List<AssemblySymbol>();
 
-                var referencesMap = new Dictionary<MetadataReference, IAssemblySymbol>();
-                var metadataMap = new Dictionary<IAssemblySymbol, MetadataReference>();
-                var assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
-
-                var refmodules = new List<PEModuleSymbol>();
-                
-                foreach (PortableExecutableReference pe in externalRefs)
+                if (_lazyExplicitReferences.IsDefault)
                 {
-                    var peass = ((AssemblyMetadata)pe.GetMetadata()).GetAssembly();
-                    
-                    var symbol = _observedMetadata.TryGetOrDefault(peass.Identity) ?? PEAssemblySymbol.Create(pe, peass);
-                    if (symbol != null)
+                    //
+                    var externalRefs = compilation.ExternalReferences;
+                    var refmodules = new List<PEModuleSymbol>();
+
+                    var referencesMap = new Dictionary<MetadataReference, IAssemblySymbol>();
+                    var metadataMap = new Dictionary<IAssemblySymbol, MetadataReference>();
+                    var assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
+
+                    foreach (PortableExecutableReference pe in externalRefs)
                     {
-                        assemblies.Add(symbol);
-                        referencesMap[pe] = symbol;
-                        metadataMap[symbol] = pe;
+                        var peass = ((AssemblyMetadata)pe.GetMetadata()).GetAssembly();
 
-                        if (_lazyCorLibrary == null && symbol.IsCorLibrary)
-                            _lazyCorLibrary = symbol;
+                        var symbol = _observedMetadata.TryGetOrDefault(peass.Identity) ?? PEAssemblySymbol.Create(pe, peass);
+                        if (symbol != null)
+                        {
+                            assemblies.Add(symbol);
+                            referencesMap[pe] = symbol;
+                            metadataMap[symbol] = pe;
 
-                        if (_lazyPhpCorLibrary == null && symbol.IsPchpCorLibrary)
-                            _lazyPhpCorLibrary = symbol;
+                            if (_lazyCorLibrary == null && symbol.IsCorLibrary)
+                                _lazyCorLibrary = symbol;
 
-                        // cache bound assembly symbol
-                        _observedMetadata[symbol.Identity] = symbol;
+                            if (_lazyPhpCorLibrary == null && symbol.IsPchpCorLibrary)
+                                _lazyPhpCorLibrary = symbol;
 
-                        // list of modules to initialize later
-                        refmodules.AddRange(symbol.Modules.Cast<PEModuleSymbol>());
+                            // cache bound assembly symbol
+                            _observedMetadata[symbol.Identity] = symbol;
+
+                            // list of modules to initialize later
+                            refmodules.AddRange(symbol.Modules.Cast<PEModuleSymbol>());
+                        }
+                        else
+                        {
+                            throw new Exception($"symbol '{pe.FilePath}' could not be created!");
+                        }
                     }
-                    else
+
+                    //
+                    _lazyExplicitReferences = externalRefs;
+                    _lazyImplicitReferences = ImmutableArray<MetadataReference>.Empty;
+                    _metadataMap = metadataMap.ToImmutableDictionary();
+                    _referencesMap = referencesMap.ToImmutableDictionary();
+
+                    //
+                    assemblies.ForEach(ass => ass.SetCorLibrary(_lazyCorLibrary));
+
+                    // recursively initialize references of referenced modules
+                    SetReferencesOfReferencedModules(resolver, refmodules);
+                }
+                else
+                {
+                    foreach (PortableExecutableReference pe in _lazyExplicitReferences)
                     {
-                        throw new Exception($"symbol '{pe.FilePath}' could not be created!");
+                        var ass = (AssemblySymbol)_referencesMap[pe];
+                        Debug.Assert(ass != null);
+                        assemblies.Add(ass);
                     }
                 }
 
                 //
-                _lazyExplicitReferences = externalRefs;
-                _lazyImplicitReferences = ImmutableArray<MetadataReference>.Empty;
-                _metadataMap = metadataMap.ToImmutableDictionary();
-                _referencesMap = referencesMap.ToImmutableDictionary();
-
-                //
                 var assembly = new SourceAssemblySymbol(compilation, this.SimpleAssemblyName, moduleName);
 
-                assembly.SetCorLibrary(_lazyCorLibrary);                
+                assembly.SetCorLibrary(_lazyCorLibrary);
                 assembly.SourceModule.SetReferences(new ModuleReferences<AssemblySymbol>(
                     assemblies.Select(x => x.Identity).AsImmutable(),
                     assemblies.AsImmutable(),
                     ImmutableArray<UnifiedAssembly<AssemblySymbol>>.Empty), assembly);
 
-                assemblies.ForEach(ass => ass.SetCorLibrary(_lazyCorLibrary));
-
-                // recursively initialize references of referenced modules
-                SetReferencesOfReferencedModules(resolver, refmodules);
-
                 // set cor types for this compilation
                 if (_lazyPhpCorLibrary == null) throw new DllNotFoundException("Peachpie.Runtime not found");
                 if (_lazyCorLibrary == null) throw new DllNotFoundException("A corlib not found");
+
                 compilation.CoreTypes.Update(_lazyPhpCorLibrary);
                 compilation.CoreTypes.Update(_lazyCorLibrary);
 

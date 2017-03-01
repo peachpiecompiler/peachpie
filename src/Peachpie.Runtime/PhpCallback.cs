@@ -67,6 +67,11 @@ namespace Pchp.Core
         public override bool Equals(object obj) => Equals(obj as PhpCallback);
         public override int GetHashCode() => this.GetType().GetHashCode();
 
+        /// <summary>
+        /// An empty PHP callback doing no action.
+        /// </summary>
+        public static readonly PhpCallback Empty = new EmptyCallback();
+
         #region PhpCallbacks
 
         [DebuggerDisplay("{_lazyResolved,nq}()")]
@@ -217,6 +222,22 @@ namespace Pchp.Core
             bool Equals(ArrayCallback other) => other != null && other._item1 == _item1 && other._item2 == _item2;
         }
 
+        [DebuggerDisplay("empty callback")]
+        sealed class EmptyCallback : PhpCallback
+        {
+            public EmptyCallback() { }
+
+            public override PhpValue ToPhpValue() => PhpValue.Null;
+
+            protected override PhpCallable BindCore(Context ctx) => (_1, _2) => PhpValue.Null;
+
+            public override bool IsValid => true;
+
+            public override int GetHashCode() => 1;
+
+            public override bool Equals(PhpCallback other) => other is EmptyCallback;
+        }
+
         [DebuggerDisplay("invalid callback")]
         sealed class InvalidCallback : PhpCallback
         {
@@ -231,7 +252,9 @@ namespace Pchp.Core
 
             public override bool IsValid => false;
 
-            public override bool Equals(PhpCallback other) => object.ReferenceEquals(this, other);
+            public override int GetHashCode() => 0;
+
+            public override bool Equals(PhpCallback other) => other is InvalidCallback;
         }
 
         #endregion
@@ -256,6 +279,8 @@ namespace Pchp.Core
         }
 
         public static PhpCallback Create(PhpValue item1, PhpValue item2) => new ArrayCallback(item1, item2);
+
+        public static PhpCallback Create(object targetInstance, string methodName) => new ArrayCallback(PhpValue.FromClass(targetInstance), (PhpValue)methodName);
 
         public static PhpCallback CreateInvalid() => new InvalidCallback();
 

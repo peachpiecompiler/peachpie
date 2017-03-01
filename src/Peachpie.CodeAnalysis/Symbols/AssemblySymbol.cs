@@ -58,7 +58,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal void SetCorLibrary(AssemblySymbol corLibrary)
         {
-            Debug.Assert((object)_corLibrary == null);
+            Debug.Assert((object)_corLibrary == null || (object)_corLibrary == corLibrary);
             _corLibrary = corLibrary;
         }
 

@@ -424,7 +424,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             var emitOptions = new EmitOptions
             (
-                //metadataOnly: false,
+                metadataOnly: false,
                 debugInformationFormat: debugInformationFormat,
                 //pdbFilePath: null, // to be determined later
                 //outputNameOverride: null, // to be determined later

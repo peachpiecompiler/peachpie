@@ -516,15 +516,40 @@ namespace Pchp.CodeAnalysis.CodeGen
             return CoreTypes.PhpValue;
         }
 
+        /// <summary>
+        /// Creates new empty <c>PhpArray</c> where modifications are not expected.
+        /// </summary>
+        public TypeSymbol Emit_PhpArray_NewEmpty()
+        {
+            // PhpArray.NewEmpty()
+            var t = CoreTypes.PhpArray.Symbol;
+            return EmitCall(ILOpCode.Call, (MethodSymbol)t.GetMembers("NewEmpty").Single());
+        }
+
+        /// <summary>
+        /// Emits LOAD of <c>PhpArray.Empty</c> fields.
+        /// The loaded value must not be modified, use only in read-only context.
+        /// </summary>
+        public TypeSymbol Emit_PhpArray_Empty()
+        {
+            // PhpArray.Empty
+            Builder.EmitOpCode(ILOpCode.Ldsfld);
+            EmitSymbolToken(CoreMethods.PhpArray.Empty, null);
+
+            return CoreMethods.PhpArray.Empty.Symbol.Type
+                .Expect(CoreTypes.PhpArray);
+        }
+
         public void Emit_NewArray(TypeSymbol elementType, BoundExpression[] values)
         {
-            _il.EmitIntConstant(values.Length);
-            _il.EmitOpCode(ILOpCode.Newarr);
-            EmitSymbolToken(elementType, null);
-
             if (values.Length != 0)
             {
-                // new []{ argI, ..., argN }
+                // new []
+                _il.EmitIntConstant(values.Length);
+                _il.EmitOpCode(ILOpCode.Newarr);
+                EmitSymbolToken(elementType, null);
+
+                // { argI, ..., argN }
                 for (int i = 0; i < values.Length; i++)
                 {
                     _il.EmitOpCode(ILOpCode.Dup);   // <array>
@@ -537,8 +562,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 // empty array
-                // TODO: use static singleton
+                Emit_EmptyArray(elementType);
             }
+        }
+
+        void Emit_EmptyArray(TypeSymbol elementType)
+        {
+            var array_empty_T = ((MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__Empty))
+                .Construct(elementType);
+
+            EmitCall(ILOpCode.Call, array_empty_T);
         }
 
         /// <summary>
@@ -558,7 +591,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var variadic_element = (variadic?.Type as ArrayTypeSymbol)?.ElementType;
             var variadic_place = variadic != null ? new ParamPlace(variadic) : null;
 
-            ps = ps.Where(p => !p.IsImplicitlyDeclared).ToImmutableArray();  // parameters without implicitly declared parameters
+            ps = ps.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();  // parameters without implicitly declared parameters
 
             if (ps.Length == 0 && variadic_element == elementType)
             {
@@ -654,6 +687,69 @@ namespace Pchp.CodeAnalysis.CodeGen
                 ReturnTemporaryLocal(tmparr);
                 tmparr = null;
             }
+        }
+
+        /// <summary>
+        /// Builds <c>PhpArray</c> out from <c>System.Array</c>.
+        /// </summary>
+        public TypeSymbol ArrayToPhpArray(IPlace arrplace, bool deepcopy = false)
+        {
+            var tmparr = GetTemporaryLocal(CoreTypes.PhpArray);
+            var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+
+            // Template: tmparr = new PhpArray(arrplace.Length)
+            arrplace.EmitLoad(_il);
+            EmitArrayLength();
+            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray_int);
+            _il.EmitLocalStore(tmparr);
+
+            // Template: for (i = 0; i < params.Length; i++) <phparr>.Add(arrplace[i])
+
+            var lbl_block = new object();
+            var lbl_cond = new object();
+
+            // i = 0
+            var tmpi = GetTemporaryLocal(CoreTypes.Int32);
+            _il.EmitIntConstant(0);
+            _il.EmitLocalStore(tmpi);
+            _il.EmitBranch(ILOpCode.Br, lbl_cond);
+
+            // {body}
+            _il.MarkLabel(lbl_block);
+
+            // <array>.Add((T)arrplace[i])
+            _il.EmitLocalLoad(tmparr);   // <array>
+            
+            arrplace.EmitLoad(_il);
+            _il.EmitLocalLoad(tmpi);
+            _il.EmitOpCode(ILOpCode.Ldelem);
+            EmitSymbolToken(arr_element, null);
+            var t = (deepcopy) ? EmitDeepCopy(arr_element, true) : arr_element;
+            EmitConvert(t, 0, CoreTypes.PhpValue);    // (PhpValue)arrplace[i]
+
+            EmitPop(EmitCall(ILOpCode.Call, CoreMethods.PhpArray.Add_PhpValue));    // <array>.Add( value )
+
+            // i++
+            _il.EmitLocalLoad(tmpi);
+            _il.EmitIntConstant(1);
+            _il.EmitOpCode(ILOpCode.Add);
+            _il.EmitLocalStore(tmpi);
+
+            // i < params.Length
+            _il.MarkLabel(lbl_cond);
+            _il.EmitLocalLoad(tmpi);
+            arrplace.EmitLoad(_il);
+            EmitArrayLength();
+            _il.EmitOpCode(ILOpCode.Clt);
+            _il.EmitBranch(ILOpCode.Brtrue, lbl_block);
+
+            //
+            ReturnTemporaryLocal(tmpi);
+            ReturnTemporaryLocal(tmparr);
+
+            //
+            _il.EmitLocalLoad(tmparr);
+            return (TypeSymbol)tmparr.Type;
         }
 
         public void EmitUnset(BoundReferenceExpression expr)
@@ -816,7 +912,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Debug.Assert(p.Type.IsArray());
 
                     // wrap remaining arguments to array
-                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).ToArray() : new BoundExpression[0];
+                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).ToArray() : Array.Empty<BoundExpression>();
                     arg_index += values.Length;
                     Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
                     break;  // p is last one
@@ -1576,6 +1672,16 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     Builder.EmitDoubleConstant((double)value);
                     return CoreTypes.Double;
+                }
+                else if (value is float)
+                {
+                    Builder.EmitSingleConstant((float)value);
+                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Single);
+                }
+                else if (value is uint)
+                {
+                    Builder.EmitIntConstant(unchecked((int)(uint)value));
+                    return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt32);
                 }
                 else
                 {

@@ -70,7 +70,7 @@ namespace Peachpie.Web
             {
                 Expires = expires,
                 Path = path,
-                Domain = domain,
+                Domain = string.IsNullOrEmpty(domain) ? null : domain,  // IE, Edge: cookie with the empty domain was not passed to request
                 Secure = secure,
                 HttpOnly = httpOnly
             });

@@ -635,6 +635,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(cg.CoreTypes.IPhpArray);
                     }
                 }
+                else if (type.IsOfType(cg.CoreTypes.ArrayAccess))
+                {
+                    // Operators.EnsureArray(<place>)
+                    _place.EmitLoad(cg.Builder);
+
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_ArrayAccess)
+                            .Expect(cg.CoreTypes.IPhpArray);
+                }
 
                 throw new NotImplementedException("EnsureArray(" + type.Name + ")");
             }
@@ -1020,7 +1028,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // .GetValue()
                     result = cg.EmitDereference(result);
-                    
+
                     // .DeepCopy()
                     if (_access.TargetType == null || cg.IsCopiable(_access.TargetType))
                     {
@@ -1231,7 +1239,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // instance
             var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
-            
+
             //
             if (_field.IsStatic)
             {
@@ -1530,7 +1538,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 Debug.Assert(valueType == null);
 
                 // <place> = default(T)
-                
+
                 if (type == cg.CoreTypes.PhpAlias)
                 {
                     // new PhpAlias(void)

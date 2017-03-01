@@ -1180,8 +1180,8 @@ namespace Pchp.CodeAnalysis.Emit
                 case SymbolKind.NamedType:
                     return Translate((NamedTypeSymbol)typeSymbol, syntaxNodeOpt, diagnostics);
 
-                //case SymbolKind.PointerType:
-                //    return Translate((PointerTypeSymbol)typeSymbol);
+                case SymbolKind.PointerType:
+                    return Translate((PointerTypeSymbol)typeSymbol);
 
                 case SymbolKind.TypeParameter:
                     return Translate((TypeParameterSymbol)typeSymbol);
@@ -1310,10 +1310,10 @@ namespace Pchp.CodeAnalysis.Emit
             return symbol;
         }
 
-        //internal static Cci.IPointerTypeReference Translate(PointerTypeSymbol symbol)
-        //{
-        //    return symbol;
-        //}
+        internal static Cci.IPointerTypeReference Translate(PointerTypeSymbol symbol)
+        {
+            return symbol;
+        }
 
         internal ImmutableArray<Cci.IParameterTypeInformation> Translate(ImmutableArray<ParameterSymbol> @params)
         {

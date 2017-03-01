@@ -616,4 +616,10 @@
   <data name="translit" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>translit.def;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
+  <data name="invalid_xmlresource" xml:space="preserve">
+    <value>Supplied resource is not a valid XML Parser resource</value>
+  </data>
+  <data name="not_parsed_data_left" xml:space="preserve">
+    <value>XML Parser contains not parsed data. Ensure to call "xml_parse" with is_final parameter set to "true".</value>
+  </data>
 </root>

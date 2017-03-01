@@ -14,6 +14,8 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
+using System.Globalization;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -222,5 +224,12 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && !IsStatic;
 
         internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual;
+
+        //public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    // TODO: XmlDocumentationCommentCompiler
+        //    var phpdoc = this.PHPDocBlock;
+        //    return (phpdoc != null) ? phpdoc.Summary : string.Empty;
+        //}
     }
 }

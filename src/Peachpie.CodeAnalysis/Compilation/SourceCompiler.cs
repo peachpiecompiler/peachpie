@@ -242,6 +242,8 @@ namespace Pchp.CodeAnalysis
 
         public static IEnumerable<Diagnostic> BindAndAnalyze(PhpCompilation compilation)
         {
+            var manager = compilation.GetBoundReferenceManager();   // ensure the references are resolved! (binds ReferenceManager)
+
             var diagnostics = new DiagnosticBag();
             var compiler = new SourceCompiler(compilation, null, true, diagnostics, CancellationToken.None);
 

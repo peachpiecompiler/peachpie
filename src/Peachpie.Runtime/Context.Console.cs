@@ -28,27 +28,27 @@ namespace Pchp.Core
                 IntializeArgvArgc(args);
             }
 
-            /// <summary>Initializes global $argv and $argc variables.</summary>
-            void IntializeArgvArgc(params string[] args)
-            {
-                Debug.Assert(args != null);
-
-                // command line argc, argv:
-                var argv = new PhpArray(args.Length);
-
-                // adds all arguments to the array (the 0-th argument is not '-' as in PHP but the program file):
-                for (int i = 0; i < args.Length; i++)
-                {
-                    argv.Add(i, PhpValue.Create(args[i]));
-                }
-
-                this.Globals["argv"] = PhpValue.Create(argv);
-                this.Globals["argc"] = PhpValue.Create(args.Length);
-            }
-
             public override string RootPath => _rootPath;
 
             public override string WorkingDirectory => Directory.GetCurrentDirectory();
+        }
+
+        /// <summary>Initializes global $argv and $argc variables.</summary>
+        protected void IntializeArgvArgc(params string[] args)
+        {
+            Debug.Assert(args != null);
+
+            // command line argc, argv:
+            var argv = new PhpArray(args.Length);
+
+            // adds all arguments to the array (the 0-th argument is not '-' as in PHP but the program file):
+            for (int i = 0; i < args.Length; i++)
+            {
+                argv.Add(i, PhpValue.Create(args[i]));
+            }
+
+            this.Globals["argv"] = PhpValue.Create(argv);
+            this.Globals["argc"] = PhpValue.Create(args.Length);
         }
 
         /// <summary>

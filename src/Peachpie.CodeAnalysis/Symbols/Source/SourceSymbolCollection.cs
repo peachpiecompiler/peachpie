@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public override void VisitLambdaFunctionExpr(LambdaFunctionExpr x)
             {
                 var container = _containerStack.Peek();
-                var lambdasymbol = new SourceLambdaSymbol(x, container, /*TODO: !x.IsStatic ?*/true);
+                var lambdasymbol = new SourceLambdaSymbol(x, container, !x.IsStatic);
                 Debug.Assert(container is ILambdaContainerSymbol);
                 ((ILambdaContainerSymbol)container).AddLambda(lambdasymbol);
 

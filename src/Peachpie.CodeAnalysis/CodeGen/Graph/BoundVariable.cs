@@ -149,32 +149,43 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void EmitInit(CodeGenerator cg)
         {
+            var srcparam = _symbol as SourceParameterSymbol;
+            if (srcparam == null)
+            {
+                // an implicit parameter
+                return;
+            }
+
             // TODO: check callable, iterable
-            
+
             // TODO: ? if (cg.HasUnoptimizedLocals && $this) <locals>["this"] = ...
 
-            var srcparam = _symbol as SourceParameterSymbol;
-            if (srcparam != null)
+            var srcplace = new ParamPlace(_symbol);
+            var routine = srcparam.Routine;
+
+            if (cg.HasUnoptimizedLocals)
             {
-                var srcplace = new ParamPlace(_symbol);
-                var routine = srcparam.Routine;
+                Debug.Assert(cg.LocalsPlaceOpt != null);
 
-                if (cg.HasUnoptimizedLocals)
+                // copy parameter to <locals>[Name]
+
+                // <locals>[name] = value
+                cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // <locals>
+                cg.EmitIntStringKey(new BoundLiteral(this.Name));   // [key]
+
+                if (srcparam.Syntax.PassedByRef)
                 {
-                    Debug.Assert(cg.LocalsPlaceOpt != null);
-
-                    // copy parameter to <locals>[Name]
-
-                    // <locals>[name] = value
-                    cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // <locals>
-                    cg.EmitIntStringKey(new BoundLiteral(this.Name));   // [key]
-
-                    if (srcparam.Syntax.PassedByRef)
+                    var srcpt = srcplace.EmitLoad(cg.Builder);  // PhpAlias
+                    Debug.Assert(srcpt == cg.CoreTypes.PhpAlias);
+                    cg.EmitConvert(srcpt, 0, cg.CoreTypes.PhpAlias);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                }
+                else
+                {
+                    if (_symbol.IsParams)
                     {
-                        var srcpt = srcplace.EmitLoad(cg.Builder);  // PhpAlias
-                        Debug.Assert(srcpt == cg.CoreTypes.PhpAlias);
-                        cg.EmitConvert(srcpt, 0, cg.CoreTypes.PhpAlias);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                        // (PhhpValue)new PhpArray( params )
+                        cg.EmitConvertToPhpValue(cg.ArrayToPhpArray(srcplace, true), 0);
                     }
                     else
                     {
@@ -195,57 +206,69 @@ namespace Pchp.CodeAnalysis.Semantics
                         {
                             cg.EmitDeepCopy(cg.CoreTypes.PhpValue);
                         }
-
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);
                     }
 
-                    //
-                    _isUnoptimized = true;
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
+                }
+
+                //
+                _isUnoptimized = true;
+            }
+            else
+            {
+                // create local variable in case of parameter type is not enough for its use within routine
+                if (_symbol.Type != cg.CoreTypes.PhpValue && _symbol.Type != cg.CoreTypes.PhpAlias)
+                {
+                    var tmask = routine.ControlFlowGraph.GetLocalTypeMask(srcparam.Name);
+                    var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
+                    if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
+                    {
+                        // TODO: performance warning
+
+                        _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
+                        _lazyLocal.EmitInit(cg);
+                        var localplace = _lazyLocal.Place(cg.Builder);
+
+                        localplace.EmitStorePrepare(cg.Builder);
+
+                        if (_symbol.IsParams)
+                        {
+                            Debug.Assert(_symbol.Type.IsSZArray());
+                            Debug.Assert(clrtype == cg.CoreTypes.PhpArray);
+
+                            // <local> = new PhpArray(){ ... }
+                            cg.ArrayToPhpArray(srcplace, true);
+                        }
+                        else
+                        {
+                            // <local> = <param>
+                            cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
+                        }
+                        localplace.EmitStore(cg.Builder);
+                    }
                 }
                 else
                 {
-                    // create local variable in case of parameter type is not enough for its use within routine
-                    if (_symbol.Type != cg.CoreTypes.PhpValue && _symbol.Type != cg.CoreTypes.PhpAlias)
+                    if (_symbol.Type == cg.CoreTypes.PhpValue)
                     {
-                        var tmask = routine.ControlFlowGraph.GetLocalTypeMask(srcparam.Name);
-                        var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
-                        if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
-                        {
-                            // TODO: performance warning
+                        srcplace.EmitStorePrepare(cg.Builder);
 
-                            _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
-                            _lazyLocal.EmitInit(cg);
-                            var localplace = _lazyLocal.Place(cg.Builder);
+                        // dereference & copy
+                        // <param> = <param>.GetValue().DeepCopy()
+                        srcplace.EmitLoadAddress(cg.Builder);
+                        cg.EmitDeepCopy(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue));
 
-                            // <local> = <param>
-                            localplace.EmitStorePrepare(cg.Builder);
-                            cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
-                            localplace.EmitStore(cg.Builder);
-                        }
+                        srcplace.EmitStore(cg.Builder);
                     }
-                    else
+                    else if (cg.IsCopiable(_symbol.Type))
                     {
-                        if (_symbol.Type == cg.CoreTypes.PhpValue)
-                        {
-                            srcplace.EmitStorePrepare(cg.Builder);
+                        srcplace.EmitStorePrepare(cg.Builder);
 
-                            // dereference & copy
-                            // <param> = <param>.GetValue().DeepCopy()
-                            srcplace.EmitLoadAddress(cg.Builder);
-                            cg.EmitDeepCopy(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue));
+                        // copy
+                        // <param> = DeepCopy(<param>)
+                        cg.EmitDeepCopy(srcplace.EmitLoad(cg.Builder));
 
-                            srcplace.EmitStore(cg.Builder);
-                        }
-                        else if (cg.IsCopiable(_symbol.Type))
-                        {
-                            srcplace.EmitStorePrepare(cg.Builder);
-
-                            // copy
-                            // <param> = DeepCopy(<param>)
-                            cg.EmitDeepCopy(srcplace.EmitLoad(cg.Builder));
-
-                            srcplace.EmitStore(cg.Builder);
-                        }
+                        srcplace.EmitStore(cg.Builder);
                     }
                 }
             }

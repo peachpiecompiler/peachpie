@@ -472,6 +472,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitOpCode(ILOpCode.Conv_r8);   // Int64 -> Double
                     return dtype;
 
+                case SpecialType.System_Single:
+                    _il.EmitOpCode(ILOpCode.Conv_r8);   // float -> Double
+                    return dtype;
+
                 case SpecialType.System_Double:
                     // nop
                     return dtype;
@@ -1168,6 +1172,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 case SpecialType.System_Int64:
                     EmitConvertToLong(from, fromHint);
+                    return;
+                case SpecialType.System_Single:
+                    EmitConvertToDouble(from, fromHint);
+                    _il.EmitOpCode(ILOpCode.Conv_r4);
                     return;
                 case SpecialType.System_Double:
                     EmitConvertToDouble(from, fromHint);

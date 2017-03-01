@@ -65,6 +65,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<ModuleSymbol> Modules => _modules;
 
+        internal DocumentationProvider DocumentationProvider => _documentationProvider;
+
         public override INamespaceSymbol GlobalNamespace => PrimaryModule.GlobalNamespace;
 
         internal PEModuleSymbol PrimaryModule => (PEModuleSymbol)_modules[0];

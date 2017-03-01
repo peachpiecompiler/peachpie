@@ -289,10 +289,16 @@ namespace Pchp.Core
             }
         }
 
+        public static IPhpArray EnsureArray(ArrayAccess obj)
+        {
+            Debug.Assert(obj != null);
+            return new ArrayAccessAsPhpArray(obj);
+        }
+
         public static IPhpArray EnsureArray(object obj)
         {
             // ArrayAccess
-            if (obj is ArrayAccess) return new ArrayAccessAsPhpArray((ArrayAccess)obj);
+            if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
 
             // TODO: Fatal error: Uncaught Error: Cannot use object of type {0} as array
             throw new InvalidOperationException(string.Format(Resources.ErrResources.object_used_as_array, obj.GetType().FullName));

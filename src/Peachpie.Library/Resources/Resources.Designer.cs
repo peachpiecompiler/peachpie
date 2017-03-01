@@ -843,6 +843,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to Supplied resource is not a valid XML Parser resource.
+        /// </summary>
+        public static string invalid_xmlresource {
+            get {
+                return ResourceManager.GetString("invalid_xmlresource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to Limit is less than 1.
         /// </summary>
         public static string limit_less_than_one {
@@ -947,6 +956,15 @@ namespace Pchp.Library.Resources {
         public static string not_enought_input {
             get {
                 return ResourceManager.GetString("not_enought_input", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to XML Parser contains not parsed data. Ensure to call &quot;xml_parse&quot; with is_final parameter set to &quot;true&quot;..
+        /// </summary>
+        public static string not_parsed_data_left {
+            get {
+                return ResourceManager.GetString("not_parsed_data_left", resourceCulture);
             }
         }
         
