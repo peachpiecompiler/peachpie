@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis
             // TODO: Reuse the existing one instead
             var tree = routine.ContainingFile.SyntaxTree;
             var span = syntax.Span;
-            var location = new SourceLocation(tree, new TextSpan(span.Start, span.Length));
+            var location = new SourceLocation(tree, span.ToTextSpan());
             diagnostics.Add(location, code, args);
         }
 
