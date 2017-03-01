@@ -1,5 +1,1 @@
-# Peachpie Compiler
-
-http://www.peachpie.io
-
-## Documentation Placeholder
+https://github.com/iolevel/peachpie/wiki
