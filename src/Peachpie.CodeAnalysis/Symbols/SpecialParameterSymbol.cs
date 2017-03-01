@@ -95,7 +95,10 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 if (_type is CoreType)
+                {
                     _type = ((CoreType)_type).Symbol;
+                    Debug.Assert(_type != null, "ReferenceManager was not bound (probably)");
+                }
 
                 if (_type is TypeSymbol)
                     return (TypeSymbol)_type;
