@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis.Errors;
 using Pchp.CodeAnalysis.Semantics;
@@ -16,14 +17,14 @@ namespace Pchp.CodeAnalysis
         public static void Add(
             this DiagnosticBag diagnostics,
             SourceRoutineSymbol routine,
-            IPhpOperation operation,
+            LangElement syntax,
             ErrorCode code,
             params object[] args)
         {
             // TODO: Reuse the existing one instead
             var tree = routine.ContainingFile.SyntaxTree;
-            var span = operation.PhpSyntax.Span;
-            var location = new SourceLocation(tree, new TextSpan(span.Start, span.Length));
+            var span = syntax.Span;
+            var location = new SourceLocation(tree, span.ToTextSpan());
             diagnostics.Add(location, code, args);
         }
 

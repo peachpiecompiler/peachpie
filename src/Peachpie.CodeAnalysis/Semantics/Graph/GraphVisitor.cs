@@ -53,6 +53,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public virtual void VisitCFGCatchBlock(CatchBlock x)
         {
+            VisitTypeRef(x.TypeRef);
             Accept(x.Variable);
             VisitCFGBlockInternal(x);
         }

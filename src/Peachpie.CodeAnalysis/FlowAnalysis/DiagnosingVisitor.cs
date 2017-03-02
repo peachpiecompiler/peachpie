@@ -35,10 +35,39 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitCFG(x);
         }
 
+        public override void VisitTypeRef(BoundTypeRef typeRef)
+        {
+            if (typeRef != null)
+            {
+                CheckUndefinedType(typeRef);
+                base.VisitTypeRef(typeRef);
+            }
+        }
+
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             CheckUndefinedFunctionCall(x);
             base.VisitGlobalFunctionCall(x);
+        }
+
+        public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
+        {
+            // TODO: Enable the diagnostic when several problems are solved (such as __call())
+            //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
+            base.VisitInstanceFunctionCall(call);
+        }
+
+        public override void VisitStaticFunctionCall(BoundStaticFunctionCall call)
+        {
+            // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
+            //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
+            base.VisitStaticFunctionCall(call);
+        }
+
+        public override void VisitVariableRef(BoundVariableRef x)
+        {
+            CheckUninitializedVariableUse(x);
+            base.VisitVariableRef(x);
         }
 
         protected override void VisitCFGBlockInternal(BoundBlock x)
@@ -57,8 +86,34 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var errmethod = (ErrorMethodSymbol)x.TargetMethod;
                 if (errmethod != null && errmethod.ErrorKind == ErrorMethodSymbol.ErrorMethodKind.Missing)
                 {
-                    _diagnostics.Add(_routine, x, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
                 }
+            }
+        }
+
+        private void CheckUndefinedMethodCall(BoundRoutineCall call, TypeSymbol type, BoundRoutineName name)
+        {
+            if (name.IsDirect && call.TargetMethod.IsErrorMethod() && type != null && !type.IsErrorType())
+            {
+                _diagnostics.Add(_routine, call.PhpSyntax, ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
+            }
+        }
+
+        private void CheckUninitializedVariableUse(BoundVariableRef x)
+        {
+            if (x.MaybeUninitialized)
+            {
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_UninitializedVariableUse, x.Name.NameValue.ToString());
+            }
+        }
+
+        private void CheckUndefinedType(BoundTypeRef typeRef)
+        {
+            // Ignore indirect types (e.g. $foo = new $className())
+            if (typeRef.IsDirect && (typeRef.ResolvedType == null || typeRef.ResolvedType.IsErrorType()))
+            {
+                string name = typeRef.TypeRef.QualifiedName?.ToString();
+                this._diagnostics.Add(this._routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
             }
         }
     }

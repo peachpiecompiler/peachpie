@@ -31,9 +31,7 @@ namespace Pchp.CodeAnalysis.Errors
         {
             ParserMessageProvider.Instance.RegisterError(info);
 
-            var location = new SourceLocation(
-                _syntaxTree,
-                new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+            var location = new SourceLocation(_syntaxTree, span.ToTextSpan());
 
             var diagnostic = ParserMessageProvider.Instance.CreateDiagnostic(
                 info.Severity == ErrorSeverity.WarningAsError,
