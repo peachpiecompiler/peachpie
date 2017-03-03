@@ -287,13 +287,20 @@ namespace Pchp.Core
                 {
                     return PhpValue.Null;
                 }
-                else if (throwOnError)
-                {
-                    throw new ArgumentException($"File '{path}' cannot be included with current configuration.");   // TODO: ErrCode
-                }
                 else
                 {
-                    return PhpValue.Create(false);   // TODO: Warning
+                    var cause = string.Format(Resources.ErrResources.script_not_found, path);
+
+                    PhpException.Throw(
+                        throwOnError ? PhpError.Error : PhpError.Notice,
+                        Resources.ErrResources.script_inclusion_failed, path, cause, string.Join(";", IncludePaths), cd);
+
+                    if (throwOnError)
+                    {
+                        throw new ArgumentException(cause);
+                    }
+
+                    return PhpValue.False;
                 }
             }
         }
