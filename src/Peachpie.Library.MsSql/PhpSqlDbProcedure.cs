@@ -21,7 +21,7 @@ namespace Peachpie.Library.MsSql
 	/// <summary>
 	/// Represets a stored procedure statement.
 	/// </summary>
-	public sealed class PhpSqlDbProcedure : StatementResource
+	internal sealed class PhpSqlDbProcedure : StatementResource
 	{
 		/// <summary>
 		/// Procedure name.

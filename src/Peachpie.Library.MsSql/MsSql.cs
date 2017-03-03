@@ -43,7 +43,7 @@ namespace Peachpie.Library.MsSql
         /// <summary>
         /// Query result array format.
         /// </summary>
-        [Flags]
+        [Flags, PhpHidden]
         public enum QueryResultKeys
         {
             /// <summary>
@@ -72,6 +72,7 @@ namespace Peachpie.Library.MsSql
         /// <summary>
         /// Types of variables bound to stored procedure parameters.
         /// </summary>
+        [PhpHidden]
         public enum VariableType
         {
             /// <summary></summary>
@@ -190,6 +191,26 @@ namespace Peachpie.Library.MsSql
         public static PhpResource mssql_connect(Context ctx, string server = null, string user = null, string password = null, bool newLink = false)
         {
             return Connect(ctx, server, user, password, newLink, false);
+        }
+
+        /// <summary>
+		/// Establishes a connection to SQL server using a specified server, user, and password and default flags.
+		/// </summary>
+		/// <param name="ctx">PHP context.</param>
+		/// <param name="server">Server (host). A <b>null</b> reference means the default value.</param>
+		/// <param name="user">User name. A <b>null</b> reference means the default value.</param>
+		/// <param name="password">Password. A <b>null</b> reference means the default value.</param>
+		/// <param name="newLink">Whether to create a new link (ignored by Phalanger).</param>
+		/// <returns>
+		/// Resource representing the connection or a <B>null</B> reference (<B>false</B> in PHP) on failure.
+		/// </returns>
+		/// <remarks>
+		/// Default values are taken from the configuration.
+		/// Creates a non-persistent connection. Persistent connections are not supported.
+		/// </remarks>		
+        public static PhpResource mssql_pconnect(Context ctx, string server = null, string user = null, string password = null, bool newLink = false)
+        {
+            return Connect(ctx, server, user, password, newLink, true);
         }
 
         static PhpResource Connect(Context ctx, string server, string user, string password, bool newLink, bool persistent)

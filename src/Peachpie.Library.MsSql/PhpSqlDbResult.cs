@@ -15,7 +15,7 @@ namespace Peachpie.Library.MsSql
     /// <summary>
 	/// Represents a result of a SQL command.
 	/// </summary>
-	public sealed class PhpSqlDbResult : ResultResource
+	internal sealed class PhpSqlDbResult : ResultResource
     {
         /// <summary>
         /// Limit on size of a batch. Non-positive values means no limit.
