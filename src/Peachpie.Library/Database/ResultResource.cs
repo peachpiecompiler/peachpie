@@ -169,7 +169,7 @@ namespace Pchp.Library.Database
 
             do
             {
-                ResultSet result_set = new ResultSet()
+                var result_set = new ResultSet()
                 {
                     Rows = new List<object[]>(),
                     Names = GetNames(),
@@ -342,7 +342,7 @@ namespace Pchp.Library.Database
         }
 
         /// <summary>
-        /// A <see cref="DObject"/> with properties that correspond to the fetched row, 
+        /// An <see cref="object"/> with properties that correspond to the fetched row, 
         /// or false if there are no more rows. 
         /// </summary>
         /// <returns></returns>
@@ -357,7 +357,7 @@ namespace Pchp.Library.Database
 
             Debug.Assert(currentRowIndex >= 0 && currentRowIndex < RowCount);
 
-            object[] oa = (object[])CurrentSet.Rows[currentRowIndex];
+            object[] oa = CurrentSet.Rows[currentRowIndex];
             var runtimeFields = new PhpArray(FieldCount);
             for (int i = 0; i < FieldCount; i++)
             {

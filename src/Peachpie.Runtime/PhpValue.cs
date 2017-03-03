@@ -557,6 +557,11 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Implicitly converts a CLR type to PHP type.
+        /// </summary>
+        public static PhpValue FromClr(PhpValue value) => value;
+
+        /// <summary>
         /// Converts an array of CLR values to PHP values.
         /// </summary>
         public static PhpValue[] FromClr(params object[] values)

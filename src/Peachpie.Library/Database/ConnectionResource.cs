@@ -75,7 +75,27 @@ namespace Pchp.Library.Database
         /// Establishes the connection to the database.
         /// Gets <c>false</c> if connection can't be opened.
         /// </summary>
-        public abstract bool Connect();
+        public virtual bool Connect()
+        {
+            if (ActiveConnection.State == ConnectionState.Open)
+            {
+                return true;
+            }
+
+            try
+            {
+                ActiveConnection.Open();  // TODO: Async
+                _lastException = null;
+            }
+            catch (System.Exception e)
+            {
+                _lastException = e;
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.cannot_open_connection, GetExceptionMessage(e));
+                return false;
+            }
+
+            return true;
+        }
 
         protected override void FreeManaged()
         {
