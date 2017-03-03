@@ -6,6 +6,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Text;
 using static Pchp.Library.StandardPhpOptions;
+using Pchp.Library.Resources;
 
 namespace Peachpie.Library.MySql
 {
@@ -100,7 +101,7 @@ namespace Peachpie.Library.MySql
             }
             else
             {
-                // TODO: err
+                PhpException.Throw(PhpError.Warning, Resources.invalid_connection_resource);
                 return null;
             }
         }

@@ -350,7 +350,7 @@ namespace Pchp.Library.Database
         /// Works like FetchArray but instead of storing data to associative array,
         /// FetchObject use object fields. Note, that field names are case sensitive.
         /// </remarks>
-        public object FetchObject()
+        public stdClass FetchObject()
         {
             // no more data
             if (!this.ReadRow()) return null;
@@ -364,7 +364,7 @@ namespace Pchp.Library.Database
                 runtimeFields[CurrentSet.Names[i]] = PhpValue.FromClr(oa[i]);
             }
 
-            return runtimeFields.ToClass(); // stdClass
+            return (stdClass)runtimeFields.ToClass();
         }
 
         #endregion

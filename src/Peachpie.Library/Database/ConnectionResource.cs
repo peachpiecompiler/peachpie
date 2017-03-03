@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library.Database
 {
@@ -103,21 +104,22 @@ namespace Pchp.Library.Database
 
             ClosePendingReader();
 
-            //try
-            //{
-            //    if (connection != null)
-            //    {
-            //        connection.Close();
-            //    }
-            //    lastException = null;
-            //}
-            //catch (Exception e)
-            //{
-            //    lastException = e;
-            //    PhpException.Throw(PhpError.Warning, LibResources.GetString("error_closing_connection",
-            //      GetExceptionMessage(e)));
-            //}
-            //connection = null;
+            var connection = ActiveConnection;
+
+            try
+            {
+                if (connection != null && connection.State != ConnectionState.Closed)
+                {
+                    connection.Close();
+                }
+
+                _lastException = null;
+            }
+            catch (System.Exception e)
+            {
+                _lastException = e;
+                PhpException.Throw(PhpError.Warning, LibResources.error_closing_connection, GetExceptionMessage(e));
+            }
         }
 
         /// <summary>

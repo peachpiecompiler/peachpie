@@ -29,25 +29,7 @@ namespace Peachpie.Library.MySql
         protected override void FreeManaged()
         {
             base.FreeManaged();
-
             _manager.RemoveConnection(this);
-
-            try
-            {
-                if (_connection != null && _connection.State != ConnectionState.Closed)
-                {
-                    _connection.Close();
-                }
-
-                _lastException = null;
-            }
-            catch (System.Exception e)
-            {
-                _lastException = e;
-                throw new NotImplementedException(); // TODO: ERR
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("error_closing_connection",
-                //  GetExceptionMessage(e)));
-            }
         }
 
         public override void ClosePendingReader()

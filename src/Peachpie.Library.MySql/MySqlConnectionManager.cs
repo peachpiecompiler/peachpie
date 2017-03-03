@@ -10,7 +10,7 @@ namespace Peachpie.Library.MySql
     internal class MySqlConnectionManager : ConnectionManager<MySqlConnectionResource>
     {
         /// <summary>
-        /// Gets the manager singletong within runtime context.
+        /// Gets the manager singleton within runtime context.
         /// </summary>
         public static MySqlConnectionManager GetInstance(Context ctx) => ctx.GetStatic<MySqlConnectionManager>();
 
