@@ -8,6 +8,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Pchp.Library.Resources;
 
 namespace Peachpie.Library.MySql
 {
@@ -56,9 +57,8 @@ namespace Peachpie.Library.MySql
             }
             else
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_result_resource"));
-                //return null;
-                throw new NotImplementedException();    // TODO: Err
+                PhpException.Throw(PhpError.Warning, Resources.invalid_result_resource);
+                return null;
             }
         }
 

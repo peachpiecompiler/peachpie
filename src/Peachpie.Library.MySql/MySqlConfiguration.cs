@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using static Pchp.Library.StandardPhpOptions;
 
 namespace Peachpie.Library.MySql
 {
@@ -54,5 +56,63 @@ namespace Peachpie.Library.MySql
         /// Maximum number of connections per request. Negative value means no limit.
         /// </summary>
         public int MaxConnections = -1;
+
+        /// <summary>
+        /// Gets, sets, or restores a value of a legacy configuration option.
+        /// </summary>
+        static PhpValue GetSet(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+        {
+            var local = config.Get<MySqlConfiguration>();
+
+            switch (option)
+            {
+                // local:
+
+                case "mysql.connect_timeout": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.ConnectTimeout, 0, value, action);
+                case "mysql.default_port": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Port, 3306, value, action);
+                case "mysql.default_host": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Server, null, value, action);
+                case "mysql.default_user": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.User, "root", value, action);
+                case "mysql.default_password": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Password, "", value, action);
+                case "mysql.default_command_timeout": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.DefaultCommandTimeout, -1, value, action);
+                case "mysql.connection_string": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.ConnectionString, null, value, action);
+
+                // global:
+
+                case "mysql.max_links":
+                    Debug.Assert(action == IniAction.Get);
+                    return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.MaxConnections, -1, value, action);
+                case "mysql.max_pool_size":
+                    return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.MaxPoolSize, 100, value, action);
+            }
+
+            Debug.Fail("Option '" + option + "' is supported but not implemented.");
+            return PhpValue.Null;
+        }
+
+        /// <summary>
+        /// Registers legacy ini-options.
+        /// </summary>
+        internal static void RegisterLegacyOptions()
+        {
+            const string s = "mysql";
+            var d = new GetSetDelegate(GetSet);
+
+            // local:
+            Register("mysql.trace_mode", IniFlags.Unsupported | IniFlags.Local, d, s);
+            Register("mysql.default_port", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysql.default_socket", IniFlags.Unsupported | IniFlags.Local, d, s);
+            Register("mysql.default_host", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysql.default_user", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysql.default_password", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysql.connect_timeout", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysql.default_command_timeout", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysql.connection_string", IniFlags.Supported | IniFlags.Local, d, s);
+
+            // global:
+            Register("mysql.allow_persistent", IniFlags.Unsupported | IniFlags.Global, d, s);
+            Register("mysql.max_persistent", IniFlags.Unsupported | IniFlags.Global, d, s);
+            Register("mysql.max_links", IniFlags.Supported | IniFlags.Global, d, s);
+            Register("mysql.max_pool_size", IniFlags.Supported | IniFlags.Global, d, s);
+        }
     }
 }

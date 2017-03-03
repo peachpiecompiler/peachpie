@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Data;
 using System.Diagnostics;
+using Pchp.Library.Resources;
 
 namespace Peachpie.Library.MySql
 {
@@ -23,33 +24,6 @@ namespace Peachpie.Library.MySql
         {
             _manager = manager;
             _connection = new MySqlConnection(this.ConnectionString);
-        }
-
-        public override bool Connect()
-        {
-            if (_connection.State == ConnectionState.Open)
-            {
-                return true;
-            }
-
-            try
-            {
-                _connection.Open();  // TODO: Async
-                _lastException = null;
-            }
-            catch (System.Exception e)
-            {
-                _lastException = e;
-
-                // TODO: ERR
-
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("cannot_open_connection",
-                //  GetExceptionMessage(e)));
-
-                return false;
-            }
-
-            return true;
         }
 
         protected override void FreeManaged()
