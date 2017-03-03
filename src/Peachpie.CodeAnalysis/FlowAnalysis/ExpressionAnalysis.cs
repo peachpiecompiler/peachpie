@@ -368,7 +368,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         if (State.MaybeVarUninitialized(name))
                         {
-                            x.MaybeUninitialized = true;
+                            x.MaybeUninitialized = (x.Variable.VariableKind != VariableKind.GlobalVariable && !vartype.IsRef);  // do not report as uninitialized if variable may be a reference or it is a (super)global variable
                             vartype |= TypeCtx.GetNullTypeMask();
                         }
                     }
