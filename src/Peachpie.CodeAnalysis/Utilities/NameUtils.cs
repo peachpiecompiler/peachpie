@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis
 {
@@ -39,6 +40,44 @@ namespace Pchp.CodeAnalysis
             {
                 return type.QualifiedName;
             }
+        }
+
+        public static QualifiedName MakeQualifiedName(string name, string clrnamespace, bool fullyQualified)
+        {
+            if (string.IsNullOrEmpty(clrnamespace))
+            {
+                return new QualifiedName(new Name(name), Name.EmptyNames, fullyQualified);
+            }
+
+            // count name parts
+            int ndots = 0;
+
+            for (int i = 0; i < clrnamespace.Length; i++)
+            {
+                var ch = clrnamespace[i];
+                if (ch == '.' || ch == QualifiedName.Separator)
+                {
+                    ndots++;
+                }
+            }
+            
+            // create name parts
+            var names = new Name[ndots + 1];
+
+            int lastDot = 0, n = 0;
+            for (int i = 0; i < clrnamespace.Length; i++)
+            {
+                var ch = clrnamespace[i];
+                if (ch == '.' || ch == QualifiedName.Separator)
+                {
+                    names[n++] = new Name(clrnamespace.Substring(lastDot, i - lastDot));
+                    lastDot = i + 1;
+                }
+            }
+            names[n++] = new Name(clrnamespace.Substring(lastDot, clrnamespace.Length - lastDot));
+            Debug.Assert(n == names.Length);
+
+            return new QualifiedName(new Name(name), names, fullyQualified);
         }
 
         /// <summary>

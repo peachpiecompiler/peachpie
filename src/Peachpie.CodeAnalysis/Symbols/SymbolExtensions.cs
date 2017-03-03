@@ -60,15 +60,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static QualifiedName MakeQualifiedName(this NamedTypeSymbol type)
         {
-            if (string.IsNullOrEmpty(type.NamespaceName))
-            {
-                return new QualifiedName(new Name(type.Name));
-            }
-            else
-            {
-                var ns = type.NamespaceName.Replace('.', QualifiedName.Separator);
-                return NameUtils.MakeQualifiedName(ns + QualifiedName.Separator + type.Name, true);
-            }
+            return NameUtils.MakeQualifiedName(type.Name, type.NamespaceName, true);
         }
 
         public static bool IsAccessible(this Symbol symbol, TypeSymbol classCtx)

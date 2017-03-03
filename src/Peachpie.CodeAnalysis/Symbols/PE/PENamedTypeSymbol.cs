@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var phpname = this.GetPhpTypeNameOrNull();
                 if (phpname.IsEmpty())
                 {
-                    phpname = new QualifiedName(new Name(_name), _ns.Split('.').Select(s => new Name(s)).ToArray(), true);
+                    phpname = this.MakeQualifiedName();
                 }
 
                 return phpname;
