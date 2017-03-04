@@ -105,7 +105,7 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Undefined variable: {0}.
+        ///    Looks up a localized string similar to Undefined variable: ${0}.
         /// </summary>
         public static string WRN_UninitializedVariableUse {
             get {
