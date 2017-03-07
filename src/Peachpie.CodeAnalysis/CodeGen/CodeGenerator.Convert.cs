@@ -708,6 +708,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString);
             }
+            else if (from == CoreTypes.PhpValue)
+            {
+                EmitPhpValueAddr(); // PhpValue -> PhpValue addr
+                EmitLoadContext();  // Context
+                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToPhpString)
+                    .Expect(CoreTypes.PhpString);
+            }
             else
             {
                 // new PhpString(string)

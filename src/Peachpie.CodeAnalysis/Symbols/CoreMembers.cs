@@ -511,6 +511,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = ct.PhpValue.Method("ToLong");
                 ToDouble = ct.PhpValue.Method("ToDouble");
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
+                ToPhpString = ct.PhpValue.Method("ToPhpString", ct.Context);
                 ToClass = ct.PhpValue.Method("ToClass");
                 EnsureObject = ct.PhpValue.Method("EnsureObject");
                 EnsureArray = ct.PhpValue.Method("EnsureArray");
@@ -550,7 +551,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToPhpString, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
                 AsObject,
                 DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue,
