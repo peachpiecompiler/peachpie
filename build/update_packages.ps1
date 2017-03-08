@@ -12,7 +12,7 @@ if ($framework -ne "netcoreapp1.0") {
 }
 
 # The list of projects to process
-$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.MySql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.Compiler.Tools")
+$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.Compiler.Tools")
 $suffix = "dev"
 
 # We suppose the global package source is in the default location 
