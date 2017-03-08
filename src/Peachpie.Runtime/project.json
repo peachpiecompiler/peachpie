@@ -18,17 +18,16 @@
   },
 
   "dependencies": {
-    "System.Reflection.Emit.Lightweight": "4.3.0",
-    "System.Dynamic.Runtime": "4.3.0"
+    "NETStandard.Library": "1.6.1"
   },
   "frameworks": {
-    ".NETFramework,Version=v4.6": {
-      "buildOptions": { "define": [ "NET46" ] }
+    "net46": {
     },
     "netstandard1.6": {
       "imports": [ "dnxcore50" ],
       "dependencies": {
-        "NETStandard.Library": "1.6.1"
+        "System.Reflection.Emit.Lightweight": "4.3.0",
+        "System.Dynamic.Runtime": "4.3.0"
       }
     }
   }

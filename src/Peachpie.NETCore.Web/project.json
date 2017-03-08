@@ -18,18 +18,16 @@
   },
 
   "dependencies": {
-    "System.Reflection": "4.3.0",
     "Microsoft.AspNetCore.Http.Abstractions": "1.1.0",
     "Microsoft.AspNetCore.Hosting.Abstractions": "1.1.0",
-    "Peachpie.Runtime": "*"
+    "Peachpie.Runtime": { "target": "project" },
+    "NETStandard.Library": "1.6.1"
   },
 
   "frameworks": {
-    ".NETFramework,Version=v4.6": {},
+    "net46": {
+    },
     "netstandard1.6": {
-      "dependencies": {
-        "NETStandard.Library": "1.6.1"
-      },
       "imports": "dnxcore50"
     }
   }

@@ -16,11 +16,12 @@
     "keyFile": "../../build/StrongKeys/core.snk"
   },
   "dependencies": {
-    "Peachpie.CodeAnalysis": "*",
-    "Peachpie.App": "*"
+    "Peachpie.CodeAnalysis": { "target": "project" },
+    "Peachpie.App": { "target": "project" }
   },
   "frameworks": {
-    ".NETFramework,Version=v4.6": {},
+    "net46": {
+    },
     "netcoreapp1.0": {
       "dependencies": {
         "Microsoft.NETCore.App": {

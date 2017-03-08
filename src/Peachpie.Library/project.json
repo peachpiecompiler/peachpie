@@ -18,20 +18,21 @@
   },
 
   "dependencies": {
-    "System.Collections": "4.3.0",
+    "NETStandard.Library": "1.6.1",
+    //"System.Collections": "4.3.0",
     "System.Data.Common": "4.3.0",
     "System.Net.NameResolution": "4.3.0",
-    "System.Xml.ReaderWriter": "4.3.0",
-    "Peachpie.Runtime": "*"
+    //"System.Xml.ReaderWriter": "4.3.0",
+    "Peachpie.Runtime": { "target": "project" }
+
   },
 
   "frameworks": {
     "netstandard1.6": {
       "imports": "dnxcore50",
-      "dependencies": { "NETStandard.Library": "1.6.1" }
+      "dependencies": {}
     },
-    ".NETFramework,Version=v4.6": {
-      "dependencies": { "NETStandard.Library": "1.6.1" }
+    "net46": {
     }
   }
 }

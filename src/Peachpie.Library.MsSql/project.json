@@ -18,18 +18,17 @@
   },
 
   "dependencies": {
-    "Peachpie.Runtime": "*",
-    "Peachpie.Library": "*",
-    "System.Data.SqlClient" :  "4.3.0"
+    "NETStandard.Library": "1.6.1",
+    "Peachpie.Runtime": { "target": "project" },
+    "Peachpie.Library": { "target": "project" },
+    "System.Data.SqlClient": "4.3.0"
   },
 
   "frameworks": {
     "netstandard1.6": {
-      "imports": "dnxcore50",
-      "dependencies": { "NETStandard.Library": "1.6.1" }
+      "imports": "dnxcore50"
     },
-    ".NETFramework,Version=v4.6": {
-      "dependencies": { "NETStandard.Library": "1.6.1" }
+    "net46": {
     }
   }
 }
