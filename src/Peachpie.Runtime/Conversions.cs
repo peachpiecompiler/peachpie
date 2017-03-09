@@ -165,7 +165,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region AsObject, ToArray, ToClass, AsCallable
+        #region AsObject, ToArray, ToPhpString, ToClass, AsCallable
 
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
@@ -181,7 +181,6 @@ namespace Pchp.Core
         /// Casts value to <see cref="PhpArray"/> or <c>null</c>.
         /// </summary>
         public static PhpArray AsArray(PhpValue value) => value.AsArray();
-
         /// <summary>
         /// Creates <see cref="PhpArray"/> from object's properties.
         /// </summary>
@@ -214,6 +213,25 @@ namespace Pchp.Core
                     TypeMembersUtils.InstanceFieldsToPhpArray(obj, arr);
                     return arr;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Gets a copy of the underlying PHP string if present, a new PHP string representing the value otherwise.
+        /// </summary>
+        public static PhpString ToPhpString(PhpValue value, Context ctx)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Alias:
+                    return ToPhpString(value.Alias.Value, ctx);
+
+                case PhpTypeCode.WritableString:
+                    return value.WritableString;
+                case PhpTypeCode.String:
+                    return new PhpString(value.String);
+                default:
+                    return new PhpString(value.ToString(ctx));
             }
         }
 

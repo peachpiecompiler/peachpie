@@ -430,21 +430,6 @@ namespace Pchp.Core
             return _type.ToStringQuiet(ref this);
         }
 
-        /// <summary>
-        /// Gets a copy of the underlying PHP string if present, a new PHP string representing the value otherwise.
-        /// </summary>
-        public PhpString ToPhpString(Context ctx)
-        {
-            if (TypeCode == PhpTypeCode.WritableString)
-            {
-                return WritableString.DeepCopy();
-            }
-            else
-            {
-                return new PhpString(ToString(ctx));
-            }
-        }
-
         #endregion
 
         #region IEquatable<PhpValue>

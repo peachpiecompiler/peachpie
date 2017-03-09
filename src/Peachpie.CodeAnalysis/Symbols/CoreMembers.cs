@@ -411,6 +411,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
                 AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
                 ToArray_PhpValue = ct.Convert.Method("ToArray", ct.PhpValue);
+                ToPhpString_PhpValue_Context = ct.Convert.Method("ToPhpString", ct.PhpValue, ct.Context);
                 ToClass_PhpValue = ct.Convert.Method("ToClass", ct.PhpValue);
                 ToClass_IPhpArray = ct.Convert.Method("ToClass", ct.IPhpArray);
                 AsCallable_PhpValue = ct.Convert.Method("AsCallable", ct.PhpValue);
@@ -479,7 +480,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object, ToBoolean_IPhpConvertible,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
                 ToNumber_PhpValue, ToNumber_String,
-                AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
+                AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue, AsCallable_String,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32,
@@ -511,7 +512,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = ct.PhpValue.Method("ToLong");
                 ToDouble = ct.PhpValue.Method("ToDouble");
                 ToString_Context = ct.PhpValue.Method("ToString", ct.Context);
-                ToPhpString = ct.PhpValue.Method("ToPhpString", ct.Context);
                 ToClass = ct.PhpValue.Method("ToClass");
                 EnsureObject = ct.PhpValue.Method("EnsureObject");
                 EnsureArray = ct.PhpValue.Method("EnsureArray");
@@ -551,7 +551,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToPhpString, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
                 AsObject,
                 DeepCopy, GetValue,
                 Eq_PhpValue_PhpValue,

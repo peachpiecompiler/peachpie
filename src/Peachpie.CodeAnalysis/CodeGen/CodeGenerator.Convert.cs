@@ -710,9 +710,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (from == CoreTypes.PhpValue)
             {
-                EmitPhpValueAddr(); // PhpValue -> PhpValue addr
                 EmitLoadContext();  // Context
-                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToPhpString)
+                EmitCall(ILOpCode.Call, CoreMethods.Operators.ToPhpString_PhpValue_Context)
                     .Expect(CoreTypes.PhpString);
             }
             else
