@@ -32,6 +32,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", typeof(PhpValue).MakeByRefType(), typeof(PhpValue));
 
             public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
+            public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", typeof(PhpValue), typeof(Context));
 
             public static MethodInfo PhpAlias_EnsureObject = typeof(Core.PhpAlias).GetMethod("EnsureObject", Types.Empty);
             public static MethodInfo PhpAlias_EnsureArray = typeof(Core.PhpAlias).GetMethod("EnsureArray", Types.Empty);

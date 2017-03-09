@@ -199,8 +199,7 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(PhpValue))
             {
-                expr = Expression.Call(expr, Cache.Operators.PhpValue_ToString_Context, ctx);   // TODO: PhpValue.AsPhpString(ctx)
-                source = expr.Type;
+                return Expression.Call(Cache.Operators.ToPhpString_PhpValue_Context, expr, ctx);    // Convert.ToPhpString(PhpValue, Context)
             }
 
             if (source == typeof(string)) return Expression.New(Cache.PhpString.ctor_String, expr);        // new PhpString(string)

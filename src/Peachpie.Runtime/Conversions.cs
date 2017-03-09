@@ -217,7 +217,7 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Gets a copy of the underlying PHP string if present, a new PHP string representing the value otherwise.
+        /// Gets the underlying PHP string if present, a new PHP string representing the value otherwise.
         /// </summary>
         public static PhpString ToPhpString(PhpValue value, Context ctx)
         {
