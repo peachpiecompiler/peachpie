@@ -1,0 +1,35 @@
+﻿{
+  "version": "1.0.0-*",
+
+  "dependencies": {
+    "Peachpie.Library.PDO": { "target": "project" },
+    "Peachpie.Library.PDO.Firebird": { "target": "project" },
+    "Peachpie.Library.PDO.MySQL": { "target": "project" },
+    "Peachpie.Library.PDO.PgSQL": { "target": "project" },
+    "Peachpie.Library.PDO.Sqlite": { "target": "project" },
+    "Peachpie.Library.PDO.SqlSrv": { "target": "project" },
+    "Peachpie.App": { "target": "project" }
+  },
+
+  "tools": {
+    "Peachpie.Compiler.Tools": "0.5.0-dev"
+  },
+
+  "buildOptions": {
+    "compilerName": "php",
+    "compile": "**\\*.php",
+    "debugType": "portable",
+    "xmlDoc": true
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.0"
+        }
+      }
+    }
+  }
+}

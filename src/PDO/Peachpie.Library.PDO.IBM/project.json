@@ -1,0 +1,22 @@
+﻿{
+  "version": "0.5.0-*",
+
+  "dependencies": {
+    "Peachpie.Library.PDO": { "target": "project" }
+  },
+
+  "buildOptions": {
+    "preserveCompilationContext": true,
+    "debugType": "portable",
+    "xmlDoc": true
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50",
+      "dependencies": {
+        "IBM.Data.DB2.Core": "1.0.0.100"
+      }
+    }
+  }
+}
