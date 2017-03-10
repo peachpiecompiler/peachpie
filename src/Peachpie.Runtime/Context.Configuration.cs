@@ -180,7 +180,7 @@ namespace Pchp.Core
 
     partial class Context
     {
-        #region StaticPhpConfigurationService, PhpConfigurationService
+        #region DefaultPhpConfigurationService, PhpConfigurationService
 
         class DefaultPhpConfigurationService : IPhpConfigurationService
         {
@@ -238,7 +238,7 @@ namespace Pchp.Core
         /// Gets a service providing access to current runtime configuration.
         /// </summary>
         public virtual IPhpConfigurationService Configuration => _configuration;
-        readonly PhpConfigurationService _configuration = new PhpConfigurationService();
+        readonly IPhpConfigurationService _configuration = new PhpConfigurationService();
 
         /// <summary>
         /// Registers a configuration to be accessed through <see cref="IPhpConfigurationService.Get{TOptions}"/> with default values.
