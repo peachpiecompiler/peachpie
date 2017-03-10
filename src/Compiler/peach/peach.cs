@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.IO;
+using System.Reflection;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -18,27 +20,41 @@ namespace Pchp.CodeAnalysis.CommandLine
                  AppDomain.CurrentDomain.BaseDirectory,
                  System.IO.Directory.GetCurrentDirectory(),
                  System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(),
-                 Environment.GetEnvironmentVariable("LIB") + @";C:\Windows\Microsoft.NET\assembly\GAC_MSIL",
+                 ReferenceDirectories,
                  analyzerLoader)
         {
             
         }
 
+        static string ReferenceDirectories
+        {
+            get
+            {
+                var libs = Environment.GetEnvironmentVariable("LIB");
+                var gac = Environment.ExpandEnvironmentVariables(@"%windir%\Microsoft.NET\assembly\GAC_MSIL");
+                return libs + ";" + gac;
+            }
+        }
+
         static string[] CreateArgs(string[] args)
         {
-            var basedir = AppDomain.CurrentDomain.BaseDirectory;
-            var list = new List<string>()
+            // implicit references
+            var assemblies = new List<Assembly>()
             {
-                "/r:" + @"C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Runtime\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Runtime.dll",
-                "/r:" + @"C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Core\v4.0_4.0.0.0__b77a5c561934e089\System.Core.dll",
-                "/r:" + Path.Combine(basedir, "Peachpie.Runtime.dll"),
-                "/r:" + Path.Combine(basedir, "Peachpie.Library.dll"),
-                "/r:" + Path.Combine(basedir, "Peachpie.Library.MySql.dll")
+                typeof(object).Assembly,            // mscorlib (or System.Runtime)
+                typeof(HashSet<>).Assembly,         // System.Core
+                typeof(Core.Context).Assembly,      // Peachpie.Runtime
+                typeof(Library.Strings).Assembly,   // Peachpie.Library
+                typeof(Peachpie.Library.MySql.MySql).Assembly,  // MySql
+                typeof(Peachpie.Library.MsSql.MsSql).Assembly,  // MsSql
             };
 
+            Debug.Assert(refs.Any(r => r.Contains("System.Core")));
+            Debug.Assert(refs.Any(r => r.Contains("Peachpie.Runtime")));
+            Debug.Assert(refs.Any(r => r.Contains("Peachpie.Library")));
+
             //
-            list.AddRange(args);
-            return list.ToArray();
+            return refs.Concat(args).ToArray();
         }
     }
 }
