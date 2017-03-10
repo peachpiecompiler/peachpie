@@ -48,6 +48,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 typeof(Peachpie.Library.MySql.MySql).Assembly,  // MySql
                 typeof(Peachpie.Library.MsSql.MsSql).Assembly,  // MsSql
             };
+            var refs = assemblies.Distinct().Select(ass => "/r:" + ass.Location);
 
             Debug.Assert(refs.Any(r => r.Contains("System.Core")));
             Debug.Assert(refs.Any(r => r.Contains("Peachpie.Runtime")));
