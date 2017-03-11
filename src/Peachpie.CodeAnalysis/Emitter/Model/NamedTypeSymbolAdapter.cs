@@ -57,15 +57,13 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                //PENamedTypeSymbol peNamedType = this as PENamedTypeSymbol;
-                //if ((object)peNamedType != null)
-                //{
-                //    return peNamedType.Handle;
-                //}
+                var peNamedType = this as PENamedTypeSymbol;
+                if ((object)peNamedType != null)
+                {
+                    return peNamedType.Handle;
+                }
 
-                throw new System.NotImplementedException();
-
-                //return default(TypeDefinitionHandle);
+                return default(TypeDefinitionHandle);
             }
         }
 
@@ -783,10 +781,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (!this.IsDefinition)
             {
-                throw new System.NotImplementedException();
-                //return moduleBeingBuilt.Translate(this.ContainingType,
-                //                                  syntaxNodeOpt: (CSharpSyntaxNode)context.SyntaxNodeOpt,
-                //                                  diagnostics: context.Diagnostics);
+                return moduleBeingBuilt.Translate(this.ContainingType,
+                                                  syntaxNodeOpt: context.SyntaxNodeOpt,
+                                                  diagnostics: context.Diagnostics);
             }
 
             return (Cci.ITypeReference)this.ContainingType;
