@@ -89,6 +89,9 @@ namespace Pchp.Library
         /// <param name="what">The output may be customized by passing one or more of the following constants bitwise values summed together in the optional what parameter. One can also combine the respective constants or bitwise values together with the or operator.</param>
         public static void phpinfo(Context ctx, PhpInfoWhat what = PhpInfoWhat.INFO_ALL)
         {
+            // TODO: ctx.IsWebApplication == false => text output
+            // TODO: 'HtmlTagWriter' -> 'PhpInfoWriter', two implementations of PhpInfoWriter: "HtmlInfoWriter", "TextInfoWriter"
+
             ctx.Echo(@"<!DOCTYPE html PUBLIC ""-//W3C//DTD XHTML 1.0 Transitional//EN"" ""DTD/xhtml1-transitional.dtd"">");
             using (var html = ctx.Tag("html", new { xmlns = "http://www.w3.org/1999/xhtml" }))
             {
@@ -105,24 +108,24 @@ namespace Pchp.Library
                 using (var center = body.Tag("div", new { @class = "center" }))
                 {
                     PageTitle(center);
-                    if (what.HasFlag(PhpInfoWhat.INFO_GENERAL))
+
+                    if ((what & PhpInfoWhat.INFO_GENERAL) != 0)
                     {
                         General(center);
                     }
-                    if (what.HasFlag(PhpInfoWhat.INFO_CONFIGURATION))
+                    if ((what & PhpInfoWhat.INFO_CONFIGURATION) != 0)
                     {
-                        center.EchoTag("h1", "Configuration");
                         Configuration(center, ctx.Configuration);
                     }
-                    if (what.HasFlag(PhpInfoWhat.INFO_ENVIRONMENT))
+                    if ((what & PhpInfoWhat.INFO_ENVIRONMENT) != 0)
                     {
                         Env(center);
                     }
-                    if (what.HasFlag(PhpInfoWhat.INFO_VARIABLES))
+                    if ((what & PhpInfoWhat.INFO_VARIABLES) != 0)
                     {
                         Variables(center);
                     }
-                    if (what.HasFlag(PhpInfoWhat.INFO_CREDITS))
+                    if ((what & PhpInfoWhat.INFO_CREDITS) != 0)
                     {
                         center.EchoTag("h1", "Credits");
                         Credits(center);
@@ -188,12 +191,17 @@ namespace Pchp.Library
 
         private static void Configuration(HtmlTagWriter container, IPhpConfigurationService config)
         {
+            container.EchoTag("h1", "Configuration");
+
             var extensions = Context.GetLoadedExtensions();
             foreach (string ext in extensions)
             {
                 container.EchoTag("h2", ext);
             }
-            //TODO : get extensions and dump configuration
+
+            // TODO: extensions configuration.
+            // 1. IPhpConfigurationService as IEnumerable<IPhpConfiguration>
+            // 2. IPhpConfiguration.ExtensionName
         }
 
         private static void Env(HtmlTagWriter container)
