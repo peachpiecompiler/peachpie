@@ -87,11 +87,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ctx">The php context.</param>
         /// <param name="what">The output may be customized by passing one or more of the following constants bitwise values summed together in the optional what parameter. One can also combine the respective constants or bitwise values together with the or operator.</param>
-        public static void phpinfo(Context ctx, int what = INFO_ALL)
-        {
-            phpinfo(ctx, (PhpInfoWhat)what);
-        }
-
         public static void phpinfo(Context ctx, PhpInfoWhat what = PhpInfoWhat.INFO_ALL)
         {
             ctx.Echo(@"<!DOCTYPE html PUBLIC ""-//W3C//DTD XHTML 1.0 Transitional//EN"" ""DTD/xhtml1-transitional.dtd"">");
@@ -117,7 +112,7 @@ namespace Pchp.Library
                     if (what.HasFlag(PhpInfoWhat.INFO_CONFIGURATION))
                     {
                         center.EchoTag("h1", "Configuration");
-                        Configuration(center);
+                        Configuration(center, ctx.Configuration);
                     }
                     if (what.HasFlag(PhpInfoWhat.INFO_ENVIRONMENT))
                     {
@@ -148,7 +143,7 @@ namespace Pchp.Library
                 }
                 using (var title = td.Tag("h1", new { @class = "p" }))
                 {
-                    title.EchoEscaped("PeachPie Version " + typeof(Context).GetTypeInfo().Assembly.GetName().Version);
+                    title.EchoEscaped("Peachpie Version " + typeof(Context).GetTypeInfo().Assembly.GetName().Version.ToString(3));  // TODO: suffix (-preview...)
                 }
             }
         }
@@ -191,11 +186,9 @@ namespace Pchp.Library
             return "Unknown";
         }
 
-        private static void Configuration(HtmlTagWriter container)
+        private static void Configuration(HtmlTagWriter container, IPhpConfigurationService config)
         {
-            var extensionTable = typeof(Context).GetTypeInfo().Assembly.GetType("Pchp.Core.Reflection.ExtensionsAppContext")
-                .GetTypeInfo().GetField("ExtensionsTable").GetValue(null);
-            var extensions = (ICollection<string>)extensionTable.GetType().GetTypeInfo().GetMethod("GetExtensions").Invoke(extensionTable, null);
+            var extensions = Context.GetLoadedExtensions();
             foreach (string ext in extensions)
             {
                 container.EchoTag("h2", ext);
