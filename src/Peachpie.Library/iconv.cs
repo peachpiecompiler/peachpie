@@ -56,7 +56,7 @@ namespace Pchp.Library
             /// </summary>
             internal static void RegisterLegacyOptions()
             {
-                const string s = "zlib";
+                const string s = "iconv";
                 GetSetDelegate d = new GetSetDelegate(GetSet);
 
                 Register("iconv.input_encoding", IniFlags.Supported | IniFlags.Local, d, s);
