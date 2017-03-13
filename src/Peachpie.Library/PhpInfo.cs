@@ -92,6 +92,8 @@ namespace Pchp.Library
             // TODO: ctx.IsWebApplication == false => text output
             // TODO: 'HtmlTagWriter' -> 'PhpInfoWriter', two implementations of PhpInfoWriter: "HtmlInfoWriter", "TextInfoWriter"
 
+            // TODO: Localize
+
             ctx.Echo(@"<!DOCTYPE html PUBLIC ""-//W3C//DTD XHTML 1.0 Transitional//EN"" ""DTD/xhtml1-transitional.dtd"">");
             using (var html = ctx.Tag("html", new { xmlns = "http://www.w3.org/1999/xhtml" }))
             {
@@ -177,6 +179,8 @@ namespace Pchp.Library
 #endif
                     ? "yes" : "no");
                 Line("IPv6 Support", System.Net.Sockets.Socket.OSSupportsIPv6 ? "yes" : "no");
+                Line("Registered PHP Streams", string.Join(", ", Streams.StreamWrapper.SystemStreamWrappers.Keys));
+                Line("Registered Stream Filters", string.Join(", ", Streams.PhpFilter.GetFilterNames()));
             }
         }
 

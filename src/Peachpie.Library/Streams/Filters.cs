@@ -429,37 +429,23 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
-        /// Merges the individual string[] into one PhpArray (numeric keys).
-        /// </summary>
-        /// <param name="filterList">List of filter name <see cref="string"/>s.</param>
-        /// <param name="rv">Return value loopback (pass <c>null</c> to create new).</param>
-        /// <returns></returns>
-        private static PhpArray MergeFilterNames(ICollection<string> filterList, PhpArray rv)
-        {
-            if (rv == null)
-                rv = new PhpArray(8);
-
-            if (filterList != null)
-            {
-                foreach (string name in filterList)
-                {
-                    rv.Add(name);
-                }
-            }
-            return rv;
-        }
-
-        /// <summary>
         /// Retrieves the list of registered filters.
         /// </summary>
         /// <returns>A <see cref="PhpArray"/> containing the names of available filters.</returns>
-        public static PhpArray GetFilterNames()
+        public static IEnumerable<string> GetFilterNames()
         {
-            PhpArray rv = null;
+            var set = new HashSet<string>();
             foreach (IFilterFactory factory in systemFilters)
-                MergeFilterNames(factory.GetImplementedFilterNames(), rv);
+            {
+                set.UnionWith(factory.GetImplementedFilterNames());
+            }
 
-            return MergeFilterNames((UserFilters != null) ? UserFilters.Keys : null, rv);
+            if (UserFilters != null)
+            {
+                set.UnionWith(UserFilters.Keys);
+            }
+
+            return set;
         }
 
         /// <summary>
