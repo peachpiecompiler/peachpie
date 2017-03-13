@@ -86,7 +86,9 @@ namespace Pchp.Library
         /// Outputs information about PHP's configuration
         /// </summary>
         /// <param name="ctx">The php context.</param>
-        /// <param name="what">The output may be customized by passing one or more of the following constants bitwise values summed together in the optional what parameter. One can also combine the respective constants or bitwise values together with the or operator.</param>
+        /// <param name="what">
+        /// The output may be customized by passing one or more of the following constants bitwise values summed together in the optional <paramref name="what"/> parameter.
+        /// One can also combine the respective constants or bitwise values together with the or operator.</param>
         public static bool phpinfo(Context ctx, PhpInfoWhat what = PhpInfoWhat.INFO_ALL)
         {
             // TODO: ctx.IsWebApplication == false => text output
@@ -129,7 +131,6 @@ namespace Pchp.Library
                     }
                     if ((what & PhpInfoWhat.INFO_CREDITS) != 0)
                     {
-                        center.EchoTag("h1", "Credits");
                         Credits(center);
                     }
                 }
@@ -296,6 +297,8 @@ namespace Pchp.Library
 
         private static void Credits(HtmlTagWriter container)
         {
+            center.EchoTag("h1", "Credits");
+            
             // TODO: creditz, can we pull it from git?
         }
     }
