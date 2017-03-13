@@ -16,6 +16,9 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public IPhpConfiguration Copy() => (PDOConfiguration)this.MemberwiseClone();
 
+        /// <inheritDoc />
+        public string ExtensionName => "pdo";
+
         //public NameValueCollection Alias { get; set; } = new NameValueCollection();
 
     }

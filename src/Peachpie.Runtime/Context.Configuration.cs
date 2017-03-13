@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace Pchp.Core
     /// <summary>
     /// Interface providing access to configuration.
     /// </summary>
-    public interface IPhpConfigurationService
+    public interface IPhpConfigurationService : IEnumerable<IPhpConfiguration>
     {
         /// <summary>
         /// Gets collection of options.
@@ -43,6 +44,11 @@ namespace Pchp.Core
     public interface IPhpConfiguration
     {
         /// <summary>
+        /// Gets the corresponding extension name.
+        /// </summary>
+        string ExtensionName { get; }
+
+        /// <summary>
         /// Creates the configuration copy.
         /// </summary>
         /// <returns>New instance of <c>this</c> with copied values.</returns>
@@ -51,12 +57,14 @@ namespace Pchp.Core
 
     public sealed class PhpCoreConfiguration : IPhpConfiguration
     {
-        #region Construction
+        #region IPhpConfiguration
 
         internal PhpCoreConfiguration()
         {
 
         }
+
+        public string ExtensionName => "Core";
 
         public IPhpConfiguration Copy() => (PhpCoreConfiguration)this.MemberwiseClone();
 
@@ -195,6 +203,10 @@ namespace Pchp.Core
                 IPhpConfiguration value;
                 return _defaultConfigs.TryGetValue(typeof(TOptions), out value) ? (TOptions)value : null;
             }
+
+            IEnumerator<IPhpConfiguration> IEnumerable<IPhpConfiguration>.GetEnumerator() => _defaultConfigs.Values.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<IPhpConfiguration>)this).GetEnumerator();
         }
 
         protected class PhpConfigurationService : IPhpConfigurationService
@@ -230,6 +242,23 @@ namespace Pchp.Core
                 //
                 return (TOptions)value;
             }
+
+            IEnumerator<IPhpConfiguration> IEnumerable<IPhpConfiguration>.GetEnumerator()
+            {
+                // collect _configs & _defaultConfigs distinctly
+                var seen = new HashSet<Type>();
+                foreach (var pair in _configs.Concat(_defaultConfigs))
+                {
+                    if (seen.Add(pair.Key))
+                    {
+                        yield return pair.Value;
+                    }
+                }
+
+                yield break;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<IPhpConfiguration>)this).GetEnumerator();
         }
 
         #endregion

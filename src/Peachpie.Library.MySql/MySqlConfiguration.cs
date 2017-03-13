@@ -12,6 +12,8 @@ namespace Peachpie.Library.MySql
     {
         IPhpConfiguration IPhpConfiguration.Copy() => (MySqlConfiguration)this.MemberwiseClone();
 
+        public string ExtensionName => "mysql";
+
         /// <summary>
         /// Request timeout in seconds. Non-positive value means no timeout.
         /// </summary>

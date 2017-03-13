@@ -67,6 +67,34 @@ namespace Pchp.Library
             }
         }
 
+        /// <summary>
+        /// Provides state, definition and values of an option.
+        /// </summary>
+        public struct OptionDump
+        {
+            /// <summary>
+            /// Option PHP name.
+            /// </summary>
+            public string Name;
+
+            /// <summary>
+            /// Corresponding extension name.
+            /// </summary>
+            public string ExtensionName => Definition.Extension;
+
+            /// <summary>
+            /// Internal option definition.
+            /// </summary>
+            public OptionDefinition Definition;
+
+            /// <summary>
+            /// Actual option value.
+            /// </summary>
+            public PhpValue
+                LocalValue,
+                DefaultValue;
+        }
+
         static readonly GetSetDelegate EmptyGsr = new GetSetDelegate((s, name, value, action) => PhpValue.Null);
 
         static Dictionary<string, OptionDefinition> _options = new Dictionary<string, OptionDefinition>(150, StringComparer.Ordinal);
@@ -261,7 +289,7 @@ namespace Pchp.Library
 		/// <returns>An array containig keys <c>"global_value"</c>, <c>"local_value"</c>, <c>"access"</c>.</returns>
 		public static PhpArray FormatOptionState(IniFlags flags, PhpValue defaultValue, PhpValue localValue)
         {
-            PhpArray result = new PhpArray(3);
+            var result = new PhpArray(3);
 
             result.Add("global_value", defaultValue);
             result.Add("local_value", localValue);
@@ -283,6 +311,22 @@ namespace Pchp.Library
             Debug.Assert(ctx != null && ctx.Configuration != null);
             Debug.Assert(result != null);
 
+            foreach (var opt in DumpOptions(ctx, extension))
+            {
+                result[opt.Name] = (PhpValue)FormatOptionState(opt.Definition.Flags, opt.DefaultValue, opt.LocalValue);
+            }
+
+            //
+            return result;
+        }
+
+        /// <summary>
+        /// Enumerates all registered options (optionally restricted by the <paramref name="extension"/> name), their definition and local and global values.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="extension">Optional. Extension name restriction.</param>
+        public static IEnumerable<OptionDump> DumpOptions(Context ctx, string extension = null)
+        {
             var config = ctx.Configuration;
 
             foreach (var entry in _options)
@@ -293,34 +337,25 @@ namespace Pchp.Library
                 // skips configuration which don't belong to the specified extension:
                 if ((extension == null || extension.Equals(def.Extension, StringComparison.Ordinal)))
                 {
-                    PhpArray array; // ["global_value", "local_value", "access"]
+                    var opt = new OptionDump() { Name = name, Definition = def };
 
                     if ((def.Flags & IniFlags.Supported) == 0)
                     {
-                        array = FormatOptionState(
-                            def.Flags,
-                            (PhpValue)"Not Supported",
-                            (PhpValue)"Not Supported");
+                        opt.LocalValue = opt.DefaultValue = (PhpValue)"Not Supported";
                     }
                     else if ((def.Flags & IniFlags.Http) != 0 && !ctx.IsWebApplication)
                     {
-                        array = FormatOptionState(
-                            def.Flags,
-                            (PhpValue)"Http Context Required",
-                            (PhpValue)"Http Context Required");
+                        opt.LocalValue = opt.DefaultValue = (PhpValue)"Http Context Required";
                     }
                     else
                     {
-                        array = FormatOptionState(
-                            def.Flags,
-                            def.Gsr(config.Parent, name, PhpValue.Null, IniAction.Get),
-                            def.Gsr(config, name, PhpValue.Null, IniAction.Get));
+                        opt.DefaultValue = def.Gsr(config.Parent, name, PhpValue.Null, IniAction.Get);
+                        opt.LocalValue = def.Gsr(config, name, PhpValue.Null, IniAction.Get);
                     }
 
-                    result[name] = (PhpValue)array;
+                    yield return opt;
                 }
             }
-            return result;
         }
 
         #region GetSet

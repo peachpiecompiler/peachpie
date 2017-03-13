@@ -13,6 +13,8 @@ namespace Peachpie.Library.MsSql
     {
         public IPhpConfiguration Copy() => (MsSqlConfiguration)this.MemberwiseClone();
 
+        public string ExtensionName => "mssql";
+
         /// <summary>
 		/// Request timeout in seconds. Non-positive value means no timeout.
 		/// </summary>

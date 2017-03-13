@@ -87,7 +87,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ctx">The php context.</param>
         /// <param name="what">The output may be customized by passing one or more of the following constants bitwise values summed together in the optional what parameter. One can also combine the respective constants or bitwise values together with the or operator.</param>
-        public static void phpinfo(Context ctx, PhpInfoWhat what = PhpInfoWhat.INFO_ALL)
+        public static bool phpinfo(Context ctx, PhpInfoWhat what = PhpInfoWhat.INFO_ALL)
         {
             // TODO: ctx.IsWebApplication == false => text output
             // TODO: 'HtmlTagWriter' -> 'PhpInfoWriter', two implementations of PhpInfoWriter: "HtmlInfoWriter", "TextInfoWriter"
@@ -115,7 +115,7 @@ namespace Pchp.Library
                     }
                     if ((what & PhpInfoWhat.INFO_CONFIGURATION) != 0)
                     {
-                        Configuration(center, ctx.Configuration);
+                        Configuration(center, ctx);
                     }
                     if ((what & PhpInfoWhat.INFO_ENVIRONMENT) != 0)
                     {
@@ -132,6 +132,9 @@ namespace Pchp.Library
                     }
                 }
             }
+
+            //
+            return true;
         }
 
         private static void PageTitle(HtmlTagWriter container)
@@ -189,7 +192,7 @@ namespace Pchp.Library
             return "Unknown";
         }
 
-        private static void Configuration(HtmlTagWriter container, IPhpConfigurationService config)
+        private static void Configuration(HtmlTagWriter container, Context ctx)
         {
             container.EchoTag("h1", "Configuration");
 
@@ -199,9 +202,12 @@ namespace Pchp.Library
                 container.EchoTag("h2", ext);
             }
 
-            // TODO: extensions configuration.
-            // 1. IPhpConfigurationService as IEnumerable<IPhpConfiguration>
-            // 2. IPhpConfiguration.ExtensionName
+            // TODO: extensions configuration
+            var options = StandardPhpOptions.DumpOptions(ctx, null);
+            foreach (var extensionopt in options.GroupBy(opt => opt.ExtensionName))
+            {
+
+            }
         }
 
         private static void Env(HtmlTagWriter container)
@@ -286,7 +292,7 @@ namespace Pchp.Library
 
         private static void Credits(HtmlTagWriter container)
         {
-            //TODO creditz
+            // TODO: creditz, can we pull it from git?
         }
     }
 }

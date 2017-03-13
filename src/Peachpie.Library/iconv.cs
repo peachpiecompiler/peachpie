@@ -22,17 +22,7 @@ namespace Pchp.Library
             public string OutputEncoding = "ISO-8859-1";
 
             public IPhpConfiguration Copy() => (IconvConfig)this.MemberwiseClone();
-        }
-
-        static IconvConfig GetConfig(Context ctx) => ctx.Configuration.Get<IconvConfig>();
-
-        internal class Registrator
-        {
-            public Registrator()
-            {
-                Context.RegisterConfiguration(new IconvConfig());
-                RegisterLegacyOptions();
-            }
+            public string ExtensionName => "iconv";
 
             /// <summary>
             /// Gets or sets a value of a legacy configuration option.
@@ -64,7 +54,7 @@ namespace Pchp.Library
             /// <summary>
             /// Registers legacy ini-options.
             /// </summary>
-            static void RegisterLegacyOptions()
+            internal static void RegisterLegacyOptions()
             {
                 const string s = "zlib";
                 GetSetDelegate d = new GetSetDelegate(GetSet);
@@ -72,6 +62,17 @@ namespace Pchp.Library
                 Register("iconv.input_encoding", IniFlags.Supported | IniFlags.Local, d, s);
                 Register("iconv.internal_encoding", IniFlags.Supported | IniFlags.Local, d, s);
                 Register("iconv.output_encoding", IniFlags.Supported | IniFlags.Local, d, s);
+            }
+        }
+
+        static IconvConfig GetConfig(Context ctx) => ctx.Configuration.Get<IconvConfig>();
+
+        internal class Registrator
+        {
+            public Registrator()
+            {
+                Context.RegisterConfiguration(new IconvConfig());
+                IconvConfig.RegisterLegacyOptions();
             }
         }
 

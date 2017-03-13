@@ -415,7 +415,9 @@ namespace Pchp.Core
 
             #region IEnumerator
 
-            public virtual object Current => CurrentValue.ToClr();
+            protected virtual object CurrentObject => CurrentValue.ToClr();
+
+            object IEnumerator.Current => CurrentObject;
 
             public bool MoveNext()
             {
@@ -471,7 +473,7 @@ namespace Pchp.Core
 
             #region IEnumerator<KeyValuePair<IntStringKey, PhpValue>>
 
-            KeyValuePair<IntStringKey, PhpValue> IEnumerator<KeyValuePair<IntStringKey, PhpValue>>.Current =>
+            public KeyValuePair<IntStringKey, PhpValue> Current =>
                 new KeyValuePair<IntStringKey, PhpValue>(_table.entries[_element]._key, CurrentValue);
 
             #endregion
@@ -560,7 +562,7 @@ namespace Pchp.Core
             {
             }
 
-            public override object Current => ((IDictionaryEnumerator)this).Entry;
+            protected override object CurrentObject => ((IDictionaryEnumerator)this).Entry;
         }
 
         #endregion
