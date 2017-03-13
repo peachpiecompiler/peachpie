@@ -96,7 +96,7 @@ namespace Pchp.Library
                 {
                     using (var style = head.Tag("style", new { type = "text/css" }))
                     {
-                        style.EchoRaw(Resource.Style);
+                        style.EchoRaw(Resources.InfoResources.Style);
                     }
                     head.EchoTag("title", "phpinfo()");
                     head.EchoTagSelf("meta", new { name = "ROBOTS", content = "NOINDEX,NOFOLLOW,NOARCHIVE" });
@@ -137,9 +137,9 @@ namespace Pchp.Library
             using (var tr = table.Tag("tr", new { @class = "h" }))
             using (var td = tr.Tag("td"))
             {
-                using (var a = td.Tag("a", new { href = Resource.LogoHref, target = "_blank" }))
+                using (var a = td.Tag("a", new { href = Resources.InfoResources.LogoHref, target = "_blank" }))
                 {
-                    a.EchoTagSelf("img", new { border = "0", src = Resource.LogoSrc, alt = Resource.LogoAlt });
+                    a.EchoTagSelf("img", new { border = "0", src = Resources.InfoResources.LogoSrc, alt = Resources.InfoResources.LogoAlt });
                 }
                 using (var title = td.Tag("h1", new { @class = "p" }))
                 {
