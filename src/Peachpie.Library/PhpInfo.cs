@@ -297,7 +297,7 @@ namespace Pchp.Library
 
         private static void Credits(HtmlTagWriter container)
         {
-            center.EchoTag("h1", "Credits");
+            container.EchoTag("h1", "Credits");
             
             // TODO: creditz, can we pull it from git?
         }
