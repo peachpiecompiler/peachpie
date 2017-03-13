@@ -16,8 +16,7 @@
       }
     },
     "WebServerCSharp": {
-      "commandName": "Project",
-      "launchBrowser": true
+      "commandName": "Project"
     }
   }
 }
