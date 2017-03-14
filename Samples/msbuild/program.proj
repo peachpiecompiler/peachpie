@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.6</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.php" />
+    <!-- EmbeddedResource Include="**\*.resx" / -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Peachpie.NET.Sdk" Version="1.0.*" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

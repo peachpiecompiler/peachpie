@@ -1,84 +1,86 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compiler", "Compiler", "{0E870B29-09DB-43B4-A1DE-B0754EBED941}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{664C373F-DAA4-4E03-B250-C64CDCA3C71E}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Runtime", "src\Peachpie.Runtime\Peachpie.Runtime.xproj", "{262137A5-BB53-4B82-B7B8-E44A9898AE33}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.NETCore.Web", "src\Peachpie.NETCore.Web\Peachpie.NETCore.Web.xproj", "{039A63A4-9A86-477A-B1C6-1C7172B90F81}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{B5FCDBD5-1279-4AFE-B752-7695B1F5F2CF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B652CDCF-F023-4C67-B8D8-C712D62E1962}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{ED9DAD46-91BC-490A-BCF9-425437544421}"
+	ProjectSection(SolutionItems) = preProject
+		build\update_packages.ps1 = build\update_packages.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{30D6D91F-A671-4E73-A571-5614500FDE0B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PDO", "PDO", "{6181CA52-4D64-4166-BBCF-36FE5D13A2B3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Runtime", "src\Peachpie.Runtime\Peachpie.Runtime.csproj", "{262137A5-BB53-4B82-B7B8-E44A9898AE33}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.NETCore.Web", "src\Peachpie.NETCore.Web\Peachpie.NETCore.Web.csproj", "{039A63A4-9A86-477A-B1C6-1C7172B90F81}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ConsoleApplication1", "Samples\ConsoleApplication1\ConsoleApplication1.xproj", "{699DA5DD-11EE-436B-A0AD-40ACB7E94EAD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {F679A98B-01EE-4A7F-8D56-F0DED48450AF}
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.App", "src\Peachpie.App\Peachpie.App.xproj", "{20059EE9-94A7-4DD6-9715-1865F4349EB4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.App", "src\Peachpie.App\Peachpie.App.csproj", "{20059EE9-94A7-4DD6-9715-1865F4349EB4}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library", "src\Peachpie.Library\Peachpie.Library.xproj", "{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library", "src\Peachpie.Library\Peachpie.Library.csproj", "{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Compiler.Tools", "src\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.xproj", "{F679A98B-01EE-4A7F-8D56-F0DED48450AF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Compiler.Tools", "src\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.csproj", "{F679A98B-01EE-4A7F-8D56-F0DED48450AF}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "website", "Samples\website\website.xproj", "{8D4F57AB-BA7E-446F-BBE3-9F2AEA42969D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {F679A98B-01EE-4A7F-8D56-F0DED48450AF}
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "WebServerCSharp", "Samples\WebServerCSharp\WebServerCSharp.xproj", "{C69F8A59-0196-4819-84AE-528BA8E32F59}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebServerCSharp", "Samples\WebServerCSharp\WebServerCSharp.csproj", "{C69F8A59-0196-4819-84AE-528BA8E32F59}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {F679A98B-01EE-4A7F-8D56-F0DED48450AF}
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.CodeAnalysis", "src\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.xproj", "{2B2B4180-5093-4A29-BE59-4D672648988D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.CodeAnalysis", "src\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj", "{2B2B4180-5093-4A29-BE59-4D672648988D}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.MySql", "src\Peachpie.Library.MySql\Peachpie.Library.MySql.xproj", "{176EBF02-2238-4056-9422-CFAA46FFED61}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.MySql", "src\Peachpie.Library.MySql\Peachpie.Library.MySql.csproj", "{176EBF02-2238-4056-9422-CFAA46FFED61}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.MsSql", "src\Peachpie.Library.MsSql\Peachpie.Library.MsSql.xproj", "{B16EB9F6-CCA5-4322-8DCF-07706C518600}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.MsSql", "src\Peachpie.Library.MsSql\Peachpie.Library.MsSql.csproj", "{B16EB9F6-CCA5-4322-8DCF-07706C518600}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B652CDCF-F023-4C67-B8D8-C712D62E1962}"
-	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "peach", "src\Compiler\peach\peach.csproj", "{082CF8D4-9138-4CD3-AC39-076E5AF57B18}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "peach", "src\Compiler\peach\peach.xproj", "{082CF8D4-9138-4CD3-AC39-076E5AF57B18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.RequestHandler", "src\Runtime\Peachpie.RequestHandler\Peachpie.RequestHandler.csproj", "{C039A778-7584-48EA-BC37-C8950FB54217}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{ED9DAD46-91BC-490A-BCF9-425437544421}"
-	ProjectSection(SolutionItems) = preProject
-		build\update_packages.ps1 = build\update_packages.ps1
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "runtests", "src\Tools\runtests\runtests.csproj", "{80883393-3EC5-4706-B9F5-4A6F6F8EB993}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.RequestHandler", "src\Runtime\Peachpie.RequestHandler\Peachpie.RequestHandler.xproj", "{C039A778-7584-48EA-BC37-C8950FB54217}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.PDO", "src\PDO\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj", "{7AFBA257-9E7B-41E0-8F94-9495AC1EB78A}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "runtests", "src\Tools\runtests\runtests.xproj", "{80883393-3EC5-4706-B9F5-4A6F6F8EB993}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.PDO.Firebird", "src\PDO\Peachpie.Library.PDO.Firebird\Peachpie.Library.PDO.Firebird.csproj", "{5D6144FE-FC31-4A55-BA94-62FEB6995EA1}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PDO", "PDO", "{30D6D91F-A671-4E73-A571-5614500FDE0B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.PDO.IBM", "src\PDO\Peachpie.Library.PDO.IBM\Peachpie.Library.PDO.IBM.csproj", "{8B413828-D2DE-46F2-8123-8B9B4D2EC8CD}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.PDO", "src\PDO\Peachpie.Library.PDO\Peachpie.Library.PDO.xproj", "{7AFBA257-9E7B-41E0-8F94-9495AC1EB78A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.PDO.MySQL", "src\PDO\Peachpie.Library.PDO.MySQL\Peachpie.Library.PDO.MySQL.csproj", "{FD523F4D-0E7E-4D5F-A5C6-12C643E7CE97}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.PDO.Firebird", "src\PDO\Peachpie.Library.PDO.Firebird\Peachpie.Library.PDO.Firebird.xproj", "{5D6144FE-FC31-4A55-BA94-62FEB6995EA1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.PDO.PgSQL", "src\PDO\Peachpie.Library.PDO.PgSQL\Peachpie.Library.PDO.PgSQL.csproj", "{C7C25012-00FC-4475-8702-66C3634263B5}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.PDO.IBM", "src\PDO\Peachpie.Library.PDO.IBM\Peachpie.Library.PDO.IBM.xproj", "{8B413828-D2DE-46F2-8123-8B9B4D2EC8CD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.PDO.Sqlite", "src\PDO\Peachpie.Library.PDO.Sqlite\Peachpie.Library.PDO.Sqlite.csproj", "{E93C0E7D-6C96-4B91-93F2-25A1DFB2D37A}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.PDO.MySQL", "src\PDO\Peachpie.Library.PDO.MySQL\Peachpie.Library.PDO.MySQL.xproj", "{FD523F4D-0E7E-4D5F-A5C6-12C643E7CE97}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.PDO.SqlSrv", "src\PDO\Peachpie.Library.PDO.SqlSrv\Peachpie.Library.PDO.SqlSrv.csproj", "{036D1937-8390-458A-9CA7-3DAC879D3BA6}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.PDO.PgSQL", "src\PDO\Peachpie.Library.PDO.PgSQL\Peachpie.Library.PDO.PgSQL.xproj", "{C7C25012-00FC-4475-8702-66C3634263B5}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.PDO.Sqlite", "src\PDO\Peachpie.Library.PDO.Sqlite\Peachpie.Library.PDO.Sqlite.xproj", "{E93C0E7D-6C96-4B91-93F2-25A1DFB2D37A}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.Library.PDO.SqlSrv", "src\PDO\Peachpie.Library.PDO.SqlSrv\Peachpie.Library.PDO.SqlSrv.xproj", "{036D1937-8390-458A-9CA7-3DAC879D3BA6}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.PDO.Test.App", "src\PDO\Peachpie.PDO.Test.App\Peachpie.PDO.Test.App.xproj", "{77AD346E-0CB1-4E27-83CE-5AF2FF507D4D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.PDO.Test.App", "src\PDO\Peachpie.PDO.Test.App\Peachpie.PDO.Test.App.csproj", "{77AD346E-0CB1-4E27-83CE-5AF2FF507D4D}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Peachpie.PDO.Test.Website", "src\PDO\Peachpie.PDO.Test.Website\Peachpie.PDO.Test.Website.xproj", "{4353F37F-E8DC-4276-B65F-40D45EE03897}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PDO", "PDO", "{6181CA52-4D64-4166-BBCF-36FE5D13A2B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.NET.Sdk", "src\Compiler\Peachpie.NET.Sdk\Peachpie.NET.Sdk.csproj", "{566A83EE-FD6C-4F42-AA80-748F115EF1B9}"
 EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|ARM = Debug|ARM
@@ -552,17 +554,41 @@ Global
 		{4353F37F-E8DC-4276-B65F-40D45EE03897}.Release|x64.Build.0 = Release|Any CPU
 		{4353F37F-E8DC-4276-B65F-40D45EE03897}.Release|x86.ActiveCfg = Release|Any CPU
 		{4353F37F-E8DC-4276-B65F-40D45EE03897}.Release|x86.Build.0 = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|ARM.Build.0 = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|x64.Build.0 = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Debug|x86.Build.0 = Debug|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|ARM.ActiveCfg = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|ARM.Build.0 = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|x64.ActiveCfg = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|x64.Build.0 = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|x86.ActiveCfg = Release|Any CPU
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{6181CA52-4D64-4166-BBCF-36FE5D13A2B3} = {B5FCDBD5-1279-4AFE-B752-7695B1F5F2CF}
 		{699DA5DD-11EE-436B-A0AD-40ACB7E94EAD} = {B5FCDBD5-1279-4AFE-B752-7695B1F5F2CF}
+		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
+		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
 		{8D4F57AB-BA7E-446F-BBE3-9F2AEA42969D} = {B5FCDBD5-1279-4AFE-B752-7695B1F5F2CF}
 		{C69F8A59-0196-4819-84AE-528BA8E32F59} = {B5FCDBD5-1279-4AFE-B752-7695B1F5F2CF}
 		{2B2B4180-5093-4A29-BE59-4D672648988D} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
+		{176EBF02-2238-4056-9422-CFAA46FFED61} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
+		{B16EB9F6-CCA5-4322-8DCF-07706C518600} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
 		{082CF8D4-9138-4CD3-AC39-076E5AF57B18} = {664C373F-DAA4-4E03-B250-C64CDCA3C71E}
-		{C039A778-7584-48EA-BC37-C8950FB54217} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
 		{80883393-3EC5-4706-B9F5-4A6F6F8EB993} = {664C373F-DAA4-4E03-B250-C64CDCA3C71E}
 		{7AFBA257-9E7B-41E0-8F94-9495AC1EB78A} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
 		{5D6144FE-FC31-4A55-BA94-62FEB6995EA1} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
@@ -573,6 +599,6 @@ Global
 		{036D1937-8390-458A-9CA7-3DAC879D3BA6} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
 		{77AD346E-0CB1-4E27-83CE-5AF2FF507D4D} = {6181CA52-4D64-4166-BBCF-36FE5D13A2B3}
 		{4353F37F-E8DC-4276-B65F-40D45EE03897} = {6181CA52-4D64-4166-BBCF-36FE5D13A2B3}
-		{6181CA52-4D64-4166-BBCF-36FE5D13A2B3} = {B5FCDBD5-1279-4AFE-B752-7695B1F5F2CF}
+		{566A83EE-FD6C-4F42-AA80-748F115EF1B9} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
 	EndGlobalSection
 EndGlobal

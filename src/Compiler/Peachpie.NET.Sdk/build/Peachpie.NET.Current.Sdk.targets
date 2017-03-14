@@ -1,0 +1,15 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- 
+        We are doing a cross-targeting build if there is no list of target frameworks specified
+        nor is there a current target framework being built individually. In that case, this import is
+        redirected to Microsoft.Common.CrossTargeting.targets.
+   -->
+  <PropertyGroup Condition=" '$(TargetFrameworks)' != '' and '$(TargetFramework)' == '' ">
+    <IsCrossTargetingBuild>true</IsCrossTargetingBuild>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)\Peachpie.NET.Core.Sdk.targets" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
+</Project>
