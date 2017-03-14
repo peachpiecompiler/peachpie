@@ -373,10 +373,10 @@ namespace Pchp.Library
         /// <param name="path">The file to be probed.</param>
         /// <returns>The file access time or -1 in case of failure.</returns>
         [return: CastToFalse]
-        public static int fileatime(Context ctx, string path)
+        public static long fileatime(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? (int)stat.st_atime : -1;
+            return stat.IsValid ? stat.st_atime : -1;
         }
 
         /// <summary>
@@ -395,10 +395,10 @@ namespace Pchp.Library
         /// <param name="path">The file to be <c>stat()</c>ed.</param>
         /// <returns>The file size or -1 in case of failure.</returns>
         [return: CastToFalse]
-        public static int filectime(Context ctx, string path)
+        public static long filectime(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? (int)stat.st_ctime : -1;
+            return stat.IsValid ? stat.st_ctime : -1;
         }
 
         /// <summary>
@@ -414,7 +414,7 @@ namespace Pchp.Library
         public static int filegroup(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? (int)stat.st_gid : -1;
+            return stat.IsValid ? stat.st_gid : -1;
         }
 
         /// <summary>
@@ -430,7 +430,7 @@ namespace Pchp.Library
         public static int fileinode(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? (int)stat.st_ino : -1;
+            return stat.IsValid ? stat.st_ino : -1;
         }
 
         /// <summary>
@@ -445,10 +445,10 @@ namespace Pchp.Library
         /// <param name="path">The file to be <c>stat()</c>ed.</param>
         /// <returns>The file modification time or <c>false</c> in case of failure.</returns>
         [return: CastToFalse]
-        public static int filemtime(Context ctx, string path)
+        public static long filemtime(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? (int)stat.st_mtime : -1;
+            return stat.IsValid ? stat.st_mtime : -1;
         }
 
         /// <summary>
@@ -461,7 +461,7 @@ namespace Pchp.Library
         public static int fileowner(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? (int)stat.st_uid : -1;
+            return stat.IsValid ? stat.st_uid : -1;
         }
 
         /// <summary>
@@ -474,7 +474,7 @@ namespace Pchp.Library
         public static int fileperms(Context ctx, string path)
         {
             var stat = ResolveStat(ctx, path, false);
-            return stat.IsValid ? (int)stat.st_mode : -1;
+            return stat.IsValid ? stat.st_mode : -1;
         }
 
         /// <summary>
@@ -499,6 +499,9 @@ namespace Pchp.Library
         #endregion
 
         #region Stat Flags (is_* functions)
+
+        static readonly char[] s_invalidPathChars = Path.GetInvalidPathChars();
+
         /// <summary>
         /// Tells whether the path is a directory.
         /// </summary>
@@ -509,7 +512,7 @@ namespace Pchp.Library
         {
             StreamWrapper wrapper;
 
-            if (!string.IsNullOrEmpty(path) && ResolvePath(ctx, ref path, false, out wrapper)) // do not throw warning if path is null or empty
+            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0 && ResolvePath(ctx, ref path, false, out wrapper)) // do not throw warning if path is null or empty
             {
                 //string url;
                 //if (StatInternalTryCache(path, out url))
@@ -550,7 +553,7 @@ namespace Pchp.Library
         {
             StreamWrapper wrapper;
 
-            if (ResolvePath(ctx, ref path, false, out wrapper))
+            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0 && ResolvePath(ctx, ref path, false, out wrapper))
             {
                 //string url;
                 //if (StatInternalTryCache(path, out url))
