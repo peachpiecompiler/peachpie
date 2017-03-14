@@ -1,0 +1,21 @@
+﻿{
+  "version": "0.5.0-*",
+  "description": "Peachpie platform dependencies.",
+  "packOptions": {
+    "files": {},
+    "summary": "Peachpie platform dependencies.",
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+  "keywords": [ "dotnet", "peachpie", "php", "compiler" ],
+  "dependencies": {
+    "Peachpie.Runtime": { "target": "project" },
+    "Peachpie.Library": { "target": "project" },
+    "Peachpie.Library.MySql": { "target": "project" },
+    "Peachpie.Library.MsSql": { "target": "project" }
+  },
+  "frameworks": {
+    "netstandard1.6": {},
+    "net46": {}
+  }
+}

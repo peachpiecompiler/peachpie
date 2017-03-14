@@ -1,0 +1,40 @@
+{
+  "version": "0.5.0-*",
+  "description": "Command line tool enabling 'php' project compilation.",
+  "packOptions": {
+    "tags": [
+      "dotnet",
+      "compile-php"
+    ],
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+  "keywords": [ "dotnet", "peachpie", "php", "compiler" ],
+  "buildOptions": {
+    "outputName": "dotnet-compile-php",
+    "emitEntryPoint": true,
+    "keyFile": "../../build/StrongKeys/core.snk"
+  },
+  "dependencies": {
+    "Peachpie.CodeAnalysis": { "target": "project" },
+    "Peachpie.App": { "target": "project" }
+  },
+  "frameworks": {
+    "net46": {
+    },
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.0"
+        }
+      }
+    }
+  },
+
+  "scripts": {
+    "postcompile": [
+      "powershell -File ../../build/update_packages.ps1 ../../ %project:Version% %compile:TargetFramework% %compile:Configuration%"
+    ]
+  }
+}

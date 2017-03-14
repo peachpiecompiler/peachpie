@@ -1,0 +1,38 @@
+{
+  "version": "0.5.0-*",
+
+  "packOptions": {
+    "tags": [
+      "peachpie",
+      "library"
+    ],
+    "summary": "Peachpie library containing standard function set.",
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+
+  "buildOptions": {
+    "xmlDoc": true,
+    "keyFile": "../../build/StrongKeys/core.snk",
+    "nowarn": [ "1591", "1574" ]
+  },
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.1",
+    //"System.Collections": "4.3.0",
+    "System.Data.Common": "4.3.0",
+    "System.Net.NameResolution": "4.3.0",
+    //"System.Xml.ReaderWriter": "4.3.0",
+    "Peachpie.Runtime": { "target": "project" }
+
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50",
+      "dependencies": {}
+    },
+    "net46": {
+    }
+  }
+}

@@ -1,0 +1,34 @@
+﻿{
+  "version": "0.5.0-*",
+
+  "packOptions": {
+    "tags": [
+      "peachpie",
+      "library",
+      "mssql"
+    ],
+    "summary": "Peachpie library containing MSSql function set.",
+    "owners": [ "jmisek", "iolevel", "peachpie" ],
+    "projectUrl": "https://github.com/iolevel/peachpie"
+  },
+
+  "buildOptions": {
+    "xmlDoc": true,
+    "keyFile": "../../build/StrongKeys/core.snk"
+  },
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.1",
+    "Peachpie.Runtime": { "target": "project" },
+    "Peachpie.Library": { "target": "project" },
+    "System.Data.SqlClient": "4.3.0"
+  },
+
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50"
+    },
+    "net46": {
+    }
+  }
+}
