@@ -100,9 +100,9 @@ namespace Pchp.Core
         /// <summary>
         /// Stream with contents of the incoming HTTP entity body.
         /// </summary>
-        public Stream InputStream => _httpctx.Request.InputStream;
+        Stream IHttpPhpContext.InputStream => _httpctx.Request.InputStream;
 
-        public void AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false)
+        void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly)
         {
             var cookie = new HttpCookie(name, value)
             {
@@ -118,6 +118,11 @@ namespace Pchp.Core
             }
 
             _httpctx.Response.AppendCookie(cookie);
+        }
+
+        void IHttpPhpContext.Flush()
+        {
+            _httpctx.Response.Flush();
         }
 
         #endregion
