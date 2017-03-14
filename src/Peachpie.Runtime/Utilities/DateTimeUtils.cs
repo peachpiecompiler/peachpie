@@ -17,15 +17,17 @@ namespace Pchp.Core.Utilities
         /// </summary>
         /// <param name="dt">Time.</param>
         /// <returns>Unix timestamp.</returns>
-        public static int UtcToUnixTimeStamp(DateTime dt)
+        public static long UtcToUnixTimeStamp(DateTime dt)
         {
             double seconds = UtcToUnixTimeStampFloat(dt);
 
-            return (seconds < int.MinValue)
-                ? int.MinValue
-                : (seconds > int.MaxValue)
-                    ? int.MaxValue
-                    : (int)seconds;
+            if (seconds < long.MinValue)
+                return long.MinValue;
+
+            if (seconds > long.MaxValue)
+                return long.MaxValue;
+
+            return (long)seconds;
         }
 
         public static double UtcToUnixTimeStampFloat(DateTime dt)

@@ -403,14 +403,14 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="dt">Time.</param>
         /// <returns>Unix timestamp.</returns>
-        internal static int UtcToUnixTimeStamp(System_DateTime dt) => Core.Utilities.DateTimeUtils.UtcToUnixTimeStamp(dt);
+        internal static long UtcToUnixTimeStamp(System_DateTime dt) => Core.Utilities.DateTimeUtils.UtcToUnixTimeStamp(dt);
 
         /// <summary>
         /// Converts UNIX timestamp (number of seconds from 1.1.1970) to <see cref="System_DateTime"/>.
         /// </summary>
         /// <param name="timestamp">UNIX timestamp</param>
         /// <returns><see cref="System_DateTime"/> structure representing UTC time.</returns>
-        internal static System_DateTime UnixTimeStampToUtc(int timestamp)
+        internal static System_DateTime UnixTimeStampToUtc(long timestamp)
         {
             return UtcStartOfUnixEpoch + TimeSpan.FromSeconds(timestamp);
         }
