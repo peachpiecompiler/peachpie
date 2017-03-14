@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     // create initial flow state
                     var state = StateBinder.CreateInitialState(this);
-                    
+
                     //
                     var binder = new SemanticsBinder(this.LocalsTable);
 
@@ -94,30 +94,114 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
 
-        protected ImmutableArray<ParameterSymbol> _params;
+        protected List<ParameterSymbol> _implicitParams;
+        private SourceParameterSymbol[] _srcParams;
+        private SynthesizedParameterSymbol _varargParam;
 
         /// <summary>
-        /// Builds CLR method parameters.
+        /// Builds implicit parameters before source parameters.
         /// </summary>
-        /// <remarks>(Context, arg1, arg2, ...)</remarks>
-        protected virtual IEnumerable<ParameterSymbol> BuildParameters(Signature signature, PHPDocBlock phpdocOpt = null)
+        /// <returns></returns>
+        protected virtual IEnumerable<ParameterSymbol> BuildImplicitParams()
         {
-            int index = 0;
+            var index = 0;
 
             if (this.IsStatic)  // instance methods have <ctx> in <this>.<ctx> field, see SourceNamedTypeSymbol._lazyContextField
             {
+                // Context <ctx>
                 yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
             }
+        }
 
-            int pindex = 0;
+        bool RequiresLateStaticBoundParam => (this.Flags & RoutineFlags.UsesLateStatic) != 0 && !this.HasThis && (this is SourceMethodSymbol);
 
-            foreach (var p in signature.FormalParams)
+        /// <summary>
+        /// Constructs routine source parameters.
+        /// </summary>
+        protected IEnumerable<SourceParameterSymbol> BuildSrcParams(IEnumerable<FormalParam> formalparams, PHPDocBlock phpdocOpt = null)
+        {
+            var pindex = 0;
+
+            foreach (var p in formalparams)
             {
                 var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Name.Value) : null;
 
-                yield return new SourceParameterSymbol(this, p, index++, ptag);
+                yield return new SourceParameterSymbol(this, p, pindex++, ptag);
+            }
+        }
 
-                pindex++;
+        protected virtual IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
+        {
+            return BuildSrcParams(signature.FormalParams, phpdocOpt);
+        }
+
+        internal virtual List<ParameterSymbol> ImplicitParameters
+        {
+            get
+            {
+                if (_implicitParams == null)
+                {
+                    _implicitParams = BuildImplicitParams().ToList();
+                }
+
+                // late static bound parameter may be needed based on flow analysis,
+                // so we have to ensure it is in the list if it isn't yet
+                if (RequiresLateStaticBoundParam && !_implicitParams.Any(SpecialParameterSymbol.IsLateStaticParameter))
+                {
+                    // PhpTypeInfo <static>
+                    _implicitParams.Add(
+                        new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, _implicitParams.Count)
+                    );
+                }
+
+                //
+                return _implicitParams;
+            }
+        }
+
+        internal SourceParameterSymbol[] SourceParameters
+        {
+            get
+            {
+                if (_srcParams == null)
+                {
+                    _srcParams = BuildSrcParams(this.SyntaxSignature, this.PHPDocBlock).ToArray();
+                }
+
+                return _srcParams;
+            }
+        }
+
+        /// <summary>
+        /// Implicitly added parameter corresponding to <c>params PhpValue[] {arguments}</c>.
+        /// Can be <c>null</c> if not needed.
+        /// </summary>
+        protected ParameterSymbol VarargsParam
+        {
+            get
+            {
+                // declare implicit [... varargs] parameter if needed and not defined as source parameter
+
+                if ((Flags & RoutineFlags.RequiresParams) != 0 && _varargParam == null && (this is SourceFunctionSymbol || this is SourceMethodSymbol))
+                {
+                    var srcparams = this.SourceParameters;
+                    if (srcparams.Length == 0 || !srcparams.Last().IsParams)
+                    {
+                        _varargParam = new SynthesizedParameterSymbol( // IsImplicitlyDeclared, IsParams
+                            this,
+                            ArrayTypeSymbol.CreateSZArray(this.ContainingAssembly, this.DeclaringCompilation.CoreTypes.PhpValue),
+                            srcparams.Length,
+                            RefKind.None,
+                            SpecialParameterSymbol.ParamsName, true);
+                    }
+                }
+
+                if (_varargParam != null)
+                {
+                    _varargParam.UpdateOrdinal(ImplicitParameters.Count + SourceParameters.Length);
+                }
+
+                return _varargParam;
             }
         }
 
@@ -155,33 +239,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return DeclaringCompilation.GetTypeFromTypeRef(typeCtx, rtype);
         }
 
-        /// <summary>
-        /// Gets array of parameter symbols.
-        /// Lazily ensures there is the variadic parameter at the end if needed.
-        /// </summary>
-        ImmutableArray<ParameterSymbol> GetParameters()
-        {
-            if ((Flags & RoutineFlags.RequiresParams) != 0 && (this is SourceFunctionSymbol || this is SourceMethodSymbol))
-            {
-                if (_params.Length == 0 || !_params.Last().IsParams)
-                {
-                    // lazily add [params] PhpValue[] <params>
-                    var p = new SynthesizedParameterSymbol( // IsImplicitlyDeclared, IsParams
-                        this,
-                        ArrayTypeSymbol.CreateSZArray(this.ContainingAssembly, this.DeclaringCompilation.CoreTypes.PhpValue),
-                        _params.Length,
-                        RefKind.None,
-                        SpecialParameterSymbol.ParamsName, true);
-
-                    //
-                    _params = _params.Add(p);
-                }
-            }
-
-            //
-            return _params;
-        }
-
         public override bool IsExtern => false;
 
         public override bool IsOverride => false;
@@ -200,9 +257,39 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override ImmutableArray<ParameterSymbol> Parameters => GetParameters();
+        public sealed override ImmutableArray<ParameterSymbol> Parameters
+        {
+            get
+            {
+                // [implicit parameters], [source parameters], [...varargs]
 
-        public override int ParameterCount => Parameters.Length;
+                var result = ImmutableArray<ParameterSymbol>.Empty;
+
+                result = result.AddRange(ImplicitParameters.Concat(SourceParameters));
+
+                var vararg = VarargsParam;
+                if (vararg != null)
+                {
+                    result = result.Add(vararg);
+                }
+
+                return result;
+            }
+        }
+
+        public sealed override int ParameterCount
+        {
+            get
+            {
+                // [implicit parameters], [source parameters], [...varargs]
+
+                var ps1 = ImplicitParameters;
+                var ps2 = SourceParameters;
+                var vararg = (VarargsParam != null) ? 1 : 0;
+
+                return ps1.Count + ps2.Length + vararg;
+            }
+        }
 
         public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 

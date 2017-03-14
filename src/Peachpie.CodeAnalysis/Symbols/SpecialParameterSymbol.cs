@@ -33,8 +33,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string ParamsName = "<arguments>";
 
         /// <summary>
-        /// Name of special late-bound parameter.
-        /// Is of type <see cref="System.RuntimeTypeHandle"/>
+        /// Name of special late-static-bound parameter.
+        /// Is of type <c>PhpTypeInfo</c>
         /// </summary>
         public const string StaticTypeName = "<static>";
 
@@ -67,6 +67,13 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool IsContextParameter(ParameterSymbol p)
             => p != null && p.Ordinal == 0 && p.Type != null && p.Type.MetadataName == "Context"; // TODO: && namespace == Pchp.Core.
 
+        /// <summary>
+        /// Determines whether given parameter is a special lately static bound parameter.
+        /// This parameter provides late static bound type, of type <c>PhpTypeInfo</c>.
+        /// </summary>
+        public static bool IsLateStaticParameter(ParameterSymbol p)
+            => p != null && p.Type != null && p.Type.MetadataName == "PhpTypeInfo" && !(p is SourceParameterSymbol) && p.Name == StaticTypeName; // TODO: && namespace == Pchp.Core.
+
         public static bool IsLocalsParameter(IParameterSymbol p)
             => p != null && p.Type != null && p.Type.MetadataName == "PhpArray" && p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportLocalsAttribute");
 
@@ -85,7 +92,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IModuleSymbol ContainingModule => _symbol.ContainingModule;
 
         public override NamedTypeSymbol ContainingType => _symbol.ContainingType;
-        
+
         public override string Name => _name;
 
         public override bool IsThis => _index == -1;

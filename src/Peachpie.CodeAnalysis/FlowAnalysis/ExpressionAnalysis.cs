@@ -1192,7 +1192,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
 
                     case ReservedTypeRef.ReservedType.@static:
-                        this.Routine.Flags |= RoutineFlags.UsesLateStatic;
+                        if (TypeCtx.ContainingType != null && TypeCtx.ContainingType.IsSealed)
+                        {
+                            tref.ResolvedType = TypeCtx.ContainingType;
+                        }
+                        else
+                        {
+                            this.Routine.Flags |= RoutineFlags.UsesLateStatic;
+                        }
                         break;
                 }
             }

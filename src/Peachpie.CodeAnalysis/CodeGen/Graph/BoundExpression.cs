@@ -2143,23 +2143,26 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             return !TargetMethod.IsErrorMethod()
-                ? EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod)
+                ? EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef)
                 : EmitCallsiteCall(cg);
         }
 
-        internal virtual TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method)
+        internal virtual TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
         {
             // TODO: emit check the routine is declared
             // <ctx>.AssertFunctionDeclared
 
             var arguments = _arguments.Select(a => a.Value).ToImmutableArray();
 
-            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, arguments), method, Access));
+            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, arguments, staticType), method, Access));
         }
 
         protected virtual string CallsiteName => null;
         protected virtual BoundExpression RoutineNameExpr => null;
-        protected virtual BoundTypeRef TypeNameRef => null;
+        protected virtual BoundTypeRef RoutineTypeRef => null;
+
+        /// <summary>Type reference to the static type. The containing type of called routine, e.g. <c>THE_TYPE::foo()</c>. Used for direct method call requiring late static type..</summary>
+        protected virtual BoundTypeRef LateStaticTypeRef => null;
         protected virtual bool IsVirtualCall => true;
 
         /// <summary>
@@ -2213,9 +2216,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 callsiteargs.Add(t);   // instance
             }
 
-            if (TypeNameRef != null)
+            if (RoutineTypeRef != null)
             {
-                callsiteargs.Add(TypeNameRef.EmitLoadTypeInfo(cg, true));   // PhpTypeInfo
+                callsiteargs.Add(RoutineTypeRef.EmitLoadTypeInfo(cg, true));   // PhpTypeInfo
             }
 
             if (RoutineNameExpr != null)
@@ -2305,7 +2308,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
-        protected override BoundTypeRef TypeNameRef => (_typeRef.ResolvedType == null) ? _typeRef : null;
+        protected override BoundTypeRef RoutineTypeRef => (_typeRef.ResolvedType == null) ? _typeRef : null;    // in case the type has to be resolved in runtime and passed to callsite
+        protected override BoundTypeRef LateStaticTypeRef => _typeRef;  // used for direct routine call requiring late static type
         protected override bool IsVirtualCall => false;
 
         internal override TypeSymbol EmitTarget(CodeGenerator cg)
@@ -2353,18 +2357,18 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
-                    // ctx.Create(caller, classname, params)
+                    // ctx.Create(caller, PhpTypeInfo, params)
                     var create = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
                         .Where(s => s.Arity == 0 && s.ParameterCount == 3 &&
-                            s.Parameters[1].Type.PrimitiveTypeCode == Microsoft.Cci.PrimitiveTypeCode.String &&
+                            s.Parameters[1].Type == cg.CoreTypes.PhpTypeInfo &&
                             s.Parameters[2].IsParams && ((ArrayTypeSymbol)s.Parameters[2].Type).ElementType == cg.CoreTypes.PhpValue &&
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single();
 
-                    cg.EmitLoadContext();               // Context
-                    cg.EmitCallerRuntimeTypeHandle();   // RuntimeTypeHandle
-                    _typeref.EmitClassName(cg);         // String
+                    cg.EmitLoadContext();                   // Context
+                    cg.EmitCallerRuntimeTypeHandle();       // RuntimeTypeHandle
+                    _typeref.EmitLoadTypeInfo(cg, true);    // PhpTypeInfo
                     cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray());  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create);

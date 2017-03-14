@@ -19,7 +19,11 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly SourceRoutineSymbol _routine;
         readonly FormalParam _syntax;
-        readonly int _index;
+
+        /// <summary>
+        /// Index of the source parameter, relative to the first source parameter.
+        /// </summary>
+        readonly int _relindex;
         readonly PHPDocBlock.ParamTag _ptagOpt;
 
         TypeSymbol _lazyType;
@@ -30,15 +34,15 @@ namespace Pchp.CodeAnalysis.Symbols
         public BoundExpression Initializer => _initializer;
         readonly BoundExpression _initializer;
 
-        public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int index, PHPDocBlock.ParamTag ptagOpt)
+        public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int relindex, PHPDocBlock.ParamTag ptagOpt)
         {
             Contract.ThrowIfNull(routine);
             Contract.ThrowIfNull(syntax);
-            Debug.Assert(index >= 0);
+            Debug.Assert(relindex >= 0);
 
             _routine = routine;
             _syntax = syntax;
-            _index = index;
+            _relindex = relindex;
             _ptagOpt = ptagOpt;
             _initializer = (syntax.InitValue != null)
                 ? new SemanticsBinder(null).BindExpression(syntax.InitValue, BoundAccess.Read)
@@ -147,7 +151,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsParams => _syntax.IsVariadic;
 
-        public override int Ordinal => _index;
+        public override int Ordinal => _relindex + _routine.ImplicitParameters.Count;
 
         public override ImmutableArray<Location> Locations
         {

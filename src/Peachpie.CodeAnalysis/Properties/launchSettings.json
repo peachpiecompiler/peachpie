@@ -1,8 +1,8 @@
 {
   "profiles": {
     "test.exe": {
-      "executablePath": "C:\\Users\\jmise\\Projects\\peachpie\\src\\Compiler\\peach\\bin\\Debug\\test.exe",
-      "workingDirectory": "C:\\Users\\jmise\\Projects\\peachpie\\src\\Compiler\\peach\\bin\\Debug"
+      "executablePath": "C:\\Users\\jmise\\Projects\\peachpie\\src\\Compiler\\peach\\bin\\Debug\\net46\\win7-x64\\test.exe",
+      "workingDirectory": "C:\\Users\\jmise\\Projects\\peachpie\\src\\Compiler\\peach\\bin\\Debug\\net46\\win7-x64"
     }
   }
 }

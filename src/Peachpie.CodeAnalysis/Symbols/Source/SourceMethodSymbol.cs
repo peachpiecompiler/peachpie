@@ -31,9 +31,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _type = type;
             _syntax = syntax;
-
-            // TODO: lazily; when using late static binding in a static method, add special <static> parameter, where runtime passes late static bound type
-            _params = BuildParameters(syntax.Signature, syntax.PHPDoc).AsImmutable();
         }
 
         public override ParameterSymbol ThisParameter
