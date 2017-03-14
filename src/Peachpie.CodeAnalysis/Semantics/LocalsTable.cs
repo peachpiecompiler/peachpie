@@ -56,12 +56,9 @@ namespace Pchp.CodeAnalysis.Semantics
         void PopuplateParameters()
         {
             // parameters
-            foreach (var p in _routine.Parameters.OfType<SourceParameterSymbol>())
+            foreach (var p in _routine.SourceParameters)
             {
-                if (!p.IsImplicitlyDeclared)
-                {
-                    _dict[new VariableName(p.Name)] = new BoundParameter(p, p.Initializer);
-                }
+                _dict[new VariableName(p.Name)] = new BoundParameter(p, p.Initializer);
             }
 
             // $this

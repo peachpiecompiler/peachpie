@@ -16,13 +16,14 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         private readonly MethodSymbol _container;
         private readonly TypeSymbol _type;
-        private readonly int _ordinal;
         private readonly string _name;
         private readonly bool _isParams;
         private readonly ImmutableArray<CustomModifier> _customModifiers;
         private readonly ushort _countOfCustomModifiersPrecedingByRef;
         private readonly RefKind _refKind;
         private readonly ConstantValue _explicitDefaultConstantValue;
+
+        private int _ordinal;
 
         public SynthesizedParameterSymbol(
             MethodSymbol container,
@@ -97,15 +98,10 @@ namespace Pchp.CodeAnalysis.Symbols
             yield break;
         }
 
-        public override int Ordinal
-        {
-            get { return _ordinal; }
-        }
+        public override int Ordinal => _ordinal;
+        internal void UpdateOrdinal(int newordinal) { _ordinal = newordinal; }
 
-        public override bool IsParams
-        {
-            get { return _isParams; }
-        }
+        public override bool IsParams => _isParams;
 
         //internal override bool IsMetadataOptional
         //{

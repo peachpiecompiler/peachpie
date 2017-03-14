@@ -1192,7 +1192,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
 
                     case ReservedTypeRef.ReservedType.@static:
-                        this.Routine.Flags |= RoutineFlags.UsesLateStatic;
+                        if (TypeCtx.ContainingType != null && TypeCtx.ContainingType.IsSealed)
+                        {
+                            tref.ResolvedType = TypeCtx.ContainingType;
+                        }
+                        else
+                        {
+                            this.Routine.Flags |= RoutineFlags.UsesLateStatic;
+                        }
                         break;
                 }
             }
@@ -1489,16 +1496,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             // bind arguments to parameters
-            var ps = symbol.Parameters;
-            int pi = 0;
-            // skip special parameters
-            while (pi < ps.Length && ps[pi] is SpecialParameterSymbol) pi++;    
-            // skip $this parameter
-            if (symbol.UseThis) { Debug.Assert(ps[pi].MetadataName == VariableName.ThisVariableName.Value); pi++; }
-
-            foreach (var v in x.UseVars)
+            var ps = symbol.SourceParameters;
+            
+            // first {N} source parameters correspond to "use" parameters
+            for (int pi = 0; pi < x.UseVars.Length; pi ++)
             {
-                v.Parameter = ps[pi++];
+                x.UseVars[pi].Parameter = ps[pi];
             }
 
             x.UseVars.ForEach(VisitArgument);

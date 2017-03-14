@@ -187,7 +187,7 @@ namespace Pchp.Library
         public static PhpValue ob_get_length(Context ctx)
         {
             var length = ctx.BufferedOutput.Length;
-            return (length >= 0) ? PhpValue.Create(length) : PhpValue.False; 
+            return (length >= 0) ? PhpValue.Create(length) : PhpValue.False;
         }
 
         /// <summary>
@@ -261,9 +261,7 @@ namespace Pchp.Library
         /// </summary>
         public static void flush(Context ctx)
         {
-            //var http_context = ctx.TryGetProperty<HttpContext>();
-            //if (http_context != null) http_context.Response.Flush();
-            throw new NotImplementedException(); // move to pchplib.web.dll
+            ctx.HttpPhpContext?.Flush();
         }
 
         /// <summary>

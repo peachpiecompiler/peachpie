@@ -34,7 +34,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             _file = file;
             _syntax = syntax;
-            _params = BuildParameters(syntax.Signature, syntax.PHPDoc).AsImmutable();
         }
 
         /// <summary>

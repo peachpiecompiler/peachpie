@@ -948,6 +948,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessFlags);
 
                 GetPhpTypeInfo_T = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo");
+                GetPhpTypeInfo_Object = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.Object);
             }
 
             public readonly CoreConstructor
@@ -956,7 +957,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 CallBinderFactory_Function, CallBinderFactory_InstanceFunction, CallBinderFactory_StaticFunction,
-                GetPhpTypeInfo_T;
+                GetPhpTypeInfo_T, GetPhpTypeInfo_Object;
         }
 
         public struct ReflectionHolder

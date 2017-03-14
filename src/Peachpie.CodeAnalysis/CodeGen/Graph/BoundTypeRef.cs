@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Emits name of bound type.
         /// </summary>
         /// <param name="cg"></param>
-        internal void EmitClassName(CodeGenerator cg)
+        private void EmitClassName(CodeGenerator cg)
         {
             if (TypeExpression != null)
             {
@@ -57,6 +57,29 @@ namespace Pchp.CodeAnalysis.Semantics
             if (this.ResolvedType != null)
             {
                 t = (TypeSymbol)EmitLoadPhpTypeInfo(cg, this.ResolvedType);
+            }
+            else if (_typeRef is ReservedTypeRef) // late static bound
+            {
+                switch (((ReservedTypeRef)_typeRef).Type)
+                {
+                    case ReservedTypeRef.ReservedType.@static:
+                        if (cg.Routine.HasThis)
+                        {
+                            // Template: GetPhpTypeInfo(this)
+                            cg.EmitThis();
+                            t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_Object);
+                        }
+                        else
+                        {
+                            // Template: LOAD @static   // ~ @static parameter passed by caller
+                            t = new ParamPlace(cg.Routine.ImplicitParameters.First(SpecialParameterSymbol.IsLateStaticParameter))
+                                .EmitLoad(cg.Builder);
+                        }
+                        break;
+
+                    default:
+                        throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
+                }
             }
             else
             {

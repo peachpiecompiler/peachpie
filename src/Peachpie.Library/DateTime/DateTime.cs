@@ -273,7 +273,7 @@ public class DateTime
         return this;
     }
 
-    public virtual int getTimestamp()
+    public virtual long getTimestamp()
     {
         return DateTimeUtils.UtcToUnixTimeStamp(Time);
     }

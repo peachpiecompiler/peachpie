@@ -114,7 +114,7 @@ namespace Pchp.Library
 
 		#region Parse
 
-		public static int Parse(Context ctx, string/*!*/ str, System.DateTime utcStart, out string error)
+		public static long Parse(Context ctx, string/*!*/ str, System.DateTime utcStart, out string error)
 		{
 			Debug.Assert(str != null);
 
@@ -139,7 +139,7 @@ namespace Pchp.Library
 
 		#region GetUnixTimeStamp
 
-		private int GetUnixTimeStamp(Context ctx, System.DateTime utcStart, out string error)
+		private long GetUnixTimeStamp(Context ctx, System.DateTime utcStart, out string error)
 		{
             var zone = PhpTimeZone.GetCurrentTimeZone(ctx);
             var start = TimeZoneInfo.ConvertTime(utcStart, TimeZoneInfo.Utc, zone);// zone.ToLocalTime(utcStart);

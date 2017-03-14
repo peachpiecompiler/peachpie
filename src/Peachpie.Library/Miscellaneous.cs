@@ -259,7 +259,7 @@ namespace Pchp.Library
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) system = "Windows NT";
             //else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) system = "OSX";
             else system = "Unix";
-            
+
             host = System.Net.Dns.GetHostName();
 
             machine = System.Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
@@ -326,6 +326,66 @@ namespace Pchp.Library
         public static string php_sapi_name(Context ctx)
         {
             return (ctx.IsWebApplication) ? "isapi" : "cli";    // TODO: Context.SapiName
+        }
+
+        #endregion
+
+        #region getmypid, getlastmod, get_current_user, getmyuid
+
+        /// <summary>
+        /// Returns the PID of the current process. 
+        /// </summary>
+        /// <returns>The PID.</returns>
+        public static int getmypid()
+        {
+            // return System.Diagnostics.Process.GetCurrentProcess().Id;
+            throw new NotImplementedException("System.Diagnostics.Process");
+        }
+
+
+        /// <summary>
+        /// Gets time of last page modification. 
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <returns>The UNIX timestamp or -1 on error.</returns>
+        [return: CastToFalse]
+        public static long getlastmod(Context ctx)
+        {
+            try
+            {
+                var file = ctx.MainScriptFile.Path;
+                if (file == null)
+                {
+                    return -1;
+                }
+
+                return DateTimeUtils.UtcToUnixTimeStamp(System.IO.File.GetLastWriteTime(System.IO.Path.Combine(ctx.RootPath, file)).ToUniversalTime());
+            }
+            catch (System.Exception)
+            {
+                return -1;
+            }
+        }
+
+
+        /// <summary>
+        /// Gets the name of the current user.
+        /// </summary>
+        /// <returns>The name of the current user.</returns>
+        public static string get_current_user()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Not supported.
+        /// </summary>
+        /// <returns>Zero.</returns>
+        [return: CastToFalse]
+        public static int getmyuid()
+        {
+            PhpException.FunctionNotSupported("getmyuid");
+            return -1;
         }
 
         #endregion

@@ -62,9 +62,9 @@ namespace Peachpie.Web
         /// <summary>
         /// Stream with contents of the incoming HTTP entity body.
         /// </summary>
-        public Stream InputStream => _httpctx.Request.Body;
+        Stream IHttpPhpContext.InputStream => _httpctx.Request.Body;
 
-        public void AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false)
+        void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false)
         {
             _httpctx.Response.Cookies.Append(name, value, new CookieOptions()
             {
@@ -74,6 +74,11 @@ namespace Peachpie.Web
                 Secure = secure,
                 HttpOnly = httpOnly
             });
+        }
+
+        void IHttpPhpContext.Flush()
+        {
+            _httpctx.Response.Body.Flush();
         }
 
         #endregion

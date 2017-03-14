@@ -786,7 +786,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             return _il.EmitCall(_moduleBuilder, _diagnostics, code, method);
         }
 
-        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundExpression> arguments)
+        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundExpression> arguments, BoundTypeRef staticType = null)
         {
             Contract.ThrowIfNull(method);
 
@@ -852,14 +852,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // special implicit parameters
                 if (arg_index == 0 && p.IsImplicitlyDeclared && !p.IsParams)
                 {
-                    // <ctx>
                     if (SpecialParameterSymbol.IsContextParameter(p))
                     {
+                        // <ctx>
                         Debug.Assert(p.Type == CoreTypes.Context);
                         EmitLoadContext();
                     }
                     else if (SpecialParameterSymbol.IsLocalsParameter(p))
                     {
+                        // <locals>
                         Debug.Assert(p.Type == CoreTypes.PhpArray);
                         if (!this.HasUnoptimizedLocals) throw new InvalidOperationException();
                         LocalsPlaceOpt.EmitLoad(Builder)
@@ -896,6 +897,24 @@ namespace Pchp.CodeAnalysis.CodeGen
                             {
                                 throw ExceptionUtilities.UnexpectedValue(p.Type);
                             }
+                        }
+                    }
+                    else if (SpecialParameterSymbol.IsLateStaticParameter(p))
+                    {
+                        // PhpTypeInfo
+                        if (staticType != null)
+                        {
+                            // LOAD <statictype>
+                            staticType.EmitLoadTypeInfo(this);
+                        }
+                        else if (thisType != null)
+                        {
+                            // LOAD PhpTypeInfo<thisType>
+                            BoundTypeRef.EmitLoadPhpTypeInfo(this, thisType);
+                        }
+                        else
+                        {
+                            throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
                         }
                     }
                     else

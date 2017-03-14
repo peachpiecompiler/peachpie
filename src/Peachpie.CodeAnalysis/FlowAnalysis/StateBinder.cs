@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var state = new FlowState(flowCtx);
 
             // handle input parameters type
-            var parameters = routine.Parameters.OfType<SourceParameterSymbol>().ToImmutableArray();
+            var parameters = routine.SourceParameters;
             foreach (var p in parameters)
             {
                 state.SetVar(p.Name, p.GetResultType(typeCtx));

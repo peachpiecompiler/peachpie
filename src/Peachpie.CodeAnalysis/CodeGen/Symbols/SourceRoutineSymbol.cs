@@ -18,9 +18,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal virtual IPlace GetContextPlace()
         {
-            if (_params.Length != 0 && SpecialParameterSymbol.IsContextParameter(_params[0]))
+            var ps = ImplicitParameters;
+            if (ps.Count != 0 && SpecialParameterSymbol.IsContextParameter(ps[0]))
             {
-                return new ParamPlace(_params[0]);  // <ctx>
+                return new ParamPlace(ps[0]);  // <ctx>
             }
             else
             {

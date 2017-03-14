@@ -82,17 +82,26 @@ namespace Pchp.Core
         /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
         /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
-        public object Create([ImportCallerClass]RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
+        public object Create([ImportCallerClass]RuntimeTypeHandle caller, string classname, params PhpValue[] arguments) => Create(caller, this.GetDeclaredType(classname, true), arguments);
+
+        /// <summary>
+        /// Creates an instance of a type dynamically with constructor overload resolution.
+        /// </summary>
+        /// <param name="caller">
+        /// Class context for resolving constructors visibility.
+        /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
+        /// <param name="tinfo">Type to be instantiated.</param>
+        /// <param name="arguments">Arguments to be passed to the constructor.</param>
+        /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
+        public object Create([ImportCallerClass]RuntimeTypeHandle caller, PhpTypeInfo tinfo, params PhpValue[] arguments)
         {
-            var tinfo = this.GetDeclaredType(classname, true);
             if (tinfo != null)
             {
                 return tinfo.ResolveCreator(Type.GetTypeFromHandle(caller))(this, arguments);
             }
             else
             {
-                // TODO: Err class not known
-                return null;
+                throw new ArgumentNullException(nameof(tinfo));
             }
         }
 
