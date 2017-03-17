@@ -256,7 +256,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     throw new NotImplementedException($"cycle in class hierarchy, {this.MakeQualifiedName()} extends itself.");
                 }
 
-                btype = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(baseTypeName.ClrName())
+                btype = (NamedTypeSymbol)DeclaringCompilation.GlobalSemantics.GetType(baseTypeName)
                     ?? new MissingMetadataTypeSymbol(baseTypeName.ClrName(), 0, false);
 
                 if (btype.Arity != 0)
@@ -412,7 +412,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ifaces = new HashSet<NamedTypeSymbol>();
             foreach (var i in _syntax.ImplementsList)
             {
-                var t = (NamedTypeSymbol)DeclaringCompilation.GetTypeByMetadataName(i.ClassName.ClrName())
+                var t = (NamedTypeSymbol)DeclaringCompilation.GlobalSemantics.GetType(i.ClassName)
                         ?? new MissingMetadataTypeSymbol(i.ClassName.ClrName(), 0, false);
 
                 if (t.Arity != 0)
