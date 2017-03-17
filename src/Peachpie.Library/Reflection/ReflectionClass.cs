@@ -192,11 +192,11 @@ namespace Pchp.Library.Reflection
         public bool isInstance(object @object) { throw new NotImplementedException(); }
         public bool isInstantiable() => !object.ReferenceEquals(_tinfo.Creator, PhpTypeInfo.InaccessibleCreator);
         public bool isInterface() => _tinfo.IsInterface;
-        public bool isInternal() { throw new NotImplementedException(); }
+        public bool isInternal() => !isUserDefined();
         public bool isIterateable() => _tinfo.Type.IsSubclassOf(typeof(Iterator)) || _tinfo.Type.IsSubclassOf(typeof(IteratorAggregate)) || _tinfo.Type.IsSubclassOf(typeof(System.Collections.IEnumerable));
         public bool isSubclassOf(string @class) { throw new NotImplementedException(); }
         public bool isTrait() => _tinfo.IsTrait;
-        public bool isUserDefined() => !isInternal();
+        public bool isUserDefined() => _tinfo.IsUserType;
         public object newInstance(Context ctx, params PhpValue[] args) => _tinfo.Creator(ctx, args);
         public object newInstanceArgs(Context ctx, PhpArray args) => newInstance(ctx, args.GetValues());
         public object newInstanceWithoutConstructor(Context ctx) => _tinfo.GetUninitializedInstance(ctx);

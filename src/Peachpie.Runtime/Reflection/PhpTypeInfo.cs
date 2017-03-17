@@ -24,9 +24,10 @@ namespace Pchp.Core.Reflection
         protected int _index;
 
         /// <summary>
-        /// Whether the type is declared in application context.
+        /// Gets value indicating the type was declared in a users code.
+        /// Otherwise the type is from a library.
         /// </summary>
-        internal bool IsInAppContext => _index < 0;
+        public bool IsUserType => _index > 0;
 
         /// <summary>
         /// Gets value indicating the type is an interface.
