@@ -49,17 +49,19 @@ namespace Pchp.CodeAnalysis.Symbols
                         var tname = ctorargs[0];
                         var tnamestr = tname.IsNull ? null : tname.DecodeValue<string>(SpecialType.System_String);
 
+                        const string InheritName = "[name]";
+
                         if (tnamestr == null)
                         {
                             return s.MakeQualifiedName();
                         }
-                        else if (tnamestr == "[name]")
+                        else if (tnamestr == InheritName)
                         {
                             return new QualifiedName(new Name(s.Name));
                         }
                         else
                         {
-                            return QualifiedName.Parse(tnamestr, true);
+                            return QualifiedName.Parse(tnamestr.Replace(InheritName, s.Name), true);
                         }
                     }
                 }

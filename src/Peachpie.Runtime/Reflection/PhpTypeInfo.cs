@@ -231,9 +231,7 @@ namespace Pchp.Core.Reflection
                 ? tinfo.FullName            // full PHP type name instead of CLR type name
                    .Replace('.', '\\')      // namespace separator
                    .Replace('+', '\\')      // nested type separator
-                : explicitName.Equals(PhpTypeAttribute.InheritedName)
-                    ? tinfo.Name
-                    : explicitName;
+                : explicitName.Replace(PhpTypeAttribute.InheritName, tinfo.Name);
         }
 
         /// <summary>

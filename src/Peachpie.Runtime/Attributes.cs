@@ -84,7 +84,7 @@ namespace Pchp.Core
         /// <see cref="ExplicitTypeName"/> value stating that the type name is inherited from the CLR name excluding its namespace part.
         /// It causes CLR type <c>A.B.C.X</c> to appear in PHP just as <c>X</c>.
         /// </summary>
-        internal const string InheritedName = "[name]";
+        internal const string InheritName = "[name]";
 
         /// <summary>
         /// Annotates the PHP type.
