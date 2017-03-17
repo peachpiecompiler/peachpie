@@ -134,7 +134,7 @@ namespace Pchp.Library.Reflection
             foreach (var t in _tinfo.Type.ImplementedInterfaces)
             {
                 var iinfo = t.GetPhpTypeInfo();
-                result.Add(iinfo.Name, PhpValue.FromClass(new ReflectionClass() { _tinfo = iinfo }));
+                result.Add(iinfo.Name, PhpValue.FromClass(new ReflectionClass(iinfo)));
             }
 
             return result;
@@ -165,7 +165,7 @@ namespace Pchp.Library.Reflection
             var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
             return (sep < 0) ? string.Empty : name.Remove(sep);
         }
-        public ReflectionClass getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass() { _tinfo = _tinfo.BaseType } : null;
+        public ReflectionClass getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass(_tinfo.BaseType) : null;
         public PhpArray getProperties(int filter) { throw new NotImplementedException(); }
         //public ReflectionProperty getProperty(string name) { throw new NotImplementedException(); }
         public string getShortName()
