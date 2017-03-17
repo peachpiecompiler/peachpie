@@ -102,11 +102,40 @@ namespace Pchp.Library.Reflection
         //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
         public string getExtensionName() { throw new NotImplementedException(); }
         public string getFileName() { throw new NotImplementedException(); }
-        public PhpArray getInterfaceNames() { throw new NotImplementedException(); }
-        public PhpArray getInterfaces() { throw new NotImplementedException(); }
+        public PhpArray getInterfaceNames()
+        {
+            var result = new PhpArray();
+
+            foreach (var t in _tinfo.Type.ImplementedInterfaces)
+            {
+                result.Add(t.GetPhpTypeInfo().Name);
+            }
+
+            return result;
+        }
+        public PhpArray getInterfaces()
+        {
+            var result = new PhpArray();
+
+            foreach (var t in _tinfo.Type.ImplementedInterfaces)
+            {
+                var iinfo = t.GetPhpTypeInfo();
+                result.Add(iinfo.Name, PhpValue.FromClass(new ReflectionClass() { _tinfo = iinfo }));
+            }
+
+            return result;
+        }
         //public ReflectionMethod getMethod(string name) { throw new NotImplementedException(); }
         public PhpArray getMethods(int filter) { throw new NotImplementedException(); }
-        public int getModifiers() { throw new NotImplementedException(); }
+        public long getModifiers()
+        {
+            long flags = 0;
+
+            if (_tinfo.Type.IsSealed) flags |= IS_FINAL;
+            if (_tinfo.Type.IsAbstract) flags |= IS_EXPLICIT_ABSTRACT;
+
+            return flags;
+        }
         public string getName() => this.name;
         public string getNamespaceName()
         {
@@ -132,25 +161,25 @@ namespace Pchp.Library.Reflection
         public PhpArray getTraitNames() { throw new NotImplementedException(); }
         public PhpArray getTraits() { throw new NotImplementedException(); }
         public bool hasConstant(string name) { throw new NotImplementedException(); }
-        public bool hasMethod(string name) { throw new NotImplementedException(); }
+        public bool hasMethod(string name) => _tinfo.RuntimeMethods[name] != null;
         public bool hasProperty(string name) { throw new NotImplementedException(); }
         public bool implementsInterface(string @interface) { throw new NotImplementedException(); }
         public bool inNamespace() => this.name.IndexOf(ReflectionUtils.NameSeparator) >= 0;
         public bool isAbstract() => _tinfo.Type.IsAbstract;
-        public bool isAnonymous() { throw new NotImplementedException(); }
+        public bool isAnonymous() => _tinfo.Type.IsSealed && _tinfo.Type.IsNotPublic && _tinfo.Type.Name.StartsWith("class@anonymous", StringComparison.Ordinal); // internal sealed 'class@anonymous...' {}
         public bool isCloneable() { throw new NotImplementedException(); }
         public bool isFinal() => _tinfo.Type.IsSealed;
         public bool isInstance(object @object) { throw new NotImplementedException(); }
-        public bool isInstantiable() { throw new NotImplementedException(); }
+        public bool isInstantiable() => !object.ReferenceEquals(_tinfo.Creator, PhpTypeInfo.InaccessibleCreator);
         public bool isInterface() => _tinfo.IsInterface;
         public bool isInternal() { throw new NotImplementedException(); }
-        public bool isIterateable() { throw new NotImplementedException(); }
+        public bool isIterateable() => _tinfo.Type.IsSubclassOf(typeof(Iterator)) || _tinfo.Type.IsSubclassOf(typeof(IteratorAggregate)) || _tinfo.Type.IsSubclassOf(typeof(System.Collections.IEnumerable));
         public bool isSubclassOf(string @class) { throw new NotImplementedException(); }
-        public bool isTrait() { throw new NotImplementedException(); }
-        public bool isUserDefined() { throw new NotImplementedException(); }
+        public bool isTrait() => _tinfo.IsTrait;
+        public bool isUserDefined() => !isInternal();
         public object newInstance(Context ctx, params PhpValue[] args) => _tinfo.Creator(ctx, args);
         public object newInstanceArgs(Context ctx, PhpArray args) => newInstance(ctx, args.GetValues());
-        public object newInstanceWithoutConstructor() { throw new NotImplementedException(); }
+        public object newInstanceWithoutConstructor(Context ctx) => _tinfo.GetUninitializedInstance(ctx);
         public void setStaticPropertyValue(string name, PhpValue value) { throw new NotImplementedException(); }
 
         #region Reflector

@@ -34,6 +34,11 @@ namespace Pchp.Core.Reflection
         public bool IsInterface => _type.IsInterface;
 
         /// <summary>
+        /// Gets valud indicating the type is a trait.
+        /// </summary>
+        public bool IsTrait => !IsInterface && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
+
+        /// <summary>
         /// Gets the full type name in PHP syntax, cannot be <c>null</c> or empty.
         /// </summary>
         public string Name => _name;
@@ -67,6 +72,12 @@ namespace Pchp.Core.Reflection
         TObjectCreator Creator_private => _lazyCreatorPrivate ?? BuildCreatorPrivate();
         TObjectCreator Creator_protected => _lazyCreatorProtected ?? BuildCreatorProtected();
         TObjectCreator _lazyCreator, _lazyCreatorPrivate, _lazyCreatorProtected;
+
+        /// <summary>
+        /// A delegate used for representing an inaccessible class constructor.
+        /// </summary>
+        public static TObjectCreator InaccessibleCreator => s_inaccessibleCreator;
+        static readonly TObjectCreator s_inaccessibleCreator = (ctx, _) => { throw new MethodAccessException(); };
 
         /// <summary>
         /// Dynamically constructed delegate for object creation in specific type context.
@@ -125,7 +136,14 @@ namespace Pchp.Core.Reflection
                 if (_lazyCreator == null)
                 {
                     var ctors = _type.DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
-                    _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctors);
+                    if (ctors.Length != 0)
+                    {
+                        _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctors);
+                    }
+                    else
+                    {
+                        _lazyCreator = s_inaccessibleCreator;
+                    }
                 }
             }
 
