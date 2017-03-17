@@ -58,6 +58,7 @@ namespace Pchp.Library.Reflection
 
         #region Construction
 
+        [PhpFieldsOnlyCtor]
         protected ReflectionClass() { }
 
         internal ReflectionClass(PhpTypeInfo tinfo)

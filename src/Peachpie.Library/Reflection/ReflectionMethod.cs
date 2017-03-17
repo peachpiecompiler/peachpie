@@ -44,6 +44,7 @@ namespace Pchp.Library.Reflection
 
         #region Construction
 
+        [PhpFieldsOnlyCtor]
         protected ReflectionMethod() { }
 
         internal ReflectionMethod(PhpTypeInfo tinfo, RoutineInfo routine)

@@ -10,6 +10,10 @@ namespace Pchp.Library.Reflection
     [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionObject : ReflectionClass
     {
+        [PhpFieldsOnlyCtor]
+        protected ReflectionObject()
+        { }
+
         public ReflectionObject(object instance)
             :base(instance.GetPhpTypeInfo())
         {

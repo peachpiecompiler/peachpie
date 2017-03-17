@@ -13,6 +13,7 @@ namespace Pchp.Library.Reflection
     {
         #region Construction
 
+        [PhpFieldsOnlyCtor]
         protected ReflectionFunction() { }
 
         internal ReflectionFunction(RoutineInfo routine)
