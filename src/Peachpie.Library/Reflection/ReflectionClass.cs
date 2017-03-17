@@ -60,35 +60,48 @@ namespace Pchp.Library.Reflection
 
         protected ReflectionClass() { }
 
-        public ReflectionClass(Context ctx, PhpValue obj)
+        internal ReflectionClass(PhpTypeInfo tinfo)
         {
-            __construct(ctx, obj);
+            Debug.Assert(tinfo != null);
+            _tinfo = tinfo;
         }
 
-        public void __construct(Context ctx, PhpValue obj)
+        public ReflectionClass(Context ctx, PhpValue @class)
+        {
+            __construct(ctx, @class);
+        }
+
+        public void __construct(Context ctx, PhpValue @class)
         {
             Debug.Assert(_tinfo == null, "Subsequent call not allowed.");
 
+            _tinfo = ResolvePhpTypeInfo(ctx, @class);
+
+            if (_tinfo == null)
+            {
+                throw new ArgumentException();  // TODO: ReflectionException
+            }
+        }
+
+        internal static PhpTypeInfo ResolvePhpTypeInfo(Context ctx, PhpValue @class)
+        {
             object instance;
 
-            var classname = obj.ToStringOrNull();
+            var classname = @class.ToStringOrNull();
             if (classname != null)
             {
-                _tinfo = ctx.GetDeclaredType(classname, true);
+                return ctx.GetDeclaredType(classname, true);
             }
-            else if ((instance = obj.AsObject()) != null)
+            else if ((instance = @class.AsObject()) != null)
             {
-                _tinfo = instance.GetPhpTypeInfo();
+                return instance.GetPhpTypeInfo();
             }
             else
             {
                 // argument type exception
             }
 
-            if (_tinfo == null)
-            {
-                throw new ArgumentException();  // TODO: ReflectionException
-            }
+            return null;
         }
 
         #endregion
@@ -125,7 +138,14 @@ namespace Pchp.Library.Reflection
 
             return result;
         }
-        //public ReflectionMethod getMethod(string name) { throw new NotImplementedException(); }
+        [return: CastToFalse]
+        public ReflectionMethod getMethod(string name)
+        {
+            var routine = _tinfo.RuntimeMethods[name];
+            return (routine != null)
+                ? new ReflectionMethod(_tinfo, routine)
+                : null;
+        }
         public PhpArray getMethods(int filter) { throw new NotImplementedException(); }
         public long getModifiers()
         {

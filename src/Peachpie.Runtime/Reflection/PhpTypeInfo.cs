@@ -34,7 +34,7 @@ namespace Pchp.Core.Reflection
         public bool IsInterface => _type.IsInterface;
 
         /// <summary>
-        /// Gets valud indicating the type is a trait.
+        /// Gets value indicating the type is a trait.
         /// </summary>
         public bool IsTrait => !IsInterface && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
 
