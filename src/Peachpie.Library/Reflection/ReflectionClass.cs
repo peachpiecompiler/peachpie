@@ -93,7 +93,6 @@ namespace Pchp.Library.Reflection
 
         #endregion
 
-        public static string export(PhpValue argument, bool @return = false) { throw new NotImplementedException(); }
         public PhpValue getConstant(string name) { throw new NotImplementedException(); }
         public PhpArray getConstants() { throw new NotImplementedException(); }
         //public ReflectionMethod getConstructor() { throw new NotImplementedException(); }
@@ -108,12 +107,23 @@ namespace Pchp.Library.Reflection
         //public ReflectionMethod getMethod(string name) { throw new NotImplementedException(); }
         public PhpArray getMethods(int filter) { throw new NotImplementedException(); }
         public int getModifiers() { throw new NotImplementedException(); }
-        public string getName() { throw new NotImplementedException(); }
-        public string getNamespaceName() { throw new NotImplementedException(); }
-        public ReflectionClass getParentClass() { throw new NotImplementedException(); }
+        public string getName() => this.name;
+        public string getNamespaceName()
+        {
+            // opposite of getShortName()
+            var name = this.name;
+            var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
+            return (sep < 0) ? string.Empty : name.Remove(sep);
+        }
+        public ReflectionClass getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass() { _tinfo = _tinfo.BaseType } : null;
         public PhpArray getProperties(int filter) { throw new NotImplementedException(); }
         //public ReflectionProperty getProperty(string name) { throw new NotImplementedException(); }
-        public string getShortName() { throw new NotImplementedException(); }
+        public string getShortName()
+        {
+            var name = this.name;
+            var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
+            return (sep < 0) ? name : name.Substring(sep + 1);
+        }
         public int getStartLine() { throw new NotImplementedException(); }
         public PhpArray getStaticProperties() { throw new NotImplementedException(); }
         public PhpValue getStaticPropertyValue(string name) { throw new NotImplementedException(); }
@@ -125,25 +135,30 @@ namespace Pchp.Library.Reflection
         public bool hasMethod(string name) { throw new NotImplementedException(); }
         public bool hasProperty(string name) { throw new NotImplementedException(); }
         public bool implementsInterface(string @interface) { throw new NotImplementedException(); }
-        public bool inNamespace() { throw new NotImplementedException(); }
-        public bool isAbstract() { throw new NotImplementedException(); }
+        public bool inNamespace() => this.name.IndexOf(ReflectionUtils.NameSeparator) >= 0;
+        public bool isAbstract() => _tinfo.Type.IsAbstract;
         public bool isAnonymous() { throw new NotImplementedException(); }
         public bool isCloneable() { throw new NotImplementedException(); }
-        public bool isFinal() { throw new NotImplementedException(); }
+        public bool isFinal() => _tinfo.Type.IsSealed;
         public bool isInstance(object @object) { throw new NotImplementedException(); }
         public bool isInstantiable() { throw new NotImplementedException(); }
-        public bool isInterface() { throw new NotImplementedException(); }
+        public bool isInterface() => _tinfo.IsInterface;
         public bool isInternal() { throw new NotImplementedException(); }
         public bool isIterateable() { throw new NotImplementedException(); }
         public bool isSubclassOf(string @class) { throw new NotImplementedException(); }
         public bool isTrait() { throw new NotImplementedException(); }
         public bool isUserDefined() { throw new NotImplementedException(); }
-        public object newInstance(params PhpValue[] args) { throw new NotImplementedException(); }
-        public object newInstanceArgs(PhpArray args) { throw new NotImplementedException(); }
+        public object newInstance(Context ctx, params PhpValue[] args) => _tinfo.Creator(ctx, args);
+        public object newInstanceArgs(Context ctx, PhpArray args) => newInstance(ctx, args.GetValues());
         public object newInstanceWithoutConstructor() { throw new NotImplementedException(); }
         public void setStaticPropertyValue(string name, PhpValue value) { throw new NotImplementedException(); }
 
         #region Reflector
+
+        public static string export(PhpValue argument, bool @return = false)
+        {
+            throw new NotImplementedException();
+        }
 
         public string __toString()
         {

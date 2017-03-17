@@ -1384,7 +1384,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Clone, InplaceDeepCopy, AddTo, CopyValuesTo
+        #region Clone, InplaceDeepCopy, AddTo, CopyValuesTo, GetValues
 
         /// <summary>
         /// Creates a shallow copy of the hashtable.
@@ -1438,6 +1438,23 @@ namespace Pchp.Core
         /// <param name="dst"></param>
         /// <param name="offset"></param>
         public void CopyValuesTo(PhpValue[]/*!*/dst, int offset) => table.CopyTo(dst, offset);
+
+        /// <summary>
+        /// Copies values to a new array.
+        /// </summary>
+        public PhpValue[] GetValues()
+        {
+            if (this.Count != 0)
+            {
+                var array = new PhpValue[this.Count];
+                this.CopyValuesTo(array, 0);
+                return array;
+            }
+            else
+            {
+                return Array.Empty<PhpValue>();
+            }
+        }
 
         #endregion
 
