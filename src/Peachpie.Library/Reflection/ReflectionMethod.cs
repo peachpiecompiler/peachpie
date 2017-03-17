@@ -14,8 +14,8 @@ namespace Pchp.Library.Reflection
         #region Constants
 
         public const int IS_STATIC = 1;
-        public const int IS_FINAL = 4;
         public const int IS_ABSTRACT = 2;
+        public const int IS_FINAL = 4;
         public const int IS_PUBLIC = 256;
         public const int IS_PROTECTED = 512;
         public const int IS_PRIVATE = 1024;

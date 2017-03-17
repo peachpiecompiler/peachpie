@@ -147,7 +147,21 @@ namespace Pchp.Library.Reflection
                 ? new ReflectionMethod(_tinfo, routine)
                 : null;
         }
-        public PhpArray getMethods(int filter) { throw new NotImplementedException(); }
+        public PhpArray getMethods(long filter = -1)
+        {
+            var result = new PhpArray();
+
+            foreach (var routine in _tinfo.RuntimeMethods)
+            {
+                var rmethod = new ReflectionMethod(_tinfo, routine);
+                if (filter == -1 || ((int)rmethod.getModifiers() & filter) != 0)
+                {
+                    result.Add(rmethod);
+                }
+            }
+
+            return result;
+        }
         public long getModifiers()
         {
             long flags = 0;
