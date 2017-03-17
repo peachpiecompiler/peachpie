@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Reflection
 {
-    [PhpType("name"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionMethod : ReflectionFunctionAbstract
     {
         #region Constants
