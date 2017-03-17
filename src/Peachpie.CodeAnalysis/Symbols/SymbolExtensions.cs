@@ -47,7 +47,16 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         var ctorargs = attrs[i].ConstructorArguments;
                         var tname = ctorargs[0];
-                        return tname.IsNull ? s.MakeQualifiedName() : QualifiedName.Parse(tname.DecodeValue<string>(SpecialType.System_String), true);
+                        var tnamestr = tname.IsNull ? null : tname.DecodeValue<string>(SpecialType.System_String);
+
+                        if (tnamestr == null || tnamestr == "[name]")
+                        {
+                            return s.MakeQualifiedName();
+                        }
+                        else
+                        {
+                            return QualifiedName.Parse(tnamestr, true);
+                        }
                     }
                 }
             }

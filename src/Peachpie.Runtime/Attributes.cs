@@ -31,7 +31,7 @@ namespace Pchp.Core
     /// 
     /// When used on the class, the attribute also annotates extension name and its set of functions.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true)]
     public class PhpExtensionAttribute : Attribute
     {
         /// <summary>
@@ -80,6 +80,17 @@ namespace Pchp.Core
         public string ExplicitTypeName => _typename;
         readonly string _typename;
 
+        /// <summary>
+        /// <see cref="ExplicitTypeName"/> value stating that the type name is inherited from the CLR name excluding its namespace part.
+        /// It causes CLR type <c>A.B.C.X</c> to appear in PHP just as <c>X</c>.
+        /// </summary>
+        internal const string InheritedName = "[name]";
+
+        /// <summary>
+        /// Annotates the PHP type.
+        /// </summary>
+        /// <param name="phpTypeName">Optional parameter overriding the default CLR name.
+        /// Special value of <c>[name]</c> denotates, the name of the PHP type will be the same as in CLR without leading namespace.</param>
         public PhpTypeAttribute(string phpTypeName = null)
         {
             _typename = phpTypeName;
