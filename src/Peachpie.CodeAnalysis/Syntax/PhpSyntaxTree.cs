@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var unit = new CodeSourceUnit(content.ToString(), fname, Encoding.UTF8);
+            var unit = new CodeSourceUnit(content, fname, Encoding.UTF8);
             var result = new PhpSyntaxTree(unit);
 
             var errorSink = new ErrorSink(result);
