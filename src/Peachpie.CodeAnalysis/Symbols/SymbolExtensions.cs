@@ -49,9 +49,13 @@ namespace Pchp.CodeAnalysis.Symbols
                         var tname = ctorargs[0];
                         var tnamestr = tname.IsNull ? null : tname.DecodeValue<string>(SpecialType.System_String);
 
-                        if (tnamestr == null || tnamestr == "[name]")
+                        if (tnamestr == null)
                         {
                             return s.MakeQualifiedName();
+                        }
+                        else if (tnamestr == "[name]")
+                        {
+                            return new QualifiedName(new Name(s.Name));
                         }
                         else
                         {

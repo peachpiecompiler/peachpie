@@ -209,11 +209,13 @@ namespace Pchp.Core.Reflection
         {
             var attr = tinfo.GetCustomAttribute<PhpTypeAttribute>(false);
             var explicitName = attr?.ExplicitTypeName;
-            return (explicitName == null || explicitName.Equals(PhpTypeAttribute.InheritedName))
+            return (explicitName == null)
                 ? tinfo.FullName            // full PHP type name instead of CLR type name
                    .Replace('.', '\\')      // namespace separator
                    .Replace('+', '\\')      // nested type separator
-                : explicitName;
+                : explicitName.Equals(PhpTypeAttribute.InheritedName)
+                    ? tinfo.Name
+                    : explicitName;
         }
 
         /// <summary>
