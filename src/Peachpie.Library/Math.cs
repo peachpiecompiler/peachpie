@@ -280,7 +280,7 @@ namespace Pchp.Library
         {
             if (length <= 0)
             {
-                throw new Error(string.Format(Resources.LibResources.arg_negative_or_zero, nameof(length)));
+                throw new Spl.Error(string.Format(Resources.LibResources.arg_negative_or_zero, nameof(length)));
             }
 
             var bytes = new byte[length];

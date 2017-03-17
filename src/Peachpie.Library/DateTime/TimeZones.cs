@@ -23,7 +23,7 @@ using System.Diagnostics;
 using Pchp.Core;
 using System.Xml;
 
-namespace Pchp.Library
+namespace Pchp.Library.DateTime
 {
     /// <summary>
 	/// Provides timezone information for PHP functions.
@@ -493,7 +493,7 @@ namespace Pchp.Library
         /// Alias of <see cref="DateTimeZone.getOffset"/>
         /// </summary>
         [return: CastToFalse]
-        public static int timezone_offset_get(Context context, DateTimeZone timezone, global::DateTime datetime)
+        public static int timezone_offset_get(Context context, DateTimeZone timezone, Library.DateTime.DateTime datetime)
         {
             return (timezone != null) ? timezone.getOffset(datetime) : -1;
         }

@@ -7,113 +7,113 @@ using Pchp.Core;
 using Pchp.Library;
 using Pchp.Library.Streams;
 
-#region PHP class: Directory
-
-/// <summary>
-/// User-like class encapsulating enumeration of a Directory. 
-/// Uses the PhpDiretory implementation upon PhpWrapper streams.
-/// </summary>
-[EditorBrowsable(EditorBrowsableState.Never)]
-[PhpType("Directory")]
-public class Directory
-{
-    #region Fields
-
-    /// <summary>
-    /// Reference to the directory listing resource.
-    /// </summary>
-    public PhpValue handle = PhpValue.Null;
-
-    /// <summary>
-    /// The opened path (accessible from the PHP script).
-    /// </summary>
-    public PhpValue path = PhpValue.Null;
-
-    #endregion
-
-    #region Construction
-
-    /// <summary>
-    /// Start listing of a directory (intended to be used from C#).
-    /// </summary>
-    /// <param name="ctx">Runtime context.</param>
-    /// <param name="directory">The path to the directory.</param>
-    public Directory(Context ctx, string directory)
-    {
-        this.path = (PhpValue)directory;
-        this.handle = PhpValue.FromClass(PhpDirectory.opendir(ctx, directory));
-    }
-
-    #endregion
-
-    #region read
-
-    /// <summary>
-    /// Read next directory entry.
-    /// </summary>
-    /// <returns>Filename of a contained file (including . and ..).</returns>
-    [return: CastToFalse]
-    public string read(PhpResource handle = null)
-    {
-        var res = handle ?? this.handle.AsResource();
-        if (res != null)
-        {
-            return PhpDirectory.readdir(res);
-        }
-        else
-        {
-            PhpException.InvalidImplicitCast(nameof(handle), PhpResource.PhpTypeName, "read");
-            return null;
-        }
-    }
-
-    #endregion
-
-    #region rewind
-
-    /// <summary>
-    /// Restart the directory listing.
-    /// </summary>
-    public virtual void rewind(PhpResource handle = null)
-    {
-        var res = handle ?? this.handle.AsResource();
-        if (res != null)
-        {
-            PhpDirectory.rewinddir(res);
-        }
-        else
-        {
-            PhpException.InvalidImplicitCast(nameof(handle), PhpResource.PhpTypeName, "rewind");
-        }
-    }
-
-    #endregion
-
-    #region close
-
-    /// <summary>
-    /// Finish the directory listing.
-    /// </summary>
-    public virtual void close(PhpResource handle = null)
-    {
-        var res = handle ?? this.handle.AsResource();
-        if (res != null)
-        {
-            PhpDirectory.closedir(res);
-        }
-        else
-        {
-            PhpException.InvalidImplicitCast(nameof(handle), PhpResource.PhpTypeName, "close");
-        }
-    }
-
-    #endregion
-}
-
-#endregion
 
 namespace Pchp.Library
 {
+    #region PHP class: Directory
+
+    /// <summary>
+    /// User-like class encapsulating enumeration of a Directory. 
+    /// Uses the PhpDirectory implementation upon PhpWrapper streams.
+    /// </summary>
+    [PhpType("Directory")]
+    public class Directory
+    {
+        #region Fields
+
+        /// <summary>
+        /// Reference to the directory listing resource.
+        /// </summary>
+        public PhpValue handle = PhpValue.Null;
+
+        /// <summary>
+        /// The opened path (accessible from the PHP script).
+        /// </summary>
+        public PhpValue path = PhpValue.Null;
+
+        #endregion
+
+        #region Construction
+
+        /// <summary>
+        /// Start listing of a directory (intended to be used from C#).
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="directory">The path to the directory.</param>
+        public Directory(Context ctx, string directory)
+        {
+            this.path = (PhpValue)directory;
+            this.handle = PhpValue.FromClass(PhpDirectory.opendir(ctx, directory));
+        }
+
+        #endregion
+
+        #region read
+
+        /// <summary>
+        /// Read next directory entry.
+        /// </summary>
+        /// <returns>Filename of a contained file (including . and ..).</returns>
+        [return: CastToFalse]
+        public string read(PhpResource handle = null)
+        {
+            var res = handle ?? this.handle.AsResource();
+            if (res != null)
+            {
+                return PhpDirectory.readdir(res);
+            }
+            else
+            {
+                PhpException.InvalidImplicitCast(nameof(handle), PhpResource.PhpTypeName, "read");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region rewind
+
+        /// <summary>
+        /// Restart the directory listing.
+        /// </summary>
+        public virtual void rewind(PhpResource handle = null)
+        {
+            var res = handle ?? this.handle.AsResource();
+            if (res != null)
+            {
+                PhpDirectory.rewinddir(res);
+            }
+            else
+            {
+                PhpException.InvalidImplicitCast(nameof(handle), PhpResource.PhpTypeName, "rewind");
+            }
+        }
+
+        #endregion
+
+        #region close
+
+        /// <summary>
+        /// Finish the directory listing.
+        /// </summary>
+        public virtual void close(PhpResource handle = null)
+        {
+            var res = handle ?? this.handle.AsResource();
+            if (res != null)
+            {
+                PhpDirectory.closedir(res);
+            }
+            else
+            {
+                PhpException.InvalidImplicitCast(nameof(handle), PhpResource.PhpTypeName, "close");
+            }
+        }
+
+        #endregion
+    }
+
+    #endregion
+
     #region DirectoryListing
 
     /// <summary>

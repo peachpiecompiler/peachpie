@@ -20,7 +20,7 @@ using System.Diagnostics;
 using Pchp.Core;
 using Pchp.Library.Resources;
 
-namespace Pchp.Library
+namespace Pchp.Library.DateTime
 {
 	#region Enums
 

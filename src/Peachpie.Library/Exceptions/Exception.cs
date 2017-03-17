@@ -1,55 +1,58 @@
 ﻿using System;
 using Pchp.Core;
 
-/// <summary>
-/// <see cref="Exception"/> is the base class for all Exceptions in PHP 5, and the base class for all user exceptions in PHP 7.
-/// </summary>
-[PhpType("Exception")]
-public class Exception : System.Exception, Throwable
+namespace Pchp.Library.Spl
 {
-    protected string message;
-    protected long code;
-    protected string file;
-    protected int line;
-
-    public Exception() { }
-
-    public Exception(string message = "", long code = 0, Throwable previous = null)
+    /// <summary>
+    /// <see cref="Exception"/> is the base class for all Exceptions in PHP 5, and the base class for all user exceptions in PHP 7.
+    /// </summary>
+    [PhpType("[name]")]
+    public class Exception : System.Exception, Throwable
     {
-        __construct(message, code, previous);
-    }
+        protected string message;
+        protected long code;
+        protected string file;
+        protected int line;
 
-    public void __construct(string message = "", long code = 0, Throwable previous = null)
-    {
-        this.message = message;
-        this.code = code;
-    }
+        public Exception() { }
 
-    public virtual int getCode() => (int)this.code;
+        public Exception(string message = "", long code = 0, Throwable previous = null)
+        {
+            __construct(message, code, previous);
+        }
 
-    public virtual string getFile() => this.file;
+        public void __construct(string message = "", long code = 0, Throwable previous = null)
+        {
+            this.message = message;
+            this.code = code;
+        }
 
-    public virtual int getLine() => this.line;
+        public virtual int getCode() => (int)this.code;
 
-    public virtual string getMessage() => this.message;
+        public virtual string getFile() => this.file;
 
-    public virtual Throwable getPrevious()
-    {
-        throw new NotImplementedException();
-    }
+        public virtual int getLine() => this.line;
 
-    public virtual PhpArray getTrace()
-    {
-        throw new NotImplementedException();
-    }
+        public virtual string getMessage() => this.message;
 
-    public virtual string getTraceAsString()
-    {
-        throw new NotImplementedException();
-    }
+        public virtual Throwable getPrevious()
+        {
+            throw new NotImplementedException();
+        }
 
-    public virtual string __toString()
-    {
-        throw new NotImplementedException();
+        public virtual PhpArray getTrace()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual string getTraceAsString()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual string __toString()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

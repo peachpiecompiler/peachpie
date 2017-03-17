@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System_DateTime = System.DateTime;
 
-namespace Pchp.Library
+namespace Pchp.Library.DateTime
 {
     public static class DateTimeFunctions
     {
@@ -49,7 +49,7 @@ namespace Pchp.Library
         #region date_format, date_create, date_offset_get, date_modify
 
         [return: CastToFalse]
-        public static string date_format(global::DateTime datetime, string format)
+        public static string date_format(DateTime datetime, string format)
         {
             // TODO: format it properly
             return FormatDate(format, datetime.Time, datetime.TimeZone);
@@ -59,9 +59,9 @@ namespace Pchp.Library
         /// Alias of new <see cref="DateTime"/>
         /// </summary>
         //[return: CastToFalse]
-        public static global::DateTime date_create(Context/*!*/context, string time = null, DateTimeZone timezone = null)
+        public static DateTime date_create(Context/*!*/context, string time = null, DateTimeZone timezone = null)
         {
-            return new global::DateTime(context, time, timezone);
+            return new Library.DateTime.DateTime(context, time, timezone);
         }
 
         /// <summary>
@@ -73,16 +73,16 @@ namespace Pchp.Library
         /// <param name="timezone">A DateTimeZone object representing the desired time zone.</param>
         /// <returns></returns>
         [return: CastToFalse]
-        public static global::DateTime date_create_from_format(Context/*!*/context, string format, string time, DateTimeZone timezone = null)
+        public static DateTime date_create_from_format(Context/*!*/context, string format, string time, DateTimeZone timezone = null)
         {
-            return global::DateTime.createFromFormat(context, format, time, timezone);
+            return DateTime.createFromFormat(context, format, time, timezone);
         }
 
         /// <summary>
         /// Alias of DateTime::getOffset().
         /// </summary>
         [return: CastToFalse]
-        public static int date_offset_get(global::DateTime datetime)
+        public static int date_offset_get(Library.DateTime.DateTime datetime)
         {
             if (datetime == null)
             {
@@ -100,7 +100,7 @@ namespace Pchp.Library
         /// Alias of DateTime::modify().
         /// </summary>
         [return: CastToFalse]
-        public static global::DateTime date_modify(Context/*!*/context, global::DateTime datetime, string modify)
+        public static DateTime date_modify(Context/*!*/context, Library.DateTime.DateTime datetime, string modify)
         {
             return datetime.modify(modify);
         }

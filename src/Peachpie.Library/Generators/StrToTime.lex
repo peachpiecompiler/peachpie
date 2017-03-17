@@ -16,7 +16,7 @@ using System.Collections.Generic;
 
 %%
 
-%namespace Pchp.Library
+%namespace Pchp.Library.DateTime
 %type Tokens
 %eofval Tokens.EOF
 %errorval Tokens.ERROR

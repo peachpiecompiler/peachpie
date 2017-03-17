@@ -1,4 +1,4 @@
-namespace Pchp.Library
+namespace Pchp.Library.DateTime
 {
 	#region User Code
 	
