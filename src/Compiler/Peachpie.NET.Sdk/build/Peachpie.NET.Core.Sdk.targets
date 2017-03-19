@@ -151,48 +151,18 @@
       <_FscTask_DotnetFscCompilerPath></_FscTask_DotnetFscCompilerPath>
     </PropertyGroup>
 
-    <PeachpieCompile
-      BaseAddress="$(BaseAddress)"
-      CodePage="$(CodePage)"
-      DebugSymbols="$(DebugSymbols)"
-      DebugType="$(DebugType)"
-      DefineConstants="$(DefineConstants)"
-      DisabledWarnings="$(NoWarn)"
-      DocumentationFile="$(DocumentationFile)"
-      EmbedAllSources="$(EmbedAllSources)"
-      Embed="$(Embed)"
-      GenerateInterfaceFile="$(GenerateInterfaceFile)"
-      KeyFile="$(KeyOriginatorFile)"
-      LCID="$(LCID)"
-      NoFramework="true"
-      Optimize="$(Optimize)"
-      OtherFlags="$(_OtherFscFlags) $(OtherFlags)"
-      OutputAssembly="@(IntermediateAssembly)"
-      PdbFile="$(PdbFile)"
-      Platform="$(PlatformTarget)"
-      Prefer32Bit="$(Actual32Bit)"
-      References="@(ReferencePath)"
-      ReferencePath="$(ReferencePath)"
-      Resources="@(_CoreCompileResourceInputs);@(CompiledLicenseFile);@(AdditionalEmbeddedResource)"
-      SourceLink="$(SourceLink)"
-      Sources="@(CompileBefore -> '%(FullPath)');@(Compile -> '%(FullPath)');@(CompileAfter -> '%(FullPath)')"
-      Tailcalls="$(Tailcalls)"
-      TargetType="$(OutputType)"
-      ToolExe="$(_FscTask_FscToolExe)"
-      ToolPath="$(_FscTask_FscToolPath)"
-      TreatWarningsAsErrors="$(TreatWarningsAsErrors)"
-      Utf8Output="$(Utf8Output)"
-      VersionFile="$(VersionFile)"
-      VisualStudioStyleErrors="$(VisualStudioStyleErrors)"
-      WarningLevel="$(WarningLevel)"
-      WarningsAsErrors="$(WarningsAsErrors)"
-      Win32ManifestFile="$(Win32Manifest)"
-      Win32ResourceFile="$(Win32Resource)"
-      SubsystemVersion="$(SubsystemVersion)"
-      HighEntropyVA="$(HighEntropyVA)"
-      TargetProfile="$(TargetProfile)"
-      DotnetFscCompilerPath="$(_FscTask_DotnetFscCompilerPath)"
-    />
+
+    <FindInList List="@(ReferencePath)" ItemSpecToFind="dotnet-compile-php.dll" MatchFileNameOnly="true">
+      <Output TaskParameter="ItemFound" ItemName="PhpCompilerReferencePath" />
+    </FindInList>
+
+    <PropertyGroup>
+      <!-- http://mattwarren.org/2016/07/04/How-the-dotnet-CLI-tooling-runs-your-code -->
+      <CompilePhp>dotnet exec --additionalprobingpath $(NuGetPackageRoot.TrimEnd('\')) @(PhpCompilerReferencePath)</CompilePhp>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="compile-php-items.rsp" Lines="@(ReferencePath->'--reference:%(FullPath)');@(Compile)" Overwrite="true" />
+    <Exec Command="$(CompilePhp) --emit-entry-point:True --output-name:@(IntermediateAssembly) --target-framework:.NETCoreApp,Version=v1.0 @compile-php-items.rsp" />
 
   </Target>
 

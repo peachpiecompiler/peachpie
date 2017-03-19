@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFramework>netcoreapp1.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Peachpie.NET.Sdk" Version="1.0.*" PrivateAssets="All" />
+    <PackageReference Include="Peachpie.NET.Sdk" Version="0.5.0-dev" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
