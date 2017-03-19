@@ -23,7 +23,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Internal array storage. <c>null</c> reference if the size is <c>0</c>.
         /// </summary>
-        protected PhpValue[] _array = null;
+        private PhpValue[] _array = null;
 
         /// <summary>
         /// Iterator position in the array.
@@ -47,15 +47,12 @@ namespace Pchp.Library.Spl
             var newarray = new PhpValue[newsize];
             var oldsize = (_array != null) ? _array.Length : 0;
 
-            if (_array == null)
-            {
-                _array = newarray;
-            }
-            else
+            if (_array != null)
             {
                 Array.Copy(_array, newarray, Math.Min(_array.Length, newarray.Length));
-                _array = newarray;
             }
+
+            _array = newarray;
 
             // mark new elements as not set
             for (int i = oldsize; i < _array.Length; i++)
@@ -111,6 +108,12 @@ namespace Pchp.Library.Spl
             ReallocArray(size);
         }
 
+        /// <summary>
+        /// Import the PHP array array in a new SplFixedArray instance.
+        /// </summary>
+        /// <param name="array">Source array.</param>
+        /// <param name="save_indexes">Whether to preserve integer indexes.</param>
+        /// <returns>New instance of <see cref="SplFixedArray"/> with copies of elements from <paramref name="array"/>.</returns>
         public static SplFixedArray fromArray(PhpArray array, bool save_indexes = true)
         {
             if (array == null || array.Count == 0)
