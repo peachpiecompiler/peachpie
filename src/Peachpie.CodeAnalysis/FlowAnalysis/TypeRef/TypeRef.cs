@@ -20,7 +20,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Debug.Assert(!string.IsNullOrEmpty(qname.Name.Value));
             Debug.Assert(!qname.IsReservedClassName);    // not self, parent, static
-            Debug.Assert(!qname.IsPrimitiveTypeName);    // use PrimitiveTypeRef instead
             _qname = qname;
         }
 
