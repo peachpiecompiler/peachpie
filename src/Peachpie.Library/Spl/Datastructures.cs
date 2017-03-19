@@ -95,7 +95,6 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Constructs an <see cref="SplFixedArray"/> object.
         /// </summary>
-        /// <param name="context"></param>
         /// <param name="size">The initial array size.</param>
         /// <returns></returns>
         public virtual void __construct(long size = 0)
