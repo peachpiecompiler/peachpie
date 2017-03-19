@@ -9,7 +9,7 @@ using Pchp.CodeAnalysis.Symbols;
 using System.Text;
 using Devsense.PHP.Syntax;
 
-namespace Pchp.CodeAnalysis.DocGen
+namespace Pchp.CodeAnalysis.DocumentationComments
 {
     internal class DocumentationCommentCompiler
     {

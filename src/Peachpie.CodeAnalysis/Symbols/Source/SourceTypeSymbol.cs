@@ -10,6 +10,8 @@ using System.Diagnostics;
 using Pchp.CodeAnalysis.Semantics;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using System.Globalization;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -469,6 +471,11 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 yield return RuntimeFieldsStore;
             }
+        }
+
+        public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return Syntax.PHPDoc?.Summary ?? string.Empty;
         }
     }
 

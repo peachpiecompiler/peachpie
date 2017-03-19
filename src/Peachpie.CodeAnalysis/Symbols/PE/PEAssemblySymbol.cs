@@ -160,7 +160,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return new PEAssemblySymbol(
-                ass, DocumentationProvider.Default, reference.FilePath, true,
+                ass, reference.DocumentationProvider, reference.FilePath, true,
                 IsPchpCor(ass) ? MetadataImportOptions.Internal : MetadataImportOptions.Public);
         }
 

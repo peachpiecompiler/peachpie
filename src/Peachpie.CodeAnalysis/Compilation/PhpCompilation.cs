@@ -19,7 +19,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis.Collections;
 using System.Collections.Concurrent;
 using Devsense.PHP.Syntax;
-using Pchp.CodeAnalysis.DocGen;
+using Pchp.CodeAnalysis.DocumentationComments;
 
 namespace Pchp.CodeAnalysis
 {

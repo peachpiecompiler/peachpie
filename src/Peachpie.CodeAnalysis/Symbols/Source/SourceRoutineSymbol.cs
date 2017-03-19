@@ -312,11 +312,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual;
 
-        //public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    // TODO: XmlDocumentationCommentCompiler
-        //    var phpdoc = this.PHPDocBlock;
-        //    return (phpdoc != null) ? phpdoc.Summary : string.Empty;
-        //}
+        public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            // TODO: XmlDocumentationCommentCompiler
+            return this.PHPDocBlock?.Summary ?? string.Empty;
+        }
     }
 }

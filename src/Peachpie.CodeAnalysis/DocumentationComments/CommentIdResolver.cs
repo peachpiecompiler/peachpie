@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Pchp.CodeAnalysis.DocGen
+namespace Pchp.CodeAnalysis.DocumentationComments
 {
     internal static class CommentIdResolver
     {

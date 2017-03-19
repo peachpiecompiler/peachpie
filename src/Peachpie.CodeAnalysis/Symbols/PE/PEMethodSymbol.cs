@@ -10,6 +10,9 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Cci;
+using System.Globalization;
+using System.Threading;
+using Pchp.CodeAnalysis.DocumentationComments;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -175,6 +178,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
         private SignatureData _lazySignature;
         private ImmutableArray<MethodSymbol> _lazyExplicitMethodImplementations;
+        private Tuple<CultureInfo, string> _lazyDocComment;
 
         #endregion
 
@@ -783,6 +787,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return null;
             }
+        }
+
+        public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return PEDocumentationCommentUtils.GetDocumentationComment(this, _containingType.ContainingPEModule, preferredCulture, cancellationToken, ref _lazyDocComment);
         }
     }
 }

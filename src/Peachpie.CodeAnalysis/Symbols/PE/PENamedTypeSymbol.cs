@@ -12,6 +12,8 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Collections;
 using System.Threading;
 using Devsense.PHP.Syntax;
+using System.Globalization;
+using Pchp.CodeAnalysis.DocumentationComments;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -481,6 +483,8 @@ namespace Pchp.CodeAnalysis.Symbols
         TypeKind _lazyKind;
 
         NamedTypeSymbol _lazyUnderlayingType;
+
+        private Tuple<CultureInfo, string> _lazyDocComment;
 
         private NamedTypeSymbol _lazyDeclaredBaseType = ErrorTypeSymbol.UnknownResultType;
         private ImmutableArray<NamedTypeSymbol> _lazyDeclaredInterfaces = default(ImmutableArray<NamedTypeSymbol>);
@@ -1531,6 +1535,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return _lazyKind;
             }
+        }
+
+        public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return PEDocumentationCommentUtils.GetDocumentationComment(this, ContainingPEModule, preferredCulture, cancellationToken, ref _lazyDocComment);
         }
     }
 }

@@ -11,6 +11,8 @@ using Pchp.CodeAnalysis.Semantics;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Pchp.CodeAnalysis.Utilities;
+using System.Globalization;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -215,5 +217,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Whether the field is real CLR static field.
         /// </summary>
         public override bool IsStatic => _fieldKind == KindEnum.AppStaticField || IsConst; // either field is CLR static field or constant (Literal field must be Static).
+
+        public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return _phpDoc?.Summary ?? string.Empty;
+        }
     }
 }
