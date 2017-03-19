@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <VersionPrefix>0.5.0</VersionPrefix>
+    <VersionSuffix>dev</VersionSuffix>
     <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Peachpie.Library.MySql</AssemblyName>
@@ -16,6 +17,8 @@
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageOutputPath>../../.nugs</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

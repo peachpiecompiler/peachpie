@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <VersionPrefix>0.5.0</VersionPrefix>
+    <VersionSuffix>dev</VersionSuffix>
     <TargetFrameworks>net46;netstandard1.6</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <PublicSign>true</PublicSign>
@@ -22,6 +23,8 @@
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageOutputPath>../../.nugs</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
