@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Spl
 {
+    // TODO:
+    // ArrayObject
+
     /// <summary>
     /// The SplObserver interface is used alongside <see cref="SplSubject"/> to implement the Observer Design Pattern.
     /// </summary>

@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Spl
 {
+    // TODO:
+    //SplDoublyLinkedList
+    //SplStack
+    //SplQueue
+    //SplHeap
+    //SplMaxHeap
+    //SplMinHeap
+    //SplPriorityQueue
+    //SplObjectStorage
+
     [PhpType("[name]")]
     public class SplFixedArray : ArrayAccess, Iterator, Countable
     {
@@ -165,6 +175,11 @@ namespace Pchp.Library.Spl
             }
         }
 
+        public virtual void __wakeup()
+        {
+            // TODO: wakeup all the elements
+        }
+
         #endregion
 
         #region interface Iterator
@@ -247,5 +262,4 @@ namespace Pchp.Library.Spl
 
         #endregion
     }
-
 }
