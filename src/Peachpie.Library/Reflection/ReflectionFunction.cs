@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Pchp.Library.Reflection
@@ -59,5 +60,19 @@ namespace Pchp.Library.Reflection
         public PhpValue invoke(Context ctx, params PhpValue[] args) => _routine.PhpCallable(ctx, args);
         public PhpValue invokeArgs(Context ctx, PhpArray args) => _routine.PhpCallable(ctx, args.GetValues());
         public bool isDisabled() => false;
+        public override string getFileName(Context ctx)
+        {
+            var methods = _routine.Methods;
+            if (methods.Length == 1 && methods[0].IsStatic)
+            {
+                var scriptattr = methods[0].DeclaringType.GetTypeInfo().GetCustomAttribute<ScriptAttribute>(false);
+                if (scriptattr != null)
+                {
+                    return System.IO.Path.Combine(ctx.RootPath, scriptattr.Path);
+                }
+            }
+
+            return string.Empty;
+        }
     }
 }

@@ -179,6 +179,7 @@ namespace Pchp.Library.Reflection
             var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
             return (sep < 0) ? string.Empty : name.Remove(sep);
         }
+        [return: CastToFalse]
         public ReflectionClass getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass(_tinfo.BaseType) : null;
         public PhpArray getProperties(int filter) { throw new NotImplementedException(); }
         //public ReflectionProperty getProperty(string name) { throw new NotImplementedException(); }
