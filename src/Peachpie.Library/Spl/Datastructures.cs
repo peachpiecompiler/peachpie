@@ -249,7 +249,7 @@ namespace Pchp.Library.Spl
         public bool offsetExists(PhpValue offset)
         {
             var i = offset.ToLong();
-            return i >= 0 && _array != null && i < _array.Length && _array[i].TypeCode != PhpTypeCode.Undefined;
+            return i >= 0 && _array != null && i < _array.Length && _array[i].IsSet;
         }
 
         #endregion

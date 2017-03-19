@@ -45,26 +45,33 @@ namespace Pchp.Library
             if (sepidx < 0)
             {
                 // a global constant
-                return ctx.GetConstant(name);
+                PhpValue value;
+                if (ctx.TryGetConstant(name, out value))
+                {
+                    return value;
+                }
             }
             else
             {
                 // a class constant
                 if (sepidx + 1 < name.Length && name[sepidx + 1] == ':')
                 {
+                    var tname = name.Remove(sepidx);
                     var cname = name.Substring(sepidx + 2);
-                    for (var tdecl = ctx.GetDeclaredType(name.Remove(sepidx), true); tdecl != null; tdecl = tdecl.BaseType)
+                    for (var tdecl = ctx.GetDeclaredType(tname, true); tdecl != null; tdecl = tdecl.BaseType)
                     {
-                        object value;
-                        if (tdecl.DeclaredFields.TryGetConstantValue(ctx, cname, out value))
+                        object obj;
+                        if (tdecl.DeclaredFields.TryGetConstantValue(ctx, cname, out obj))
                         {
-                            return PhpValue.FromClr(value);
+                            return PhpValue.FromClr(obj);
                         }
                     }
                 }
-
-                return PhpValue.Void;
             }
+
+            //
+            PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.constant_not_found, name);
+            return PhpValue.Void;
         }
 
         /// <summary>

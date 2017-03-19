@@ -191,9 +191,10 @@ namespace Pchp.Core
         public PhpTypeInfo GetDeclaredTypeOrThrow(string name, bool autoload = false)
         {
             var tinfo = GetDeclaredType(name, autoload);
-            
-            // TODO: Err PhpException.Throw(PhpError.Error, Resources.ErrResources....
-            Debug.Assert(tinfo != null);
+            if (tinfo == null)
+            {
+                PhpException.Throw(PhpError.Error, Resources.ErrResources.class_not_found, name);
+            }
 
             return tinfo;
         }
@@ -341,9 +342,25 @@ namespace Pchp.Core
         /// </summary>
         public PhpValue GetConstant(string name, ref int idx)
         {
-            return _constants.GetConstant(name, ref idx);
+            PhpValue value;
+            if (TryGetConstant(name, out value) == false)
+            {
+                // Warning: undefined constant
+                PhpException.Throw(PhpError.Warning, Resources.ErrResources.undefined_constant, name);
+                value = (PhpValue)name;
+            }
 
-            // TODO: check the constant is valid (PhpValue.IsSet) otherwise Warning: undefined constant
+            return value;
+        }
+
+        /// <summary>
+        /// Tries to get a global constant from current context.
+        /// </summary>
+        public bool TryGetConstant(string name, out PhpValue value)
+        {
+            int idx = 0;
+            value = _constants.GetConstant(name, ref idx);
+            return value.IsSet;
         }
 
         /// <summary>
