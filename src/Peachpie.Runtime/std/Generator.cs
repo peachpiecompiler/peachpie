@@ -3,13 +3,15 @@ using System;
 
 namespace Pchp.Core.std
 {
+    internal delegate void GeneratorStateMachine(Context ctx, Generator gen);
+
     [PhpType("Generator")]
     public class Generator : Iterator
     {
         readonly protected Context _ctx;
 
-        readonly PhpArray _local;
-        readonly internal RoutineInfo routine;
+        readonly internal PhpArray _local;
+        readonly internal GeneratorStateMachine routine;
 
         //Might get replaced by _state logic
         bool _runToFirstYield = false;
@@ -41,7 +43,7 @@ namespace Pchp.Core.std
             checkIfMovingFromFirstYeild();
             checkIfRunToFirstYield();
 
-            routine.PhpCallable(_ctx, PhpValue.FromClass(this));
+            routine.Invoke(_ctx, this);
             throw new NotImplementedException();
         }
 
