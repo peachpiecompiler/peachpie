@@ -26,6 +26,7 @@ namespace Pchp.Core.std
         /// </summary>
         internal int _state = 0;
 
+        //TODO: Add _currNumericalKey update on next();
         int _currNumericalKey = 0;
         internal PhpValue _currValue, _currKey, _currSendItem, _returnValue;
         internal Exception _currException;
