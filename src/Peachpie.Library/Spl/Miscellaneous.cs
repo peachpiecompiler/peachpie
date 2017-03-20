@@ -3,6 +3,7 @@ using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Pchp.Library.Spl
@@ -52,12 +53,12 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Properties of the object have their normal functionality when accessed as list (var_dump, foreach, etc.).
         /// </summary>
-        public const long STD_PROP_LIST = 1;
+        public const int STD_PROP_LIST = 1;
 
         /// <summary>
         /// Entries can be accessed as properties (read and write).
         /// </summary>
-        public const long ARRAY_AS_PROPS = 2;
+        public const int ARRAY_AS_PROPS = 2;
 
         #endregion
 
@@ -75,6 +76,8 @@ namespace Pchp.Library.Spl
         string _iteratorClass;
 
         const string DefaultIteratorClass = "ArrayIterator";
+
+        int _flags;
 
         PhpValue UnderlayingValue
         {
@@ -146,7 +149,7 @@ namespace Pchp.Library.Spl
             }
             else
             {
-                throw new NotImplementedException();
+                return Operators.PropertyExists(default(RuntimeTypeHandle), _underlayingObject, index);
             }
         }
         public virtual PhpValue offsetGet(PhpValue index)
@@ -157,9 +160,8 @@ namespace Pchp.Library.Spl
             }
             else
             {
-                throw new NotImplementedException();
+                return Operators.PropertyGetValue(default(RuntimeTypeHandle), _underlayingObject, index);
             }
-
         }
         public virtual void offsetSet(PhpValue index, PhpValue newval)
         {
@@ -169,7 +171,7 @@ namespace Pchp.Library.Spl
             }
             else
             {
-                throw new NotImplementedException();
+                Operators.PropertySetValue(default(RuntimeTypeHandle), _underlayingObject, index, newval);
             }
         }
         public virtual void offsetUnset(PhpValue index)
@@ -180,7 +182,7 @@ namespace Pchp.Library.Spl
             }
             else
             {
-                throw new NotImplementedException();
+                Operators.PropertyUnset(default(RuntimeTypeHandle), _underlayingObject, index);
             }
         }
 
@@ -248,6 +250,44 @@ namespace Pchp.Library.Spl
         {
             this.UnderlayingValue = input;
             this.setIteratorClass(iterator_class);
+            this.setFlags(flags);
+        }
+
+        public virtual void __set(PhpValue prop, PhpValue value)
+        {
+            if (_underlayingArray != null)
+            {
+                if ((_flags & ARRAY_AS_PROPS) != 0)
+                {
+                    _underlayingArray[prop.ToIntStringKey()] = value.DeepCopy();
+                }
+                else
+                {
+                    // TODO: err
+                }
+            }
+            else if (_underlayingObject != null)
+            {
+                Operators.PropertySetValue(default(RuntimeTypeHandle), _underlayingObject, prop, value);
+            }
+        }
+
+        public virtual PhpValue __get(PhpValue prop)
+        {
+            if (_underlayingArray != null)
+            {
+                if ((_flags & ARRAY_AS_PROPS) != 0)
+                {
+                    return _underlayingArray[prop.ToIntStringKey()];
+                }
+            }
+            else if (_underlayingObject != null)
+            {
+                return Operators.PropertyGetValue(default(RuntimeTypeHandle), _underlayingObject, prop);
+            }
+
+            // TODO: err
+            return PhpValue.Void;
         }
 
         public string getIteratorClass() => _iteratorClass ?? DefaultIteratorClass;
@@ -265,8 +305,15 @@ namespace Pchp.Library.Spl
             _iteratorClass = iterator_class;
         }
 
-        public int getFlags() { throw new NotImplementedException(); }
-        public void setFlags(int flags) { throw new NotImplementedException(); }
+        public int getFlags()
+        {
+            return _flags;
+        }
+
+        public void setFlags(int flags)
+        {
+            _flags = flags;
+        }
 
         public void append(PhpValue value)
         {
@@ -276,7 +323,7 @@ namespace Pchp.Library.Spl
             }
             else
             {
-                PhpException.Throw(PhpError.E_RECOVERABLE_ERROR, "Cannot append properties to objects, use %s::offsetSet() instead");   // TODO
+                PhpException.Throw(PhpError.E_RECOVERABLE_ERROR, "Cannot append properties to objects, use %s::offsetSet() instead");   // TODO: Resources
             }
         }
         public PhpValue exchangeArray(PhpValue input)

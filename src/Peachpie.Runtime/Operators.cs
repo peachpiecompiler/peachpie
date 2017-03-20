@@ -341,16 +341,78 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Object
+
+        public static bool PropertyExists(RuntimeTypeHandle caller, object instance, PhpValue prop)
+        {
+            var tinfo = instance.GetPhpTypeInfo();
+
+            // 1. instance property
+            
+            // 2. runtime property
+
+            // 3. __isset
+
+            // false
+
+            throw new NotImplementedException();
+        }
+
+        public static PhpValue PropertyGetValue(RuntimeTypeHandle caller, object instance, PhpValue prop)
+        {
+            var tinfo = instance.GetPhpTypeInfo();
+
+            // 1. instance property
+
+            // 2. runtime property
+
+            // 3. __get
+
+            // error
+
+            throw new NotImplementedException();
+        }
+
+        public static void PropertySetValue(RuntimeTypeHandle caller, object instance, PhpValue prop, PhpValue value)
+        {
+            var tinfo = instance.GetPhpTypeInfo();
+
+            // 1. instance property
+
+            // 2. overwrite runtime property
+
+            // 3. __set ?? runtime property
+
+            // error
+
+            throw new NotImplementedException();
+        }
+
+        public static void PropertyUnset(RuntimeTypeHandle caller, object instance, PhpValue prop)
+        {
+            var tinfo = instance.GetPhpTypeInfo();
+
+            // 1. instance property
+
+            // 2. unset runtime property
+
+            // 3. __unset
+
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
         #region GetForeachEnumerator
 
         /// <summary>
-		/// Provides the <see cref="IPhpEnumerator"/> interface by wrapping a user-implemeted <see cref="Iterator"/>.
-		/// </summary>
-		/// <remarks>
-		/// Instances of this class are iterated when <c>foreach</c> is used on object of a class
-		/// that implements <see cref="Iterator"/> or <see cref="IteratorAggregate"/>.
-		/// </remarks>
-		private sealed class PhpIteratorEnumerator : IPhpEnumerator
+        /// Provides the <see cref="IPhpEnumerator"/> interface by wrapping a user-implemeted <see cref="Iterator"/>.
+        /// </summary>
+        /// <remarks>
+        /// Instances of this class are iterated when <c>foreach</c> is used on object of a class
+        /// that implements <see cref="Iterator"/> or <see cref="IteratorAggregate"/>.
+        /// </remarks>
+        private sealed class PhpIteratorEnumerator : IPhpEnumerator
         {
             readonly Iterator _iterator;
             bool _hasmoved;
