@@ -147,6 +147,17 @@ namespace Pchp.Core.std
         }
 
         /// <summary>
+        /// Serialize callback.
+        /// </summary>
+        /// <remarks>
+        /// Throws an exception as generators can't be serialized. 
+        /// </remarks>
+        public void __wakeup()
+        {
+            throw new Exception("Unserialization of 'Generator' is not allowed");
+        }
+
+        /// <summary>
         /// Checks if the generator is moving beyond first yield, if so sets proper variable. Important for <see cref="rewind"/>.
         /// </summary>
         private void checkIfMovingFromFirstYeild()
@@ -159,8 +170,7 @@ namespace Pchp.Core.std
         /// </summary>
         private void checkIfRunToFirstYieldIfNotRun()
         {
-            if(!_runToFirstYield) { _runToFirstYield = true; this.next(); }
-            
+            if(!_runToFirstYield) { _runToFirstYield = true; this.next(); }           
         }
 
     }
