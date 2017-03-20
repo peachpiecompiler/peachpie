@@ -107,7 +107,20 @@ namespace Pchp.Library.Reflection
 
         #endregion
 
-        public PhpValue getConstant(string name) { throw new NotImplementedException(); }
+        public PhpValue getConstant(Context ctx, string name)
+        {
+            for (var tdecl = _tinfo; tdecl != null; tdecl = tdecl.BaseType)
+            {
+                object obj;
+                if (tdecl.DeclaredFields.TryGetConstantValue(ctx, name, out obj))
+                {
+                    return PhpValue.FromClr(obj);
+                }
+            }
+
+            //
+            return PhpValue.False;
+        }
         public PhpArray getConstants() { throw new NotImplementedException(); }
         //public ReflectionMethod getConstructor() { throw new NotImplementedException(); }
         public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
