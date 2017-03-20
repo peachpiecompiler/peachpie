@@ -159,10 +159,24 @@
     <PropertyGroup>
       <!-- http://mattwarren.org/2016/07/04/How-the-dotnet-CLI-tooling-runs-your-code -->
       <CompilePhp>dotnet exec --additionalprobingpath $(NuGetPackageRoot.TrimEnd('\')) @(PhpCompilerReferencePath)</CompilePhp>
+      <TempOutputDir>%(IntermediateAssembly.RelativeDir)</TempOutputDir>
+      <EmitEntryPoint>false</EmitEntryPoint>
+      <EmitEntryPoint Condition=" '$(OutputType.ToLower())' == 'exe' ">true</EmitEntryPoint>
     </PropertyGroup>
 
-    <WriteLinesToFile File="compile-php-items.rsp" Lines="@(ReferencePath->'--reference:%(FullPath)');@(Compile)" Overwrite="true" />
-    <Exec Command="$(CompilePhp) --emit-entry-point:True --output-name:@(IntermediateAssembly) --target-framework:.NETCoreApp,Version=v1.0 @compile-php-items.rsp" />
+    <ItemGroup>
+      <RspLine Include="--temp-output:$(TempOutputDir)" />
+      <RspLine Include="--out:$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)" />
+      <RspLine Include="--output-name:%(IntermediateAssembly.Filename)" />
+      <RspLine Include="--debug-type:$(DebugType)" />
+      <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
+      <RspLine Include="--target-framework:.NETCoreApp,Version=v1.0" />
+      <RspLine Include="@(ReferencePath->'--reference:%(FullPath)')" />
+      <RspLine Include="@(Compile)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(TempOutputDir)compile-php-args.rsp" Lines="@(RspLine)" Overwrite="true" />
+    <Exec Command="$(CompilePhp) @$(TempOutputDir)compile-php-args.rsp" />
 
   </Target>
 
