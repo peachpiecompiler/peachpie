@@ -125,6 +125,22 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Creates a new instance of <see cref="PhpArray"/> filled by data from an enumerator.
+        /// </summary>
+        /// <param name="data">The enumerator containing values added to the new instance.</param>
+        public PhpArray(IEnumerable<KeyValuePair<IntStringKey, PhpValue>> data)
+            : base((data is ICollection) ? ((ICollection)data).Count : 0)
+        {
+            if (data != null)
+            {
+                foreach (var item in data)
+                {
+                    Add(item);
+                }
+            }
+        }
+
+        /// <summary>
         /// Copy constructor. Creates <see cref="PhpArray"/> that shares internal data table with another <see cref="PhpArray"/>.
         /// </summary>
         /// <param name="array">Table to be shared.</param>

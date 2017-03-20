@@ -53,7 +53,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (!this.IsStatic)
                 {
                     // resolve <ctx> field
-                    var candidates = this.GetMembers(SpecialParameterSymbol.ContextName)
+                    var candidates = this.GetMembers(SpecialParameterSymbol.ContextName)    // TODO: _ctx, __ctx
                         .OfType<FieldSymbol>()
                         .Where(f => f.DeclaredAccessibility == Accessibility.Protected && !f.IsStatic && f.Type.MetadataName == "Context")
                         .ToList();
