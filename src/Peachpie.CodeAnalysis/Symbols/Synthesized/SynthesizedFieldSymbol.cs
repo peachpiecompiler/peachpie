@@ -65,8 +65,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsImplicitlyDeclared => true;
 
-        public override ImmutableArray<Location> Locations => ImmutableArray<Location>.Empty;
-
         public override string Name => _name;
 
         internal override bool HasRuntimeSpecialName => false;

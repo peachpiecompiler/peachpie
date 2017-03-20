@@ -145,8 +145,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => null;
 
-        public override ImmutableArray<Location> Locations => ImmutableArray<Location>.Empty;
-
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
             get

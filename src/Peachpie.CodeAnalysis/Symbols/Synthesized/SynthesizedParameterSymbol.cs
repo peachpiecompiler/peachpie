@@ -152,11 +152,6 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return _container; }
         }
 
-        public override ImmutableArray<Location> Locations
-        {
-            get { return ImmutableArray<Location>.Empty; }
-        }
-
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
             get

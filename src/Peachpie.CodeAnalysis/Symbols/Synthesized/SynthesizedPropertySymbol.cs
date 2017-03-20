@@ -61,8 +61,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsVirtual => !IsStatic && (!IsSealed || IsOverride);
 
-        public override ImmutableArray<Location> Locations => ImmutableArray<Location>.Empty;
-
         public override string Name => _name;
 
         public override ImmutableArray<ParameterSymbol> Parameters { get; } = ImmutableArray<ParameterSymbol>.Empty;

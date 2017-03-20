@@ -179,7 +179,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 foreach (var f in flist.Fields)
                 {
-                    yield return new SourceFieldSymbol(this, f.Name.Value, flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc, fkind,
+                    yield return new SourceFieldSymbol(this, f.Name.Value,
+                        Location.Create(ContainingFile.SyntaxTree, f.NameSpan.ToTextSpan()),
+                        flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
+                        fkind,
                         (f.Initializer != null) ? binder.BindExpression(f.Initializer, BoundAccess.Read) : null);
                 }
             }
@@ -189,7 +192,9 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 foreach (var c in clist.Constants)
                 {
-                    yield return new SourceFieldSymbol(this, c.Name.Name.Value, Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
+                    yield return new SourceFieldSymbol(this, c.Name.Name.Value,
+                        Location.Create(ContainingFile.SyntaxTree, c.Name.Span.ToTextSpan()),
+                        Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
                         SourceFieldSymbol.KindEnum.ClassConstant,
                         binder.BindExpression(c.Initializer, BoundAccess.Read));
                 }

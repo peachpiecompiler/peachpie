@@ -271,11 +271,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 get { return _containingType; }
             }
 
-            public override ImmutableArray<Location> Locations
-            {
-                get { return ImmutableArray<Location>.Empty; }
-            }
-
             public override Accessibility DeclaredAccessibility
             {
                 get

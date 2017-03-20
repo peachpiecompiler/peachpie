@@ -206,7 +206,7 @@ namespace Pchp.CodeAnalysis
         /// metadata. Some symbols (for example, partial classes) may be defined in more than one
         /// location.
         /// </summary>
-        public abstract ImmutableArray<Location> Locations { get; }
+        public virtual ImmutableArray<Location> Locations => ImmutableArray<Location>.Empty;
 
         /// <summary>
         /// <para>

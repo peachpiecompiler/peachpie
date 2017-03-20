@@ -89,14 +89,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => true;
 
-        public override ImmutableArray<Location> Locations
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
         public override string Name => WellKnownPchpNames.DefaultScriptClassName;
 
         public override string NamespaceName => string.Empty;

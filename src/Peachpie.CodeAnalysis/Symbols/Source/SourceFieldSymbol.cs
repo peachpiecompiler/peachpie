@@ -45,6 +45,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public KindEnum FieldKind => _fieldKind;
         readonly KindEnum _fieldKind;
 
+        readonly Location _location;
+
         /// <summary>
         /// Optional associated PHPDoc block defining the field type hint.
         /// </summary>
@@ -104,7 +106,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         private FieldSymbol _originaldefinition;
 
-        public SourceFieldSymbol(SourceTypeSymbol type, string name, Accessibility accessibility, PHPDocBlock phpdoc, KindEnum kind, BoundExpression initializer = null)
+        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, KindEnum kind, BoundExpression initializer = null)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -115,6 +117,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _accessibility = accessibility;
             _phpDoc = phpdoc;
             _initializer = initializer;
+            _location = location;
         }
 
         #region FieldSymbol
@@ -135,7 +138,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsVolatile => false;
 
-        public override ImmutableArray<Location> Locations { get { throw new NotImplementedException(); } }
+        public override ImmutableArray<Location> Locations => ImmutableArray.Create(_location);
 
         internal override bool HasRuntimeSpecialName => false;
 

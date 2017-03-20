@@ -68,14 +68,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => false;
 
-        public override ImmutableArray<Location> Locations
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
         public override TypeKind TypeKind => TypeKind.Class;
 
         internal override bool IsInterface => false;
