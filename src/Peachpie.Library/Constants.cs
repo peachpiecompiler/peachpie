@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,12 +59,14 @@ namespace Pchp.Library
                 {
                     var tname = name.Remove(sepidx);
                     var cname = name.Substring(sepidx + 2);
-                    for (var tdecl = ctx.GetDeclaredType(tname, true); tdecl != null; tdecl = tdecl.BaseType)
+
+                    var tinfo = ctx.GetDeclaredType(tname, true);
+                    if (tinfo != null)
                     {
-                        object obj;
-                        if (tdecl.DeclaredFields.TryGetConstantValue(ctx, cname, out obj))
+                        var p = tinfo.GetDeclaredConstant(cname);
+                        if (p != null)
                         {
-                            return PhpValue.FromClr(obj);
+                            return p.GetValue(ctx, null);
                         }
                     }
                 }

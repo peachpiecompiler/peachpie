@@ -367,13 +367,40 @@ namespace Pchp.Core.Reflection
         /// Gets descriptor of property defined in given class or its base classes. Does not resolve runtime fields.
         /// </summary>
         /// <returns>Instance of property descriptor or <c>null</c> if such property is not declared.</returns>
-        public static PhpPropertyInfo GetDeclaredProperty(this PhpTypeInfo tinfo, Context ctx, string name)
+        public static PhpPropertyInfo GetDeclaredProperty(this PhpTypeInfo tinfo, string name)
         {
             for (var t = tinfo; t != null; t = t.BaseType)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(ctx, name))
+                foreach (var p in t.DeclaredFields.GetPhpProperties(name))
                 {
                     if (!p.IsConstant) return p;
+                }
+            }
+
+            //
+            return null;
+        }
+
+        /// <summary>
+        /// Gets descriptor of property defined in given class or its base classes. Does not resolve runtime fields.
+        /// </summary>
+        /// <returns>Instance of property descriptor or <c>null</c> if such property is not declared.</returns>
+        public static PhpPropertyInfo GetDeclaredConstant(this PhpTypeInfo tinfo, string name)
+        {
+            for (var t = tinfo; t != null; t = t.BaseType)
+            {
+                foreach (var p in t.DeclaredFields.GetPhpProperties(name))
+                {
+                    if (p.IsConstant) return p;
+                }
+            }
+
+            // interfaces
+            foreach (var itype in tinfo.Type.GetInterfaces())
+            {
+                foreach (var p in itype.GetPhpTypeInfo().DeclaredFields.GetPhpProperties(name))
+                {
+                    if (p.IsConstant) return p;
                 }
             }
 
@@ -385,11 +412,22 @@ namespace Pchp.Core.Reflection
         /// Gets descriptor representing a runtime field.
         /// Can be <c>null</c> if type does not support runtime fields.
         /// </summary>
-        public static PhpPropertyInfo GetRuntimeProperty(this PhpTypeInfo tinfo, string propertyName)
+        public static PhpPropertyInfo GetRuntimeProperty(this PhpTypeInfo tinfo, string propertyName, object instance)
         {
             if (tinfo.RuntimeFieldsHolder != null)
             {
-                return new PhpPropertyInfo.RuntimeProperty(tinfo, new IntStringKey(propertyName));
+                var key = new IntStringKey(propertyName);
+
+                if (instance != null)
+                {
+                    var runtimefields = tinfo.GetRuntimeFields(instance);
+                    if (runtimefields == null || runtimefields.Count == 0 || !runtimefields.ContainsKey(key))
+                    {
+                        return null;
+                    }
+                }
+
+                return new PhpPropertyInfo.RuntimeProperty(tinfo, key);
             }
             else
             {
@@ -400,11 +438,11 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets enumeration of declared properties excluding constants.
         /// </summary>
-        public static IEnumerable<PhpPropertyInfo> GetDeclaredProperties(this PhpTypeInfo tinfo, Context ctx)
+        public static IEnumerable<PhpPropertyInfo> GetDeclaredProperties(this PhpTypeInfo tinfo)
         {
             for (var t = tinfo; t != null; t = t.BaseType)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(ctx))
+                foreach (var p in t.DeclaredFields.GetPhpProperties())
                 {
                     if (!p.IsConstant) yield return p;
                 }
@@ -414,11 +452,11 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets enumeration of declared class constants.
         /// </summary>
-        public static IEnumerable<PhpPropertyInfo> GetDeclaredConstants(this PhpTypeInfo tinfo, Context ctx)
+        public static IEnumerable<PhpPropertyInfo> GetDeclaredConstants(this PhpTypeInfo tinfo)
         {
             for (var t = tinfo; t != null; t = t.BaseType)
             {
-                foreach (var p in t.DeclaredFields.GetPhpProperties(ctx))
+                foreach (var p in t.DeclaredFields.GetPhpProperties())
                 {
                     if (p.IsConstant) yield return p;
                 }
@@ -427,7 +465,7 @@ namespace Pchp.Core.Reflection
             // interfaces
             foreach (var itype in tinfo.Type.GetInterfaces())
             {
-                foreach (var p in itype.GetPhpTypeInfo().DeclaredFields.GetPhpProperties(ctx))
+                foreach (var p in itype.GetPhpTypeInfo().DeclaredFields.GetPhpProperties())
                 {
                     if (p.IsConstant) yield return p;
                 }

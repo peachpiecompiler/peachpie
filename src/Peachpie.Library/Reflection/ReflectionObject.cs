@@ -32,10 +32,10 @@ namespace Pchp.Library.Reflection
             _tinfo = _instance.GetPhpTypeInfo();
         }
 
-        public override PhpArray getProperties(Context ctx, int filter)
+        public override PhpArray getProperties(int filter)
         {
             var result = new PhpArray(8);
-            foreach (var p in _tinfo.GetDeclaredProperties(ctx).Concat(_tinfo.GetRuntimeProperties(_instance)))
+            foreach (var p in _tinfo.GetDeclaredProperties().Concat(_tinfo.GetRuntimeProperties(_instance)))
             {
                 var pinfo = new ReflectionProperty(p);
                 if (filter == 0 || ((int)pinfo.getModifiers() | filter) != 0)
@@ -48,16 +48,12 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public override ReflectionProperty getProperty(Context ctx, string name)
+        public override ReflectionProperty getProperty(string name)
         {
-            var p = _tinfo.GetDeclaredProperty(ctx, name);
+            var p = _tinfo.GetDeclaredProperty(name) ?? _tinfo.GetRuntimeProperty(name, _instance);
             if (p == null)
             {
-                p = _tinfo.GetRuntimeProperty(name);
-                if (!p.GetValue(_instance).IsSet)
-                {
-                    return null;
-                }
+                return null;
             }
 
             return new ReflectionProperty(p);

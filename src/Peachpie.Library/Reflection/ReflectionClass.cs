@@ -109,24 +109,21 @@ namespace Pchp.Library.Reflection
 
         public PhpValue getConstant(Context ctx, string name)
         {
-            for (var tdecl = _tinfo; tdecl != null; tdecl = tdecl.BaseType)
+            var p = _tinfo.GetDeclaredConstant(name);
+            if (p != null)
             {
-                object obj;
-                if (tdecl.DeclaredFields.TryGetConstantValue(ctx, name, out obj))
-                {
-                    return PhpValue.FromClr(obj);
-                }
+                return p.GetValue(ctx, null);
             }
-
+            
             //
             return PhpValue.False;
         }
         public PhpArray getConstants(Context ctx)
         {
             var result = new PhpArray();
-            foreach (var p in _tinfo.GetDeclaredConstants(ctx))
+            foreach (var p in _tinfo.GetDeclaredConstants())
             {
-                result.Add(p.PropertyName, p.GetValue(null));
+                result.Add(p.PropertyName, p.GetValue(ctx, null));
             }
             return result;
         }
@@ -202,10 +199,10 @@ namespace Pchp.Library.Reflection
         }
         [return: CastToFalse]
         public ReflectionClass getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass(_tinfo.BaseType) : null;
-        public virtual PhpArray getProperties(Context ctx, int filter)
+        public virtual PhpArray getProperties(int filter)
         {
             var result = new PhpArray(8);
-            foreach (var p in _tinfo.GetDeclaredProperties(ctx))
+            foreach (var p in _tinfo.GetDeclaredProperties())
             {
                 var pinfo = new ReflectionProperty(p);
                 if (filter == 0 || ((int)pinfo.getModifiers() | filter) != 0)
@@ -217,9 +214,9 @@ namespace Pchp.Library.Reflection
             return result;
         }
         [return: CastToFalse]
-        public virtual ReflectionProperty getProperty(Context ctx, string name)
+        public virtual ReflectionProperty getProperty(string name)
         {
-            var prop = _tinfo.GetDeclaredProperty(ctx, name);
+            var prop = _tinfo.GetDeclaredProperty(name);
             return (prop != null) ? new ReflectionProperty(prop) : null;
         }
         public string getShortName()

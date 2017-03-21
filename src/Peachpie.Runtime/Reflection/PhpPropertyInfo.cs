@@ -39,11 +39,26 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => _field.Name;
 
-            public override PhpValue GetValue(object instance = null) => PhpValue.FromClr(_field.GetValue(instance));
+            public override PhpValue GetValue(Context ctx, object instance = null) => PhpValue.FromClr(_field.GetValue(instance));
 
-            public override void SetValue(object instance, PhpValue value)
+            public override void SetValue(Context ctx, object instance, PhpValue value)
             {
                 _field.SetValue(instance, value.ToClr(_field.FieldType));
+            }
+
+            public override Expression Bind(Expression ctx, Expression target)
+            {
+                if (_field.IsLiteral)
+                {
+                    return Expression.Constant(_field.GetValue(null));
+                }
+
+                if (_field.IsStatic)
+                {
+                    return Expression.Field(null, _field);
+                }
+
+                return Expression.Field(target, _field);
             }
         }
 
@@ -56,18 +71,15 @@ namespace Pchp.Core.Reflection
         /// </summary>
         internal sealed class ContainedClrField : PhpPropertyInfo
         {
-            readonly Context _ctx;
             readonly FieldInfo _field;
             readonly Func<Context, object> _staticsGetter;
 
-            public ContainedClrField(Context ctx, PhpTypeInfo tinfo, Func<Context, object> staticsGetter, FieldInfo field)
+            public ContainedClrField(PhpTypeInfo tinfo, Func<Context, object> staticsGetter, FieldInfo field)
                 : base(tinfo)
             {
-                Debug.Assert(ctx != null);
                 Debug.Assert(staticsGetter != null);
                 Debug.Assert(field != null);
                 Debug.Assert(!field.IsStatic);
-                _ctx = ctx;
                 _field = field;
                 _staticsGetter = staticsGetter;
             }
@@ -82,16 +94,26 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => _field.Name;
 
-            public override PhpValue GetValue(object instance = null)
+            public override PhpValue GetValue(Context ctx, object instance = null)
             {
-                return PhpValue.FromClr(_field.GetValue(_staticsGetter(_ctx))); // __statics.field
+                return PhpValue.FromClr(_field.GetValue(_staticsGetter(ctx))); // __statics.field
             }
 
-            public override void SetValue(object instance, PhpValue value)
+            public override void SetValue(Context ctx, object instance, PhpValue value)
             {
                 if (IsReadOnly) throw new NotSupportedException();
 
-                _field.SetValue(_staticsGetter(_ctx), value.ToClr(_field.FieldType));
+                _field.SetValue(_staticsGetter(ctx), value.ToClr(_field.FieldType));
+            }
+
+            public override Expression Bind(Expression ctx, Expression target)
+            {
+                Debug.Assert(target == null);
+                Debug.Assert(ctx != null);
+
+                // Context.GetStatics<_statics>().FIELD
+                var getstatics = Dynamic.BinderHelpers.GetStatic_T_Method(_field.DeclaringType);
+                return Expression.Field(Expression.Call(ctx, getstatics), _field);
             }
         }
 
@@ -135,13 +157,23 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => _property.Name;
 
-            public override PhpValue GetValue(object instance = null) => PhpValue.FromClr(_property.GetValue(instance));
+            public override PhpValue GetValue(Context ctx, object instance = null) => PhpValue.FromClr(_property.GetValue(instance));
 
-            public override void SetValue(object instance, PhpValue value)
+            public override void SetValue(Context ctx, object instance, PhpValue value)
             {
                 var setter = _property.SetMethod;
                 if (setter == null) throw new NotSupportedException();
                 setter.Invoke(instance, new[] { value.ToClr(_property.PropertyType) });
+            }
+
+            public override Expression Bind(Expression ctx, Expression target)
+            {
+                if (_property.GetMethod.IsStatic != (target == null))
+                {
+                    
+                }
+
+                return Expression.Property(target, _property);
             }
         }
 
@@ -168,7 +200,7 @@ namespace Pchp.Core.Reflection
 
             public override string PropertyName => _name.ToString();
 
-            public override PhpValue GetValue(object instance)
+            public override PhpValue GetValue(Context ctx, object instance)
             {
                 var runtime_fields = _tinfo.GetRuntimeFields(instance);
                 if (runtime_fields != null)
@@ -180,12 +212,17 @@ namespace Pchp.Core.Reflection
                 return PhpValue.Void;
             }
 
-            public override void SetValue(object instance, PhpValue value)
+            public override void SetValue(Context ctx, object instance, PhpValue value)
             {
                 _tinfo.EnsureRuntimeFields(instance)[_name] = value;
             }
 
             public override bool IsPublic => true;
+
+            public override Expression Bind(Expression ctx, Expression target)
+            {
+                throw new NotSupportedException();
+            }
         }
 
         #endregion
@@ -217,13 +254,13 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets the runtime value of the property.
         /// </summary>
-        public abstract PhpValue GetValue(object instance = null);
+        public abstract PhpValue GetValue(Context ctx, object instance = null);
 
         /// <summary>
         /// Sets new value.
         /// Throws an exception in case of <see cref="IsReadOnly"/>.
         /// </summary>
-        public abstract void SetValue(object instance, PhpValue value);
+        public abstract void SetValue(Context ctx, object instance, PhpValue value);
 
         /// <summary>
         /// Gets accessibility attributes.
@@ -279,6 +316,28 @@ namespace Pchp.Core.Reflection
             return _tinfo.Type.IsAssignableFrom(callerType);
         }
 
-        // public abstract Expression Bind(Expression ctx);
+        /// <summary>
+        /// Gets value indicating the property is visible in given class context.
+        /// </summary>
+        /// <param name="caller">Class context. By default the method check if the property is publically visible.</param>
+        public bool IsVisible(Type caller = null)
+        {
+            if (IsPublic) return true;
+
+            if (caller == null) return false;
+
+            // private
+            if (IsPrivate) return _tinfo.Type.Equals(caller);
+
+            // protected|internal
+            return _tinfo.Type.IsAssignableFrom(caller);
+        }
+
+        /// <summary>
+        /// Gets <see cref="Expression"/> representing the property (field or property).
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="target">Target instance. Can be <c>null</c> for static properties and constants.</param>
+        public abstract Expression Bind(Expression ctx, Expression target);
     }
 }

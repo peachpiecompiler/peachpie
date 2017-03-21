@@ -110,7 +110,7 @@ namespace Pchp.Library.Reflection
                 var tinfo = ctx.GetDeclaredTypeOrThrow(classname, true);
                 if (tinfo != null)
                 {
-                    _pinfo = tinfo.GetDeclaredProperty(ctx, name);
+                    _pinfo = tinfo.GetDeclaredProperty(name);
                 }
             }
 
@@ -135,13 +135,13 @@ namespace Pchp.Library.Reflection
             return flags;
         }
         public virtual string getName() => name;
-        public virtual PhpValue getValue(object @object) => _pinfo.GetValue(@object);
+        public virtual PhpValue getValue(Context ctx, object @object) => _pinfo.GetValue(ctx, @object);
         public virtual bool isDefault() => !_pinfo.IsRuntimeProperty;
         public virtual bool isPrivate() => _pinfo.IsPrivate;
         public virtual bool isProtected() => _pinfo.IsProtected;
         public virtual bool isPublic() => _pinfo.IsPublic;
         public virtual bool isStatic() => _pinfo.IsStatic;
         public virtual void setAccessible(bool accessible) { throw new NotImplementedException(); }
-        public virtual void setValue(object @object, PhpValue value) { _pinfo.SetValue(@object, value); }
+        public virtual void setValue(Context ctx, object @object, PhpValue value) { _pinfo.SetValue(ctx, @object, value); }
     }
 }
