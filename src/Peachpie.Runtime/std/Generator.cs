@@ -17,7 +17,7 @@ namespace Pchp.Core.std
         /// <summary>
         /// Lifted local variables from the state machine function.
         /// </summary>
-        readonly internal PhpArray _local;
+        readonly internal PhpArray _locals;
 
         /// <summary>
         /// Delegate to a static method implementing the state machine itself. 
@@ -58,6 +58,12 @@ namespace Pchp.Core.std
         #endregion
 
         #region Constructors
+        internal Generator(Context ctx, GeneratorStateMachine method, PhpArray locals)
+        {
+            _stateMachineMethod = method;
+            _ctx = ctx;
+            _locals = locals;
+        }
         #endregion
 
         #region IteratorMethods
