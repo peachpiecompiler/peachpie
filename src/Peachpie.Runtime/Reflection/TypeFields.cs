@@ -273,5 +273,77 @@ namespace Pchp.Core.Reflection
 
             return null;
         }
+
+        /// <summary>
+        /// Enumerates all the properties in the class excluding runtime fields.
+        /// </summary>
+        public IEnumerable<PhpPropertyInfo> GetPhpProperties(Context ctx)
+        {
+            IEnumerable<PhpPropertyInfo> result = Enumerable.Empty<PhpPropertyInfo>();
+
+            //
+            if (_fields != null)
+            {
+                result = _fields.Values.Select(fld => new PhpPropertyInfo.ClrFieldProperty(fld.DeclaringType.GetPhpTypeInfo(), fld));
+            }
+
+            //
+            if (_staticsFields != null)
+            {
+                result = result.Concat(_staticsFields.Values.Select(
+                    fld =>
+                    {
+                        var __statics = fld.DeclaringType;
+                        return new PhpPropertyInfo.ContainedClrField(ctx, __statics.DeclaringType.GetPhpTypeInfo(), EnsureStaticsGetter(__statics), fld);
+                    }
+                ));
+            }
+
+            //
+            if (_properties != null)
+            {
+                result = result.Concat(_properties.Values.Select(p => new PhpPropertyInfo.ClrProperty(p.DeclaringType.GetPhpTypeInfo(), p)));
+            }
+
+            //
+            return result;
+        }
+
+        /// <summary>
+        /// Obtains the PHP property descriptor matching given name.
+        /// The enumeration includes instance fields, static fields, CLR properties and class constants
+        /// </summary>
+        /// <returns>
+        /// Instance of <see cref="PhpPropertyInfo"/> describing the property/field/constant.
+        /// Can be <c>null</c> if specified property is not declared on current type.
+        /// </returns>
+        /// <remarks>The method return <c>null</c> in case the property is a runtime property. This case has to be handled separately.</remarks>
+        public IEnumerable<PhpPropertyInfo> GetPhpProperties(Context ctx, string name)
+        {
+            FieldInfo fld;
+
+            //
+            if (_fields != null && _fields.TryGetValue(name, out fld))
+            {
+                yield return new PhpPropertyInfo.ClrFieldProperty(fld.DeclaringType.GetPhpTypeInfo(), fld);
+            }
+
+            //
+            if (_staticsFields != null && _staticsFields.TryGetValue(name, out fld))
+            {
+                var __statics = fld.DeclaringType;
+                yield return new PhpPropertyInfo.ContainedClrField(ctx, __statics.DeclaringType.GetPhpTypeInfo(), EnsureStaticsGetter(__statics), fld);
+            }
+
+            //
+            PropertyInfo p;
+            if (_properties != null && _properties.TryGetValue(name, out p))
+            {
+                yield return new PhpPropertyInfo.ClrProperty(p.DeclaringType.GetPhpTypeInfo(), p);
+            }
+
+            //
+            yield break;
+        }
     }
 }

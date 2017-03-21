@@ -417,6 +417,16 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Implicitly converts this value to <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">Target type.</param>
+        /// <returns>Converted value.</returns>
+        public object ToClr(Type type)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Calls corresponding <c>Accept</c> method on visitor.
         /// </summary>
         public void Accept(PhpVariableVisitor visitor) => _type.Accept(ref this, visitor);
