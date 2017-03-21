@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using PhpException = global::Exception;
+﻿using Pchp.Library.Spl;
+using System;
 
 namespace Peachpie.Library.PDO
 {
     /// <summary>
     /// Exception raised by PDO objects
     /// </summary>
-    /// <seealso cref="Exception" />
-    public class PDOException : PhpException
+    /// <seealso cref="Pchp.Library.Spl.Exception" />
+    public class PDOException : Pchp.Library.Spl.Exception
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOException"/> class.
