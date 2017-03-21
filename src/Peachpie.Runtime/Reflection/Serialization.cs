@@ -18,7 +18,7 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateSerializableProperties(object/*!*/ instance, PhpTypeInfo tinfo)
         {
             return TypeMembersUtils.EnumerateInstanceFields(instance,
-                (f, d) => Serialization.FormatSerializedPropertyName(f, f.Name, d),
+                (f, d) => Serialization.FormatSerializedPropertyName(new PhpPropertyInfo.ClrFieldProperty(tinfo, f), d),
                 (k) => k.ToString(),
                 (f) => true);
         }
@@ -100,15 +100,14 @@ namespace Pchp.Core.Reflection
 		/// Formats a property name for serialization according to its visibility and declaing type.
 		/// </summary>
 		/// <param name="property">The property info.</param>
-		/// <param name="propertyName">The property name.</param>
         /// <param name="declaringtype">Declaring type of the property.</param>
 		/// <returns>The property name formatted according to the <paramref name="property"/> as used by PHP serialization.
 		/// </returns>
-		public static string/*!*/ FormatSerializedPropertyName(FieldInfo/*!*/ property, string/*!*/ propertyName, PhpTypeInfo declaringtype)
+		public static string/*!*/ FormatSerializedPropertyName(PhpPropertyInfo/*!*/ property, PhpTypeInfo declaringtype)
         {
-            if (property.IsPrivate) return "\0" + declaringtype.Name + "\0" + propertyName;
-            if (property.IsFamilyOrAssembly) return "\0*\0" + propertyName;
-            return propertyName;
+            if (property.IsPrivate) return "\0" + declaringtype.Name + "\0" + property.PropertyName;
+            if (property.IsProtected) return "\0*\0" + property.PropertyName;
+            return property.PropertyName;
         }
 
         #endregion

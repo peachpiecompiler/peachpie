@@ -90,21 +90,21 @@ namespace Pchp.Library
                     ? tinfo
                     : context.GetDeclaredType(type_name, true) ?? tinfo;
 
-                // try to find a suitable field handle
-                var fld = TypeMembersUtils.ResolveInstanceField(tinfo, property_name);
-                if (fld != null && TypeMembersUtils.IsVisible(fld, declarer.Type.AsType()))
+                // try to find a suitable property
+                var property = tinfo.GetDeclaredProperty(property_name);
+                if (property != null && !property.IsStatic && property.IsVisible(declarer.Type.AsType()))
                 {
-                    if ((fld.IsPrivate && declarer.Type.AsType() != fld.DeclaringType))
+                    if (property.IsPrivate && declarer != property.ContainingType)
                     {
                         // if certain conditions are met, don't use the handle even if it was found
                         // (this is to precisely mimic the PHP behavior)
-                        fld = null;
+                        property = null;
                     }
                 }
 
-                if (fld != null)
+                if (property != null)
                 {
-                    fld.SetValue(instance, value);
+                    property.SetValue(context, instance, value);
                 }
                 else if (tinfo.RuntimeFieldsHolder != null)
                 {
@@ -498,33 +498,33 @@ namespace Pchp.Library
                         }
 
                         // obtain the property desc and decorate the prop name according to its visibility and declaring class
-                        var fld = TypeMembersUtils.ResolveInstanceField(tinfo, name);
-                        if (fld != null && TypeMembersUtils.IsVisible(fld, declarer.Type.AsType()))
+                        var property = tinfo.GetDeclaredProperty(property_name);
+                        if (property != null && !property.IsStatic && property.IsVisible(declarer.Type.AsType()))
                         {
-                            var fld_declarer = fld.DeclaringType;
+                            var prop_declarer = property.ContainingType;
 
                             // if certain conditions are met, serialize the property as null
                             // (this is to precisely mimic the PHP behavior)
-                            if ((visibility == (fld.Attributes & FieldAttributes.FieldAccessMask) && visibility != FieldAttributes.Public) ||
-                                (visibility == FieldAttributes.Private && declarer.Type.AsType() != fld_declarer))
+                            if ((visibility == (property.Attributes & FieldAttributes.FieldAccessMask) && visibility != FieldAttributes.Public) ||
+                                (visibility == FieldAttributes.Private && declarer != prop_declarer))
                             {
                                 yield return new KeyValuePair<string, PhpValue>(name, PhpValue.Null);
                                 continue;
                             }
 
-                            name = Serialization.FormatSerializedPropertyName(fld, property_name, fld_declarer.GetPhpTypeInfo());
+                            name = Serialization.FormatSerializedPropertyName(property, prop_declarer);
                         }
                         else
                         {
-                            fld = null; // field is not visible, try runtime fields
+                            property = null; // field is not visible, try runtime fields
                         }
 
                         // obtain the property value
                         PhpValue val;
 
-                        if (fld != null)
+                        if (property != null)
                         {
-                            val = PhpValue.FromClr(fld.GetValue(obj));
+                            val = property.GetValue(_ctx, obj);
                         }
                         else
                         {

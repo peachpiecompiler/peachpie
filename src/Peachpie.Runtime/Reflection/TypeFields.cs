@@ -96,20 +96,6 @@ namespace Pchp.Core.Reflection
         public IEnumerable<FieldInfo> InstanceFields => (_fields != null) ? _fields.Values.Where(_isInstanceField) : Array.Empty<FieldInfo>();
 
         /// <summary>
-        /// Gets an instance field with given name declared on this type, or <c>null</c>.
-        /// </summary>
-        public FieldInfo TryGetInstanceField(string name)
-        {
-            FieldInfo fld;
-            if (_fields != null && _fields.TryGetValue(name, out fld) && !fld.IsStatic)
-            {
-                return fld;
-            }
-
-            return null;
-        }
-
-        /// <summary>
         /// Enumerates all the properties in the class excluding runtime fields.
         /// </summary>
         public IEnumerable<PhpPropertyInfo> GetPhpProperties()

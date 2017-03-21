@@ -210,23 +210,6 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
-        /// Resolves an instance property or gets <c>null</c> if the field is not declared.
-        /// </summary>
-        public static FieldInfo ResolveInstanceField(PhpTypeInfo tinfo, string fieldName)
-        {
-            for (var t = tinfo; t != null; t = t.BaseType)
-            {
-                var fld = t.DeclaredFields.TryGetInstanceField(fieldName);
-                if (fld != null)
-                {
-                    return fld;
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
         /// Builds delegate that creates uninitialized class instance for purposes of deserialization.
         /// </summary>
         internal static Func<Context, object> BuildCreateEmptyObjectFunc(PhpTypeInfo tinfo)
