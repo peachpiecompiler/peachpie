@@ -1,5 +1,4 @@
-﻿using Pchp.Core.Reflection;
-using System;
+﻿using System;
 
 namespace Pchp.Core.std
 {
