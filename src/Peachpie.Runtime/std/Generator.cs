@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Pchp.Core.std
 {
@@ -59,6 +60,10 @@ namespace Pchp.Core.std
         #region Constructors
         internal Generator(Context ctx, GeneratorStateMachine method, PhpArray locals)
         {
+            Debug.Assert(ctx != null);
+            Debug.Assert(method != null);
+            Debug.Assert(locals != null);
+
             _stateMachineMethod = method;
             _ctx = ctx;
             _locals = locals;
