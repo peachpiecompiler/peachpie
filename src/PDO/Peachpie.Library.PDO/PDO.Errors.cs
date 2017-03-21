@@ -40,9 +40,9 @@ namespace Peachpie.Library.PDO
                     this.m_ctx.Throw(PhpError.E_WARNING, ex.Message);
                     break;
                 case PDO_ERRMODE.ERRMODE_EXCEPTION:
-                    if (ex is global::Exception)
+                    if (ex is Pchp.Library.Spl.Exception)
                     {
-                        var pex = (global::Exception)ex;
+                        var pex = (Pchp.Library.Spl.Exception)ex;
                         throw new PDOException(pex.Message, pex.getCode(), pex);
                     }
                     else
