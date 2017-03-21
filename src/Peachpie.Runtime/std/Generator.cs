@@ -8,6 +8,7 @@ namespace Pchp.Core.std
     [PhpType("Generator")]
     public class Generator : Iterator
     {
+        #region InternalVariables
         /// <summary>
         /// Context associated in which the generator is run.
         /// </summary>
@@ -24,12 +25,6 @@ namespace Pchp.Core.std
         readonly internal GeneratorStateMachine _stateMachineMethod;
       
         /// <summary>
-        /// Helper variables used for <see cref="rewind"/> and <see cref="checkIfRunToFirstYieldIfNotRun"/>
-        /// </summary>
-        bool _runToFirstYield = false; //Might get replaced by _state logic
-        bool _runAfterFirstYield = false;
-
-        /// <summary>
         /// Current state of the state machine implemented by <see cref="_stateMachineMethod"/>
         /// </summary>
         /// <remarks>
@@ -44,14 +39,28 @@ namespace Pchp.Core.std
         /// Did last yield returned user-specified key.
         /// </summary>
         internal bool _userKeyReturned = false;
+
+        internal PhpValue _currValue, _currKey, _currSendItem, _returnValue;
+        internal Exception _currException;
+        #endregion
+
+        #region HelperLocalVariables
         /// <summary>
         /// Automatic numerical key for next yield.
         /// </summary>
         long _nextNumericalKey = 0;
 
-        internal PhpValue _currValue, _currKey, _currSendItem, _returnValue;
-        internal Exception _currException;
+        /// <summary>
+        /// Helper variables used for <see cref="rewind"/> and <see cref="checkIfRunToFirstYieldIfNotRun"/>
+        /// </summary>
+        bool _runToFirstYield = false; //Might get replaced by _state logic
+        bool _runAfterFirstYield = false;
+        #endregion
 
+        #region Constructors
+        #endregion
+
+        #region IteratorMethods
         /// <summary>
         /// Rewinds the iterator to the first element.
         /// </summary>
@@ -156,7 +165,9 @@ namespace Pchp.Core.std
         {
             throw new Exception("Unserialization of 'Generator' is not allowed");
         }
+        #endregion
 
+        #region HelperMethods
         /// <summary>
         /// Checks if the generator is moving beyond first yield, if so sets proper variable. Important for <see cref="rewind"/>.
         /// </summary>
@@ -172,6 +183,7 @@ namespace Pchp.Core.std
         {
             if(!_runToFirstYield) { _runToFirstYield = true; this.next(); }           
         }
+        #endregion
 
     }
 }
