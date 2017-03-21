@@ -474,8 +474,6 @@ namespace Pchp.Library
                     var enumerator = properties.GetFastEnumerator();
                     while (enumerator.MoveNext())
                     {
-                        // TODO: PhpFieldInfo instead of System.Reflection.FieldInfo
-
                         FieldAttributes visibility;
                         string name = enumerator.CurrentValue.ToStringOrThrow(_ctx);
                         string declaring_type_name;
