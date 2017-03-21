@@ -52,7 +52,7 @@ namespace Pchp.Library.Reflection
         /// Underlaying type information.
         /// Cannot be <c>null</c>.
         /// </summary>
-        PhpTypeInfo _tinfo;
+        internal PhpTypeInfo _tinfo;
 
         #endregion
 
@@ -72,7 +72,7 @@ namespace Pchp.Library.Reflection
             __construct(ctx, @class);
         }
 
-        public void __construct(Context ctx, PhpValue @class)
+        public virtual void __construct(Context ctx, PhpValue @class)
         {
             Debug.Assert(_tinfo == null, "Subsequent call not allowed.");
 
@@ -121,8 +121,16 @@ namespace Pchp.Library.Reflection
             //
             return PhpValue.False;
         }
-        public PhpArray getConstants() { throw new NotImplementedException(); }
-        //public ReflectionMethod getConstructor() { throw new NotImplementedException(); }
+        public PhpArray getConstants(Context ctx)
+        {
+            var result = new PhpArray();
+            foreach (var p in _tinfo.GetDeclaredConstants(ctx))
+            {
+                result.Add(p.PropertyName, p.GetValue(null));
+            }
+            return result;
+        }
+        public ReflectionMethod getConstructor() { throw new NotImplementedException(); }
         public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
         public string getDocComment() { throw new NotImplementedException(); }
         public int getEndLine() { throw new NotImplementedException(); }
@@ -194,8 +202,26 @@ namespace Pchp.Library.Reflection
         }
         [return: CastToFalse]
         public ReflectionClass getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass(_tinfo.BaseType) : null;
-        public PhpArray getProperties(int filter) { throw new NotImplementedException(); }
-        //public ReflectionProperty getProperty(string name) { throw new NotImplementedException(); }
+        public virtual PhpArray getProperties(Context ctx, int filter)
+        {
+            var result = new PhpArray(8);
+            foreach (var p in _tinfo.GetDeclaredProperties(ctx))
+            {
+                var pinfo = new ReflectionProperty(p);
+                if (filter == 0 || ((int)pinfo.getModifiers() | filter) != 0)
+                {
+                    result.Add(PhpValue.FromClass(pinfo));
+                }
+            }
+
+            return result;
+        }
+        [return: CastToFalse]
+        public virtual ReflectionProperty getProperty(Context ctx, string name)
+        {
+            var prop = _tinfo.GetDeclaredProperty(ctx, name);
+            return (prop != null) ? new ReflectionProperty(prop) : null;
+        }
         public string getShortName()
         {
             var name = this.name;
