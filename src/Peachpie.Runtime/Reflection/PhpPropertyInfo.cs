@@ -280,17 +280,17 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the property is public.
         /// </summary>
-        public virtual bool IsPublic => (Attributes & FieldAttributes.Public) != 0;
+        public virtual bool IsPublic => (Attributes & FieldAttributes.Public) == FieldAttributes.Public;
 
         /// <summary>
         /// Gets value indicating the property is public.
         /// </summary>
-        public virtual bool IsPrivate => (Attributes & FieldAttributes.Private) != 0;
+        public virtual bool IsPrivate => (Attributes & FieldAttributes.Private) == FieldAttributes.Private;
 
         /// <summary>
         /// Gets value indicating the property is protected.
         /// </summary>
-        public virtual bool IsProtected => (Attributes & FieldAttributes.FamORAssem) != 0;
+        public virtual bool IsProtected => !IsPublic && !IsPrivate;
 
         /// <summary>
         /// Gets value indicating the descriptor corresponds to a class constant.
