@@ -135,9 +135,9 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      
+
     </PropertyGroup>
-    
+
     <PropertyGroup Condition=" '$(DontRunPeachpieCompileWithDotnet)' == '' ">
       <!-- default: -->
       <_FscTask_FscToolExe>$(_DotNetHostExecutableName)</_FscTask_FscToolExe>
@@ -150,8 +150,7 @@
       <_FscTask_FscToolPath>$(FscToolPath)</_FscTask_FscToolPath>
       <_FscTask_DotnetFscCompilerPath></_FscTask_DotnetFscCompilerPath>
     </PropertyGroup>
-
-
+    
     <FindInList List="@(ReferencePath)" ItemSpecToFind="dotnet-compile-php.dll" MatchFileNameOnly="true">
       <Output TaskParameter="ItemFound" ItemName="PhpCompilerReferencePath" />
     </FindInList>
@@ -168,9 +167,12 @@
       <RspLine Include="--temp-output:$(TempOutputDir)" />
       <RspLine Include="--out:$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)" />
       <RspLine Include="--output-name:%(IntermediateAssembly.Filename)" />
+      <RspLine Include="--optimize:$(Optimize)" />
       <RspLine Include="--debug-type:$(DebugType)" />
+      <RspLine Include="--define:DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
-      <RspLine Include="--target-framework:.NETCoreApp,Version=v1.0" />
+      <RspLine Include="--pdb:$(PdbFile)" Condition=" '$(PdbFile)' != '' " />
+      <RspLine Include="--target-framework:$(TargetFramework)" />
       <RspLine Include="@(ReferencePath->'--reference:%(FullPath)')" />
       <RspLine Include="@(Compile)" />
     </ItemGroup>
