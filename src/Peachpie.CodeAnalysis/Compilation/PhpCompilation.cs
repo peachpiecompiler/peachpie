@@ -399,6 +399,7 @@ namespace Pchp.CodeAnalysis
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            // Compile
             if (stage == CompilationStage.Compile || stage > CompilationStage.Compile && includeEarlierStages)
             {
                 var methodBodyDiagnostics = DiagnosticBag.GetInstance();

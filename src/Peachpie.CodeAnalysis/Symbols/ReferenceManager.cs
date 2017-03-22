@@ -122,8 +122,9 @@ namespace Pchp.CodeAnalysis
                     }
                     else
                     {
-                        // TODO: diagnostics
-                        throw new DllNotFoundException(identity.GetDisplayName());
+                        //
+                        _diagnostics.Add(Location.None, Errors.ErrorCode.ERR_MetadataFileNotFound, identity);
+                        // TODO: ass = new MissingAssemblySymbol(identity);
                     }
                 }
 
@@ -233,8 +234,15 @@ namespace Pchp.CodeAnalysis
                     ImmutableArray<UnifiedAssembly<AssemblySymbol>>.Empty), assembly);
 
                 // set cor types for this compilation
-                if (_lazyPhpCorLibrary == null) throw new DllNotFoundException("Peachpie.Runtime not found");
-                if (_lazyCorLibrary == null) throw new DllNotFoundException("A corlib not found");
+                if (_lazyPhpCorLibrary == null)
+                {
+                    _diagnostics.Add(Location.None, Errors.ErrorCode.ERR_MetadataFileNotFound, "Peachpie.Runtime.dll");
+                    throw new DllNotFoundException("Peachpie.Runtime not found");
+                }
+                if (_lazyCorLibrary == null)
+                {
+                    throw new DllNotFoundException("A corlib not found");
+                }
 
                 compilation.CoreTypes.Update(_lazyPhpCorLibrary);
                 compilation.CoreTypes.Update(_lazyCorLibrary);
