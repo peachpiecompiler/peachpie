@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Gets special <c>_statics</c> nested class holding static fields bound to context.
         /// </summary>
         /// <returns></returns>
-        internal TypeSymbol TryGetStatics() => (this as IPhpTypeSymbol)?.StaticsContainer;
+        internal TypeSymbol TryGetStatics() => (TypeSymbol)(this as IPhpTypeSymbol)?.StaticsContainer;
 
         /// <summary>
         /// Emits load of statics holder.

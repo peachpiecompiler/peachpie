@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Symbols;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -86,16 +87,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var errmethod = (ErrorMethodSymbol)x.TargetMethod;
                 if (errmethod != null && errmethod.ErrorKind == ErrorMethodSymbol.ErrorMethodKind.Missing)
                 {
-                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
+                    _diagnostics.Add(_routine, ((FunctionCall)x.PhpSyntax).NameSpan.ToTextSpan(), ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
                 }
             }
         }
 
-        private void CheckUndefinedMethodCall(BoundRoutineCall call, TypeSymbol type, BoundRoutineName name)
+        private void CheckUndefinedMethodCall(BoundRoutineCall x, TypeSymbol type, BoundRoutineName name)
         {
-            if (name.IsDirect && call.TargetMethod.IsErrorMethod() && type != null && !type.IsErrorType())
+            if (name.IsDirect && x.TargetMethod.IsErrorMethod() && type != null && !type.IsErrorType())
             {
-                _diagnostics.Add(_routine, call.PhpSyntax, ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
+                _diagnostics.Add(_routine, ((FunctionCall)x.PhpSyntax).NameSpan.ToTextSpan(), ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
             }
         }
 

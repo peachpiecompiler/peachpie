@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// A field holding a reference to current runtime context.
         /// Is of type <see cref="Pchp.Core.Context"/>.
         /// </summary>
-        public FieldSymbol ContextStore
+        public IFieldSymbol ContextStore
         {
             get
             {
@@ -58,7 +58,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// A field holding array of the class runtime fields.
         /// Is of type <see cref="Pchp.Core.PhpArray"/>.
         /// </summary>
-        public FieldSymbol RuntimeFieldsStore
+        public IFieldSymbol RuntimeFieldsStore
         {
             get
             {
@@ -83,7 +83,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Optional.
         /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
         /// </summary>
-        public NamedTypeSymbol StaticsContainer => _staticsContainer;
+        public INamedTypeSymbol StaticsContainer => _staticsContainer;
+
+        /// <summary>
+        /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the PHP constructor.
+        /// </summary>
+        public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
 
         #endregion
 
@@ -92,8 +97,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         NamedTypeSymbol _lazyBaseType;
         ImmutableArray<MethodSymbol> _lazyCtors;   // .ctor
-        FieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
-        FieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
+        IFieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
+        IFieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
         SynthesizedStaticFieldsHolder/*!*/_staticsContainer; // class __statics { ... }
 
         /// <summary>
@@ -203,11 +208,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
         }
-
-        /// <summary>
-        /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the PHP constructor.
-        /// </summary>
-        public MethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
@@ -485,12 +485,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // special fields
-            if (ContextStore?.ContainingType == this)
+            if (ReferenceEquals(ContextStore?.ContainingType, this))
             {
                 yield return ContextStore;
             }
 
-            if (RuntimeFieldsStore?.ContainingType == this)
+            if (ReferenceEquals(RuntimeFieldsStore?.ContainingType, this))
             {
                 yield return RuntimeFieldsStore;
             }

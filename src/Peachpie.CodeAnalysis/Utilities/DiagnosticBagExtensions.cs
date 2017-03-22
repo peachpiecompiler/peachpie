@@ -21,10 +21,18 @@ namespace Pchp.CodeAnalysis
             ErrorCode code,
             params object[] args)
         {
-            // TODO: Reuse the existing one instead
+            Add(diagnostics, routine, syntax.Span.ToTextSpan(), code, args);
+        }
+
+        public static void Add(
+            this DiagnosticBag diagnostics,
+            SourceRoutineSymbol routine,
+            TextSpan span,
+            ErrorCode code,
+            params object[] args)
+        {
             var tree = routine.ContainingFile.SyntaxTree;
-            var span = syntax.Span;
-            var location = new SourceLocation(tree, span.ToTextSpan());
+            var location = new SourceLocation(tree, span);
             diagnostics.Add(location, code, args);
         }
 

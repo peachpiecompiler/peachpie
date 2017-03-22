@@ -146,7 +146,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // resolve base .ctor that has to be called
             var btype = type.BaseType;
             Debug.Assert(!(btype is ErrorTypeSymbol));
-            var fieldsonlyctor = (btype as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly;   // base..ctor() to be called if provided
+            var fieldsonlyctor = (MethodSymbol)(btype as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly;   // base..ctor() to be called if provided
             var basectors = (fieldsonlyctor != null)
                 ? ImmutableArray.Create(fieldsonlyctor)
                 : btype.InstanceConstructors

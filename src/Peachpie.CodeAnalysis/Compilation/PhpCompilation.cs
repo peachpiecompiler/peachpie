@@ -90,6 +90,16 @@ namespace Pchp.CodeAnalysis
 
         internal new PhpCompilationOptions Options => _options;
 
+        /// <summary>
+        /// Gets enumeration of all user declared routines (global code, functions, methods and lambdas) in the compilation.
+        /// </summary>
+        public IEnumerable<IPhpRoutineSymbol> UserDeclaredRoutines => this.SourceSymbolCollection.AllRoutines;
+
+        /// <summary>
+        /// Gets enumeration of all user declared types (classes, interfaces and traits) in the compilation.
+        /// </summary>
+        public IEnumerable<IPhpTypeSymbol> UserDeclaredTypes => this.SourceSymbolCollection.GetTypes();
+
         private PhpCompilation(
             string assemblyName,
             PhpCompilationOptions options,

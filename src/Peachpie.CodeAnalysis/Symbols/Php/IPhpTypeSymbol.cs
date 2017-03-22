@@ -10,7 +10,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// A symbol representing PHP type in CLR.
     /// </summary>
-    interface IPhpTypeSymbol : INamedTypeSymbol
+    public interface IPhpTypeSymbol : INamedTypeSymbol
     {
         /// <summary>
         /// Gets fully qualified name of the class.
@@ -29,27 +29,27 @@ namespace Pchp.CodeAnalysis.Symbols
         /// A field holding a reference to current runtime context.
         /// Is of type <see cref="Pchp.Core.Context"/>.
         /// </summary>
-        FieldSymbol ContextStore { get; }
+        IFieldSymbol ContextStore { get; }
 
         /// <summary>
         /// Optional.
         /// A field holding array of the class runtime fields.
         /// Is of type <see cref="Pchp.Core.PhpArray"/>.
         /// </summary>
-        FieldSymbol RuntimeFieldsStore { get; }
+        IFieldSymbol RuntimeFieldsStore { get; }
 
         /// <summary>
         /// Optional. A <c>.ctor</c> that does not make call to PHP constructor.
         /// This method is expected to be declared with <b>protected</b> visibility and
         /// used in context of a derived class constructor, since in PHP user calls PHP constructor explicitly.
         /// </summary>
-        MethodSymbol InstanceConstructorFieldsOnly { get; }
+        IMethodSymbol InstanceConstructorFieldsOnly { get; }
 
         /// <summary>
         /// Optional.
         /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
         /// </summary>
-        NamedTypeSymbol StaticsContainer { get; }
+        INamedTypeSymbol StaticsContainer { get; }
 
         #endregion
     }
