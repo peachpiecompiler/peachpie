@@ -54,8 +54,14 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ResourceInModule,
         ERR_ResourceNotUnique,
         ERR_TooManyUserStrings,
+
+        ERR_CircularBase,
+        ERR_TypeNameCannotBeResolved,
+
         FTL_InputFileNameTooLong,
+
         INF_UnableToLoadSomeTypesInAnalyzer,
+
         WRN_AnalyzerCannotBeCreated,
         WRN_NoAnalyzerInAssembly,
         WRN_NoConfigNotOnCommandLine,

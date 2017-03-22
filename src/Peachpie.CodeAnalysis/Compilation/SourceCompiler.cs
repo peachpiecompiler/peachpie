@@ -275,9 +275,15 @@ namespace Pchp.CodeAnalysis
         {
             Debug.Assert(moduleBuilder != null);
 
-            // ensure flow analysis
-            var analysisdiagnostics = compilation.BindAndAnalyseTask().Result;
-            diagnostics.AddRange(analysisdiagnostics);
+            // ensure flow analysis and collect diagnostics
+            var declarationDiagnostics = compilation.GetDeclarationDiagnostics();
+            diagnostics.AddRange(declarationDiagnostics);
+
+            if (hasDeclarationErrors |= declarationDiagnostics.HasAnyErrors())
+            {
+                // cancel the operation if there are errors
+                return;
+            }
 
             //
             var compiler = new SourceCompiler(compilation, moduleBuilder, emittingPdb, diagnostics, cancellationToken);

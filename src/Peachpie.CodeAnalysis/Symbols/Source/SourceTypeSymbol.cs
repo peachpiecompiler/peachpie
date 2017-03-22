@@ -12,6 +12,7 @@ using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using System.Globalization;
 using System.Threading;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -108,6 +109,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SourceFileSymbol ContainingFile => _file;
 
+        Location CreateLocation(TextSpan span) => Location.Create(ContainingFile.SyntaxTree, span);
+
         public SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
             Contract.ThrowIfNull(file);
@@ -180,7 +183,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 foreach (var f in flist.Fields)
                 {
                     yield return new SourceFieldSymbol(this, f.Name.Value,
-                        Location.Create(ContainingFile.SyntaxTree, f.NameSpan.ToTextSpan()),
+                        CreateLocation(f.NameSpan.ToTextSpan()),
                         flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
                         fkind,
                         (f.Initializer != null) ? binder.BindExpression(f.Initializer, BoundAccess.Read) : null);
@@ -193,7 +196,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 foreach (var c in clist.Constants)
                 {
                     yield return new SourceFieldSymbol(this, c.Name.Name.Value,
-                        Location.Create(ContainingFile.SyntaxTree, c.Name.Span.ToTextSpan()),
+                        CreateLocation(c.Name.Span.ToTextSpan()),
                         Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
                         SourceFieldSymbol.KindEnum.ClassConstant,
                         binder.BindExpression(c.Initializer, BoundAccess.Read));
@@ -241,9 +244,15 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyBaseType == null)
+                if (ReferenceEquals(_lazyBaseType, null))
                 {
-                    _lazyBaseType = ResolveBaseType(DiagnosticBag.GetInstance());
+                    DiagnosticBag diagnostics = DiagnosticBag.GetInstance();
+                    if (Interlocked.CompareExchange(ref _lazyBaseType, ResolveBaseType(diagnostics), null) == null)
+                    {
+                        AddDeclarationDiagnostics(diagnostics);
+                    }
+
+                    diagnostics.Free();
                 }
 
                 return _lazyBaseType;
@@ -259,8 +268,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 var baseTypeName = _syntax.BaseClass.ClassName;
                 if (baseTypeName == this.MakeQualifiedName())
                 {
-                    // TODO: Err diagnostics
-                    throw new NotImplementedException($"cycle in class hierarchy, {this.MakeQualifiedName()} extends itself.");
+                    // TODO: check full circular dependency after the resolution
+                    // Circular base class dependency involving '{0}' and '{1}'
+                    diagnostics.Add(
+                        CreateLocation(_syntax.HeadingSpan.ToTextSpan()),
+                        Errors.ErrorCode.ERR_CircularBase, baseTypeName, this);
                 }
 
                 btype = (NamedTypeSymbol)DeclaringCompilation.GlobalSemantics.GetType(baseTypeName)
@@ -268,8 +280,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (btype.Arity != 0)
                 {
+                    // generics not supported yet
                     // TODO: Err diagnostics
-                    throw new NotImplementedException($"Class {this.MakeQualifiedName()} extends a generic type {baseTypeName}.");    // generics not supported yet
+                    throw new NotImplementedException($"Class {this.MakeQualifiedName()} extends a generic type {baseTypeName}.");
+                }
+                else if (btype.IsErrorType())
+                {
+                    // error: Type name '{1}' could not be resolved.
+                    diagnostics.Add(CreateLocation(_syntax.BaseClass.Span.ToTextSpan()), Errors.ErrorCode.ERR_TypeNameCannotBeResolved, baseTypeName);
                 }
             }
             else if (!IsStatic && !IsInterface)
@@ -346,7 +364,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.MemberAttributes.IsStatic();
 
-        public override ImmutableArray<Location> Locations => ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, _syntax.Span.ToTextSpan()));
+        public override ImmutableArray<Location> Locations => ImmutableArray.Create(CreateLocation(_syntax.Span.ToTextSpan()));
 
         internal override bool ShouldAddWinRTMembers => false;
 

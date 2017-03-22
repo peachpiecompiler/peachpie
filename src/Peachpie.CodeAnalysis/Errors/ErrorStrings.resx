@@ -117,11 +117,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ERR_CircularBase" xml:space="preserve">
+    <value>Circular base class dependency involving '{0}' and '{1}'</value>
+  </data>
   <data name="ERR_ErrorOpeningAssemblyFile" xml:space="preserve">
     <value>Error opening assembly file '{0}': {1}</value>
   </data>
   <data name="ERR_MetadataFileNotFound" xml:space="preserve">
     <value>Metadata file '{0}' could not be found</value>
+  </data>
+  <data name="ERR_TypeNameCannotBeResolved" xml:space="preserve">
+    <value>Type name '{1}' could not be resolved. It is either not defined, defined conditionally or ambiguous declarations were found.</value>
   </data>
   <data name="WRN_UndefinedFunctionCall" xml:space="preserve">
     <value>Call to undefined function: '{0}'</value>

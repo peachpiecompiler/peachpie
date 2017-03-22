@@ -313,30 +313,105 @@ namespace Pchp.CodeAnalysis
             return new MissingMetadataTypeSymbol(name, arity, false);
         }
 
+        /// <summary>
+        /// The bag in which semantic analysis should deposit its diagnostics.
+        /// </summary>
+        internal DiagnosticBag DeclarationDiagnostics
+        {
+            get
+            {
+                if (_lazyDeclarationDiagnostics == null)
+                {
+                    var diagnostics = new DiagnosticBag();
+                    Interlocked.CompareExchange(ref _lazyDeclarationDiagnostics, diagnostics, null);
+                }
+
+                return _lazyDeclarationDiagnostics;
+            }
+        }
+
+        private DiagnosticBag _lazyDeclarationDiagnostics;
+
         public override ImmutableArray<Diagnostic> GetParseDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            //return GetDiagnostics(CompilationStage.Parse, false, cancellationToken);
-            return this.SyntaxTrees.SelectMany(tree => tree.Diagnostics).ToImmutableArray();
+            return GetDiagnostics(CompilationStage.Parse, false, cancellationToken);
         }
 
         public override ImmutableArray<Diagnostic> GetDeclarationDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ImmutableArray<Diagnostic>.Empty;
-        }
-
-        public ImmutableArray<Diagnostic>GetBindingDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.BindAndAnalyseTask().Result.AsImmutable();
+            return GetDiagnostics(CompilationStage.Declare, false, cancellationToken);
         }
 
         public override ImmutableArray<Diagnostic> GetMethodBodyDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return GetDiagnostics(CompilationStage.Compile, false, cancellationToken);
         }
 
         public override ImmutableArray<Diagnostic> GetDiagnostics(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return GetDiagnostics(CompilationStage.Compile, true, cancellationToken);
+        }
+
+        internal ImmutableArray<Diagnostic> GetDiagnostics(CompilationStage stage, bool includeEarlierStages, CancellationToken cancellationToken)
+        {
+            var builder = DiagnosticBag.GetInstance();
+
+            // Parse
+            if (stage == CompilationStage.Parse || (stage > CompilationStage.Parse && includeEarlierStages))
+            {
+                var syntaxTrees = this.SyntaxTrees;
+                if (this.Options.ConcurrentBuild)
+                {
+                    Parallel.ForEach(syntaxTrees, UICultureUtilities.WithCurrentUICulture<PhpSyntaxTree>(syntaxTree =>
+                        {
+                            builder.AddRange(syntaxTree.GetDiagnostics(cancellationToken));
+                        }));
+                }
+                else
+                {
+                    foreach (var syntaxTree in syntaxTrees)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        builder.AddRange(syntaxTree.GetDiagnostics(cancellationToken));
+                    }
+                }
+            }
+
+            // Declare
+            if (stage == CompilationStage.Declare || stage > CompilationStage.Declare && includeEarlierStages)
+            {
+                // CheckAssemblyName(builder);
+                builder.AddRange(Options.Errors);
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // the set of diagnostics related to establishing references.
+                builder.AddRange(GetBoundReferenceManager().Diagnostics);
+
+                //cancellationToken.ThrowIfCancellationRequested();
+
+                builder.AddRange(this.BindAndAnalyseTask().Result.AsImmutable());   // TODO: cancellationToken
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                builder.AddRange(_lazyDeclarationDiagnostics?.AsEnumerable() ?? Enumerable.Empty<Diagnostic>());
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (stage == CompilationStage.Compile || stage > CompilationStage.Compile && includeEarlierStages)
+            {
+                var methodBodyDiagnostics = DiagnosticBag.GetInstance();
+                // TODO: perform compilation and report diagnostics
+                // GetDiagnosticsForAllMethodBodies(methodBodyDiagnostics, cancellationToken); 
+                builder.AddRangeAndFree(methodBodyDiagnostics);
+            }
+
+            // Before returning diagnostics, we filter warnings
+            // to honor the compiler options (e.g., /nowarn, /warnaserror and /warn) and the pragmas.
+            var result = DiagnosticBag.GetInstance();
+            FilterAndAppendAndFreeDiagnostics(result, ref builder);
+            return result.ToReadOnlyAndFree<Diagnostic>();
         }
 
         public override IEnumerable<ISymbol> GetSymbolsWithName(Func<string, bool> predicate, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))
@@ -671,7 +746,7 @@ namespace Pchp.CodeAnalysis
             {
                 return false;
             }
-        
+
             cancellationToken.ThrowIfCancellationRequested();
 
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
@@ -679,7 +754,7 @@ namespace Pchp.CodeAnalysis
 
             string assemblyName = FileNameUtilities.ChangeExtension(moduleBeingBuilt.EmitOptions.OutputNameOverride, extension: null);
             DocumentationCommentCompiler.WriteDocumentationCommentXml(this, assemblyName, xmlDocStream, xmlDiagnostics, cancellationToken);
-            
+
             if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref xmlDiagnostics))
             {
                 return false;
@@ -778,7 +853,7 @@ namespace Pchp.CodeAnalysis
         internal override CommonPEModuleBuilder CreateModuleBuilder(EmitOptions emitOptions, IMethodSymbol debugEntryPoint, IEnumerable<ResourceDescription> manifestResources, CompilationTestData testData, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
             Debug.Assert(!IsSubmission || HasCodeToEmit());
-            
+
             var runtimeMDVersion = GetRuntimeMetadataVersion(emitOptions, diagnostics);
             if (runtimeMDVersion == null)
             {

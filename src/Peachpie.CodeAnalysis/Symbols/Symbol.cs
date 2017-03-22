@@ -609,8 +609,7 @@ namespace Pchp.CodeAnalysis
             {
                 var compilation = this.DeclaringCompilation;
                 Debug.Assert(compilation != null);
-                throw new NotImplementedException();
-                //compilation.DeclarationDiagnostics.AddRange(diagnostics);
+                compilation.DeclarationDiagnostics.AddRange(diagnostics);
             }
         }
 

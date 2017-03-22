@@ -32,6 +32,16 @@ namespace Pchp.CodeAnalysis
             readonly string _sdkdir;
 
             /// <summary>
+            /// Diagnostics produced during reference resolution and binding.
+            /// </summary>
+            /// <remarks>
+            /// When reporting diagnostics be sure not to include any information that can't be shared among 
+            /// compilations that share the same reference manager (such as full identity of the compilation, 
+            /// simple assembly name is ok).
+            /// </remarks>
+            private readonly DiagnosticBag _diagnostics = new DiagnosticBag();
+
+            /// <summary>
             /// COR library containing base system types.
             /// </summary>
             internal AssemblySymbol CorLibrary => _lazyCorLibrary;
@@ -67,6 +77,8 @@ namespace Pchp.CodeAnalysis
             }
 
             internal IEnumerable<IAssemblySymbol> ExplicitReferencesSymbols => ExplicitReferences.Select(r => _referencesMap[r]).WhereNotNull();
+
+            internal DiagnosticBag Diagnostics => _diagnostics;
 
             public ReferenceManager(
                 string simpleAssemblyName,
