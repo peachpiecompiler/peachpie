@@ -161,8 +161,18 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
             if (expr is AST.LambdaFunctionExpr) return BindLambda((AST.LambdaFunctionExpr)expr).WithAccess(access);
             if (expr is AST.EvalEx) return BindEval((AST.EvalEx)expr).WithAccess(access);
+            if (expr is AST.YieldEx) return BindYieldEx((AST.YieldEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundYieldEx BindYieldEx(AST.YieldEx expr)
+        {
+            // Reference: https://github.com/dotnet/roslyn/blob/05d923831e1bc2a88918a2073fba25ab060dda0c/src/Compilers/CSharp/Portable/Binder/Binder_Statements.cs#L194
+            var boundValueExpr = (expr.ValueExpr != null) ? BindExpression(expr.ValueExpr) : null;
+            var boundKeyExpr = (expr.KeyExpr != null) ? BindExpression(expr.KeyExpr) : null;
+
+            return new BoundYieldEx(boundValueExpr, boundKeyExpr);
         }
 
         BoundLambda BindLambda(AST.LambdaFunctionExpr expr)
