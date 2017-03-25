@@ -185,7 +185,8 @@ namespace Pchp.CodeAnalysis.Semantics
             Accept(x.CodeExpression);
         }
 
-        internal void VisitYield(BoundYieldEx boundYieldEx)
+
+        public virtual void VisitYield(BoundYieldEx boundYieldEx)
         {
             
 
