@@ -678,6 +678,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //if (isNumber)
                 //    mask &= ~IsNumberMask;
 
+                //if (IsNull(mask))
+                //{
+                //    mask &= ~_isNullMask;
+                //    types.Add(QualifiedName.Null.ToString());
+                //}
+
                 //
                 types.AddRange(GetTypes(mask).Select(t => t.QualifiedName.ToString()));
 

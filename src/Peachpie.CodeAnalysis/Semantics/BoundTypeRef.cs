@@ -1,4 +1,5 @@
 ﻿using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -36,6 +37,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Resolved <see cref="TypeRef"/> if possible.
         /// </summary>
         internal TypeSymbol ResolvedType { get; set; }
+
+        /// <summary>
+        /// Resolved type symbol if any.
+        /// </summary>
+        public ITypeSymbol Symbol { get { return this.ResolvedType; } }
 
         /// <summary>
         /// Expression getting type name.
