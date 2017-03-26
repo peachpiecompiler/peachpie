@@ -9,18 +9,30 @@ using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal abstract class ErrorMethodSymbol : MethodSymbol
+    public enum ErrorMethodKind
     {
-        public enum ErrorMethodKind
-        {
-            None = 0,
+        None = 0,
 
-            Ambiguous,
-            Inaccessible,
-            Missing,
-        }
+        Ambiguous,
+        Inaccessible,
+        Missing,
+    }
 
+    public interface IErrorMethodSymbol : IMethodSymbol
+    {
+        ErrorMethodKind ErrorKind { get; }
+
+        /// <summary>
+        /// In case of an original method(s) causing error (not visible or ambiguous), gets their enumeration.
+        /// </summary>
+        ImmutableArray<IMethodSymbol> OriginalSymbols { get; }
+    }
+
+    internal abstract class ErrorMethodSymbol : MethodSymbol, IErrorMethodSymbol
+    {
         public abstract ErrorMethodKind ErrorKind { get; }
+
+        public virtual ImmutableArray<IMethodSymbol> OriginalSymbols => ImmutableArray<IMethodSymbol>.Empty;
 
         public override bool IsExtern => false;
 
@@ -47,6 +59,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get { return ErrorMethodKind.Ambiguous; }
         }
+
+        public override ImmutableArray<IMethodSymbol> OriginalSymbols => _ambiguities.CastArray<IMethodSymbol>();
 
         /// <summary>
         /// Method symbol representing more overloads.

@@ -193,6 +193,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     case PhpTypeCode.WritableString:
                     case PhpTypeCode.String: return QualifiedName.String;
                     case PhpTypeCode.PhpArray: return QualifiedName.Array;
+                    case PhpTypeCode.Null: return QualifiedName.Null;
                     default:
                         throw new ArgumentException();
                 }

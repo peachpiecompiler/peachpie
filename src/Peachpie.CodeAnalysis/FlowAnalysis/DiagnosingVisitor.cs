@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x.Name.IsDirect && x.TargetMethod.IsErrorMethod())
             {
                 var errmethod = (ErrorMethodSymbol)x.TargetMethod;
-                if (errmethod != null && errmethod.ErrorKind == ErrorMethodSymbol.ErrorMethodKind.Missing)
+                if (errmethod != null && errmethod.ErrorKind == ErrorMethodKind.Missing)
                 {
                     _diagnostics.Add(_routine, ((FunctionCall)x.PhpSyntax).NameSpan.ToTextSpan(), ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
                 }

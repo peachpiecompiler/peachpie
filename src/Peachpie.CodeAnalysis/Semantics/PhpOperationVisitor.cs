@@ -89,6 +89,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitIncDec(BoundIncDecEx x)
         {
+            Accept(x.Target);
             Accept(x.Value);
         }
 
