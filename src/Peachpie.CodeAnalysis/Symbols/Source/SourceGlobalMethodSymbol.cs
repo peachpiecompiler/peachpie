@@ -28,6 +28,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override Signature SyntaxSignature => new Signature(false, Array.Empty<FormalParam>());
 
+        internal override TypeRef SyntaxReturnType => null;
+
         protected override IEnumerable<ParameterSymbol> BuildImplicitParams()
         {
             int index = 0;
@@ -95,14 +97,6 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 return ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, default(Microsoft.CodeAnalysis.Text.TextSpan)));
-            }
-        }
-
-        public override TypeSymbol ReturnType
-        {
-            get
-            {
-                return BuildReturnType(default(Signature), null, null, this.ResultTypeMask);
             }
         }
 

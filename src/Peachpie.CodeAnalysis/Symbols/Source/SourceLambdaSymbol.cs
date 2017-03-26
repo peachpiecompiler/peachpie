@@ -72,6 +72,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override Signature SyntaxSignature => _syntax.Signature;
 
+        internal override TypeRef SyntaxReturnType => _syntax.ReturnType;
+
         internal override AstNode Syntax => _syntax;
 
         internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
@@ -79,14 +81,6 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override SourceFileSymbol ContainingFile => (_container as SourceTypeSymbol)?.ContainingFile ?? (_container as SourceFileSymbol);
 
         public override string Name => "anonymous@function";
-
-        public override TypeSymbol ReturnType
-        {
-            get
-            {
-                return BuildReturnType(_syntax.Signature, _syntax.ReturnType, _syntax.PHPDoc, this.ResultTypeMask);
-            }
-        }
 
         public override Symbol ContainingSymbol => _container;
 

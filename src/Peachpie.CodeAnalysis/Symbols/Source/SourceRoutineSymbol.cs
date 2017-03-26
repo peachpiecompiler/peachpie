@@ -80,6 +80,11 @@ namespace Pchp.CodeAnalysis.Symbols
         internal abstract Signature SyntaxSignature { get; }
 
         /// <summary>
+        /// Specified return type.
+        /// </summary>
+        internal abstract TypeRef SyntaxReturnType { get; }
+
+        /// <summary>
         /// Gets routine declaration syntax.
         /// </summary>
         internal abstract AstNode Syntax { get; }
@@ -205,40 +210,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        protected virtual TypeSymbol BuildReturnType(Signature signature, TypeRef tref, PHPDocBlock phpdocOpt, TypeRefMask rtype)
-        {
-            if (signature.AliasReturn)
-            {
-                return DeclaringCompilation.CoreTypes.PhpAlias;
-            }
-
-            // PHP7 return type
-            if (tref != null)
-            {
-                return DeclaringCompilation.GetTypeFromTypeRef(tref);
-            }
-
-            //
-            var typeCtx = this.TypeRefContext;
-
-            //
-            if (phpdocOpt != null && (DeclaringCompilation.Options.PhpDocTypes & PhpDocTypes.ReturnTypes) != 0)
-            {
-                var returnTag = phpdocOpt.Returns;
-                if (returnTag != null && returnTag.TypeNames.Length != 0)
-                {
-                    var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNamesArray, this.GetNamingContext());
-                    if (!tmask.IsVoid && !tmask.IsAnyType)
-                    {
-                        return DeclaringCompilation.GetTypeFromTypeRef(typeCtx, tmask);
-                    }
-                }
-            }
-
-            //
-            return DeclaringCompilation.GetTypeFromTypeRef(typeCtx, rtype);
-        }
-
         public override bool IsExtern => false;
 
         public override bool IsOverride => false;
@@ -293,14 +264,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 
-        //public override TypeSymbol ReturnType { get; }
-        //{
-        //    get
-        //    {
-        //        throw new InvalidOperationException("To be overriden in derived class!");
-        //        //return DeclaringCompilation.GetTypeFromTypeRef(this, this.ControlFlowGraph.ReturnTypeMask);
-        //    }
-        //}
+        public override TypeSymbol ReturnType => PhpRoutineSymbolExtensions.ConstructClrReturnType(this);
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 

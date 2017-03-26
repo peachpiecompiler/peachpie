@@ -55,6 +55,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override Signature SyntaxSignature => _syntax.Signature;
 
+        internal override TypeRef SyntaxReturnType => _syntax.ReturnType;
+
         internal override AstNode Syntax => _syntax;
 
         internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
@@ -114,14 +116,6 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsStatic => true;
 
         public override bool IsVirtual => false;
-
-        public override TypeSymbol ReturnType
-        {
-            get
-            {
-                return BuildReturnType(_syntax.Signature, _syntax.ReturnType, _syntax.PHPDoc, this.ResultTypeMask);
-            }
-        }
 
         public override ImmutableArray<Location> Locations
         {

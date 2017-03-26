@@ -59,6 +59,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override Signature SyntaxSignature => _syntax.Signature;
 
+        internal override TypeRef SyntaxReturnType => _syntax.ReturnType;
+
         internal override AstNode Syntax => _syntax;
 
         internal override PHPDocBlock PHPDocBlock => _syntax.PHPDoc;
@@ -98,23 +100,6 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 return ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, _syntax.Span.ToTextSpan()));
-            }
-        }
-
-        public override TypeSymbol ReturnType
-        {
-            get
-            {
-                // we can use analysed return type in case the method cannot be an override
-                var propagateResultType = this.IsStatic || this.DeclaredAccessibility == Accessibility.Private || (this.IsSealed && !this.IsOverride);
-
-                // TODO: in case of override, use return type of overriden method // in some cases
-
-                //
-                var t = BuildReturnType(_syntax.Signature, _syntax.ReturnType, _syntax.PHPDoc,
-                    propagateResultType ? this.ResultTypeMask : TypeRefMask.AnyType);
-
-                return t;
             }
         }
 

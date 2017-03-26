@@ -1,4 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using System;
@@ -11,6 +13,57 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal static class PhpRoutineSymbolExtensions
     {
+        /// <summary>
+        /// Constructs most appropriate CLR return type of given routine.
+        /// The method handles returning by alias, PHP7 return type, PHPDoc @return tag and result of flow analysis.
+        /// In case the routine is an override or can be overriden, the CLR type is a value.
+        /// </summary>
+        public static TypeSymbol ConstructClrReturnType(SourceRoutineSymbol routine)
+        {
+            var compilation = routine.DeclaringCompilation;
+
+            // &
+            if (routine.SyntaxSignature.AliasReturn)
+            {
+                return compilation.CoreTypes.PhpAlias;
+            }
+
+            // : return type
+            if (routine.SyntaxReturnType != null)
+            {
+                return compilation.GetTypeFromTypeRef(routine.SyntaxReturnType);
+            }
+
+            // for non virtual methods:
+            if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
+            {
+                // /** @return */
+                var typeCtx = routine.TypeRefContext;
+                if (routine.PHPDocBlock != null && (compilation.Options.PhpDocTypes & PhpDocTypes.ReturnTypes) != 0)
+                {
+                    var returnTag = routine.PHPDocBlock.Returns;
+                    if (returnTag != null && returnTag.TypeNames.Length != 0)
+                    {
+                        var tmask = PHPDoc.GetTypeMask(typeCtx, returnTag.TypeNamesArray, routine.GetNamingContext());
+                        if (!tmask.IsVoid && !tmask.IsAnyType)
+                        {
+                            return compilation.GetTypeFromTypeRef(typeCtx, tmask);
+                        }
+                    }
+                }
+
+                // determine from code flow
+                return compilation.GetTypeFromTypeRef(typeCtx, routine.ResultTypeMask);
+            }
+            else
+            {
+                // TODO: an override that respects the base? check routine.ResultTypeMask (flow analysis) and base implementation is it matches
+            }
+
+            // any value by default
+            return compilation.CoreTypes.PhpValue;
+        }
+
         /// <summary>
         /// Gets expected return type mask of given symbol (field, function, method or property).
         /// </summary>
@@ -30,7 +83,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var m = (MethodSymbol)symbol;
                 var r = symbol as SourceRoutineSymbol;
-                if (r != null && r.IsStatic)
+                if (r != null && r.IsStatic && r.SyntaxReturnType == null)
                 {
                     // In case of a static function, we can return expected return type mask exactly.
                     // Such function cannot be overriden and we know exactly what the return type will be even the CLR type covers more possibilities.
