@@ -13,13 +13,14 @@ using Devsense.PHP.Syntax;
 using System.Globalization;
 using System.Threading;
 using Microsoft.CodeAnalysis.Text;
+using static Pchp.CodeAnalysis.AstUtils;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, ILambdaContainerSymbol
+    internal partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, ILambdaContainerSymbol, IGeneratorContainerSymbol
     {
         #region IPhpTypeSymbol
 
@@ -108,6 +109,7 @@ namespace Pchp.CodeAnalysis.Symbols
         List<Symbol> _lazyMembers;
 
         List<SourceLambdaSymbol> _lambdas;
+        List<SourceGeneratorSymbol> _generators;
 
         /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
         BaseAttributeData _lazyPhpTraitAttribute;
@@ -146,6 +148,30 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (expr == null) throw new ArgumentNullException(nameof(expr));
             return _lambdas.First(s => s.Syntax == expr);
+        }
+
+        void IGeneratorContainerSymbol.AddGenerator(SourceGeneratorSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+            if (_generators == null) _generators = new List<SourceGeneratorSymbol>();
+            _generators.Add(routine);
+        }
+
+
+        IEnumerable<SourceGeneratorSymbol> IGeneratorContainerSymbol.Generators
+        {
+            get
+            {
+                return (IEnumerable<SourceGeneratorSymbol>)_generators ?? Array.Empty<SourceGeneratorSymbol>();
+            }
+        }
+
+        SourceGeneratorSymbol IGeneratorContainerSymbol.ResolveGeneratorSymbol(YieldEx expr)
+        {
+            if (expr == null) throw new ArgumentNullException(nameof(expr));
+            var enclosingFunctionDecl = FindParentLangElement<FunctionDecl>(expr);
+
+            return _generators.First(s => s.Syntax == enclosingFunctionDecl);
         }
 
         List<Symbol> EnsureMembers()
@@ -462,7 +488,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return EnsureMembers().OfType<IMethodSymbol>()
                 .Concat(InstanceConstructors)
-                .Concat(((ILambdaContainerSymbol)this).Lambdas);
+                .Concat(((ILambdaContainerSymbol)this).Lambdas)
+                .Concat(((IGeneratorContainerSymbol)this).Generators);
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()

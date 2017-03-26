@@ -275,4 +275,12 @@ namespace Pchp.CodeAnalysis.Symbols
             field.EmitStore(cctor);
         }
     }
+
+    partial class SourceGeneratorSymbol
+    {
+        internal void EmitInit(Emit.PEModuleBuilder module)
+        {
+            throw new NotImplementedException("IMPLEMENT");
+        }
+    }
 };

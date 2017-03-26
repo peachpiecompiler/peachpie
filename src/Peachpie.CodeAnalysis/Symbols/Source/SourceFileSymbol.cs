@@ -2,14 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
-using System.Diagnostics;
 using Pchp.CodeAnalysis.Utilities;
 using Devsense.PHP.Syntax.Ast;
-using Pchp.CodeAnalysis;
+using static Pchp.CodeAnalysis.AstUtils;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -22,7 +19,7 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         object [Main](){ ... }
     ///     }
     /// }</remarks>
-    sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol
+    sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol, IGeneratorContainerSymbol
     {
         readonly PhpCompilation _compilation;
         readonly PhpSyntaxTree _syntaxTree;
@@ -93,6 +90,22 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (expr == null) throw new ArgumentNullException(nameof(expr));
             return _lazyMembers.OfType<SourceLambdaSymbol>().First(s => s.Syntax == expr);
+        }
+
+        IEnumerable<SourceGeneratorSymbol> IGeneratorContainerSymbol.Generators => _lazyMembers.OfType<SourceGeneratorSymbol>();
+
+        void IGeneratorContainerSymbol.AddGenerator(SourceGeneratorSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+            _lazyMembers.Add(routine);
+        }
+
+        SourceGeneratorSymbol IGeneratorContainerSymbol.ResolveGeneratorSymbol(YieldEx expr)
+        {
+            if (expr == null) throw new ArgumentNullException(nameof(expr));
+            var enclosingFunctionDecl = FindParentLangElement<FunctionDecl>(expr);
+
+            return _lazyMembers.OfType<SourceGeneratorSymbol>().First(s => s.Syntax == enclosingFunctionDecl);
         }
 
         internal string RelativeFilePath =>

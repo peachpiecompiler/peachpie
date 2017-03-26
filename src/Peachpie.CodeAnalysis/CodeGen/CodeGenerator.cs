@@ -363,7 +363,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal void Generate()
         {
             Debug.Assert(_routine != null && _routine.ControlFlowGraph != null);
-            GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
+            if((_routine.Flags & RoutineFlags.IsGenerator) != RoutineFlags.IsGenerator)
+            {
+                GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
+            }
+            else
+            {
+                throw new NotImplementedException("IMPLEMENT");
+            }
+
         }
 
         internal void GenerateScope(BoundBlock block, int to)

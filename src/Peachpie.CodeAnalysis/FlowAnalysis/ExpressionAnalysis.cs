@@ -1530,6 +1530,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region VisitYield
         public override void VisitYield(BoundYieldEx x)
         {
+            Debug.Assert(Routine.ContainingType is IGeneratorContainerSymbol);
+            var container = (IGeneratorContainerSymbol)Routine.ContainingType;
+
+            var symbol = container.ResolveGeneratorSymbol((YieldEx)x.PhpSyntax);
+            x.SourceGeneratorSymbol = symbol;
+
             //Might want to move it to SemanticsBinder on BindYieldEx(...)
             this.Routine.Flags |= RoutineFlags.IsGenerator;
         }

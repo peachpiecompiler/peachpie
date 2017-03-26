@@ -12,6 +12,7 @@ using Roslyn.Utilities;
 using Pchp.CodeAnalysis.Utilities;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
+using static Pchp.CodeAnalysis.AstUtils;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -100,6 +101,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 //
                 base.VisitLambdaFunctionExpr(x);
+            }
+
+            public override void VisitYieldEx(YieldEx x)
+            {
+                var container = _containerStack.Peek();
+                var enclosingFunctionDecl = FindParentLangElement<FunctionDecl>(x);
+
+                var generatorSymbol = new SourceGeneratorSymbol(enclosingFunctionDecl, container);
+
+                Debug.Assert(container is IGeneratorContainerSymbol);
+                ((IGeneratorContainerSymbol)container).AddGenerator(generatorSymbol);
+
+                base.VisitYieldEx(x);
             }
         }
 
@@ -309,6 +323,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return GetTypes().Cast<ILambdaContainerSymbol>().Concat(_files.Values).SelectMany(c => c.Lambdas);
         }
 
+        public IEnumerable<SourceGeneratorSymbol> GetGenerators()
+        {
+            return GetTypes().Cast<IGeneratorContainerSymbol>().Concat(_files.Values).SelectMany(c => c.Generators);
+        }
+
         /// <summary>
         /// Gets enumeration of all routines (global code, functions and methods) in source code.
         /// </summary>
@@ -320,9 +339,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 var mains = _files.Values.Select(f => f.MainMethod);
                 var methods = GetTypes().SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
                 var lambdas = GetLambdas();
+                var generators = GetGenerators();
                 
                 //
-                return funcs.Concat(mains).Concat(methods).Concat(lambdas);
+                return funcs.Concat(mains).Concat(methods).Concat(lambdas).Concat(generators);
             }
         }
 
