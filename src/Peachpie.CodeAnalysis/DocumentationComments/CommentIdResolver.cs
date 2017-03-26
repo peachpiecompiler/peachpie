@@ -30,12 +30,18 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 var arrtype = (ArrayTypeSymbol)type;
                 return TypeId(arrtype.ElementType) + "[]";  // TODO: MDSize
             }
+            else if (type.ContainingType != null) // nested type
+            {
+                return TypeId(type.ContainingType) + "." + TypeNameId(type);
+            }
             else
             {
                 var ns = ((NamedTypeSymbol)type).NamespaceName.Replace("<", "&lt;").Replace(">", "&gt;");
                 var name = TypeNameId(type);
                 return string.IsNullOrEmpty(ns) ? name : (ns + "." + name);
             }
+
+            // todo: generics `N
         }
 
         static string TypeNameId(TypeSymbol type)
