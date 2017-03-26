@@ -188,8 +188,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitYield(BoundYieldEx boundYieldEx)
         {
-            
-
+            Accept(boundYieldEx.YieldedValue);
+            Accept(boundYieldEx.YieldedKey);
         }
 
         #endregion
