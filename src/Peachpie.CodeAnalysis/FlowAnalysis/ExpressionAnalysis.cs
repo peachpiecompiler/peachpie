@@ -1598,6 +1598,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else throw ExceptionUtilities.UnexpectedValue(value);
         }
 
+        public override void VisitPseudoClassConstUse(BoundPseudoClassConst x)
+        {
+            base.VisitPseudoClassConstUse(x);
+
+            //
+            if (x.Type == PseudoClassConstUse.Types.Class)
+            {
+                x.TypeRefMask = TypeCtx.GetStringTypeMask();
+
+                if (x.TargetType.ResolvedType != null)
+                {
+                    x.ConstantValue = new Optional<object>(((IPhpTypeSymbol)x.TargetType.ResolvedType).FullName.ToString());
+                }
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(x.Type);
+            }
+        }
+
         public override void VisitGlobalConstUse(BoundGlobalConst x)
         {
             // TODO: check constant name

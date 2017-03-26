@@ -180,13 +180,12 @@ namespace Pchp.CodeAnalysis.Semantics
             if (x is AST.ClassConstUse)
             {
                 var cx = (AST.ClassConstUse)x;
-                var dtype = cx.TargetType as AST.INamedTypeRef;
-                if (dtype != null && cx.Name.Equals("class"))   // Type::class ~ "Type"
-                {
-                    return new BoundLiteral(dtype.ClassName.ToString());
-                }
-
                 var typeref = BindTypeRef(cx.TargetType);
+
+                if (cx.Name.Equals("class"))   // pseudo class constant
+                {
+                    return new BoundPseudoClassConst(typeref, AST.PseudoClassConstUse.Types.Class);
+                }
 
                 return BoundFieldRef.CreateClassConst(typeref, new BoundVariableName(cx.Name));
             }

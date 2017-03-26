@@ -432,6 +432,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
                 BuildClosure_RoutineInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
+                GetName_PhpTypeInfo = ct.PhpTypeInfo.Property("Name");
 
                 offsetGet_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetGet", ct.PhpValue);
 
@@ -502,6 +503,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Div_PhpValue_PhpValue, Div_long_PhpValue, Div_double_PhpValue,
                 BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue;
+
+            public readonly CoreProperty
+                GetName_PhpTypeInfo;
         }
 
         public struct PhpValueHolder
@@ -564,7 +568,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreProperty
                 IsEmpty, Object;
-                
+
         }
 
         public struct PhpAliasHolder

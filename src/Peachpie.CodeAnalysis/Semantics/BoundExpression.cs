@@ -1370,7 +1370,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
-        public readonly PseudoConstUse.Types Type;
+        public PseudoConstUse.Types Type { get; private set; }
 
         public BoundPseudoConst(PseudoConstUse.Types type)
         {
@@ -1386,6 +1386,31 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitPseudoConstUse(this);
+    }
+
+    #endregion
+
+    #region BoundPseudoClassConst
+
+    public partial class BoundPseudoClassConst : BoundExpression
+    {
+        public PseudoClassConstUse.Types Type { get; private set; }
+
+        public override OperationKind Kind => OperationKind.None;
+
+        public BoundTypeRef TargetType { get; private set; }
+
+        public BoundPseudoClassConst(BoundTypeRef targetType, PseudoClassConstUse.Types type)
+        {
+            this.TargetType = targetType;
+            this.Type = type;
+        }
+
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitPseudoClassConstUse(this);
+
+        public override void Accept(OperationVisitor visitor) => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.DefaultVisit(this, argument);
     }
 
     #endregion

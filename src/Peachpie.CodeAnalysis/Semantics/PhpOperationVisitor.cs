@@ -159,6 +159,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         }
 
+        public virtual void VisitPseudoClassConstUse(BoundPseudoClassConst x)
+        {
+            VisitTypeRef(x.TargetType);
+        }
+
         public virtual void VisitIsEmpty(BoundIsEmptyEx x)
         {
             Accept(x.Operand);

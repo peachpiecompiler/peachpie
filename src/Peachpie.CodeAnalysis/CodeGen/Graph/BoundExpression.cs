@@ -3653,6 +3653,22 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundPseudoClassConst
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            switch (this.Type)
+            {
+                case PseudoClassConstUse.Types.Class:
+                    this.TargetType.EmitClassName(cg);
+                    return cg.CoreTypes.String;
+
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(this.Type);
+            }
+        }
+    }
+
     partial class BoundGlobalConst
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

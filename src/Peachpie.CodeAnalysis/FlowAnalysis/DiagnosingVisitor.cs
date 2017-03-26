@@ -113,8 +113,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // Ignore indirect types (e.g. $foo = new $className())
             if (typeRef.IsDirect && (typeRef.ResolvedType == null || typeRef.ResolvedType.IsErrorType()))
             {
-                var name = typeRef.TypeRef.QualifiedName?.ToString();
-                _diagnostics.Add(this._routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
+                if (typeRef.TypeRef is ReservedTypeRef)
+                {
+                    // unresolved parent, self ?
+                }
+                else
+                {
+                    var name = typeRef.TypeRef.QualifiedName?.ToString();
+                    _diagnostics.Add(this._routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
+                }
             }
         }
     }
