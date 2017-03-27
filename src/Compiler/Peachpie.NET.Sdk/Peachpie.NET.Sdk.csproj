@@ -38,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.csproj" />
+    <ProjectReference Include="..\..\Peachpie.App\Peachpie.App.csproj" />
   </ItemGroup>
 
 </Project>

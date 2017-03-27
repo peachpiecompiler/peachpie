@@ -12,7 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="System.Runtime.Serialization.Json" Version="4.0.3" /><!-- TODO: Remove when added to Peachpie.Microsoft.CodeAnalysis -->
-    <PackageReference Include="Peachpie.NET.Sdk" Version="0.5.0-dev" PrivateAssets="All" />
+    <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="0.5.0-dev" />
+    <PackageReference Include="Peachpie.NET.Sdk" Version="0.5.0-dev" PrivateAssets="Build" />
   </ItemGroup>
   
   <!-- As a temporary solution, import C# Visual Studio design time targets in order to be able to load the project in Visual Studio -->
