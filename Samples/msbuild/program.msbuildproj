@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Runtime.Serialization.Json" Version="4.0.3" /><!-- TODO: Remove when added to Peachpie.Microsoft.CodeAnalysis -->
     <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="0.5.0-dev" />
+    <PackageReference Include="Peachpie.Compiler.Tools" Version="0.5.0-dev" />
     <PackageReference Include="Peachpie.NET.Sdk" Version="0.5.0-dev" PrivateAssets="Build" />
   </ItemGroup>
   
