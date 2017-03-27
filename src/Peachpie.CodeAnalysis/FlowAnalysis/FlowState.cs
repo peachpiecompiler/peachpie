@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // intersection of other variable flags
             if (state1._lessThanLongMax != null && state2._lessThanLongMax != null)
             {
-                _lessThanLongMax = new HashSet<string>(state1._lessThanLongMax);
+                _lessThanLongMax = new HashSet<VariableHandle>(state1._lessThanLongMax);
                 _lessThanLongMax.Intersect(state2._lessThanLongMax);
             }
 
@@ -106,7 +106,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (other._lessThanLongMax != null)
             {
-                _lessThanLongMax = new HashSet<string>(other._lessThanLongMax);
+                _lessThanLongMax = new HashSet<VariableHandle>(other._lessThanLongMax);
             }
 
             //if (other._varKindMap != null)
@@ -180,14 +180,146 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public FlowState Merge(FlowState other) => new FlowState(this, other);
 
         /// <summary>
-        /// Get merged variable value type.
+        /// Gets variable handle use for other variable operations.
         /// </summary>
-        public TypeRefMask GetVarType(string name)
+        public VariableHandle/*!*/GetLocalHandle(string varname)
         {
-            var index = _flowCtx.GetVarIndex(new VariableName(name));
-            var types = _varsType;
-            return (index >= 0 && index < types.Length) ? types[index] : 0;
+            return _flowCtx.GetVarIndex(new VariableName(varname));
         }
+
+        /// <summary>
+        /// Sets variable type in this state.
+        /// </summary>
+        /// <param name="handle">Variable handle.</param>
+        /// <param name="tmask">Variable type. If <c>uninitialized</c>, the variable is set as not initialized in this state.</param>
+        public void SetLocalType(VariableHandle handle, TypeRefMask tmask)
+        {
+            handle.ThrowIfInvalid();
+
+            if (handle >= _varsType.Length)
+            {
+                Array.Resize(ref _varsType, handle + 1);
+            }
+
+            _varsType[handle] = tmask;
+
+            this.FlowContext.AddVarType(handle, tmask);    // TODO: collect merged type information at the end of analysis
+
+            // update the _initializedMask
+            if (tmask.IsUninitialized) { SetVarUninitialized(handle); }
+            else { SetVarInitialized(handle); }
+        }
+
+        /// <summary>
+        /// Gets type of variable at this state.
+        /// </summary>
+        public TypeRefMask GetLocalType(VariableHandle handle)
+        {
+            handle.ThrowIfInvalid();
+            return (handle < _varsType.Length) ? _varsType[handle] : 0;
+        }
+
+        /// <summary>
+        /// Marks variable as being referenced.
+        /// </summary>
+        public void MarkLocalByRef(VariableHandle handle)
+        {
+            handle.ThrowIfInvalid();
+
+            this.FlowContext.SetReference(handle);
+            this.SetVarInitialized(handle);
+            _flowCtx.SetUsed(handle);
+        }
+
+        /// <summary>
+        /// Handles use of a local variable.
+        /// </summary>
+        public void VisitLocal(VariableHandle handle)
+        {
+            handle.ThrowIfInvalid();
+            _flowCtx.SetUsed(handle);
+        }
+
+        /// <summary>
+        /// Sets all variables as initialized at this state and with a <c>mixed</c> type.
+        /// </summary>
+        public void SetAllUnknown(bool maybeRef)
+        {
+            var tmask = maybeRef
+                ? TypeRefMask.AnyType.WithRefFlag
+                : TypeRefMask.AnyType;
+
+            foreach (var v in _flowCtx.EnumerateVariables())
+            {
+                SetLocalType(v, tmask);
+            }
+
+            // all initialized
+            _initializedMask = ~0u;
+        }
+
+        /// <summary>
+        /// Gets value indicating the variable is set in all code paths.
+        /// Gets also <c>true</c> if we don't known.
+        /// </summary>
+        public bool IsLocalSet(VariableHandle handle)
+        {
+            handle.ThrowIfInvalid();
+            return handle.Slot >= FlowContext.BitsCount || (_initializedMask & (1u << handle)) != 0;
+        }
+
+        public void FlowThroughReturn(TypeRefMask type)
+        {
+            _flowCtx.ReturnType |= type;
+        }
+
+        void SetVarInitialized(int varindex)
+        {
+            if (varindex >= 0 && varindex < FlowContext.BitsCount)
+            {
+                _initializedMask |= 1u << varindex;
+            }
+        }
+
+        void SetVarUninitialized(int varindex)
+        {
+            if (varindex >= 0 && varindex < FlowContext.BitsCount)
+            {
+                _initializedMask &= ~(1u << varindex);
+            }
+        }
+
+        #endregion
+
+        #region Constraints
+
+        HashSet<VariableHandle> _lessThanLongMax;
+
+        /// <summary>
+        /// Sets or removes LTInt64 flag for a variable.
+        /// </summary>
+        public void LTInt64Max(VariableHandle handle, bool lt)
+        {
+            if (lt)
+            {
+                if (_lessThanLongMax == null) _lessThanLongMax = new HashSet<VariableHandle>();
+                _lessThanLongMax.Add(handle);
+            }
+            else
+            {
+                if (_lessThanLongMax != null)
+                {
+                    _lessThanLongMax.Remove(handle);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets LTInt64 flag for a variable.
+        /// </summary>
+        public bool IsLTInt64Max(VariableHandle handle) => _lessThanLongMax != null && _lessThanLongMax.Contains(handle);
+
+        #endregion
 
         /// <summary>
         /// Gets merged return value type.
@@ -197,140 +329,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return _flowCtx.ReturnType;
         }
         
-        public void SetAllInitialized()
-        {
-            _initializedMask = ~(ulong)0;
-        }
-
-        public void SetVarInitialized(string name)
-        {
-            SetVarInitialized(_flowCtx.GetVarIndex(new VariableName(name)));
-        }
-
-        internal void SetVarInitialized(int varindex)
-        {
-            if (varindex >= 0 && varindex < FlowContext.BitsCount)
-            {
-                _initializedMask |= (ulong)1 << varindex;
-            }
-        }
-
-        internal bool MaybeVarUninitialized(string name)
-        {
-            return MaybeVarUninitialized(_flowCtx.GetVarIndex(new VariableName(name)));
-        }
-
-        internal bool MaybeVarUninitialized(int varindex)
-        {
-            return
-                varindex < 0 ||
-                varindex >= FlowContext.BitsCount ||
-                (_initializedMask & ((ulong)1 << varindex)) == 0;
-        }
-
-        /// <summary>
-        /// Sets all variables type to <see cref="TypeRefMask.AnyType"/>.
-        /// </summary>
-        /// <param name="maybeRef">Whether to set <c>IsRef</c> flag for all variables.</param>
-        public void SetAllAnyType(bool maybeRef)
-        {
-            var tmask = maybeRef
-                ? TypeRefMask.AnyType.WithRefFlag
-                : TypeRefMask.AnyType;
-
-            foreach (var v in _flowCtx.EnumerateVariables())
-            {
-                SetVar(v.Key, tmask);
-            }
-        }
-
-        public void SetVar(string name, TypeRefMask type)
-        {
-            SetVar(_flowCtx.GetVarIndex(new VariableName(name)), type);
-        }
-
-        internal void SetVar(int varindex, TypeRefMask type)
-        {
-            var types = _varsType;
-            if (varindex >= 0)
-            {
-                if (varindex >= types.Length)
-                {
-                    Array.Resize(ref _varsType, varindex + 1);
-                    types = _varsType;
-                }
-
-                types[varindex] = type;
-                this.SetVarInitialized(varindex);
-                this.FlowContext.AddVarType(varindex, type);    // TODO: collect merged type information at the end of analysis
-            }
-        }
-
-        /// <summary>
-        /// Sets the variable is used by reference.
-        /// </summary>
-        public void SetVarRef(string name)
-        {
-            SetVarRef(_flowCtx.GetVarIndex(new VariableName(name)));
-        }
-
-        /// <summary>
-        /// Sets the variable is used by reference.
-        /// </summary>
-        internal void SetVarRef(int varindex)
-        {
-            this.FlowContext.SetReference(varindex);
-            this.SetVarInitialized(varindex);
-            _flowCtx.SetUsed(varindex);
-        }
-
-        public void SetVarUsed(string name)
-        {
-            SetVarUsed(_flowCtx.GetVarIndex(new VariableName(name)));
-        }
-
-        internal void SetVarUsed(int varindex)
-        {
-            _flowCtx.SetUsed(varindex);
-        }
-
-        public void FlowThroughReturn(TypeRefMask type)
-        {
-            _flowCtx.ReturnType |= type;
-        }
-
-        #endregion
-
-        #region Constraints
-
-        HashSet<string> _lessThanLongMax;
-        
-        /// <summary>
-        /// Sets or removes LTInt64 flag for a variable.
-        /// </summary>
-        public void LTInt64Max(string varname, bool lt)
-        {
-            if (lt)
-            {
-                if (_lessThanLongMax == null) _lessThanLongMax = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                _lessThanLongMax.Add(varname);
-            }
-            else
-            {
-                if (_lessThanLongMax != null)
-                    _lessThanLongMax.Remove(varname);
-            }
-        }
-
-        /// <summary>
-        /// Gets LTInt64 flag for a variable.
-        /// </summary>
-        /// <param name="varname"></param>
-        /// <returns></returns>
-        public bool IsLTInt64Max(string varname) => _lessThanLongMax != null && _lessThanLongMax.Contains(varname);
-
-        #endregion
-
         //#region Variable Kind
 
         //Dictionary<VariableName, VariableKind> _varKindMap;
@@ -338,7 +336,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Declares variable with a specific kind (static or global).
         /// </summary>
-        public void SetVarKind(VariableName varname, VariableKind kind)
+        public void SetVarKind(VariableHandle handle, VariableKind kind)
         {
             //if (_varKindMap == null)
             //{
@@ -359,8 +357,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets kind of variable declaration in this state.
         /// </summary>
-        public VariableKind GetVarKind(VariableName varname)
+        public VariableKind GetVarKind(VariableHandle handle)
         {
+            handle.ThrowIfInvalid();
+
             //// explicit variable declaration
             //if (_varKindMap != null)
             //{
@@ -373,7 +373,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //}
 
             // already declared on locals label
-            return Routine.LocalsTable.GetVariableKind(varname);
+            return Routine.LocalsTable.GetVariableKind(handle.Name);
         }
 
         //#endregion

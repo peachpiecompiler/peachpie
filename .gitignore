@@ -276,3 +276,5 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+/src/Compiler/peach/Properties/launchSettings.json
+/src/Peachpie.Compiler.Tools/Properties/launchSettings.json

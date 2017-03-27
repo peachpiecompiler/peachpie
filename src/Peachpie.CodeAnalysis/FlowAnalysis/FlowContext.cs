@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets index of variable within the context.
         /// </summary>
-        public int GetVarIndex(VariableName name)
+        public VariableHandle GetVarIndex(VariableName name)
         {
             Debug.Assert(!name.IsEmpty());
 
@@ -100,15 +100,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 _varsIndex[name] = index;
             }
 
-            return index;
+            //
+            return new VariableHandle() { Slot = index, Name = name };
         }
 
         /// <summary>
         /// Enumerates all known variables as pairs of their index and name.
         /// </summary>
-        public IEnumerable<KeyValuePair<int, VariableName>> EnumerateVariables()
+        public IEnumerable<VariableHandle> EnumerateVariables()
         {
-            return _varsIndex.Select(pair => new KeyValuePair<int, VariableName>(pair.Value, pair.Key));
+            return _varsIndex.Select(pair => new VariableHandle()
+            {
+                Slot = pair.Value,
+                Name = pair.Key,
+            });
         }
 
         public void SetReference(int varindex)

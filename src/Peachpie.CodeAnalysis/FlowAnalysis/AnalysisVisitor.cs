@@ -73,17 +73,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
-        /// Sets type of local variable in current state.
-        /// </summary>
-        protected virtual TypeRefMask SetVar(string name, TypeRefMask typemask)
-        {
-            AssertState();
-
-            _state.SetVar(name, typemask);
-            return typemask;
-        }
-
-        /// <summary>
         /// Helper method that merges state with the target block and determines whether to continue by visiting the target block.
         /// </summary>
         /// <param name="state">Locals state in which we are entering the target.</param>
@@ -275,7 +264,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // add catch control variable to the state
             Accept(x.Variable);
             VisitTypeRef(x.TypeRef);
-            SetVar(x.Variable.Name.NameValue.Value, TypeCtx.GetTypeMask(x.TypeRef.TypeRef));
+            State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue.Value), TypeCtx.GetTypeMask(x.TypeRef.TypeRef));
             
             //
             x.Variable.ResultType = x.TypeRef.ResolvedType;

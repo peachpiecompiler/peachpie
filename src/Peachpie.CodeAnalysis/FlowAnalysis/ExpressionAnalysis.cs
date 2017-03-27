@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         bool IsLTInt64Max(BoundReferenceExpression r)
         {
             var varname = AsVariableName(r);
-            return varname != null && State.IsLTInt64Max(varname);
+            return varname != null && State.IsLTInt64Max(State.GetLocalHandle(varname));
         }
 
         /// <summary>
@@ -117,7 +117,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             var varname = AsVariableName(r);
             if (varname != null)
-                State.LTInt64Max(varname, lt);
+            {
+                State.LTInt64Max(State.GetLocalHandle(varname), lt);
+            }
         }
 
         void Eq(BoundReferenceExpression r, Optional<object> value)
@@ -138,7 +140,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (varname != null && TypeCtx.IsNull(r.TypeRefMask) && value.IsNull())
             {
                 // varname != NULL
-                State.SetVar(varname, TypeCtx.WithoutNull(r.TypeRefMask));
+                State.SetLocalType(State.GetLocalHandle(varname), TypeCtx.WithoutNull(r.TypeRefMask));
             }
         }
 
@@ -214,11 +216,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             foreach (var v in x.Variables)
             {
-                var name = v.Variable.Name;
+                var local = State.GetLocalHandle(v.Variable.Name);
 
-                State.SetVarKind(new VariableName(name), VariableKind.StaticVariable);
+                State.SetVarKind(local, VariableKind.StaticVariable);
 
-                var oldtype = State.GetVarType(name);
+                var oldtype = State.GetLocalType(local);
 
                 // set var
                 if (v.InitialValue != null)
@@ -226,14 +228,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // analyse initializer
                     Accept((IPhpOperation)v.InitialValue);
 
-                    State.SetVarInitialized(name);
-                    State.LTInt64Max(name, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
-                    State.SetVar(name, ((BoundExpression)v.InitialValue).TypeRefMask | oldtype);
+                    State.LTInt64Max(local, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
+                    State.SetLocalType(local, ((BoundExpression)v.InitialValue).TypeRefMask | oldtype);
                 }
                 else
                 {
-                    State.LTInt64Max(name, false);
-                    State.SetVar(name, TypeCtx.GetNullTypeMask() | oldtype);
+                    State.LTInt64Max(local, false);
+                    State.SetLocalType(local, TypeCtx.GetNullTypeMask() | oldtype);
+                    // TODO: explicitly State.SetLocalUninitialized() ?
                 }
             }
         }
@@ -242,9 +244,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             foreach (var v in x.Variables)
             {
-                State.SetVarKind(new VariableName(v.Name), VariableKind.GlobalVariable);
-                State.SetVar(v.Name, TypeRefMask.AnyType);
-                State.SetVarInitialized(v.Name);
+                var local = State.GetLocalHandle(v.Name);
+                State.SetVarKind(local, VariableKind.GlobalVariable);
+                State.SetLocalType(local, TypeRefMask.AnyType);
             }
         }
 
@@ -326,16 +328,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x.Name.IsDirect)
             {
                 // direct variable access:
-                var name = x.Name.NameValue.Value;
+                var local = State.GetLocalHandle(x.Name.NameValue.Value);
 
                 // bind variable place
-                x.Variable = Routine.LocalsTable.BindVariable(x.Name.NameValue, State.GetVarKind(x.Name.NameValue));
+                x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local));
+
+                //
+                State.VisitLocal(local);
 
                 // update state
                 if (x.Access.IsRead)
                 {
-                    State.SetVarUsed(name);
-                    var vartype = State.GetVarType(name);
+                    var vartype = State.GetLocalType(local);
 
                     if (vartype.IsVoid || x.Variable.VariableKind == VariableKind.GlobalVariable)
                     {
@@ -349,7 +353,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         if (x.Access.IsReadRef)
                         {
-                            State.SetVarRef(name);
+                            State.MarkLocalByRef(local);
                             vartype.IsRef = true;
                         }
                         if (x.Access.EnsureObject && !TypeCtx.IsObject(vartype))
@@ -361,12 +365,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             vartype |= TypeCtx.GetArrayTypeMask();
                         }
 
-                        State.SetVarInitialized(name);
-                        State.SetVar(name, vartype);
+                        State.SetLocalType(local, vartype);
                     }
                     else
                     {
-                        if (State.MaybeVarUninitialized(name))
+                        if (!State.IsLocalSet(local))
                         {
                             x.MaybeUninitialized = (x.Variable.VariableKind != VariableKind.GlobalVariable && !vartype.IsRef);  // do not report as uninitialized if variable may be a reference or it is a (super)global variable
                             vartype |= TypeCtx.GetNullTypeMask();
@@ -380,16 +383,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     x.TypeRefMask = x.Access.WriteMask;
 
-                    if (x.Access.IsWriteRef || State.GetVarType(name).IsRef)    // <x> can be a referenced value
+                    if (x.Access.IsWriteRef || State.GetLocalType(local).IsRef)    // <x> can be a referenced value
                     {
-                        State.SetVarRef(name);
+                        State.MarkLocalByRef(local);
                         x.TypeRefMask = x.TypeRefMask.WithRefFlag;
                     }
 
                     //
-                    State.SetVarInitialized(name);
-                    State.SetVar(name, x.TypeRefMask);
-                    State.LTInt64Max(name, false);
+                    State.SetLocalType(local, x.TypeRefMask);
+                    State.LTInt64Max(local, false);
 
                     //
                     if (x.Variable.VariableKind == VariableKind.StaticVariable)
@@ -398,10 +400,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         var startBlock = Routine.ControlFlowGraph.Start;
                         var startState = startBlock.FlowState;
 
-                        var oldVar = startState.GetVarType(name);
+                        var oldVar = startState.GetLocalType(local);
                         if (oldVar != x.TypeRefMask)
                         {
-                            startState.SetVar(name, oldVar | x.TypeRefMask);
+                            startState.SetLocalType(local, oldVar | x.TypeRefMask);
                             this.Worklist.Enqueue(startBlock);
                         }
                     }
@@ -410,8 +412,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (x.Access.IsUnset)
                 {
                     x.TypeRefMask = TypeCtx.GetNullTypeMask();
-                    State.SetVar(name, x.TypeRefMask);
-                    State.LTInt64Max(name, false);
+                    State.SetLocalType(local, x.TypeRefMask);
+                    State.LTInt64Max(local, false);
                 }
             }
             else
@@ -435,8 +437,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (x.Access.IsWrite)
                 {
-                    State.SetAllInitialized();
-                    State.SetAllAnyType(x.Access.IsWriteRef);
+                    State.SetAllUnknown(x.Access.IsWriteRef);
                 }
 
                 if (x.Access.IsUnset)
@@ -923,7 +924,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var vartype = TypeCtx.GetTypeMask(x.AsType.TypeRef, true);
                     if (x.Operand.TypeRefMask.IsRef) vartype = vartype.WithRefFlag; // keep IsRef flag
 
-                    State.SetVar(vref.Name.NameValue.Value, vartype);
+                    State.SetLocalType(State.GetLocalHandle(vref.Name.NameValue.Value), vartype);
                 }
             }
 
@@ -999,10 +1000,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                     {
                                         if (refvar.Name.IsDirect)
                                         {
-                                            State.SetVar(refvar.Name.NameValue.Value, expectedparams[i].Type);
+                                            var local = State.GetLocalHandle(refvar.Name.NameValue.Value);
+                                            State.SetLocalType(local, expectedparams[i].Type);
                                             if (ep.IsAlias)
                                             {
-                                                State.SetVarRef(refvar.Name.NameValue.Value);
+                                                State.MarkLocalByRef(local);
                                             }
                                         }
                                         else

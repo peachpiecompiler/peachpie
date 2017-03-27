@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Devsense.PHP.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,35 +19,119 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         T/*!*/Merge(T/*!*/other);
 
+        #region Local Variable Handling
+
         /// <summary>
-        /// Updates variable information within this state.
+        /// Gets variable handle use for other variable operations.
         /// </summary>
-        void SetVar(string name, TypeRefMask type);
+        VariableHandle GetLocalHandle(string varname);
+
+        /// <summary>
+        /// Sets variable type in this state.
+        /// </summary>
+        /// <param name="handle">Variable handle.</param>
+        /// <param name="tmask">Variable type. If <c>void</c> or <c>uninitialized</c>, the variable is set as not initialized in this state.</param>
+        void SetLocalType(VariableHandle handle, TypeRefMask tmask);
 
         /// <summary>
         /// Gets type of variable at this state.
-        /// Variable is expected to be local, not a member of chained expression.
         /// </summary>
-        TypeRefMask GetVarType(string/*!*/name);
+        TypeRefMask GetLocalType(VariableHandle handle);
 
         /// <summary>
-        /// Marks variable as a reference.
+        /// Marks variable as being referenced.
         /// </summary>
-        void SetVarRef(string name);
+        void MarkLocalByRef(VariableHandle handle);
 
         /// <summary>
-        /// Marks variable as used.
+        /// Handles use of a local variable.
         /// </summary>
-        void SetVarUsed(string name);
+        void VisitLocal(VariableHandle handle);
 
         /// <summary>
-        /// Sets all variables as initialized at this state.
+        /// Sets all variables as initialized at this state and with a <c>mixed</c> type.
         /// </summary>
-        void SetAllInitialized();
+        void SetAllUnknown(bool maybeRef);
+
+        /// <summary>
+        /// Gets value indicating the variable is set in all code paths.
+        /// Gets also <c>true</c> if we don't known.
+        /// </summary>
+        bool IsLocalSet(VariableHandle handle);
+
+        #endregion
 
         /// <summary>
         /// Records return value type.
         /// </summary>
         void FlowThroughReturn(TypeRefMask type);
+    }
+
+    /// <summary>
+    /// Represents a variable in the routine context.
+    /// </summary>
+    public struct VariableHandle : IEquatable<VariableHandle>
+    {
+        /// <summary>
+        /// Valid indexes starts from <c>1</c>.
+        /// </summary>
+        int _index;
+
+        /// <summary>
+        /// The variable name.
+        /// </summary>
+        VariableName _name;
+
+        /// <summary>
+        /// Gets value indicating the handle is valid.
+        /// </summary>
+        public bool IsValid => (_index > 0);
+
+        /// <summary>
+        /// throws an exception if the handle is not valid.
+        /// </summary>
+        internal void ThrowIfInvalid()
+        {
+            if (!IsValid)
+            {
+                throw new ArgumentException();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets internal slot within the locals variable table starting from <c>0</c>.
+        /// </summary>
+        public int Slot
+        {
+            get { return _index - 1; }
+            set { _index = value + 1; }
+        }
+
+        /// <summary>
+        /// The variable name.
+        /// </summary>
+        public VariableName Name
+        {
+            get { return _name; }
+            internal set { _name = value; }
+        }
+
+        #region IEquatable<VariableHandle>
+
+        bool IEquatable<VariableHandle>.Equals(VariableHandle other)
+        {
+            return _index == other._index;
+        }
+
+        public override int GetHashCode() => _index * 2;
+
+        public override bool Equals(object obj) => obj is VariableHandle && ((VariableHandle)obj)._index == _index;
+
+        #endregion
+
+        /// <summary>
+        /// Implicitly converts the handle to an integer slot index.
+        /// </summary>
+        public static implicit operator int(VariableHandle handle) => handle.Slot;
     }
 }
