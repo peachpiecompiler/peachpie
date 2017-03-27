@@ -811,6 +811,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
+                    // TODO: unset of static local makes it regular local variable
+
                     // default(T)
                     cg.EmitLoadDefaultOfValueType(type);
                 }

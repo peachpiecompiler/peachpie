@@ -229,7 +229,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Accept((IPhpOperation)v.InitialValue);
 
                     State.LTInt64Max(local, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
-                    State.SetLocalType(local, ((BoundExpression)v.InitialValue).TypeRefMask | oldtype);
+                    State.SetLocalType(local, ((IPhpExpression)v.InitialValue).TypeRefMask | oldtype);
                 }
                 else
                 {
@@ -329,17 +329,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 // direct variable access:
                 var local = State.GetLocalHandle(x.Name.NameValue.Value);
+                var previoustype = State.GetLocalType(local);    // type of the variable in the previous state
 
                 // bind variable place
                 x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local));
-
+                
                 //
                 State.VisitLocal(local);
 
                 // update state
                 if (x.Access.IsRead)
                 {
-                    var vartype = State.GetLocalType(local);
+                    var vartype = previoustype;
 
                     if (vartype.IsVoid || x.Variable.VariableKind == VariableKind.GlobalVariable)
                     {
@@ -383,7 +384,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     x.TypeRefMask = x.Access.WriteMask;
 
-                    if (x.Access.IsWriteRef || State.GetLocalType(local).IsRef)    // <x> can be a referenced value
+                    if (x.Access.IsWriteRef || previoustype.IsRef)    // <x> can be a referenced value
                     {
                         State.MarkLocalByRef(local);
                         x.TypeRefMask = x.TypeRefMask.WithRefFlag;
@@ -392,21 +393,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     //
                     State.SetLocalType(local, x.TypeRefMask);
                     State.LTInt64Max(local, false);
-
-                    //
-                    if (x.Variable.VariableKind == VariableKind.StaticVariable)
-                    {
-                        // analysis has to be started over // TODO: start from the block which declares the static local variable
-                        var startBlock = Routine.ControlFlowGraph.Start;
-                        var startState = startBlock.FlowState;
-
-                        var oldVar = startState.GetLocalType(local);
-                        if (oldVar != x.TypeRefMask)
-                        {
-                            startState.SetLocalType(local, oldVar | x.TypeRefMask);
-                            this.Worklist.Enqueue(startBlock);
-                        }
-                    }
                 }
 
                 if (x.Access.IsUnset)
@@ -414,6 +400,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     x.TypeRefMask = TypeCtx.GetNullTypeMask();
                     State.SetLocalType(local, x.TypeRefMask);
                     State.LTInt64Max(local, false);
+                }
+
+                // static variable -> restart flow analysis with new possible initial state
+                if (x.Variable.VariableKind == VariableKind.StaticVariable && x.Access.MightChange)
+                {
+                    // analysis has to be started over
+                    var startBlock = Routine.ControlFlowGraph.Start;    // TODO: start from the block which declares the static local variable
+                    var startState = startBlock.FlowState;
+
+                    var oldtype = previoustype | x.TypeRefMask;
+                    if (oldtype != x.TypeRefMask)
+                    {
+                        startState.SetLocalType(local, oldtype);
+                        this.Worklist.Enqueue(startBlock);
+                    }
                 }
             }
             else

@@ -108,6 +108,21 @@ namespace Pchp.CodeAnalysis
             return CoreTypes.PhpValue;
         }
 
+        internal NamedTypeSymbol MergeNull(NamedTypeSymbol type)
+        {
+            if (type == null || type.SpecialType == SpecialType.System_Void)
+            {
+                return CoreTypes.Object;
+            }
+
+            if (type.IsValueType) // || IsAString(type) || type.IsOfType(CoreTypes.IPhpArray))
+            {
+                return CoreTypes.PhpValue;    // Nullable bool|long|double -> PhpValue
+            }
+
+            return type;
+        }
+
         /// <summary>
         /// Merges CLR type to be nullable.
         /// </summary>
@@ -482,26 +497,31 @@ namespace Pchp.CodeAnalysis
                 if (maybenull)
                 {
                     typeMask = typeCtx.WithoutNull(typeMask);
-                    if (typeMask.IsVoid)
-                    {
-                        return CoreTypes.Object;
-                    }
+                    Debug.Assert(!typeCtx.IsNull(typeMask));
                 }
-
-                Debug.Assert(!typeCtx.IsNull(typeMask));
 
                 //
+                NamedTypeSymbol result;
                 var types = typeCtx.GetTypes(typeMask);
-                Debug.Assert(types.Count != 0);
-
-                // determine best fitting CLR type based on defined PHP types hierarchy
-                var result = GetTypeFromTypeRef(types[0]);
-
-                for (int i = 1; i < types.Count; i++)
+                if (types.Count != 0)
                 {
-                    var tdesc = GetTypeFromTypeRef(types[i]);
-                    result = (NamedTypeSymbol)Merge(result, GetTypeFromTypeRef(types[i]));
+                    // determine best fitting CLR type based on defined PHP types hierarchy
+                    result = GetTypeFromTypeRef(types[0]);
+
+                    for (int i = 1; i < types.Count; i++)
+                    {
+                        var tdesc = GetTypeFromTypeRef(types[i]);
+                        result = (NamedTypeSymbol)Merge(result, GetTypeFromTypeRef(types[i]));
+                    }
                 }
+                else
+                {
+                    result = CoreTypes.Void;
+                }
+
+                result = maybenull ? MergeNull(result) : result;
+
+                Debug.Assert(result != null && result.SpecialType != SpecialType.System_Void);
 
                 //
                 return result;

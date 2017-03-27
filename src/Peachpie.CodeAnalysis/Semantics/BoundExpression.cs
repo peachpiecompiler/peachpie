@@ -173,6 +173,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool IsEnsure => (_flags & ~AccessMask.Read & (AccessMask.ReadRef | AccessMask.EnsureObject | AccessMask.EnsureArray)) != 0;
 
         /// <summary>
+        /// Gets value indicating the variable might be changed in context of the access.
+        /// </summary>
+        public bool MightChange => IsWrite || IsUnset || IsEnsure;
+
+        /// <summary>
         /// In case an alias will be written to the variable.
         /// </summary>
         public bool WriteRef => (_flags & AccessMask.WriteRef) == AccessMask.WriteRef;
