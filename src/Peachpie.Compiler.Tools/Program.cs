@@ -18,12 +18,8 @@ namespace Peachpie.NETCore.Compiler.Tools
         /// <param name="args">Arguments passed from <c>dotnet build</c>.</param>
         public static int Main(string[] args)
         {
-            string rspfile = CreateRspFile(args);
+            string rspfile = CreateRspFile(args, out string sdkdir);
 
-            string sdkdir = null;
-#if NET46
-            sdkdir = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
-#endif
             string libs = Environment.GetEnvironmentVariable("LIB") + @";C:\Windows\Microsoft.NET\assembly\GAC_MSIL";
 
             // compile
@@ -40,13 +36,14 @@ namespace Peachpie.NETCore.Compiler.Tools
         /// </summary>
         /// <param name="args">Original set of arguments.</param>
         /// <returns>New set of arguments.</returns>
-        static string CreateRspFile(string[] args)
+        static string CreateRspFile(string[] args, out string sdkdir)
         {
             var todo = new Queue<string>(args);
             var newargs = new List<string>();
             var sourcefiles = new List<string>();
 
             string tmpoutput = System.IO.Directory.GetCurrentDirectory(); // temp output to place new RSP file into
+            sdkdir = null;
 
             while (todo.Count != 0)
             {
@@ -96,6 +93,9 @@ namespace Peachpie.NETCore.Compiler.Tools
                                 break;
                             case "generate-xml-documentation":
                                 newargs.Add($"/doc");
+                                break;
+                            case "sdk-dir":
+                                sdkdir = opt.Value.Value;
                                 break;
                         }
 

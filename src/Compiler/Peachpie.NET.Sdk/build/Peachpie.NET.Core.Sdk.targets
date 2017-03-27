@@ -150,18 +150,30 @@
       <_FscTask_FscToolPath>$(FscToolPath)</_FscTask_FscToolPath>
       <_FscTask_DotnetFscCompilerPath></_FscTask_DotnetFscCompilerPath>
     </PropertyGroup>
-    
-    <FindInList List="@(ReferencePath)" ItemSpecToFind="dotnet-compile-php.dll" MatchFileNameOnly="true">
+
+    <PropertyGroup>
+      <CompilePhpSuffix Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' " >exe</CompilePhpSuffix>
+      <CompilePhpSuffix Condition=" '$(TargetFrameworkIdentifier)' != '.NETFramework' " >dll</CompilePhpSuffix>
+    </PropertyGroup>
+
+    <FindInList List="@(ReferencePath)" ItemSpecToFind="dotnet-compile-php.$(CompilePhpSuffix)" MatchFileNameOnly="true">
       <Output TaskParameter="ItemFound" ItemName="PhpCompilerReferencePath" />
     </FindInList>
 
     <PropertyGroup>
+      <!-- Always run the .NET Core version -->
+      <DotnetCompilePhpDll>%(PhpCompilerReferencePath.RootDir)%(PhpCompilerReferencePath.Directory)..\netcoreapp1.0\dotnet-compile-php.dll</DotnetCompilePhpDll>
       <!-- http://mattwarren.org/2016/07/04/How-the-dotnet-CLI-tooling-runs-your-code -->
-      <CompilePhp>dotnet exec --additionalprobingpath $(NuGetPackageRoot.TrimEnd('\')) @(PhpCompilerReferencePath)</CompilePhp>
+      <CompilePhp>dotnet exec --additionalprobingpath $(NuGetPackageRoot.TrimEnd('\')) $(DotnetCompilePhpDll)</CompilePhp>
       <TempOutputDir>%(IntermediateAssembly.RelativeDir)</TempOutputDir>
       <EmitEntryPoint>false</EmitEntryPoint>
       <EmitEntryPoint Condition=" '$(OutputType.ToLower())' == 'exe' ">true</EmitEntryPoint>
     </PropertyGroup>
+
+    <!-- If compiling for full .NET, MSBuild is expected to run on it (e.g. in Visual Studio) so that it can obtain the runtime directory -->
+    <GetFrameworkPath>
+      <Output TaskParameter="Path" PropertyName="NetFrameworkPath" />
+    </GetFrameworkPath>
 
     <ItemGroup>
       <RspLine Include="--temp-output:$(TempOutputDir)" />
@@ -173,6 +185,7 @@
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
       <RspLine Include="--pdb:$(PdbFile)" Condition=" '$(PdbFile)' != '' " />
       <RspLine Include="--target-framework:$(TargetFramework)" />
+      <RspLine Include="--sdk-dir:$(NetFrameworkPath)" Condition=" '$(NetFrameworkPath)' != '' " />
       <RspLine Include="@(ReferencePath->'--reference:%(FullPath)')" />
       <RspLine Include="@(Compile)" />
     </ItemGroup>
