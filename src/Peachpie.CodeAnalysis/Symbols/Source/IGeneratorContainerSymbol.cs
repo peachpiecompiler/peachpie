@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
+
+    // Replace with SynthesizedManager, not sure how it works
+    // Port lambda to use the same infrastructure as well
+
     //Could get merged with ILambdaContainerSymbol
     internal interface IGeneratorContainerSymbol
     {

@@ -363,12 +363,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal void Generate()
         {
             Debug.Assert(_routine != null && _routine.ControlFlowGraph != null);
-            if((_routine.Flags & RoutineFlags.IsGenerator) != RoutineFlags.IsGenerator)
+            if ((_routine.Flags & RoutineFlags.IsGenerator) != RoutineFlags.IsGenerator)
             {
                 GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
             }
             else
-            {
+            {   
+                //Is this the right place to branch? How should I start?
+
                 throw new NotImplementedException("IMPLEMENT");
             }
 

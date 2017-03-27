@@ -15,14 +15,18 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly NamedTypeSymbol _container;
         readonly FunctionDecl _syntax;
+        readonly bool _useThis;
 
         ParameterSymbol _lazyThisSymbol;
         FieldSymbol _lazyRoutineInfoField;    // internal static RoutineInfo !name;
 
-        public SourceGeneratorSymbol(FunctionDecl syntax, NamedTypeSymbol containing)
+        internal bool UseThis => _useThis;
+
+        public SourceGeneratorSymbol(FunctionDecl syntax, NamedTypeSymbol containing, bool useThis)
         {
             _container = containing;
             _syntax = syntax;
+            _useThis = useThis;
         }
 
         /// <summary>
@@ -33,6 +37,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (_lazyRoutineInfoField == null)
             {
+                // The last two parameters? @readonly and autoincrement?
+
                 _lazyRoutineInfoField = module.SynthesizedManager
                     .GetOrCreateSynthesizedField(_container, this.DeclaringCompilation.CoreTypes.RoutineInfo, $"[routine]{this.MetadataName}", Accessibility.Private, true, true, true);
             }
@@ -42,7 +48,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override IEnumerable<ParameterSymbol> BuildImplicitParams()
         {
-            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, "generator", 0);
+            int index = 0;
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, "generator", index++);
+
+            if (_useThis)
+            {
+                //Isn't the type being mere object going to be a problem?
+
+                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++);
+            }
         }
 
         protected override IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
@@ -52,16 +66,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IList<Statement> Statements => _syntax.Body.Statements;
 
-        public override ParameterSymbol ThisParameter
-        {
-            get
-            {
-                if (_lazyThisSymbol == null && this.HasThis)
-                    _lazyThisSymbol = new SpecialParameterSymbol(this, _container, SpecialParameterSymbol.ThisName, -1);
-
-                return _lazyThisSymbol;
-            }
-        }
+        public override ParameterSymbol ThisParameter => null;
 
         internal override Signature SyntaxSignature
         {
@@ -69,6 +74,23 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 return new Signature(false, new List<FormalParam>());
 
+                // Don't have AST corresponding to signature because the signature is synthesized.
+                // Maybe choose different parent object (SynthesizedMethodSymbol)?
+                // + Doesn't have these problems
+                // - The method isn't completely synthesized, only it's signature 
+                //   the inside is merely rewritten.
+
+                throw new NotImplementedException("IMPLEMENT");
+            }
+        }
+
+
+        internal override TypeRef SyntaxReturnType
+        {
+            // See Signature SyntaxSignature
+
+            get
+            {
                 throw new NotImplementedException("IMPLEMENT");
             }
         }
@@ -87,9 +109,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<Location> Locations
         {
+            // See Signature SyntaxSignature
+            // Might not be applicable as I rewrite the inside of the method
             get
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("IMPLEMENT");
             }
         }
 
@@ -103,7 +127,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Accessibility DeclaredAccessibility => Accessibility.Private;
 
-        public override bool IsStatic => false;
+        public override bool IsStatic => true;
 
         public override bool IsAbstract => false;
 
@@ -111,12 +135,5 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_syntax.ContainingSourceUnit, _container as SourceTypeSymbol);
 
-        internal override TypeRef SyntaxReturnType
-        {
-            get
-            {
-                throw new NotImplementedException("IMPLEMENT");
-            }
-        }
     }
 }

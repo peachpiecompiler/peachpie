@@ -191,7 +191,10 @@ namespace Pchp.CodeAnalysis
 
         internal void EmitSynthesized()
         {
-            // TODO: Visit every symbol with Synthesize() method and call it instead of following
+            // Note: not sure what it means
+            // call all SourceRoutineSymbol.Synthesize instead: this.WalkMethods(f => f.Synthesize(...))
+
+            // TODO: Visit egvery symbol with Synthesize() method and call it instead of followin
 
             // ghost stubs
             this.WalkMethods(f => f.SynthesizeGhostStubs(_moduleBuilder, _diagnostics));

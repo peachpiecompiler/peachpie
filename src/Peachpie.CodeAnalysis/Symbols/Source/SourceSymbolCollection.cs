@@ -108,7 +108,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 var container = _containerStack.Peek();
                 var enclosingFunctionDecl = FindParentLangElement<FunctionDecl>(x);
 
-                var generatorSymbol = new SourceGeneratorSymbol(enclosingFunctionDecl, container);
+                // Need to know whether the SourceGeneratorSymbol will use this or not i.e
+                // whether the generator method does (or can -> is not static) access this.
+
+                var generatorSymbol = new SourceGeneratorSymbol(enclosingFunctionDecl, container, false);
 
                 Debug.Assert(container is IGeneratorContainerSymbol);
                 ((IGeneratorContainerSymbol)container).AddGenerator(generatorSymbol);

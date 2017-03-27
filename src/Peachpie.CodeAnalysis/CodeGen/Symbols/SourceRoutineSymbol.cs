@@ -280,6 +280,8 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal void EmitInit(Emit.PEModuleBuilder module)
         {
+            //Need explanation of how to emit, what does SourceLambdaSymbol emits, etc.
+
             throw new NotImplementedException("IMPLEMENT");
         }
     }
