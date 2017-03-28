@@ -37,6 +37,12 @@ namespace Pchp.CodeAnalysis.Symbols
             // for non virtual methods:
             if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
             {
+                // if the method is generator and can't be overriden then the return type must be generator
+                if((routine.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+                {
+                    return compilation.CoreTypes.Generator;
+                }
+
                 // /** @return */
                 var typeCtx = routine.TypeRefContext;
                 if (routine.PHPDocBlock != null && (compilation.Options.PhpDocTypes & PhpDocTypes.ReturnTypes) != 0)
