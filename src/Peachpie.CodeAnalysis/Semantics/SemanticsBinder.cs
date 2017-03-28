@@ -160,6 +160,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
             if (expr is AST.LambdaFunctionExpr) return BindLambda((AST.LambdaFunctionExpr)expr).WithAccess(access);
+            if (expr is AST.EvalEx) return BindEval((AST.EvalEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -168,6 +169,11 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             // Syntax is bound by caller, needed to resolve lambda symbol in analysis
             return new BoundLambda(BindLambdaUseArguments(expr.UseParams));
+        }
+
+        BoundExpression BindEval(AST.EvalEx expr)
+        {
+            return new BoundEvalEx(BindExpression(expr.Code));
         }
 
         BoundExpression BindConstUse(AST.ConstantUse x)

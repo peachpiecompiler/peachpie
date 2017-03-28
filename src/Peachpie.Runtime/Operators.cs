@@ -348,7 +348,7 @@ namespace Pchp.Core
             var tinfo = instance.GetPhpTypeInfo();
 
             // 1. instance property
-            
+
             // 2. runtime property
 
             // 3. __isset
@@ -488,7 +488,7 @@ namespace Pchp.Core
         {
             readonly IEnumerator<KeyValuePair<IntStringKey, PhpValue>> _enumerator;
             bool _valid;
-            
+
             public PhpFieldsEnumerator(object obj, RuntimeTypeHandle caller)
             {
                 Debug.Assert(obj != null);
@@ -693,6 +693,36 @@ namespace Pchp.Core
         /// Gets enumerator object for given value.
         /// </summary>
         public static IPhpEnumerator GetForeachEnumerator(PhpValue value, bool aliasedValues, RuntimeTypeHandle caller) => value.GetForeachEnumerator(aliasedValues, caller);
+
+        #endregion
+
+        #region Dynamic
+
+        /// <summary>
+        /// Performs dynamic code evaluation in given context.
+        /// </summary>
+        /// <returns>Evaluated code return value.</returns>
+        public static PhpValue Eval(Context ctx, PhpArray locals, object @this, string code, string currentpath, int line, int column)
+        {
+            Debug.Assert(ctx != null);
+            Debug.Assert(locals != null);
+
+            if (string.IsNullOrEmpty(code))
+            {
+                return PhpValue.Null;
+            }
+
+            var script = ctx.ScriptingProvider.CreateScript(
+                new Context.ScriptOptions()
+                {
+                    Location = new Location(currentpath, line, column),
+                    EmitDebugInformation = false
+                },
+                code);
+
+            //
+            return script.Evaluate(ctx, locals, @this);
+        }
 
         #endregion
     }

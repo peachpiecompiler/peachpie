@@ -2646,6 +2646,32 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundEvalEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            Debug.Assert(cg.LocalsPlaceOpt != null);
+
+            // get location of evaluated code
+            var filepath = cg.Routine.ContainingFile.RelativeFilePath;
+            int line, col;
+            var unit = this.PhpSyntax.ContainingSourceUnit;
+            unit.GetLineColumnFromPosition(this.CodeExpression.PhpSyntax.Span.Start, out line, out col);
+
+            // Template: Operators.Eval(ctx, locals, @this, code, currentpath, line, column)
+            cg.EmitLoadContext();
+            cg.LocalsPlaceOpt.EmitLoad(cg.Builder);
+            cg.EmitThisOrNull();
+            cg.EmitConvert(this.CodeExpression, cg.CoreTypes.String);   // (string)code
+            cg.Builder.EmitStringConstant(filepath);    // currentpath
+            cg.Builder.EmitIntConstant(line);           // line
+            cg.Builder.EmitIntConstant(col);            // column
+
+            // Eval( ... )
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Eval_Context_PhpArray_object_string_string_int_int);
+        }
+    }
+
     partial class BoundExitEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

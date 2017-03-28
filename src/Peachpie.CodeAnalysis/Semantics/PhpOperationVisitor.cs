@@ -180,6 +180,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         }
 
+        public virtual void VisitEval(BoundEvalEx x)
+        {
+            Accept(x.CodeExpression);
+        }
+
         #endregion
 
         #region Statements

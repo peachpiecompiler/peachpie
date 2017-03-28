@@ -1685,6 +1685,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Accept(x.Thrown);
         }
 
+        public override void VisitEval(BoundEvalEx x)
+        {
+            base.VisitEval(x);
+
+            //
+            Routine.Flags |= RoutineFlags.HasEval;
+            State.SetAllUnknown(true);
+
+            //
+            x.TypeRefMask = TypeRefMask.AnyType;
+        }
+
         #endregion
     }
 }

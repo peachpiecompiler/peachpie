@@ -734,6 +734,29 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
+    #region BoundEvalEx
+
+    public partial class BoundEvalEx : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        public BoundExpression CodeExpression { get; private set; }
+
+        public BoundEvalEx(BoundExpression code)
+        {
+            Debug.Assert(code != null);
+            this.CodeExpression = code;
+        }
+
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitEval(this);
+
+        public override void Accept(OperationVisitor visitor) => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.DefaultVisit(this, argument);
+    }
+
+    #endregion
+
     #region BoundLiteral
 
     public partial class BoundLiteral : BoundExpression, ILiteralExpression

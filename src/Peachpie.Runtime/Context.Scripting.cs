@@ -66,8 +66,26 @@ namespace Pchp.Core
         /// Gets dynamic scripting provider.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public virtual IScriptingProvider ScriptingProvider => _scriptingProvider ?? new UnsupportedScriptingProvider();
-        //TODO: [Import(typeof(IScriptingProvider)]
+        public IScriptingProvider ScriptingProvider => _scriptingProvider ?? CreateScriptingProvider();
         IScriptingProvider _scriptingProvider;
+
+        IScriptingProvider CreateScriptingProvider()
+        {
+            lock (typeof(IScriptingProvider))
+            {
+                if (_scriptingProvider == null) // double checked lock
+                {
+                    _scriptingProvider = CreateScriptingProviderNoLock();
+                }
+            }
+
+            return _scriptingProvider;
+        }
+
+        protected virtual IScriptingProvider CreateScriptingProviderNoLock()
+        {
+            //TODO: [Import(typeof(IScriptingProvider)]
+            return new UnsupportedScriptingProvider();
+        }
     }
 }
