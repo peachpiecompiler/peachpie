@@ -168,6 +168,19 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        private void DiagnoseTypes()
+        {
+            this.WalkTypes(DiagnoseType);
+        }
+
+        private void DiagnoseType(SourceTypeSymbol type)
+        {
+            // resolves base types in here
+            var btype = type.BaseType;
+
+            // ...
+        }
+
         internal void EmitMethodBodies()
         {
             Debug.Assert(_moduleBuilder != null);
@@ -247,19 +260,19 @@ namespace Pchp.CodeAnalysis
             var diagnostics = new DiagnosticBag();
             var compiler = new SourceCompiler(compilation, null, true, diagnostics, CancellationToken.None);
 
-            // 1.Bind Syntax & Symbols to Operations (CFG)
-            //   a.equivalent to building CFG
-            //   b.most generic types(and empty type - mask)
+            // 1. Bind Syntax & Symbols to Operations (CFG)
+            //   a. construct CFG, bind AST to Operation
+            //   b. declare table of local variables
             compiler.WalkMethods(compiler.EnqueueRoutine);
             compiler.WalkTypes(compiler.EnqueueFieldsInitializer);
 
-            // 2.Analyze Operations
-            //   a.declared variables
-            //   b.build global variables/constants table
-            //   c.type analysis(converge type - mask), resolve symbols
-            //   d.lower semantics, update bound tree, repeat
+            // 2. Analyze Operations
+            //   a. type analysis (converge type - mask), resolve symbols
+            //   b. lower semantics, update bound tree, repeat
+            //   c. collect diagnostics
             compiler.AnalyzeMethods();
             compiler.DiagnoseMethods();
+            compiler.DiagnoseTypes();
 
             //
             return diagnostics.AsEnumerable();

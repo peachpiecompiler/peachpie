@@ -145,7 +145,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // resolve base .ctor that has to be called
             var btype = type.BaseType;
-            Debug.Assert(!(btype is ErrorTypeSymbol));
             var fieldsonlyctor = (MethodSymbol)(btype as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly;   // base..ctor() to be called if provided
             var basectors = (fieldsonlyctor != null)
                 ? ImmutableArray.Create(fieldsonlyctor)
@@ -160,8 +159,9 @@ namespace Pchp.CodeAnalysis.Symbols
             var basector = ResolveBaseCtor(givenparams, basectors);
             if (basector == null)
             {
-                throw new NotImplementedException("Base constructor cannot be resolved. Base class either does not exist or constructor parameters do not match.");
+                // type.BaseType was not resolved, reported by type.BaseType
                 // TODO: Err & ErrorMethodSymbol
+                yield break;
             }
 
             // create .ctor(s)
