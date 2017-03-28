@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Pchp.Core.std
 {
-    internal delegate void GeneratorStateMachine(Context ctx, Generator gen);
+    internal delegate void GeneratorStateMachineDelegate(Context ctx, object @this, Generator gen);
 
     [PhpType("Generator")]
     public class Generator : Iterator, IDisposable
@@ -22,7 +22,12 @@ namespace Pchp.Core.std
         /// <summary>
         /// Delegate to a static method implementing the state machine itself. 
         /// </summary>
-        readonly internal GeneratorStateMachine _stateMachineMethod;
+        readonly internal GeneratorStateMachineDelegate _stateMachineMethod;
+
+        /// <summary>
+        /// Bounded this for non-static enumerator methods, null for static ones.
+        /// </summary>
+        readonly internal object _this;
       
         /// <summary>
         /// Current state of the state machine implemented by <see cref="_stateMachineMethod"/>
@@ -58,7 +63,7 @@ namespace Pchp.Core.std
         #endregion
 
         #region Constructors
-        internal Generator(Context ctx, GeneratorStateMachine method, PhpArray locals)
+        internal Generator(Context ctx, object @this, GeneratorStateMachineDelegate method, PhpArray locals)
         {
             Debug.Assert(ctx != null);
             Debug.Assert(method != null);
@@ -67,6 +72,7 @@ namespace Pchp.Core.std
             _stateMachineMethod = method;
             _ctx = ctx;
             _locals = locals;
+            _this = @this;
         }
         #endregion
 
@@ -90,7 +96,7 @@ namespace Pchp.Core.std
             checkIfMovingFromFirstYeild();
             checkIfRunToFirstYieldIfNotRun();
 
-            _stateMachineMethod.Invoke(_ctx, this);
+            _stateMachineMethod.Invoke(_ctx, _this, gen: this);
 
             if (!_userKeyReturned) { _currKey = PhpValue.Create(_nextNumericalKey); }
             if(_currKey.IsInteger()) { _nextNumericalKey = (_currKey.ToLong() + 1); } 

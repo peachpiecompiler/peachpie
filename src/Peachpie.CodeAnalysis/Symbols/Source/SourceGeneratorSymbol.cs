@@ -16,28 +16,28 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed partial class SourceGeneratorSymbol : SynthesizedMethodSymbol
     {
-        public SourceGeneratorSymbol(NamedTypeSymbol containingType, bool useThis)
+        public SourceGeneratorSymbol(NamedTypeSymbol containingType)
             : base(containingType, "generator@function", 
                   isstatic: true, isvirtual: false, 
                   returnType: containingType.DeclaringCompilation.CoreTypes.Void, ps: null )
         {
             //Need to postpone settings the params because I can't access 'this' in base constructor call
-            var parameters = getParams(useThis);
+            var parameters = getParams();
             base.SetParameters(null);
         }
 
         /// <summary>
-        ///  Parameters for SourceGeneratorSymbol method are defined by <see cref="Core.std.GeneratorStateMachine"/>
+        ///  Parameters for SourceGeneratorSymbol method are defined by <see cref="Core.std.GeneratorStateMachineDelegate"/>
         /// </summary>
-        IEnumerable<ParameterSymbol> getParams(bool useThis)
+        IEnumerable<ParameterSymbol> getParams()
         {
             int index = 0;
-            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, "generator", index++);
 
-            if (useThis)
-            {
-                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++);
-            }
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++);
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Generator, "generator", index++);
+
+            
         }
 
     }
