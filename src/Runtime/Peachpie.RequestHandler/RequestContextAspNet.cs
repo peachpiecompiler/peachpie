@@ -276,7 +276,7 @@ namespace Pchp.Core
             if (script.IsValid)
             {
                 this.MainScriptFile = script;
-                script.MainMethod(this, this.Globals, null);
+                script.Evaluate(this, this.Globals, null);
                 return true;
             }
             else

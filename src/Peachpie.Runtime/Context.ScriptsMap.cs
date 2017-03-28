@@ -39,7 +39,7 @@ namespace Pchp.Core
         /// Script descriptor.
         /// </summary>
         [DebuggerDisplay("{Index}: {Path,nq}")]
-        public struct ScriptInfo
+        public struct ScriptInfo : IScript
         {
             /// <summary>
             /// Undefined script.
@@ -58,7 +58,7 @@ namespace Pchp.Core
 
             readonly public int Index;
             readonly public string Path;
-            readonly public MainDelegate MainMethod;
+            readonly MainDelegate MainMethod;
 
             static MainDelegate CreateMain(TypeInfo script)
             {
@@ -70,6 +70,15 @@ namespace Pchp.Core
                 Debug.Assert(mainmethod.ReturnType == typeof(PhpValue));
 
                 return (MainDelegate)mainmethod.CreateDelegate(typeof(MainDelegate));
+            }
+
+            /// <summary>
+            /// Runs the script.
+            /// </summary>
+            public PhpValue Evaluate(Context ctx, PhpArray locals, object @this)
+            {
+                if (!IsValid) throw new InvalidOperationException();
+                return this.MainMethod(ctx, locals, @this);
             }
 
             internal ScriptInfo(int index, string path, TypeInfo script)

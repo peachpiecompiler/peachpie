@@ -279,7 +279,7 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    return script.MainMethod(this, locals, @this);
+                    return script.Evaluate(this, locals, @this);
                 }
             }
             else

@@ -135,13 +135,13 @@ namespace Peachpie.Web
             {
                 if (Debugger.IsAttached)
                 {
-                    script.MainMethod(this, this.Globals, null);
+                    script.Evaluate(this, this.Globals, null);
                 }
                 else
                 {
                     using (_requestTimer = new Timer(RequestTimeout, null, this.Configuration.Core.ExecutionTimeout, Timeout.Infinite))
                     {
-                        script.MainMethod(this, this.Globals, null);
+                        script.Evaluate(this, this.Globals, null);
                     }
                 }
             }
