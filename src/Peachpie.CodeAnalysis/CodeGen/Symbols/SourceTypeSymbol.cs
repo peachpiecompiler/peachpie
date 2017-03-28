@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 // note, their initializers do not have Context available, since they are not bound to a Context
 
                 var cctor = module.GetStaticCtorBuilder(this);
-                var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, null, null);
+                var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, null);
 
                 foreach (var f in sflds)
                 {
@@ -98,7 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             module.SetMethodBody(invoke, MethodGenerator.GenerateMethodBody(module, invoke, il =>
             {
-                var cg = new CodeGenerator(il, module, diagnostics, OptimizationLevel.Release, false, this, new ParamPlace(invoke.Parameters[0]), new ArgPlace(this, 0));
+                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(invoke.Parameters[0]), new ArgPlace(this, 0));
 
                 var argsplace = new ParamPlace(invoke.Parameters[1]);
                 var args_element = ((ArrayTypeSymbol)argsplace.TypeOpt).ElementType;
@@ -176,7 +176,7 @@ namespace Pchp.CodeAnalysis.Symbols
             module.SetMethodBody(tophpvalue, MethodGenerator.GenerateMethodBody(module, tophpvalue, il =>
             {
                 var thisPlace = new ArgPlace(this, 0);
-                var cg = new CodeGenerator(il, module, diagnostics, OptimizationLevel.Release, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
 
                 // return PhpValue.FromClass(this)
                 cg.EmitThis();
@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     Debug.Assert(SpecialParameterSymbol.IsContextParameter(ctor.Parameters[0]));
 
-                    var cg = new CodeGenerator(il, module, diagnostics, OptimizationLevel.Release, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0));
+                    var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0));
 
                     Debug.Assert(ctor.BaseCtor != null);
 
@@ -261,7 +261,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 module.SetMethodBody(tostring, MethodGenerator.GenerateMethodBody(module, tostring, il =>
                 {
                     var thisPlace = new ArgPlace(this, 0);
-                    var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), OptimizationLevel.Release, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+                    var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
 
                     if (__tostring != null)
                     {
