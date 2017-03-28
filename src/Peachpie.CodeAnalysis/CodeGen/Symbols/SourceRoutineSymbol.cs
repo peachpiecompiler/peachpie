@@ -126,20 +126,56 @@ namespace Pchp.CodeAnalysis.Symbols
             module.SetMethodBody(ghost, body);
         }
 
-        public virtual void Generate(CodeGenerator generator)
+        public virtual void Generate(CodeGenerator cg)
         {
             if ((this.Flags & RoutineFlags.IsGenerator) != RoutineFlags.IsGenerator)
             {
-                generator.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
+                //Proceed with normal method generation
+                cg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
             }
             else
-            { 
-                //Create SourceGeneratorSymbol, emit original method, emit SGS, ...
+            {
+                var genSymbol = new SourceGeneratorSymbol(this.ContainingType);
+                cg.Module.SynthesizedManager.AddMethod(this.ContainingType, genSymbol); //Add metadata to the assembly
+
+                //Prepares and starts generation of state machine's next method represented by SourceGeneratorSymbol
+                var genMethodBody = MethodGenerator.GenerateMethodBody(cg.Module, genSymbol, (_il) =>
+                {
+                    generateStateMachinesNextMethod(cg, _il, genSymbol);
+                }
+                , null, cg.Diagnostics, cg.EmitPdbSequencePoints);
+
+
+                cg.Module.SetMethodBody(genSymbol, genMethodBody);
+
+                throw new NotImplementedException("Emit generator initialization & return");
+
+                var il = cg.Builder;
+                il.EmitNullConstant();
+                il.EmitRet(false);
             }
         }
 
-
-
+        //Initialized a new CodeGenerator for generation of SourceGeneratorSymbol (state machine's next method)
+        private void generateStateMachinesNextMethod(CodeGenerator cg, Microsoft.CodeAnalysis.CodeGen.ILBuilder _il, SourceGeneratorSymbol genSymbol)
+        {
+            //Refactor parameters references to proper fields
+            using (var stateMachineNextCg = new CodeGenerator(
+                _il, cg.Module, cg.Diagnostics,
+                cg.DeclaringCompilation.Options.OptimizationLevel, 
+                cg.EmitPdbSequencePoints, 
+                this.ContainingType,
+                contextPlace: new ParamPlace(genSymbol.Parameters[0]),
+                thisPlace: new ParamPlace(genSymbol.Parameters[1]),
+                routine: this,
+                locals: new FieldPlace(
+                    new ParamPlace(genSymbol.Parameters[2]),
+                    this.DeclaringCompilation.CoreTypes.Generator.Field("_locals").Symbol)
+                    ))
+            {
+                stateMachineNextCg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
+            }
+        }
     }
 
     partial class SourceGlobalMethodSymbol
