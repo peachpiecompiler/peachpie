@@ -715,6 +715,7 @@ namespace Pchp.Core
             var script = ctx.ScriptingProvider.CreateScript(
                 new Context.ScriptOptions()
                 {
+                    Context = ctx,
                     Location = new Location(currentpath, line, column),
                     EmitDebugInformation = false
                 },

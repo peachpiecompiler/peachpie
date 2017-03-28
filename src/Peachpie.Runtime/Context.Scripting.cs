@@ -13,6 +13,11 @@ namespace Pchp.Core
         public sealed class ScriptOptions
         {
             /// <summary>
+            /// Script context.
+            /// </summary>
+            public Context Context { get; set; }
+
+            /// <summary>
             /// The path and location within the script source if it originated from a file, empty otherwise.
             /// </summary>
             public Location Location;
@@ -20,7 +25,7 @@ namespace Pchp.Core
             /// <summary>
             /// Specifies whether debugging symbols should be emitted.
             /// </summary>
-            public bool EmitDebugInformation;
+            public bool EmitDebugInformation { get; set; }
         }
 
         /// <summary>
@@ -66,8 +71,8 @@ namespace Pchp.Core
         /// Gets dynamic scripting provider.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public IScriptingProvider ScriptingProvider => _scriptingProvider ?? CreateScriptingProvider();
-        IScriptingProvider _scriptingProvider;
+        public virtual IScriptingProvider ScriptingProvider => _scriptingProvider ?? CreateScriptingProvider();
+        static IScriptingProvider _scriptingProvider;
 
         IScriptingProvider CreateScriptingProvider()
         {
@@ -75,17 +80,12 @@ namespace Pchp.Core
             {
                 if (_scriptingProvider == null) // double checked lock
                 {
-                    _scriptingProvider = CreateScriptingProviderNoLock();
+                    //TODO: [Import(typeof(IScriptingProvider)]
+                    _scriptingProvider = new UnsupportedScriptingProvider();
                 }
             }
 
             return _scriptingProvider;
-        }
-
-        protected virtual IScriptingProvider CreateScriptingProviderNoLock()
-        {
-            //TODO: [Import(typeof(IScriptingProvider)]
-            return new UnsupportedScriptingProvider();
         }
     }
 }
