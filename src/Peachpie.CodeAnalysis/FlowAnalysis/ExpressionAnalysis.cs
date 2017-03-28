@@ -1530,22 +1530,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region VisitYield
         public override void VisitYield(BoundYieldEx x)
         {
-            Debug.Assert(Routine.ContainingType is IGeneratorContainerSymbol);
-            var container = (IGeneratorContainerSymbol)Routine.ContainingType;
-
-            // ?Accept x.YieldedKey and x.YieldedValue the same way as with PhpOperationVisitor.cs 
-
-            // Might want to move the .ResolveGeneratorSymbol & linking with BoundYieldEx to SemanticsBinder
-
-            var symbol = container.ResolveGeneratorSymbol((YieldEx)x.PhpSyntax);
-            x.SourceGeneratorSymbol = symbol;
-
-            // Return type analysis has to traverse the whole sematic tree so 
-            // why can't it spot the BoundYieldEx itself and change the ret type
-            // itself?
 
             //Might want to move it to SemanticsBinder on BindYieldEx(...)
             this.Routine.Flags |= RoutineFlags.IsGenerator;
+            base.VisitYield(x);
         }
         #endregion
 

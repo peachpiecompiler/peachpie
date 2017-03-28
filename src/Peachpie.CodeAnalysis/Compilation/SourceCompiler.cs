@@ -190,9 +190,7 @@ namespace Pchp.CodeAnalysis
         }
 
         internal void EmitSynthesized()
-        {
-            // Note: not sure what it means
-            // call all SourceRoutineSymbol.Synthesize instead: this.WalkMethods(f => f.Synthesize(...))
+        {       
 
             // TODO: Visit egvery symbol with Synthesize() method and call it instead of followin
 
@@ -204,9 +202,6 @@ namespace Pchp.CodeAnalysis
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
             _compilation.SourceSymbolCollection.GetLambdas()
-                .ForEach(f => f.EmitInit(_moduleBuilder));
-
-            _compilation.SourceSymbolCollection.GetGenerators()
                 .ForEach(f => f.EmitInit(_moduleBuilder));
 
             // __statics.Init, .phpnew, .ctor

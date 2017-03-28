@@ -19,7 +19,7 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         object [Main](){ ... }
     ///     }
     /// }</remarks>
-    sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol, IGeneratorContainerSymbol
+    sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol
     {
         readonly PhpCompilation _compilation;
         readonly PhpSyntaxTree _syntaxTree;
@@ -90,22 +90,6 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (expr == null) throw new ArgumentNullException(nameof(expr));
             return _lazyMembers.OfType<SourceLambdaSymbol>().First(s => s.Syntax == expr);
-        }
-
-        IEnumerable<SourceGeneratorSymbol> IGeneratorContainerSymbol.Generators => _lazyMembers.OfType<SourceGeneratorSymbol>();
-
-        void IGeneratorContainerSymbol.AddGenerator(SourceGeneratorSymbol routine)
-        {
-            Contract.ThrowIfNull(routine);
-            _lazyMembers.Add(routine);
-        }
-
-        SourceGeneratorSymbol IGeneratorContainerSymbol.ResolveGeneratorSymbol(YieldEx expr)
-        {
-            if (expr == null) throw new ArgumentNullException(nameof(expr));
-            var enclosingFunctionDecl = FindParentLangElement<FunctionDecl>(expr);
-
-            return _lazyMembers.OfType<SourceGeneratorSymbol>().First(s => s.Syntax == enclosingFunctionDecl);
         }
 
         internal string RelativeFilePath =>
