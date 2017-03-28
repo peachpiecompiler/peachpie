@@ -188,7 +188,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         /// <summary>
         /// Place referring array of locals variables.
-        /// This is valid for global scope or local scope with unoptimized locals.
+        /// This is valid for global scope, local scope with unoptimized locals and generators.
         /// </summary>
         readonly IPlace _localsPlaceOpt;
 
@@ -276,7 +276,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         #region Construction
 
         public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
-            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null)
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null)
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
@@ -286,6 +286,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _optimizations = optimizations;
             _diagnostics = diagnostics;
 
+            _localsPlaceOpt = locals;
             _emmittedTag = 0;
 
             _contextPlace = contextPlace;
@@ -308,12 +309,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Used for emitting in a context of a different routine (parameter initializer).
         /// </summary>
         public CodeGenerator(CodeGenerator cg, SourceRoutineSymbol routine)
-            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine)
+            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt)
         {
             Contract.ThrowIfNull(routine);
-
             _emmittedTag = cg._emmittedTag;
-            _localsPlaceOpt = cg._localsPlaceOpt;
         }
 
         public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
@@ -363,17 +362,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal void Generate()
         {
             Debug.Assert(_routine != null && _routine.ControlFlowGraph != null);
-            if ((_routine.Flags & RoutineFlags.IsGenerator) != RoutineFlags.IsGenerator)
-            {
-                GenerateScope(_routine.ControlFlowGraph.Start, int.MaxValue);
-            }
-            else
-            {   
-                //Is this the right place to branch? How should I start?
-
-                throw new NotImplementedException("IMPLEMENT");
-            }
-
+            _routine.Generate(this);
         }
 
         internal void GenerateScope(BoundBlock block, int to)

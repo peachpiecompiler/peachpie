@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Emit;
 using System.Reflection.Metadata;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -124,6 +125,21 @@ namespace Pchp.CodeAnalysis.Symbols
 
             module.SetMethodBody(ghost, body);
         }
+
+        public virtual void Generate(CodeGenerator generator)
+        {
+            if ((this.Flags & RoutineFlags.IsGenerator) != RoutineFlags.IsGenerator)
+            {
+                generator.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
+            }
+            else
+            { 
+                //Create SourceGeneratorSymbol, emit original method, emit SGS, ...
+            }
+        }
+
+
+
     }
 
     partial class SourceGlobalMethodSymbol
@@ -253,7 +269,7 @@ namespace Pchp.CodeAnalysis.Symbols
             cctor.EmitStringConstant(this.QualifiedName.ToString());
             cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
             cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
-
+            
             field.EmitStore(cctor);
         }
     }
@@ -280,9 +296,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal void EmitInit(Emit.PEModuleBuilder module)
         {
-            //Need explanation of how to emit, what does SourceLambdaSymbol emits, etc.
-
-            throw new NotImplementedException("IMPLEMENT");
+            //Don't  need any initial emit
         }
     }
 };
