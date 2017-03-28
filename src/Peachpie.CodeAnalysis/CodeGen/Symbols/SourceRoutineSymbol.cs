@@ -114,7 +114,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var body = MethodGenerator.GenerateMethodBody(module, ghost,
                 (il) =>
                 {
-                    var cg = new CodeGenerator(il, module, diagnostic, OptimizationLevel.Release, false, this.ContainingType, this.GetContextPlace(), this.GetThisPlace());
+                    var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, this.ContainingType, this.GetContextPlace(), this.GetThisPlace());
 
                     // return (T){routine}(p0, ..., pN);
                     cg.EmitConvert(cg.EmitThisCall(this, ghost), 0, ghost.ReturnType);
@@ -232,7 +232,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             module.SetMethodBody(this, MethodGenerator.GenerateMethodBody(module, this, (il) =>
             {
-                var cg = new CodeGenerator(this, il, module, diagnostic, OptimizationLevel.Release, false);
+                var cg = new CodeGenerator(this, il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false);
 
                 // Template: return default(T)
                 cg.EmitRetDefault();
