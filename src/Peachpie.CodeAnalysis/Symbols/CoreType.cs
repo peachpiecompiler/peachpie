@@ -112,7 +112,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IntStringKey, PhpHashtable,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
-            stdClass, ArrayAccess;
+            stdClass, ArrayAccess, Generator;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -166,6 +166,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");
+
+            Generator = CreateFromFullName("Pchp.Core.std.Generator");
         }
 
         #region Table of types
