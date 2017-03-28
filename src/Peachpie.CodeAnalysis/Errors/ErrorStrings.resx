@@ -127,7 +127,7 @@
     <value>Metadata file '{0}' could not be found</value>
   </data>
   <data name="ERR_TypeNameCannotBeResolved" xml:space="preserve">
-    <value>Type name '{1}' could not be resolved. It is either not defined, defined conditionally or ambiguous declarations were found.</value>
+    <value>Type name '{0}' could not be resolved. It is either not defined, defined conditionally or ambiguous declarations were found.</value>
   </data>
   <data name="WRN_UndefinedFunctionCall" xml:space="preserve">
     <value>Call to undefined function: '{0}'</value>
