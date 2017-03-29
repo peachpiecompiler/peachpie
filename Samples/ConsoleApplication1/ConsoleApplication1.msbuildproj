@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp1.0</TargetFramework>
+    <Description>Simpliest PHP project for .NET Core, a console app.</Description>
   </PropertyGroup>
 
   <ItemGroup>

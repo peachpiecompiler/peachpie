@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>netcoreapp1.0</TargetFramework>
   </PropertyGroup>
 
@@ -12,6 +12,7 @@
   <ItemGroup>
     <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="0.5.0-dev" />
     <PackageReference Include="Peachpie.NET.Sdk" Version="0.5.0-dev" PrivateAssets="Build" />
+    <PackageReference Include="Peachpie.Library.PDO" Version="0.5.0-dev" />
   </ItemGroup>
   
   <!-- As a temporary solution, import C# Visual Studio design time targets in order to be able to load the project in Visual Studio -->
