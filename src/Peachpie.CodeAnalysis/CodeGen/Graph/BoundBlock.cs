@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                if (cg.HasUnoptimizedLocals)
+                if (cg.HasUnoptimizedLocals && cg.HasInitializedLocalsPlace)
                 {
                     // <locals> = new PhpArray(HINTCOUNT)
                     cg.LocalsPlaceOpt.EmitStorePrepare(cg.Builder);

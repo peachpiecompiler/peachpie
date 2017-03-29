@@ -69,6 +69,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         public bool HasUnoptimizedLocals => LocalsPlaceOpt != null;
 
         /// <summary>
+        /// Gets value indicating the routine has locals already inicialized. 
+        /// This means the routine isn't supposed to initialize a new PHP array for them.
+        /// </summary>
+        public bool HasInitializedLocalsPlace { get; private set; }
+
+        /// <summary>
         /// Emits reference to <c>this</c>.
         /// </summary>
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>

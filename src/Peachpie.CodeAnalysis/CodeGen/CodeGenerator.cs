@@ -287,6 +287,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             _diagnostics = diagnostics;
 
             _localsPlaceOpt = locals;
+            if (locals != null) { HasInitializedLocalsPlace = true; }
+
             _emmittedTag = 0;
 
             _contextPlace = contextPlace;
@@ -322,6 +324,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _emmittedTag = (routine.ControlFlowGraph != null) ? routine.ControlFlowGraph.NewColor() : -1;
             _localsPlaceOpt = GetLocalsPlace(routine);
+
+            //If the place isn't local it has to be supplied externally -> it's initialized by the caller
+            if(!(_localsPlaceOpt is LocalPlace)) { HasInitializedLocalsPlace = true; }
 
             // Emit sequence points unless
             // - the PDBs are not being generated
