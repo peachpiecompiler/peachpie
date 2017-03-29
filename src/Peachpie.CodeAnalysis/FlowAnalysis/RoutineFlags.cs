@@ -21,7 +21,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         UsesLocals = 8,
         UsesArgs = 16,
 
-        //Or should I use IsIterator on MethodSymbol as Roslyn does?
         IsGenerator = 32,
 
         /// <summary>
