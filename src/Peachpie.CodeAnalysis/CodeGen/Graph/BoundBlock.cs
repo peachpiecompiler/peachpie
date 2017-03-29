@@ -89,7 +89,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                if (cg.HasUnoptimizedLocals && cg.HasInitializedUnoptimizedLocals)
+                //If it has unoptimized locals and they're not initilized externally -> need to initialize them
+                if (cg.HasUnoptimizedLocals && !cg.HasInitializedUnoptimizedLocals)
                 {
                     // <locals> = new PhpArray(HINTCOUNT)
                     cg.LocalsPlaceOpt.EmitStorePrepare(cg.Builder);
