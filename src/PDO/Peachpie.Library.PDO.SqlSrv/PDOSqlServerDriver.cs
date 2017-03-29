@@ -12,6 +12,7 @@ namespace Peachpie.Library.PDO.SqlSrv
     /// PDO driver for Microsoft SqlServer
     /// </summary>
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
+    [System.Composition.Export(typeof(IPDODriver))]
     public class PDOSqlServerDriver : PDODriver
     {
         /// <summary>

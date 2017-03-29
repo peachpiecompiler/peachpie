@@ -4,8 +4,7 @@
   "dependencies": {
     "NETStandard.Library": "1.6.1",
     "Peachpie.Runtime": { "target": "project" },
-    "Peachpie.Library": { "target": "project" },
-    "Microsoft.Extensions.DependencyModel": "1.1.1"
+    "Peachpie.Library": { "target": "project" }
   },
 
   "buildOptions": {

@@ -12,6 +12,7 @@ namespace Peachpie.Library.PDO.MySQL
     /// PDO driver class for MySQL
     /// </summary>
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
+    [System.Composition.Export(typeof(IPDODriver))]
     public sealed class PDOMySQLDriver : PDODriver
     {
         /// <summary>

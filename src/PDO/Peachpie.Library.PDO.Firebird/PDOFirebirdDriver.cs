@@ -11,6 +11,7 @@ namespace Peachpie.Library.PDO.Firebird
     /// PDO driver for firebird
     /// </summary>
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
+    [System.Composition.Export(typeof(IPDODriver))]
     public class PDOFirebirdDriver : PDODriver
     {
         /// <summary>

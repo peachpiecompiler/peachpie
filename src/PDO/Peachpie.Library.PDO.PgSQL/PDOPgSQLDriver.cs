@@ -11,6 +11,7 @@ namespace Peachpie.Library.PDO.PgSQL
     /// PDO driver class for postgresql
     /// </summary>
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
+    [System.Composition.Export(typeof(IPDODriver))]
     public class PDONpgsqlDriver : PDODriver
     {
         /// <summary>

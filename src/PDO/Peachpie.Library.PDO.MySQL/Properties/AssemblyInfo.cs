@@ -17,5 +17,3 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("fd523f4d-0e7e-4d5f-a5c6-12c643e7ce97")]
-
-[assembly: Peachpie.Library.PDO.PDODriverAssembly]

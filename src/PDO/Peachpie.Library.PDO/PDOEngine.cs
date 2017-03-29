@@ -17,10 +17,8 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Registers the driver.
         /// </summary>
-        /// <typeparam name="TDriver">The type of the driver.</typeparam>
-        public static void RegisterDriver<TDriver>() where TDriver : IPDODriver, new()
+        public static void RegisterDriver(IPDODriver driver)
         {
-            var driver = new TDriver();
             lock (s_drivers)
             {
                 if (!s_drivers.ContainsKey(driver.Name))

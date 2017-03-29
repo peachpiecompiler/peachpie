@@ -105,46 +105,9 @@ namespace Peachpie.Library.PDO
         /// </summary>
         public static void RegisterAllDrivers()
         {
-            //Find all assemblies referencing the PDO library and tagged with PDODriverAssemblyAttribute
-            //Drivers must implement IPDODriver
-            string PdoLib = typeof(PDODriverAssemblyAttribute).GetTypeInfo().Assembly.GetName().Name;
-            Type iDriver = typeof(IPDODriver);
-            var driverTypes = new List<Type>();
-
-            //Seach in all assemblies
-            foreach (var lib in DependencyContext.Default.RuntimeLibraries)
+            foreach (var driver in Context.CompositionContext.GetExports<IPDODriver>())
             {
-                if (lib.Dependencies.Any(d => d.Name == PdoLib))
-                {
-                    var asm = Assembly.Load(new AssemblyName(lib.Name));
-                    if (asm.GetCustomAttribute<PDODriverAssemblyAttribute>() != null)
-                    {
-                        foreach (var asmType in asm.GetTypes())
-                        {
-                            var asmTypeInfo = asmType.GetTypeInfo();
-                            if (asmTypeInfo.IsClass && !asmTypeInfo.IsAbstract && iDriver.IsAssignableFrom(asmType) && asmTypeInfo.GetConstructor(Type.EmptyTypes) != null)
-                            {
-                                driverTypes.Add(asmType);
-                            }
-                        }
-                    }
-                }
-            }
-
-            //Register the found drivers
-            var method = typeof(PDOEngine).GetMethod(nameof(PDOEngine.RegisterDriver));
-            foreach (var type in driverTypes)
-            {
-                var registerDriver = method.MakeGenericMethod(type);
-                try
-                {
-                    registerDriver.Invoke(null, null);
-                }
-                catch(System.Exception ex)
-                {
-                    //TODO better error handling
-                    Console.Error.WriteLine($"Could not load driver '{type.FullName}' : {ex.GetType().FullName}: {ex.Message}");
-                }
+                PDOEngine.RegisterDriver(driver);
             }
         }
 
