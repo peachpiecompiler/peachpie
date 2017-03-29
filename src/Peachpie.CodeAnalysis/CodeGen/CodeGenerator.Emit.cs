@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Gets value indicating the routine has locals already inicialized. 
         /// This means the routine isn't supposed to initialize a new PHP array for them.
         /// </summary>
-        public bool HasInitializedLocalsPlace { get; private set; }
+        public bool HasInitializedUnoptimizedLocals => _unoptimizedLocalsInitialized;
 
         /// <summary>
         /// Emits reference to <c>this</c>.

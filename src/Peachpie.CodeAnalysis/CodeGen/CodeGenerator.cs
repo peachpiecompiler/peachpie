@@ -193,6 +193,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly IPlace _localsPlaceOpt;
 
         /// <summary>
+        /// Are unoptimized locals initialized externally.
+        /// E.g. generator methods have locals array supplied and inicialized by an external Generator instance.
+        /// </summary>
+        readonly bool _unoptimizedLocalsInitialized;
+
+        /// <summary>
         /// Place for loading a reference to <c>this</c>.
         /// </summary>
         public IPlace ThisPlaceOpt => _thisPlace;
@@ -276,10 +282,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         #region Construction
 
         public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
-            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null)
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null, bool localsAlreadyInited = false)
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
+
+            if(localsAlreadyInited) { Debug.Assert(locals != null); }
             
             _il = il;
             _moduleBuilder = moduleBuilder;
@@ -287,7 +295,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _diagnostics = diagnostics;
 
             _localsPlaceOpt = locals;
-            if (locals != null) { HasInitializedLocalsPlace = true; }
+            _unoptimizedLocalsInitialized = localsAlreadyInited;
 
             _emmittedTag = 0;
 
@@ -311,7 +319,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Used for emitting in a context of a different routine (parameter initializer).
         /// </summary>
         public CodeGenerator(CodeGenerator cg, SourceRoutineSymbol routine)
-            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt)
+            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt, cg.HasInitializedUnoptimizedLocals)
         {
             Contract.ThrowIfNull(routine);
             _emmittedTag = cg._emmittedTag;
@@ -323,10 +331,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(routine);
 
             _emmittedTag = (routine.ControlFlowGraph != null) ? routine.ControlFlowGraph.NewColor() : -1;
-            _localsPlaceOpt = GetLocalsPlace(routine);
 
-            //If the place isn't local it has to be supplied externally -> it's initialized by the caller
-            if(!(_localsPlaceOpt is LocalPlace)) { HasInitializedLocalsPlace = true; }
+            bool localsAlreadyInited;
+            _localsPlaceOpt = GetLocalsPlace(routine, out localsAlreadyInited);
+            _unoptimizedLocalsInitialized = localsAlreadyInited;
+
 
             // Emit sequence points unless
             // - the PDBs are not being generated
@@ -337,12 +346,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             _emitPdbSequencePoints = emittingPdb && true; // routine.GenerateDebugInfo;
         }
 
-        IPlace GetLocalsPlace(SourceRoutineSymbol routine)
+        //Gets appropriate locals place and whether it's inicialized externally or not.
+        IPlace GetLocalsPlace(SourceRoutineSymbol routine, out bool localsAlredyInicialized)
         {
             if (routine is SourceGlobalMethodSymbol)
             {
                 // second parameter
                 Debug.Assert(routine.ParameterCount >= 2 && routine.Parameters[1].Name == SpecialParameterSymbol.LocalsName);
+
+                localsAlredyInicialized = true;
                 return new ParamPlace(routine.Parameters[1]);
             }
             else if ((routine.Flags & RoutineFlags.RequiresLocalsArray) != 0)
@@ -350,10 +362,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // declare PhpArray <locals>
                 var symbol = new SynthesizedLocalSymbol(Routine, "<locals>", CoreTypes.PhpArray);
                 var localsDef = this.Builder.LocalSlotManager.DeclareLocal((Cci.ITypeReference)symbol.Type, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
+
+                localsAlredyInicialized = false;
                 return new LocalPlace(localsDef);
             }
 
             //
+            localsAlredyInicialized = false;
             return null;
         }
 
