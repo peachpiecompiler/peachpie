@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Pchp.Core
 {
@@ -71,21 +70,6 @@ namespace Pchp.Core
         /// Gets dynamic scripting provider.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public virtual IScriptingProvider ScriptingProvider => _scriptingProvider ?? CreateScriptingProvider();
-        static IScriptingProvider _scriptingProvider;
-
-        IScriptingProvider CreateScriptingProvider()
-        {
-            lock (typeof(IScriptingProvider))
-            {
-                if (_scriptingProvider == null) // double checked lock
-                {
-                    //TODO: [Import(typeof(IScriptingProvider)]
-                    _scriptingProvider = new UnsupportedScriptingProvider();
-                }
-            }
-
-            return _scriptingProvider;
-        }
+        public virtual IScriptingProvider ScriptingProvider => GlobalServices.GetService<IScriptingProvider>();
     }
 }
