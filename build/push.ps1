@@ -1,5 +1,5 @@
 Param(
-  [string]$suffix = "preview7"
+  [string]$suffix = "xxx"
 )
 
-..\tools\nuget.exe push ..\.nugs\Release\*.*$suffix.nupkg -Source https://www.nuget.org/api/v2/package
+..\tools\nuget.exe push ..\.nugs\*.*$suffix.nupkg -Source https://www.nuget.org/api/v2/package
