@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="..\..\..\build\Targets\Settings.props" />
+  <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <TargetFrameworks>net46;netcoreapp1.0</TargetFrameworks>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
@@ -13,6 +13,8 @@
 	<IncludeBuildOutput>false</IncludeBuildOutput>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -35,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Peachpie.App\Peachpie.App.csproj" />
+    <ProjectReference Include="..\Peachpie.App\Peachpie.App.csproj" />
   </ItemGroup>
 
 </Project>
