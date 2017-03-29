@@ -1,0 +1,1 @@
+powershell .\build.ps1

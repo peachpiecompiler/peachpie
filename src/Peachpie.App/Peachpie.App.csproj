@@ -1,15 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <Description>Peachpie platform dependencies.</Description>
-    <VersionPrefix>0.5.0</VersionPrefix>
-    <VersionSuffix>dev</VersionSuffix>
     <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
     <AssemblyName>Peachpie.App</AssemblyName>
     <PackageId>Peachpie.App</PackageId>
-    <PackageProjectUrl>https://github.com/iolevel/peachpie</PackageProjectUrl>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageOutputPath>../../.nugs</PackageOutputPath>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

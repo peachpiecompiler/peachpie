@@ -64,7 +64,7 @@ namespace Peachpie.Web
         /// </summary>
         Stream IHttpPhpContext.InputStream => _httpctx.Request.Body;
 
-        void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path = "/", string domain = null, bool secure = false, bool httpOnly = false)
+        void IHttpPhpContext.AddCookie(string name, string value, DateTimeOffset? expires, string path, string domain, bool secure, bool httpOnly)
         {
             _httpctx.Response.Cookies.Append(name, value, new CookieOptions()
             {

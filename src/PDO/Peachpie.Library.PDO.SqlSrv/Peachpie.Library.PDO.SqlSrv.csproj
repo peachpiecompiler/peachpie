@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <VersionPrefix>0.5.0</VersionPrefix>
     <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
     <DebugType>portable</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

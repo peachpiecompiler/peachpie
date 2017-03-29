@@ -25,7 +25,6 @@ namespace Pchp.CodeAnalysis.Symbols
     internal abstract partial class SourceRoutineSymbol : MethodSymbol
     {
         ControlFlowGraph _cfg;
-        FlowState _state;
         LocalsTable _locals;
 
         /// <summary>
