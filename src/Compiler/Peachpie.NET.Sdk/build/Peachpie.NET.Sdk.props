@@ -1,0 +1,15 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <WarningLevel>4</WarningLevel>
+
+    <!-- disable wilcard include of Compile items, file ordering is a feature -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+
+    <!-- project guid used by dotnet sln add -->
+    <!--TODO DefaultProjectTypeGuid Condition=" '$(DefaultProjectTypeGuid)' == '' ">{F2A71F9B-5D33-465A-A702-920D77279786}</DefaultProjectTypeGuid -->
+
+    <LanguageTargets>$(MSBuildThisFileDirectory)\Peachpie.NET.Current.Sdk.targets</LanguageTargets>
+  </PropertyGroup>
+
+</Project>

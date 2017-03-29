@@ -1,0 +1,191 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--TODO error if PeachCompileTaskAssemblyPath is not defined-->
+  <UsingTask TaskName="PeachpieCompile" AssemblyFile="dotnet-compile-php.dll" />
+  <!--TODO add property CreatePeachpieManifestResourceNameTaskAssemblyPath -->
+  <!--TODO UsingTask TaskName="CreatePeachpieManifestResourceName" AssemblyFile="$(PeachpieTaskAssemblyPath)"/ -->
+
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <DefaultLanguageSourceExtension>.php</DefaultLanguageSourceExtension>
+    <Language>PHP</Language>
+    <TargetRuntime>Managed</TargetRuntime>
+    <AlwaysUseNumericalSuffixInItemNames>true</AlwaysUseNumericalSuffixInItemNames>
+    <DefineCommonItemSchemas Condition=" '$(DefineCommonItemSchemas)' == '' ">true</DefineCommonItemSchemas>
+    <DefineCommonReferenceSchemas Condition=" '$(DefineCommonReferenceSchemas)' == '' ">true</DefineCommonReferenceSchemas>
+    <DefineCommonCapabilities Condition=" '$(DefineCommonCapabilities)' == '' ">true</DefineCommonCapabilities>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <DocFileItem Include="$(DocumentationFile)" Condition="'$(DocumentationFile)'!=''"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(_DebugSymbolsProduced)' == 'true' and '$(PdbFile)' != ''">
+    <_DebugSymbolsIntermediatePathTemporary Include="$(PdbFile)"/>
+    <!-- Add any missing .pdb extension, as the compiler does -->
+    <_DebugSymbolsIntermediatePath Include="@(_DebugSymbolsIntermediatePathTemporary->'%(RootDir)%(Directory)%(Filename).pdb')"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CoreCompileDependsOn>_ComputeNonExistentFileProperty</CoreCompileDependsOn>
+  </PropertyGroup>
+
+  <!-- Locate and add mscorlib, unless NoStdLib is set -->
+  <ItemGroup Condition=" '$(NoStdLib)' != 'true' ">
+    <_ExplicitReference Include="$(FrameworkPathOverride)\mscorlib.dll" />
+  </ItemGroup>
+
+  <!--
+      The CreateManifestResourceNames target create the manifest resource names from the .RESX
+      files.
+      
+          [IN]
+          @(EmbeddedResource) - The list of EmbeddedResource items that have been pre-processed to add metadata about resource type
+                                Expected Metadata "Type" can either be "Resx" or "Non-Resx"
+          [OUT]
+          @(EmbeddedResource) - EmbeddedResource items with metadata         
+          
+      For F# applications the transformation is like:
+          Resources1.resx => Resources1 => Build into main assembly
+          SubFolder\Resources1.resx => SubFolder.Resources1 => Build into main assembly
+          Resources1.fr.resx => Resources1.fr => Build into satellite assembly
+          Resources1.notaculture.resx => Resources1.notaculture => Build into main assembly
+      For other project systems, this transformation may be different.
+      -->
+  <!-- target CreateManifestResourceNames is required by .Common.target-->
+  <PropertyGroup>
+    <CreateManifestResourceNamesDependsOn></CreateManifestResourceNamesDependsOn>
+  </PropertyGroup>
+  <Target
+      Name="CreateManifestResourceNames"
+      Condition=" '@(EmbeddedResource)' != '' "
+      DependsOnTargets="$(CreateManifestResourceNamesDependsOn)"
+        >
+
+    <ItemGroup>
+      <_Temporary Remove="@(_Temporary)" />
+    </ItemGroup>
+
+    <!-- Create manifest names for culture and non-culture Resx files, and for non-culture Non-Resx resources -->
+    <CreatePeachpieManifestResourceName
+          ResourceFiles="@(EmbeddedResource)"
+          RootNamespace="$(RootNamespace)"
+          Condition=" '%(EmbeddedResource.ManifestResourceName)' == '' and ( '%(EmbeddedResource.WithCulture)' == 'false' or '%(EmbeddedResource.Type)' == 'Resx' ) ">
+
+      <Output TaskParameter="ResourceFilesWithManifestResourceNames" ItemName="_Temporary" />
+
+    </CreatePeachpieManifestResourceName>
+
+    <!-- Create manifest names for all culture non-resx resources -->
+    <CreatePeachpieManifestResourceName
+          ResourceFiles="@(EmbeddedResource)"
+          RootNamespace="$(RootNamespace)"
+          PrependCultureAsDirectory="false"
+          Condition=" '%(EmbeddedResource.ManifestResourceName)' == '' and '%(EmbeddedResource.WithCulture)' == 'true' and '%(EmbeddedResource.Type)' == 'Non-Resx' ">
+
+      <Output TaskParameter="ResourceFilesWithManifestResourceNames" ItemName="_Temporary" />
+
+    </CreatePeachpieManifestResourceName>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="@(EmbeddedResource)" Condition=" '%(EmbeddedResource.ManifestResourceName)' == '' "/>
+      <EmbeddedResource Include="@(_Temporary)" />
+      <_Temporary Remove="@(_Temporary)" />
+    </ItemGroup>
+
+  </Target>
+
+  <Target
+          Name="CoreCompile"
+          Inputs="$(MSBuildAllProjects);
+                @(Compile);
+                @(_CoreCompileResourceInputs);
+                $(ApplicationIcon);
+                $(AssemblyOriginatorKeyFile);
+                @(ReferencePath);
+                @(CompiledLicenseFile);
+                @(LinkResource);
+                @(EmbeddedDocumentation);
+                $(Win32Resource);
+                $(Win32Manifest);
+                @(CustomAdditionalCompileInputs);
+                $(ResolvedCodeAnalysisRuleSet);
+                @(AdditionalFiles);
+                @(EmbeddedFiles)"
+          Outputs="@(DocFileItem);
+                @(IntermediateAssembly);
+                @(_DebugSymbolsIntermediatePath);
+                $(NonExistentFile);
+                @(CustomAdditionalCompileOutputs)"
+          Returns="@(PeachpieCompileCommandLineArgs)"
+          DependsOnTargets="$(CoreCompileDependsOn)"
+    >
+
+    <PropertyGroup>
+      <TargetProfile Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' " >mscorlib</TargetProfile>
+      <TargetProfile Condition=" '$(TargetFrameworkIdentifier)' != '.NETFramework' " >netcore</TargetProfile>
+
+      <!-- ref https://github.com/Microsoft/msbuild/issues/1669
+                 the dotnet in PATH can be different from the dotnet who run msbuild,
+                 so i need to specify the full path. -->
+      <_DotNetHostExecutableName>dotnet</_DotNetHostExecutableName>
+      <_DotNetHostExecutableName Condition=" '$(OS)' == 'Windows_NT' ">$(_DotNetHostExecutableName).exe</_DotNetHostExecutableName>
+      <_DotNetHostExecutableDirectory>$(MSBuildSDKsPath)/../../..</_DotNetHostExecutableDirectory>
+      <_DotNetHostExecutablePath>$(_DotNetHostExecutableDirectory)/$(_DotNetHostExecutableName)</_DotNetHostExecutablePath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(DontRunPeachpieCompileWithDotnet)' == '' ">
+      <!-- default: -->
+      <_FscTask_FscToolExe>$(_DotNetHostExecutableName)</_FscTask_FscToolExe>
+      <_FscTask_FscToolPath>$(_DotNetHostExecutableDirectory)</_FscTask_FscToolPath>
+      <_FscTask_DotnetFscCompilerPath> "$(FscToolPath)/$(FscToolExe)"</_FscTask_DotnetFscCompilerPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(DontRunPeachpieCompileWithDotnet)' != '' ">
+      <_FscTask_FscToolExe>$(FscToolExe)</_FscTask_FscToolExe>
+      <_FscTask_FscToolPath>$(FscToolPath)</_FscTask_FscToolPath>
+      <_FscTask_DotnetFscCompilerPath></_FscTask_DotnetFscCompilerPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <TempOutputDir>%(IntermediateAssembly.RelativeDir)</TempOutputDir>
+      <EmitEntryPoint>false</EmitEntryPoint>
+      <EmitEntryPoint Condition=" '$(OutputType.ToLower())' == 'exe' ">true</EmitEntryPoint>
+    </PropertyGroup>
+
+    <!-- If compiling for full .NET, MSBuild is expected to run on it (e.g. in Visual Studio) so that it can obtain the runtime directory -->
+    <GetFrameworkPath>
+      <Output TaskParameter="Path" PropertyName="NetFrameworkPath" />
+    </GetFrameworkPath>
+
+    <ItemGroup>
+      <RspLine Include="--temp-output:$(TempOutputDir)" />
+      <RspLine Include="--out:$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)" />
+      <RspLine Include="--output-name:%(IntermediateAssembly.Filename)" />
+      <RspLine Include="--optimize:$(Optimize)" />
+      <RspLine Include="--debug-type:$(DebugType)" />
+      <RspLine Include="--define:DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
+      <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
+      <RspLine Include="--pdb:$(PdbFile)" Condition=" '$(PdbFile)' != '' " />
+      <RspLine Include="--target-framework:$(TargetFramework)" />
+      <RspLine Include="--sdk-dir:$(NetFrameworkPath)" Condition=" '$(NetFrameworkPath)' != '' " />
+      <RspLine Include="@(ReferencePath->'--reference:%(FullPath)')" />
+      <RspLine Include="@(Compile)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(TempOutputDir)compile-php-args.rsp" Lines="@(RspLine)" Overwrite="true" />
+    <Exec Command="dotnet compile-php @$(TempOutputDir)compile-php-args.rsp" />
+
+  </Target>
+
+  <!--End Required Task by .Common.target-->
+
+  <PropertyGroup Condition="$(MSBuildProjectFullPath.EndsWith('.phpproj')) == 'true' AND '$(PackProjectInputFile)' == ''">
+    <PackProjectInputFile>$(MSBuildProjectFullPath)</PackProjectInputFile>
+  </PropertyGroup>
+
+</Project>

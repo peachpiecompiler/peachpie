@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net46;netcoreapp1.0</TargetFrameworks>
+    <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
+    <PackageId>Peachpie.NET.Sdk</PackageId>
+    <VersionPrefix>0.5.0</VersionPrefix>
+    <VersionSuffix>dev</VersionSuffix>
+	
+	<PackageTags>php;sdk;peachpie;msbuild</PackageTags>
+    <PackageProjectUrl>https://github.com/iolevel/peachpie</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/iolevel/peachpie</RepositoryUrl>
+	
+	<IncludeBuildOutput>false</IncludeBuildOutput>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageOutputPath>../../../.nugs</PackageOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+  </PropertyGroup>
+  
+   <ItemGroup>
+    <Content Include="build/Peachpie.NET.Current.Sdk.targets">
+      <PackagePath>build/Peachpie.NET.Current.Sdk.targets</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="build/Peachpie.NET.Core.Sdk.targets">
+      <PackagePath>build/Peachpie.NET.Core.Sdk.targets</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="build/Peachpie.NET.Sdk.props">
+      <PackagePath>build/Peachpie.NET.Sdk.props</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Peachpie.App\Peachpie.App.csproj" />
+  </ItemGroup>
+
+</Project>
