@@ -52,7 +52,7 @@ namespace Pchp.Core
             // TODO: extension libraries
 
             //
-            return asses.Distinct().Select(Assembly.Load);
+            return asses.Distinct().Select(CompositionExtension.TryLoad).WhereNotNull();
         }
 
         // TODO: local (instance) services

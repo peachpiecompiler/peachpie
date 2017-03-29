@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Composition;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Pchp.Core.Utilities
@@ -16,6 +17,21 @@ namespace Pchp.Core.Utilities
             T value;
             context.TryGetExport<T>(out value);
             return value;
+        }
+
+        /// <summary>
+        /// Loads assembly by name. Returns <c>null</c> if load fails.
+        /// </summary>
+        public static Assembly TryLoad(AssemblyName assname)
+        {
+            try
+            {
+                return Assembly.Load(assname);
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
