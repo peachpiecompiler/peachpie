@@ -1,19 +1,7 @@
 # Prepare the files needed to compile and run the tests
 
 TOOL_DIR="./src/Tools/runtests_shell"
-OUTPUT_DIR="$TOOL_DIR/bin"
-
-# Peachpie.App
-cp src/Peachpie.Runtime/bin/Debug/netstandard1.6/Peachpie.Runtime.dll $OUTPUT_DIR
-cp src/Peachpie.Library/bin/Debug/netstandard1.6/Peachpie.Library.dll $OUTPUT_DIR
-cp src/Peachpie.Library.MySql/bin/Debug/netstandard1.6/Peachpie.Library.MySql.dll $OUTPUT_DIR
-
-# The location of the referenced libraries may differ and the compiler works properly only with absolute addresses
-NUGET_DIR="$(readlink -f ~/.nuget/packages)"
-awk "{print \"--reference:$NUGET_DIR/\" \$0}" $TOOL_DIR/references.rsp.tpl > $TOOL_DIR/references.rsp
-
-COMPILE_PHP_DLL="./src/Peachpie.Compiler.Tools/bin/Debug/netcoreapp1.0/dotnet-compile-php.dll"
-COMPILE_PHP="dotnet $COMPILE_PHP_DLL --temp-output:$OUTPUT_DIR --out:$OUTPUT_DIR/output.exe @$TOOL_DIR/common.rsp @$TOOL_DIR/references.rsp"
+OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp1.0"
 
 PHP_TMP_FILE=$OUTPUT_DIR/php.out
 PEACH_TMP_FILE=$OUTPUT_DIR/peach.out
@@ -23,18 +11,21 @@ COLOR_RED="\033[1;31m"
 COLOR_RESET="\033[0m"
 HR="----------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
+# Restore the testing project to gather all dependencies
+dotnet restore $TOOL_DIR
+
 # Compile and run every PHP file in ./tests and check the output against the one from the PHP interpreter
-for PHP_FILE in $(find ./tests -name *.php)
+for PHP_FILE in $(find $PWD/tests -name *.php)
 do
   echo -n "Testing $PHP_FILE..."
-  COMPILE_OUTPUT="$($COMPILE_PHP $PHP_FILE 2>&1)"
+  COMPILE_OUTPUT="$(dotnet build $TOOL_DIR /p:TestFile=$PHP_FILE)"
   if [ $PIPESTATUS != 0 ] ; then
     echo -e $COLOR_RED"Compilation error"$COLOR_RESET
     echo "$COMPILE_OUTPUT"
     FAILURE="FAILURE"
   else
     PHP_OUTPUT="$(php $PHP_FILE)"
-    PEACH_OUTPUT="$(dotnet $OUTPUT_DIR/output.exe)"
+    PEACH_OUTPUT="$(dotnet $OUTPUT_DIR/Test.dll)"
 
     if [ "$PHP_OUTPUT" = "$PEACH_OUTPUT" ] ; then
       echo -e $COLOR_GREEN"OK"$COLOR_RESET

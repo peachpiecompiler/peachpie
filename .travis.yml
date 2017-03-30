@@ -13,3 +13,6 @@ install:
   - dotnet build -f netcoreapp1.0 ./src/Peachpie.Compiler.Tools
   - dotnet restore ./Samples/ConsoleApplication1
   - dotnet run -p ./Samples/ConsoleApplication1/ConsoleApplication1.msbuildproj
+
+script:
+  - ./src/Tools/runtests_shell/runtests.sh
