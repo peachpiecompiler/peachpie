@@ -15,7 +15,7 @@
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <PostBuildEvent>rem powershell -File ../../build/update_packages.ps1 ../../ $(Version) $(TargetFramework) $(Configuration)</PostBuildEvent>
+    <PostBuildEvent>powershell -File ../../../../../build/update_packages.ps1 ../../../../../ $(VersionPrefix) $(TargetFramework) $(Configuration)</PostBuildEvent>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 

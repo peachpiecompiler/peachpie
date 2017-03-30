@@ -12,7 +12,7 @@ if ($framework -ne "netcoreapp1.0") {
 }
 
 # The list of projects to process
-$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.Compiler.Tools")
+$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk")
 $suffix = "dev"
 
 # We suppose the global package source is in the default location 
@@ -20,7 +20,7 @@ $packagesSource = (Resolve-Path "~/.nuget/packages").Path
 
 # Create the Nuget packages and delete those currently installed
 foreach ($project in $projects) {
-    dotnet pack --no-build -c $configuration -o "$rootDir/.nugs" --version-suffix $suffix "$rootDir/src/$project"
+    dotnet pack --no-build -c $configuration --version-suffix $suffix "$rootDir/src/$project"
 
     $installedFolder = "$packagesSource/$project/$version-$suffix"
     if (Test-Path $installedFolder) {
