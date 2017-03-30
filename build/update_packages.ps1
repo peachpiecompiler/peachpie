@@ -20,7 +20,17 @@ $packagesSource = (Resolve-Path "~/.nuget/packages").Path
 
 # Create the Nuget packages and delete those currently installed
 foreach ($project in $projects) {
-    dotnet pack --no-build -c $configuration --version-suffix $suffix "$rootDir/src/$project"
+    $appendedArgs = New-Object System.Collections.Generic.List[System.String]
+    
+    # Do not pack full .NET 4.6 assemblies if they weren't produced
+    $projectDir = "$rootDir/src/$project"
+    if (!(Test-Path $projectDir/bin/$configuration/net46/*)) {
+        $packFramework = if ($project -eq "Peachpie.Compiler.Tools") { "netcoreapp1.0" } else { "netstandard1.6" }
+        $appendedArgs.Add("/p:TargetFrameworks=")
+        $appendedArgs.Add("/p:TargetFramework=$packFramework")
+    }
+
+    dotnet pack --no-build -c $configuration --version-suffix $suffix $projectDir $appendedArgs
 
     $installedFolder = "$packagesSource/$project/$version-$suffix"
     if (Test-Path $installedFolder) {
