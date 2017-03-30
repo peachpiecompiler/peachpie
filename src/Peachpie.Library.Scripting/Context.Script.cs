@@ -55,8 +55,6 @@ namespace Peachpie.Library.Scripting
             {
                 throw new InvalidOperationException();
             }
-            // TODO:
-            //_entryPoint = (Context.MainDelegate)assembly.GetType("<ScriptType>").GetMethod("<Main>").CreateDelegate(typeof(Context.MainDelegate));
         }
 
         static IEnumerable<Script> AllPreviousSubmissions(Script previousSubmission)

@@ -644,7 +644,7 @@ namespace Pchp.CodeAnalysis
                 return this;
             }
 
-            return Update(assemblyName: outputName, reuseReferenceManager: true);
+            return Update(assemblyName: outputName);
         }
 
         protected override Compilation CommonWithOptions(CompilationOptions options)

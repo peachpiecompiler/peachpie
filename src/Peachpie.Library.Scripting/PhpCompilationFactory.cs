@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-//using System.Runtime.Loader;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis;
 
 namespace Peachpie.Library.Scripting
 {
-    class PhpCompilationFactory // : AssemblyLoadContext
+    class PhpCompilationFactory
+#if NETSTANDARD1_6
+        : System.Runtime.Loader.AssemblyLoadContext
+#endif
     {
         public PhpCompilationFactory()
         {
@@ -70,7 +72,7 @@ namespace Peachpie.Library.Scripting
         public Assembly LoadFromStream(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream)
         {
 #if NETSTANDARD1_6
-            Assembly ass = null;//this.LoadFromStream(peStream, pdbStream);
+            Assembly ass = this.LoadFromStream(peStream, pdbStream);
 #else
             Assembly ass = Assembly.Load(peStream.ToArray(), pdbStream?.ToArray());
 #endif
@@ -81,11 +83,13 @@ namespace Peachpie.Library.Scripting
             return ass;
         }
 
-        //protected override Assembly Load(AssemblyName assemblyName)
-        //{
-        //    _asses.TryGetValue(assemblyName, out Assembly assembly);
-        //    return assembly;
-        //}
+#if NETSTANDARD1_6
+        protected override Assembly Load(AssemblyName assemblyName)
+        {
+            _asses.TryGetValue(assemblyName, out Assembly assembly);
+            return assembly;
+        }
+#endif
 
         int _counter = 0;
 

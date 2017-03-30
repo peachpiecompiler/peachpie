@@ -47,6 +47,7 @@ namespace Pchp.Core
 
             // wellknown
             asses.Add(new AssemblyName("Peachpie.Library"));
+            asses.Add(new AssemblyName("Peachpie.Library.Scripting"));
             // asses.Add(new AssemblyName("Peachpie.Library.Dynamic")); // eval, create_function
 
             // TODO: extension libraries
