@@ -130,26 +130,29 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public new PhpCompilation Clone()
         {
-            return Update(_referenceManager, true, this.SyntaxTrees);
+            return Update(reuseReferenceManager: true);
         }
 
         private PhpCompilation Update(
-            ReferenceManager referenceManager,
-            bool reuseReferenceManager,
-            IEnumerable<PhpSyntaxTree> syntaxTrees)
+            string assemblyName = null,
+            ReferenceManager referenceManager = null,
+            PhpCompilationOptions options = null,
+            bool reuseReferenceManager = false,
+            IEnumerable<PhpSyntaxTree> syntaxTrees = null)
         {
             var compilation = new PhpCompilation(
-                this.AssemblyName,
-                _options,
+                assemblyName ?? this.AssemblyName,
+                options ?? _options,
                 this.ExternalReferences,
                 //this.PreviousSubmission,
                 //this.SubmissionReturnType,
                 //this.HostObjectType,
                 this.IsSubmission,
-                referenceManager,
-                reuseReferenceManager);
+                referenceManager ?? _referenceManager,
+                reuseReferenceManager,
+                EventQueue);
 
-            compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees);
+            compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees ?? SyntaxTrees);
 
             return compilation;
         }
@@ -157,7 +160,6 @@ namespace Pchp.CodeAnalysis
         private PhpCompilation WithSyntaxTrees(IEnumerable<PhpSyntaxTree> syntaxTrees)
         {
             return Update(
-                _referenceManager,
                 reuseReferenceManager: true,
                 syntaxTrees: syntaxTrees);
         }
@@ -637,7 +639,12 @@ namespace Pchp.CodeAnalysis
 
         protected override Compilation CommonWithAssemblyName(string outputName)
         {
-            throw new NotImplementedException();
+            if (this.AssemblyName == outputName)
+            {
+                return this;
+            }
+
+            return Update(assemblyName: outputName, reuseReferenceManager: true);
         }
 
         protected override Compilation CommonWithOptions(CompilationOptions options)

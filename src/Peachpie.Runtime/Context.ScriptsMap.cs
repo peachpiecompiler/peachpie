@@ -81,7 +81,7 @@ namespace Pchp.Core
                 return this.MainMethod(ctx, locals, @this);
             }
 
-            internal ScriptInfo(int index, string path, TypeInfo script)
+            public ScriptInfo(int index, string path, TypeInfo script)
             {
                 Index = index;
                 Path = path;
