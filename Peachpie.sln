@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.4
+VisualStudioVersion = 15.0.26228.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compiler", "Compiler", "{0E870B29-09DB-43B4-A1DE-B0754EBED941}"
 EndProject
@@ -30,6 +30,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library", "src\Peachpie.Library\Peachpie.Library.csproj", "{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Compiler.Tools", "src\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.csproj", "{F679A98B-01EE-4A7F-8D56-F0DED48450AF}"
+	ProjectSection(ProjectDependencies) = postProject
+		{039A63A4-9A86-477A-B1C6-1C7172B90F81} = {039A63A4-9A86-477A-B1C6-1C7172B90F81}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebServerCSharp", "Samples\WebServerCSharp\WebServerCSharp.csproj", "{C69F8A59-0196-4819-84AE-528BA8E32F59}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -67,10 +70,19 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.NET.Sdk", "src\Peachpie.NET.Sdk\Peachpie.NET.Sdk.csproj", "{566A83EE-FD6C-4F42-AA80-748F115EF1B9}"
 EndProject
 Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "ConsoleApplication1", "Samples\ConsoleApplication1\ConsoleApplication1.msbuildproj", "{813BD203-7ACF-4F5D-873A-B1C802303A71}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {F679A98B-01EE-4A7F-8D56-F0DED48450AF}
+	EndProjectSection
 EndProject
 Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "website", "Samples\website\website.msbuildproj", "{42EC48F6-3595-4893-BCDD-64EC861EDB3C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {F679A98B-01EE-4A7F-8D56-F0DED48450AF}
+	EndProjectSection
 EndProject
 Project("{13B669BE-BB05-4DDF-9536-439F39A36129}") = "Peachpie.PDO.Test.Website", "src\PDO\Peachpie.PDO.Test.Website\Peachpie.PDO.Test.Website.msbuildproj", "{C9CE08B9-0B28-40D8-8E8A-1F78549259AE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {F679A98B-01EE-4A7F-8D56-F0DED48450AF}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
