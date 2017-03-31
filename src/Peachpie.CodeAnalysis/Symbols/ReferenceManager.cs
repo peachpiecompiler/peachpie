@@ -167,15 +167,22 @@ namespace Pchp.CodeAnalysis
                 {
                     //
                     var externalRefs = compilation.ExternalReferences;
-                    var refmodules = new List<PEModuleSymbol>();
-
                     var referencesMap = new Dictionary<MetadataReference, IAssemblySymbol>();
                     var metadataMap = new Dictionary<IAssemblySymbol, MetadataReference>();
                     var assembliesMap = new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
+                    var observed = new HashSet<AssemblyIdentity>();
 
                     foreach (PortableExecutableReference pe in externalRefs)
                     {
                         var peass = ((AssemblyMetadata)pe.GetMetadata()).GetAssembly();
+
+                        if (!observed.Add(peass.Identity))
+                        {
+                            // already added reference identity, different metadata
+                            referencesMap[pe] = _observedMetadata[peass.Identity];
+                            Debug.Assert(referencesMap[pe] != null);
+                            continue;
+                        }
 
                         var symbol = _observedMetadata.TryGetOrDefault(peass.Identity) ?? PEAssemblySymbol.Create(pe, peass);
                         if (symbol != null)
@@ -192,15 +199,15 @@ namespace Pchp.CodeAnalysis
 
                             // cache bound assembly symbol
                             _observedMetadata[symbol.Identity] = symbol;
-
-                            // list of modules to initialize later
-                            refmodules.AddRange(symbol.Modules.Cast<PEModuleSymbol>());
                         }
                         else
                         {
                             throw new Exception($"symbol '{pe.FilePath}' could not be created!");
                         }
                     }
+
+                    // list of modules to initialize later
+                    var refmodules = assemblies.SelectMany(symbol => symbol.Modules.Cast<PEModuleSymbol>()).ToList();
 
                     //
                     _lazyExplicitReferences = externalRefs;
