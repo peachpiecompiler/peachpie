@@ -130,7 +130,7 @@
     <value>Type name '{0}' could not be resolved. It is either not defined, defined conditionally or ambiguous declarations were found.</value>
   </data>
   <data name="WRN_EvalDiscouraged" xml:space="preserve">
-    <value>The use of 'eval()' is discouraged. The construct allows the execution of arbitrary code and is subject to a performance and memory overhead.</value>
+    <value>Use of 'eval()' is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead.</value>
   </data>
   <data name="WRN_UndefinedFunctionCall" xml:space="preserve">
     <value>Call to undefined function: '{0}'</value>
