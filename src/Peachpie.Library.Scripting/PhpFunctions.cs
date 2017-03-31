@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 
 namespace Peachpie.Library.Scripting
 {
     public static class PhpFunctions
     {
-        const string _createFunctionTemplate = "function __lambda{0} ({1}){{ {2} }}";
+        const string _createFunctionTemplate = "function __lambda{0} ({1}) {{ {2} }}";
 
         /// <summary>
         /// Creates an anonymous function from the parameters passed, and returns a unique name for it.

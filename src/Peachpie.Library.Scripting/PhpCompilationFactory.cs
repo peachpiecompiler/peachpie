@@ -47,14 +47,14 @@ namespace Peachpie.Library.Scripting
 
             for (int i = 0; i < list.Count; i++)
             {
-                var ass = list[i];
-                var refs = ass.GetReferencedAssemblies();
+                var assembly = list[i];
+                var refs = assembly.GetReferencedAssemblies();
                 foreach (var refname in refs)
                 {
-                    var refass = Assembly.Load(refname);
-                    if (refass != null && set.Add(refass))
+                    var refassembly = Assembly.Load(refname);
+                    if (refassembly != null && set.Add(refassembly))
                     {
-                        list.Add(refass);
+                        list.Add(refassembly);
                     }
                 }
             }
@@ -67,26 +67,26 @@ namespace Peachpie.Library.Scripting
         readonly PhpCompilation _compilation;
         readonly IAssemblySymbol _assemblytmp;
 
-        readonly Dictionary<AssemblyName, Assembly> _asses = new Dictionary<AssemblyName, Assembly>();
+        readonly Dictionary<AssemblyName, Assembly> _assemblies = new Dictionary<AssemblyName, Assembly>();
 
         public Assembly LoadFromStream(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream)
         {
 #if NETSTANDARD1_6
-            Assembly ass = this.LoadFromStream(peStream, pdbStream);
+            Assembly assembly = this.LoadFromStream(peStream, pdbStream);
 #else
-            Assembly ass = Assembly.Load(peStream.ToArray(), pdbStream?.ToArray());
+            Assembly assembly = Assembly.Load(peStream.ToArray(), pdbStream?.ToArray());
 #endif
-            if (ass != null)
+            if (assembly != null)
             {
-                _asses.Add(assemblyName, ass);
+                _assemblies.Add(assemblyName, assembly);
             }
-            return ass;
+            return assembly;
         }
 
 #if NETSTANDARD1_6
         protected override Assembly Load(AssemblyName assemblyName)
         {
-            _asses.TryGetValue(assemblyName, out Assembly assembly);
+            _assemblies.TryGetValue(assemblyName, out Assembly assembly);
             return assembly;
         }
 #endif

@@ -718,7 +718,7 @@ namespace Pchp.Core
                 {
                     Context = ctx,
                     Location = new Location(Path.Combine(ctx.RootPath, currentpath), line, column),
-                    EmitDebugInformation = false
+                    EmitDebugInformation = false,   // TODO
                 },
                 code);
 

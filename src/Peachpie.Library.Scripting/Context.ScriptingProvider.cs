@@ -43,7 +43,7 @@ namespace Peachpie.Library.Scripting
             {
                 foreach (var c in candidates)
                 {
-                    if (c.DependingSubmission == null || scriptingCtx.Submissions.Contains(c.DependingSubmission))
+                    if (c.DependingSubmission == null || scriptingCtx.Submissions.Contains(c.DependingSubmission))  // TODO: not correct, a new submission may change candidate
                     {
                         return c;
                     }

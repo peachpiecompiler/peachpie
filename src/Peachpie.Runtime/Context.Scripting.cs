@@ -40,8 +40,6 @@ namespace Pchp.Core
             /// <param name="this">Optional. Reference to current <c>$this</c> object.</param>
             /// <returns>Return value of the script.</returns>
             PhpValue Evaluate(Context ctx, PhpArray locals, object @this);
-
-            // TODO: PhpRoutineInfo GetGlobalFunction(name)
         }
 
         /// <summary>

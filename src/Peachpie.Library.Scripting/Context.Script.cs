@@ -16,13 +16,27 @@ namespace Peachpie.Library.Scripting
         readonly Script _previousSubmission;
         readonly Context.MainDelegate _entryPoint;
         readonly ImmutableArray<byte> _image;
+        readonly AssemblyName _assemblyName;
 
+        /// <summary>
+        /// Optional refernce to a script that preceeds this one.
+        /// Current script requires this one to be evaluated.
+        /// </summary>
         public Script DependingSubmission => _previousSubmission;
 
+        /// <summary>
+        /// Gets the assembly content.
+        /// </summary>
         public ImmutableArray<byte> Image => _image;
+
+        /// <summary>
+        /// Gets the script assembly name.
+        /// </summary>
+        public AssemblyName AssemblyName => _assemblyName;
 
         private Script(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream, PhpCompilationFactory builder, Script previousSubmissionOpt)
         {
+            _assemblyName = assemblyName;
             _previousSubmission = previousSubmissionOpt;
 
             //
@@ -57,46 +71,80 @@ namespace Peachpie.Library.Scripting
             }
         }
 
+        private Script(Context.MainDelegate entryPoint, Script previousSubmissionOpt)
+        {
+            _entryPoint = entryPoint;
+            _previousSubmission = previousSubmissionOpt;
+            _assemblyName = new AssemblyName();
+            _image = ImmutableArray<byte>.Empty;
+        }
+
         static IEnumerable<Script> AllPreviousSubmissions(Script previousSubmission)
         {
             for (var submission = previousSubmission; submission != null; submission = submission.DependingSubmission)
             {
-                yield return submission;
+                if (!submission.Image.IsDefaultOrEmpty)
+                {
+                    yield return submission;
+                }
             }
         }
 
         public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, Script previousSubmission)
         {
             var tree = PhpSyntaxTree.ParseCode(code, new PhpParseOptions(kind: SourceCodeKind.Script), PhpParseOptions.Default, options.Location.Path);
-            // TODO: if (tree.Diagnostics) ...            
-
-            var name = builder.GetNewSubmissionName();
-
-            var compilation = builder.CoreCompilation
-                .WithAssemblyName(name.Name)
-                .AddSyntaxTrees(tree)
-                .AddReferences(AllPreviousSubmissions(previousSubmission).Select(s => MetadataReference.CreateFromImage(s.Image)));
-
-            var diagnostics = compilation.GetDeclarationDiagnostics();
-
-            // TODO: if (diagnostics) ...
-
-            var peStream = new MemoryStream();
-            var pdbStream = options.EmitDebugInformation ? new MemoryStream() : null;
-            var result = compilation.Emit(peStream, pdbStream);
-            if (result.Success)
+            var diagnostics = tree.Diagnostics;
+            if (!HasErrors(diagnostics))
             {
-                return new Script(name, peStream, pdbStream, builder, previousSubmission);
+                var name = builder.GetNewSubmissionName();
+
+                var compilation = builder.CoreCompilation
+                    .WithAssemblyName(name.Name)
+                    .AddSyntaxTrees(tree)
+                    .AddReferences(AllPreviousSubmissions(previousSubmission).Select(s => MetadataReference.CreateFromImage(s.Image)));
+
+                diagnostics = compilation.GetDeclarationDiagnostics();
+                if (!HasErrors(diagnostics))
+                {
+                    var peStream = new MemoryStream();
+                    var pdbStream = options.EmitDebugInformation ? new MemoryStream() : null;
+                    var result = compilation.Emit(peStream, pdbStream);
+                    if (result.Success)
+                    {
+                        return new Script(name, peStream, pdbStream, builder, previousSubmission);
+                    }
+                    else
+                    {
+                        diagnostics = result.Diagnostics;
+                    }
+                }
             }
-            else
-            {
-                throw new NotImplementedException("InvalidScript"); // return new InvalidScript(error)
-            }
+
+            //
+            return CreateInvalid(diagnostics, previousSubmission);
         }
+
+        public static Script CreateInvalid(IEnumerable<Diagnostic> diagnostics, Script previousSubmission)
+        {
+            return new Script((ctx, locals, @this) =>
+            {
+                throw new NotImplementedException("invalid script, report diagnostics");
+            }, previousSubmission);
+        }
+
+        static bool HasErrors(IEnumerable<Diagnostic> diagnostics)
+        {
+            return diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
+        }
+
+        #region Context.IScript
 
         public PhpValue Evaluate(Context ctx, PhpArray locals, object @this)
         {
             return _entryPoint(ctx, locals, @this);
         }
+
+        #endregion
+
     }
 }
