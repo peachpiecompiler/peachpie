@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
-    <ProjectReference Include="..\Peachpie.App\Peachpie.App.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
