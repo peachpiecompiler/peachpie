@@ -22,11 +22,11 @@ namespace Pchp.Core.Utilities
         /// <summary>
         /// Loads assembly by name. Returns <c>null</c> if load fails.
         /// </summary>
-        public static Assembly TryLoad(AssemblyName assname)
+        public static Assembly TryLoad(string assemblyName)
         {
             try
             {
-                return Assembly.Load(assname);
+                return Assembly.Load(new AssemblyName(assemblyName));
             }
             catch
             {

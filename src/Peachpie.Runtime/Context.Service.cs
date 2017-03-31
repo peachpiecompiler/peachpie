@@ -30,29 +30,33 @@ namespace Pchp.Core
 
         static IEnumerable<Assembly> CollectCompositionAssemblies()
         {
-            var asses = new List<AssemblyName>(8);
-            var runtimeDepName = typeof(Context).GetTypeInfo().Assembly.GetName().Name;
-
-            // runtime deps
-            if (DependencyContext.Default != null)
+            // wellknown components
+            var assemblyNames = new List<string>(8)
             {
-                foreach (var lib in DependencyContext.Default.RuntimeLibraries)
-                {
-                    if (lib.Dependencies.Any(d => d.Name == runtimeDepName))    // only assemblies depending on this runtime
-                    {
-                        asses.Add(new AssemblyName(lib.Name));
-                    }
-                }
-            }
+                "Peachpie.Library.Scripting",
+                "Peachpie.Library.PDO.Firebird",
+                "Peachpie.Library.PDO.IBM",
+                "Peachpie.Library.PDO.MySQL",
+                "Peachpie.Library.PDO.PgSQL",
+                "Peachpie.Library.PDO.SqlSrv",
+            };
 
-            // wellknown
-            asses.Add(new AssemblyName("Peachpie.Library"));
-            asses.Add(new AssemblyName("Peachpie.Library.Scripting")); // eval, create_function
+            //// runtime deps
+            //if (DependencyContext.Default != null)
+            //{
+            //    foreach (var lib in DependencyContext.Default.RuntimeLibraries)
+            //    {
+            //        if (lib.Dependencies.Any(d => d.Name == runtimeDepName))    // only assemblies depending on this runtime
+            //        {
+            //            assemblyNames.Add(lib.Name);
+            //        }
+            //    }
+            //}
 
             // TODO: extension libraries
 
             //
-            return asses.Distinct().Select(CompositionExtension.TryLoad).WhereNotNull();
+            return assemblyNames.Distinct(StringComparer.OrdinalIgnoreCase).Select(CompositionExtension.TryLoad).WhereNotNull();
         }
 
         // TODO: local (instance) services
