@@ -19,7 +19,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Devsense.Php.Parser" Version="1.2.5" />
+    <PackageReference Include="Devsense.Php.Parser" Version="1.2.6" />
     <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.5.3" />
   </ItemGroup>
 
