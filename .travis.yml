@@ -8,8 +8,8 @@ install:
   - ./build/install_dependencies_ubuntu14.sh
   - dotnet restore ./src/Peachpie.NETCore.Web
   - dotnet build -f netstandard1.6 ./src/Peachpie.NETCore.Web
-  - dotnet restore ./src/Peachpie.Compiler.Tools
   - dotnet restore ./src/Peachpie.NET.Sdk
+  - dotnet restore ./src/Peachpie.Compiler.Tools
   - dotnet build -f netcoreapp1.0 ./src/Peachpie.Compiler.Tools
   - dotnet restore ./Samples/ConsoleApplication1
   - dotnet run -p ./Samples/ConsoleApplication1/ConsoleApplication1.msbuildproj
