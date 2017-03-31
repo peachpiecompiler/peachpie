@@ -135,15 +135,16 @@ namespace Pchp.CodeAnalysis
 
         private PhpCompilation Update(
             string assemblyName = null,
-            ReferenceManager referenceManager = null,
             PhpCompilationOptions options = null,
+            IEnumerable<MetadataReference> references = null,
+            ReferenceManager referenceManager = null,
             bool reuseReferenceManager = false,
             IEnumerable<PhpSyntaxTree> syntaxTrees = null)
         {
             var compilation = new PhpCompilation(
                 assemblyName ?? this.AssemblyName,
                 options ?? _options,
-                this.ExternalReferences,
+                this.ExternalReferences.AddRange((references == null) ? ImmutableArray<MetadataReference>.Empty : references),
                 //this.PreviousSubmission,
                 //this.SubmissionReturnType,
                 //this.HostObjectType,
@@ -494,7 +495,7 @@ namespace Pchp.CodeAnalysis
 
         protected override Compilation CommonClone()
         {
-            throw new NotImplementedException();
+            return Clone();
         }
 
         protected override IArrayTypeSymbol CommonCreateArrayTypeSymbol(ITypeSymbol elementType, int rank)
@@ -649,12 +650,17 @@ namespace Pchp.CodeAnalysis
 
         protected override Compilation CommonWithOptions(CompilationOptions options)
         {
-            throw new NotImplementedException();
+            if (!(options is PhpCompilationOptions))
+            {
+                throw ExceptionUtilities.UnexpectedValue(options);
+            }
+
+            return Update(options: (PhpCompilationOptions)options);
         }
 
         protected override Compilation CommonWithReferences(IEnumerable<MetadataReference> newReferences)
         {
-            throw new NotImplementedException();
+            return Update(references: newReferences);
         }
 
         protected override Compilation CommonWithScriptCompilationInfo(ScriptCompilationInfo info)
