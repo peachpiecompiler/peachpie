@@ -67,10 +67,11 @@ namespace Peachpie.Library.Scripting
 
         public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, Script previousSubmission)
         {
-            var tree = PhpSyntaxTree.ParseCode(code, new PhpParseOptions(kind: SourceCodeKind.Script), PhpParseOptions.Default, Path.Combine(options.Context.RootPath, options.Location.Path));
-            // TODO: if (tree.Diagnostics) ...
+            var tree = PhpSyntaxTree.ParseCode(code, new PhpParseOptions(kind: SourceCodeKind.Script), PhpParseOptions.Default, options.Location.Path);
+            // TODO: if (tree.Diagnostics) ...            
 
             var name = builder.GetNewSubmissionName();
+
             var compilation = builder.CoreCompilation
                 .WithAssemblyName(name.Name)
                 .AddSyntaxTrees(tree)
