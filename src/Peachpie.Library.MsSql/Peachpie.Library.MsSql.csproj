@@ -2,7 +2,7 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;net46</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Peachpie.Library.MsSql</AssemblyName>
     <AssemblyOriginatorKeyFile>../../build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
@@ -12,7 +12,7 @@
     <PackageTags>peachpie;library;mssql</PackageTags>
     <PackageProjectUrl>https://github.com/iolevel/peachpie</PackageProjectUrl>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.6' ">$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
+    <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.5' ">$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
