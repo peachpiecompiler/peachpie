@@ -36,6 +36,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitCFG(x);
         }
 
+        public override void VisitEval(BoundEvalEx x)
+        {
+            _diagnostics.Add(_routine, new TextSpan(x.PhpSyntax.Span.Start, 4)/*'eval'*/, ErrorCode.WRN_EvalDiscouraged);
+
+            base.VisitEval(x);
+        }
+
         public override void VisitTypeRef(BoundTypeRef typeRef)
         {
             if (typeRef != null)

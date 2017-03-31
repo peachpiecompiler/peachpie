@@ -71,6 +71,7 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_UndefinedFunctionCall,
         WRN_UninitializedVariableUse,
         WRN_UndefinedType,
-        WRN_UndefinedMethodCall
+        WRN_UndefinedMethodCall,
+        WRN_EvalDiscouraged,
     }
 }
