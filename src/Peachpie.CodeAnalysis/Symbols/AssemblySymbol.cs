@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Threading;
 using Roslyn.Utilities;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -37,6 +38,26 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         public abstract AssemblyIdentity Identity { get; }
+
+        /// <summary>
+        /// Assembly version pattern with wildcards represented by <see cref="ushort.MaxValue"/>,
+        /// or null if the version string specified in the <see cref="AssemblyVersionAttribute"/> doesn't contain a wildcard.
+        /// 
+        /// For example, 
+        ///   AssemblyVersion("1.2.*") is represented as 1.2.65535.65535,
+        ///   AssemblyVersion("1.2.3.*") is represented as 1.2.3.65535.
+        /// </summary>
+        public abstract Version AssemblyVersionPattern { get; }
+
+        /// <summary>
+        /// Does this symbol represent a missing assembly.
+        /// </summary>
+        internal virtual bool IsMissing => false;
+
+        /// <summary>
+        /// Assembly is /l-ed by compilation that is using it as a reference.
+        /// </summary>
+        internal abstract bool IsLinked { get; }
 
         /// <summary>
         /// The system assembly, which provides primitive types like Object, String, etc., e.g. mscorlib.dll. 
@@ -253,7 +274,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Lookup member declaration in predefined CorLib type in this Assembly. Only valid if this 
         /// assembly is the Cor Library
         /// </summary>
-        internal Symbol GetDeclaredSpecialTypeMember(SpecialMember member)
+        internal virtual Symbol GetDeclaredSpecialTypeMember(SpecialMember member)
         {
             if (_lazySpecialTypeMembers == null || ReferenceEquals(_lazySpecialTypeMembers[(int)member], ErrorTypeSymbol.UnknownResultType))
             {
@@ -283,6 +304,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return _lazySpecialTypeMembers[(int)member];
         }
+
+        /// <summary>
+        /// Return an array of assemblies referenced by this assembly, which are linked (/l-ed) by 
+        /// each compilation that is using this AssemblySymbol as a reference. 
+        /// If this AssemblySymbol is linked too, it will be in this array too.
+        /// </summary>
+        internal abstract ImmutableArray<AssemblySymbol> GetLinkedReferencedAssemblies();
+        internal abstract void SetLinkedReferencedAssemblies(ImmutableArray<AssemblySymbol> assemblies);
 
         public virtual bool GivesAccessTo(IAssemblySymbol toAssembly)
         {

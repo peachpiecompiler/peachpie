@@ -79,8 +79,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal override bool IsLinked => false;
+
         public override AssemblyIdentity Identity => _lazyIdentity ?? (_lazyIdentity = ComputeIdentity());
-        
+
+        public override Version AssemblyVersionPattern => null; // TODO: Version attribute
+
         internal override ObsoleteAttributeData ObsoleteAttributeData
         {
             get
@@ -234,6 +238,16 @@ namespace Pchp.CodeAnalysis.Symbols
         public override NamedTypeSymbol GetTypeByMetadataName(string fullyQualifiedMetadataName)
         {
             return SourceModule.SymbolCollection.GetType(NameUtils.MakeQualifiedName(fullyQualifiedMetadataName.Replace('.', Devsense.PHP.Syntax.QualifiedName.Separator), true));
+        }
+
+        internal override ImmutableArray<AssemblySymbol> GetLinkedReferencedAssemblies()
+        {
+            return ImmutableArray<AssemblySymbol>.Empty;
+        }
+
+        internal override void SetLinkedReferencedAssemblies(ImmutableArray<AssemblySymbol> assemblies)
+        {
+            throw ExceptionUtilities.Unreachable;
         }
     }
 }

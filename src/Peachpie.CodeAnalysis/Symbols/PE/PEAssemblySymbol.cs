@@ -33,6 +33,14 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly string _filePath;
 
         /// <summary>
+        /// An array of assemblies referenced by this assembly, which are linked (/l-ed) by 
+        /// each compilation that is using this AssemblySymbol as a reference. 
+        /// If this AssemblySymbol is linked too, it will be in this array too.
+        /// The array and its content is provided by ReferenceManager and must not be modified.
+        /// </summary>
+        private ImmutableArray<AssemblySymbol> _linkedReferencedAssemblies;
+
+        /// <summary>
         /// Assembly is /l-ed by compilation that is using it as a reference.
         /// </summary>
         readonly bool _isLinked;
@@ -63,6 +71,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override AssemblyIdentity Identity => _assembly.Identity;
 
+        public override Version AssemblyVersionPattern => null;
+
         public override ImmutableArray<ModuleSymbol> Modules => _modules;
 
         internal DocumentationProvider DocumentationProvider => _documentationProvider;
@@ -80,6 +90,18 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsCorLibrary => _specialAssembly == SpecialAssembly.CorLibrary;
 
         public override bool IsPchpCorLibrary => _specialAssembly == SpecialAssembly.PchpCorLibrary;
+
+        internal override bool IsLinked => _isLinked;
+
+        internal override void SetLinkedReferencedAssemblies(ImmutableArray<AssemblySymbol> assemblies)
+        {
+            _linkedReferencedAssemblies = assemblies;
+        }
+
+        internal override ImmutableArray<AssemblySymbol> GetLinkedReferencedAssemblies()
+        {
+            return _linkedReferencedAssemblies;
+        }
 
         internal bool IsExtensionLibrary
         {
@@ -152,7 +174,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal static bool IsPchpCor(PEAssembly ass) => ass.Identity.Name == "Peachpie.Runtime";
 
-        internal static PEAssemblySymbol Create(PortableExecutableReference reference, PEAssembly ass = null)
+        internal static PEAssemblySymbol Create(PortableExecutableReference reference, PEAssembly ass = null, bool isLinked = true)
         {
             if (ass == null)
             {
@@ -160,7 +182,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return new PEAssemblySymbol(
-                ass, reference.DocumentationProvider, reference.FilePath, true,
+                ass, reference.DocumentationProvider, reference.FilePath, isLinked,
                 IsPchpCor(ass) ? MetadataImportOptions.Internal : MetadataImportOptions.Public);
         }
 

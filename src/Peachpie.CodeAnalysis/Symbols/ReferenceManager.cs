@@ -92,7 +92,7 @@ namespace Pchp.CodeAnalysis
                 _observedMetadata = observedMetadata ?? new Dictionary<AssemblyIdentity, PEAssemblySymbol>();
             }
 
-            PEAssemblySymbol CreateAssemblyFromIdentity(MetadataReferenceResolver resolver, AssemblyIdentity identity, string basePath, List<PEModuleSymbol> modules)
+            AssemblySymbol CreateAssemblyFromIdentity(MetadataReferenceResolver resolver, AssemblyIdentity identity, string basePath, List<PEModuleSymbol> modules)
             {
                 PEAssemblySymbol ass;
                 if (!_observedMetadata.TryGetValue(identity, out ass))
@@ -116,15 +116,14 @@ namespace Pchp.CodeAnalysis
                     var pe = pes.FirstOrDefault();
                     if (pe != null)
                     {
-                        _observedMetadata[identity] = ass = PEAssemblySymbol.Create(pe);
+                        _observedMetadata[identity] = ass = PEAssemblySymbol.Create(pe, isLinked: false);
                         ass.SetCorLibrary(_lazyCorLibrary);
                         modules.AddRange(ass.Modules.Cast<PEModuleSymbol>());
                     }
                     else
                     {
-                        //
-                        _diagnostics.Add(Location.None, Errors.ErrorCode.ERR_MetadataFileNotFound, identity);
-                        // TODO: ass = new MissingAssemblySymbol(identity);
+                        //_diagnostics.Add(Location.None, Errors.ErrorCode.ERR_MetadataFileNotFound, identity);
+                        return new MissingAssemblySymbol(identity);
                     }
                 }
 
@@ -184,7 +183,7 @@ namespace Pchp.CodeAnalysis
                             continue;
                         }
 
-                        var symbol = _observedMetadata.TryGetOrDefault(peass.Identity) ?? PEAssemblySymbol.Create(pe, peass);
+                        var symbol = _observedMetadata.TryGetOrDefault(peass.Identity) ?? PEAssemblySymbol.Create(pe, peass, isLinked: true);
                         if (symbol != null)
                         {
                             assemblies.Add(symbol);
@@ -202,7 +201,7 @@ namespace Pchp.CodeAnalysis
                         }
                         else
                         {
-                            throw new Exception($"symbol '{pe.FilePath}' could not be created!");
+                            _diagnostics.Add(Location.None, Errors.ErrorCode.ERR_MetadataFileNotFound, peass.Identity);
                         }
                     }
 
