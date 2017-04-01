@@ -43,9 +43,9 @@ foreach ($project in $projects) {
 
 # build & pack
 Write-Host -f green "Building packages ..."
-#$defaultArgs += "--no-build" #/t:pack
 dotnet build $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Library.Scripting
 dotnet build $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.CodeAnalysis
+$defaultArgs += "--no-build" #/t:pack
 dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Runtime
 dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Library
 dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.6" $rootDir/src/Peachpie.Library.MySql
