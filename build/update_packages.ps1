@@ -11,27 +11,16 @@ if ($framework -ne "netcoreapp1.0") {
     return
 }
 
-# The list of projects to process
-$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk")
-$suffix = "dev"
-
 # We suppose the global package source is in the default location 
+$rootDir = [System.IO.Path]::GetFullPath($rootDir)
 $packagesSource = (Resolve-Path "~/.nuget/packages").Path
+$suffix = "dev"
+$defaultArgs = @("/p:Configuration=$configuration", "/p:VersionSuffix=$suffix")
 
-# Create the Nuget packages and delete those currently installed
+## Delete old nuget packages
+Write-Host -f green "Deleting '$suffix' packages from '$packagesSource' ..."
+$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk")
 foreach ($project in $projects) {
-    $appendedArgs = New-Object System.Collections.Generic.List[System.String]
-    
-    # Do not pack full .NET 4.6 assemblies if they weren't produced
-    $projectDir = "$rootDir/src/$project"
-    if (!(Test-Path $projectDir/bin/$configuration/net46/*)) {
-        $packFramework = if ($project -eq "Peachpie.Compiler.Tools") { "netcoreapp1.0" } elseif ($project -eq "Peachpie.Library.MySql") { "netstandard1.6" } else { "netstandard1.5" }
-        $appendedArgs.Add("/p:TargetFrameworks=")
-        $appendedArgs.Add("/p:TargetFramework=$packFramework")
-    }
-
-    dotnet pack --no-build -c $configuration --version-suffix $suffix $projectDir $appendedArgs
-
     $installedFolder = "$packagesSource/$project/$version-$suffix"
     if (Test-Path $installedFolder) {
         Remove-Item -Recurse -Force $installedFolder
@@ -44,5 +33,27 @@ if (Test-Path $toolFolder) {
     Remove-Item -Recurse -Force $toolFolder
 }
 
+## Restore top packages, dependencies restored recursively
+
+$projects = @("Peachpie.NET.Sdk", "Peachpie.Library.Scripting", "Peachpie.NETCore.Web");
+foreach ($project in $projects) {
+	Write-Host -f green "Restoring '$rootDir/src/$project'"
+    dotnet restore $defaultArgs "$rootDir/src/$project"
+}
+
+# build & pack
+Write-Host -f green "Building packages ..."
+#$defaultArgs += "--no-build" #/t:pack
+dotnet build $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Library.Scripting
+dotnet build $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.CodeAnalysis
+dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Runtime
+dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Library
+dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.6" $rootDir/src/Peachpie.Library.MySql
+dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Library.MsSql
+dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.App
+dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.6" $rootDir/src/Peachpie.NETCore.Web
+dotnet pack $defaultArgs "/p:TargetFramework=netcoreapp1.0" $rootDir/src/Peachpie.NET.Sdk
+
 # Reinstall the packages by restoring a dummy project that depends on them
+Write-Host -f green "Installing packages to nuget cache ..."
 dotnet restore "$rootDir/build/dummy"
