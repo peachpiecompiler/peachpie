@@ -13,6 +13,7 @@ if ($framework -ne "netcoreapp1.0") {
 
 # We suppose the global package source is in the default location 
 $rootDir = [System.IO.Path]::GetFullPath($rootDir)
+Write-Host "Root at" $rootDir
 $packagesSource = (Resolve-Path "~/.nuget/packages").Path
 $suffix = "dev"
 $defaultArgs = @("/p:Configuration=$configuration", "/p:VersionSuffix=$suffix")
@@ -41,19 +42,26 @@ foreach ($project in $projects) {
     dotnet restore $defaultArgs "$rootDir/src/$project"
 }
 
+# produces nuget package of the project
+function Pack
+{
+	param ([string]$project)
+	$moreArgs = @()
+	$projectDir = "$rootDir/src/$project"
+	$target = if (Test-Path $projectDir/bin/$configuration/) { "pack" } else { "build" }
+	# Do not pack full .NET 4.6 assemblies if they weren't produced
+	if (!(Test-Path $projectDir/bin/$configuration/net4*))
+	{
+		$frameworks = Get-ChildItem "$projectDir/bin/$configuration" -Directory | % {$_.Name}
+		$moreArgs += "/p:TargetFrameworks=" + ($a -join ';')
+	}
+	Write-Host "Building " $projectDir "/t:" $target " ..." -f green
+	dotnet $target $defaultArgs $moreArgs $projectDir
+}
+
 # build & pack
 Write-Host -f green "Building & packing additional packages ..."
-dotnet build $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.CodeAnalysis
-dotnet build $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Library
-dotnet build $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Library.Scripting
-dotnet build $defaultArgs "/p:TargetFramework=netstandard1.6" $rootDir/src/Peachpie.NETCore.Web
-dotnet build $defaultArgs "/p:TargetFramework=netcoreapp1.0" $rootDir/src/Peachpie.NET.Sdk
-Write-Host -f green "Packing ..."
-$defaultArgs += "--no-build" #/t:pack
-dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Runtime
-dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.6" $rootDir/src/Peachpie.Library.MySql
-dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.Library.MsSql
-dotnet pack $defaultArgs "/p:TargetFramework=netstandard1.5" $rootDir/src/Peachpie.App
+@("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk") | % {Pack $_}
 
 # Reinstall the packages by restoring a dummy project that depends on them
 Write-Host -f green "Installing packages to nuget cache ..."

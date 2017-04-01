@@ -11,11 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="$(VersionPrefix)-$(VersionSuffix)" />
     <PackageReference Include="Peachpie.Compiler.Tools" Version="$(VersionPrefix)-$(VersionSuffix)" />
 	<PackageReference Include="Peachpie.NETCore.Web" Version="$(VersionPrefix)-$(VersionSuffix)" />
 	<PackageReference Include="Peachpie.Library.Scripting" Version="$(VersionPrefix)-$(VersionSuffix)" />
     <PackageReference Include="Peachpie.NET.Sdk" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
+    <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="$(VersionPrefix)-$(VersionSuffix)" />
   </ItemGroup>
   
 </Project>
