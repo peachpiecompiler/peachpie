@@ -20,9 +20,8 @@ $defaultArgs = @("/p:Configuration=$configuration", "/p:VersionSuffix=$suffix")
 
 ## Delete old nuget packages
 Write-Host -f green "Deleting '$suffix' packages from '$packagesSource' ..."
-$projects = @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk")
-foreach ($project in $projects) {
-    $installedFolder = "$packagesSource/$project/$version-$suffix"
+@("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk") | % {
+	$installedFolder = "$packagesSource/$_/$version-$suffix"
     if (Test-Path $installedFolder) {
         Remove-Item -Recurse -Force $installedFolder
     }
@@ -35,32 +34,33 @@ if (Test-Path $toolFolder) {
 }
 
 ## Restore top packages, dependencies restored recursively
-
-$projects = @("Peachpie.NET.Sdk", "Peachpie.Library.Scripting", "Peachpie.NETCore.Web");
-foreach ($project in $projects) {
-	Write-Host -f green "Restoring '$rootDir/src/$project'"
-    dotnet restore $defaultArgs "$rootDir/src/$project"
+Write-Host -f green "Restoring packages ..."
+@("Peachpie.NET.Sdk", "Peachpie.Library.Scripting", "Peachpie.NETCore.Web") | % {
+	dotnet restore $defaultArgs "$rootDir/src/$_"
 }
 
 # produces nuget package of the project
+Write-Host -f green "Building & packing additional packages ..."
 function Pack {
 	param ([string]$project)
-	$moreArgs = ""
 	$projectDir = "$rootDir/src/$project"
+	# check what is already built and just pack if possible
 	$frameworks = if (Test-Path "$projectDir/bin/$configuration") { Get-ChildItem "$projectDir/bin/$configuration" -Directory | Where-Object {$_.GetFiles("*.dll").Count -gt 0} | % {$_.Name} } else { @() }
-	if ($frameworks.Count -eq 0) {
-		$target = "build"
+	$target = if ($frameworks.Count -eq 0) { "build" } else { "pack" }
+	switch ($project)
+	{
+		"Peachpie.Compiler.Tools" { $framework = "netcoreapp1.0" }
+		"Peachpie.Library.MySql" { $framework = "netstandard1.6" }
+		"Peachpie.NETCore.Web" { $framework = "netstandard1.6" }
+		"Peachpie.NET.Sdk" { $framework = "netcoreapp1.0" }
+		default { $framework = "netstandard1.5" }
 	}
-	else {
-		$target = "pack"
-		$moreArgs = "" # "/p:TargetFrameworks=$($frameworks -join '+')"
-	}
+	$moreArgs = "/p:TargetFramework=$framework"
 	Write-Host "Building $projectDir /t:$target $moreArgs ..." -f green
 	dotnet $target $defaultArgs $moreArgs $projectDir
 }
 
 # build & pack
-Write-Host -f green "Building & packing additional packages ..."
 @("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk") | % {Pack $_}
 
 # Reinstall the packages by restoring a dummy project that depends on them
