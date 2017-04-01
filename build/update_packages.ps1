@@ -24,11 +24,11 @@ foreach ($project in $projects) {
     
     # Do not pack full .NET 4.6 assemblies if they weren't produced
     $projectDir = "$rootDir/src/$project"
-    #if (!(Test-Path $projectDir/bin/$configuration/net46/*)) {
-    #    $packFramework = if ($project -eq "Peachpie.Compiler.Tools") { "netcoreapp1.0" } else { "netstandard1.6" }
-    #    $appendedArgs.Add("/p:TargetFrameworks=")
-    #    $appendedArgs.Add("/p:TargetFramework=$packFramework")
-    #}
+    if (!(Test-Path $projectDir/bin/$configuration/net46/*)) {
+        $packFramework = if ($project -eq "Peachpie.Compiler.Tools") { "netcoreapp1.0" } elseif ($project -eq "Peachpie.Library.MySql") { "netstandard1.6" } else { "netstandard1.5" }
+        $appendedArgs.Add("/p:TargetFrameworks=")
+        $appendedArgs.Add("/p:TargetFramework=$packFramework")
+    }
 
     dotnet pack --no-build -c $configuration --version-suffix $suffix $projectDir $appendedArgs
 
