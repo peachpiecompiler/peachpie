@@ -43,19 +43,19 @@ foreach ($project in $projects) {
 }
 
 # produces nuget package of the project
-function Pack
-{
+function Pack {
 	param ([string]$project)
-	$moreArgs = @()
+	$moreArgs = ""
 	$projectDir = "$rootDir/src/$project"
-	$target = if (Test-Path $projectDir/bin/$configuration/) { "pack" } else { "build" }
-	# Do not pack full .NET 4.6 assemblies if they weren't produced
-	if (!(Test-Path $projectDir/bin/$configuration/net4*))
-	{
-		$frameworks = Get-ChildItem "$projectDir/bin/$configuration" -Directory | % {$_.Name}
-		$moreArgs += "/p:TargetFrameworks=" + ($a -join ';')
+	$frameworks = if (Test-Path "$projectDir/bin/$configuration") { Get-ChildItem "$projectDir/bin/$configuration" -Directory | Where-Object {$_.GetFiles("*.dll").Count -gt 0} | % {$_.Name} } else { @() }
+	if ($frameworks.Count -eq 0) {
+		$target = "build"
 	}
-	Write-Host "Building " $projectDir "/t:" $target " ..." -f green
+	else {
+		$target = "pack"
+		$moreArgs = "" # "/p:TargetFrameworks=$($frameworks -join '+')"
+	}
+	Write-Host "Building $projectDir /t:$target $moreArgs ..." -f green
 	dotnet $target $defaultArgs $moreArgs $projectDir
 }
 
