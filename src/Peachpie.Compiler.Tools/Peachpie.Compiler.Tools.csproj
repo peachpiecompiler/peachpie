@@ -6,22 +6,16 @@
     <TargetFrameworks>net46;netcoreapp1.0</TargetFrameworks>
     <AssemblyName>dotnet-compile-php</AssemblyName>
     <OutputType>Exe</OutputType>
-    <AssemblyOriginatorKeyFile>../../build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
-    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
     <PackageId>Peachpie.Compiler.Tools</PackageId>
     <PackageTags>dotnet;compile-php</PackageTags>
-    <RuntimeFrameworkVersion Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">1.0.4</RuntimeFrameworkVersion>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <PostBuildEvent>powershell -File ../../../../../build/update_packages.ps1 ../../../../../ $(VersionPrefix) $(TargetFramework) $(Configuration)</PostBuildEvent>
+    <!-- PostBuildEvent Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">
+	powershell -File ../../../../../build/update-cache.ps1 $(VersionPrefix) $(VersionSuffix)
+	</PostBuildEvent -->
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
-    <ProjectReference Include="..\Peachpie.App\Peachpie.App.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">

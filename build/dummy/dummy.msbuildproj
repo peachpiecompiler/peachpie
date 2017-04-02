@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\Targets\Settings.props" />
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp1.0</TargetFramework>
   </PropertyGroup>
 
@@ -10,15 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="0.6.0-dev" />
-    <PackageReference Include="Peachpie.Compiler.Tools" Version="0.6.0-dev" />
-    <PackageReference Include="Peachpie.NET.Sdk" Version="0.6.0-dev" PrivateAssets="Build" />
+    <PackageReference Include="Peachpie.Library.Scripting" Version="$(VersionPrefix)-$(VersionSuffix)" />
+    <PackageReference Include="Peachpie.NET.Sdk" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
+    <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="$(VersionPrefix)-$(VersionSuffix)" />
   </ItemGroup>
   
-  <!-- As a temporary solution, import C# Visual Studio design time targets in order to be able to load the project in Visual Studio -->
-  <PropertyGroup>
-    <CSharpDesignTimeTargetsPath Condition="'$(CSharpDesignTimeTargetsPath)'==''">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\Managed\Microsoft.CSharp.DesignTime.targets</CSharpDesignTimeTargetsPath>
-  </PropertyGroup>
-  <Import Project="$(CSharpDesignTimeTargetsPath)" Condition="'$(CSharpDesignTimeTargetsPath)' != '' and Exists('$(CSharpDesignTimeTargetsPath)')" />
-
 </Project>

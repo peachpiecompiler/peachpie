@@ -2,23 +2,12 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>net46;netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>net46;netstandard1.5</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <PublicSign>true</PublicSign>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Peachpie.CodeAnalysis</AssemblyName>
     <AssemblyOriginatorKeyFile>../../build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
     <PackageId>Peachpie.CodeAnalysis</PackageId>
     <PackageTags>php;peachpie;dotnet;compiler</PackageTags>
-    <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.6' ">$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
@@ -28,7 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="Devsense.Php.Parser" Version="1.2.6" />
-    <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.5.3" />
+    <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.6.0" />
     <PackageReference Include="System.Collections.Immutable" Version="1.3.1" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.4.2" />
   </ItemGroup>
@@ -38,7 +27,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
     <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
   </ItemGroup>
 

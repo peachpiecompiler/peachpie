@@ -2,25 +2,17 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;net462</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;1574</NoWarn>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>Peachpie.Library.Scripting</AssemblyName>
-    <AssemblyOriginatorKeyFile>../../build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
-    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
     <PackageId>Peachpie.Library.Scripting</PackageId>
     <PackageTags>peachpie;library;scripting</PackageTags>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <PackageTargetFallback Condition=" '$(TargetFramework)' == 'netstandard1.6' ">$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="Devsense.Php.Parser" Version="1.2.6" />
-    <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.5.3" />
+    <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.6.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,7 +26,7 @@
 	<Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 

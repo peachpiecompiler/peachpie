@@ -2,15 +2,36 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
+  
     <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">0.6.0</VersionPrefix>
     <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">dev</VersionSuffix>
+	
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateNeutralResourcesLanguageAttribute>true</GenerateNeutralResourcesLanguageAttribute>
+	
+	<RuntimeFrameworkVersion Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">1.0.4</RuntimeFrameworkVersion>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+	
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)../StrongKeys/core.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+	<PublicSign>true</PublicSign>
+	
   </PropertyGroup>
   
   <PropertyGroup>
-    <PackageProjectUrl>https://github.com/iolevel/peachpie</PackageProjectUrl>
-	<PackageOutputPath>$(MSBuildThisFileDirectory)..\..\.nugs</PackageOutputPath>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/iolevel/peachpie</RepositoryUrl>
+	<PackageProjectUrl>https://github.com/iolevel/peachpie</PackageProjectUrl>
+	<PackageOutputPath>$(MSBuildThisFileDirectory)../../.nugs</PackageOutputPath>
   </PropertyGroup>
+  
+  <Import Project="CommonBuild.target" />
   
 </Project>
