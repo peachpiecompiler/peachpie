@@ -14,7 +14,9 @@ install:
   - dotnet build ./src/Peachpie.App/ -f netstandard1.5
   - dotnet restore ./src/Peachpie.CodeAnalysis/
   - dotnet build ./src/Peachpie.CodeAnalysis/ -f netstandard1.5
+  - dotnet restore ./src/Peachpie.Compiler.Tools/
   - dotnet build ./src/Peachpie.Compiler.Tools/ -f netcoreapp1.0
+  - dotnet restore ./src/Peachpie.NET.Sdk/
   - dotnet build ./src/Peachpie.NET.Sdk/ -f netcoreapp1.0
   - powershell -File ./build/update-cache.ps1 0.6.0
 
