@@ -6,10 +6,8 @@ php:
 
 install:
   - ./build/install_dependencies_ubuntu14.sh
-  - dotnet restore ./src/Peachpie.Compiler.Tools
-  - dotnet build -f netcoreapp1.0 ./src/Peachpie.Compiler.Tools
-  - dotnet restore ./Samples/ConsoleApplication1
-  - dotnet run -p ./Samples/ConsoleApplication1/ConsoleApplication1.msbuildproj
+  - powershell -File ./build/build.ps1 -suffix dev
+  - powershell -File ./build/update-cache.ps1 0.6.0
 
 script:
   - ./src/Tools/runtests_shell/runtests.sh

@@ -26,7 +26,7 @@ namespace Peachpie.NETCore.Compiler.Tools
             return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, new[] { "@" + rspfile }, null, System.IO.Directory.GetCurrentDirectory(), sdkdir, libs, new SimpleAnalyzerAssemblyLoader(), Console.Out);
         }
 
-#region ProcessArguments
+        #region ProcessArguments
 
         // TODO: CommonCompilerOptionsCommandLine:
 
@@ -35,6 +35,7 @@ namespace Peachpie.NETCore.Compiler.Tools
         /// Parses given arguments and gets new set of arguments to be passed to our compiler driver.
         /// </summary>
         /// <param name="args">Original set of arguments.</param>
+        /// <param name="sdkdir"><c>sdk-dir</c> argument value.</param>
         /// <returns>New set of arguments.</returns>
         static string CreateRspFile(string[] args, out string sdkdir)
         {
