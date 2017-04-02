@@ -7,17 +7,17 @@ php:
 install:
   - ./build/install_dependencies_ubuntu14.sh
   - dotnet restore ./Peachpie.sln
-  - dotnet build ./src/Peachpie.Runtime/ /p:TargetFrameworks=,TargetFramework=netstandard1.5
-  - dotnet build ./src/Peachpie.Library/ /p:TargetFrameworks=,TargetFramework=netstandard1.5
-  - dotnet build ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=,TargetFramework=netstandard1.5
-  - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=,TargetFramework=netstandard1.5
-  - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=,TargetFramework=netstandard1.5
+  - dotnet build ./src/Peachpie.Runtime/ /p:TargetFrameworks=netstandard1.5
+  - dotnet build ./src/Peachpie.Library/ /p:TargetFrameworks=netstandard1.5
+  - dotnet build ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=netstandard1.5
+  - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=netstandard1.5
+  - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=netstandard1.5
   - dotnet restore ./src/Peachpie.CodeAnalysis/
-  - dotnet build ./src/Peachpie.CodeAnalysis/ /p:TargetFrameworks=,TargetFramework=netstandard1.5
-  - dotnet restore ./src/Peachpie.Compiler.Tools/
-  - dotnet build ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=,TargetFramework=netcoreapp1.0
-  - dotnet restore ./src/Peachpie.NET.Sdk/
-  - dotnet build ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=,TargetFramework=netcoreapp1.0
+  - dotnet build ./src/Peachpie.CodeAnalysis/ /p:TargetFrameworks=netstandard1.5
+  - dotnet restore ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp1.0
+  - dotnet build ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp1.0
+  - dotnet restore ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=netcoreapp1.0
+  - dotnet build ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=netcoreapp1.0
   - powershell -File ./build/update-cache.ps1 0.6.0
 
 script:
