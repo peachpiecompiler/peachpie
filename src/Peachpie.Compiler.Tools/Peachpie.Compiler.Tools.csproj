@@ -8,10 +8,9 @@
     <OutputType>Exe</OutputType>
     <PackageId>Peachpie.Compiler.Tools</PackageId>
     <PackageTags>dotnet;compile-php</PackageTags>
-    <PostBuildEvent>
-	REM TODO after pack !!
-	REM IF [$(TargetFramework)]==[netcoreapp1.0] powershell -File ../../../../../build/update-cache.ps1 $(VersionPrefix) $(VersionSuffix)
-	</PostBuildEvent>
+    <!-- PostBuildEvent Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">
+	powershell -File ../../../../../build/update-cache.ps1 $(VersionPrefix) $(VersionSuffix)
+	</PostBuildEvent -->
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
