@@ -9,7 +9,6 @@ param([string]$version, [string]$suffix = "dev")
 $rootDir = [System.IO.Path]::GetFullPath("$PSScriptRoot/..")
 Write-Host "Root at" $rootDir
 $packagesSource = (Resolve-Path "~/.nuget/packages").Path
-$suffix = "dev"
 $defaultArgs = "/p:VersionPrefix=$version,VersionSuffix=$suffix"
 
 ## Delete old nuget packages
