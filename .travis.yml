@@ -6,7 +6,15 @@ php:
 
 install:
   - ./build/install_dependencies_ubuntu14.sh
-  - powershell -File ./build/build.ps1 -suffix dev
+  - dotnet restore ./Peachpie.sln
+  - dotnet build ./src/Peachpie.Runtime/ -f netstandard1.5
+  - dotnet build ./src/Peachpie.Library/ -f netstandard1.5
+  - dotnet build ./src/Peachpie.Library.Scripting/ -f netstandard1.5
+  - dotnet build ./src/Peachpie.Library.MsSql/ -f netstandard1.5
+  - dotnet build ./src/Peachpie.App/ -f netstandard1.5
+  - dotnet build ./src/Peachpie.CodeAnalysis/ -f netstandard1.5
+  - dotnet build ./src/Peachpie.Compiler.Tools/ -f netcoreapp1.0
+  - dotnet build ./src/Peachpie.NET.Sdk/ -f netcoreapp1.0
   - powershell -File ./build/update-cache.ps1 0.6.0
 
 script:

@@ -3,5 +3,9 @@ Param(
   [string]$suffix = "preview-" + [datetime]::now.tostring("yyyyMMdd-HHmmss")
 )
 
-dotnet restore "$PSScriptRoot/../Peachpie.sln" /v:m /p:VersionSuffix=$suffix,PackageVersionSuffix=$suffix,Configuration=$config
-dotnet build "$PSScriptRoot/../Peachpie.sln" /v:m /p:VersionSuffix=$suffix,PackageVersionSuffix=$suffix,Configuration=$config
+$props = "/p:VersionSuffix=$suffix,PackageVersionSuffix=$suffix,Configuration=$config"
+
+Write-Host -f Green "msbuild $props ..."
+
+msbuild /t:restore "$PSScriptRoot/../Peachpie.sln" /v:m $props
+msbuild /t:build "$PSScriptRoot/../Peachpie.sln" /v:m $props
