@@ -12,6 +12,7 @@ install:
   - dotnet build ./src/Peachpie.Library.Scripting/ -f netstandard1.5
   - dotnet build ./src/Peachpie.Library.MsSql/ -f netstandard1.5
   - dotnet build ./src/Peachpie.App/ -f netstandard1.5
+  - dotnet restore ./src/Peachpie.CodeAnalysis/
   - dotnet build ./src/Peachpie.CodeAnalysis/ -f netstandard1.5
   - dotnet build ./src/Peachpie.Compiler.Tools/ -f netcoreapp1.0
   - dotnet build ./src/Peachpie.NET.Sdk/ -f netcoreapp1.0
