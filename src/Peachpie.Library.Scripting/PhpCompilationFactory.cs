@@ -41,6 +41,7 @@ namespace Peachpie.Library.Scripting
                 typeof(object),                 // mscorlib (or System.Runtime)
                 typeof(Pchp.Core.Context),      // Peachpie.Runtime
                 typeof(Pchp.Library.Strings),   // Peachpie.Library
+                typeof(ScriptingProvider),      // Peachpie.Library.Scripting
             };
 
             var list = types.Distinct().Select(ass => ass.GetTypeInfo().Assembly).ToList();

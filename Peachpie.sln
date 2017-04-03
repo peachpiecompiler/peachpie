@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{664C373F-D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{ED9DAD46-91BC-490A-BCF9-425437544421}"
 	ProjectSection(SolutionItems) = preProject
+		.travis.yml = .travis.yml
 		build\build.ps1 = build\build.ps1
 		build\push.ps1 = build\push.ps1
 		build\update-cache.ps1 = build\update-cache.ps1
