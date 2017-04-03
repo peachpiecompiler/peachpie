@@ -3847,4 +3847,18 @@ namespace Pchp.CodeAnalysis.Semantics
             return cg.CoreTypes.Boolean;
         }
     }
+
+    partial class BoundYieldEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            var il = cg.Builder;
+
+            il.EmitRet(true);
+
+            //Just placeholder, return an Symbol that points to generator._currSendItem;
+            return cg.CoreTypes.Boolean;
+
+        }
+    }
 }
