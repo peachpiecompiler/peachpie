@@ -23,6 +23,11 @@ namespace Pchp.CodeAnalysis.Utilities
                 {
                     throw new ArgumentException();  // cannot make relative path
                 }
+
+                if (levelups > 64)
+                {
+                    return path;
+                }
             }
 
             return

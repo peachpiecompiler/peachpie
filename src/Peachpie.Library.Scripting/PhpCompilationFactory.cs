@@ -40,6 +40,7 @@ namespace Peachpie.Library.Scripting
             {
                 typeof(object),                 // mscorlib (or System.Runtime)
                 typeof(Pchp.Core.Context),      // Peachpie.Runtime
+                typeof(Pchp.Library.Strings),   // Peachpie.Library
             };
 
             var list = types.Distinct().Select(ass => ass.GetTypeInfo().Assembly).ToList();

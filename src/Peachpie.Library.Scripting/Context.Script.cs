@@ -69,6 +69,9 @@ namespace Peachpie.Library.Scripting
             {
                 throw new InvalidOperationException();
             }
+
+            // we have to "declare" the script, so its referenced symbols and compiled files are loaded into the context
+            Context.AddScriptReference(ass);
         }
 
         private Script(Context.MainDelegate entryPoint, Script previousSubmissionOpt)

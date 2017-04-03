@@ -1226,7 +1226,7 @@ namespace Pchp.CodeAnalysis.Emit
 
                 //return CodeAnalysis.Emit.ErrorType.Singleton;
 
-                throw new NotImplementedException();
+                throw new NotImplementedException($"Translate(ErrorType {namedTypeSymbol.Name})");
             }
 
             if (!namedTypeSymbol.IsDefinition)
