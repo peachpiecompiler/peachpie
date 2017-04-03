@@ -22,21 +22,21 @@ namespace Pchp.CodeAnalysis.Symbols
                   returnType: containingType.DeclaringCompilation.CoreTypes.Void, ps: null )
         {
             //Need to postpone settings the params because I can't access 'this' in base constructor call
-            var parameters = getParams();
-            base.SetParameters(null);
+            base.SetParameters(getParams());
         }
 
         /// <summary>
         ///  Parameters for SourceGeneratorSymbol method are defined by <see cref="Core.std.GeneratorStateMachineDelegate"/>
         /// </summary>
-        IEnumerable<ParameterSymbol> getParams()
+        ParameterSymbol[] getParams()
         {
-            int index = 0;
-
-            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
-            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++);
-            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Generator, "generator", index++);
-
+            var index = 0;
+            return new ParameterSymbol[]
+            {
+                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++),
+                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++),
+                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Generator, "generator", index++),
+            };
             
         }
 
