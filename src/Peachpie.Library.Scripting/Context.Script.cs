@@ -92,16 +92,25 @@ namespace Peachpie.Library.Scripting
 
         public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, Script previousSubmission)
         {
-            var tree = PhpSyntaxTree.ParseCode(code, new PhpParseOptions(kind: SourceCodeKind.Script), PhpParseOptions.Default, options.Location.Path);
+            var tree = PhpSyntaxTree.ParseCode(code,
+                new PhpParseOptions(kind: options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular),
+                PhpParseOptions.Default,
+                options.Location.Path);
+
             var diagnostics = tree.Diagnostics;
             if (!HasErrors(diagnostics))
             {
                 var name = builder.GetNewSubmissionName();
 
-                var compilation = builder.CoreCompilation
+                var compilation = (PhpCompilation)builder.CoreCompilation
                     .WithAssemblyName(name.Name)
                     .AddSyntaxTrees(tree)
                     .AddReferences(AllPreviousSubmissions(previousSubmission).Select(s => MetadataReference.CreateFromImage(s.Image)));
+
+                if (options.EmitDebugInformation)
+                {
+                    compilation = compilation.WithPhpOptions(compilation.Options.WithOptimizationLevel(OptimizationLevel.Debug).WithDebugPlusMode(true));
+                }
 
                 diagnostics = compilation.GetDeclarationDiagnostics();
                 if (!HasErrors(diagnostics))

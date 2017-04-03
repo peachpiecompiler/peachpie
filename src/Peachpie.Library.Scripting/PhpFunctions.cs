@@ -27,7 +27,7 @@ namespace Peachpie.Library.Scripting
             var fooname = "__lambda666";
 
             // create script that declares the lambda function
-            var script = ctx.ScriptingProvider.CreateScript(new Context.ScriptOptions() { Context = ctx, EmitDebugInformation = false, Location = new Location(/*TODO*/) }, source);
+            var script = ctx.ScriptingProvider.CreateScript(new Context.ScriptOptions() { Context = ctx, EmitDebugInformation = false, Location = new Location(/*TODO*/), IsSubmission = true }, source);
             // TODO: check for error
             var tmp = script.Evaluate(ctx, ctx.Globals, null);  // declare the function
 

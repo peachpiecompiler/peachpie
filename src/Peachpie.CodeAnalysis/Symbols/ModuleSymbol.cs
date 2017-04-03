@@ -71,11 +71,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal void SetReferences(ModuleReferences<AssemblySymbol> moduleReferences, SourceAssemblySymbol originatingSourceAssemblyDebugOnly = null)
         {
-            Debug.Assert(_moduleReferences == null);
+            Debug.Assert(HasReferencesSet == false);
             Debug.Assert(moduleReferences != null);
 
             _moduleReferences = moduleReferences;
         }
+
+        internal bool HasReferencesSet => _moduleReferences != null;
 
         public virtual ModuleMetadata GetMetadata()
         {

@@ -88,7 +88,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal new IAssemblySymbol Assembly => SourceAssembly;
 
-        internal new PhpCompilationOptions Options => _options;
+        public new PhpCompilationOptions Options => _options;
 
         /// <summary>
         /// Gets enumeration of all user declared routines (global code, functions, methods and lambdas) in the compilation.
@@ -158,11 +158,16 @@ namespace Pchp.CodeAnalysis
             return compilation;
         }
 
-        private PhpCompilation WithSyntaxTrees(IEnumerable<PhpSyntaxTree> syntaxTrees)
+        private PhpCompilation WithPhpSyntaxTrees(IEnumerable<PhpSyntaxTree> syntaxTrees)
         {
             return Update(
                 reuseReferenceManager: true,
                 syntaxTrees: syntaxTrees);
+        }
+
+        public PhpCompilation WithPhpOptions(PhpCompilationOptions options)
+        {
+            return Update(options: options);
         }
 
         public override ImmutableArray<MetadataReference> DirectiveReferences
@@ -594,17 +599,17 @@ namespace Pchp.CodeAnalysis
 
         protected override Compilation CommonAddSyntaxTrees(IEnumerable<SyntaxTree> trees)
         {
-            return WithSyntaxTrees(this.SyntaxTrees.Concat(trees.Cast<PhpSyntaxTree>()));
+            return WithPhpSyntaxTrees(this.SyntaxTrees.Concat(trees.Cast<PhpSyntaxTree>()));
         }
 
         protected override Compilation CommonRemoveAllSyntaxTrees()
         {
-            return WithSyntaxTrees(ImmutableArray<PhpSyntaxTree>.Empty);
+            return WithPhpSyntaxTrees(ImmutableArray<PhpSyntaxTree>.Empty);
         }
 
         protected override Compilation CommonRemoveSyntaxTrees(IEnumerable<SyntaxTree> trees)
         {
-            return WithSyntaxTrees(this.SyntaxTrees.Except(trees.OfType<PhpSyntaxTree>()));
+            return WithPhpSyntaxTrees(this.SyntaxTrees.Except(trees.OfType<PhpSyntaxTree>()));
         }
 
         protected override Compilation CommonReplaceSyntaxTree(SyntaxTree oldTree, SyntaxTree newTree)
@@ -629,7 +634,7 @@ namespace Pchp.CodeAnalysis
                 throw new KeyNotFoundException();
             }
 
-            return WithSyntaxTrees(SyntaxTrees.Select(t => (t == oldTree) ? (PhpSyntaxTree)newTree : t));
+            return WithPhpSyntaxTrees(SyntaxTrees.Select(t => (t == oldTree) ? (PhpSyntaxTree)newTree : t));
         }
 
         internal override int GetSyntaxTreeOrdinal(SyntaxTree tree)
@@ -655,7 +660,7 @@ namespace Pchp.CodeAnalysis
                 throw ExceptionUtilities.UnexpectedValue(options);
             }
 
-            return Update(options: (PhpCompilationOptions)options);
+            return WithPhpOptions((PhpCompilationOptions)options);
         }
 
         protected override Compilation CommonWithReferences(IEnumerable<MetadataReference> newReferences)

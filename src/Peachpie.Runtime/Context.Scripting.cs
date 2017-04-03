@@ -25,6 +25,11 @@ namespace Pchp.Core
             /// Specifies whether debugging symbols should be emitted.
             /// </summary>
             public bool EmitDebugInformation { get; set; }
+
+            /// <summary>
+            /// Value indicating the script is a submission (without opening PHP tag).
+            /// </summary>
+            public bool IsSubmission { get; set; }
         }
 
         /// <summary>

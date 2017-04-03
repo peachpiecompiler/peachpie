@@ -134,6 +134,12 @@ namespace Pchp.CodeAnalysis
             {
                 for (int i = 0; i < modules.Count; i++)
                 {
+                    if (modules[i].HasReferencesSet)
+                    {
+                        // module is already cached with references set
+                        continue;
+                    }
+
                     var refs = modules[i].Module.ReferencedAssemblies;
                     var symbols = new AssemblySymbol[refs.Length];
                     var ass = modules[i].ContainingAssembly;

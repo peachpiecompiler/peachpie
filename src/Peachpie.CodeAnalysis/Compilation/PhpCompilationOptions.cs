@@ -408,7 +408,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { ExtendedCustomDebugInformation_internal_protected_set = extendedCustomDebugInformation };
         }
 
-        internal PhpCompilationOptions WithDebugPlusMode(bool debugPlusMode)
+        public PhpCompilationOptions WithDebugPlusMode(bool debugPlusMode)
         {
             if (debugPlusMode == this.DebugPlusMode)
             {
