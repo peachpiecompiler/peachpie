@@ -170,7 +170,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 routine: this,
                 locals: new FieldPlace(
                     new ParamPlace(genSymbol.Parameters[2]),
-                    this.DeclaringCompilation.CoreTypes.Generator.Field("_locals").Symbol)
+                    this.DeclaringCompilation.CoreTypes.Generator.Field("_locals").Symbol),
+                localsAlreadyInited:true
                     ))
             {
                 stateMachineNextCg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
