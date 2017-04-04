@@ -404,7 +404,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitSymbolToken(MethodSymbol method, SyntaxNode syntaxNode)
         {
-            _il.EmitToken(_moduleBuilder.Translate(method, syntaxNode, _diagnostics, false), syntaxNode, _diagnostics);
+            _il.EmitSymbolToken(_moduleBuilder, _diagnostics, method, syntaxNode);
         }
 
         internal void EmitSequencePoint(LangElement element)
