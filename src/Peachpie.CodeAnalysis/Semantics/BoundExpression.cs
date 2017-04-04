@@ -1511,8 +1511,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public IExpression Returned => YieldedValue;
 
-        internal SourceGeneratorSymbol SourceGeneratorSymbol { get; set; }
-
         public BoundYieldEx(BoundExpression valueExpression, BoundExpression keyExpression)
         {
             YieldedValue = valueExpression;
