@@ -112,7 +112,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IntStringKey, PhpHashtable,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
-            stdClass, ArrayAccess, Generator, GeneratorStateMachineDelegate;
+            stdClass, ArrayAccess, Generator, GeneratorStateMachineDelegate, IntPtr;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -169,6 +169,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             Generator = CreateFromFullName("Generator");
             GeneratorStateMachineDelegate = CreateFromFullName("GeneratorStateMachineDelegate");
+
+            IntPtr = CreateFromFullName("System.IntPtr");
         }
 
         #region Table of types
