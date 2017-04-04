@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        ///  Parameters for SourceGeneratorSymbol method are defined by <see cref="Core.std.GeneratorStateMachineDelegate"/>
+        ///  Parameters for SourceGeneratorSymbol method are defined by <see cref="GeneratorStateMachineDelegate"/>
         /// </summary>
         ParameterSymbol[] getParams()
         {
