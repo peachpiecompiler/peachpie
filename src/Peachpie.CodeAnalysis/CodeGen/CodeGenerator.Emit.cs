@@ -402,10 +402,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitSymbolToken(_moduleBuilder, _diagnostics, symbol, syntaxNode);
         }
 
-        //private void EmitSymbolToken(MethodSymbol method, SyntaxNode syntaxNode)
-        //{
-        //    _il.EmitToken(_moduleBuilder.Translate(method, syntaxNode, _diagnostics, null), syntaxNode, _diagnostics);
-        //}
+        internal void EmitSymbolToken(MethodSymbol method, SyntaxNode syntaxNode)
+        {
+            _il.EmitToken(_moduleBuilder.Translate(method, syntaxNode, _diagnostics, false), syntaxNode, _diagnostics);
+        }
 
         internal void EmitSequencePoint(LangElement element)
         {

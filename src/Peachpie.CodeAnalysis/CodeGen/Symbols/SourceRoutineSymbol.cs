@@ -145,13 +145,22 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 , null, cg.Diagnostics, cg.EmitPdbSequencePoints);
 
-
                 cg.Module.SetMethodBody(genSymbol, genMethodBody);
 
-                throw new NotImplementedException("Emit generator initialization & return");
 
                 var il = cg.Builder;
-                il.EmitNullConstant();
+
+                cg.EmitLoadContext(); // ctx
+                cg.EmitThisOrNull();  // @this
+
+                // new GeneratorStateMachineDelegate(generator@function)
+                cg.EmitThisOrNull();   // this @object
+                cg.EmitOpCode(ILOpCode.Ldftn); // method
+                cg.EmitSymbolToken(genSymbol, null); 
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
+
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_GeneratorStateMachineDelegate);
+
                 il.EmitRet(false);
             }
         }
