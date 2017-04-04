@@ -3,7 +3,7 @@
 
   <PropertyGroup>
   
-    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">0.6.0</VersionPrefix>
+    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">0.6.1</VersionPrefix>
     <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">dev</VersionSuffix>
 	
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
