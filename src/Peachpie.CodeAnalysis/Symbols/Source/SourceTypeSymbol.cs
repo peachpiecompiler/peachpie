@@ -109,7 +109,6 @@ namespace Pchp.CodeAnalysis.Symbols
         List<Symbol> _lazyMembers;
 
         List<SourceLambdaSymbol> _lambdas;
-        List<SourceGeneratorSymbol> _generators;
 
         /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
         BaseAttributeData _lazyPhpTraitAttribute;
