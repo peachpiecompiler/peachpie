@@ -18,6 +18,8 @@ namespace Peachpie.Library.Scripting
         readonly ImmutableArray<byte> _image;
         readonly AssemblyName _assemblyName;
 
+        readonly Type _script;
+
         /// <summary>
         /// Optional refernce to a script that preceeds this one.
         /// Current script requires this one to be evaluated.
@@ -60,6 +62,7 @@ namespace Peachpie.Library.Scripting
                 var attr = t.GetTypeInfo().GetCustomAttribute<ScriptAttribute>(false);
                 if (attr != null)
                 {
+                    _script = t;
                     _entryPoint = new Context.ScriptInfo(-1, attr.Path, t.GetTypeInfo()).Evaluate;
                     break;
                 }
@@ -154,6 +157,21 @@ namespace Peachpie.Library.Scripting
         public PhpValue Evaluate(Context ctx, PhpArray locals, object @this)
         {
             return _entryPoint(ctx, locals, @this);
+        }
+
+        /// <summary>
+        /// Resolves global function handle(s).
+        /// </summary>
+        public IEnumerable<MethodInfo> GetGlobalRoutineHandle(string name)
+        {
+            if (_script == null)
+            {
+                return Enumerable.Empty<MethodInfo>();
+            }
+            else
+            {
+                return _script.GetTypeInfo().DeclaredMethods.Where(m => m.IsStatic && m.Name == name);
+            }
         }
 
         #endregion

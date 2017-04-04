@@ -81,6 +81,14 @@ namespace Pchp.Core
                 return this.MainMethod(ctx, locals, @this);
             }
 
+            /// <summary>
+            /// Resolves global function handle(s).
+            /// </summary>
+            public IEnumerable<MethodInfo> GetGlobalRoutineHandle(string name)
+            {
+                throw new NotSupportedException();
+            }
+
             public ScriptInfo(int index, string path, TypeInfo script)
             {
                 Index = index;

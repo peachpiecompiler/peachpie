@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Text;
 using Pchp.Core;
 using Pchp.Core.Reflection;
@@ -9,7 +11,17 @@ namespace Peachpie.Library.Scripting
 {
     public static class PhpFunctions
     {
-        const string _createFunctionTemplate = "function __lambda{0} ({1}) {{ {2} }}";
+        const string _createFunctionTemplate = "function {0} ({1}) {{ {2} }}";
+
+        /// <summary>
+        /// CLR name of the lambda function also internal PHP name if <c>__FUNCTION__</c> is used inside.
+        /// </summary>
+        const string _lambdaFuncName = "__lambda_func";
+
+        /// <summary>
+        /// Name of the lambda when registered in <see cref="Context"/>.
+        /// </summary>
+        const string _lambdaFormatString = "\0lambda_{0}";
 
         /// <summary>
         /// Creates an anonymous function from the parameters passed, and returns a unique name for it.
@@ -22,19 +34,30 @@ namespace Peachpie.Library.Scripting
         public static string create_function(Context ctx, string args, string code)
         {
             // prepare function script
-            // TODO: increment lambda ID upon compilation
-            var source = string.Format(_createFunctionTemplate, 666, args, code);
-            var fooname = "__lambda666";
+            var data = ScriptingContext.EnsureContext(ctx);
+            var source = string.Format(_createFunctionTemplate, _lambdaFuncName, args, code);
 
             // create script that declares the lambda function
-            var script = ctx.ScriptingProvider.CreateScript(new Context.ScriptOptions() { Context = ctx, EmitDebugInformation = false, Location = new Location(/*TODO*/), IsSubmission = true }, source);
-            // TODO: check for error
-            var tmp = script.Evaluate(ctx, ctx.Globals, null);  // declare the function
+            var script = ctx.ScriptingProvider.CreateScript(new Context.ScriptOptions()
+            {
+                Context = ctx,
+                EmitDebugInformation = false,
+                Location = new Location(Path.Combine(ctx.RootPath, "runtime-created function"), 0, 0),  // TODO: pass from calling script
+                IsSubmission = true
+            }, source);
+            var methods = script.GetGlobalRoutineHandle(_lambdaFuncName).ToArray();
 
-            Debug.Assert(ctx.GetDeclaredFunction(fooname) != null);
+            if (methods.Length == 0)
+            {
+                return null;
+            }
 
-            //
-            return fooname;
+            var lambdaName = string.Format(_lambdaFormatString, ++data.LastLambdaIndex);
+            var routine = RoutineInfo.CreateUserRoutine(lambdaName, methods);
+
+            ctx.DeclareFunction(routine);
+
+            return lambdaName;
         }
     }
 }

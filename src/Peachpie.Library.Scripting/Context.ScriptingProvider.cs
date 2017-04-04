@@ -15,19 +15,6 @@ namespace Peachpie.Library.Scripting
         readonly Dictionary<string, List<Script>> _scripts = new Dictionary<string, List<Script>>();
         readonly PhpCompilationFactory _builder = new PhpCompilationFactory();
 
-        sealed class ScriptingContext
-        {
-            public List<Script> Submissions { get; } = new List<Script>();
-
-            public Script LastSubmission
-            {
-                get
-                {
-                    return (Submissions.Count == 0) ? null : Submissions[Submissions.Count - 1];
-                }
-            }
-        }
-
         List<Script> EnsureCache(string code)
         {
             if (!_scripts.TryGetValue(code, out List<Script> candidates))
@@ -55,20 +42,19 @@ namespace Peachpie.Library.Scripting
 
         Context.IScript Context.IScriptingProvider.CreateScript(Context.ScriptOptions options, string code)
         {
-            var scriptingCtx = options.Context.GetStatic<ScriptingContext>();
-
-            var script = CacheLookup(options, code, scriptingCtx);
+            var data = ScriptingContext.EnsureContext(options.Context);
+            var script = CacheLookup(options, code, data);
             if (script == null)
             {
                 // TODO: rwlock cache[code]
-                script = Script.Create(options, code, _builder, scriptingCtx.LastSubmission);
+                script = Script.Create(options, code, _builder, data.LastSubmission);
                 EnsureCache(code).Add(script);
             }
 
             Debug.Assert(script != null);
 
             //
-            scriptingCtx.Submissions.Add(script);
+            data.Submissions.Add(script);
 
             //
             return script;

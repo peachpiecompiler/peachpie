@@ -45,6 +45,11 @@ namespace Pchp.Core
             /// <param name="this">Optional. Reference to current <c>$this</c> object.</param>
             /// <returns>Return value of the script.</returns>
             PhpValue Evaluate(Context ctx, PhpArray locals, object @this);
+
+            /// <summary>
+            /// Resolves global function handle(s).
+            /// </summary>
+            IEnumerable<System.Reflection.MethodInfo> GetGlobalRoutineHandle(string name);
         }
 
         /// <summary>

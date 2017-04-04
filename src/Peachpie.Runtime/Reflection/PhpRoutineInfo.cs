@@ -67,10 +67,18 @@ namespace Pchp.Core.Reflection
         /// Used by compiler generated code.
         /// Creates instance of <see cref="RoutineInfo"/> representing a user PHP function.
         /// </summary>
-        /// <param name="name">Functio name.</param>
+        /// <param name="name">Function name.</param>
         /// <param name="handle">CLR method handle.</param>
         /// <returns>Instance of routine info with uninitialized slot index and unbound delegate.</returns>
         public static RoutineInfo CreateUserRoutine(string name, RuntimeMethodHandle handle) => new PhpRoutineInfo(name, handle);
+
+        /// <summary>
+        /// Creates instance of <see cref="RoutineInfo"/> representing a CLR methods (handling ovberloads).
+        /// </summary>
+        /// <param name="name">Function name.</param>
+        /// <param name="handles">CLR methods.</param>
+        /// <returns>Instance of routine info with uninitialized slot index and unbound delegate.</returns>
+        public static RoutineInfo CreateUserRoutine(string name, MethodInfo[] handles) => new PhpMethodInfo(0, name, handles);
 
         /// <summary>
         /// Creates user routine from a CLR delegate.
@@ -217,8 +225,8 @@ namespace Pchp.Core.Reflection
         {
             get
             {
-                // instance methods cannot be bound to PhpCallable
-                throw new NotSupportedException();
+                Debug.Assert(_methods.All(m => m.IsStatic));
+                return (ctx, args) => Invoke(ctx, null, args);
             }
         }
 
