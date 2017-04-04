@@ -3851,14 +3851,39 @@ namespace Pchp.CodeAnalysis.Semantics
     partial class BoundYieldEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
-        {
+        {         
             var il = cg.Builder;
+
+            storeAsPHPValueInArgumentField(cg, il, 2, YieldedValue, cg.CoreTypes.Generator.Field("_currValue"));
+            storeAsPHPValueInArgumentField(cg, il, 2, YieldedKey, cg.CoreTypes.Generator.Field("_currKey"));
+
+            //generator._userKeyReturned = (YieldedKey != null)
+            var userKeyReturned = (YieldedKey != null);
+            il.EmitLoadArgumentOpcode(2);
+            cg.EmitLoadConstant(userKeyReturned, cg.CoreTypes.Boolean);
+            cg.EmitOpCode(ILOpCode.Stfld);
+            cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_userKeyReturned"), null);
 
             il.EmitRet(true);
 
             //Just placeholder, return an Symbol that points to generator._currSendItem;
             return cg.CoreTypes.Boolean;
 
+        }
+
+        private void storeAsPHPValueInArgumentField(CodeGenerator cg, ILBuilder il, int argNumber, BoundExpression valueExpr, FieldSymbol field)
+        {
+            il.EmitLoadArgumentOpcode(argNumber);
+
+            if (valueExpr == null) { cg.Emit_PhpValue_Null(); }
+            else
+            {
+                cg.Emit(valueExpr);
+                cg.EmitConvertToPhpValue(valueExpr.ResultType, valueExpr.TypeRefMask);
+            }
+
+            cg.EmitOpCode(ILOpCode.Stfld);
+            cg.EmitSymbolToken(field, null);
         }
     }
 }
