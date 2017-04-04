@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using Pchp.Core;
 
-internal delegate void GeneratorStateMachineDelegate(Context ctx, object @this, Generator gen);
+public delegate void GeneratorStateMachineDelegate(Context ctx, object @this, Generator gen);
 
 [PhpType("Generator")]
 public class Generator : Iterator, IDisposable
@@ -62,15 +62,14 @@ public class Generator : Iterator, IDisposable
     #endregion
 
     #region Constructors
-    internal Generator(Context ctx, object @this, GeneratorStateMachineDelegate method, PhpArray locals)
+    internal Generator(Context ctx, object @this, GeneratorStateMachineDelegate method)
     {
         Debug.Assert(ctx != null);
         Debug.Assert(method != null);
-        Debug.Assert(locals != null);
 
         _stateMachineMethod = method;
         _ctx = ctx;
-        _locals = locals;
+        _locals = new PhpArray();
         _this = @this;
     }
     #endregion
