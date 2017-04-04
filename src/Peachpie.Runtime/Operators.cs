@@ -686,6 +686,11 @@ namespace Pchp.Core
         /// </summary>
         public static Closure BuildClosure(RoutineInfo routine, PhpArray parameter, PhpArray @static) => new Closure(routine, parameter, @static);
 
+        /// <summary>
+        /// Create <see cref="Generator"/> with specified state machine function and parameters.
+        /// </summary>
+        public static Generator BuildGenerator(Context ctx, object @this, GeneratorStateMachineDelegate method) => new Generator(ctx, @this, method);
+
         #endregion
 
         #region Enumerator
