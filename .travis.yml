@@ -9,6 +9,7 @@ install:
   - dotnet restore ./Peachpie.sln
   - dotnet build ./src/Peachpie.Runtime/ /p:TargetFrameworks=netstandard1.5
   - dotnet build ./src/Peachpie.Library/ /p:TargetFrameworks=netstandard1.5
+  - dotnet restore ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=netstandard1.5
   - dotnet build ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=netstandard1.5
   - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=netstandard1.5
   - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=netstandard1.5
