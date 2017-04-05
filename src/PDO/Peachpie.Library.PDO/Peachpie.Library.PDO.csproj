@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;net46</TargetFrameworks>
     <AssemblyName>Peachpie.Library.PDO</AssemblyName>
     <PackageId>Peachpie.Library.PDO</PackageId>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
