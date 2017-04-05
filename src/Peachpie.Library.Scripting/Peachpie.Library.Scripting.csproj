@@ -10,7 +10,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
   
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net46' ">
 		<DefineConstants>$(DefineConstants);NETSTANDARD1_5</DefineConstants>
   </PropertyGroup>
   
