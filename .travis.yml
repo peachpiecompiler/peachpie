@@ -15,6 +15,7 @@ install:
   - dotnet build ./src/PDO/Peachpie.Library.PDO/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.CodeAnalysis/ /p:TargetFrameworks=netcoreapp1.1
+  - dotnet restore ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=netcoreapp1.1
   - powershell -File ./build/update-cache.ps1 0.6.1
