@@ -31,7 +31,7 @@
 	<Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 
