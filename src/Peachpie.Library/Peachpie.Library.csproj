@@ -8,6 +8,7 @@
     <PackageId>Peachpie.Library</PackageId>
     <PackageTags>peachpie;library</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Peachpie PHP language library functions.</Description>
   </PropertyGroup>
 
   <ItemGroup>

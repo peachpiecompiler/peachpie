@@ -8,6 +8,7 @@
     <PackageId>Peachpie.Library.Scripting</PackageId>
     <PackageTags>peachpie;library;scripting</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Support for dynamic code evaluation in Peachpie application. The package enables `eval` and `create_function` in compiled programs.</Description>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
