@@ -10,9 +10,9 @@ install:
   - dotnet build ./src/Peachpie.Runtime/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.Library/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=netcoreapp1.1
-  - dotnet build ./src/PDO/Peachpie.Library.PDO/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.Library.MySql/ /p:TargetFrameworks=netcoreapp1.1
+  - dotnet build ./src/PDO/Peachpie.Library.PDO/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.CodeAnalysis/ /p:TargetFrameworks=netcoreapp1.1
   - dotnet build ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp1.1
