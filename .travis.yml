@@ -19,7 +19,7 @@ install:
   - dotnet build ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp1.0
   - dotnet restore ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=netcoreapp1.0
   - dotnet build ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=netcoreapp1.0
-  - powershell -File ./build/update-cache.ps1 0.6.0
+  - powershell -File ./build/update-cache.ps1 0.6.1
 
 script:
   - ./src/Tools/runtests_shell/runtests.sh
