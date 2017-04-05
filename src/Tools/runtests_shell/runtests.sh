@@ -1,7 +1,7 @@
 # Prepare the files needed to compile and run the tests
 
 TOOL_DIR="./src/Tools/runtests_shell"
-OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp1.0"
+OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp1.1"
 
 PHP_TMP_FILE=$OUTPUT_DIR/php.out
 PEACH_TMP_FILE=$OUTPUT_DIR/peach.out
@@ -12,7 +12,7 @@ COLOR_RESET="\033[0m"
 HR="----------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 # Restore the testing project to gather all dependencies
-dotnet restore $TOOL_DIR
+dotnet restore $TOOL_DIR /p:TargetFrameworks=netcoreapp1.1
 
 # Compile and run every PHP file in ./tests and check the output against the one from the PHP interpreter
 for PHP_FILE in $(find $PWD/tests -name *.php)
