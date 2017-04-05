@@ -11,6 +11,7 @@ install:
   - dotnet build ./src/Peachpie.Library/ /p:TargetFrameworks=netstandard1.5
   - dotnet build ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=netstandard1.5
   - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=netstandard1.5
+  - dotnet build ./src/Peachpie.Library.MySql/ /p:TargetFrameworks=netstandard1.6
   - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=netstandard1.5
   - dotnet restore ./src/Peachpie.CodeAnalysis/
   - dotnet build ./src/Peachpie.CodeAnalysis/ /p:TargetFrameworks=netstandard1.5
