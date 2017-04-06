@@ -9,6 +9,11 @@ namespace Pchp.CodeAnalysis.Utilities
 {
     internal static class PhpFileUtilities
     {
+        /// <summary>
+        /// Normalizes backward slashes to forward slashes.
+        /// </summary>
+        public static string NormalizeSlashes(string path) => path.Replace('\\', '/').Replace("//", "/");
+
         public static string GetRelativePath(string path, string basedir)
         {
             int levelups = 0;

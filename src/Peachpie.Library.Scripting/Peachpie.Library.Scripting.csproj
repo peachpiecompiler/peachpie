@@ -8,9 +8,10 @@
     <PackageId>Peachpie.Library.Scripting</PackageId>
     <PackageTags>peachpie;library;scripting</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Support for dynamic code evaluation in Peachpie application. The package enables `eval` and `create_function` in compiled programs.</Description>
   </PropertyGroup>
   
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net46' ">
 		<DefineConstants>$(DefineConstants);NETSTANDARD1_5</DefineConstants>
   </PropertyGroup>
   
@@ -31,7 +32,7 @@
 	<Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 

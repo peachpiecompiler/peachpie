@@ -96,8 +96,9 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         internal string RelativeFilePath =>
-            PhpFileUtilities.GetRelativePath(_syntaxTree.Source.FilePath, _compilation.Options.BaseDirectory)
-            .Replace(PathUtilities.DirectorySeparatorChar, PathUtilities.AltDirectorySeparatorChar);    // forward slashes by default
+            PhpFileUtilities.GetRelativePath(
+                PhpFileUtilities.NormalizeSlashes(_syntaxTree.Source.FilePath),
+                PhpFileUtilities.NormalizeSlashes(_compilation.Options.BaseDirectory));
 
         /// <summary>
         /// Gets relative path excluding the file name and trailing slashes.

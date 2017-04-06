@@ -9,6 +9,7 @@
     <PackageId>Peachpie.CodeAnalysis</PackageId>
     <PackageTags>php;peachpie;dotnet;compiler</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Peachpie PHP language compiler platform.</Description>
   </PropertyGroup>
 
   <ItemGroup>

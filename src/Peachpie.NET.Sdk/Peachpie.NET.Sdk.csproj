@@ -14,6 +14,7 @@
 	
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <Description>The MSBuild SDK containing build targets and runtime.</Description>
   </PropertyGroup>
 
   <ItemGroup>

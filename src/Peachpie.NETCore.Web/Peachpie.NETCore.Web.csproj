@@ -8,6 +8,7 @@
     <PackageId>Peachpie.NETCore.Web</PackageId>
     <PackageTags>peachpie;web</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Allows integration of Peachpie compiled PHP code into ASP.NET Core pipeline.</Description>
   </PropertyGroup>
 
   <ItemGroup>
