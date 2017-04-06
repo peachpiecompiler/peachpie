@@ -69,7 +69,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peachpie.Runtime.Tests", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peachpie.Test", "src\Tests\Peachpie.Test\Peachpie.Test.csproj", "{0057BE0D-9CA9-4867-9DF1-4313AE2CF1A6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptsTest", "src\Tests\ScriptsTest\ScriptsTest.csproj", "{AC8B71D2-59AF-42B0-8F85-BE0BA7D6E836}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peachpie.ScriptTests", "src\Tests\Peachpie.ScriptTests\Peachpie.ScriptTests.csproj", "{AC8B71D2-59AF-42B0-8F85-BE0BA7D6E836}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
