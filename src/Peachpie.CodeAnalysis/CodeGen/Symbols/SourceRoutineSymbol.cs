@@ -136,9 +136,10 @@ namespace Pchp.CodeAnalysis.Symbols
             else
             {
                 var genSymbol = new SourceGeneratorSymbol(this.ContainingType);
-                cg.Module.SynthesizedManager.AddMethod(this.ContainingType, genSymbol); //Add metadata to the assembly
+                cg.Module.SynthesizedManager.AddMethod(this.ContainingType, genSymbol); // save method symbol to module
 
-                //Prepares and starts generation of state machine's next method represented by SourceGeneratorSymbol
+
+                // generate generator's next method body
                 var genMethodBody = MethodGenerator.GenerateMethodBody(cg.Module, genSymbol, (_il) =>
                 {
                     generateStateMachinesNextMethod(cg, _il, genSymbol);
