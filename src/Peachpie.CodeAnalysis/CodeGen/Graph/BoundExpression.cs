@@ -3854,20 +3854,52 @@ namespace Pchp.CodeAnalysis.Semantics
         {         
             var il = cg.Builder;
 
+
+            // sets currValue and currKey on generator object
             storeAsPHPValueInArgumentField(cg, il, 2, YieldedValue, cg.CoreTypes.Generator.Field("_currValue"));
             storeAsPHPValueInArgumentField(cg, il, 2, YieldedKey, cg.CoreTypes.Generator.Field("_currKey"));
 
-            //generator._userKeyReturned = (YieldedKey != null)
+
+            // generator._userKeyReturned = (YieldedKey != null)
             var userKeyReturned = (YieldedKey != null);
             il.EmitLoadArgumentOpcode(2);
             cg.EmitLoadConstant(userKeyReturned, cg.CoreTypes.Boolean);
             cg.EmitOpCode(ILOpCode.Stfld);
             cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_userKeyReturned"), null);
 
-            il.EmitRet(true);
+            // Return is conditioned because Roslyn optimises the rest of the code away otherwise (dead code)
+            //  DELETE after implementing switch jumping
+            /*TMP*/var TMP = new NamedLabel("TMP");
+            il.EmitLoadArgumentOpcode(2);
+            /*TMP*/il.EmitBranch(ILOpCode.Brfalse, TMP);
+            /*TMP*/il.EmitRet(true);
+            /*TMP*/il.MarkLabel(TMP);
 
-            //Just placeholder, return an Symbol that points to generator._currSendItem;
-            return cg.CoreTypes.Boolean;
+
+            // if(generator._currException != null) throw ex;
+            il.EmitLoadArgumentOpcode(2);
+            cg.EmitOpCode(ILOpCode.Ldfld);
+            cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_currException"), null);
+
+            var excNotNull = new NamedLabel("generator._currException == null");
+            il.EmitBranch(ILOpCode.Brfalse, excNotNull);
+
+            il.EmitLoadArgumentOpcode(2);
+            cg.EmitOpCode(ILOpCode.Ldfld);
+            cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_currException"), null);
+            il.EmitThrow(false);
+
+            il.MarkLabel(excNotNull);
+
+
+            // leave result of yield expr. (sent value) on eval stack
+            il.EmitLoadArgumentOpcode(2);
+            cg.EmitOpCode(ILOpCode.Ldfld);
+            cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_currSendItem"), null);
+
+
+            // type of expression result is PHP value (sent value)
+            return cg.CoreTypes.PhpValue;
 
         }
 
