@@ -7,7 +7,7 @@ public delegate void GeneratorStateMachineDelegate(Context ctx, object @this, Ph
 [PhpType("Generator")]
 public class Generator : Iterator, IDisposable
 {
-    #region InternalVariables
+    #region BoundVariables
     /// <summary>
     /// Context associated in which the generator is run.
     /// </summary>
@@ -27,8 +27,9 @@ public class Generator : Iterator, IDisposable
     /// Lifted local variables from the state machine function.
     /// </summary>
     readonly PhpArray _locals; // Change to internal after all access moved to Operators method
+    #endregion
 
- 
+    #region StateVariables
     /// <summary>
     /// Current state of the state machine implemented by <see cref="_stateMachineMethod"/>
     /// </summary>
