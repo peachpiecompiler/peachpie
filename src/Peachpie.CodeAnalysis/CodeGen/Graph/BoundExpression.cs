@@ -3854,18 +3854,18 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var il = cg.Builder;
 
-
             // sets currValue and currKey on generator object
-            storeAsPHPValueInArgumentField(cg, il, 2, YieldedValue, cg.CoreMethods.Generator._currValue);
-            storeAsPHPValueInArgumentField(cg, il, 2, YieldedKey, cg.CoreMethods.Generator._currKey);
+            storeAsPHPValueInArgumentField(cg, il, 3, YieldedValue, cg.CoreMethods.Generator._currValue);
+            storeAsPHPValueInArgumentField(cg, il, 3, YieldedKey, cg.CoreMethods.Generator._currKey);
 
 
             // generator._userKeyReturned = (YieldedKey != null)
             var userKeyReturned = (YieldedKey != null);
-            il.EmitLoadArgumentOpcode(2);
+            il.EmitLoadArgumentOpcode(3);
             cg.EmitLoadConstant(userKeyReturned, cg.CoreTypes.Boolean);
             cg.EmitOpCode(ILOpCode.Stfld);
             cg.EmitSymbolToken(cg.CoreMethods.Generator._userKeyReturned, null);
+
 
             // Return is conditioned because Roslyn optimises the rest of the code away otherwise (dead code)
             //  DELETE after implementing switch jumping
@@ -3877,14 +3877,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
 
             // if(generator._currException != null) throw ex;
-            il.EmitLoadArgumentOpcode(2);
+            il.EmitLoadArgumentOpcode(3);
             cg.EmitOpCode(ILOpCode.Ldfld);
             cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
 
             var excNotNull = new NamedLabel("generator._currException == null");
             il.EmitBranch(ILOpCode.Brfalse, excNotNull);
 
-            il.EmitLoadArgumentOpcode(2);
+            il.EmitLoadArgumentOpcode(3);
             cg.EmitOpCode(ILOpCode.Ldfld);
             cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
             il.EmitThrow(false);
@@ -3893,7 +3893,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
 
             // leave result of yield expr. (sent value) on eval stack
-            il.EmitLoadArgumentOpcode(2);
+            il.EmitLoadArgumentOpcode(3);
             cg.EmitOpCode(ILOpCode.Ldfld);
             cg.EmitSymbolToken(cg.CoreMethods.Generator._currSendItem, null);
 

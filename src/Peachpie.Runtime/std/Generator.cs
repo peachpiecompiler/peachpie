@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using Pchp.Core;
 
-public delegate void GeneratorStateMachineDelegate(Context ctx, object @this, Generator gen);
+public delegate void GeneratorStateMachineDelegate(Context ctx, object @this, PhpArray locals, Generator gen);
 
 [PhpType("Generator")]
 public class Generator : Iterator, IDisposable
@@ -26,8 +26,9 @@ public class Generator : Iterator, IDisposable
     /// <summary>
     /// Lifted local variables from the state machine function.
     /// </summary>
-    readonly public PhpArray _locals; // Change to internal after all access moved to Operators method
+    readonly PhpArray _locals; // Change to internal after all access moved to Operators method
 
+ 
     /// <summary>
     /// Current state of the state machine implemented by <see cref="_stateMachineMethod"/>
     /// </summary>
@@ -99,7 +100,7 @@ public class Generator : Iterator, IDisposable
         checkIfMovingFromFirstYeild();
         checkIfRunToFirstYieldIfNotRun();
 
-        _stateMachineMethod.Invoke(_ctx, _this, gen: this);
+        _stateMachineMethod.Invoke(_ctx, _this, _locals, gen: this);
 
         if (!_userKeyReturned) { _currKey = PhpValue.Create(_nextNumericalKey); }
         if (_currKey.IsInteger()) { _nextNumericalKey = (_currKey.ToLong() + 1); }
