@@ -182,7 +182,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 contextPlace: new ParamPlace(genSymbol.Parameters[0]),
                 thisPlace: new ParamPlace(genSymbol.Parameters[1]),
                 routine: this,
-                locals: new ParamPlace(genSymbol.Parameters[2])
+                locals: new ParamPlace(genSymbol.Parameters[2]),
+                localsAlreadyInited: true
                     ))
             {
                 stateMachineNextCg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
