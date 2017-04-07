@@ -6,9 +6,7 @@
 # Peachpie Compiler
 ### The open-source PHP compiler to .NET
 
-[![Build status](https://api.travis-ci.org/iolevel/peachpie.svg?branch=master)](https://travis-ci.org/iolevel/peachpie)
-[![peachpie MyGet Build Status](https://www.myget.org/BuildSource/Badge/peachpie?identifier=14586f8c-2600-412f-b9b0-39db8e930806)](https://www.myget.org/gallery/peachpie)  
-
+[![NuGet](https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat)](http://www.nuget.org/profiles/peachpie)
 [![Join the chat at https://gitter.im/iolevel/peachpie](https://badges.gitter.im/iolevel/peachpie.svg)](https://gitter.im/iolevel/peachpie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![License](https://img.shields.io/hexpm/l/plug.svg)](https://github.com/iolevel/peachpie/blob/master/LICENSE.txt)
 [![Twitter](https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg)](https://twitter.com/pchpcompiler)
@@ -22,6 +20,13 @@
  
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E)
 
+## Continuous Integration
+
+| Service  | Platform  | Build Status  |
+|---|---|---|
+| Travis CI | Ubuntu  | [![Build status](https://api.travis-ci.org/iolevel/peachpie.svg?branch=master)](https://travis-ci.org/iolevel/peachpie)  |
+| MyGet Build Services  | Windows  | [![peachpie MyGet Build Status](https://www.myget.org/BuildSource/Badge/peachpie?identifier=14586f8c-2600-412f-b9b0-39db8e930806)](https://www.myget.org/gallery/peachpie)    |
+| Visual Studio Team Services  | VS2017  | [![VSTeam Services Status](https://iolevel.visualstudio.com/_apis/public/build/definitions/bd7dcca1-8515-44f8-81d0-bb2acc03d949/1/badge)](http://www.peachpie.io)    |
 
 ## What is Peachpie?
 Peachpie is a modern PHP compiler based on the Microsoft Roslyn compiler platform and drawing from our popular Phalanger project. It allows PHP to be executed within the .NET framework, thereby opening the door for PHP developers into the world of .NET – and vice versa.
