@@ -355,6 +355,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly ContextHolder Context;
         public readonly DynamicHolder Dynamic;
         public readonly ReflectionHolder Reflection;
+        public readonly GeneratorHolder Generator;
 
         public CoreMethods(CoreTypes types)
         {
@@ -372,6 +373,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context = new ContextHolder(types);
             Dynamic = new DynamicHolder(types);
             Reflection = new ReflectionHolder(types);
+            Generator = new GeneratorHolder(types);
         }
 
         public struct OperatorsHolder
@@ -976,6 +978,31 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public CoreMethod CreateUserRoutine_string_RuntimeMethodHandle;
+        }
+
+        public struct GeneratorHolder
+        {
+            public readonly CoreField _ctx, _locals, _stateMachineMethod, _this, _state, _userKeyReturned, _currValue, _currKey, _currSendItem, _returnValue, _currException;
+
+            public GeneratorHolder(CoreTypes ct)
+            {
+                _ctx = ct.Generator.Field("_ctx");
+                _locals = ct.Generator.Field("_locals");
+                _stateMachineMethod = ct.Generator.Field("_stateMachineMethod");
+                _this = ct.Generator.Field("_this");
+
+                _state = ct.Generator.Field("_state");
+
+                _userKeyReturned = ct.Generator.Field("_userKeyReturned");
+
+                _currValue = ct.Generator.Field("_currValue");
+                _currKey = ct.Generator.Field("_currKey");
+                _currSendItem = ct.Generator.Field("_currSendItem");
+                _returnValue = ct.Generator.Field("_returnValue");
+
+                _currException = ct.Generator.Field("_currException");
+
+            }
         }
     }
 }

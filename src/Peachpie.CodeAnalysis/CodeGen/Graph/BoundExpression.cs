@@ -3851,13 +3851,13 @@ namespace Pchp.CodeAnalysis.Semantics
     partial class BoundYieldEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
-        {         
+        {
             var il = cg.Builder;
 
 
             // sets currValue and currKey on generator object
-            storeAsPHPValueInArgumentField(cg, il, 2, YieldedValue, cg.CoreTypes.Generator.Field("_currValue"));
-            storeAsPHPValueInArgumentField(cg, il, 2, YieldedKey, cg.CoreTypes.Generator.Field("_currKey"));
+            storeAsPHPValueInArgumentField(cg, il, 2, YieldedValue, cg.CoreMethods.Generator._currValue);
+            storeAsPHPValueInArgumentField(cg, il, 2, YieldedKey, cg.CoreMethods.Generator._currKey);
 
 
             // generator._userKeyReturned = (YieldedKey != null)
@@ -3865,7 +3865,7 @@ namespace Pchp.CodeAnalysis.Semantics
             il.EmitLoadArgumentOpcode(2);
             cg.EmitLoadConstant(userKeyReturned, cg.CoreTypes.Boolean);
             cg.EmitOpCode(ILOpCode.Stfld);
-            cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_userKeyReturned"), null);
+            cg.EmitSymbolToken(cg.CoreMethods.Generator._userKeyReturned, null);
 
             // Return is conditioned because Roslyn optimises the rest of the code away otherwise (dead code)
             //  DELETE after implementing switch jumping
@@ -3879,14 +3879,14 @@ namespace Pchp.CodeAnalysis.Semantics
             // if(generator._currException != null) throw ex;
             il.EmitLoadArgumentOpcode(2);
             cg.EmitOpCode(ILOpCode.Ldfld);
-            cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_currException"), null);
+            cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
 
             var excNotNull = new NamedLabel("generator._currException == null");
             il.EmitBranch(ILOpCode.Brfalse, excNotNull);
 
             il.EmitLoadArgumentOpcode(2);
             cg.EmitOpCode(ILOpCode.Ldfld);
-            cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_currException"), null);
+            cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
             il.EmitThrow(false);
 
             il.MarkLabel(excNotNull);
@@ -3895,8 +3895,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // leave result of yield expr. (sent value) on eval stack
             il.EmitLoadArgumentOpcode(2);
             cg.EmitOpCode(ILOpCode.Ldfld);
-            cg.EmitSymbolToken(cg.CoreTypes.Generator.Field("_currSendItem"), null);
-
+            cg.EmitSymbolToken(cg.CoreMethods.Generator._currSendItem, null);
 
             // type of expression result is PHP value (sent value)
             return cg.CoreTypes.PhpValue;
