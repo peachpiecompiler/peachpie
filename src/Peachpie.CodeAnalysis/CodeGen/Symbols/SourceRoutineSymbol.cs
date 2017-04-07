@@ -162,6 +162,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_GeneratorStateMachineDelegate);
 
+                // Convert generator to PHP Value (foreach expects PHPValue)
+                // ..see ConstructClrReturnType in PhpRoutineSymbolExtensions for more info
+                cg.EmitConvertToPhpValue(cg.CoreTypes.Generator, 0); 
+
                 il.EmitRet(false);
             }
         }

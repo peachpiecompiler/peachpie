@@ -37,10 +37,15 @@ namespace Pchp.CodeAnalysis.Symbols
             // for non virtual methods:
             if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
             {
+
+
                 // if the method is generator and can't be overriden then the return type must be generator
                 if((routine.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
                 {
-                    return compilation.CoreTypes.Generator;
+                    // TODO: Make it return Generator in safe cases (and stop converting generator to PHPValue before return).
+
+                    return compilation.CoreTypes.PhpValue;
+                    // return compilation.CoreTypes.Generator; // foreach expects PHPValue, let's deliver it for now
                 }
 
                 // /** @return */
