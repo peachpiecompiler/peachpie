@@ -11,22 +11,22 @@ public class Generator : Iterator, IDisposable
     /// <summary>
     /// Context associated in which the generator is run.
     /// </summary>
-    readonly protected Context _ctx;
-
-    /// <summary>
-    /// Lifted local variables from the state machine function.
-    /// </summary>
-    readonly internal PhpArray _locals;
+    readonly Context _ctx;
 
     /// <summary>
     /// Delegate to a static method implementing the state machine itself. 
     /// </summary>
-    readonly internal GeneratorStateMachineDelegate _stateMachineMethod;
+    readonly GeneratorStateMachineDelegate _stateMachineMethod;
 
     /// <summary>
     /// Bounded this for non-static enumerator methods, null for static ones.
     /// </summary>
-    readonly internal object _this;
+    readonly object _this;
+
+    /// <summary>
+    /// Lifted local variables from the state machine function.
+    /// </summary>
+    readonly public PhpArray _locals; // Change to internal after all access moved to Operators method
 
     /// <summary>
     /// Current state of the state machine implemented by <see cref="_stateMachineMethod"/>
@@ -37,15 +37,15 @@ public class Generator : Iterator, IDisposable
     ///  -2: closed
     /// +x: valid state
     /// </remarks>
-    internal int _state = 0;
+    public int _state = 0; // Change to internal after all access moved to Operators method
 
     /// <summary>
     /// Did last yield returned user-specified key.
     /// </summary>
-    internal bool _userKeyReturned = false;
+    public bool _userKeyReturned = false; // Change to internal after all access moved to Operators method
 
-    internal PhpValue _currValue, _currKey, _currSendItem, _returnValue;
-    internal Exception _currException;
+    public PhpValue _currValue, _currKey, _currSendItem, _returnValue; // Change to internal after all access moved to Operators method
+    public Exception _currException; // Change to internal after all access moved to Operators method
     #endregion
 
     #region HelperLocalVariables
