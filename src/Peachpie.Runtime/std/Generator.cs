@@ -62,6 +62,10 @@ public class Generator : Iterator, IDisposable
     bool _runAfterFirstYield = false;
     #endregion
 
+    #region HelperLocalProperties
+    bool isInValidState { get => (_state >= 0); }
+    #endregion  
+
     #region Constructors
     internal Generator(Context ctx, object @this, GeneratorStateMachineDelegate method)
     {
@@ -95,15 +99,8 @@ public class Generator : Iterator, IDisposable
     /// </summary>
     public void next()
     {
-        if (!valid()) { return; }
-
-        checkIfMovingFromFirstYeild();
         checkIfRunToFirstYieldIfNotRun();
-
-        _stateMachineMethod.Invoke(_ctx, _this, _locals, gen: this);
-
-        if (!_userKeyReturned) { _currKey = PhpValue.Create(_nextNumericalKey); }
-        if (_currKey.IsInteger()) { _nextNumericalKey = (_currKey.ToLong() + 1); }
+        moveStateMachine();
     }
 
     /// <summary>
@@ -113,7 +110,7 @@ public class Generator : Iterator, IDisposable
     public bool valid()
     {
         checkIfRunToFirstYieldIfNotRun();
-        return (_state >= 0);
+        return isInValidState;
     }
 
     /// <summary>
@@ -153,7 +150,7 @@ public class Generator : Iterator, IDisposable
         checkIfRunToFirstYieldIfNotRun();
 
         _currSendItem = value;
-        next();
+        moveStateMachine();
         _currSendItem = PhpValue.Null;
 
         return current();
@@ -169,7 +166,7 @@ public class Generator : Iterator, IDisposable
         if (!valid()) { throw ex; }
 
         _currException = ex;
-        next();
+        moveStateMachine();
         _currException = null;
 
         return current();
@@ -189,6 +186,23 @@ public class Generator : Iterator, IDisposable
 
     #region HelperMethods
     /// <summary>
+    /// Moves the state machine to next element.
+    /// </summary>
+    private void moveStateMachine()
+    {
+        if (!isInValidState) { return; }
+        checkIfMovingFromFirstYeild();
+
+        _stateMachineMethod.Invoke(_ctx, _this, _locals, gen: this);
+
+        if (!_userKeyReturned) { _currKey = PhpValue.Create(_nextNumericalKey); }
+        if (_currKey.IsInteger()) { _nextNumericalKey = (_currKey.ToLong() + 1); }
+
+        _runToFirstYield = true;
+
+    }
+
+    /// <summary>
     /// Checks if the generator is moving beyond first yield, if so sets proper variable. Important for <see cref="rewind"/>.
     /// </summary>
     private void checkIfMovingFromFirstYeild()
@@ -201,7 +215,7 @@ public class Generator : Iterator, IDisposable
     /// </summary>
     private void checkIfRunToFirstYieldIfNotRun()
     {
-        if (!_runToFirstYield) { _runToFirstYield = true; this.next(); }
+        if (!_runToFirstYield) { this.moveStateMachine(); }
     }
 
     #endregion
