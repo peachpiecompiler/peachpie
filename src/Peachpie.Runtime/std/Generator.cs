@@ -71,6 +71,11 @@ public class Generator : Iterator, IDisposable
         _ctx = ctx;
         _locals = new PhpArray();
         _this = @this;
+
+        _currValue = PhpValue.Null;
+        _currKey = PhpValue.Null;
+        _currSendItem = PhpValue.Null;
+        _returnValue = PhpValue.Null;
     }
     #endregion
 
