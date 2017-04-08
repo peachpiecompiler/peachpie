@@ -106,6 +106,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 loc.EmitInit(cg);
             }
 
+            // if generator method: goto switch table if already run to first yield
             if((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator)
             {
 
@@ -177,6 +178,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         internal override void Emit(CodeGenerator cg)
         {
+            // if generator method: create a switch table & generator's end
             if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator)
             {
                 // if got here normally (not via jump from StartBlock) -> skip after switch table
@@ -227,7 +229,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // GENFIX: The routine has PhpValue as returns type -> EmitRetDefault loads empty PHPValue on stack, this prevents it
             if (((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator))
-            { cg.Builder.EmitRet(true); }
+            { cg.Builder.EmitRet(true); return; }
 
             // return <default>;
             cg.EmitRetDefault(); 
