@@ -13,12 +13,8 @@
 [![Facebook](https://img.shields.io/badge/FB-pchpcompiler-blue.svg)](https://www.facebook.com/pchpcompiler)
 [![Peachpie.io](https://img.shields.io/badge/Web-peachpie.io-orange.svg)](http://www.peachpie.io)
 
-[Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started)  
-[Documentation](https://github.com/iolevel/peachpie/wiki)
-
-> **Note:** If you would like to reward us for our hard work on this project, we will be happy to accept donations of all amounts.
- 
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E)
+- [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started)  
+- [Documentation](https://github.com/iolevel/peachpie/wiki)
 
 ## Continuous Integration
 
@@ -31,16 +27,22 @@
 ## What is Peachpie?
 Peachpie is a modern PHP compiler based on the Microsoft Roslyn compiler platform and drawing from our popular Phalanger project. It allows PHP to be executed within the .NET framework, thereby opening the door for PHP developers into the world of .NET – and vice versa.
 
+<p align="center">
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"/></a>
+</p>
+
+*If you would like to reward us for our hard work on this project, we will be happy to accept donations of all amounts.*
+
 ## Project goals
--**Increased performance**: Peachpie's extensive type analysis and the influence of Microsoft Roslyn should provide an improved performance of PHP applications and components. 
+- **Increased performance**: Peachpie's extensive type analysis and the influence of Microsoft Roslyn should provide an improved performance of PHP applications and components. 
 
--**Security**: since programs run within the standardized and manageable .NET or .NET Core environment, the code is fully verifiable without any unsafe constructs. 
+- **Security**: since programs run within the standardized and manageable .NET or .NET Core environment, the code is fully verifiable without any unsafe constructs. 
 
--**Cross-platform development**: the project compiles legacy PHP code into portable class libraries, enabling developers to build cross-platform apps and libraries for Microsoft platforms.  
+- **Cross-platform development**: the project compiles legacy PHP code into portable class libraries, enabling developers to build cross-platform apps and libraries for Microsoft platforms.  
 
--**Full .NET compatibility**: compiled programs run on the reimplemented Peachpie runtime, fully compatibly with the PHP runtime.
+- **Full .NET compatibility**: compiled programs run on the reimplemented Peachpie runtime, fully compatibly with the PHP runtime.
 
--**Both-way interoperability**: the project allows for hybrid applications, where parts are written in C# and others in PHP. The parts will be entirely compatible and can communicate seamlessly, all within the .NET framework.  
+- **Both-way interoperability**: the project allows for hybrid applications, where parts are written in C# and others in PHP. The parts will be entirely compatible and can communicate seamlessly, all within the .NET framework.  
 
 
 ## How to use Peachpie
