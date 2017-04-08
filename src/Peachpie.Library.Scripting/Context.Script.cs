@@ -39,7 +39,7 @@ namespace Peachpie.Library.Scripting
         private Script(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream, PhpCompilationFactory builder, Script previousSubmissionOpt)
         {
             _assemblyName = assemblyName;
-            _previousSubmission = previousSubmissionOpt;
+            _previousSubmission = null;
 
             //
             peStream.Position = 0;
@@ -71,6 +71,21 @@ namespace Peachpie.Library.Scripting
             if (_entryPoint == null)
             {
                 throw new InvalidOperationException();
+            }
+
+            // find out highest dependent submission, if any
+            Assembly depass = null;
+            foreach (var refname in ass.GetReferencedAssemblies())
+            {
+                var refass = builder.TryGetSubmissionAssembly(refname);
+                if (refass != null)
+                {
+                    depass = refass;
+                }
+            }
+            if (depass != null)
+            {
+                _previousSubmission = AllPreviousSubmissions(previousSubmissionOpt).First(s => s.AssemblyName.Name == depass.GetName().Name);
             }
 
             // we have to "declare" the script, so its referenced symbols and compiled files are loaded into the context

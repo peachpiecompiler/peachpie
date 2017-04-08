@@ -69,7 +69,21 @@ namespace Peachpie.Library.Scripting
         readonly PhpCompilation _compilation;
         readonly IAssemblySymbol _assemblytmp;
 
-        readonly Dictionary<AssemblyName, Assembly> _assemblies = new Dictionary<AssemblyName, Assembly>();
+        /// <summary>
+        /// Set of simple assembly names (submissions) loaded by the factory.
+        /// </summary>
+        readonly Dictionary<string, Assembly> _assemblies = new Dictionary<string, Assembly>(StringComparer.Ordinal);
+
+        public Assembly TryGetSubmissionAssembly(AssemblyName assemblyName)
+        {
+            if (assemblyName.Name.StartsWith(s_submissionAssemblyNamePrefix, StringComparison.Ordinal) &&
+                _assemblies.TryGetValue(assemblyName.Name, out Assembly assembly))
+            {
+                return assembly;
+            }
+
+            return null;
+        }
 
         public Assembly LoadFromStream(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream)
         {
@@ -80,24 +94,22 @@ namespace Peachpie.Library.Scripting
 #endif
             if (assembly != null)
             {
-                _assemblies.Add(assemblyName, assembly);
+                _assemblies.Add(assemblyName.Name, assembly);
             }
             return assembly;
         }
 
 #if !NET46
-        protected override Assembly Load(AssemblyName assemblyName)
-        {
-            _assemblies.TryGetValue(assemblyName, out Assembly assembly);
-            return assembly;
-        }
+        protected override Assembly Load(AssemblyName assemblyName) => TryGetSubmissionAssembly(assemblyName);
 #endif
 
-        int _counter = 0;
+        static int _counter = 0;
+
+        const string s_submissionAssemblyNamePrefix = "<submission>`";
 
         public AssemblyName GetNewSubmissionName()
         {
-            return new AssemblyName($"<submission>`{_counter++}");
+            return new AssemblyName(s_submissionAssemblyNamePrefix + (_counter++).ToString());
         }
     }
 }
