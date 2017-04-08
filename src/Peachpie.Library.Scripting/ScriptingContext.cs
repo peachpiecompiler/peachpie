@@ -15,15 +15,10 @@ namespace Peachpie.Library.Scripting
         /// </summary>
         public static ScriptingContext EnsureContext(Context ctx) => ctx.GetStatic<ScriptingContext>();
 
-        public List<Script> Submissions { get; } = new List<Script>();
-
-        public Script LastSubmission
-        {
-            get
-            {
-                return (Submissions.Count == 0) ? null : Submissions[Submissions.Count - 1];
-            }
-        }
+        /// <summary>
+        /// Set of submissions already evaluated within the context.
+        /// </summary>
+        public HashSet<Script> Submissions { get; } = new HashSet<Script>();
 
         /// <summary>
         /// Index of function created with <see cref="PhpFunctions.create_function"/>.

@@ -91,6 +91,11 @@ namespace Pchp.Core
 
     public static class PhpException
     {
+        public static void Throw(PhpError error, string message)
+        {
+            Context.DefaultErrorHandler?.Throw(error, message);
+        }
+
         public static void Throw(PhpError error, string formatString, params string[] args)
         {
             Context.DefaultErrorHandler?.Throw(error, formatString, args);

@@ -33,13 +33,14 @@ namespace Pchp.Core
     /// </summary>
     internal sealed class DefaultErrorHandler : IErrorHandler
     {
-        public void Throw(PhpError error, string message) => Throw(error, message, Array.Empty<string>());
-
-        public void Throw(PhpError error, string formatString, params string[] args)
+        public void Throw(PhpError error, string message)
         {
-            Debug.WriteLine(string.Format(formatString, args), "PHP");
-            Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, string.Format(formatString, args));
+            Debug.WriteLine(message, "PHP");
+            Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, message);
+            Throw(error, message, Array.Empty<string>());
         }
+
+        public void Throw(PhpError error, string formatString, params string[] args) => Throw(error, string.Format(formatString, args));
     }
 
     /// <summary>

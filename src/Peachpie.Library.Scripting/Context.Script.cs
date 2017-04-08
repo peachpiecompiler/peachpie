@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -11,20 +12,44 @@ using Pchp.Core;
 
 namespace Peachpie.Library.Scripting
 {
+    /// <summary>
+    /// Script representing a compiled submission.
+    /// </summary>
+    [DebuggerDisplay("Script ({_assemblyName.Name})")]
     sealed class Script : Context.IScript
     {
-        readonly Script _previousSubmission;
+        /// <summary>
+        /// Set of dependency submissions.
+        /// Can be empty.
+        /// These scripts are expected to be evaluated when running this script.
+        /// </summary>
+        readonly Script[] _previousSubmissions;
+
+        /// <summary>
+        /// The entry method of the submissions global code.
+        /// </summary>
         readonly Context.MainDelegate _entryPoint;
+
+        /// <summary>
+        /// Submission assembly image.
+        /// </summary>
         readonly ImmutableArray<byte> _image;
+
+        /// <summary>
+        /// Siubmission assembly name.
+        /// </summary>
         readonly AssemblyName _assemblyName;
 
+        /// <summary>
+        /// In case of valid submission, <c>&lt;Script&gt;</c> type representing the submissions global code.
+        /// </summary>
         readonly Type _script;
 
         /// <summary>
-        /// Optional refernce to a script that preceeds this one.
-        /// Current script requires this one to be evaluated.
+        /// Refernces to scripts that preceeds this one.
+        /// Current script requires these to be evaluated first.
         /// </summary>
-        public Script DependingSubmission => _previousSubmission;
+        public IEnumerable<Script> DependingSubmissions => _previousSubmissions;
 
         /// <summary>
         /// Gets the assembly content.
@@ -36,11 +61,10 @@ namespace Peachpie.Library.Scripting
         /// </summary>
         public AssemblyName AssemblyName => _assemblyName;
 
-        private Script(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream, PhpCompilationFactory builder, Script previousSubmissionOpt)
+        private Script(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
             _assemblyName = assemblyName;
-            _previousSubmission = null;
-
+            
             //
             peStream.Position = 0;
             if (pdbStream != null)
@@ -73,60 +97,94 @@ namespace Peachpie.Library.Scripting
                 throw new InvalidOperationException();
             }
 
-            // find out highest dependent submission, if any
-            Assembly depass = null;
-            foreach (var refname in ass.GetReferencedAssemblies())
-            {
-                var refass = builder.TryGetSubmissionAssembly(refname);
-                if (refass != null)
-                {
-                    depass = refass;
-                }
-            }
-            if (depass != null)
-            {
-                _previousSubmission = AllPreviousSubmissions(previousSubmissionOpt).First(s => s.AssemblyName.Name == depass.GetName().Name);
-            }
-
             // we have to "declare" the script, so its referenced symbols and compiled files are loaded into the context
+            // this comes once after loading the assembly
             Context.AddScriptReference(ass);
+
+            // find out highest dependent submissions, if any
+            _previousSubmissions = CollectDependencies(ass, builder, previousSubmissions);
         }
 
-        private Script(Context.MainDelegate entryPoint, Script previousSubmissionOpt)
+        private Script(Context.MainDelegate entryPoint)
         {
             _entryPoint = entryPoint;
-            _previousSubmission = previousSubmissionOpt;
             _assemblyName = new AssemblyName();
             _image = ImmutableArray<byte>.Empty;
         }
 
-        static IEnumerable<Script> AllPreviousSubmissions(Script previousSubmission)
+        /// <summary>
+        /// Collects scripts which declarations were used directly in the compiled assembly.
+        /// These scripts are dependencies to the assembly so they must be evaluated first in order to re-use <paramref name="assembly"/> in future.
+        /// </summary>
+        /// <param name="assembly">Compiled assembly.</param>
+        /// <param name="builder">Assembly factory.</param>
+        /// <param name="previousSubmissions">All scripts referenced by the assembly compilation.</param>
+        /// <returns></returns>
+        private static Script[] CollectDependencies(Assembly assembly, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
-            for (var submission = previousSubmission; submission != null; submission = submission.DependingSubmission)
+            // collect dependency scripts from referenced assemblies
+            var dependencies = new HashSet<Script>();
+            foreach (var refname in assembly.GetReferencedAssemblies()) // TODO: only assemblies really used within the {assembly} -> optimizes caching
             {
-                if (!submission.Image.IsDefaultOrEmpty)
+                var refass = builder.TryGetSubmissionAssembly(refname);
+                if (refass != null)
                 {
-                    yield return submission;
+                    var refscript = previousSubmissions.First(s => s.AssemblyName.Name == refass.GetName().Name);
+                    Debug.Assert(refscript != null);
+                    if (refscript != null)
+                    {
+                        dependencies.Add(refscript);
+                    }
                 }
             }
+
+            // remove dependencies of dependencies -> not needed for checking
+            var toremove = new HashSet<Script>();
+            foreach (var d in dependencies)
+            {
+                toremove.UnionWith(d.DependingSubmissions);
+            }
+
+            dependencies.ExceptWith(toremove);
+
+            //
+            return (dependencies.Count != 0)
+                ? dependencies.ToArray()
+                : Array.Empty<Script>();
         }
 
-        public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, Script previousSubmission)
+        /// <summary>
+        /// Compiles <paramref name="code"/> and creates script.
+        /// </summary>
+        /// <param name="options">Compilation options.</param>
+        /// <param name="code">Code to be compiled.</param>
+        /// <param name="builder">Assembly builder.</param>
+        /// <param name="previousSubmissions">Enumeration of scripts that were evaluated within current context. New submission may reference them.</param>
+        /// <returns>New script reepresenting the compiled code.</returns>
+        public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
             var tree = PhpSyntaxTree.ParseCode(code,
                 new PhpParseOptions(kind: options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular),
                 PhpParseOptions.Default,
                 options.Location.Path);
 
+
             var diagnostics = tree.Diagnostics;
             if (!HasErrors(diagnostics))
             {
+                // unique in-memory assembly name
                 var name = builder.GetNewSubmissionName();
 
+                // list of scripts that were eval'ed in the context already,
+                // our compilation may depend on them
+                var dependingSubmissions = previousSubmissions.Where(s => !s.Image.IsDefaultOrEmpty);
+
+                // create the compilation object
+                // TODO: add conditionally declared types into the compilation tables
                 var compilation = (PhpCompilation)builder.CoreCompilation
                     .WithAssemblyName(name.Name)
                     .AddSyntaxTrees(tree)
-                    .AddReferences(AllPreviousSubmissions(previousSubmission).Select(s => MetadataReference.CreateFromImage(s.Image)));
+                    .AddReferences(dependingSubmissions.Select(s => MetadataReference.CreateFromImage(s.Image)));
 
                 if (options.EmitDebugInformation)
                 {
@@ -141,7 +199,7 @@ namespace Peachpie.Library.Scripting
                     var result = compilation.Emit(peStream, pdbStream);
                     if (result.Success)
                     {
-                        return new Script(name, peStream, pdbStream, builder, previousSubmission);
+                        return new Script(name, peStream, pdbStream, builder, previousSubmissions);
                     }
                     else
                     {
@@ -151,18 +209,29 @@ namespace Peachpie.Library.Scripting
             }
 
             //
-            return CreateInvalid(diagnostics, previousSubmission);
+            return CreateInvalid(diagnostics);
         }
 
-        public static Script CreateInvalid(IEnumerable<Diagnostic> diagnostics, Script previousSubmission)
+        /// <summary>
+        /// Initializes an invalid script that throws diagnostics upon invoking.
+        /// </summary>
+        /// <param name="diagnostics"></param>
+        /// <returns></returns>
+        private static Script CreateInvalid(IEnumerable<Diagnostic> diagnostics)
         {
             return new Script((ctx, locals, @this) =>
             {
-                throw new NotImplementedException("invalid script, report diagnostics");
-            }, previousSubmission);
+                foreach (var d in diagnostics)
+                {
+                    PhpException.Throw(PhpError.Error, d.GetMessage());
+                }
+
+                //
+                return PhpValue.Void;
+            });
         }
 
-        static bool HasErrors(IEnumerable<Diagnostic> diagnostics)
+        private static bool HasErrors(IEnumerable<Diagnostic> diagnostics)
         {
             return diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
         }

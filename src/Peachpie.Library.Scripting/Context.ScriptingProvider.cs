@@ -24,13 +24,14 @@ namespace Peachpie.Library.Scripting
             return candidates;
         }
 
-        Script CacheLookup(Context.ScriptOptions options, string code, ScriptingContext scriptingCtx)
+        Script CacheLookup(Context.ScriptOptions options, string code, ScriptingContext data)
         {
             if (_scripts.TryGetValue(code, out List<Script> candidates))
             {
                 foreach (var c in candidates)
                 {
-                    if (c.DependingSubmission == null || scriptingCtx.Submissions.Contains(c.DependingSubmission))  // TODO: not correct, a new submission may change candidate
+                    // candidate requires that all its dependencies were loaded into context
+                    if (c.DependingSubmissions.All(data.Submissions.Contains))
                     {
                         return c;
                     }
@@ -47,7 +48,7 @@ namespace Peachpie.Library.Scripting
             if (script == null)
             {
                 // TODO: rwlock cache[code]
-                script = Script.Create(options, code, _builder, data.LastSubmission);
+                script = Script.Create(options, code, _builder, data.Submissions);
                 EnsureCache(code).Add(script);
             }
 
