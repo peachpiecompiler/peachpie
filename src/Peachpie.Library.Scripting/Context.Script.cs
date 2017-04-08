@@ -15,9 +15,11 @@ namespace Peachpie.Library.Scripting
     /// <summary>
     /// Script representing a compiled submission.
     /// </summary>
-    [DebuggerDisplay("Script ({_assemblyName.Name})")]
+    [DebuggerDisplay("Script ({AssemblyName.Name})")]
     sealed class Script : Context.IScript
     {
+        #region Fields & Properties
+
         /// <summary>
         /// Set of dependency submissions.
         /// Can be empty.
@@ -60,6 +62,10 @@ namespace Peachpie.Library.Scripting
         /// Gets the script assembly name.
         /// </summary>
         public AssemblyName AssemblyName => _assemblyName;
+
+        #endregion
+
+        #region Initialization
 
         private Script(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
@@ -231,6 +237,11 @@ namespace Peachpie.Library.Scripting
             });
         }
 
+        #endregion
+
+        /// <summary>
+        /// Checks if given collection contains fatal errors.
+        /// </summary>
         private static bool HasErrors(IEnumerable<Diagnostic> diagnostics)
         {
             return diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
@@ -259,6 +270,5 @@ namespace Peachpie.Library.Scripting
         }
 
         #endregion
-
     }
 }
