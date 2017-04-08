@@ -16,7 +16,7 @@ namespace ScriptsTest
     {
         static string GetRootDirectory()
         {
-            var d = Path.GetDirectoryName(typeof(ScriptsListDataAttribute).GetTypeInfo().Assembly.Location);
+            var d = Directory.GetCurrentDirectory();
             while (!File.Exists(Path.Combine(d, "Peachpie.sln")))
             {
                 d = Path.GetDirectoryName(d);
