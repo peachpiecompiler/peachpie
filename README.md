@@ -1,4 +1,3 @@
-<br>
 <p align="left">
 <img src="http://www.peachpie.io/wp-content/uploads/2016/12/peachpie-round.png" width="400"/>
 </p>
