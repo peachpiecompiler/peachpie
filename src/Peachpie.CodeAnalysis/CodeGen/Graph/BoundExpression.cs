@@ -3852,6 +3852,10 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            // yieldIndex is 1-based because zero is reserved for to-first-yield-run.
+            cg.YieldExprs.Add(this);
+            var yieldIndex = cg.YieldExprs.Count;
+
             var il = cg.Builder;
 
             // sets currValue and currKey on generator object
@@ -3867,13 +3871,23 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitSymbolToken(cg.CoreMethods.Generator._userKeyReturned, null);
 
 
-            // Return is conditioned because Roslyn optimises the rest of the code away otherwise (dead code)
-            //  DELETE after implementing switch jumping
-            /*TMP*/var TMP = new NamedLabel("TMP");
-            il.EmitLoadArgumentOpcode(2);
-            /*TMP*/il.EmitBranch(ILOpCode.Brfalse, TMP);
-            /*TMP*/il.EmitRet(true);
-            /*TMP*/il.MarkLabel(TMP);
+            //generator._state = yieldIndex
+            il.EmitLoadArgumentOpcode(3);
+            cg.EmitLoadConstant(yieldIndex, cg.CoreTypes.Int32);
+            cg.EmitOpCode(ILOpCode.Stfld);
+            cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+
+
+            // return & set continuation point just after that
+            il.EmitRet(true);
+            il.MarkLabel(this);
+
+
+            // state = -1 -> generator is running
+            cg.Builder.EmitLoadArgumentOpcode(3);
+            cg.EmitLoadConstant(-1, cg.CoreTypes.Int32);
+            cg.EmitOpCode(ILOpCode.Stfld);
+            cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
 
 
             // if(generator._currException != null) throw ex;

@@ -106,6 +106,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 loc.EmitInit(cg);
             }
 
+            if((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator)
+            {
+
+                // if Generator._state != 0 (already run to first yield) -> goto switch
+                cg.Builder.EmitLoadArgumentOpcode(3);
+                cg.EmitOpCode(ILOpCode.Ldfld);
+                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+
+                cg.Builder.EmitBranch(ILOpCode.Brtrue, cg.YieldExprs);
+
+
+                // else state = -1 (running) & continue running normally
+                cg.Builder.EmitLoadArgumentOpcode(3);
+                cg.EmitLoadConstant(-1, cg.CoreTypes.Int32);
+                cg.EmitOpCode(ILOpCode.Stfld);
+                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+
+            }
+
             //
             base.Emit(cg);
         }
@@ -158,6 +177,47 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         internal override void Emit(CodeGenerator cg)
         {
+            if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator)
+            {
+                // if got here normally (not via jump from StartBlock) -> skip after switch table
+                var skipSwitch = new object();
+                cg.Builder.EmitBranch(ILOpCode.Br, skipSwitch);
+
+                // label for switch table start
+                cg.Builder.MarkLabel(cg.YieldExprs);
+
+                var yieldExLabels = new List<KeyValuePair<ConstantValue, object>>();
+                for (var i = 0; i < cg.YieldExprs.Count; i++)
+                {
+                    // i+1 because labels have 1-based index (zero is reserved for run to first yield)
+                    yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(i + 1), cg.YieldExprs[i]));
+                }
+
+                // local <state> = g._state that is switched on (can't switch on remote field)
+                cg.Builder.EmitLoadArgumentOpcode(3);
+                cg.EmitOpCode(ILOpCode.Ldfld);
+                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+
+                var switchOnLocation = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
+                cg.Builder.EmitLocalStore(switchOnLocation);
+
+                // emit switch table that based on g._state jumps to appropriate continuation label
+                cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), skipSwitch, switchOnLocation, Microsoft.Cci.PrimitiveTypeCode.Int32);
+                cg.ReturnTemporaryLocal(switchOnLocation);
+
+                // label after switch table (used for skipping it & as a fallTroughLabel)
+                cg.Builder.MarkLabel(skipSwitch);
+
+
+                // g._state = -2 (closed): got to the end of the generator method
+                cg.Builder.EmitLoadArgumentOpcode(3);
+                cg.EmitLoadConstant(-2, cg.CoreTypes.Int32);
+                cg.EmitOpCode(ILOpCode.Stfld);
+                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+
+            }
+
+
             // note: ILBuider removes eventual unreachable .ret opcode
 
             if (_retlbl != null && _rettmp == null)
@@ -165,8 +225,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.Builder.MarkLabel(_retlbl);
             }
 
+            // GENFIX: The routine has PhpValue as returns type -> EmitRetDefault loads empty PHPValue on stack, this prevents it
+            if (((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator))
+            { cg.Builder.EmitRet(true); }
+
             // return <default>;
-            cg.EmitRetDefault();
+            cg.EmitRetDefault(); 
             cg.Builder.AssertStackEmpty();
 
             // return <rettemp>;

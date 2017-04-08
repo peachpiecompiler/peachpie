@@ -14,6 +14,7 @@ using System.Reflection.Metadata;
 using System.Diagnostics;
 using System.Collections.Immutable;
 using Cci = Microsoft.Cci;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -276,6 +277,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Type of the caller context (the class declaring current method) or null.
         /// </summary>
         public TypeSymbol CallerType => (_routine is SourceMethodSymbol) ? _routine.ContainingType : null;
+
+        /// <summary>
+        /// Seen BoundYieldExpressions. Used for emiting switch table in the end of generator method.
+        /// </summary>
+        public List<BoundYieldEx> YieldExprs = new List<BoundYieldEx>();
 
         #endregion
 
