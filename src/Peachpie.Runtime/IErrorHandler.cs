@@ -37,7 +37,6 @@ namespace Pchp.Core
         {
             Debug.WriteLine(message, "PHP");
             Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, message);
-            Throw(error, message, Array.Empty<string>());
         }
 
         public void Throw(PhpError error, string formatString, params string[] args) => Throw(error, string.Format(formatString, args));
