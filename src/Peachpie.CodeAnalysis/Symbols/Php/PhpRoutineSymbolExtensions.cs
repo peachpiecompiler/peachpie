@@ -25,10 +25,15 @@ namespace Pchp.CodeAnalysis.Symbols
             // if the method is generator and can't be overriden then the return type must be generator
             if ((routine?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
             {
-                // TODO: Make it return Generator in safe cases (non-virtual-methods) and stop converting generator to PHPValue before return.
-
-                return compilation.CoreTypes.PhpValue;
-                // return compilation.CoreTypes.Generator; // foreach expects PHPValue, let's deliver it for now
+                // if non-virtual -> return Generator directly
+                if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
+                {
+                    return compilation.CoreTypes.Generator;
+                }
+                else //can't be sure -> play safe with PhpValue
+                {
+                    return compilation.CoreTypes.PhpValue;
+                }
             }
 
             // &
@@ -94,13 +99,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 var m = (MethodSymbol)symbol;
                 var r = symbol as SourceRoutineSymbol;
 
-                // if the method is generator and can't be overriden then the return type must be generator
+                // if the method is generator use ConstructClrReturnType analysis for return type
                 if ((r?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
                 {
-                    // TODO: Make it return Generator in safe cases (non-virtual-methods) and stop converting generator to PHPValue before return.
-
-                    t = m.DeclaringCompilation.CoreTypes.PhpValue;
-                    
+                    t = m.ReturnType;
                 }
                 else if (r != null && r.IsStatic && r.SyntaxReturnType == null)
                 {
