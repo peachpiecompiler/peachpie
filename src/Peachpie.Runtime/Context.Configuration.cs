@@ -179,6 +179,8 @@ namespace Pchp.Core
 
         public bool AddXHeader = false;
 
+        public string ForceExtraMailParameters = null;
+
         public string DefaultFromHeader = null;
 
         #endregion
