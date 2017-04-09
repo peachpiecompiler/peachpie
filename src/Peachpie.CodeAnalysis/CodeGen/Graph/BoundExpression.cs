@@ -3901,6 +3901,13 @@ namespace Pchp.CodeAnalysis.Semantics
             il.EmitLoadArgumentOpcode(3);
             cg.EmitOpCode(ILOpCode.Ldfld);
             cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
+
+            //g._curException = null : clear the field after throwing the exception
+            il.EmitLoadArgumentOpcode(3);
+            il.EmitNullConstant(); 
+            cg.EmitOpCode(ILOpCode.Stfld);
+            cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
+
             il.EmitThrow(false);
 
             il.MarkLabel(excNotNull);
