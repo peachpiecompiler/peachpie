@@ -13,7 +13,7 @@ function Die([string]$message, [object[]]$output) {
     exit 1
 }
 
-.\build\build.ps1 -suffix "CI$env:BuildCounter"
+.\build\build.ps1 -suffix "$env:PrereleaseTag"
 if($LASTEXITCODE -ne 0) { Die("Build failed.") }
 
 dotnet test .\src\Tests\Peachpie.ScriptTests\Peachpie.ScriptTests.csproj
