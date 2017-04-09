@@ -434,7 +434,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
                 BuildClosure_RoutineInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
-                BuildGenerator_Context_Object_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.GeneratorStateMachineDelegate);
+                BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.GeneratorStateMachineDelegate);
                 Eval_Context_PhpArray_object_string_string_int_int = ct.Operators.Method("Eval", ct.Context, ct.PhpArray, ct.Object, ct.String, ct.String, ct.Int32, ct.Int32);
                 GetName_PhpTypeInfo = ct.PhpTypeInfo.Property("Name");
 
@@ -494,7 +494,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Clone_Context_Object,
                 BuildClosure_RoutineInfo_PhpArray_PhpArray,
-                BuildGenerator_Context_Object_GeneratorStateMachineDelegate,
+                BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate,
                 Eval_Context_PhpArray_object_string_string_int_int,
 
                 offsetGet_ArrayAccess_PhpValue,

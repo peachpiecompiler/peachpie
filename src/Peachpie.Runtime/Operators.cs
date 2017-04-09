@@ -689,7 +689,7 @@ namespace Pchp.Core
         /// <summary>
         /// Create <see cref="Generator"/> with specified state machine function and parameters.
         /// </summary>
-        public static Generator BuildGenerator(Context ctx, object @this, GeneratorStateMachineDelegate method) => new Generator(ctx, @this, method);
+        public static Generator BuildGenerator(Context ctx, object @this, PhpArray locals, GeneratorStateMachineDelegate method) => new Generator(ctx, @this, locals, method);
 
         #endregion
 

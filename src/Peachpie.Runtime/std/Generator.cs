@@ -68,14 +68,14 @@ public class Generator : Iterator, IDisposable
     #endregion  
 
     #region Constructors
-    internal Generator(Context ctx, object @this, GeneratorStateMachineDelegate method)
+    internal Generator(Context ctx, object @this, PhpArray locals, GeneratorStateMachineDelegate method)
     {
         Debug.Assert(ctx != null);
         Debug.Assert(method != null);
 
         _stateMachineMethod = method;
         _ctx = ctx;
-        _locals = new PhpArray();
+        _locals = locals;
         _this = @this;
 
         _currValue = PhpValue.Null;

@@ -154,13 +154,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.EmitLoadContext(); // ctx
                 cg.EmitThisOrNull();  // @this
 
+                // new PhpArray for generator's locals
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray); // TODO: Copy local arguments to it
+
                 // new GeneratorStateMachineDelegate(generator@function)
                 cg.EmitThisOrNull();   // this @object
                 cg.EmitOpCode(ILOpCode.Ldftn); // method
                 cg.EmitSymbolToken(genSymbol, null); 
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
 
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_GeneratorStateMachineDelegate);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate);
 
                 // Convert generator to PHP Value (foreach expects PHPValue)
                 // ..see ConstructClrReturnType in PhpRoutineSymbolExtensions for more info
