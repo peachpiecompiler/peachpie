@@ -22,6 +22,15 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var compilation = routine.DeclaringCompilation;
 
+            // if the method is generator and can't be overriden then the return type must be generator
+            if ((routine?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+            {
+                // TODO: Make it return Generator in safe cases (non-virtual-methods) and stop converting generator to PHPValue before return.
+
+                return compilation.CoreTypes.PhpValue;
+                // return compilation.CoreTypes.Generator; // foreach expects PHPValue, let's deliver it for now
+            }
+
             // &
             if (routine.SyntaxSignature.AliasReturn)
             {
@@ -37,16 +46,6 @@ namespace Pchp.CodeAnalysis.Symbols
             // for non virtual methods:
             if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
             {
-
-
-                // if the method is generator and can't be overriden then the return type must be generator
-                if((routine.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
-                {
-                    // TODO: Make it return Generator in safe cases (and stop converting generator to PHPValue before return).
-
-                    return compilation.CoreTypes.PhpValue;
-                    // return compilation.CoreTypes.Generator; // foreach expects PHPValue, let's deliver it for now
-                }
 
                 // /** @return */
                 var typeCtx = routine.TypeRefContext;
@@ -94,14 +93,25 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var m = (MethodSymbol)symbol;
                 var r = symbol as SourceRoutineSymbol;
-                if (r != null && r.IsStatic && r.SyntaxReturnType == null)
+
+                // if the method is generator and can't be overriden then the return type must be generator
+                if ((r?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+                {
+                    // TODO: Make it return Generator in safe cases (non-virtual-methods) and stop converting generator to PHPValue before return.
+
+                    t = m.DeclaringCompilation.CoreTypes.PhpValue;
+                    
+                }
+                else if (r != null && r.IsStatic && r.SyntaxReturnType == null)
                 {
                     // In case of a static function, we can return expected return type mask exactly.
                     // Such function cannot be overriden and we know exactly what the return type will be even the CLR type covers more possibilities.
                     return ctx.AddToContext(r.TypeRefContext, r.ResultTypeMask);
                 }
-
-                t = m.ReturnType;
+                else
+                {
+                    t = m.ReturnType;
+                }
             }
             else if (symbol is PropertySymbol)
             {
