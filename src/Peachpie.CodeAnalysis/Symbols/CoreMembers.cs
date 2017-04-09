@@ -982,15 +982,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public struct GeneratorHolder
         {
-            public readonly CoreField _ctx, _locals, _stateMachineMethod, _this, _state, _userKeyReturned, _currValue, _currKey, _currSendItem, _returnValue, _currException;
+            public readonly CoreField _state, _userKeyReturned, _currValue, _currKey, _currSendItem, _returnValue, _currException;
 
             public GeneratorHolder(CoreTypes ct)
             {
-                _ctx = ct.Generator.Field("_ctx");
-                _locals = ct.Generator.Field("_locals");
-                _stateMachineMethod = ct.Generator.Field("_stateMachineMethod");
-                _this = ct.Generator.Field("_this");
-
                 _state = ct.Generator.Field("_state");
 
                 _userKeyReturned = ct.Generator.Field("_userKeyReturned");
