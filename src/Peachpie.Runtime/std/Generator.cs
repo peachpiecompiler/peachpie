@@ -120,7 +120,7 @@ public class Generator : Iterator, IDisposable
     public PhpValue key()
     {
         checkIfRunToFirstYieldIfNotRun();
-        return _currKey;
+        return (isInValidState) ? _currKey : PhpValue.Null;
     }
 
     /// <summary>
@@ -129,7 +129,7 @@ public class Generator : Iterator, IDisposable
     public PhpValue current()
     {
         checkIfRunToFirstYieldIfNotRun();
-        return _currValue;
+        return (isInValidState) ? _currValue : PhpValue.Null;
     }
 
     /// <summary>
