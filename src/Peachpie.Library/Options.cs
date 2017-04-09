@@ -97,6 +97,30 @@ namespace Pchp.Library
 
         static readonly GetSetDelegate EmptyGsr = new GetSetDelegate((s, name, value, action) => PhpValue.Null);
 
+        static PhpValue GsrMail(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+        {
+            switch (option.ToLowerInvariant())
+            {
+                case "SMTP":
+                    return (PhpValue)GetSet(ref config.Core.SmtpServer, null, value, action);
+
+                case "smtp_port":
+                    return (PhpValue)GetSet(ref config.Core.SmtpPort, 25, value, action);
+
+                case "sendmail_from":
+                    return (PhpValue)GetSet(ref config.Core.DefaultFromHeader, null, value, action);
+
+                case "mail.add_x_header":
+                    return (PhpValue)GetSet(ref config.Core.AddXHeader, false, value, action);
+
+                case "mail.force_extra_parameters":
+                    return (PhpValue)GetSet(ref config.Core.ForceExtraMailParameters, null, value, action);
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(option));
+            }
+        }
+
         static Dictionary<string, OptionDefinition> _options = new Dictionary<string, OptionDefinition>(150, StringComparer.Ordinal);
 
         /// <summary>
@@ -204,6 +228,13 @@ namespace Pchp.Library
             Register("xbithack", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
             Register("y2k_compliance", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
             Register("zend.ze1_compatibility_mode", IniFlags.Supported | IniFlags.Local, EmptyGsr);
+
+            // mail
+            Register("SMTP", IniFlags.Supported | IniFlags.Local, GsrMail);
+            Register("smtp_port", IniFlags.Supported | IniFlags.Local, GsrMail);
+            Register("sendmail_from", IniFlags.Supported | IniFlags.Local, GsrMail);
+            Register("mail.add_x_header", IniFlags.Supported | IniFlags.Local, GsrMail);
+            Register("mail.force_extra_parameters", IniFlags.Supported | IniFlags.Local, GsrMail);
         }
 
         /// <summary>

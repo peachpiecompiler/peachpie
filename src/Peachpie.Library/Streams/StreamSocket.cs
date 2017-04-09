@@ -158,7 +158,7 @@ namespace Pchp.Library.Streams
             //SplitSocketAddressPort(ref remoteSocket, out port);
             return Connect(ctx, remoteSocket, port, out errno, out errstr, Double.NaN, SocketOptions.None, StreamContext.Default);
         }
-        
+
         /// <summary>
         /// Open client socket.
         /// </summary>
@@ -405,19 +405,12 @@ namespace Pchp.Library.Streams
                     }
                 }
 
-                Socket socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
-
-                using (var connectargs = new PhpSocketAsyncEventArgs(new IPEndPoint(address, port)))
+                var socket = new Socket(address.AddressFamily, SocketType.Stream, protocol);
+                if (!socket.ConnectAsync(address, port).Wait((int)(timeout * 1000)))
                 {
-                    if (socket.ConnectAsync(connectargs))   // true if connection is pending and we have to wait asynchronously
-                    {
-                        if (!connectargs.WaitForCompletion((int)(timeout * 1000)))
-                        {
-                            Debug.Assert(!socket.Connected);
-                            PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.socket_open_timeout, FileSystemUtils.StripPassword(remoteSocket)));
-                            return null;
-                        }
-                    }
+                    Debug.Assert(!socket.Connected);
+                    PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.socket_open_timeout, FileSystemUtils.StripPassword(remoteSocket)));
+                    return null;
                 }
 
                 // socket.Connect(new IPEndPoint(address, port));
@@ -436,24 +429,6 @@ namespace Pchp.Library.Streams
 
             PhpException.Throw(PhpError.Warning, string.Format(Resources.LibResources.socket_open_error, FileSystemUtils.StripPassword(remoteSocket), errstr));
             return null;
-        }
-
-        private class PhpSocketAsyncEventArgs : SocketAsyncEventArgs
-        {
-            readonly ManualResetEventSlim _event = new ManualResetEventSlim(false);
-
-            public bool WaitForCompletion(int millisecondsTimeout)
-            {
-                return _event.Wait(millisecondsTimeout);
-            }
-
-            public PhpSocketAsyncEventArgs(IPEndPoint remoteEndPoint)
-            {
-                _event.Reset();
-
-                this.RemoteEndPoint = remoteEndPoint;
-                this.Completed += (o, e) => _event.Set();
-            }
         }
 
         #endregion
