@@ -129,7 +129,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 result = PhpSyntaxTree.ParseCode(content.ToString(), parseOptions, scriptParseOptions, file.Path);
             }
 
-            if (result != null && result.Diagnostics.Length != 0)
+            if (result != null && result.Diagnostics.HasAnyErrors())
             {
                 ReportErrors(result.Diagnostics, consoleOutput, errorLogger);
                 hadErrors = true;
