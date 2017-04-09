@@ -9,7 +9,7 @@ To run the tests locally use `vstest` (Visual Studio 2017+) or `dotnet test` (.N
 Example:
 1. `cd ../src/Tests/Peachpie.ScriptTests`
 2. `dotnet restore`
-3. `dotnet test
+3. `dotnet test`
 
 Optionally, the test runner will try to run `php` command locally. If you have PHP installed, ensure your  `php` command corresponds to PHP version 7 or newer or the version you would like to compare with Peachpie.
 
