@@ -3852,9 +3852,12 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            Debug.Assert(cg.Routine.ControlFlowGraph.Yields != null);
+
             // yieldIndex is 1-based because zero is reserved for to-first-yield-run.
-            cg.YieldExprs.Add(this);
-            var yieldIndex = cg.YieldExprs.Count;
+            var yieldEx = this.PhpSyntax;
+            var yieldIndex = cg.Routine.ControlFlowGraph.Yields.IndexOf(this, EqualityComparer<BoundYieldEx>.Default) + 1;
+            Debug.Assert(yieldIndex >= 1); 
 
             var il = cg.Builder;
 

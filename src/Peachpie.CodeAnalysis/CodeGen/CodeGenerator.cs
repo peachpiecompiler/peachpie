@@ -278,11 +278,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol CallerType => (_routine is SourceMethodSymbol) ? _routine.ContainingType : null;
 
-        /// <summary>
-        /// Seen BoundYieldExpressions. Used for emiting switch table in the end of generator method.
-        /// </summary>
-        public List<BoundYieldEx> YieldExprs = new List<BoundYieldEx>();
-
         #endregion
 
         #region Construction

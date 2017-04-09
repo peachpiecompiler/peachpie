@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AST = Devsense.PHP.Syntax.Ast;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -27,11 +28,18 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         readonly LocalsTable _locals;
 
+        /// <summary>
+        /// Found yields (needed for ControlFlowGraph)
+        /// </summary>
+        public BoundYieldEx[] Yields { get => _yields.ToArray(); }
+        readonly List<BoundYieldEx> _yields;
+
         #region Construction
 
         public SemanticsBinder(LocalsTable locals = null)
         {
             _locals = locals;
+            _yields = new List<BoundYieldEx>();
         }
 
         #endregion
@@ -172,7 +180,9 @@ namespace Pchp.CodeAnalysis.Semantics
             var boundValueExpr = (expr.ValueExpr != null) ? BindExpression(expr.ValueExpr) : null;
             var boundKeyExpr = (expr.KeyExpr != null) ? BindExpression(expr.KeyExpr) : null;
 
-            return new BoundYieldEx(boundValueExpr, boundKeyExpr);
+            var boundYieldEx = new BoundYieldEx(boundValueExpr, boundKeyExpr);
+            _yields.Add(boundYieldEx);
+            return boundYieldEx;
         }
 
         BoundLambda BindLambda(AST.LambdaFunctionExpr expr)

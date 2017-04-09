@@ -114,7 +114,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.Builder.EmitLoadArgumentOpcode(3);
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorState_Generator);
 
-                cg.Builder.EmitBranch(ILOpCode.Brtrue, cg.YieldExprs);
+                var yields = cg.Routine.ControlFlowGraph.Yields;
+                cg.Builder.EmitBranch(ILOpCode.Brtrue, yields);
 
 
                 // else state = -1 (running) & continue running normally
@@ -184,13 +185,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.Builder.EmitBranch(ILOpCode.Br, skipSwitch);
 
                 // label for switch table start
-                cg.Builder.MarkLabel(cg.YieldExprs);
+                var yields = cg.Routine.ControlFlowGraph.Yields;
+                cg.Builder.MarkLabel(yields);
 
                 var yieldExLabels = new List<KeyValuePair<ConstantValue, object>>();
-                for (var i = 0; i < cg.YieldExprs.Count; i++)
+                for (var i = 0; i < yields.Length; i++)
                 {
                     // i+1 because labels have 1-based index (zero is reserved for run to first yield)
-                    yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(i + 1), cg.YieldExprs[i]));
+                    yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(i + 1), yields[i]));
                 }
 
                 // local <state> = g._state that is switched on (can't switch on remote field)
