@@ -686,11 +686,32 @@ namespace Pchp.Core
         /// </summary>
         public static Closure BuildClosure(RoutineInfo routine, PhpArray parameter, PhpArray @static) => new Closure(routine, parameter, @static);
 
+        #endregion
+
+        #region Generator
+
         /// <summary>
         /// Create <see cref="Generator"/> with specified state machine function and parameters.
         /// </summary>
         public static Generator BuildGenerator(Context ctx, object @this, PhpArray locals, GeneratorStateMachineDelegate method) => new Generator(ctx, @this, locals, method);
 
+        public static int GetGeneratorState(Generator g) => g._state;
+
+        public static void SetGeneratorState(Generator g, int newState) => g._state = newState;
+
+        public static void NullGeneratorThrownException(Generator g) => g._currException = null;
+
+        public static Exception GetGeneratorThrownException(Generator g) => g._currException;
+
+        public static void SetGeneratorCurrValue(Generator g, PhpValue value) => g._currValue = value;
+
+        public static void SetGeneratorCurrKey(Generator g, PhpValue value) => g._currKey = value;
+
+        public static void SetGeneratorReturnedUserKey(Generator g, bool value) => g._userKeyReturned = value;
+
+        public static PhpValue GetGeneratorSentItem(Generator g) => g._currSendItem;
+
+        public static void SetGeneratorReturnedValue(Generator g, PhpValue value) => g._returnValue = value;
         #endregion
 
         #region Enumerator

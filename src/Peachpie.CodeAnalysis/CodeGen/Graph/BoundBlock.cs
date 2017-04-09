@@ -112,8 +112,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // if Generator._state != 0 (already run to first yield) -> goto switch
                 cg.Builder.EmitLoadArgumentOpcode(3);
-                cg.EmitOpCode(ILOpCode.Ldfld);
-                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorState_Generator);
 
                 cg.Builder.EmitBranch(ILOpCode.Brtrue, cg.YieldExprs);
 
@@ -121,8 +120,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // else state = -1 (running) & continue running normally
                 cg.Builder.EmitLoadArgumentOpcode(3);
                 cg.EmitLoadConstant(-1, cg.CoreTypes.Int32);
-                cg.EmitOpCode(ILOpCode.Stfld);
-                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
             }
 
@@ -197,8 +195,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // local <state> = g._state that is switched on (can't switch on remote field)
                 cg.Builder.EmitLoadArgumentOpcode(3);
-                cg.EmitOpCode(ILOpCode.Ldfld);
-                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorState_Generator);
 
                 var switchOnLocation = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
                 cg.Builder.EmitLocalStore(switchOnLocation);
@@ -214,8 +211,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // g._state = -2 (closed): got to the end of the generator method
                 cg.Builder.EmitLoadArgumentOpcode(3);
                 cg.EmitLoadConstant(-2, cg.CoreTypes.Int32);
-                cg.EmitOpCode(ILOpCode.Stfld);
-                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
             }
 

@@ -68,16 +68,14 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.Builder.EmitLoadArgumentOpcode(3);
                     var t = cg.Emit(this.Returned);
                     cg.EmitConvertToPhpValue(t, 0);
-                    cg.EmitOpCode(ILOpCode.Stfld);
-                    cg.EmitSymbolToken(cg.CoreMethods.Generator._returnValue, null);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedValue_Generator_PhpValue);
                 }
 
 
                 // g._state = -2 (closed): got to the end of the generator method
                 cg.Builder.EmitLoadArgumentOpcode(3);
                 cg.EmitLoadConstant(-2, cg.CoreTypes.Int32);
-                cg.EmitOpCode(ILOpCode.Stfld);
-                cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
                 cg.Builder.EmitRet(true);
                 return;

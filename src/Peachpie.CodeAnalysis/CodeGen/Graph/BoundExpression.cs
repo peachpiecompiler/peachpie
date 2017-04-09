@@ -3858,24 +3858,23 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var il = cg.Builder;
 
+            
             // sets currValue and currKey on generator object
-            storeAsPHPValueInArgumentField(cg, il, 3, YieldedValue, cg.CoreMethods.Generator._currValue);
-            storeAsPHPValueInArgumentField(cg, il, 3, YieldedKey, cg.CoreMethods.Generator._currKey);
+            setAsPhpValueOnGenerator(cg, YieldedValue, cg.CoreMethods.Operators.SetGeneratorCurrValue_Generator_PhpValue);
+            setAsPhpValueOnGenerator(cg, YieldedKey, cg.CoreMethods.Operators.SetGeneratorCurrKey_Generator_PhpValue);
 
 
             // generator._userKeyReturned = (YieldedKey != null)
             var userKeyReturned = (YieldedKey != null);
             il.EmitLoadArgumentOpcode(3);
             cg.EmitLoadConstant(userKeyReturned, cg.CoreTypes.Boolean);
-            cg.EmitOpCode(ILOpCode.Stfld);
-            cg.EmitSymbolToken(cg.CoreMethods.Generator._userKeyReturned, null);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedUserKey_Generator_bool);
 
 
             //generator._state = yieldIndex
             il.EmitLoadArgumentOpcode(3);
             cg.EmitLoadConstant(yieldIndex, cg.CoreTypes.Int32);
-            cg.EmitOpCode(ILOpCode.Stfld);
-            cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
 
             // return & set continuation point just after that
@@ -3886,27 +3885,23 @@ namespace Pchp.CodeAnalysis.Semantics
             // state = -1 -> generator is running
             cg.Builder.EmitLoadArgumentOpcode(3);
             cg.EmitLoadConstant(-1, cg.CoreTypes.Int32);
-            cg.EmitOpCode(ILOpCode.Stfld);
-            cg.EmitSymbolToken(cg.CoreMethods.Generator._state, null);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
 
             // if(generator._currException != null) throw ex;
             il.EmitLoadArgumentOpcode(3);
-            cg.EmitOpCode(ILOpCode.Ldfld);
-            cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
 
             var excNotNull = new NamedLabel("generator._currException == null");
             il.EmitBranch(ILOpCode.Brfalse, excNotNull);
 
+            // load the exception to be thrown on stack (so it can be nulled)
             il.EmitLoadArgumentOpcode(3);
-            cg.EmitOpCode(ILOpCode.Ldfld);
-            cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
 
             //g._curException = null : clear the field after throwing the exception
             il.EmitLoadArgumentOpcode(3);
-            il.EmitNullConstant(); 
-            cg.EmitOpCode(ILOpCode.Stfld);
-            cg.EmitSymbolToken(cg.CoreMethods.Generator._currException, null);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.NullGeneratorThrownException_Generator);
 
             il.EmitThrow(false);
 
@@ -3915,17 +3910,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // leave result of yield expr. (sent value) on eval stack
             il.EmitLoadArgumentOpcode(3);
-            cg.EmitOpCode(ILOpCode.Ldfld);
-            cg.EmitSymbolToken(cg.CoreMethods.Generator._currSendItem, null);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorSentItem_Generator);
 
             // type of expression result is PHP value (sent value)
             return cg.CoreTypes.PhpValue;
 
         }
 
-        private void storeAsPHPValueInArgumentField(CodeGenerator cg, ILBuilder il, int argNumber, BoundExpression valueExpr, FieldSymbol field)
+        private void setAsPhpValueOnGenerator(CodeGenerator cg, BoundExpression valueExpr, CoreMethod setMethod)
         {
-            il.EmitLoadArgumentOpcode(argNumber);
+            var il = cg.Builder;
+            il.EmitLoadArgumentOpcode(3);
 
             if (valueExpr == null) { cg.Emit_PhpValue_Null(); }
             else
@@ -3934,8 +3929,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitConvertToPhpValue(valueExpr.ResultType, valueExpr.TypeRefMask);
             }
 
-            cg.EmitOpCode(ILOpCode.Stfld);
-            cg.EmitSymbolToken(field, null);
+            cg.EmitCall(ILOpCode.Call, setMethod);
         }
     }
 }

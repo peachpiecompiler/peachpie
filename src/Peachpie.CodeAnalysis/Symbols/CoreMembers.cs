@@ -355,7 +355,6 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly ContextHolder Context;
         public readonly DynamicHolder Dynamic;
         public readonly ReflectionHolder Reflection;
-        public readonly GeneratorHolder Generator;
 
         public CoreMethods(CoreTypes types)
         {
@@ -373,7 +372,6 @@ namespace Pchp.CodeAnalysis.Symbols
             Context = new ContextHolder(types);
             Dynamic = new DynamicHolder(types);
             Reflection = new ReflectionHolder(types);
-            Generator = new GeneratorHolder(types);
         }
 
         public struct OperatorsHolder
@@ -434,9 +432,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
                 BuildClosure_RoutineInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
-                BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.GeneratorStateMachineDelegate);
                 Eval_Context_PhpArray_object_string_string_int_int = ct.Operators.Method("Eval", ct.Context, ct.PhpArray, ct.Object, ct.String, ct.String, ct.Int32, ct.Int32);
                 GetName_PhpTypeInfo = ct.PhpTypeInfo.Property("Name");
+
+                BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.GeneratorStateMachineDelegate);
+                GetGeneratorState_Generator = ct.Operators.Method("GetGeneratorState", ct.Generator);
+                SetGeneratorState_Generator_int = ct.Operators.Method("SetGeneratorState", ct.Generator, ct.Int32);
+                NullGeneratorThrownException_Generator = ct.Operators.Method("NullGeneratorThrownException", ct.Generator);
+                GetGeneratorThrownException_Generator = ct.Operators.Method("GetGeneratorThrownException", ct.Generator);
+                SetGeneratorCurrValue_Generator_PhpValue = ct.Operators.Method("SetGeneratorCurrValue", ct.Generator, ct.PhpValue);
+                SetGeneratorCurrKey_Generator_PhpValue = ct.Operators.Method("SetGeneratorCurrKey", ct.Generator, ct.PhpValue);
+                SetGeneratorReturnedUserKey_Generator_bool = ct.Operators.Method("SetGeneratorReturnedUserKey", ct.Generator, ct.Boolean);
+                GetGeneratorSentItem_Generator = ct.Operators.Method("GetGeneratorSentItem", ct.Generator);
+                SetGeneratorReturnedValue_Generator_PhpValue = ct.Operators.Method("SetGeneratorReturnedValue", ct.Generator, ct.PhpValue);
 
                 offsetGet_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetGet", ct.PhpValue);
 
@@ -494,8 +502,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Clone_Context_Object,
                 BuildClosure_RoutineInfo_PhpArray_PhpArray,
-                BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate,
                 Eval_Context_PhpArray_object_string_string_int_int,
+
+                BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate,
+                GetGeneratorState_Generator, SetGeneratorState_Generator_int, NullGeneratorThrownException_Generator, GetGeneratorThrownException_Generator, SetGeneratorCurrValue_Generator_PhpValue,
+                SetGeneratorCurrKey_Generator_PhpValue, SetGeneratorReturnedUserKey_Generator_bool, GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
 
                 offsetGet_ArrayAccess_PhpValue,
 
@@ -980,24 +991,5 @@ namespace Pchp.CodeAnalysis.Symbols
             public CoreMethod CreateUserRoutine_string_RuntimeMethodHandle;
         }
 
-        public struct GeneratorHolder
-        {
-            public readonly CoreField _state, _userKeyReturned, _currValue, _currKey, _currSendItem, _returnValue, _currException;
-
-            public GeneratorHolder(CoreTypes ct)
-            {
-                _state = ct.Generator.Field("_state");
-
-                _userKeyReturned = ct.Generator.Field("_userKeyReturned");
-
-                _currValue = ct.Generator.Field("_currValue");
-                _currKey = ct.Generator.Field("_currKey");
-                _currSendItem = ct.Generator.Field("_currSendItem");
-                _returnValue = ct.Generator.Field("_returnValue");
-
-                _currException = ct.Generator.Field("_currException");
-
-            }
-        }
     }
 }

@@ -39,15 +39,15 @@ public class Generator : Iterator, IDisposable
     ///  -2: closed
     /// +x: valid state
     /// </remarks>
-    public int _state = 0; // Change to internal after all access moved to Operators method
+    internal int _state = 0; // Change to internal after all access moved to Operators method
 
     /// <summary>
     /// Did last yield returned user-specified key.
     /// </summary>
-    public bool _userKeyReturned = false; // Change to internal after all access moved to Operators method
+    internal bool _userKeyReturned = false; // Change to internal after all access moved to Operators method
 
-    public PhpValue _currValue, _currKey, _currSendItem, _returnValue; // Change to internal after all access moved to Operators method
-    public Exception _currException; // Change to internal after all access moved to Operators method
+    internal PhpValue _currValue, _currKey, _currSendItem, _returnValue; // Change to internal after all access moved to Operators method
+    internal Exception _currException; // Change to internal after all access moved to Operators method
     #endregion
 
     #region HelperLocalVariables
