@@ -30,6 +30,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeRef SyntaxReturnType => null;
 
+        public override bool IsGlobalScope => true;
+
         protected override IEnumerable<ParameterSymbol> BuildImplicitParams()
         {
             int index = 0;

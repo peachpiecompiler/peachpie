@@ -31,5 +31,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// otherwise an empty string.
         /// </summary>
         string RoutineName { get; }
+
+        /// <summary>
+        /// Gets value indicating the routine represents a global code.
+        /// </summary>
+        bool IsGlobalScope { get; }
     }
 }

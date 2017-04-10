@@ -372,7 +372,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         if (!State.IsLocalSet(local))
                         {
-                            x.MaybeUninitialized = (x.Variable.VariableKind != VariableKind.GlobalVariable && !vartype.IsRef);  // do not report as uninitialized if variable may be a reference or it is a (super)global variable
+                            // do not report as uninitialized if variable
+                            // - may be a reference
+                            // - is a (super)global variable
+                            // - is in a global scope
+                            if (x.Variable.VariableKind != VariableKind.GlobalVariable && !vartype.IsRef && !Routine.IsGlobalScope)
+                            {
+                                x.MaybeUninitialized = true;
+                            }
+
+                            // variable maybe null
                             vartype |= TypeCtx.GetNullTypeMask();
                         }
                     }

@@ -290,6 +290,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public virtual string RoutineName => Name;
 
+        /// <summary>
+        /// Whether routine represents a global code.
+        /// </summary>
+        public virtual bool IsGlobalScope => false;
+
         #endregion
     }
 }
