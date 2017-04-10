@@ -5,6 +5,8 @@
 # Peachpie Compiler
 ### The open-source PHP compiler to .NET
 
+> **Peachpie** is still in the alpha stages of development and not fully compatible with the PHP language yet. As a result, we do not recommend using it in a production environment at this point.
+
 [![NuGet](https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat)](http://www.nuget.org/profiles/peachpie)
 [![Join the chat at https://gitter.im/iolevel/peachpie](https://badges.gitter.im/iolevel/peachpie.svg)](https://gitter.im/iolevel/peachpie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![License](https://img.shields.io/hexpm/l/plug.svg)](https://github.com/iolevel/peachpie/blob/master/LICENSE.txt)
