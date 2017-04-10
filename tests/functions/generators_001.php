@@ -4,10 +4,13 @@ function f()
 {
     echo "preY\n";
 	yield "a";
-    yield 5 => 2;
+    for ($i = 1; $i <= 3; $i++)
+    {
+        yield 5 => 2;
+    }
     yield "7" => "c";
     yield;
-    yield "d";
+    if ($i > 2) { yield "d"; }
     echo "posY\n";
 }
 

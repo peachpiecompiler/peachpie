@@ -1498,6 +1498,12 @@ namespace Pchp.CodeAnalysis.Semantics
     #endregion
 
     #region BoundYieldEx
+    /// <summary>
+    /// BoundYieldEx
+    /// </summary>
+    /// <remarks>
+    /// Instances used for continuation labels in emit.
+    /// </remarks>
     public partial class BoundYieldEx : BoundExpression, IReturnStatement
     {
         //Not sure about BoundYieldEx being IReturnStatement but yield is statement in C# and

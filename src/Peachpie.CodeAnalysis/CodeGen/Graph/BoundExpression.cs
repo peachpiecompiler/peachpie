@@ -3884,13 +3884,6 @@ namespace Pchp.CodeAnalysis.Semantics
             il.EmitRet(true);
             il.MarkLabel(this);
 
-
-            // state = -1 -> generator is running
-            cg.Builder.EmitLoadArgumentOpcode(3);
-            cg.EmitLoadConstant(-1, cg.CoreTypes.Int32);
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
-
-
             // if(generator._currException != null) throw ex;
             il.EmitLoadArgumentOpcode(3);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
