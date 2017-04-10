@@ -305,6 +305,22 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundThisParameter
+    {
+        internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
+        {
+            return new BoundLocalPlace(Place(il), BoundAccess.Read, _routine.TypeRefContext.GetThisTypeMask());
+        }
+
+        internal override IPlace Place(ILBuilder il)
+        {
+            // get place of $this in the routine
+            // this may vary in different symbols like global code, generator sm method, etc.
+
+            return new ParamPlace(_routine.ThisParameter);
+        }
+    }
+
     partial class BoundGlobalVariable
     {
         internal override void EmitInit(CodeGenerator cg)

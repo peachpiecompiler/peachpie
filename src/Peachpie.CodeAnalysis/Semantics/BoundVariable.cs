@@ -169,6 +169,34 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
+    #region BoundThisParameter
+
+    /// <summary>
+    /// Represents <c>$this</c> variable in PHP code.
+    /// </summary>
+    public partial class BoundThisParameter : BoundVariable
+    {
+        readonly SourceRoutineSymbol _routine;
+
+        internal BoundThisParameter(SourceRoutineSymbol routine)
+            : base(VariableKind.ThisParameter)
+        {
+            _routine = routine;
+        }
+
+        public override OperationKind Kind => OperationKind.None;
+
+        internal override Symbol Symbol => _routine.ThisParameter;
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
+
+    #endregion
+
     #region BoundGlobalVariable
 
     public partial class BoundGlobalVariable : BoundVariable

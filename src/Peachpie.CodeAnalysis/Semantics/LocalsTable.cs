@@ -64,10 +64,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // $this
             if (_routine.ThisParameter != null) // NOTE: even global code has $this  => routine.HasThis may be false
             {
-                _dict[VariableName.ThisVariableName] = new BoundParameter(_routine.ThisParameter, null)
-                {
-                    VariableKind = VariableKind.ThisParameter
-                };
+                _dict[VariableName.ThisVariableName] = new BoundThisParameter(_routine);
             }
         }
 
