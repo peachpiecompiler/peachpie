@@ -1,17 +1,31 @@
 <?php
-#Tests generator methods return type optimization static & global ones should return Generator instead of PhpValue
-
 class A {
 
-    public function foo() {
-        yield 1;
+    public $a = 5;
+    public function getVal(){
+        return 2;
     }
 
-    public static function sfoo(){
-        yield 2;
+
+    public function foo() {
+        $this->a = 10;
+        yield 1 + $this->getVal();
     }
+
+
+
+    public static $b = 5;
+    public static function sgetVal(){
+        return 4;
+    }
+    public static function sfoo(){
+        self::$b = 10;
+        yield 2 + self::sgetVal();
+    }
+
 
     public function run_foo(){
+        echo "a:".$this->a."\n";
 
         $gen = $this->foo();
         echo "k:".$gen->key()."v:".$gen->current()."\n";
@@ -19,9 +33,12 @@ class A {
         foreach($this->foo() as $value){
             echo "v:".$value."\n";
         }
+
+        echo "a:".$this->a."\n";
     }
 
     public static function run_sfoo(){
+        echo "b:".self::$b."\n";
 
         $gen = A::sfoo();
         echo "k:".$gen->key()."v:".$gen->current()."\n";
@@ -29,6 +46,9 @@ class A {
         foreach(A::sfoo() as $value){
             echo "v:".$value."\n";
         }
+
+        echo "b:".self::$b."\n";
+
     }
 }
 

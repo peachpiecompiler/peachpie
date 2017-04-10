@@ -317,6 +317,10 @@ namespace Pchp.CodeAnalysis.Semantics
             // get place of $this in the routine
             // this may vary in different symbols like global code, generator sm method, etc.
 
+            // TODO: Remove this hack (GN_SGS) needed for correct ThisPlace resolution during state machine method generating (it's generated from a SourceRoutineSymbol with incorrect ThisPlace, ...) 
+            if ((_routine.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+            { return new ParamPlace(new SpecialParameterSymbol(_routine, _routine.DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, 0)); }
+
             return new ParamPlace(_routine.ThisParameter);
         }
     }

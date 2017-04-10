@@ -22,7 +22,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var compilation = routine.DeclaringCompilation;
 
-            // if the method is generator and can't be overriden then the return type must be generator
+            // if the method is generator and can't be overriden then the return type must be generator 
+            // TODO: would not be necessary if GN_SGS got fixed (the routine could report the return type correctly itself)
             if ((routine?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
             {
                 // if non-virtual -> return Generator directly
@@ -100,6 +101,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var r = symbol as SourceRoutineSymbol;
 
                 // if the method is generator use ConstructClrReturnType analysis for return type
+                // TODO: would not be necessary if GN_SGS got fixed (the routine could report the return type correctly itself)
                 if ((r?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
                 {
                     t = m.ReturnType;

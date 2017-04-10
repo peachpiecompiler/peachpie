@@ -201,6 +201,10 @@ namespace Pchp.CodeAnalysis.Symbols
         //Initialized a new CodeGenerator for generation of SourceGeneratorSymbol (state machine's next method)
         private void generateStateMachinesNextMethod(CodeGenerator cg, Microsoft.CodeAnalysis.CodeGen.ILBuilder _il, SourceGeneratorSymbol genSymbol)
         {
+            // TODO: Pass SourceGeneratorSymbol to CG instead of this to get correct ThisPlace, ReturnType etc. resolution & binding out of the box without GN_SGS hacks
+            // ..can't do that easily beacuse CodeGenerator accepts only SourceRoutineSymbol and SGS derives from SynthesizedMethodSymbol (shim over too general MethodSymbol) 
+
+
             //Refactor parameters references to proper fields
             using (var stateMachineNextCg = new CodeGenerator(
                 _il, cg.Module, cg.Diagnostics,
