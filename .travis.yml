@@ -21,4 +21,5 @@ install:
   - powershell -File ./build/update-cache.ps1 0.6.1
 
 script:
+  - dotnet test ./src/Tests/Peachpie.DiagnosticTests/Peachpie.DiagnosticTests.csproj
   - ./src/Tools/runtests_shell/runtests.sh
