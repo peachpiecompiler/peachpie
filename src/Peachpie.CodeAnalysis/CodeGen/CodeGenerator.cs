@@ -194,10 +194,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly IPlace _localsPlaceOpt;
 
         /// <summary>
-        /// Are unoptimized locals initialized externally.
-        /// E.g. generator methods have locals array supplied and inicialized by an external Generator instance.
+        /// Are locals initilized externally.
         /// </summary>
-        readonly bool _unoptimizedLocalsInitialized;
+        readonly bool _localsInitialized;
 
         /// <summary>
         /// Place for loading a reference to <c>this</c>.
@@ -283,12 +282,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         #region Construction
 
         public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
-            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null, bool localsAlreadyInited = false)
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null, bool localsInitialized = false)
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
 
-            if(localsAlreadyInited) { Debug.Assert(locals != null); }
+            if(localsInitialized) { Debug.Assert(locals != null); }
             
             _il = il;
             _moduleBuilder = moduleBuilder;
@@ -296,7 +295,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _diagnostics = diagnostics;
 
             _localsPlaceOpt = locals;
-            _unoptimizedLocalsInitialized = localsAlreadyInited;
+            _localsInitialized = localsInitialized;
 
             _emmittedTag = 0;
 
@@ -320,7 +319,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Used for emitting in a context of a different routine (parameter initializer).
         /// </summary>
         public CodeGenerator(CodeGenerator cg, SourceRoutineSymbol routine)
-            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt, cg.HasInitializedUnoptimizedLocals)
+            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt, cg.InitializedLocals)
         {
             Contract.ThrowIfNull(routine);
             _emmittedTag = cg._emmittedTag;
@@ -335,7 +334,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             bool localsAlreadyInited;
             _localsPlaceOpt = GetLocalsPlace(routine, out localsAlreadyInited);
-            _unoptimizedLocalsInitialized = localsAlreadyInited;
+            _localsInitialized = localsAlreadyInited;
 
 
             // Emit sequence points unless

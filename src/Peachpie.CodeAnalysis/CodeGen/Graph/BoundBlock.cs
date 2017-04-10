@@ -90,7 +90,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 //If it has unoptimized locals and they're not initilized externally -> need to initialize them
-                if (cg.HasUnoptimizedLocals && !cg.HasInitializedUnoptimizedLocals)
+                if (cg.HasUnoptimizedLocals && !cg.InitializedLocals)
                 {
                     // <locals> = new PhpArray(HINTCOUNT)
                     cg.LocalsPlaceOpt.EmitStorePrepare(cg.Builder);
@@ -100,10 +100,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
             }
 
-            // variables/parameters initialization
-            foreach (var loc in locals.Variables)
+            if(!cg.InitializedLocals) // Přejmenovat
             {
-                loc.EmitInit(cg);
+                // variables/parameters initialization
+                foreach (var loc in locals.Variables)
+                {
+                    loc.EmitInit(cg);
+                }
             }
 
             // if generator method: goto switch table if already run to first yield

@@ -171,7 +171,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     thisPlace: null,
                     routine: null,
                     locals: new LocalPlace(generatorsLocals),
-                    localsAlreadyInited: false
+                    localsInitialized: false
                         ))
                 {
                     // EmitInit (for UnoptimizedLocals) copies arguments to locals array, does nothing for normal variables, handles local statics, global variables ...
@@ -211,7 +211,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 thisPlace: new ParamPlace(genSymbol.Parameters[1]),
                 routine: this,
                 locals: new ParamPlace(genSymbol.Parameters[2]),
-                localsAlreadyInited: true
+                localsInitialized: true
                     ))
             {
                 stateMachineNextCg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
