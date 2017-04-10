@@ -177,7 +177,13 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundYieldEx BindYieldEx(AST.YieldEx expr)
         {
             // Reference: https://github.com/dotnet/roslyn/blob/05d923831e1bc2a88918a2073fba25ab060dda0c/src/Compilers/CSharp/Portable/Binder/Binder_Statements.cs#L194
-            var boundValueExpr = (expr.ValueExpr != null) ? BindExpression(expr.ValueExpr) : null;
+            
+            // TODO: Throw error when trying to iterate a non-reference generator by reference 
+            var access = _locals.Routine.SyntaxSignature.AliasReturn
+                    ? BoundAccess.ReadRef
+                    : BoundAccess.Read;
+
+            var boundValueExpr = (expr.ValueExpr != null) ? BindExpression(expr.ValueExpr, access) : null;
             var boundKeyExpr = (expr.KeyExpr != null) ? BindExpression(expr.KeyExpr) : null;
 
             var boundYieldEx = new BoundYieldEx(boundValueExpr, boundKeyExpr);
