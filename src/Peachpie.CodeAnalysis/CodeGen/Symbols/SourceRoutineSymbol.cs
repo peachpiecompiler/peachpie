@@ -136,20 +136,7 @@ namespace Pchp.CodeAnalysis.Symbols
             else
             {
                 var genSymbol = new SourceGeneratorSymbol(this.ContainingType);
-                cg.Module.SynthesizedManager.AddMethod(this.ContainingType, genSymbol); // save method symbol to module
-
-
-                // generate generator's next method body
-                var genMethodBody = MethodGenerator.GenerateMethodBody(cg.Module, genSymbol, (_il) =>
-                {
-                    generateStateMachinesNextMethod(cg, _il, genSymbol);
-                }
-                , null, cg.Diagnostics, cg.EmitPdbSequencePoints);
-
-                cg.Module.SetMethodBody(genSymbol, genMethodBody);
-
                 var il = cg.Builder;
-
 
                 cg.EmitLoadContext(); // ctx for generator
                 cg.EmitThisOrNull();  // @this for generator
@@ -161,30 +148,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 var generatorsLocals = cg.GetTemporaryLocal(cg.CoreTypes.PhpArray);
                 cg.Builder.EmitLocalStore(generatorsLocals);
 
-                // Emit init of unoptimized BoundParameters using separate CodeGenerator that has locals place pointing to our generator's locals array
-                using (var localsArrayCg = new CodeGenerator(
-                    il, cg.Module, cg.Diagnostics,
-                    cg.DeclaringCompilation.Options.OptimizationLevel,
-                    cg.EmitPdbSequencePoints,
-                    this.ContainingType,
-                    contextPlace: null,
-                    thisPlace: null,
-                    routine: null,
-                    locals: new LocalPlace(generatorsLocals),
-                    localsInitialized: false
-                        ))
-                {
-                    // EmitInit (for UnoptimizedLocals) copies arguments to locals array, does nothing for normal variables, handles local statics, global variables ...
-                    LocalsTable.Variables.ForEach(v => v.EmitInit(localsArrayCg)); 
-                }
-
+                // initialize parameters (set their _isOptimized and copy them to locals array)
+                initializeParametersForGeneratorMethod(cg, il, generatorsLocals);
                 cg.Builder.EmitLoad(generatorsLocals);
                 cg.ReturnTemporaryLocal(generatorsLocals);
 
                 // new GeneratorStateMachineDelegate(generator@function) delegate for generator
                 cg.EmitThisOrNull();   // this @object
                 cg.EmitOpCode(ILOpCode.Ldftn); // method
-                cg.EmitSymbolToken(genSymbol, null); 
+                cg.EmitSymbolToken(genSymbol, null);
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
 
 
@@ -193,9 +165,47 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 // Convert to return type (Generator or PhpValue, depends on analysis)
                 cg.EmitConvert(cg.CoreTypes.Generator, 0, this.ReturnType);
-
                 il.EmitRet(false);
+
+
+                // Generate SM method. Must be generated after EmitInit of parameters (it sets their _isUnoptimized field).
+                createStateMachineNextMethod(cg, genSymbol);
             }
+        }
+
+        private void initializeParametersForGeneratorMethod(CodeGenerator cg, Microsoft.CodeAnalysis.CodeGen.ILBuilder il, Microsoft.CodeAnalysis.CodeGen.LocalDefinition generatorsLocals)
+        {
+            // Emit init of unoptimized BoundParameters using separate CodeGenerator that has locals place pointing to our generator's locals array
+            using (var localsArrayCg = new CodeGenerator(
+                il, cg.Module, cg.Diagnostics,
+                cg.DeclaringCompilation.Options.OptimizationLevel,
+                cg.EmitPdbSequencePoints,
+                this.ContainingType,
+                contextPlace: null,
+                thisPlace: null,
+                routine: null,
+                locals: new LocalPlace(generatorsLocals),
+                localsInitialized: false
+                    ))
+            {
+                // EmitInit (for UnoptimizedLocals) copies arguments to locals array, does nothing for normal variables, handles local statics, global variables ...
+                LocalsTable.Variables.ForEach(v => v.EmitInit(localsArrayCg));
+            }
+
+        }
+
+        private void createStateMachineNextMethod(CodeGenerator cg, SourceGeneratorSymbol genSymbol)
+        {
+            cg.Module.SynthesizedManager.AddMethod(ContainingType, genSymbol); // save method symbol to module
+
+            // generate generator's next method body
+            var genMethodBody = MethodGenerator.GenerateMethodBody(cg.Module, genSymbol, (_il) =>
+            {
+                generateStateMachinesNextMethod(cg, _il, genSymbol);
+            }
+            , null, cg.Diagnostics, cg.EmitPdbSequencePoints);
+
+            cg.Module.SetMethodBody(genSymbol, genMethodBody);
         }
 
         //Initialized a new CodeGenerator for generation of SourceGeneratorSymbol (state machine's next method)
