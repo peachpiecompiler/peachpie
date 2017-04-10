@@ -148,21 +148,47 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 cg.Module.SetMethodBody(genSymbol, genMethodBody);
 
-
                 var il = cg.Builder;
 
-                cg.EmitLoadContext(); // ctx
-                cg.EmitThisOrNull();  // @this
+
+                cg.EmitLoadContext(); // ctx for generator
+                cg.EmitThisOrNull();  // @this for generator
+
 
                 // new PhpArray for generator's locals
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray); // TODO: Copy local arguments to it
 
-                // new GeneratorStateMachineDelegate(generator@function)
+                var generatorsLocals = cg.GetTemporaryLocal(cg.CoreTypes.PhpArray);
+                cg.Builder.EmitLocalStore(generatorsLocals);
+
+                // Emit init of unoptimized BoundParameters using separate CodeGenerator that has locals place pointing to our generator's locals array
+                using (var localsArrayCg = new CodeGenerator(
+                    il, cg.Module, cg.Diagnostics,
+                    cg.DeclaringCompilation.Options.OptimizationLevel,
+                    cg.EmitPdbSequencePoints,
+                    this.ContainingType,
+                    contextPlace: null,
+                    thisPlace: null,
+                    routine: null,
+                    locals: new LocalPlace(generatorsLocals),
+                    localsAlreadyInited: false
+                        ))
+                {
+                    // EmitInit (for UnoptimizedLocals) copies arguments to locals array, does nothing for normal variables, handles local statics, global variables ...
+                    LocalsTable.Variables.ForEach(v => v.EmitInit(localsArrayCg)); 
+                }
+
+                cg.Builder.EmitLoad(generatorsLocals);
+                cg.ReturnTemporaryLocal(generatorsLocals);
+
+                // new GeneratorStateMachineDelegate(generator@function) delegate for generator
                 cg.EmitThisOrNull();   // this @object
                 cg.EmitOpCode(ILOpCode.Ldftn); // method
                 cg.EmitSymbolToken(genSymbol, null); 
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
 
+
+                // create generator object via Operators factory method
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate);
 
                 // Convert to return type (Generator or PhpValue, depends on analysis)
