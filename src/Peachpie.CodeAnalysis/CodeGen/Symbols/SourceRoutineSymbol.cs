@@ -143,7 +143,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
 
                 // new PhpArray for generator's locals
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray); // TODO: Copy local arguments to it
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
 
                 var generatorsLocals = cg.GetTemporaryLocal(cg.CoreTypes.PhpArray);
                 cg.Builder.EmitLocalStore(generatorsLocals);
