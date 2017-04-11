@@ -133,7 +133,7 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                return new PhpGdImageResource(new Image(image));
+                return new PhpGdImageResource(Image.Load(image));
             }
             catch
             {
@@ -216,15 +216,17 @@ namespace Peachpie.Library.Graphics
             if (quality < 0) quality = 75;
             if (quality > 100) quality = 100;
 
+            var jpegoptions = new ImageSharp.Formats.JpegEncoderOptions() { Quality = quality };
+
             if (filename == null)
             {
-                img.Image.SaveAsJpeg(ctx.OutputStream, quality);
+                img.Image.SaveAsJpeg(ctx.OutputStream, jpegoptions);
             }
             else
             {
                 using (var stream = File.OpenWrite(Path.Combine(ctx.WorkingDirectory, filename)))
                 {
-                    img.Image.SaveAsJpeg(stream, quality);
+                    img.Image.SaveAsJpeg(stream, jpegoptions);
                 }
             }
 

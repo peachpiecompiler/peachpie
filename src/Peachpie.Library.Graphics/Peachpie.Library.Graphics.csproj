@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\build\Targets\Settings.props" />
+  <PropertyGroup>
+    <TargetFrameworks>netstandard1.5</TargetFrameworks>
+    <NoWarn>$(NoWarn);1591;1574</NoWarn>
+    <AssemblyName>Peachpie.Library.Graphics</AssemblyName>
+    <PackageId>Peachpie.Library.Graphics</PackageId>
+    <PackageTags>peachpie;library;image;gd2</PackageTags>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Peachpie PHP language library functions for image processing.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ImageSharp" Version="1.0.0-alpha5-00054" />
+    <PackageReference Include="ImageSharp.Drawing" Version="1.0.0-alpha5-00048" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
+	<ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
+    <Reference Include="System" />
+	<Reference Include="System.Core" />
+	<Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+</Project>
