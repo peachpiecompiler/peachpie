@@ -11,6 +11,40 @@ namespace Peachpie.Library.Graphics
     [PhpExtension("gd")]
     public static class PhpGd2
     {
+        #region GDVersionConstants
+
+        /// <summary>
+        /// The GD version PHP was compiled against.
+        /// </summary>
+        public const string GD_VERSION = "2.0.35";
+
+        /// <summary>
+        /// The GD major version PHP was compiled against.
+        /// </summary>
+        public const int GD_MAJOR_VERSION = 2;
+
+        /// <summary>
+        /// The GD minor version PHP was compiled against.
+        /// </summary>
+        public const int GD_MINOR_VERSION = 0;
+
+        /// <summary>
+        /// The GD release version PHP was compiled against.
+        /// </summary>
+        public const int GD_RELEASE_VERSION = 35;
+
+        /// <summary>
+        /// The GD "extra" version (beta/rc..) PHP was compiled against.
+        /// </summary>
+        public const string GD_EXTRA_VERSION = ""; //"beta";
+
+        /// <summary>
+        /// When the bundled version of GD is used this is 1 otherwise its set to 0.
+        /// </summary>
+        public const int GD_BUNDLED = 1;
+
+        #endregion
+
         #region ImgType
 
         /// <summary>
@@ -61,6 +95,162 @@ namespace Peachpie.Library.Graphics
         public const int IMG_PNG = (int)ImgType.PNG;
         public const int IMG_WBMP = (int)ImgType.WBMP;
         public const int IMG_XPM = (int)ImgType.XPM;
+
+        #endregion
+
+        #region FilledArcStyles
+
+        /// <summary>
+        /// Filled Arc Style types enumeration
+        /// </summary>
+        [Flags]
+        public enum FilledArcStyles
+        {
+            /// <summary>
+            /// A style constant used by the <see cref="imagefilledarc"/> function.
+            /// This constant has the same value as IMG_ARC_PIE.
+            /// </summary>
+            ROUNDED = PIE,
+
+            /// <summary>
+            /// A style constant used by the <see cref="imagefilledarc"/> function.
+            /// </summary>
+            PIE = 0,
+
+            /// <summary>
+            /// A style constant used by the <see cref="imagefilledarc"/> function.
+            /// </summary>
+            CHORD = 1,
+
+            /// <summary>
+            /// A style constant used by the <see cref="imagefilledarc"/> function.
+            /// </summary>
+            NOFILL = 2,
+
+            /// <summary>
+            /// A style constant used by the <see cref="imagefilledarc"/> function.
+            /// </summary>
+            EDGED = 4,
+        }
+
+        public const int IMG_ARC_ROUNDED = (int)FilledArcStyles.ROUNDED;
+        public const int IMG_ARC_PIE = (int)FilledArcStyles.PIE;
+        public const int IMG_ARC_CHORD = (int)FilledArcStyles.CHORD;
+        public const int IMG_ARC_NOFILL = (int)FilledArcStyles.NOFILL;
+        public const int IMG_ARC_EDGED = (int)FilledArcStyles.EDGED;
+
+        #endregion
+
+        #region ColorValues
+
+        /// <summary>
+        /// Special Image Color values enumeration.
+        /// </summary>
+        public enum ColorValues
+        {
+            /// <summary>
+            /// Special color option which can be used in stead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
+            /// </summary>
+            STYLED = -2,
+
+            /// <summary>
+            /// Special color option which can be used in stead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
+            /// </summary>
+            BRUSHED = -3,
+
+            /// <summary>
+            /// Special color option which can be used in stead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
+            /// </summary>
+            STYLEDBRUSHED = -4,
+
+            /// <summary>
+            /// Special color option which can be used in stead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
+            /// </summary>
+            TILED = -5,
+
+            /// <summary>
+            /// Special color option which can be used in stead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
+            /// </summary>
+            TRANSPARENT = -6
+        }
+
+        public const int IMG_COLOR_STYLED = (int)ColorValues.STYLED;
+        public const int IMG_COLOR_BRUSHED = (int)ColorValues.BRUSHED;
+        public const int IMG_COLOR_STYLEDBRUSHED = (int)ColorValues.STYLEDBRUSHED;
+        public const int IMG_COLOR_TILED = (int)ColorValues.TILED;
+        public const int IMG_COLOR_TRANSPARENT = (int)ColorValues.TRANSPARENT;
+
+        #endregion
+
+        #region FilterTypes
+
+        /// <summary>
+        /// Filled Arc Style types enumeration
+        /// </summary>
+        public enum FilterTypes
+        {
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            NEGATE,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            GRAYSCALE,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            BRIGHTNESS,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            CONTRAST,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            COLORIZE,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            EDGEDETECT,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            EMBOSS,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            GAUSSIAN_BLUR,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            SELECTIVE_BLUR,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            MEAN_REMOVAL,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            SMOOTH,
+            /// <summary>
+            /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
+            /// </summary>
+            PIXELATE,
+        }
+
+        public const int IMG_FILTER_NEGATE = (int)FilterTypes.NEGATE;
+        public const int IMG_FILTER_GRAYSCALE = (int)FilterTypes.GRAYSCALE;
+        public const int IMG_FILTER_BRIGHTNESS = (int)FilterTypes.BRIGHTNESS;
+        public const int IMG_FILTER_CONTRAST = (int)FilterTypes.CONTRAST;
+        public const int IMG_FILTER_COLORIZE = (int)FilterTypes.COLORIZE;
+        public const int IMG_FILTER_EDGEDETECT = (int)FilterTypes.EDGEDETECT;
+        public const int IMG_FILTER_EMBOSS = (int)FilterTypes.EMBOSS;
+        public const int IMG_FILTER_GAUSSIAN_BLUR = (int)FilterTypes.GAUSSIAN_BLUR;
+        public const int IMG_FILTER_SELECTIVE_BLUR = (int)FilterTypes.SELECTIVE_BLUR;
+        public const int IMG_FILTER_MEAN_REMOVAL = (int)FilterTypes.MEAN_REMOVAL;
+        public const int IMG_FILTER_SMOOTH = (int)FilterTypes.SMOOTH;
+        public const int IMG_FILTER_PIXELATE = (int)FilterTypes.PIXELATE;
 
         #endregion
 
