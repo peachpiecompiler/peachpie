@@ -128,6 +128,22 @@ namespace Pchp.Core
         /// Creates a new instance of <see cref="PhpArray"/> filled by data from an enumerator.
         /// </summary>
         /// <param name="data">The enumerator containing values added to the new instance.</param>
+        public PhpArray(IEnumerable<PhpValue> data)
+            : base((data is ICollection) ? ((ICollection)data).Count : 0)
+        {
+            if (data != null)
+            {
+                foreach (var value in data)
+                {
+                    AddToEnd(value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="PhpArray"/> filled by data from an enumerator.
+        /// </summary>
+        /// <param name="data">The enumerator containing values added to the new instance.</param>
         public PhpArray(IEnumerable<KeyValuePair<IntStringKey, PhpValue>> data)
             : base((data is ICollection) ? ((ICollection)data).Count : 0)
         {

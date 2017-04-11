@@ -2005,7 +2005,7 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Runtime context.
         /// </summary>
-        private Context _ctx;
+        protected readonly Context _ctx;
 
         /// <summary>
         /// Gets the Auto-remove option of this stream.

@@ -192,7 +192,7 @@ public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterato
     public virtual PhpArray getArrayCopy()
     {
         if (isArrayIterator)
-            return new PhpArray(_array);
+            return _array.DeepCopy();
 
         throw new NotImplementedException();
     }

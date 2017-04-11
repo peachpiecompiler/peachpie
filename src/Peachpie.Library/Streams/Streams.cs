@@ -7,6 +7,24 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+/* TODO:
+  - Added offset parameter to the stream_copy_to_stream() function. (PHP 5.1.0)
+  - Changed stream_filter_(ap|pre)pend() to return resource. (Sara) 
+  - Fixed a bug where stream_get_meta_data() did not return the "uri" element for files opened with tmpname(). (Derick) 
+  - Fixed crash inside stream_get_line() when length parameter equals 0. (Ilia) 
+  - Added (PHP 5.1.0):
+      stream_context_get_default() (Wez) 
+      stream_wrapper_unregister() (Sara) 
+      stream_wrapper_restore() (Sara) 
+      stream_filter_remove() (Sara) 
+  - Added proxy support to ftp wrapper via http. (Sara) 
+  - Added MDTM support to ftp_url_stat. (Sara) 
+  - Added zlib stream filter support. (Sara) 
+  - Added bz2 stream filter support. (Sara) 
+  - Added bindto socket context option. (PHP 5.1.0)
+  - Added HTTP/1.1 and chunked encoding support to http:// wrapper. (PHP 5.1.0)
+*/
+
 namespace Pchp.Library.Streams
 {
     #region Stream Context functions
@@ -14,7 +32,6 @@ namespace Pchp.Library.Streams
     /// <summary>
     /// Class containing implementations of PHP functions accessing the <see cref="StreamContext"/>s.
     /// </summary>
-    /// <threadsafety static="true"/>
     public static class PhpContexts
     {
         #region stream_context_create
@@ -220,9 +237,233 @@ namespace Pchp.Library.Streams
 
     #endregion
 
+    /// <summary>
+	/// Gives access to the stream filter chains.
+	/// </summary>
+	public static class PhpFilters
+    {
+        #region Enums & Constants
+
+        /// <summary>
+        /// The status indicators returned by filter's main method.
+        /// </summary>
+        public enum FilterStatus
+        {
+            /// <summary>
+            /// Error in data stream (1).
+            /// </summary>
+            FatalError,
+
+            /// <summary>
+            /// Filter needs more data; stop processing chain until more is available (2).
+            /// </summary>
+            MoreData,
+
+            /// <summary>
+            /// Filter generated output buckets; pass them on to next in chain (3).
+            /// </summary>
+            OK
+        }
+
+        public const int PSFS_ERR_FATAL = (int)FilterStatus.FatalError;
+        public const int PSFS_FEED_ME = (int)FilterStatus.MoreData;
+        public const int PSFS_PASS_ON = (int)FilterStatus.OK;
+
+        /// <summary>
+        /// Indicates whether the filter is to be attached to the
+        /// input/ouput filter-chain or both.
+        /// </summary>
+        [Flags]
+        public enum FilterChains
+        {
+            /// <summary>
+            /// Insert the filter to the read filter chain of the stream (1).
+            /// </summary>
+            Read = FilterChainOptions.Read,
+
+            /// <summary>
+            /// Insert the filter to the write filter chain of the stream (2).
+            /// </summary>
+            Write = FilterChainOptions.Write,
+
+            /// <summary>
+            /// Insert the filter to both the filter chains of the stream (3).
+            /// </summary>
+            ReadWrite = Read | Write
+        }
+
+        public const int STREAM_FILTER_READ = (int)FilterChains.Read;
+        public const int STREAM_FILTER_WRITE = (int)FilterChains.Write;
+        public const int STREAM_FILTER_ALL = (int)FilterChains.ReadWrite;
+
+        #endregion
+
+        #region stream_filter_append, stream_filter_prepend
+
+        /// <summary>Adds filtername to the list of filters attached to stream.</summary>
+        /// <param name="stream"></param>
+        /// <param name="filter"></param>
+        /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
+        public static bool stream_filter_append(PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite)
+        {
+            return stream_filter_append(stream, filter, read_write, PhpValue.Null);
+        }
+
+        /// <summary>Adds filtername to the list of filters attached to stream.</summary>
+        /// <param name="stream">The target stream.</param>
+        /// <param name="filter">The filter name.</param>
+        /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
+        /// <param name="parameters">Additional parameters for a user filter.</param>
+        public static bool stream_filter_append(PhpResource stream, string filter, FilterChainOptions read_write, PhpValue parameters)
+        {
+            PhpStream s = PhpStream.GetValid(stream);
+            if (s == null) return false;
+
+            var where = (FilterChainOptions)read_write & FilterChainOptions.ReadWrite;
+            return PhpFilter.AddToStream(s, filter, where | FilterChainOptions.Tail, parameters);
+        }
+
+        /// <summary>Adds <paramref name="filter"/> to the list of filters attached to <paramref name="stream"/>.</summary>
+        /// <param name="stream">The target stream.</param>
+        /// <param name="filter">The filter name.</param>
+        /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
+        public static bool stream_filter_prepend(PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite)
+        {
+            return stream_filter_prepend(stream, filter, read_write, PhpValue.Null);
+        }
+
+        /// <summary>Adds <paramref name="filter"/> to the list of filters attached to <paramref name="stream"/>.</summary>
+        /// <param name="stream">The target stream.</param>
+        /// <param name="filter">The filter name.</param>
+        /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
+        /// <param name="parameters">Additional parameters for a user filter.</param>
+        public static bool stream_filter_prepend(PhpResource stream, string filter, FilterChainOptions read_write, PhpValue parameters)
+        {
+            var s = PhpStream.GetValid(stream);
+            if (s == null) return false;
+
+            var where = (FilterChainOptions)read_write & FilterChainOptions.ReadWrite;
+            return PhpFilter.AddToStream(s, filter, where | FilterChainOptions.Head, parameters);
+        }
+
+        #endregion
+
+        #region stream_filter_register, stream_get_filters
+
+        /// <summary>
+        /// Registers a user stream filter.
+        /// </summary>
+        /// <param name="filter">The name of the filter (may contain wildcards).</param>
+        /// <param name="classname">The PHP user class (derived from <c>php_user_filter</c>) implementing the filter.</param>
+        /// <returns><c>true</c> if the filter was succesfully added, <c>false</c> if the filter of such name already exists.</returns>
+        public static bool stream_filter_register(string filter, string classname)
+        {
+            // EX: [stream_filter_register]
+
+            return PhpFilter.AddUserFilter(filter, classname);
+        }
+
+        /// <summary>
+        /// Retrieves the list of registered filters.
+        /// </summary>
+        /// <returns>A <see cref="PhpArray"/> containing the names of available filters. Cannot be <c>null</c>.</returns>
+        public static PhpArray stream_get_filters()
+        {
+            return new PhpArray(PhpFilter.GetFilterNames().Select(PhpValue.Create));
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+	/// Class containing implementations of PHP functions accessing the <see cref="StreamWrapper"/>s.
+	/// </summary>
+	/// <threadsafety static="true"/>
+	public static class PhpWrappers
+    {
+        #region stream_wrapper_register, stream_register_wrapper, stream_get_wrappers
+
+        /// <summary>
+        /// Optional flag for <c>stream_wrapper_register</c> function.
+        /// </summary>
+        public enum StreamWrapperRegisterFlags : int
+        {
+            Default = 0,
+            IsUrl = 1
+        }
+
+        public const int STREAM_IS_URL = (int)StreamWrapperRegisterFlags.IsUrl;
+
+        /// <summary>
+        /// Registers a user-wrapper specified by the name of a defining user-class.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="protocol">The schema to be associated with the given wrapper.</param>
+        /// <param name="classname">Name of the user class implementing the wrapper functions.</param>
+        /// <param name="flags">Should be set to STREAM_IS_URL if protocol is a URL protocol. Default is 0, local stream.</param>
+        /// <returns>False in case of failure (ex. schema already occupied).</returns>
+        public static bool stream_wrapper_register(Context ctx, string protocol, string classname, StreamWrapperRegisterFlags flags = StreamWrapperRegisterFlags.Default)
+        {
+            // check if the scheme is already registered:
+            if (string.IsNullOrEmpty(protocol) || StreamWrapper.GetWrapperInternal(ctx, protocol) == null)
+            {
+                // TODO: Warning?
+                return false;
+            }
+
+            var wrapperClass = ctx.GetDeclaredTypeOrThrow(classname, true);
+            if (wrapperClass == null)
+            {
+                return false;
+            }
+
+            // EX: [stream_wrapper_register]: create the user wrapper
+            var wrapper = new UserStreamWrapper(ctx, protocol, wrapperClass, flags == StreamWrapperRegisterFlags.IsUrl);
+            return StreamWrapper.RegisterUserWrapper(ctx, protocol, wrapper);
+        }
+
+        /// <summary>
+        /// Registers a user-wrapper specified by the name of a defining user-class.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="protocol">The schema to be associated with the given wrapper.</param>
+        /// <param name="userWrapperName">Name of the user class implementing the wrapper functions.</param>
+        /// <param name="flags">Should be set to STREAM_IS_URL if protocol is a URL protocol. Default is 0, local stream.</param>
+        /// <returns>False in case of failure (ex. schema already occupied).</returns>
+        public static bool stream_register_wrapper(Context ctx, string protocol, string userWrapperName, StreamWrapperRegisterFlags flags = StreamWrapperRegisterFlags.Default)
+        {
+            return stream_wrapper_register(ctx, protocol, userWrapperName, flags);
+        }
+
+
+        ///<summary>Retrieve list of registered streams (only the names)</summary>  
+        public static PhpArray stream_get_wrappers(Context ctx)
+        {
+            var ret = new PhpArray(8);
+
+            // First add the internal built-in wrappers.
+            var internals = StreamWrapper.GetSystemWrapperSchemes();
+            foreach (var scheme in internals)
+            {
+                ret.Add(scheme);
+            }
+
+            // Now add the indexes (schemes) of User wrappers.
+            foreach (var scheme in StreamWrapper.GetUserWrapperSchemes(ctx))
+            {
+                ret.Add(scheme);
+            }
+
+            //
+            return ret;
+        }
+
+        #endregion
+    }
+
     public static class PhpStreams
     {
-        #region Constants
+        #region Enums & Constants
 
         /// <summary>
         /// The "whence" options used in PhpStream.Seek().
