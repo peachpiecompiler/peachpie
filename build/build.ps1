@@ -1,6 +1,6 @@
 Param(
-  [string]$config = "Release",
-  [string]$suffix = "preview-" + [datetime]::now.tostring("yyyyMMdd-HHmmss")
+  [string]$suffix = "preview-" + [datetime]::now.tostring("yyyyMMdd-HHmmss"),
+  [string]$config = "Release"
 )
 
 $props = "/p:VersionSuffix=$suffix,PackageVersionSuffix=$suffix,Configuration=$config"
