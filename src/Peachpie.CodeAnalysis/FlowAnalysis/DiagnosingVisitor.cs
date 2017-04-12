@@ -172,6 +172,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        public override void VisitStaticStatement(BoundStaticVariableStatement x)
+        {
+            // TODO: Remove once fix for static variables handling in methods with unoptimized locals is done.
+            if ((_routine.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+            {
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Having static variables in generator methods");
+            }
+            base.VisitStaticStatement(x);
+        }
+
         public override void VisitYield(BoundYieldEx boundYieldEx)
         {
             // TODO: Start supporting yielding from exception handling constructs.
