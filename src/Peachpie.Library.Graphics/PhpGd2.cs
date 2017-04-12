@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using ImageSharp;
 using System.IO;
+using ImageSharp.Formats;
+using System.Diagnostics;
+using Pchp.Library.Streams;
+using System.Runtime.InteropServices;
 
 namespace Peachpie.Library.Graphics
 {
@@ -95,6 +99,20 @@ namespace Peachpie.Library.Graphics
         public const int IMG_PNG = (int)ImgType.PNG;
         public const int IMG_WBMP = (int)ImgType.WBMP;
         public const int IMG_XPM = (int)ImgType.XPM;
+
+        #endregion
+
+        #region IMG_GD2_*
+
+        /// <summary>
+        /// A type constant used by the imagegd2() function.
+        /// </summary>
+        public const int IMG_GD2_RAW = 1;
+
+        /// <summary>
+        /// A type constant used by the imagegd2() function.
+        /// </summary>
+        public const int IMG_GD2_COMPRESSED = 2;
 
         #endregion
 
@@ -288,11 +306,37 @@ namespace Peachpie.Library.Graphics
             return (int)ImgType.Supported;
         }
 
+        #region imagecreate*
+
         /// <summary>
         /// Create a new image
         /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreate(int x_size, int y_size)
+        {
+            var img = imagecreatecommon(x_size, y_size, new BmpFormat());
+
+            img.Image.BackgroundColor(Color.White);
+            img.AlphaBlending = true;
+
+            return img;
+        }
+
+        /// <summary>
+        /// Create a new true color image
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatetruecolor(int x_size, int y_size)
+        {
+            var img = imagecreatecommon(x_size, y_size, new PngFormat());
+
+            img.Image.BackgroundColor(Color.Black);
+            img.AlphaBlending = true;
+
+            return img;
+        }
+
+        static PhpGdImageResource imagecreatecommon(int x_size, int y_size, IImageFormat format)
         {
             if (x_size <= 0 || y_size <= 0)
             {
@@ -300,13 +344,7 @@ namespace Peachpie.Library.Graphics
                 return null;
             }
 
-            var img = new PhpGdImageResource(x_size, y_size);
-
-            // Draw white background
-            img.Image.BackgroundColor(Color.White);
-
-            //
-            return img;
+            return new PhpGdImageResource(x_size, y_size, format);
         }
 
         /// <summary>
@@ -315,7 +353,7 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreatefromstring(byte[] image)
         {
-            if (image == null)
+            if (image == null || image.Length == 0)
             {
                 PhpException.Throw(PhpError.Warning, Resources.empty_string_or_invalid_image);
                 return null;
@@ -331,6 +369,117 @@ namespace Peachpie.Library.Graphics
                 return null;
             }
         }
+
+        /// <summary>
+        /// Create a new image from GD file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefromgd(Context ctx, string filename)
+        {
+            return imagercreatefromfile(ctx, filename);
+        }
+
+        /// <summary>
+        /// Create a new image from GD2 file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefromgd2(Context ctx, string filename)
+        {
+            return imagercreatefromfile(ctx, filename);
+        }
+
+        /// <summary>
+        /// Create a new image from a given part of GD2 file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefromgd2part(Context ctx, string filename, int srcX, int srcY, int width, int height)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Create a new image from GIF file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefromgif(Context ctx, string filename)
+        {
+            return imagercreatefromfile(ctx, filename, new GifFormat());
+        }
+
+        /// <summary>
+        /// Create a new image from JPEG file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefromjpeg(Context ctx, string filename)
+        {
+            return imagercreatefromfile(ctx, filename, new JpegFormat());
+        }
+
+        /// <summary>
+        /// Create a new image from PNG file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefrompng(Context ctx, string filename)
+        {
+            return imagercreatefromfile(ctx, filename, new PngFormat());
+        }
+
+        /// <summary>
+        /// Create a new image from WBMP file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefromwbmp(Context ctx, string filename)
+        {
+            return imagercreatefromfile(ctx, filename);
+        }
+
+        /// <summary>
+        /// Create a new image from XBM file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefromxbm(Context ctx, string filename)
+        {
+            return imagercreatefromfile(ctx, filename);
+        }
+
+        /// <summary>
+        /// Create a new image from XPM file or URL.
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpResource imagecreatefromxpm(Context ctx, string filename)
+        {
+            return imagercreatefromfile(ctx, filename);
+        }
+
+        static PhpGdImageResource imagercreatefromfile(Context ctx, string filename, IImageFormat formatOpt = null)
+        {
+            if (string.IsNullOrEmpty(filename))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
+                return null;
+            }
+
+            var configuration = (formatOpt == null)
+                ? Configuration.Default
+                : new Configuration(formatOpt);
+
+            Image img = null;
+
+            using (var stream = Utils.OpenStream(ctx, filename))
+            {
+                if (stream != null)
+                {
+                    try { img = Image.Load(configuration, stream); }
+                    catch { }
+                }
+            }
+
+            return (img != null)
+                ? new PhpGdImageResource(img)
+                : null;
+        }
+
+        #endregion
 
         /// <summary>
         /// Destroy an image
@@ -387,37 +536,154 @@ namespace Peachpie.Library.Graphics
             }
 
             // In PHP AlphaBlending is supported only in True color images
-            img.AlphaBlending = blendmode;
+            if (!img.IsIndexed)
+            {
+                img.AlphaBlending = blendmode;
+            }
 
             return true;
         }
 
         /// <summary>
+        /// return true if the image uses truecolor
+        /// </summary> 
+        public static bool imageistruecolor(PhpResource im)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            return !img.IsIndexed;
+        }
+
+        /// <summary>
+        /// Output WBMP image to browser or file
+        /// </summary> 
+        public static bool image2wbmp(Context ctx, PhpResource im, PhpValue to, int threshold = 0)
+        {
+            throw new NotImplementedException();
+            //return imagesave(ctx, im, filename, (img, stream) => img.SaveAsWirelessBmp(stream));
+        }
+
+        public static bool image2wbmp(Context ctx, PhpResource im) => image2wbmp(ctx, im, PhpValue.Null);
+
+        /// <summary>
         /// Output JPEG image to browser or a file.
         /// </summary> 
-        public static bool imagejpeg(Context ctx, PhpResource im, string filename = null, int quality = 75)
+        public static bool imagejpeg(Context ctx, PhpResource im, PhpValue to, int quality = 75)
         {
+            var jpegoptions = new JpegEncoderOptions() { Quality = Math.Min(Math.Max(quality, 0), 100) };
+            return imagesave(ctx, im, to, (img, stream) => img.SaveAsJpeg(stream, jpegoptions));
+        }
+
+        public static bool imagejpeg(Context ctx, PhpResource im) => imagejpeg(ctx, im, PhpValue.Null);
+
+        /// <summary>
+        /// Output GD image to browser or file
+        /// </summary> 
+        public static bool imagegd(PhpResource im)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Output GD2 image to browser or file
+        /// </summary> 
+        public static bool imagegd2(Context ctx, PhpResource im, [Optional]PhpValue to, int chunk_size = 128, int type = IMG_GD2_RAW)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Output GIF image to browser or file
+        /// </summary> 
+        public static bool imagegif(Context ctx, PhpResource im, [Optional]PhpValue to)
+        {
+            return imagesave(ctx, im, to, (img, stream) =>
+            {
+                img.BackgroundColor(Color.Transparent);
+                img.SaveAsGif(stream);
+            });            
+        }
+
+        public static bool imagegif(Context ctx, PhpResource im) => imagegif(ctx, im, PhpValue.Null);
+
+        /// <summary>
+        /// Output PNG image to browser or file or a stream.
+        /// </summary> 
+        public static bool imagepng(Context ctx, PhpResource im, PhpValue to, int quality = 6, int filters = 0)
+        {
+            quality = Math.Min(Math.Max(quality, 0), 9);    // compression level 0 - 9
+
+            return imagesave(ctx, im, to, (img, stream) =>
+            {
+                img.SaveAsPng(stream, new PngEncoderOptions() { CompressionLevel = quality });
+            });
+        }
+
+        public static bool imagepng(Context ctx, PhpResource im) => imagepng(ctx, im, PhpValue.Null);
+
+        /// <summary>
+        /// Internal image save.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="im">Image resource.</param>
+        /// <param name="to">Optional. Filename or stream. If not specified the functiona saves the image to output stream.</param>
+        /// <param name="saveaction">Callback that actually save the image to given stream. Called when all checks pass.</param>
+        /// <returns>True if save succeeded.</returns>
+        static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image, Stream> saveaction)
+        {
+            Debug.Assert(saveaction != null);
+
+            // check the gd2 resource
             var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
             {
                 return false;
             }
 
-            if (quality < 0) quality = 75;
-            if (quality > 100) quality = 100;
-
-            var jpegoptions = new ImageSharp.Formats.JpegEncoderOptions() { Quality = quality };
-
-            if (filename == null)
+            try
             {
-                img.Image.SaveAsJpeg(ctx.OutputStream, jpegoptions);
-            }
-            else
-            {
-                using (var stream = File.OpenWrite(Path.Combine(ctx.WorkingDirectory, filename)))
+                var filename = to.ToStringOrNull();
+                PhpStream phpstream;
+
+                // either save to a file or to output stream
+                if (filename == null)
                 {
-                    img.Image.SaveAsJpeg(stream, jpegoptions);
+                    saveaction(img.Image, ctx.OutputStream);
                 }
+                else if (to.IsEmpty)
+                {
+                    using (var stream = File.OpenWrite(Path.Combine(ctx.WorkingDirectory, filename)))
+                    {
+                        saveaction(img.Image, stream);
+                    }
+                }
+                else
+                {
+                    // validate the stream resource, outputs warning in case of invalid resource
+                    phpstream = PhpStream.GetValid(to.AsObject() as PhpResource, FileAccess.Write);
+                    if (phpstream == null)
+                    {
+                        return false;
+                    }
+
+                    // save image to byte[] and pass it to php stream
+
+                    var ms = new MemoryStream();
+
+                    saveaction(img.Image, ms);
+
+                    phpstream.WriteBytes(ms.ToArray());
+                    phpstream.Flush();
+
+                    // stream is closed after the operation
+                    phpstream.Dispose();
+                }
+            }
+            catch
+            {
+                return false;
             }
 
             return true;
