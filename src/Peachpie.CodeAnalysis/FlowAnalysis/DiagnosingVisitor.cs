@@ -131,5 +131,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
         }
+        public override void VisitYield(BoundYieldEx boundYieldEx)
+        {
+            // TODO: Start supporting sending values & subsequently yield as an Expression
+            if (boundYieldEx.Access.IsRead)
+            {
+                _diagnostics.Add(_routine, boundYieldEx.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Returning a value from yield");
+            }
+        }
     }
 }
