@@ -33,5 +33,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Format string for a generator state machine method name.
         /// </summary>
         public const string GeneratorStateMachineNameFormatString = "<>sm_{0}";
+
+        /// <summary>
+        /// Name of method containing lambda method's implementation.
+        /// </summary>
+        public const string LambdaMethodName = "anonymous@function";
     }
 }

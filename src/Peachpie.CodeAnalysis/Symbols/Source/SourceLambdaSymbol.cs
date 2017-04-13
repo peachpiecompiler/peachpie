@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override SourceFileSymbol ContainingFile => (_container as SourceTypeSymbol)?.ContainingFile ?? (_container as SourceFileSymbol);
 
-        public override string Name => "anonymous@function";
+        public override string Name => WellKnownPchpNames.LambdaMethodName;
 
         public override Symbol ContainingSymbol => _container;
 
