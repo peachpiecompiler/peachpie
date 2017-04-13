@@ -58,6 +58,29 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             cg.EmitSequencePoint(this.PhpSyntax);
 
+            // if generator method -> return via storing the value in generator
+            if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator)
+            {
+
+                // g._returnValue = <returned expression>
+                if (this.Returned != null)
+                {
+                    cg.Builder.EmitLoadArgumentOpcode(3);
+                    var t = cg.Emit(this.Returned);
+                    cg.EmitConvertToPhpValue(t, 0);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedValue_Generator_PhpValue);
+                }
+
+
+                // g._state = -2 (closed): got to the end of the generator method
+                cg.Builder.EmitLoadArgumentOpcode(3);
+                cg.EmitLoadConstant(-2, cg.CoreTypes.Int32);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
+
+                cg.Builder.EmitRet(true);
+                return;
+            }
+
             var rtype = cg.Routine.ReturnType;
             var rvoid = rtype.SpecialType == SpecialType.System_Void;
 

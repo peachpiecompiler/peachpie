@@ -12,6 +12,7 @@ using Roslyn.Utilities;
 using Pchp.CodeAnalysis.Utilities;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
+using static Pchp.CodeAnalysis.AstUtils;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -100,6 +101,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 //
                 base.VisitLambdaFunctionExpr(x);
+            }
+
+            public override void VisitYieldEx(YieldEx x)
+            {
+                var container = _containerStack.Peek();
+
+                //We could create SourceGeneratorSymbol here (as lambda does it) but since we don't need
+                // it we can wait until SourceRoutineSymbol.Generate() and create it there.
+               
+                base.VisitYieldEx(x);
             }
         }
 
@@ -308,6 +319,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return GetTypes().Cast<ILambdaContainerSymbol>().Concat(_files.Values).SelectMany(c => c.Lambdas);
         }
+
 
         /// <summary>
         /// Gets enumeration of all routines (global code, functions and methods) in source code.

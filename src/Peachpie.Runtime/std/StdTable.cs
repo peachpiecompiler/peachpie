@@ -17,6 +17,7 @@ namespace Pchp.Core.std
             typeof(Traversable), typeof(Iterator), typeof(IteratorAggregate),
             typeof(ArrayAccess), typeof(Serializable),
             typeof(Closure),
+            typeof(Generator),
         };
 
         /// <summary>

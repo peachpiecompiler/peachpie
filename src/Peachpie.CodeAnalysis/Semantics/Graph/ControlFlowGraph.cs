@@ -100,6 +100,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         readonly LabelBlockState[] _labels;
 
         /// <summary>
+        /// Array of yield expressions within routine. Can be <c>null</c>.
+        /// </summary>
+        public BoundYieldEx[] Yields { get => _yields; }
+        readonly BoundYieldEx[] _yields;
+
+        /// <summary>
         /// List of blocks that are unreachable syntactically (statements after JumpStmt etc.).
         /// </summary>
         public List<BoundBlock>/*!*/UnreachableBlocks { get { return _unrecachable; } }
@@ -115,16 +121,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         #region Construction
 
         internal ControlFlowGraph(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder, NamingContext naming)
-            : this(BuilderVisitor.Build(statements, binder, naming))
+            : this(BuilderVisitor.Build(statements, binder, naming), binder.Yields)
         {
         }
 
-        private ControlFlowGraph(BuilderVisitor/*!*/builder)
-            : this(builder.Start, builder.Exit, /*builder.Exception*/null, builder.Labels, builder.DeadBlocks)
+        private ControlFlowGraph(BuilderVisitor/*!*/builder, BoundYieldEx[] yields)
+            : this(builder.Start, builder.Exit, /*builder.Exception*/null, builder.Labels, yields, builder.DeadBlocks)
         {
         }
 
-        private ControlFlowGraph(BoundBlock/*!*/start, BoundBlock/*!*/exit, BoundBlock exception, LabelBlockState[] labels, List<BoundBlock> unreachable)
+        private ControlFlowGraph(BoundBlock/*!*/start, BoundBlock/*!*/exit, BoundBlock exception, LabelBlockState[] labels, BoundYieldEx[] yields, List<BoundBlock> unreachable)
         {
             Contract.ThrowIfNull(start);
             Contract.ThrowIfNull(exit);
@@ -133,6 +139,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _exit = exit;
             //_exception = exception;
             _labels = labels;
+            _yields = yields;
             _unrecachable = unreachable ?? new List<BoundBlock>();
         }
 

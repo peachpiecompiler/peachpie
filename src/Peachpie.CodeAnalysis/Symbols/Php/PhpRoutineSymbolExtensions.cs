@@ -22,6 +22,21 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var compilation = routine.DeclaringCompilation;
 
+            // if the method is generator and can't be overriden then the return type must be generator 
+            // TODO: would not be necessary if GN_SGS got fixed (the routine could report the return type correctly itself)
+            if ((routine?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+            {
+                // if non-virtual -> return Generator directly
+                if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
+                {
+                    return compilation.CoreTypes.Generator;
+                }
+                else //can't be sure -> play safe with PhpValue
+                {
+                    return compilation.CoreTypes.PhpValue;
+                }
+            }
+
             // &
             if (routine.SyntaxSignature.AliasReturn)
             {
@@ -37,6 +52,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // for non virtual methods:
             if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
             {
+
                 // /** @return */
                 var typeCtx = routine.TypeRefContext;
                 if (routine.PHPDocBlock != null && (compilation.Options.PhpDocTypes & PhpDocTypes.ReturnTypes) != 0)
@@ -83,14 +99,23 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var m = (MethodSymbol)symbol;
                 var r = symbol as SourceRoutineSymbol;
-                if (r != null && r.IsStatic && r.SyntaxReturnType == null)
+
+                // if the method is generator use ConstructClrReturnType analysis for return type
+                // TODO: would not be necessary if GN_SGS got fixed (the routine could report the return type correctly itself)
+                if ((r?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+                {
+                    t = m.ReturnType;
+                }
+                else if (r != null && r.IsStatic && r.SyntaxReturnType == null)
                 {
                     // In case of a static function, we can return expected return type mask exactly.
                     // Such function cannot be overriden and we know exactly what the return type will be even the CLR type covers more possibilities.
                     return ctx.AddToContext(r.TypeRefContext, r.ResultTypeMask);
                 }
-
-                t = m.ReturnType;
+                else
+                {
+                    t = m.ReturnType;
+                }
             }
             else if (symbol is PropertySymbol)
             {

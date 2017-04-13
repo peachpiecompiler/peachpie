@@ -20,6 +20,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
 
+        int inTryLevel = 0;
+        int inCatchLevel = 0;
+        int inFinallyLevel = 0;
+
+        Stack<BoundBlock> endOfTryBlocks = new Stack<BoundBlock>();
+
         private int _visitedColor;
 
         public DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
@@ -129,6 +135,65 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var name = typeRef.TypeRef.QualifiedName?.ToString();
                     _diagnostics.Add(this._routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
                 }
+            }
+        }
+
+        public override void VisitCFGBlock(BoundBlock x)
+        {
+            // is current block directly after the end of some try block?
+            Debug.Assert(inTryLevel == 0 || endOfTryBlocks.Count > 0);
+            if (inTryLevel > 0 && endOfTryBlocks.Peek() == x) { --inTryLevel; endOfTryBlocks.Pop(); }
+
+            base.VisitCFGBlock(x);
+        }
+
+        public override void VisitCFGTryCatchEdge(TryCatchEdge x)
+        {
+            // .Accept() on BodyBlocks traverses not only the try block but also the rest of the code
+            ++inTryLevel;
+            var hasEndBlock = (x.NextBlock != null);                // if there's a block directly after try-catch-finally
+            if (hasEndBlock) { endOfTryBlocks.Push(x.NextBlock); }  // -> add it as ending block
+            x.BodyBlock.Accept(this);
+            if (!hasEndBlock) { --inTryLevel; }                     // if there isn't dicrease tryLevel after going trough the try & rest (nothing)
+
+            foreach (var c in x.CatchBlocks)
+            {
+                ++inCatchLevel;
+                c.Accept(this);
+                --inCatchLevel;
+            }
+
+
+            if (x.FinallyBlock != null)
+            {
+                ++inFinallyLevel;
+                x.FinallyBlock.Accept(this);
+                --inFinallyLevel;
+            }
+        }
+
+        public override void VisitStaticStatement(BoundStaticVariableStatement x)
+        {
+            // TODO: Remove once fix for static variables handling in methods with unoptimized locals is done.
+            if ((_routine.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+            {
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Having static variables in generator methods");
+            }
+            base.VisitStaticStatement(x);
+        }
+
+        public override void VisitYield(BoundYieldEx boundYieldEx)
+        {
+            // TODO: Start supporting yielding from exception handling constructs.
+            if (inTryLevel > 0 || inCatchLevel > 0 || inFinallyLevel > 0)
+            {
+                _diagnostics.Add(_routine, boundYieldEx.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
+            }
+
+            // TODO: Start supporting sending values & subsequently yield as an Expression
+            if (boundYieldEx.Access.IsRead)
+            {
+                _diagnostics.Add(_routine, boundYieldEx.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Returning a value from yield");
             }
         }
     }
