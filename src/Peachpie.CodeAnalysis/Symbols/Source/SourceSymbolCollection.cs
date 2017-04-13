@@ -21,101 +21,6 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal class SourceSymbolCollection // SourceProject
     {
-        #region BinderVisitor
-
-        sealed class BinderVisitor : TreeVisitor
-        {
-            readonly SourceSymbolCollection _tables;
-            readonly PhpCompilation _compilation;
-            readonly Stack<NamedTypeSymbol> _containerStack = new Stack<NamedTypeSymbol>();
-
-            SourceFileSymbol _currentFile;
-            PhpSyntaxTree _syntaxTree;
-
-            public BinderVisitor(PhpCompilation compilation, SourceSymbolCollection tables, PhpSyntaxTree syntaxTree)
-            {
-                _tables = tables;
-                _compilation = compilation;
-                _syntaxTree = syntaxTree;
-            }
-
-            public override void VisitGlobalCode(GlobalCode x)
-            {
-                Debug.Assert(_syntaxTree.Source.Ast == x);
-
-                var fsymbol = new SourceFileSymbol(_compilation, _syntaxTree);
-
-                _currentFile = fsymbol;
-                _tables._files.Add(fsymbol.RelativeFilePath, fsymbol);
-                _tables._ordinalMap.Add(_syntaxTree, _tables._ordinalMap.Count);
-
-                if (_tables.FirstScript == null)
-                {
-                    _tables.FirstScript = _currentFile;
-                }
-
-                _containerStack.Push(fsymbol);
-
-                base.VisitGlobalCode(x);
-
-                _containerStack.Pop();
-
-                _currentFile = null;
-            }
-
-            public override void VisitFunctionDecl(FunctionDecl x)
-            {
-                var routine = new SourceFunctionSymbol(_currentFile, x);
-
-                x.SetProperty(routine); // remember bound function symbol
-                _currentFile.AddFunction(routine);
-
-                //
-                base.VisitFunctionDecl(x);
-            }
-
-            public override void VisitTypeDecl(TypeDecl x)
-            {
-                var type = (x is AnonymousTypeDecl)
-                    ? new SourceAnonymousTypeSymbol(_currentFile, (AnonymousTypeDecl)x)
-                    : new SourceTypeSymbol(_currentFile, x);
-
-                x.SetProperty(type);    // remember bound type symbol
-                _currentFile.ContainedTypes.Add(type);
-
-                //
-
-                _containerStack.Push(type);
-
-                base.VisitTypeDecl(x);
-
-                _containerStack.Pop();
-            }
-
-            public override void VisitLambdaFunctionExpr(LambdaFunctionExpr x)
-            {
-                var container = _containerStack.Peek();
-                var lambdasymbol = new SourceLambdaSymbol(x, container, !x.IsStatic);
-                Debug.Assert(container is ILambdaContainerSymbol);
-                ((ILambdaContainerSymbol)container).AddLambda(lambdasymbol);
-
-                //
-                base.VisitLambdaFunctionExpr(x);
-            }
-
-            public override void VisitYieldEx(YieldEx x)
-            {
-                var container = _containerStack.Peek();
-
-                //We could create SourceGeneratorSymbol here (as lambda does it) but since we don't need
-                // it we can wait until SourceRoutineSymbol.Generate() and create it there.
-               
-                base.VisitYieldEx(x);
-            }
-        }
-
-        #endregion
-
         #region SymbolsCache
 
         sealed class SymbolsCache<TKey, TSymbol>
@@ -270,8 +175,57 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Contract.ThrowIfNull(tree);
 
-            new BinderVisitor(_compilation, this, tree).VisitGlobalCode(tree.Source.Ast);
+            Debug.Assert(tree.Root != null);
 
+            // create file symbol (~ php script containing type)
+            var fsymbol = new SourceFileSymbol(_compilation, tree);
+            if (FirstScript == null) FirstScript = fsymbol;
+
+            // collect type declarations
+            foreach (var t in tree.Types)
+            {
+                var typesymbol = (t is AnonymousTypeDecl)
+                    ? new SourceAnonymousTypeSymbol(fsymbol, (AnonymousTypeDecl)t)
+                    : new SourceTypeSymbol(fsymbol, t);
+
+                t.SetProperty(typesymbol);    // remember bound type symbol
+                fsymbol.ContainedTypes.Add(typesymbol);
+            }
+
+            // annotate routines that contain yield
+            if (!tree.YieldNodes.IsDefaultOrEmpty)
+            {
+                foreach (var y in tree.YieldNodes)
+                {
+                    var containingroutine = y.GetContainingRoutine();
+                    Debug.Assert(containingroutine != null);
+                    // TODO: annotate routine as generator ! so it can be bound as generator already
+                }
+            }
+
+            //
+            foreach (var f in tree.Functions)
+            {
+                var routine = new SourceFunctionSymbol(fsymbol, f);
+
+                f.SetProperty(routine); // remember bound function symbol
+                fsymbol.AddFunction(routine);
+            }
+
+            //
+            foreach (var l in tree.Lambdas)
+            {
+                var containingtype = l.ContainingType;
+                var container = (containingtype != null) ? (NamedTypeSymbol)containingtype.GetProperty<SourceTypeSymbol>() : fsymbol;                
+
+                var lambdasymbol = new SourceLambdaSymbol(l, container, !l.IsStatic);
+                Debug.Assert(container is ILambdaContainerSymbol);
+                ((ILambdaContainerSymbol)container).AddLambda(lambdasymbol);
+            }
+
+            //
+            _files.Add(fsymbol.RelativeFilePath, fsymbol);
+            _ordinalMap.Add(tree, _ordinalMap.Count);
             _version++;
         }
 

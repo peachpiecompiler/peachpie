@@ -133,9 +133,26 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public static T FindParentLangElement<T>(LangElement node) where T : LangElement
         {
-            while (node != null && !(node is T)) { node = node.ContainingElement; }
+            while (node != null && !(node is T))
+            {
+                node = node.ContainingElement;
+            }
 
             return (T)node;
+        }
+
+        /// <summary>
+        /// Gets containing routine element (function, method or lambda).
+        /// </summary>
+        public static LangElement GetContainingRoutine(this LangElement element)
+        {
+            while (!(element is MethodDecl || element is FunctionDecl || element is LambdaFunctionExpr || element is GlobalCode || element == null))
+            {
+                element = element.ContainingElement;
+            }
+
+            //
+            return element;
         }
     }
 }
