@@ -122,26 +122,12 @@ namespace Pchp.Library
         /// <param name="path">The file to be opened. The schema part of the URL specifies the wrapper to be used.</param>
         /// <param name="mode">The read/write and text/binary file open mode.</param>
         /// <param name="flags">If set to true, then the include path is searched for relative filenames too.</param>
-        /// <returns>The file resource or false in case of failure.</returns>
-        [return: CastToFalse]
-        public static PhpResource fopen(Context ctx, string path, string mode, FileOpenOptions flags = FileOpenOptions.Empty)
-        {
-            return fopen(ctx, path, mode, flags, StreamContext.Default);
-        }
-
-        /// <summary>
-        /// Opens filename or URL using a registered StreamWrapper.
-        /// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="path">The file to be opened. The schema part of the URL specifies the wrapper to be used.</param>
-        /// <param name="mode">The read/write and text/binary file open mode.</param>
-        /// <param name="flags">If set to true, then the include path is searched for relative filenames too.</param>
         /// <param name="context">A script context to be provided to the StreamWrapper.</param>
         /// <returns>The file resource or false in case of failure.</returns>
         [return: CastToFalse]
-        public static PhpResource fopen(Context ctx, string path, string mode, FileOpenOptions flags, PhpResource context)
+        public static PhpResource fopen(Context ctx, string path, string mode, FileOpenOptions flags = FileOpenOptions.Empty, PhpResource context = null)
         {
-            StreamContext sc = StreamContext.GetValid(context);
+            StreamContext sc = StreamContext.GetValid(context, true);
             if (sc == null) return null;
 
             if (string.IsNullOrEmpty(path))

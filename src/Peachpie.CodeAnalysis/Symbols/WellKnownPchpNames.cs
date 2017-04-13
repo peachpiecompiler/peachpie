@@ -28,5 +28,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Name of special nested class containing context bound static fields and constants.
         /// </summary>
         public const string StaticsHolderClassName = "_statics";
+
+        /// <summary>
+        /// Format string for a generator state machine method name.
+        /// </summary>
+        public const string GeneratorStateMachineNameFormatString = "<>sm_{0}";
+
+        /// <summary>
+        /// Name of method containing lambda method's implementation.
+        /// This is PHP-like name that has to be equal <c>anonymous@function</c>
+        /// so PHP <c>__FUNCTION__</c> constant and eventual reflection is compatible with regular PHP.
+        /// </summary>
+        public const string LambdaMethodName = "anonymous@function";
     }
 }

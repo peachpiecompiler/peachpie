@@ -314,10 +314,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IPlace Place(ILBuilder il)
         {
-            // get place of $this in the routine
-            // this may vary in different symbols like global code, generator sm method, etc.
+            // Get place of PHP $this variable in the routine.
+            // This may vary in different symbols like global code, generator sm method, etc.
 
-            return new ParamPlace(_routine.ThisParameter);
+            return _routine.PhpThisVariablePlace;
         }
     }
 

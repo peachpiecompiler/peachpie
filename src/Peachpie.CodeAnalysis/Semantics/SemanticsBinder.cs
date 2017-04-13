@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AST = Devsense.PHP.Syntax.Ast;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -27,11 +28,18 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         readonly LocalsTable _locals;
 
+        /// <summary>
+        /// Found yields (needed for ControlFlowGraph)
+        /// </summary>
+        public BoundYieldEx[] Yields { get => _yields.ToArray(); }
+        readonly List<BoundYieldEx> _yields;
+
         #region Construction
 
         public SemanticsBinder(LocalsTable locals = null)
         {
             _locals = locals;
+            _yields = new List<BoundYieldEx>();
         }
 
         #endregion
@@ -161,8 +169,26 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
             if (expr is AST.LambdaFunctionExpr) return BindLambda((AST.LambdaFunctionExpr)expr).WithAccess(access);
             if (expr is AST.EvalEx) return BindEval((AST.EvalEx)expr).WithAccess(access);
+            if (expr is AST.YieldEx) return BindYieldEx((AST.YieldEx)expr).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
+        }
+
+        BoundYieldEx BindYieldEx(AST.YieldEx expr)
+        {
+            // Reference: https://github.com/dotnet/roslyn/blob/05d923831e1bc2a88918a2073fba25ab060dda0c/src/Compilers/CSharp/Portable/Binder/Binder_Statements.cs#L194
+            
+            // TODO: Throw error when trying to iterate a non-reference generator by reference 
+            var access = _locals.Routine.SyntaxSignature.AliasReturn
+                    ? BoundAccess.ReadRef
+                    : BoundAccess.Read;
+
+            var boundValueExpr = (expr.ValueExpr != null) ? BindExpression(expr.ValueExpr, access) : null;
+            var boundKeyExpr = (expr.KeyExpr != null) ? BindExpression(expr.KeyExpr) : null;
+
+            var boundYieldEx = new BoundYieldEx(boundValueExpr, boundKeyExpr);
+            _yields.Add(boundYieldEx);
+            return boundYieldEx;
         }
 
         BoundLambda BindLambda(AST.LambdaFunctionExpr expr)

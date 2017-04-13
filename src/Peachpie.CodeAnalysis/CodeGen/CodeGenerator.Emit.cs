@@ -69,6 +69,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public bool HasUnoptimizedLocals => LocalsPlaceOpt != null;
 
         /// <summary>
+        /// Gets value indicating the routine has locals already inicialized. 
+        /// </summary>
+        public bool InitializedLocals => _localsInitialized;
+
+        /// <summary>
         /// Emits reference to <c>this</c>.
         /// </summary>
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
@@ -396,10 +401,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitSymbolToken(_moduleBuilder, _diagnostics, symbol, syntaxNode);
         }
 
-        //private void EmitSymbolToken(MethodSymbol method, SyntaxNode syntaxNode)
-        //{
-        //    _il.EmitToken(_moduleBuilder.Translate(method, syntaxNode, _diagnostics, null), syntaxNode, _diagnostics);
-        //}
+        internal void EmitSymbolToken(MethodSymbol method, SyntaxNode syntaxNode)
+        {
+            _il.EmitSymbolToken(_moduleBuilder, _diagnostics, method, syntaxNode);
+        }
 
         internal void EmitSequencePoint(LangElement element)
         {
@@ -719,7 +724,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // <array>.Add((T)arrplace[i])
             _il.EmitLocalLoad(tmparr);   // <array>
-            
+
             arrplace.EmitLoad(_il);
             _il.EmitLocalLoad(tmpi);
             _il.EmitOpCode(ILOpCode.Ldelem);

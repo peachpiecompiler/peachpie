@@ -126,6 +126,9 @@
   <data name="ERR_MetadataFileNotFound" xml:space="preserve">
     <value>Metadata file '{0}' could not be found</value>
   </data>
+  <data name="ERR_NotYetImplemented" xml:space="preserve">
+    <value>{0} is currently not supported by Peachpie.</value>
+  </data>
   <data name="ERR_TypeNameCannotBeResolved" xml:space="preserve">
     <value>Type name '{0}' could not be resolved. It is either not defined, defined conditionally or ambiguous declarations were found.</value>
   </data>

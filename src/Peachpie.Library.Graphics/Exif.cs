@@ -90,7 +90,7 @@ namespace Peachpie.Library.Graphics
             {
                 try
                 {
-                    image = new Image(ms);
+                    image = Image.Load(ms);
                 }
                 catch
                 {
@@ -324,7 +324,7 @@ namespace Peachpie.Library.Graphics
             {
                 try
                 {
-                    using (var image = new Image(ms))
+                    using (var image = Image.Load(ms))
                     {
                         // return byte[] ~ image.MetaData.ExifProfile{ this.data, this.thumbnailOffset, this.thumbnailLength }
                         thumbnail = image.MetaData.ExifProfile.CreateThumbnail<Color>();

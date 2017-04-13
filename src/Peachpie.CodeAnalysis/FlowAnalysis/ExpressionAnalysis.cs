@@ -370,6 +370,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     else
                     {
+                        // reset 'MaybeUninitialized' flag:
+                        x.MaybeUninitialized = false;
+
                         if (!State.IsLocalSet(local))
                         {
                             // do not report as uninitialized if variable
@@ -381,7 +384,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 x.MaybeUninitialized = true;
                             }
 
-                            // variable maybe null
+                            // variable maybe null if it can be uninitialized
                             vartype |= TypeCtx.GetNullTypeMask();
                         }
                     }
@@ -1525,6 +1528,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = TypeCtx.GetTypeMask(NameUtils.SpecialNames.Closure, false); // {Closure}, no null, no subclasses
         }
 
+        #endregion
+
+        #region VisitYield
+        public override void VisitYield(BoundYieldEx x)
+        {
+
+            //Might want to move it to SemanticsBinder on BindYieldEx(...)
+            this.Routine.Flags |= RoutineFlags.IsGenerator;
+            base.VisitYield(x);
+        }
         #endregion
 
         #region Visit

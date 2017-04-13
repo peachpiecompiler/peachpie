@@ -127,5 +127,15 @@ namespace Pchp.CodeAnalysis
         {
             return new QualifiedName(new Name(GetAnonymousTypeName(tdecl)));
         }
+
+        /// <summary>
+        /// Traverses AST and finds closest parent element of desired type.
+        /// </summary>
+        public static T FindParentLangElement<T>(LangElement node) where T : LangElement
+        {
+            while (node != null && !(node is T)) { node = node.ContainingElement; }
+
+            return (T)node;
+        }
     }
 }

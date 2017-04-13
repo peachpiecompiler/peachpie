@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using ImageSharp;
+using ImageSharp.Formats;
 using Pchp.Core;
 
 namespace Peachpie.Library.Graphics
@@ -21,24 +22,21 @@ namespace Peachpie.Library.Graphics
         {
             get
             {
-                return image;
+                return _image;
             }
             internal set
             {
-                if (value == null)
-                    throw new ArgumentNullException();
-
-                image = value;
+                _image = value ?? throw new ArgumentNullException();
             }
         }
-        private Image/*!*/image;
+        private Image/*!*/_image;
 
         /// <summary>
         /// Determine if the pixel format is indexed.
         /// </summary>
         public bool IsIndexed =>
-            image.CurrentImageFormat.Decoder is ImageSharp.Formats.JpegDecoder ||
-            image.CurrentImageFormat.Decoder is ImageSharp.Formats.PngDecoder;
+            _image.CurrentImageFormat.Decoder is JpegDecoder ||
+            _image.CurrentImageFormat.Decoder is PngDecoder;
 
         internal bool AlphaBlending = false;
         internal bool SaveAlpha = false;
@@ -60,19 +58,19 @@ namespace Peachpie.Library.Graphics
         {
         }
 
-        internal PhpGdImageResource(int x, int y)
-            : this(new Image(x, y))
+        internal PhpGdImageResource(int x, int y, IImageFormat format)
+            : this(new Image(x, y, new Configuration(format)))
         {
         }
 
         /// <summary>
         ///  Creates PhpGdImageResource without creating internal image
         /// </summary>
-        internal PhpGdImageResource(Image/*!*/img)
+        internal PhpGdImageResource(Image/*!*/image)
             : this()
         {
-            Debug.Assert(img != null);
-            image = img;
+            Debug.Assert(image != null);
+            _image = image;
         }
 
         /// <summary>
@@ -80,10 +78,10 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         protected override void FreeManaged()
         {
-            if (this.image != null)
+            if (_image != null)
             {
-                this.image.Dispose();
-                this.image = null;
+                _image.Dispose();
+                _image = null;
             }
 
             //if (this.styled != null)
@@ -113,11 +111,16 @@ namespace Peachpie.Library.Graphics
         /// <exception cref="PhpException">Warning when resource is not valid <see cref="PhpGdImageResource"/>.</exception>
         internal static PhpGdImageResource ValidImage(PhpResource handle)
         {
-            PhpGdImageResource result = handle as PhpGdImageResource;
-            if (result != null && result.IsValid && result.image != null) return result;
-
-            PhpException.Throw(PhpError.Warning, Resources.image_resource_not_valid);
-            return null;
+            var result = handle as PhpGdImageResource;
+            if (result != null && result.IsValid && result._image != null)
+            {
+                return result;
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Warning, Resources.image_resource_not_valid);
+                return null;
+            }
         }
     }
 }

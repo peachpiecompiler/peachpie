@@ -38,7 +38,9 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 if (_lazyThisSymbol == null && this.HasThis)
+                {
                     _lazyThisSymbol = new SpecialParameterSymbol(this, _type, SpecialParameterSymbol.ThisName, -1);
+                }
 
                 return _lazyThisSymbol;
             }

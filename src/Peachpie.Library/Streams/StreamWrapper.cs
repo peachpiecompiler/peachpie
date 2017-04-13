@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Library.Streams
 {
@@ -25,6 +26,25 @@ namespace Pchp.Library.Streams
     /// </remarks>
     public abstract class StreamWrapper : IDisposable
     {
+        #region ContextData
+
+        /// <summary>
+        /// State stored within a runtime <see cref="Context"/>.
+        /// </summary>
+        sealed class ContextData
+        {
+            public static ContextData GetData(Context ctx) => ctx.GetStatic<ContextData>();
+
+            public Dictionary<string, StreamWrapper> EnsureUserWrappers()
+            {
+                return UserWrappers ?? (UserWrappers = new Dictionary<string, StreamWrapper>());
+            }
+
+            public Dictionary<string, StreamWrapper> UserWrappers { get; private set; }
+        }
+
+        #endregion
+
         #region Mandatory Wrapper Operations
 
         public abstract PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context);
@@ -303,25 +323,29 @@ namespace Pchp.Library.Streams
 
         #region Static wrapper-list handling methods
 
-        ///// <summary>
-        ///// Insert a new wrapper to the list of user StreamWrappers.
-        ///// </summary>
-        ///// <remarks>
-        ///// Each script has its own set of user StreamWrappers registered
-        ///// by stream_wrapper_register() stored in the ScriptContext.
-        ///// </remarks>
-        ///// <param name="protocol">The scheme portion of URLs this wrapper can handle.</param>
-        ///// <param name="wrapper">An instance of the corresponding StreamWrapper descendant.</param>
-        ///// <returns>True if succeeds, false if the scheme is already registered.</returns>
-        //public static bool RegisterUserWrapper(string protocol, StreamWrapper wrapper)
-        //{
-        //    // Userwrappers may be initialized to null
-        //    if (UserWrappers == null)
-        //        CreateUserWrapperTable();
-
-        //    UserWrappers.Add(protocol, wrapper);
-        //    return true;
-        //}
+        /// <summary>
+        /// Insert a new wrapper to the list of user StreamWrappers.
+        /// </summary>
+        /// <remarks>
+        /// Each script has its own set of user StreamWrappers registered
+        /// by stream_wrapper_register() stored in the ScriptContext.
+        /// </remarks>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="protocol">The scheme portion of URLs this wrapper can handle.</param>
+        /// <param name="wrapper">An instance of the corresponding StreamWrapper descendant.</param>
+        /// <returns>True if succeeds, false if the scheme is already registered.</returns>
+        public static bool RegisterUserWrapper(Context ctx, string protocol, StreamWrapper wrapper)
+        {
+            try
+            {
+                EnsureUserStreamWrappers(ctx).Add(protocol, wrapper);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         /// <summary>
         /// Register a new system wrapper
@@ -338,15 +362,13 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        ///// <summary>
-        ///// Checks if a wrapper is already registered for the given scheme.
-        ///// </summary>
-        ///// <param name="scheme">The scheme.</param>
-        ///// <returns><c>true</c> if exists.</returns>
-        //public static bool Exists(string scheme)
-        //{
-        //    return GetWrapperInternal(scheme) != null;
-        //}
+        /// <summary>
+        /// Checks if a wrapper is already registered for the given scheme.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="scheme">The scheme.</param>
+        /// <returns><c>true</c> if exists.</returns>
+        public static bool Exists(Context ctx, string scheme) => GetWrapperInternal(ctx, scheme) != null;
 
         /// <summary>
         /// Retreive the corresponding StreamWrapper respectind the scheme portion 
@@ -373,14 +395,14 @@ namespace Pchp.Library.Streams
 
             // EX [GetWrapper]: check for the other StreamOptions here: for example UseUrl, IgnoreUrl
 
-            //if (!ScriptContext.CurrentContext.Config.FileSystem.AllowUrlFopen)
-            //{
-            //    if (wrapper.IsUrl)
-            //    {
-            //        PhpException.Throw(PhpError.Warning, ErrResources.url_fopen_disabled);
-            //        return null;
-            //    }
-            //}
+            if (!ctx.Configuration.Core.AllowUrlFopen)
+            {
+                if (wrapper.IsUrl)
+                {
+                    PhpException.Throw(PhpError.Warning, ErrResources.url_fopen_disabled);
+                    return null;
+                }
+            }
 
             Debug.Assert(wrapper != null);
             return wrapper;
@@ -397,17 +419,22 @@ namespace Pchp.Library.Streams
             return keys;
         }
 
-        ///// <summary>
-        ///// Gets the list of user wrapper schemes.
-        ///// </summary>
-        ///// <returns></returns>
-        //public static ICollection<string> GetUserWrapperSchemes()
-        //{
-        //    if (UserWrappers == null)
-        //        return Core.Utilities.ArrayUtils.EmptyStrings;
-
-        //    return UserWrappers.Keys;
-        //}
+        /// <summary>
+        /// Gets the list of user wrapper schemes.
+        /// </summary>
+        /// <returns></returns>
+        public static ICollection<string> GetUserWrapperSchemes(Context ctx)
+        {
+            var data = ContextData.GetData(ctx);
+            if (data.UserWrappers == null)
+            {
+                return Array.Empty<string>();
+            }
+            else
+            {
+                return data.UserWrappers.Keys;
+            }
+        }
 
         /// <summary>
         /// Search the lists of registered StreamWrappers to find the 
@@ -442,42 +469,26 @@ namespace Pchp.Library.Streams
                         return (SystemStreamWrappers[scheme] = new InputOutputStreamWrapper());
                 }
 
-                //// Next search the user wrappers (if present)
-                //if (UserWrappers != null)
-                //{
-                //    UserWrappers.TryGetValue(scheme, out result);
-                //}
+                // Next search the user wrappers (if present)
+                var data = ContextData.GetData(ctx);
+                if (data.UserWrappers != null)
+                {
+                    data.UserWrappers.TryGetValue(scheme, out result);
+                }
             }
 
             //
             return result;  // can be null
         }
 
-        ///// <summary>
-        ///// Make new instance of Hashtable for the userwrappers
-        ///// in the ScriptContext.
-        ///// </summary>
-        //internal static void CreateUserWrapperTable()
-        //{
-        //    ScriptContext script_context = ScriptContext.CurrentContext;
-
-        //    Debug.Assert(script_context.UserStreamWrappers == null);
-        //    script_context.UserStreamWrappers = new Dictionary<string, StreamWrapper>(5);
-        //}
-
-        ///// <summary>
-        ///// Table of user-registered stream wrappers.
-        ///// Stored as an instance variable in ScriptContext
-        ///// (for every script there is one, it is initialized
-        ///// to null - instance is created on first user-wrapper insertion).
-        ///// </summary>
-        //internal static Dictionary<string, StreamWrapper> UserWrappers
-        //{
-        //    get
-        //    {
-        //        return ScriptContext.CurrentContext.UserStreamWrappers;
-        //    }
-        //}
+        /// <summary>
+        /// Make new instance of Hashtable for the userwrappers
+        /// in the ScriptContext.
+        /// </summary>
+        private static Dictionary<string, StreamWrapper> EnsureUserStreamWrappers(Context ctx)
+        {
+            return ContextData.GetData(ctx).EnsureUserWrappers();
+        }
 
         /// <summary>
         /// Registered system stream wrappers for all requests.
@@ -1350,6 +1361,228 @@ namespace Pchp.Library.Streams
             return stderr;
         }
         private static PhpStream stderr = null;
+    }
+
+    #endregion
+
+    #region FTP Stream Wrapper (N/A)
+
+    ///// <summary>
+    ///// Derived from <see cref="StreamWrapper"/>, this class provides access to 
+    ///// remote files using the ftp protocol.
+    ///// </summary>
+    //public class FtpStreamWrapper : StreamWrapper
+    //{
+    //    /// <summary>
+    //    /// The protocol portion of URL handled by this wrapper.
+    //    /// </summary>
+    //    public const string scheme = "ftp";
+
+    //    #region StreamWrapper overrides
+
+    //    public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
+    //    {
+    //        return null;
+    //    }
+
+    //    public override string Scheme => scheme;
+
+    //    public override string Label => "FTP";
+
+    //    public override StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+    //    {
+    //        return null;
+    //    }
+
+    //    public override bool Unlink(string path, StreamUnlinkOptions options, StreamContext context)
+    //    {
+    //        return false;
+    //    }
+
+    //    public override string[] Listing(string path, StreamListingOptions options, StreamContext context)
+    //    {
+    //        return null;
+    //    }
+
+    //    #endregion
+    //}
+
+    #endregion
+
+    #region User-space Stream Wrapper
+
+    /// <summary>
+    /// Derived from <see cref="StreamWrapper"/>, this class is built
+    /// using reflection upon a user-defined stream wrapper.
+    /// A PhpStream descendant is defined upon the instance methods of 
+    /// the given PHP class.
+    /// </summary>
+    public class UserStreamWrapper : StreamWrapper
+    {
+        private readonly Context/*!*/_ctx;
+        private readonly string _scheme;
+        private readonly PhpTypeInfo/*!*/_wrapperType;
+        private readonly bool _isUrl;
+
+        #region Wrapper methods invocation
+
+        /// <summary>
+        /// Lazily instantiated <see cref="_wrapperType"/>. PHP instantiates the wrapper class when used for the first time.
+        /// </summary>
+        protected object/*!*/WrapperInstance
+        {
+            get
+            {
+                if (_wrapperInstance == null)
+                {
+                    _wrapperInstance = _wrapperType.Creator(_ctx, Array.Empty<PhpValue>());
+                }
+
+                return _wrapperInstance;
+            }
+        }
+        private object _wrapperInstance; // lazily instantiated wrapper
+
+        /// <summary>
+        /// Invoke wrapper method on wrapper instance.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        public PhpValue InvokeWrapperMethod(string method, params PhpValue[] args)
+        {
+            var routine = _wrapperType.RuntimeMethods[method];
+            return (routine != null)
+                ? routine.Invoke(_ctx, WrapperInstance, args)
+                : PhpValue.Null;
+        }
+
+        #endregion
+
+        public UserStreamWrapper(Context/*!*/context, string protocol, PhpTypeInfo/*!*/wrapperType, bool isUrl)
+        {
+            Debug.Assert(wrapperType != null);
+            Debug.Assert(!string.IsNullOrEmpty(protocol));
+
+            // Create a new PhpWrapper instance above the given class (reflection)
+            // Note: when a member is not defined (Error): "Call to unimplemented method:
+            // variablestream::stream_write is not implemented!"
+
+            _ctx = context;
+            _scheme = protocol;
+            _wrapperType = wrapperType;
+            _isUrl = isUrl;
+        }
+
+        #region StreamWrapper overrides
+
+        public override string Label => "user-space";
+
+        public override string Scheme => _scheme;
+
+        public override bool IsUrl => _isUrl;
+
+        public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
+        {
+            var opened_path_ref = new PhpAlias((PhpValue)path);
+            var result = InvokeWrapperMethod(PhpUserStream.USERSTREAM_OPEN, (PhpValue)path, (PhpValue)mode, (PhpValue)(int)options, PhpValue.Create(opened_path_ref));
+
+            if (result.ToBoolean() == true)
+            {
+                string opened_path_str = PhpVariable.AsString(opened_path_ref.Value);
+                if (opened_path_str != null) path = opened_path_str;
+
+                FileMode fileMode;
+                FileAccess fileAccess;
+                StreamAccessOptions ao;
+
+                if (ParseMode(ctx, mode, options, out fileMode, out fileAccess, out ao))
+                {
+                    return new PhpUserStream(ctx, this, ao, path, context);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        public override void OnClose(PhpStream stream)
+        {
+            // stream_close:
+            InvokeWrapperMethod(PhpUserStream.USERSTREAM_CLOSE);
+
+            (_wrapperInstance as IDisposable)?.Dispose();
+            _wrapperInstance = null;
+
+            //
+            base.OnClose(stream);
+        }
+
+        public override PhpArray OnStat(PhpStream stream)
+        {
+            return base.OnStat(stream);
+        }
+
+        public override bool RemoveDirectory(string path, StreamRemoveDirectoryOptions options, StreamContext context)
+        {
+            return base.RemoveDirectory(path, options, context);
+        }
+
+        public override bool Rename(string fromPath, string toPath, StreamRenameOptions options, StreamContext context)
+        {
+            return base.Rename(fromPath, toPath, options, context);
+        }
+
+        public override StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
+        {
+            PhpArray arr = (streamStat ?
+                InvokeWrapperMethod(PhpUserStream.USERSTREAM_STAT) :
+                InvokeWrapperMethod(PhpUserStream.USERSTREAM_STATURL, (PhpValue)path, (PhpValue)(int)options)).ArrayOrNull();
+
+            if (arr != null)
+            {
+                return new StatStruct()
+                {
+                    st_dev = (uint)(arr["dev"]),
+                    st_ino = (ushort)(arr["ino"]),
+                    st_mode = (ushort)(arr["mode"]),
+                    st_nlink = (short)(arr["nlink"]),
+                    st_uid = (short)(arr["uid"]),
+                    st_gid = (short)(arr["gid"]),
+                    st_rdev = (uint)(arr["rdev"]),
+                    st_size = (long)(arr["size"]),
+
+                    st_atime = (long)(arr["atime"]),
+                    st_mtime = (long)(arr["mtime"]),
+                    st_ctime = (long)(arr["ctime"]),
+
+                    //st_blksize = (long)Convert.ObjectToLongInteger(arr["blksize"]),
+                    //st_blocks = (long)Convert.ObjectToLongInteger(arr["blocks"]),
+                };
+            }
+
+            return new StatStruct();
+        }
+
+        public override bool Unlink(string path, StreamUnlinkOptions options, StreamContext context)
+        {
+            return InvokeWrapperMethod(PhpUserStream.USERSTREAM_UNLINK, (PhpValue)path).ToBoolean();
+        }
+
+        public override string[] Listing(string path, StreamListingOptions options, StreamContext context)
+        {
+            return base.Listing(path, options, context);
+        }
+
+        public override bool MakeDirectory(string path, int accessMode, StreamMakeDirectoryOptions options, StreamContext context)
+        {
+            return base.MakeDirectory(path, accessMode, options, context);
+        }
+
+        #endregion
     }
 
     #endregion

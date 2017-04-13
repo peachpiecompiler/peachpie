@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Devsense.PHP.Text;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -89,7 +90,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                if (cg.HasUnoptimizedLocals)
+                //If it has unoptimized locals and they're not initilized externally -> need to initialize them
+                if (cg.HasUnoptimizedLocals && !cg.InitializedLocals)
                 {
                     // <locals> = new PhpArray(HINTCOUNT)
                     cg.LocalsPlaceOpt.EmitStorePrepare(cg.Builder);
@@ -99,14 +101,59 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
             }
 
-            // variables/parameters initialization
-            foreach (var loc in locals.Variables)
+            if (!cg.InitializedLocals)
             {
-                loc.EmitInit(cg);
+                // variables/parameters initialization
+                foreach (var loc in locals.Variables)
+                {
+                    loc.EmitInit(cg);
+                }
+            }
+
+            // if generator method: emit switch table for continuation & change state to -1 (running)
+            if (cg.Routine.IsGeneratorMethod())
+            {
+                EmitStateMachineMethodStart(cg);
             }
 
             //
             base.Emit(cg);
+        }
+
+        private static void EmitStateMachineMethodStart(CodeGenerator cg)
+        {
+            // local <state> = g._state that is switched on (can't switch on remote field)
+            cg.Builder.EmitLoadArgumentOpcode(3);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorState_Generator);
+
+            var stateTmpLocal = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
+            cg.Builder.EmitLocalStore(stateTmpLocal);
+
+
+            // g._state = -1 : running
+            cg.Builder.EmitLoadArgumentOpcode(3);
+            cg.EmitLoadConstant(-1, cg.CoreTypes.Int32);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
+
+
+            // create label for situation when state doesn't correspond to continuation: 0 -> didn't run to first yield
+            var noContinuationLabel = new NamedLabel("noStateContinuation");
+
+            // prepare jump table from yields
+            var yields = cg.Routine.ControlFlowGraph.Yields;
+            var yieldExLabels = new List<KeyValuePair<ConstantValue, object>>();
+            for (var i = 0; i < yields.Length; i++)
+            {
+                // i+1 because labels have 1-based index (zero is reserved for run to first yield)
+                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(i + 1), yields[i]));
+            }
+
+            // emit switch table that based on g._state jumps to appropriate continuation label
+            cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, stateTmpLocal, Microsoft.Cci.PrimitiveTypeCode.Int32);
+            cg.ReturnTemporaryLocal(stateTmpLocal);
+
+
+            cg.Builder.MarkLabel(noContinuationLabel);
         }
     }
 
@@ -157,6 +204,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         internal override void Emit(CodeGenerator cg)
         {
+            // if generator method: set state to -2 (closed)
+            if (cg.Routine.IsGeneratorMethod())
+            {
+                // g._state = -2 (closed): got to the end of the generator method
+                cg.Builder.EmitLoadArgumentOpcode(3);
+                cg.EmitLoadConstant(-2, cg.CoreTypes.Int32);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
+
+                cg.Builder.EmitRet(true);
+                return;
+            }
+
             // note: ILBuider removes eventual unreachable .ret opcode
 
             if (_retlbl != null && _rettmp == null)

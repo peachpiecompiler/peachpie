@@ -1496,4 +1496,41 @@ namespace Pchp.CodeAnalysis.Semantics
     }
 
     #endregion
+
+    #region BoundYieldEx
+    /// <summary>
+    /// BoundYieldEx
+    /// </summary>
+    /// <remarks>
+    /// Instances used for continuation labels in emit.
+    /// </remarks>
+    public partial class BoundYieldEx : BoundExpression, IReturnStatement
+    {
+        //Not sure about BoundYieldEx being IReturnStatement but yield is statement in C# and
+        // ..BoundYieldReturnStatement from Roslyn implements it this way, it also enables us
+        // ..use the same visitor's accepts as Roslyn 
+
+        public override OperationKind Kind => OperationKind.YieldReturnStatement;
+
+        public BoundExpression YieldedValue { get; private set; }
+        public BoundExpression YieldedKey { get; private set; }
+
+        public IExpression Returned => YieldedValue;
+
+        public BoundYieldEx(BoundExpression valueExpression, BoundExpression keyExpression)
+        {
+            YieldedValue = valueExpression;
+            YieldedKey = keyExpression;
+        }
+
+        public override void Accept(PhpOperationVisitor visitor)
+            => visitor.VisitYield(this);
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitReturnStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitReturnStatement(this, argument);
+    }
+    #endregion
 }

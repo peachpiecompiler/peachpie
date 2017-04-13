@@ -55,6 +55,11 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ResourceNotUnique,
         ERR_TooManyUserStrings,
 
+        ERR_NotYetImplemented, // Used for all valid PHP constructs that Peachipe doesn't currently support.
+
+        ERR_YieldAsExpression, // TODO: Remove after starting to support yields as expressions
+        ERR_YieldInTryCatch,   // TODO: Remove after starting to support yields in exception control blocks
+
         ERR_CircularBase,
         ERR_TypeNameCannotBeResolved,
 

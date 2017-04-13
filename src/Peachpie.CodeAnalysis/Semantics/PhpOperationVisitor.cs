@@ -185,6 +185,13 @@ namespace Pchp.CodeAnalysis.Semantics
             Accept(x.CodeExpression);
         }
 
+
+        public virtual void VisitYield(BoundYieldEx boundYieldEx)
+        {
+            Accept(boundYieldEx.YieldedValue);
+            Accept(boundYieldEx.YieldedKey);
+        }
+
         #endregion
 
         #region Statements

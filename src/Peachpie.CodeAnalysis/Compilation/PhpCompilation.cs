@@ -214,6 +214,7 @@ namespace Pchp.CodeAnalysis
         {
             get
             {
+                Debug.Assert(this.CoreTypes.Object.Symbol != null);
                 return this.CoreTypes.Object.Symbol;
             }
         }
