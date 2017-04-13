@@ -36,6 +36,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Name of method containing lambda method's implementation.
+        /// This is PHP-like name that has to be equal <c>anonymous@function</c>
+        /// so PHP <c>__FUNCTION__</c> constant and eventual reflection is compatible with regular PHP.
         /// </summary>
         public const string LambdaMethodName = "anonymous@function";
     }
