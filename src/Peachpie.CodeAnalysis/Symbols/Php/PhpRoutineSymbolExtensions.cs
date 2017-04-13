@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // if the method is generator and can't be overriden then the return type must be generator 
             // TODO: would not be necessary if GN_SGS got fixed (the routine could report the return type correctly itself)
-            if ((routine?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+            if (routine.IsGeneratorMethod())
             {
                 // if non-virtual -> return Generator directly
                 if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
@@ -102,7 +102,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 // if the method is generator use ConstructClrReturnType analysis for return type
                 // TODO: would not be necessary if GN_SGS got fixed (the routine could report the return type correctly itself)
-                if ((r?.Flags & RoutineFlags.IsGenerator) == RoutineFlags.IsGenerator)
+                if (r != null && r.IsGeneratorMethod())
                 {
                     t = m.ReturnType;
                 }
@@ -225,5 +225,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return f;
         }
+
+        /// <summary>
+        /// Gets value indicating the routine was found containing <c>yield</c>
+        /// hence it is considered as a generator state machine method.
+        /// </summary>
+        /// <param name="routine">The analysed routine.</param>
+        /// <returns>Value indicating the routine gets a generator.</returns>
+        public static bool IsGeneratorMethod(this SourceRoutineSymbol routine) => (routine.Flags & RoutineFlags.IsGenerator) != 0;
     }
 }

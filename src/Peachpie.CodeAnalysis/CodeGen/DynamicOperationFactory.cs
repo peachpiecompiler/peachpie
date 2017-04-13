@@ -190,7 +190,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal TypeSymbol[] MakeCallSiteDelegateSignature(TypeSymbol callSiteType, TypeSymbol receiver, ImmutableArray<TypeSymbol> arguments, TypeSymbol right, TypeSymbol resultType)
         {
-            var systemObjectType = (TypeSymbol)_compilation.GetSpecialType(SpecialType.System_Object);
+            var systemObjectType = (TypeSymbol)_compilation.ObjectType;
             var result = new TypeSymbol[1 + (receiver != null ? 1 : 0) + arguments.Length + (right != null ? 1 : 0) + (resultType.SpecialType == SpecialType.System_Void ? 0 : 1)];
             int j = 0;
 

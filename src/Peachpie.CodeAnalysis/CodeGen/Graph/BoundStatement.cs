@@ -59,7 +59,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitSequencePoint(this.PhpSyntax);
 
             // if generator method -> return via storing the value in generator
-            if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator)
+            if (cg.Routine.IsGeneratorMethod())
             {
 
                 // g._returnValue = <returned expression>

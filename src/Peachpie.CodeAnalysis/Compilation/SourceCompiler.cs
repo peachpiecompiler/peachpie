@@ -164,7 +164,7 @@ namespace Pchp.CodeAnalysis
             if (routine.ControlFlowGraph != null)   // non-abstract method
             {
                 var diagnosingVisitor = new DiagnosingVisitor(_diagnostics, routine);
-                diagnosingVisitor.VisitCFG(routine.ControlFlowGraph); 
+                diagnosingVisitor.VisitCFG(routine.ControlFlowGraph);
             }
         }
 
@@ -190,9 +190,8 @@ namespace Pchp.CodeAnalysis
         }
 
         internal void EmitSynthesized()
-        {       
-
-            // TODO: Visit egvery symbol with Synthesize() method and call it instead of followin
+        {
+            // TODO: Visit every symbol with Synthesize() method and call it instead of followin
 
             // ghost stubs
             this.WalkMethods(f => f.SynthesizeGhostStubs(_moduleBuilder, _diagnostics));

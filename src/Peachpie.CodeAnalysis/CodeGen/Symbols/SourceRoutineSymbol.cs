@@ -30,12 +30,43 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// Gets place of <c>this</c> value in CLR.
+        /// This is not necessary the same as PHP <c>$this</c> variable.
+        /// </summary>
         internal virtual IPlace GetThisPlace()
         {
             var thisParameter = this.ThisParameter;
             return (thisParameter != null)
                 ? new ReadOnlyPlace(new ParamPlace(thisParameter))
                 : null;
+        }
+
+        /// <summary>
+        /// Gets place of PHP <c>$this</c> variable.
+        /// </summary>
+        public virtual IPlace PhpThisVariablePlace
+        {
+            get
+            {
+                var thisPlace = GetThisPlace();
+                if (thisPlace != null)
+                {
+                    if (this.IsGeneratorMethod())
+                    {
+                        // $this ~ arg1
+                        return new ArgPlace(thisPlace.TypeOpt, 1);
+                    }
+                    else
+                    {
+                        return thisPlace;
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            }
         }
 
         /// <summary>
@@ -128,19 +159,22 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual void Generate(CodeGenerator cg)
         {
-            if ((this.Flags & RoutineFlags.IsGenerator) != RoutineFlags.IsGenerator)
+            if (!this.IsGeneratorMethod())
             {
                 //Proceed with normal method generation
                 cg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
             }
             else
             {
-                var genSymbol = new SourceGeneratorSymbol(this.ContainingType);
+                var genSymbol = new SourceGeneratorSymbol(this);
                 var il = cg.Builder;
+
+                /* Template:
+                 * return BuildGenerator( <ctx>, this, new PhpArray(){ p1, p2, ... }, new GeneratorStateMachineDelegate((IntPtr)<genSymbol>) )
+                 */
 
                 cg.EmitLoadContext(); // ctx for generator
                 cg.EmitThisOrNull();  // @this for generator
-
 
                 // new PhpArray for generator's locals
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
@@ -153,8 +187,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.Builder.EmitLoad(generatorsLocals);
                 cg.ReturnTemporaryLocal(generatorsLocals);
 
-                // new GeneratorStateMachineDelegate(generator@function) delegate for generator
-                cg.EmitThisOrNull();   // this @object
+                // new GeneratorStateMachineDelegate(<genSymbol>) delegate for generator
+                cg.Builder.EmitNullConstant(); // null
                 cg.EmitOpCode(ILOpCode.Ldftn); // method
                 cg.EmitSymbolToken(genSymbol, null);
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
@@ -166,7 +200,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 // Convert to return type (Generator or PhpValue, depends on analysis)
                 cg.EmitConvert(cg.CoreTypes.Generator, 0, this.ReturnType);
                 il.EmitRet(false);
-
 
                 // Generate SM method. Must be generated after EmitInit of parameters (it sets their _isUnoptimized field).
                 createStateMachineNextMethod(cg, genSymbol);
@@ -191,7 +224,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 // EmitInit (for UnoptimizedLocals) copies arguments to locals array, does nothing for normal variables, handles local statics, global variables ...
                 LocalsTable.Variables.ForEach(v => v.EmitInit(localsArrayCg));
             }
-
         }
 
         private void createStateMachineNextMethod(CodeGenerator cg, SourceGeneratorSymbol genSymbol)
@@ -214,12 +246,11 @@ namespace Pchp.CodeAnalysis.Symbols
             // TODO: Pass SourceGeneratorSymbol to CG instead of this to get correct ThisPlace, ReturnType etc. resolution & binding out of the box without GN_SGS hacks
             // ..can't do that easily beacuse CodeGenerator accepts only SourceRoutineSymbol and SGS derives from SynthesizedMethodSymbol (shim over too general MethodSymbol) 
 
-
             //Refactor parameters references to proper fields
             using (var stateMachineNextCg = new CodeGenerator(
                 _il, cg.Module, cg.Diagnostics,
-                cg.DeclaringCompilation.Options.OptimizationLevel, 
-                cg.EmitPdbSequencePoints, 
+                cg.DeclaringCompilation.Options.OptimizationLevel,
+                cg.EmitPdbSequencePoints,
                 this.ContainingType,
                 contextPlace: new ParamPlace(genSymbol.Parameters[0]),
                 thisPlace: new ParamPlace(genSymbol.Parameters[1]),
@@ -235,6 +266,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceGlobalMethodSymbol
     {
+        public override IPlace PhpThisVariablePlace => base.PhpThisVariablePlace;
+
         internal override void SynthesizeGhostStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
             // <Main>'0
@@ -360,7 +393,7 @@ namespace Pchp.CodeAnalysis.Symbols
             cctor.EmitStringConstant(this.QualifiedName.ToString());
             cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
             cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
-            
+
             field.EmitStore(cctor);
         }
     }

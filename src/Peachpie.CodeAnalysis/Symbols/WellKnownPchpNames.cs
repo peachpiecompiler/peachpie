@@ -28,5 +28,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Name of special nested class containing context bound static fields and constants.
         /// </summary>
         public const string StaticsHolderClassName = "_statics";
+
+        /// <summary>
+        /// Format string for a generator state machine method name.
+        /// </summary>
+        public const string GeneratorStateMachineNameFormatString = "<>sm_{0}";
     }
 }

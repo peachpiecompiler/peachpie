@@ -724,7 +724,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // <array>.Add((T)arrplace[i])
             _il.EmitLocalLoad(tmparr);   // <array>
-            
+
             arrplace.EmitLoad(_il);
             _il.EmitLocalLoad(tmpi);
             _il.EmitOpCode(ILOpCode.Ldelem);

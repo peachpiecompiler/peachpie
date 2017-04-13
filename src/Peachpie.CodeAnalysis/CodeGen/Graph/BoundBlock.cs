@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Devsense.PHP.Text;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -100,7 +101,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
             }
 
-            if(!cg.InitializedLocals) // Přejmenovat
+            if (!cg.InitializedLocals)
             {
                 // variables/parameters initialization
                 foreach (var loc in locals.Variables)
@@ -110,7 +111,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // if generator method: emit switch table for continuation & change state to -1 (running)
-            if((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator)
+            if (cg.Routine.IsGeneratorMethod())
             {
                 EmitStateMachineMethodStart(cg);
             }
@@ -204,7 +205,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal override void Emit(CodeGenerator cg)
         {
             // if generator method: set state to -2 (closed)
-            if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.IsGenerator) == FlowAnalysis.RoutineFlags.IsGenerator)
+            if (cg.Routine.IsGeneratorMethod())
             {
                 // g._state = -2 (closed): got to the end of the generator method
                 cg.Builder.EmitLoadArgumentOpcode(3);
@@ -215,7 +216,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 return;
             }
 
-
             // note: ILBuider removes eventual unreachable .ret opcode
 
             if (_retlbl != null && _rettmp == null)
@@ -224,7 +224,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // return <default>;
-            cg.EmitRetDefault(); 
+            cg.EmitRetDefault();
             cg.Builder.AssertStackEmpty();
 
             // return <rettemp>;
