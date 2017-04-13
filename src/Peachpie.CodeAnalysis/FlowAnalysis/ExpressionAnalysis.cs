@@ -370,6 +370,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     else
                     {
+                        // reset 'MaybeUninitialized' flag:
+                        x.MaybeUninitialized = false;
+
                         if (!State.IsLocalSet(local))
                         {
                             // do not report as uninitialized if variable
@@ -381,7 +384,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 x.MaybeUninitialized = true;
                             }
 
-                            // variable maybe null
+                            // variable maybe null if it can be uninitialized
                             vartype |= TypeCtx.GetNullTypeMask();
                         }
                     }
