@@ -25,11 +25,6 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// </summary>
         Dictionary<QualifiedName, NamedTypeSymbol> _lazyExportedTypes;
 
-        /// <summary>
-        /// Standard (builtin) types from <c>Peachpie.Runtime</c>.
-        /// </summary>
-        Dictionary<QualifiedName, NamedTypeSymbol> _lazyStdTypes;
-
         #endregion
 
         public GlobalSymbolProvider(PhpCompilation compilation)
@@ -77,7 +72,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         }
 
         /// <summary>
-        /// Types in extension libraries.
+        /// (PHP) Types exported from extension libraries and cor library.
         /// </summary>
         Dictionary<QualifiedName, NamedTypeSymbol> ExportedTypes
         {
@@ -87,7 +82,12 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 {
                     var result = new Dictionary<QualifiedName, NamedTypeSymbol>();
 
-                    foreach (var lib in GetExtensionLibraries(_compilation))
+                    // lookup extensions and cor library for exported types
+                    var libs = GetExtensionLibraries(_compilation).ToList();
+                    libs.Add((PEAssemblySymbol)_compilation.PhpCorLibrary);
+
+                    //
+                    foreach (var lib in libs)
                     {
                         foreach (var t in lib.PrimaryModule.GlobalNamespace.GetTypeMembers().OfType<PENamedTypeSymbol>())
                         {
@@ -110,25 +110,6 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
         }
 
-        /// <summary>
-        /// Standard types in Peachpie.Runtime.
-        /// </summary>
-        Dictionary<QualifiedName, NamedTypeSymbol> StandardTypes
-        {
-            get
-            {
-                if (_lazyStdTypes == null)
-                {
-                    _lazyStdTypes = Core.std.StdTable.Types
-                        .Select(tname => _compilation.PhpCorLibrary.GetTypeByMetadataName(tname))
-                        .Where(t => t != null)
-                        .ToDictionary(t => ((IPhpTypeSymbol)t).FullName);
-                }
-
-                return _lazyStdTypes;
-            }
-        }
-
         public IEnumerable<IPhpValue> GetExportedConstants()
         {
             return ExtensionContainers
@@ -136,10 +117,11 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 .Where(IsConstantField);
         }
 
-        internal IEnumerable<NamedTypeSymbol> GetReferencedTypes()
-        {
-            return StandardTypes.Values.Concat(ExportedTypes.Values);
-        }
+        /// <summary>
+        /// Gets PHP types exported from referenced extension libraries and cor library.
+        /// </summary>
+        /// <returns></returns>
+        internal IEnumerable<NamedTypeSymbol> GetReferencedTypes() => ExportedTypes.Values;
 
         #region ISemanticModel
 
@@ -149,7 +131,6 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             Debug.Assert(!name.IsEmpty());
 
             return
-                StandardTypes.TryGetOrDefault(name) ??
                 ExportedTypes.TryGetOrDefault(name) ??
                 GetTypeFromNonExtensionAssemblies(name.ClrName()) ??
                 _next.GetType(name);

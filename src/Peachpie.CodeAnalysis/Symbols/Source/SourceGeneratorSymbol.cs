@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        ///  Parameters for SourceGeneratorSymbol method are defined by <see cref="GeneratorStateMachineDelegate"/>
+        /// Parameters for <see cref="SourceGeneratorSymbol"/> method are defined by <c>GeneratorStateMachineDelegate</c>.
         /// </summary>
         ParameterSymbol[] getParams(SourceRoutineSymbol originalRoutine)
         {

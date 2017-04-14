@@ -162,7 +162,7 @@ namespace Pchp.Core.Dynamic
             return target.GetRuntimeFields().FirstOrDefault(ReflectionUtils.IsRuntimeFields);
         }
 
-        static Expression BindAccess(Expression expr, Expression ctx, AccessFlags access, Expression rvalue)
+        static Expression BindAccess(Expression expr, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.EnsureObject())
             {
@@ -276,7 +276,7 @@ namespace Pchp.Core.Dynamic
             return expr;
         }
 
-        static Expression BindArrayAccess(Expression arr, Expression key, Expression ctx, AccessFlags access, Expression rvalue)
+        static Expression BindArrayAccess(Expression arr, Expression key, Expression ctx, AccessMask access, Expression rvalue)
         {
             Debug.Assert(key.Type == typeof(IntStringKey));
 
@@ -373,7 +373,7 @@ namespace Pchp.Core.Dynamic
             return null;
         }
 
-        public static Expression BindField(PhpTypeInfo type, Type classCtx, Expression target, string field, Expression ctx, AccessFlags access, Expression rvalue)
+        public static Expression BindField(PhpTypeInfo type, Type classCtx, Expression target, string field, Expression ctx, AccessMask access, Expression rvalue)
         {
             if (access.Write() != (rvalue != null))
             {
@@ -588,7 +588,7 @@ namespace Pchp.Core.Dynamic
         /// <summary>
         /// Binds recursion check for property magic method.
         /// </summary>
-        static Expression InvokeHandler(Expression ctx, Expression target, string field, Expression getter, AccessFlags access, Expression @default = null, Type resultType = null)
+        static Expression InvokeHandler(Expression ctx, Expression target, string field, Expression getter, AccessMask access, Expression @default = null, Type resultType = null)
         {
             // default
             resultType = resultType ?? Cache.Types.PhpValue[0];

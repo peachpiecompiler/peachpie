@@ -71,10 +71,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (TypeCtx.IsLong(tmask) || TypeCtx.IsDouble(tmask))
             {
                 if (tmask.IsSingleType)
+                {
                     return true;
+                }
 
-                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask)
-                    .All(t => t.TypeCode == Core.PhpTypeCode.Long || t.TypeCode == Core.PhpTypeCode.Double);
+                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(TypeHelpers.IsNumber);
             }
 
             return false;
@@ -619,36 +620,38 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Resolves value of bit operation.
         /// </summary>
         /// <remarks>TODO: move to **evaluation**.</remarks>
-        object ResolveBitOperation(object xobj, object yobj, Operations op)
+        Optional<object> ResolveBitOperation(Optional<object> xobj, Optional<object> yobj, Operations op)
         {
-            if (xobj is string && yobj is string)
+            var xconst = xobj.ToConstantValueOrNull();
+            var yconst = yobj.ToConstantValueOrNull();
+
+            if (xconst.TryConvertToLong(out long xval) && yconst.TryConvertToLong(out long yval))
             {
-                throw new NotImplementedException();    // bit op of chars
+                long result;
+
+                switch (op)
+                {
+                    case Operations.BitOr: result = xval | yval; break;
+                    case Operations.BitAnd: result = xval & yval; break;
+                    case Operations.BitXor: result = xval ^ yval; break;
+                    default:
+                        throw new ArgumentException(nameof(op));
+                }
+
+                //
+                if (result >= int.MinValue && result <= int.MaxValue)
+                {
+                    return (int)result;
+                }
+                else
+                {
+                    return result;
+                }
+
+                //
             }
 
-            var x = Core.PhpValue.FromClr(xobj);
-            var y = Core.PhpValue.FromClr(yobj);
-            long result;
-
-            // TODO: use PhpValue overriden operators
-
-            switch (op)
-            {
-                case Operations.BitOr: result = x.ToLong() | y.ToLong(); break;
-                case Operations.BitAnd: result = x.ToLong() & y.ToLong(); break;
-                case Operations.BitXor: result = x.ToLong() ^ y.ToLong(); break;
-                default:
-                    throw new ArgumentException(nameof(op));
-            }
-
-            if (result >= int.MinValue && result <= int.MaxValue)
-            {
-                return (int)result;
-            }
-            else
-            {
-                return result;
-            }
+            return default(Optional<object>);
         }
 
         /// <summary>
@@ -745,11 +748,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.BitOr:
                 case Operations.BitXor:
 
-                    if (x.Left.ConstantValue.HasValue && x.Right.ConstantValue.HasValue)
-                    {
-                        x.ConstantValue = ResolveBitOperation(x.Left.ConstantValue.Value, x.Right.ConstantValue.Value, x.Operation);
-                    }
-
+                    x.ConstantValue = ResolveBitOperation(x.Left.ConstantValue, x.Right.ConstantValue, x.Operation);
                     return GetBitOperationType(x.Left.TypeRefMask, x.Right.TypeRefMask);    // int or string
 
                 #endregion
@@ -1523,9 +1522,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             
             //
             x.BoundLambdaMethod = symbol;
-            x.ResultType = (TypeSymbol)_model.GetType(NameUtils.SpecialNames.Closure);
+            x.ResultType = Routine.DeclaringCompilation.CoreTypes.Closure;
             Debug.Assert(x.ResultType != null);
-            x.TypeRefMask = TypeCtx.GetTypeMask(NameUtils.SpecialNames.Closure, false); // {Closure}, no null, no subclasses
+            x.TypeRefMask = TypeCtx.GetTypeMask(new LambdaTypeRef(TypeRefMask.AnyType, symbol.SyntaxSignature), false); // specific {Closure}, no null, no subclasses
         }
 
         #endregion

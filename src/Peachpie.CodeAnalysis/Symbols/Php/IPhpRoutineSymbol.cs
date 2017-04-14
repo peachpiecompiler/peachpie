@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
     public interface IPhpRoutineSymbol : IMethodSymbol, IPhpValue
     {
         /// <summary>
-        /// Gets value indicating whether <see cref="Core.CastToFalse"/> attribute applies to this routine and
+        /// Gets value indicating whether <c>CastToFalseAttribute</c> applies to this routine and
         /// <c>null</c> reference or negative number must be converted to <c>false</c>.
         /// </summary>
         /// <remarks>Applies to library functions only.</remarks>

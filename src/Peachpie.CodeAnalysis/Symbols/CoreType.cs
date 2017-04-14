@@ -1,11 +1,7 @@
-﻿using Microsoft.CodeAnalysis;
-using Pchp.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -106,13 +102,13 @@ namespace Pchp.CodeAnalysis.Symbols
             Context, Operators, Convert, Comparison, StrictComparison,
             ScriptAttribute, PhpTraitAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
-            CallBinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessFlags,
+            CallBinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             PhpTypeInfoExtension, PhpTypeInfo,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible,
             IntStringKey, PhpHashtable,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
-            stdClass, ArrayAccess, Generator, GeneratorStateMachineDelegate, IntPtr;
+            stdClass, ArrayAccess, Closure, Generator, GeneratorStateMachineDelegate, IntPtr;
 
         public CoreTypes(PhpCompilation compilation)
         {
@@ -157,12 +153,13 @@ namespace Pchp.CodeAnalysis.Symbols
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");
             ArrayAccess = CreateFromFullName("ArrayAccess");
+            Closure = CreateFromFullName("Closure");
 
             CallBinderFactory = Create("Dynamic.CallBinderFactory");
             GetClassConstBinder = Create("Dynamic.GetClassConstBinder");
             GetFieldBinder = Create("Dynamic.GetFieldBinder");
             SetFieldBinder = Create("Dynamic.SetFieldBinder");
-            AccessFlags = Create("Dynamic.AccessFlags");
+            AccessMask = Create("Dynamic.AccessMask");
 
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");

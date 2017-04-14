@@ -194,30 +194,6 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public bool EnsureArray => (_flags & AccessMask.EnsureArray) == AccessMask.EnsureArray;
 
-        /// <summary>
-        /// Gets AccesFlags to be used at runtime.
-        /// </summary>
-        public Core.Dynamic.AccessFlags AccessFlags
-        {
-            get
-            {
-                // TODO: use AccessMask instead
-                Core.Dynamic.AccessFlags result = Core.Dynamic.AccessFlags.Default;
-
-                if (EnsureObject) result |= Core.Dynamic.AccessFlags.EnsureObject;
-                if (EnsureArray) result |= Core.Dynamic.AccessFlags.EnsureArray;
-                if (IsReadRef) result |= Core.Dynamic.AccessFlags.EnsureAlias;
-                // TODO: if (IsReadCopy) result |= Core.Dynamic.AccessFlags.DeepCopy;
-                if (IsQuiet) result |= Core.Dynamic.AccessFlags.CheckOnly;
-                if (IsUnset) result |= Core.Dynamic.AccessFlags.Unset;
-                if (IsWriteRef) result |= Core.Dynamic.AccessFlags.WriteAlias;
-                else if (IsWrite) result |= Core.Dynamic.AccessFlags.WriteValue;
-                
-
-                return result;
-            }
-        }
-
         #endregion
 
         #region Construction

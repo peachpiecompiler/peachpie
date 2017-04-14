@@ -685,7 +685,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits conversion to <see cref="Pchp.Core.PhpString"/> (aka writable string).
+        /// Emits conversion to <c>PhpString</c> (aka writable string).
         /// </summary>
         public void EmitConvertToPhpString(TypeSymbol from, TypeRefMask fromHint)
         {

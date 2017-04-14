@@ -7,6 +7,7 @@ using Pchp.Core;
 /// Used for casting values to an <c>object</c>.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
+[PhpType("[name]")]
 public class stdClass
 {
     /// <summary>

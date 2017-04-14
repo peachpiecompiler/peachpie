@@ -17,13 +17,13 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         /// <summary>
         /// Name of special context parameter.
-        /// Is of type <see cref="Pchp.Core.Context"/>
+        /// Is of type <c>Context</c>.
         /// </summary>
         public const string ContextName = "<ctx>";
 
         /// <summary>
         /// Name of special locals parameter.
-        /// Is of type <see cref="Pchp.Core.PhpArray"/>
+        /// Is of type <c>PhpArray</c>.
         /// </summary>
         public const string LocalsName = "<locals>";
 

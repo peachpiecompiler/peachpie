@@ -1,14 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
-using Pchp.Core;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis
 {
@@ -23,8 +17,6 @@ namespace Pchp.CodeAnalysis
         internal static readonly PrimitiveTypeRef/*!*/StringTypeRef = new PrimitiveTypeRef(PhpTypeCode.String);
         internal static readonly PrimitiveTypeRef/*!*/WritableStringRef = new PrimitiveTypeRef(PhpTypeCode.WritableString);
         internal static readonly PrimitiveTypeRef/*!*/ArrayTypeRef = new PrimitiveTypeRef(PhpTypeCode.PhpArray);
-        internal static readonly PrimitiveTypeRef/*!*/ResourceTypeRef = new PrimitiveTypeRef(PhpTypeCode.Resource);
-        internal static readonly PrimitiveTypeRef/*!*/CallableTypeRef = new PrimitiveTypeRef(PhpTypeCode.Callable);
 
         #endregion
 
