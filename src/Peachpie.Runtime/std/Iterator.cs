@@ -10,6 +10,7 @@ using Pchp.Core;
 /// shall not be called until the first element is retrieved.
 /// </remarks>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
+[PhpType("[name]")]
 public interface Iterator : Traversable
 {
     /// <summary>
@@ -46,6 +47,7 @@ public interface Iterator : Traversable
 /// This interface contains only arg-less stubs as signatures should not be restricted.
 /// </remarks>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
+[PhpType("[name]")]
 public interface IteratorAggregate : Traversable
 {
     /// <summary>

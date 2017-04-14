@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
 
-[PhpType("Closure")]
+[PhpType("[name]")]
 public sealed class Closure : IPhpCallable
 {
     /// <summary>

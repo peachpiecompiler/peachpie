@@ -15,9 +15,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     internal static class TypeHelpers
     {
         /// <summary>
-        /// Gets value indicating the type refers to <c>NULL</c>.
+        /// Determines if given <see cref="ITypeRef"/> represents a number (integral or real).
         /// </summary>
-        public static bool IsNull(this ITypeRef tref) => tref.TypeCode == Core.PhpTypeCode.Null;
+        public static bool IsNumber(this ITypeRef tref) => tref.TypeCode == PhpTypeCode.Long || tref.TypeCode == PhpTypeCode.Double;
 
         ///// <summary>
         ///// Gets value determining whether <paramref name="totype"/> type can be assigned from <paramref name="fromtype"/>.

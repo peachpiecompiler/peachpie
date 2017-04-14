@@ -1,16 +1,14 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
-using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis.Errors;
-using Devsense.PHP.Errors;
 using Peachpie.CodeAnalysis.Syntax;
 
 namespace Pchp.CodeAnalysis

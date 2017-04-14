@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using Pchp.CodeAnalysis.Utilities;
-using Pchp.Core;
-using Pchp.CodeAnalysis.Symbols;
 using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.Symbols;
 using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
@@ -301,7 +298,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public TypeRefMask GetTypeMask(QualifiedName qname, bool includesSubclasses = true)
         {
             if (qname.IsReservedClassName)
+            {
                 return GetTypeMaskOfReservedClassName(qname.Name);
+            }
 
             return GetTypeMask(new ClassTypeRef(qname), includesSubclasses);
         }
@@ -476,7 +475,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetResourceTypeMask()
         {
-            return GetPrimitiveTypeRefMask(TypeRefFactory.ResourceTypeRef);
+            return GetTypeMask(NameUtils.SpecialNames.Core_Resource, true);
         }
 
         /// <summary>
@@ -484,7 +483,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetCallableTypeMask()
         {
-            return GetPrimitiveTypeRefMask(TypeRefFactory.CallableTypeRef);
+            // string | Closure | array | object
+            return GetStringTypeMask() | GetTypeMask(NameUtils.SpecialNames.Closure, false) | GetArrayTypeMask() | GetSystemObjectTypeMask();
         }
 
         /// <summary>

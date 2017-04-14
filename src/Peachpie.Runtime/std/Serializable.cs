@@ -17,6 +17,7 @@ using Pchp.Core;
 /// __wakeup() is called instead of the serialize method, what might be useful for migration purposes.
 /// </remarks>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
+[PhpType("[name]")]
 public interface Serializable
 {
     /// <summary>

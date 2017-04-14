@@ -40,11 +40,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 return phpname;
             }
         }
-        
+
         /// <summary>
         /// Optional.
         /// A field holding a reference to current runtime context.
-        /// Is of type <see cref="Pchp.Core.Context"/>.
+        /// Is of type <c>Context</c>.
         /// </summary>
         public IFieldSymbol ContextStore
         {
@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional.
         /// A field holding array of the class runtime fields.
-        /// Is of type <see cref="Pchp.Core.PhpArray"/>.
+        /// Is of type <c>PhpArray</c>.
         /// </summary>
         public IFieldSymbol RuntimeFieldsStore
         {

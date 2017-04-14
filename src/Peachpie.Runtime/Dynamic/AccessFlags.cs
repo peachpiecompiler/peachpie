@@ -1,79 +1,86 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.Core.Dynamic
 {
-    /// <summary>
-    /// Specifies how the value is accessed.
-    /// </summary>
     [Flags]
-    public enum AccessFlags : int
+    public enum AccessMask
     {
-        Default = 0,
+        /// <summary>
+        /// Serves for case when Expression is body of a ExpressionStmt.
+        /// It is useless to push its value on the stack in that case.
+        /// </summary>
+        /// <remarks>Values must match the ones in <c>CodeAnalysis</c>, AccessMask.</remarks>
+        None = 0,
 
         /// <summary>
-        /// Value should be converted to an object before it is read and returned as <see cref="object"/>.
+        /// The result value will be read first.
         /// </summary>
-        EnsureObject = 1,
+        Read = 1,
 
         /// <summary>
-        /// Value should be converted to an array before it is read.
+        /// A value will be written to the place.
+        /// Only available for VariableUse (variables, fields, properties, array items, references).
         /// </summary>
-        EnsureArray = 2,
+        Write = 2,
 
         /// <summary>
-        /// Value should be aliased if not yet and returned as <see cref="PhpAlias"/>.
+        /// The expression will be aliased and the alias will be read.
         /// </summary>
-        EnsureAlias = 4,
+        ReadRef = 4 | Read,
 
         /// <summary>
-        /// Value is read within <c>isset</c> operator and all read warnings should be ignored.
+        /// The expression will be read by value and copied.
         /// </summary>
-        CheckOnly = 8,
+        ReadCopy = 8 | Read,
 
         /// <summary>
-        /// Value will be written to.
+        /// An aliased value will be written to the place.
+        /// Only available for VariableUse (variables, fields, properties, array items, references).
         /// </summary>
-        WriteValue = 16,
+        WriteRef = 16 | Write,
 
         /// <summary>
-        /// Alias will be written, RValue is expected to be <see cref="PhpAlias"/>.
+        /// The expression is accessed as a part of chain,
+        /// its member field will be written to.
+        /// E.g. (EnsureObject)->Field = Value
         /// </summary>
-        WriteAlias = 32,
+        EnsureObject = 32 | Read,
 
         /// <summary>
-        /// The variable has to be unset. Valid for fields and runtime fields.
+        /// The expression is accessed as a part of chain,
+        /// its item entry will be written to.
+        /// E.g. (EnsureArray)[] = Value
         /// </summary>
-        Unset = 64,
+        EnsureArray = 64 | Read,
 
         /// <summary>
-        /// The variable is checked for existance.
+        /// Read is check only and won't result in an exception in case the variable does not exist.
         /// </summary>
-        Isset = 128,
+        ReadQuiet = 128,
 
         /// <summary>
-        /// Read access flags.
+        /// The variable will be unset. Combined with <c>quiet</c> flag, valid for variables, array entries and fields.
         /// </summary>
-        ReadMask = EnsureObject | EnsureArray | EnsureAlias | CheckOnly | Isset,
+        Unset = 256,
 
-        /// <summary>
-        /// Write access flags.
-        /// </summary>
-        WriteMask = WriteValue | WriteAlias | Unset,
+        // NOTE: WriteAndReadRef has to be constructed by semantic binder as bound expression with Write and another bound expression with ReadRef
+        // NOTE: ReadAndWriteAndReadRef has to be constructed by semantic binder as bound expression with Read|Write and another bound expression with ReadRef
+
+        //
+        ReadMask = EnsureObject | EnsureArray | ReadRef | ReadCopy | ReadQuiet,
+        WriteMask = Write | WriteRef| Unset,
     }
 
-    internal static class AccessFlagsExtensions
+    internal static class AccessMaskExtensions
     {
-        public static bool EnsureObject(this AccessFlags flags) => (flags & AccessFlags.EnsureObject) == AccessFlags.EnsureObject;
-        public static bool EnsureArray(this AccessFlags flags) => (flags & AccessFlags.EnsureArray) == AccessFlags.EnsureArray;
-        public static bool EnsureAlias(this AccessFlags flags) => (flags & AccessFlags.EnsureAlias) == AccessFlags.EnsureAlias;
-        public static bool Quiet(this AccessFlags flags) => (flags & AccessFlags.CheckOnly) == AccessFlags.CheckOnly;
-        public static bool WriteAlias(this AccessFlags flags) => (flags & AccessFlags.WriteAlias) == AccessFlags.WriteAlias;
-        public static bool Write(this AccessFlags flags) => (flags & (AccessFlags.WriteAlias | AccessFlags.WriteValue)) != 0;
-        public static bool Unset(this AccessFlags flags) => (flags & AccessFlags.Unset) == AccessFlags.Unset;
-        public static bool Isset(this AccessFlags flags) => (flags & AccessFlags.Isset) == AccessFlags.Isset;
+        public static bool EnsureObject(this AccessMask flags) => (flags & AccessMask.EnsureObject) == AccessMask.EnsureObject;
+        public static bool EnsureArray(this AccessMask flags) => (flags & AccessMask.EnsureArray) == AccessMask.EnsureArray;
+        public static bool EnsureAlias(this AccessMask flags) => (flags & AccessMask.ReadRef) == AccessMask.ReadRef;
+        public static bool Quiet(this AccessMask flags) => (flags & AccessMask.ReadQuiet) != 0;
+        public static bool Read(this AccessMask flags) => (flags & AccessMask.Read) != 0;
+        public static bool WriteAlias(this AccessMask flags) => (flags & AccessMask.WriteRef) == AccessMask.WriteRef;
+        public static bool Write(this AccessMask flags) => (flags & AccessMask.Write) != 0;
+        public static bool Unset(this AccessMask flags) => (flags & AccessMask.Unset) == AccessMask.Unset;
+        public static bool Isset(this AccessMask flags) => Quiet(flags) && Read(flags);
     }
 }

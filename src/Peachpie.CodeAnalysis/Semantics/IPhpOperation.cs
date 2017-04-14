@@ -39,7 +39,7 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundAccess Access { get; }
 
         /// <summary>
-        /// Whether the expression needs current <see cref="Pchp.Core.Context"/> to be evaluated.
+        /// Whether the expression needs current <c>Context</c> to be evaluated.
         /// If not, the expression can be evaluated in compile time or in app context.
         /// </summary>
         bool RequiresContext { get; }
