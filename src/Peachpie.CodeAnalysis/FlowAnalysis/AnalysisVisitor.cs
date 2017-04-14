@@ -75,13 +75,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Helper method that merges state with the target block and determines whether to continue by visiting the target block.
         /// </summary>
+        /// <param name="edgeLabel">Label identifying incoming edge.</param>
         /// <param name="state">Locals state in which we are entering the target.</param>
         /// <param name="target">Target block.</param>
         /// <remarks>Only for traversing into blocks within the same routine (same type context).</remarks>
-        private void TraverseToBlock(FlowState/*!*/state, BoundBlock/*!*/target)
+        private void TraverseToBlock(object edgeLabel, FlowState/*!*/state, BoundBlock/*!*/target)
         {
             Contract.ThrowIfNull(state);    // state should be already set by previous block
-            
+
+            state = target.UpdateIncomingFlowState(edgeLabel, state);   // merge states into new one
+
             var targetState = target.FlowState;
             if (targetState != null)
             {
@@ -89,17 +92,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // block was visited already,
                 // merge and check whether state changed
-                state = state.Merge(targetState);   // merge states into new one
+                
                 if (state.Equals(targetState))
                 {
                     return; // state convergated, we don't have to analyse target block again
                 }
             }
-            else
-            {
-                // block was not visited yet
-                state = state.Clone();              // copy state into new one
-            }
+            //else
+            //{
+            //    // block was not visited yet
+            //    state = state.Clone();              // copy state into new one
+            //}
 
             // update target block state
             target.FlowState = state;
@@ -275,7 +278,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitCFGSimpleEdge(SimpleEdge x)
         {
-            TraverseToBlock(_state, x.NextBlock);
+            TraverseToBlock(x, _state, x.NextBlock);
         }
 
         public override void VisitCFGConditionalEdge(ConditionalEdge x)
@@ -286,12 +289,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // true branch
             _state = state.Clone();
             VisitCondition(x.Condition, ConditionBranch.ToTrue);
-            TraverseToBlock(_state, x.TrueTarget);
+            TraverseToBlock(x, _state, x.TrueTarget);
 
             // false branch
             _state = state.Clone();
             VisitCondition(x.Condition, ConditionBranch.ToFalse);
-            TraverseToBlock(_state, x.FalseTarget);
+            TraverseToBlock(x, _state, x.FalseTarget);
         }
 
         public override void VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
@@ -330,11 +333,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Accept(keyVar);
                 }
             }
-            TraverseToBlock(_state, x.BodyBlock);
+            TraverseToBlock(x, _state, x.BodyBlock);
 
             // End branch
             _state = state.Clone();
-            TraverseToBlock(_state, x.NextBlock);
+            TraverseToBlock(x, _state, x.NextBlock);
         }
 
         public override void VisitCFGSwitchEdge(SwitchEdge x)
@@ -345,7 +348,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             foreach (var c in x.CaseBlocks)
             {
-                TraverseToBlock(state, c);
+                TraverseToBlock(x, state, c);
             }
         }
 
@@ -354,16 +357,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var state = _state;
 
             //
-            TraverseToBlock(state, x.BodyBlock);
+            TraverseToBlock(x, state, x.BodyBlock);
 
             foreach (var c in x.CatchBlocks)
             {
-                TraverseToBlock(state, c);
+                TraverseToBlock(x, state, c);
             }
 
             if (x.FinallyBlock != null)
             {
-                TraverseToBlock(state, x.FinallyBlock);
+                TraverseToBlock(x, state, x.FinallyBlock);
             }
         }
 
