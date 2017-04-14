@@ -1,10 +1,10 @@
 <?php
 
-$b = UndefinedClass/*!PHP0053!*/::Constant;
-$b = UndefinedClass/*!PHP0053!*/::$staticProperty;
-$b = UndefinedClass/*!PHP0053!*/::staticMethod();
-$b = UndefinedClass/*!PHP0053!*/::undefinedStaticMethod();
+$b = UndefinedClass/*!PHP3008!*/::Constant;
+$b = UndefinedClass/*!PHP3008!*/::$staticProperty;
+$b = UndefinedClass/*!PHP3008!*/::staticMethod();
+$b = UndefinedClass/*!PHP3008!*/::undefinedStaticMethod();
 
-$badInstance = new UndefinedClass/*!PHP0053!*/();
+$badInstance = new UndefinedClass/*!PHP3008!*/();
 
-if ($badInstance instanceof UndefinedClass/*!PHP0053!*/) {}
+if ($badInstance instanceof UndefinedClass/*!PHP3008!*/) {}
