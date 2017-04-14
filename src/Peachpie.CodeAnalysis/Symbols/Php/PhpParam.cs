@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public bool IsVariadic;
 
         /// <summary>
-        /// Whether the parameter is passed as a PHP alias (<see cref="Core.PhpAlias"/>)..
+        /// Whether the parameter is passed as a PHP alias (<c>PhpAlias</c>).
         /// </summary>
         public bool IsAlias => Type.IsRef;
         public BoundExpression DefaultValue;

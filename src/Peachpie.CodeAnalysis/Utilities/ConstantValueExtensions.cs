@@ -44,5 +44,24 @@ namespace Pchp.CodeAnalysis
         {
             return value.HasValue && value.Value == null;
         }
+            
+        /// <summary>
+        /// PHP safe implicit conversion to <c>long</c> (null|long|double to long).
+        /// </summary>
+        public static bool TryConvertToLong(this ConstantValue value, out long result)
+        {
+            result = 0;
+
+            if (value == null) return false;
+            else if (value.IsNull) result = 0;
+            else if (value.IsIntegral) result = value.Int64Value;
+            else if (value.IsFloating) result = (long)value.DoubleValue;
+            else
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

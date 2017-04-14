@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Pchp.Core;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -65,6 +63,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Gets the type code.
         /// </summary>
         PhpTypeCode TypeCode { get; }
+
+        /// <summary>
+        /// Gets corresponding CLR type for the type reference.
+        /// </summary>
+        INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation);
 
         /// <summary>
         /// Transfers this type reference to the target type context.

@@ -1,10 +1,8 @@
-﻿using Devsense.PHP.Syntax;
-using Pchp.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
+using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
@@ -44,6 +42,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public AST.Signature LambdaSignature { get { throw new InvalidOperationException(); } }
 
         public PhpTypeCode TypeCode { get { return PhpTypeCode.Object; } }
+
+        /// <summary>
+        /// Gets corresponding CLR type for the type reference.
+        /// </summary>
+        public INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
+        {
+            return compilation.GlobalSemantics.GetType(QualifiedName) ?? compilation.CoreTypes.Object.Symbol;
+        }
 
         public ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target) { return this; }   // there is nothing depending on the context
         
@@ -121,6 +127,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public PhpTypeCode TypeCode { get { return PhpTypeCode.PhpArray; } }
 
+        /// <summary>
+        /// Gets corresponding CLR type for the type reference.
+        /// </summary>
+        public INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
+        {
+            return compilation.CoreTypes.PhpArray.Symbol;
+        }
+
         public ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target)
         {
             Contract.ThrowIfNull(source);
@@ -187,7 +201,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 switch (_code)
                 {
                     case PhpTypeCode.Boolean: return QualifiedName.Boolean;
-                    case PhpTypeCode.Int32:
                     case PhpTypeCode.Long: return QualifiedName.Integer;
                     case PhpTypeCode.Double: return QualifiedName.Double;
                     case PhpTypeCode.WritableString:
@@ -206,7 +219,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public bool IsPrimitiveType { get { return true; } }
 
-        public bool IsLambda { get { return _code == PhpTypeCode.Callable; } }
+        public bool IsLambda { get { return false; } }
 
         public IEnumerable<object> Keys { get { return null; } }
 
@@ -220,6 +233,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Gets underlaying type code of the primitive type.
         /// </summary>
         public PhpTypeCode TypeCode { get { return _code; } }
+
+        /// <summary>
+        /// Gets corresponding CLR type for the type reference.
+        /// </summary>
+        public INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
+        {
+            switch (TypeCode)
+            {
+                case PhpTypeCode.Boolean: return compilation.CoreTypes.Boolean.Symbol;
+                case PhpTypeCode.Long: return compilation.CoreTypes.Long.Symbol;
+                case PhpTypeCode.Double: return compilation.CoreTypes.Double.Symbol;
+                case PhpTypeCode.String: return compilation.CoreTypes.String.Symbol;
+                case PhpTypeCode.WritableString: return compilation.CoreTypes.PhpString.Symbol;
+                case PhpTypeCode.PhpArray: return compilation.CoreTypes.PhpArray.Symbol;
+                case PhpTypeCode.Null: return compilation.CoreTypes.Object.Symbol; // object // when merging, NULL should be handled separatelly (e.g. PhpValue|NULL -> PhpValue)
+                default:
+                    throw new NotImplementedException();
+            }
+        }
 
         public ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target) { return this; }
 
@@ -317,6 +349,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public AST.Signature LambdaSignature { get { return _signature; } }
 
         public PhpTypeCode TypeCode { get { return PhpTypeCode.Object; } }
+
+        /// <summary>
+        /// Gets corresponding CLR type for the type reference.
+        /// </summary>
+        public INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
+        {
+            return compilation.CoreTypes.Closure.Symbol;
+        }
 
         public ITypeRef Transfer(TypeRefContext source, TypeRefContext target)
         {

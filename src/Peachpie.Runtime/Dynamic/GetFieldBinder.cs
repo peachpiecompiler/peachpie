@@ -16,16 +16,16 @@ namespace Pchp.Core.Dynamic
         readonly string _name;
         readonly Type _classContext;
         readonly Type _returnType;
-        readonly AccessFlags _access;
+        readonly AccessMask _access;
 
         protected virtual bool IsClassConst => false;
 
-        public GetFieldBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessFlags access)
+        public GetFieldBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessMask access)
         {
             _name = name;
             _returnType = Type.GetTypeFromHandle(returnType); // should correspond to AccessFlags
             _classContext = Type.GetTypeFromHandle(classContext);
-            _access = access & AccessFlags.ReadMask;
+            _access = access & AccessMask.ReadMask;
         }
 
         string ResolveName(DynamicMetaObject[] args, ref BindingRestrictions restrictions)
@@ -117,7 +117,7 @@ namespace Pchp.Core.Dynamic
 
     public class GetClassConstBinder : GetFieldBinder
     {
-        public GetClassConstBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessFlags access)
+        public GetClassConstBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessMask access)
             :base(name, classContext, returnType, access)
         {
         }

@@ -15,13 +15,13 @@ namespace Pchp.Core.Dynamic
     {
         readonly string _name;
         readonly Type _classContext;
-        readonly AccessFlags _access;
+        readonly AccessMask _access;
 
-        public SetFieldBinder(string name, RuntimeTypeHandle classContext, AccessFlags access)
+        public SetFieldBinder(string name, RuntimeTypeHandle classContext, AccessMask access)
         {
             _name = name;
             _classContext = Type.GetTypeFromHandle(classContext);
-            _access = access & AccessFlags.WriteMask;
+            _access = access & AccessMask.WriteMask;
         }
 
         void ResolveArgs(DynamicMetaObject[] args, ref BindingRestrictions restrictions, out string fieldName, out Expression valueExpr)

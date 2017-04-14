@@ -16,8 +16,6 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <remarks>Use <see cref="SemanticModel"/> once we implement <see cref="SyntaxTree"/>.</remarks>
     internal interface ISymbolProvider
     {
-        // TODO: variable
-
         /// <summary>
         /// Gets a file by its path relative to current context.
         /// </summary>

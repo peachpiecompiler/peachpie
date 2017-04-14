@@ -1,16 +1,15 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
-using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis.Errors;
-using Devsense.PHP.Errors;
+using Peachpie.CodeAnalysis.Syntax;
 
 namespace Pchp.CodeAnalysis
 {
@@ -20,6 +19,31 @@ namespace Pchp.CodeAnalysis
     public class PhpSyntaxTree : SyntaxTree
     {
         readonly SourceUnit _source;
+
+        /// <summary>
+        /// Gets constructed lambda nodes.
+        /// </summary>
+        public ImmutableArray<LambdaFunctionExpr> Lambdas { get; private set; }
+
+        /// <summary>
+        /// Gets constructed type declaration nodes.
+        /// </summary>
+        public ImmutableArray<TypeDecl> Types { get; private set; }
+
+        /// <summary>
+        /// Gets constructed function declaration nodes.
+        /// </summary>
+        public ImmutableArray<FunctionDecl> Functions { get; private set; }
+
+        /// <summary>
+        /// Gets constructed global code (ast root).
+        /// </summary>
+        public GlobalCode Root { get; private set; }
+
+        /// <summary>
+        /// Gets constructed yield extpressions.
+        /// </summary>
+        public ImmutableArray<LangElement> YieldNodes { get; private set; }
 
         private PhpSyntaxTree(SourceUnit source)
         {
@@ -40,12 +64,25 @@ namespace Pchp.CodeAnalysis
             var unit = new CodeSourceUnit(
                 content, fname, Encoding.UTF8,
                 (parseOptions.Kind == SourceCodeKind.Regular) ? Lexer.LexicalStates.INITIAL : Lexer.LexicalStates.ST_IN_SCRIPTING);
+
             var result = new PhpSyntaxTree(unit);
 
             var errorSink = new ErrorSink(result);
-            unit.Parse(new BasicNodesFactory(unit), errorSink);
+            var factory = new NodesFactory(unit);
+
+            //
+            unit.Parse(factory, errorSink);
+
+            //
             result.Diagnostics = errorSink.Diagnostics;
 
+            result.Lambdas = factory.Lambdas.AsImmutableSafe();
+            result.Types = factory.Types.AsImmutableSafe();
+            result.Functions = factory.Functions.AsImmutableSafe();
+            result.YieldNodes = factory.YieldNodes.AsImmutableSafe();
+            result.Root = factory.Root;
+
+            //
             return result;
         }
 

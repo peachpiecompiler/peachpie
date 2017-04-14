@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System.Diagnostics;
-using Pchp.Core;
 using Pchp.CodeAnalysis.Semantics.Model;
 using Microsoft.CodeAnalysis.RuntimeMembers;
 using Roslyn.Utilities;
@@ -531,46 +530,7 @@ namespace Pchp.CodeAnalysis
             return CoreTypes.PhpValue;
         }
 
-        internal NamedTypeSymbol GetTypeFromTypeRef(ITypeRef t)
-        {
-            if (t is PrimitiveTypeRef)
-            {
-                return GetTypeFromTypeRef((PrimitiveTypeRef)t);
-            }
-            else if (t is ClassTypeRef)
-            {
-                return (NamedTypeSymbol)GlobalSemantics.GetType(t.QualifiedName) ?? CoreTypes.Object.Symbol;
-            }
-            else if (t is ArrayTypeRef)
-            {
-                return this.CoreTypes.PhpArray;
-            }
-            else if (t is LambdaTypeRef)
-            {
-
-            }
-
-            throw new ArgumentException();
-        }
-
-        NamedTypeSymbol GetTypeFromTypeRef(PrimitiveTypeRef t)
-        {
-            switch (t.TypeCode)
-            {
-                case PhpTypeCode.Double: return CoreTypes.Double;
-                case PhpTypeCode.Long: return CoreTypes.Long;
-                case PhpTypeCode.Int32: return CoreTypes.Int32;
-                case PhpTypeCode.Boolean: return CoreTypes.Boolean;
-                case PhpTypeCode.String: return CoreTypes.String;
-                case PhpTypeCode.WritableString: return CoreTypes.PhpString;
-                case PhpTypeCode.PhpArray: return CoreTypes.PhpArray;
-                case PhpTypeCode.Callable: return CoreTypes.PhpValue;   // array|object|string
-                case PhpTypeCode.Resource: return CoreTypes.PhpResource;
-                case PhpTypeCode.Null: return CoreTypes.Object; // object // when merging, NULL must be handled specially (e.g. PhpValue|NULL -> PhpValue)
-                default:
-                    throw new NotImplementedException();
-            }
-        }
+        internal NamedTypeSymbol GetTypeFromTypeRef(ITypeRef t) => (NamedTypeSymbol)t.GetTypeSymbol(this);
 
         /// <summary>
         /// Resolves <see cref="INamedTypeSymbol"/> best fitting given type mask.

@@ -1667,7 +1667,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.CallerType, null);
                 cctor.EmitLoadToken(return_type, null);
-                cctor.Builder.EmitIntConstant((int)Access.AccessFlags);
+                cctor.Builder.EmitIntConstant((int)Access.Flags);
                 cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
             });
 
@@ -1730,7 +1730,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
-                cctor.Builder.EmitIntConstant((int)Access.AccessFlags);   // flags
+                cctor.Builder.EmitIntConstant((int)Access.Flags);   // flags
                 cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
             });
         }
@@ -1824,7 +1824,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
                 cctor.EmitLoadToken(return_type, null);
-                cctor.Builder.EmitIntConstant((int)Access.AccessFlags);
+                cctor.Builder.EmitIntConstant((int)Access.Flags);
                 cctor.EmitCall(ILOpCode.Newobj, _boundref.IsClassConstant
                     ? cg.CoreMethods.Dynamic.GetClassConstBinder_ctor
                     : cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
@@ -1881,7 +1881,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
-                cctor.Builder.EmitIntConstant((int)Access.AccessFlags);   // flags
+                cctor.Builder.EmitIntConstant((int)Access.Flags);   // flags
                 cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
             });
         }

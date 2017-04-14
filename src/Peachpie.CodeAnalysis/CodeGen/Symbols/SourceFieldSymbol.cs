@@ -11,7 +11,7 @@ namespace Pchp.CodeAnalysis.Symbols
     partial class SourceFieldSymbol
     {
         /// <summary>
-        /// Whteher the field initializer requires a reference to current <see cref="Pchp.Core.Context"/>.
+        /// Whteher the field initializer requires a reference to current <c>Context</c>.
         /// </summary>
         internal bool RequiresContext
         {

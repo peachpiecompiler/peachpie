@@ -178,5 +178,20 @@ namespace Pchp.CodeAnalysis
 
             return -1;
         }
+
+        /// <summary>
+        /// Converts list to <see cref="ImmutableArray{T}"/> safely. If the list is <c>null</c>, empty array is returned.
+        /// </summary>
+        public static ImmutableArray<T> AsImmutableSafe<T>(this IList<T> list)
+        {
+            if (list == null || list.Count == 0)
+            {
+                return ImmutableArray<T>.Empty;
+            }
+            else
+            {
+                return list.ToImmutableArray();
+            }
+        }
     }
 }
