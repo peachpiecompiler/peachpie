@@ -114,7 +114,7 @@ namespace Peachpie.DiagnosticTests
 
         private void ReportUnexpectedDiagnostic(Diagnostic diagnostic)
         {
-            var position = diagnostic.Location.GetLineSpan().StartLinePosition;
+            var position = GetLinePosition(diagnostic.Location.GetLineSpan());
             _output.WriteLine($"Unexpected diagnostic {diagnostic.Id} on {position.Line},{position.Character}");
         }
 
@@ -122,17 +122,24 @@ namespace Peachpie.DiagnosticTests
         {
             string idExpected = expectedMatch.Groups[1].Value;
             var span = new TextSpan(expectedMatch.Index, 0);
-            var position = syntaxTree.GetLineSpan(span).StartLinePosition;
+            var position = GetLinePosition(syntaxTree.GetLineSpan(span));
             _output.WriteLine($"Missing diagnostic {idExpected} on {position.Line},{position.Character}");
         }
 
         private void ReportWrongDiagnosticId(Diagnostic diagnostic, string idActual, string idExpected)
         {
-            var position = diagnostic.Location.GetLineSpan().StartLinePosition;
+            var position = GetLinePosition(diagnostic.Location.GetLineSpan());
             _output.WriteLine($"Wrong diagnostic {idActual} instead of {idExpected} on {position.Line},{position.Character}");
         }
 
-        static PhpCompilation CreateEmptyCompilation()
+        private static LinePosition GetLinePosition(FileLinePositionSpan span)
+        {
+            // It is zero-based both for line and character, therefore we must add 1
+            var originalPos = span.StartLinePosition;
+            return new LinePosition(originalPos.Line + 1, originalPos.Character + 1);
+        }
+
+        private static PhpCompilation CreateEmptyCompilation()
         {
             var compilation = PhpCompilation.Create("project",
                 references: MetadataReferences().Select((string path) => MetadataReference.CreateFromFile(path)),
@@ -151,7 +158,7 @@ namespace Peachpie.DiagnosticTests
         /// <summary>
         /// Collect references we have to pass to the compilation.
         /// </summary>
-        static IEnumerable<string> MetadataReferences()
+        private static IEnumerable<string> MetadataReferences()
         {
             // implicit references
             var types = new List<Type>()
