@@ -278,9 +278,9 @@ namespace Peachpie.Web
             array["DOCUMENT_ROOT"] = (PhpValue)RootPath;    // string, backslashes, no trailing slash
 
             //var f_connection = _httpctx.Features.Get<IHttpConnectionFeature>();
-            array["REMOTE_ADDR"] = (PhpValue)_httpctx.Connection.RemoteIpAddress.ToString();
+            array["REMOTE_ADDR"] = (PhpValue)(_httpctx.Connection.RemoteIpAddress?.ToString() ?? request.Headers["X-Real-IP"]);
             array["REMOTE_PORT"] = (PhpValue)_httpctx.Connection.RemotePort;
-            array["LOCAL_ADDR"] = array["SERVER_ADDR"] = (PhpValue)_httpctx.Connection.LocalIpAddress.ToString();
+            array["LOCAL_ADDR"] = array["SERVER_ADDR"] = (PhpValue)_httpctx.Connection.LocalIpAddress?.ToString();
             array["LOCAL_PORT"] = (PhpValue)_httpctx.Connection.LocalPort;
             array["SERVER_SOFTWARE"] = (PhpValue)"ASP.NET Core Server";
             array["SERVER_PROTOCOL"] = (PhpValue)request.Protocol;
