@@ -13,10 +13,16 @@ function Die([string]$message, [object[]]$output) {
     exit 1
 }
 
+function Test([string]$projectpath) {
+    Write-Diagnostic "Testing $projectpath ..."
+    dotnet test .\src\Tests\$projectpath\$projectpath.csproj
+    if($LASTEXITCODE -ne 0) { Die("$projectpath failed.") }
+}
+
 .\build\build.ps1 -suffix "$env:PrereleaseTag"
 if($LASTEXITCODE -ne 0) { Die("Build failed.") }
 
-dotnet test .\src\Tests\Peachpie.ScriptTests\Peachpie.ScriptTests.csproj
-if($LASTEXITCODE -ne 0) { Die("Peachpie.ScriptTests failed.") }
+Test "Peachpie.ScriptTests"
+Test "Peachpie.DiagnosticTests"
 
 Write-Diagnostic "Succeeded."
