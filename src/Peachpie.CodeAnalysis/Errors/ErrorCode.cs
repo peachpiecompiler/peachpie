@@ -11,9 +11,21 @@ namespace Pchp.CodeAnalysis.Errors
     /// "HDN_" for hidden information. Messages and other information are stored in the resources,
     /// <see cref="ErrorFacts"/> contains the naming logic.
     /// </summary>
+    /// <remarks>
+    /// New diagnostics must be added to the end of the corresponding severity group in order not to change the
+    /// codes of the current ones.
+    /// </remarks>
     internal enum ErrorCode
     {
-        ERR_BadCompilationOptionValue,
+        // 
+        // Fatal errors
+        //
+        FTL_InputFileNameTooLong = 1000,
+
+        //
+        // Errors
+        //
+        ERR_BadCompilationOptionValue = 2000,
         ERR_BadWin32Resource,
         ERR_BinaryFile,
         ERR_CantOpenFileWrite,
@@ -54,20 +66,16 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ResourceInModule,
         ERR_ResourceNotUnique,
         ERR_TooManyUserStrings,
-
         ERR_NotYetImplemented, // Used for all valid PHP constructs that Peachipe doesn't currently support.
-
         ERR_YieldAsExpression, // TODO: Remove after starting to support yields as expressions
         ERR_YieldInTryCatch,   // TODO: Remove after starting to support yields in exception control blocks
-
         ERR_CircularBase,
         ERR_TypeNameCannotBeResolved,
 
-        FTL_InputFileNameTooLong,
-
-        INF_UnableToLoadSomeTypesInAnalyzer,
-
-        WRN_AnalyzerCannotBeCreated,
+        //
+        // Warnings
+        //
+        WRN_AnalyzerCannotBeCreated = 3000,
         WRN_NoAnalyzerInAssembly,
         WRN_NoConfigNotOnCommandLine,
         WRN_PdbLocalNameTooLong,
@@ -78,5 +86,10 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_UndefinedType,
         WRN_UndefinedMethodCall,
         WRN_EvalDiscouraged,
+
+        //
+        // Visible information
+        //
+        INF_UnableToLoadSomeTypesInAnalyzer = 4000,
     }
 }
