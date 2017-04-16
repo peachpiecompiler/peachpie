@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var cfg = this.ControlFlowGraph;
-                return (cfg != null)
+                return (cfg != null && cfg.Exit.FlowState != null)  // => exit block reached
                     ? cfg.FlowContext.ReturnType
                     : TypeRefMask.AnyType;
             }
