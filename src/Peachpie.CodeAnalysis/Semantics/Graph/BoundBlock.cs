@@ -17,9 +17,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <summary>
     /// Represents control flow block.
     /// </summary>
-    [DebuggerDisplay("Block")]
+    [DebuggerDisplay("{DebugDisplay}")]
     public partial class BoundBlock : AstNode, IBlockStatement
     {
+        /// <summary>
+        /// Internal name of the block.
+        /// </summary>
+        protected virtual string DebugName => "Block";
+
+        /// <summary>
+        /// Debugger display.
+        /// </summary>
+        internal string DebugDisplay => $"{FlowState?.Routine?.RoutineName}: {DebugName} #{Ordinal}";
+
         readonly List<BoundStatement>/*!*/_statements;
         Edge _next;
 
@@ -44,7 +54,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Gets statements contained in this block.
         /// </summary>
         public List<BoundStatement>/*!!*/Statements => _statements;
-        
+
         /// <summary>
         /// Gets edge pointing out of this block.
         /// </summary>
@@ -53,7 +63,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             get { return _next; }
             internal set { _next = value; }
         }
-        
+
         /// <summary>
         /// Gets block topological index.
         /// Index is unique within the graph.
@@ -65,7 +75,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Gets value indicating the block is unreachable.
         /// </summary>
         public bool IsDead => _ordinal < 0;
-        
+
         internal BoundBlock()
         {
             _statements = new List<BoundStatement>();
@@ -86,7 +96,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal static List<BoundBlock>/*!*/SkipEmpty(IEnumerable<BoundBlock>/*!*/blocks)
         {
             Contract.ThrowIfNull(blocks);
-            
+
             var result = new HashSet<BoundBlock>();
 
             foreach (var x in blocks)
@@ -145,6 +155,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("Start")]
     public sealed partial class StartBlock : BoundBlock
     {
+        /// <summary>
+        /// Internal name of the block.
+        /// </summary>
+        protected override string DebugName => "Start";
     }
 
     /// <summary>
@@ -153,6 +167,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("Exit")]
     public sealed partial class ExitBlock : BoundBlock
     {
+        /// <summary>
+        /// Internal name of the block.
+        /// </summary>
+        protected override string DebugName => "Exit";
+
         public override void Accept(GraphVisitor visitor) => visitor.VisitCFGExitBlock(this);
     }
 
@@ -162,6 +181,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("CatchBlock({ClassName.QualifiedName})")]
     public partial class CatchBlock : BoundBlock //, ICatch
     {
+        /// <summary>
+        /// Internal name of the block.
+        /// </summary>
+        protected override string DebugName => "Catch";
+
         /// <summary>
         /// Catch variable type.
         /// </summary>
@@ -202,6 +226,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("CaseBlock")]
     public partial class CaseBlock : BoundBlock
     {
+        /// <summary>
+        /// Internal name of the block.
+        /// </summary>
+        protected override string DebugName => IsDefault ? "default:" : "case:";
+
         /// <summary>
         /// Gets case value expression. In case of default item, returns <c>null</c>.
         /// </summary>
