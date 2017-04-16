@@ -149,7 +149,7 @@ namespace Pchp.CodeAnalysis
 
         ExpressionAnalysis AnalysisFactory()
         {
-            return new ExpressionAnalysis(_worklist, new GlobalSymbolProvider(_compilation));
+            return new ExpressionAnalysis(_worklist, _compilation.GlobalSemantics);
         }
 
         internal void DiagnoseMethods()
