@@ -83,8 +83,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Contract.ThrowIfNull(state);    // state should be already set by previous block
 
-            state = target.UpdateIncomingFlowState(edgeLabel, state);   // merge states into new one
-
             var targetState = target.FlowState;
             if (targetState != null)
             {
@@ -92,17 +90,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // block was visited already,
                 // merge and check whether state changed
-                
+                state = state.Merge(targetState);   // merge states into new one
+
                 if (state.Equals(targetState))
                 {
                     return; // state convergated, we don't have to analyse target block again
                 }
             }
-            //else
-            //{
-            //    // block was not visited yet
-            //    state = state.Clone();              // copy state into new one
-            //}
+            else
+            {
+                // block was not visited yet
+                state = state.Clone();              // copy state into new one
+            }
 
             // update target block state
             target.FlowState = state;

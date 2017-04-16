@@ -206,8 +206,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             this.FlowContext.AddVarType(handle, tmask);    // TODO: collect merged type information at the end of analysis
 
             // update the _initializedMask
-            if (tmask.IsUninitialized) { SetVarUninitialized(handle); }
-            else { SetVarInitialized(handle); }
+            SetVarInitialized(handle);
         }
 
         /// <summary>
@@ -281,8 +280,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        void SetVarUninitialized(int varindex)
+        public void SetVarUninitialized(VariableHandle handle)
         {
+            var varindex = handle.Slot;
             if (varindex >= 0 && varindex < FlowContext.BitsCount)
             {
                 _initializedMask &= ~(1u << varindex);

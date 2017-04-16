@@ -20,38 +20,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             get; set;
         }
-
-        /// <summary>
-        /// Updates flow state of incoming edge and gets merged states of all incoming edges.
-        /// </summary>
-        /// <param name="edgeLabel">Incoming edge label. Can be anything identifying the edge except <c>null</c>.</param>
-        /// <param name="state">Flow state of the incoming edge.</param>
-        /// <returns>Merged initial block state.</returns>
-        internal FlowState UpdateIncomingFlowState(object edgeLabel, FlowState state)
-        {
-            Debug.Assert(edgeLabel != null, $"{nameof(edgeLabel)} is null");
-            Debug.Assert(state != null, $"{nameof(state)} is null");
-
-            if (_incommingFlowStates == null)
-            {
-                _incommingFlowStates = new Dictionary<object, FlowState>(ReferenceEqualityComparer.Default);
-            }
-
-            // update incoming flow state
-            _incommingFlowStates[edgeLabel] = state.Clone();
-
-            // merge states
-            FlowState result = null;
-            foreach (var s in _incommingFlowStates)
-            {
-                result = (result != null) ? result.Merge(s.Value) : s.Value;
-            }
-
-            Debug.Assert(result != null, $"{nameof(result)} is null");
-            return result;
-        }
-
-        Dictionary<object, FlowState> _incommingFlowStates;
     }
 
     partial class ExitBlock

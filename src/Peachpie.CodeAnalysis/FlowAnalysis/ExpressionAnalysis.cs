@@ -413,6 +413,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     x.TypeRefMask = TypeCtx.GetNullTypeMask();
                     State.SetLocalType(local, x.TypeRefMask);
                     State.LTInt64Max(local, false);
+                    State.SetVarUninitialized(local);
                 }
 
                 // static variable -> restart flow analysis with new possible initial state
