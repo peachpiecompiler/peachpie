@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     var state = StateBinder.CreateInitialState(this);
 
                     //
-                    var binder = new SemanticsBinder(this.LocalsTable);
+                    var binder = new SemanticsBinder(this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics);
 
                     // build control flow graph
                     _cfg = new ControlFlowGraph(this.Statements, binder, this.GetNamingContext());

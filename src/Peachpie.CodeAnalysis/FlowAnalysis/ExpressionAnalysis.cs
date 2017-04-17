@@ -1034,7 +1034,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 else
                                 {
                                     // TODO: Err, variable or field must be passed into byref argument. foo("hello") where function foo(&$x){}
-                                    Debug.Fail($"TODO: Err. Argument {i} must be passed as a variable.");
                                 }
                             }
                         }
