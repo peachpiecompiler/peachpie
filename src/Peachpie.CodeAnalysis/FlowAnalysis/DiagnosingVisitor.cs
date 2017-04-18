@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private void CheckUninitializedVariableUse(BoundVariableRef x)
         {
-            if (x.MaybeUninitialized)
+            if (x.MaybeUninitialized && !(x.PhpSyntax.ContainingElement is IssetEx))
             {
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_UninitializedVariableUse, x.Name.NameValue.ToString());
             }

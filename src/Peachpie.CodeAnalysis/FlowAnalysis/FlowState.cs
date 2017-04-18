@@ -272,8 +272,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _flowCtx.ReturnType |= type;
         }
 
-        void SetVarInitialized(int varindex)
+        public void SetVarInitialized(VariableHandle handle)
         {
+            int varindex = handle.Slot;
             if (varindex >= 0 && varindex < FlowContext.BitsCount)
             {
                 _initializedMask |= 1u << varindex;

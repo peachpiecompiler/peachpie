@@ -947,6 +947,33 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region Visit IsSet
+
+        protected override void Visit(BoundIsSetEx x, ConditionBranch branch)
+        {
+            if (branch == ConditionBranch.ToTrue)
+            {
+                foreach (var refExpr in x.VarReferences)
+                {
+                    var varRef = refExpr as BoundVariableRef;
+                    if (varRef != null && varRef.Name.IsDirect)
+                    {
+                        State.SetVarInitialized(State.GetLocalHandle(varRef.Name.NameValue.Value));
+                    }
+
+                    Accept(refExpr);
+                }
+            }
+            else
+            {
+                x.VarReferences.ForEach(Accept);
+            }
+            
+            x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
+        }
+
+        #endregion
+
         #region Visit Function Call
 
         protected override void VisitRoutineCall(BoundRoutineCall x)
@@ -1544,12 +1571,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitIsEmpty(BoundIsEmptyEx x)
         {
             Accept(x.Operand);
-            x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
-        }
-
-        public override void VisitIsSet(BoundIsSetEx x)
-        {
-            x.VarReferences.ForEach(Accept);
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 
