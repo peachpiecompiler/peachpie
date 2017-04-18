@@ -1559,6 +1559,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             // 
             this.EmitSequencePoint(t.Syntax.HeadingSpan);
 
+            // TODO: autoload base types
+
+            // TODO: t.HasVersions ?
+
             // <ctx>.DeclareType<T>()
             EmitLoadContext();
             EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));

@@ -130,7 +130,7 @@
     <value>{0} is currently not supported by Peachpie.</value>
   </data>
   <data name="ERR_TypeNameCannotBeResolved" xml:space="preserve">
-    <value>Type name '{0}' could not be resolved. It is either not defined, defined conditionally or ambiguous declarations were found.</value>
+    <value>Type name '{0}' could not be resolved.</value>
   </data>
   <data name="WRN_EvalDiscouraged" xml:space="preserve">
     <value>Use of 'eval()' is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead.</value>

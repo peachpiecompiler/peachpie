@@ -573,7 +573,7 @@ namespace Pchp.CodeAnalysis
                 }
 
                 var type = this.SourceSymbolCollection.GetType(qname);
-                if (type != null)
+                if (type.IsErrorType() == false)
                 {
                     var mains = type.GetMembers(methodname).OfType<SourceMethodSymbol>().AsImmutable();
                     if (mains.Length == 1)

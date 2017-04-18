@@ -96,7 +96,59 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly protected TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
+        /// <summary>
+        /// Resolved base type.
+        /// </summary>
         NamedTypeSymbol _lazyBaseType;
+
+        /// <summary>
+        /// Resolved base interfaces.
+        /// </summary>
+        ImmutableArray<NamedTypeSymbol> _lazyInterfacesType;
+
+        /// <summary>
+        /// In case the declaration is ambiguous, this references symbol with alternative declaration.
+        /// </summary>
+        public SourceTypeSymbol NextVersion
+        {
+            get
+            {
+                ResolveBaseTypes();
+                return _nextVersion;
+            }
+        }
+        SourceTypeSymbol _nextVersion;
+        int _version;
+
+        /// <summary>
+        /// Gets value indicating the type declaration is ambiguous.
+        /// </summary>
+        public bool HasVersions => (_version != 0);
+
+        /// <summary>
+        /// Enumerates all versions of this declaration.
+        /// </summary>
+        public IEnumerable<SourceTypeSymbol> AllVersions()
+        {
+            ResolveBaseTypes();
+
+            if (_nextVersion == null)
+            {
+                return new[] { this };
+            }
+            else
+            {
+                Debug.Assert(_version != 0);
+                var result = new SourceTypeSymbol[_version];
+                for (var x = this; x != null; x = x.NextVersion)
+                {
+                    Debug.Assert(x._version > 0 && x._version <= result.Length);
+                    result[x._version - 1] = x;
+                }
+                return result;
+            }
+        }
+
         ImmutableArray<MethodSymbol> _lazyCtors;   // .ctor
         IFieldSymbol _lazyContextField;   // protected Pchp.Core.Context <ctx>;
         IFieldSymbol _lazyRuntimeFieldsField; // internal Pchp.Core.PhpArray <runtimeFields>;
@@ -117,6 +169,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         Location CreateLocation(TextSpan span) => Location.Create(ContainingFile.SyntaxTree, span);
 
+        #region Construction
+
         public SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
             Contract.ThrowIfNull(file);
@@ -127,6 +181,190 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             _staticsContainer = new SynthesizedStaticFieldsHolder(this);
         }
+
+        private SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax, NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, int version)
+            : this(file, syntax)
+        {
+            _lazyBaseType = baseType;
+            _lazyInterfacesType = ifacesType;
+            _version = version;
+        }
+
+        /// <summary>
+        /// Writes up <see cref="_lazyBaseType"/> and <see cref="_lazyInterfacesType"/>.
+        /// </summary>
+        private void ResolveBaseTypes()
+        {
+            if (_lazyInterfacesType.IsDefault == false) // or _nextVersion != null or _lazyBaseType != null
+            {
+                return; // resolved
+            }
+
+            DiagnosticBag diagnostics = DiagnosticBag.GetInstance();
+            ResolveBaseTypes(diagnostics);
+            AddDeclarationDiagnostics(diagnostics);
+            diagnostics.Free();
+        }
+
+        private void ResolveBaseTypes(DiagnosticBag diagnostics)
+        {
+            Debug.Assert(_lazyInterfacesType.IsDefault);    // not resolved yet
+
+            // get possible type signature [ BaseType?, Interface1, ..., InterfaceN ]
+            // Single slots may refer to a MissingTypeSymbol or an ambiguous type symbol
+            var tsignature = ResolveTypeSignature(_syntax, this.DeclaringCompilation).ToArray();
+            Debug.Assert(tsignature.Length >= 1);   // [0] is base class
+
+            // check all types are supported
+            foreach (var t in tsignature)
+            {
+                if (t == null) continue;
+
+                Debug.Assert(t.Item2 != null);
+
+                if (t.Item2.Arity != 0) diagnostics.Add(CreateLocation(t.Item1.Span.ToTextSpan()), Errors.ErrorCode.ERR_NotYetImplemented, "Using generic types.");
+                if (t.Item2.IsErrorType() && ((ErrorTypeSymbol)t.Item2).CandidateReason != CandidateReason.Ambiguous)
+                {
+                    diagnostics.Add(CreateLocation(t.Item1.Span.ToTextSpan()), Errors.ErrorCode.ERR_TypeNameCannotBeResolved, t.Item1.ClassName.ToString());
+                }
+            }
+
+            if (!diagnostics.HasAnyErrors())
+            {
+                // collect variations of possible base types
+                var variations = Variations<NamedTypeSymbol>(tsignature.Select(t => t?.Item2).AsImmutable());
+
+                // instantiate versions
+                bool self = true;
+                int lastVersion = 0;    // the SourceTypeSymbol version, 0 ~ a single version, >0 ~ multiple version
+                foreach (var v in variations)
+                {
+                    if (self)
+                    {
+                        _lazyBaseType = v[0];
+                        _lazyInterfacesType = v.RemoveAt(0);
+                        self = false;
+                    }
+                    else
+                    {
+                        // create next version of this type with already resolved type signature
+                        _nextVersion = new SourceTypeSymbol(_file, _syntax, v[0], v.RemoveAt(0), ++lastVersion)
+                        {
+                            //_lambdas = _lambdas,
+                            _nextVersion = _nextVersion
+                        };
+
+                        // clone lambdas that use $this
+                        if (_lambdas != null)
+                        {
+                            foreach (var l in _lambdas.Where(l => l.UseThis))
+                            {
+                                ((ILambdaContainerSymbol)_nextVersion).AddLambda(new SourceLambdaSymbol((LambdaFunctionExpr)l.Syntax, _nextVersion, l.UseThis));
+                            }
+                        }
+                    }
+                }
+                if (lastVersion != 0)
+                {
+                    _version = ++lastVersion;
+                    // diagnostics.Add(CreateLocation(_syntax.HeadingSpan), Errors.ErrorCode.MultipleDeclarations);
+                }
+            }
+            else
+            {
+                // default:
+                _lazyBaseType = tsignature[0]?.Item2;
+                _lazyInterfacesType = tsignature.Skip(1).Select(t => t.Item2).AsImmutable();
+            }
+
+            // check for circular dependencies
+            // ...
+        }
+
+        static IEnumerable<ImmutableArray<T>> Variations<T>(ImmutableArray<T> types) where T : NamedTypeSymbol
+        {
+            if (types.Length == 0)
+            {
+                return new ImmutableArray<T>[] { ImmutableArray<T>.Empty };
+            }
+
+            // skip non ambiguous types
+            int i = 0;
+            while (i < types.Length && (types[i] == null || types[i].IsErrorType() == false))
+            {
+                i++;
+            }
+
+            if (i == types.Length)
+            {
+                return new ImmutableArray<T>[] { types };
+            }
+
+            // [prefix, {types[i]}, Variations(types[i+1..])
+
+            var prefix = (i == 0)
+                ? ImmutableArray<T>.Empty
+                : ImmutableArray.CreateRange(types.Take(i));
+
+            var suffixvariations = Variations(types.RemoveRange(0, i + 1));
+
+            var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>();
+            return ambiguity.SelectMany(t =>
+            {
+                var list = new List<ImmutableArray<T>>();
+
+                // prefix + t + |suffixvariations|
+                foreach (var v in suffixvariations)
+                {
+                    var bldr = ImmutableArray.CreateBuilder<T>(types.Length);
+                    bldr.AddRange(prefix);
+                    bldr.Add(t);
+                    bldr.AddRange(v);
+                    // prefix + t + v
+                    list.Add(bldr.ToImmutable());
+                }
+
+                //
+                return list;
+            });
+        }
+
+        /// <summary>
+        /// Gets type signature of the type [BaseType or NULL, Interface1, ..., InterfaceN]
+        /// </summary>
+        private static IEnumerable<Tuple<INamedTypeRef, NamedTypeSymbol>> ResolveTypeSignature(TypeDecl syntax, PhpCompilation compilation)
+        {
+            // base type or NULL
+            if (syntax.BaseClass != null)   // a class with base
+            {
+                var baseTypeName = syntax.BaseClass.ClassName;
+
+                yield return new Tuple<INamedTypeRef, NamedTypeSymbol>(syntax.BaseClass, (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName));
+            }
+            else if ((syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) != 0) // a static class or an interface
+            {
+                yield return null;
+            }
+            else // a class without base
+            {
+                yield return new Tuple<INamedTypeRef, NamedTypeSymbol>(null, compilation.CoreTypes.Object.Symbol);
+            }
+
+            // base interfaces
+            var visited = new HashSet<QualifiedName>(); // set of visited interfaces
+            foreach (var i in syntax.ImplementsList)
+            {
+                var qname = i.ClassName;
+                if (visited.Add(qname))
+                {
+                    yield return new Tuple<INamedTypeRef, NamedTypeSymbol>(i, (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname));
+                }
+            }
+        }
+
+        #endregion
+
+        #region ILambdaContainerSymbol
 
         void ILambdaContainerSymbol.AddLambda(SourceLambdaSymbol routine)
         {
@@ -148,6 +386,8 @@ namespace Pchp.CodeAnalysis.Symbols
             if (expr == null) throw new ArgumentNullException(nameof(expr));
             return _lambdas.First(s => s.Syntax == expr);
         }
+
+        #endregion
 
         List<Symbol> EnsureMembers()
         {
@@ -245,63 +485,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (ReferenceEquals(_lazyBaseType, null))
-                {
-                    DiagnosticBag diagnostics = DiagnosticBag.GetInstance();
-                    if (Interlocked.CompareExchange(ref _lazyBaseType, ResolveBaseType(diagnostics), null) == null)
-                    {
-                        AddDeclarationDiagnostics(diagnostics);
-                    }
-
-                    diagnostics.Free();
-                }
-
+                ResolveBaseTypes();
                 return _lazyBaseType;
             }
-        }
-
-        NamedTypeSymbol ResolveBaseType(DiagnosticBag diagnostics)
-        {
-            NamedTypeSymbol btype;
-
-            if (_syntax.BaseClass != null)
-            {
-                var baseTypeName = _syntax.BaseClass.ClassName;
-                if (baseTypeName == this.MakeQualifiedName())
-                {
-                    // TODO: check full circular dependency after the resolution
-                    // Circular base class dependency involving '{0}' and '{1}'
-                    diagnostics.Add(
-                        CreateLocation(_syntax.HeadingSpan.ToTextSpan()),
-                        Errors.ErrorCode.ERR_CircularBase, baseTypeName, this);
-                }
-
-                btype = (NamedTypeSymbol)DeclaringCompilation.GlobalSemantics.GetType(baseTypeName)
-                    ?? new MissingMetadataTypeSymbol(baseTypeName.ClrName(), 0, false);
-
-                if (btype.Arity != 0)
-                {
-                    // generics not supported yet
-                    // TODO: Err diagnostics
-                    throw new NotImplementedException($"Class {this.MakeQualifiedName()} extends a generic type {baseTypeName}.");
-                }
-                else if (btype.IsErrorType())
-                {
-                    // error: Type name '{1}' could not be resolved.
-                    diagnostics.Add(CreateLocation(_syntax.BaseClass.Span.ToTextSpan()), Errors.ErrorCode.ERR_TypeNameCannotBeResolved, baseTypeName);
-                }
-            }
-            else if (!IsStatic && !IsInterface)
-            {
-                btype = DeclaringCompilation.CoreTypes.Object.Symbol;
-            }
-            else
-            {
-                btype = null;
-            }
-
-            //
-            return btype;
         }
 
         /// <summary>
@@ -327,10 +513,19 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var name = base.MetadataName;
 
+                // name'conditional#version
+
+                // conditional suffix
                 if (_syntax.IsConditional)
                 {
                     var ambiguities = this.DeclaringCompilation.SourceSymbolCollection.GetTypes().Where(t => t.Name == this.Name && t.NamespaceName == this.NamespaceName);
                     name += "@" + ambiguities.TakeWhile(f => f != this).Count().ToString(); // index within types with the same name
+                }
+
+                // count version
+                if (_version != 0)
+                {
+                    name += "#" + _version;
                 }
 
                 return name;
@@ -435,28 +630,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
         {
-            var ifaces = new HashSet<NamedTypeSymbol>();
-            foreach (var i in _syntax.ImplementsList)
-            {
-                var t = (NamedTypeSymbol)DeclaringCompilation.GlobalSemantics.GetType(i.ClassName)
-                        ?? new MissingMetadataTypeSymbol(i.ClassName.ClrName(), 0, false);
-
-                if (t.Arity != 0)
-                {
-                    throw new NotImplementedException();    // generics
-                }
-
-                ifaces.Add(t);
-            }
-
-            // __invoke => IPhpCallable
-            if (TryGetMagicInvoke() != null)
-            {
-                ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
-            }
+            ResolveBaseTypes();
 
             //
-            return ifaces.AsImmutable();
+            if (TryGetMagicInvoke() == null)
+            {
+                return _lazyInterfacesType;
+            }
+            else
+            {
+                // __invoke => IPhpCallable
+                return _lazyInterfacesType
+                    .Add(DeclaringCompilation.CoreTypes.IPhpCallable);
+            }
         }
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()

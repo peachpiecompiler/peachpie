@@ -40,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_lazyRoutineInfoField == null)
             {
                 _lazyRoutineInfoField = module.SynthesizedManager
-                    .GetOrCreateSynthesizedField(_container, this.DeclaringCompilation.CoreTypes.RoutineInfo, $"[routine]{this.MetadataName}", Accessibility.Private, true, true, true);
+                    .GetOrCreateSynthesizedField(_container, this.DeclaringCompilation.CoreTypes.RoutineInfo, $"[routine]{this.MetadataName}", Accessibility.Internal, true, true, true);
             }
 
             return _lazyRoutineInfoField;
