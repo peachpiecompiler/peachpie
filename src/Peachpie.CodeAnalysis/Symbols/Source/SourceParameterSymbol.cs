@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _relindex = relindex;
             _ptagOpt = ptagOpt;
             _initializer = (syntax.InitValue != null)
-                ? new SemanticsBinder(null).BindExpression(syntax.InitValue, BoundAccess.Read)
+                ? new SemanticsBinder(locals: null, diagnostics: DeclaringCompilation.DeclarationDiagnostics).BindExpression(syntax.InitValue, BoundAccess.Read)
                 : null;
         }
 

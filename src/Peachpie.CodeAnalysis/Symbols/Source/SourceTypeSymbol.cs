@@ -177,7 +177,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         IEnumerable<FieldSymbol> LoadFields()
         {
-            var binder = new SemanticsBinder(null);
+            var binder = new SemanticsBinder(locals: null, diagnostics: DeclaringCompilation.DeclarationDiagnostics);
 
             // fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())

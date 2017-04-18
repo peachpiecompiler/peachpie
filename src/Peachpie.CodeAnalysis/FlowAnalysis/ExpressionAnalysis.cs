@@ -413,6 +413,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     x.TypeRefMask = TypeCtx.GetNullTypeMask();
                     State.SetLocalType(local, x.TypeRefMask);
                     State.LTInt64Max(local, false);
+                    State.SetVarUninitialized(local);
                 }
 
                 // static variable -> restart flow analysis with new possible initial state
@@ -1033,7 +1034,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 else
                                 {
                                     // TODO: Err, variable or field must be passed into byref argument. foo("hello") where function foo(&$x){}
-                                    Debug.Fail($"TODO: Err. Argument {i} must be passed as a variable.");
                                 }
                             }
                         }
@@ -1229,7 +1229,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // resolve target type
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
-            if (type != null)
+            if (type != null && !type.IsErrorType())
             {
                 if (type.IsStatic || type.IsInterface)
                 {

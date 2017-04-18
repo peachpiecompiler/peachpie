@@ -34,11 +34,14 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundYieldEx[] Yields { get => _yields.ToArray(); }
         readonly List<BoundYieldEx> _yields;
 
+        readonly DiagnosticBag _diagnostics;
+
         #region Construction
 
-        public SemanticsBinder(LocalsTable locals = null)
+        public SemanticsBinder(LocalsTable locals = null, DiagnosticBag diagnostics = null)
         {
             _locals = locals;
+            _diagnostics = diagnostics ?? DiagnosticBag.GetInstance();
             _yields = new List<BoundYieldEx>();
         }
 
@@ -67,8 +70,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.ActualParam> parameters)
         {
-            if (parameters.Any(p => p.IsUnpack || p.Ampersand))
-                throw new NotImplementedException();
+            var unsupported = parameters.FirstOrDefault(p => p.IsUnpack || p.Ampersand);
+            if (unsupported != null)
+            {
+                _diagnostics.Add(_locals.Routine, unsupported, Errors.ErrorCode.ERR_NotYetImplemented, "Passing parameter by ref or parameter unpacking.");
+            }
 
             return BindArguments(parameters.Select(p => p.Expression));
         }
@@ -113,7 +119,9 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.ThrowStmt) return new BoundThrowStatement(BindExpression(((AST.ThrowStmt)stmt).Expression, BoundAccess.Read)) { PhpSyntax = stmt };
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement() { PhpSyntax = stmt };
 
-            throw new NotImplementedException(stmt.GetType().FullName);
+            //
+            _diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
+            return new BoundEmptyStatement(stmt.Span.ToTextSpan());
         }
 
         BoundStatement BindJumpStmt(AST.JumpStmt stmt)
@@ -171,13 +179,15 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.EvalEx) return BindEval((AST.EvalEx)expr).WithAccess(access);
             if (expr is AST.YieldEx) return BindYieldEx((AST.YieldEx)expr).WithAccess(access);
 
-            throw new NotImplementedException(expr.GetType().FullName);
+            //
+            _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
+            return new BoundLiteral(null);
         }
 
         BoundYieldEx BindYieldEx(AST.YieldEx expr)
         {
             // Reference: https://github.com/dotnet/roslyn/blob/05d923831e1bc2a88918a2073fba25ab060dda0c/src/Compilers/CSharp/Portable/Binder/Binder_Statements.cs#L194
-            
+
             // TODO: Throw error when trying to iterate a non-reference generator by reference 
             var access = _locals.Routine.SyntaxSignature.AliasReturn
                     ? BoundAccess.ReadRef
@@ -377,7 +387,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.StaticFieldUse) return BindFieldUse((AST.StaticFieldUse)expr, access);
             if (expr is AST.ListEx) return BindListEx((AST.ListEx)expr).WithAccess(access);
 
-
             throw new NotImplementedException(expr.GetType().FullName);
         }
 
@@ -391,7 +400,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindArrayEx(AST.ArrayEx x, BoundAccess access)
         {
-            Debug.Assert(access.IsRead && !access.IsReadRef);
+            Debug.Assert(access.IsRead);
+
+            if (access.IsReadRef)
+            {
+                // TODO: warninng deprecated
+            }
 
             return new BoundArrayEx(BindArrayItems(x.Items)) { PhpSyntax = x }.WithAccess(access);
         }

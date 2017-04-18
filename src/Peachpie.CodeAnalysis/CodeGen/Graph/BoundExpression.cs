@@ -2338,7 +2338,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                if (_typeref.ResolvedType != null)
+                if (_typeref.ResolvedType != null && _typeref.ResolvedType.IsErrorType() == false)
                 {
                     // context.Create<T>(caller, params)
                     var create_t = cg.CoreTypes.Context.Symbol.GetMembers("Create")

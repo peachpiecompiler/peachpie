@@ -52,16 +52,16 @@ There are currently two ways of using Peachpie through `msbuild`: in your favori
 ### Visual Studio Code 
 We have a custom [VSCode extension](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode) to make working with Peachpie compiler as comfortable as possible. The extension automatically installs all required dependencies, enables the `Peachpie: Create project` command, syntax error underlining and Peachpie analytics:
 
-[![VSCode](http://www.peachpie.io/wp-content/uploads/2017/02/create-project.png)](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode)
-[![VSCode](http://www.peachpie.io/wp-content/uploads/2017/02/unresolved-diagnostics.png)](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode)
-[![VSCode](http://www.peachpie.io/wp-content/uploads/2017/02/syntax-error.png)](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode)
+<p align="center">
+<a href="https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode" target="_blank"><img src="https://github.com/iolevel/peachpie-vscode/blob/master/src/Peachpie.VSCode/images/tEDLQt.gif" 
+alt="Peachpie Extension" border="10" /></a> 
+</p>
 
 To install the Peachpie extension, simply launch VS Code Quick Open (Ctrl+P), paste the following command, and press enter: `ext install peachpie-vscode`. Watch the intro video below to see how to work with the extension:
 
 <p align="center">
-<a href="https://youtu.be/hBiixbockK4
-" target="_blank"><img src="http://img.youtube.com/vi/hBiixbockK4/0.jpg" 
-alt="Peachpie Introduction" width="480" height="360" border="10" /></a>
+<a href="https://youtu.be/hBiixbockK4" target="_blank"><img src="http://www.peachpie.io/wp-content/uploads/2017/04/yt-screen-1.png" 
+alt="Peachpie Introduction" border="10" /></a>
 </p>
 
 ### Command line building

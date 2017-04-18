@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal RoutineFlags Flags { get; set; }
 
         /// <summary>
-        /// 
+        /// Gets so far type-analysed routine result type.
         /// </summary>
         internal TypeRefMask ResultTypeMask
         {
@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var cfg = this.ControlFlowGraph;
                 return (cfg != null)
-                    ? cfg.FlowContext.ReturnType
+                    ? cfg.FlowContext.ReturnType    // might be void if not analysed yet
                     : TypeRefMask.AnyType;
             }
         }

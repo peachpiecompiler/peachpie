@@ -129,4 +129,22 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override bool MangleName => _mangleName;
         public override int Arity => _arity;
     }
+
+    internal sealed class AmbiguousErrorTypeSymbol : ErrorTypeSymbol
+    {
+        ImmutableArray<NamedTypeSymbol> _candidates;
+
+        public AmbiguousErrorTypeSymbol(ImmutableArray<NamedTypeSymbol> candidates)
+        {
+            Debug.Assert(!candidates.IsDefaultOrEmpty);
+            _candidates = candidates;
+        }
+
+        public override CandidateReason CandidateReason => CandidateReason.Ambiguous;
+        public override ImmutableArray<ISymbol> CandidateSymbols => _candidates.CastArray<ISymbol>();
+
+        public override string Name => _candidates[0].Name;
+        internal override bool MangleName => _candidates[0].MangleName;
+        public override int Arity => 0;
+    }
 }

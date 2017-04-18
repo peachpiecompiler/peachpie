@@ -602,7 +602,7 @@ namespace Pchp.Core.Dynamic
                     return ConversionCost.ImplicitCast;
 
                 case PhpTypeCode.WritableString:
-                    return value.WritableString.ContainsBinaryData ? ConversionCost.ImplicitCast : ConversionCost.PassCostly;
+                    return value.WritableString.ContainsBinaryData ? ConversionCost.LoosingPrecision : ConversionCost.PassCostly;
 
                 case PhpTypeCode.String:
                     return ConversionCost.Pass;
@@ -627,10 +627,10 @@ namespace Pchp.Core.Dynamic
                     return ConversionCost.ImplicitCast;
 
                 case PhpTypeCode.WritableString:
-                    return ConversionCost.PassCostly;
+                    return ConversionCost.Pass;
 
                 case PhpTypeCode.String:
-                    return ConversionCost.Pass;
+                    return ConversionCost.PassCostly;
 
                 case PhpTypeCode.PhpArray:
                     return ConversionCost.Warning;
