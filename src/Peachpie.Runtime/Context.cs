@@ -171,11 +171,21 @@ namespace Pchp.Core
         /// <param name="typename">Type name alias, can differ from <see cref="PhpTypeInfo.Name"/>.</param>
         public void DeclareType(PhpTypeInfo tinfo, string typename) => _types.DeclareTypeAlias(tinfo, typename);
 
-        public void AssertTypeDeclared<T>()
+        /// <summary>
+        /// Called by runtime when it expects that given type is declared.
+        /// If not, autoload is invoked and if the type mismatches or cannot be declared, an exception is thrown.
+        /// </summary>
+        /// <typeparam name="T">Type which is expected to be declared.</typeparam>
+        public void ExpectTypeDeclared<T>()
         {
-            if (!_types.IsDeclared(TypeInfoHolder<T>.TypeInfo))
+            var tinfo = TypeInfoHolder<T>.TypeInfo;
+            if (!_types.IsDeclared(tinfo))
             {
-                // TODO: autoload, ErrCode
+                // perform regular load with autoload
+                if (GetDeclaredTypeOrThrow(tinfo.Name, true) != tinfo)
+                {
+                    throw new InvalidOperationException();
+                }
             }
         }
 

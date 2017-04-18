@@ -135,5 +135,29 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return null;
         }
+
+        /// <summary>
+        /// Gets (PHP) type symbols that has to be declared in order to declare given <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The type declaration which dependant symbols will be returned.</param>
+        public static IList<NamedTypeSymbol> GetDependentSourceTypeSymbols(this SourceTypeSymbol type)
+        {
+            // TODO: what type can be declared on Context ? SourceTypeSymbol and PENamedTypeSymbol compiled from PHP sources
+            // TODO: traits
+
+            var btype = type.BaseType as SourceTypeSymbol;
+            var ifaces = type.Interfaces;
+
+            if (ifaces.Length == 0 && btype == null)
+            {
+                return Array.Empty<NamedTypeSymbol>();
+            }
+
+            var list = new List<NamedTypeSymbol>(1 + ifaces.Length);
+            if (btype != null) list.Add(btype);
+            if (ifaces.Length != 0) list.AddRange(ifaces.Where(x => x is SourceTypeSymbol));
+
+            return list;
+        }
     }
 }

@@ -52,6 +52,11 @@ namespace Pchp.Core.Reflection
         readonly TypeInfo _type;
 
         /// <summary>
+        /// Gets <see cref="RuntimeTypeHandle"/> of corresponding type information.
+        /// </summary>
+        public RuntimeTypeHandle TypeHandle => _type.UnderlyingSystemType.TypeHandle;
+
+        /// <summary>
         /// Dynamically constructed delegate for object creation.
         /// </summary>
         public TObjectCreator Creator => _lazyCreator ?? BuildCreator();

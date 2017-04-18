@@ -128,13 +128,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Enumerates all versions of this declaration.
         /// </summary>
-        public IEnumerable<SourceTypeSymbol> AllVersions()
+        public ImmutableArray<SourceTypeSymbol> AllVersions()
         {
             ResolveBaseTypes();
 
             if (_nextVersion == null)
             {
-                return new[] { this };
+                return ImmutableArray.Create(this);
             }
             else
             {
@@ -145,7 +145,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     Debug.Assert(x._version > 0 && x._version <= result.Length);
                     result[x._version - 1] = x;
                 }
-                return result;
+                return ImmutableArray.Create(result);
             }
         }
 
@@ -267,7 +267,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (lastVersion != 0)
                 {
                     _version = ++lastVersion;
-                    // diagnostics.Add(CreateLocation(_syntax.HeadingSpan), Errors.ErrorCode.MultipleDeclarations);
+
+                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan.ToTextSpan()), Errors.ErrorCode.WRN_AmbiguousDeclaration, this.FullName);
                 }
             }
             else

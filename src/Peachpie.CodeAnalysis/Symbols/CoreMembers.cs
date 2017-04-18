@@ -434,6 +434,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 BuildClosure_RoutineInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
                 Eval_Context_PhpArray_object_string_string_int_int = ct.Operators.Method("Eval", ct.Context, ct.PhpArray, ct.Object, ct.String, ct.String, ct.Int32, ct.Int32);
                 GetName_PhpTypeInfo = ct.PhpTypeInfo.Property("Name");
+                GetTypeHandle_PhpTypeInfo = ct.PhpTypeInfo.Property("TypeHandle");
 
                 BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.GeneratorStateMachineDelegate);
                 GetGeneratorState_Generator = ct.Operators.Method("GetGeneratorState", ct.Generator);
@@ -522,7 +523,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue;
 
             public readonly CoreProperty
-                GetName_PhpTypeInfo;
+                GetName_PhpTypeInfo, GetTypeHandle_PhpTypeInfo;
         }
 
         public struct PhpValueHolder
@@ -919,7 +920,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 OnInclude_TScript = ct.Context.Method("OnInclude");
                 Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
 
-                AssertTypeDeclared_PhpTypeInfo_string = ct.Context.Method("AssertTypeDeclared", ct.PhpTypeInfo, ct.String);
+                ExpectTypeDeclared_T = ct.Context.Method("ExpectTypeDeclared");
 
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
@@ -946,7 +947,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_RoutineInfo, DeclareType_T,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
-                AssertTypeDeclared_PhpTypeInfo_string,
+                ExpectTypeDeclared_T,
                 GetConstant_string_int32,
                 GetStatic_T,
                 GetDeclaredType_string_bool, GetDeclaredTypeOrThrow_string_bool,
