@@ -1229,7 +1229,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // resolve target type
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
-            if (type != null)
+            if (type != null && !type.IsErrorType())
             {
                 if (type.IsStatic || type.IsInterface)
                 {
