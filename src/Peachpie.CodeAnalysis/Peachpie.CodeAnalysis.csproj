@@ -10,7 +10,6 @@
     <PackageTags>php;peachpie;dotnet;compiler</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>Peachpie PHP language compiler platform.</Description>
-    <RootNamespace>Pchp.CodeAnalysis</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
