@@ -382,6 +382,45 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits check if type on top of the stack is null.
+        /// Results in boolean (<c>i4</c>) with value of <c>0</c> or <c>1</c> on top of the stack.
+        /// </summary>
+        public void EmitNotNull(TypeSymbol t, TypeRefMask tmask)
+        {
+            // CanBeNull(tmask)
+            // CanBeNull(t)
+
+            // t != null
+            if (t.IsReferenceType)
+            {
+                // != null
+                _il.EmitNullConstant();
+                _il.EmitOpCode(ILOpCode.Cgt_un);
+                return;
+            }
+
+            // PhpAlias.Value
+            if (t == CoreTypes.PhpAlias)
+            {
+                // dereference
+                t = Emit_PhpAlias_GetValue();
+                // continue ->
+            }
+
+            // IsSet(PhpValue) ~ !IsNull
+            if (t == CoreTypes.PhpValue)
+            {
+                EmitCall(ILOpCode.Call, CoreMethods.Operators.IsSet_PhpValue);
+                return;
+            }
+
+            // cannot be null:
+            Debug.Assert(!CanBeNull(t));
+            EmitPop(t);
+            _il.EmitBoolConstant(false);
+        }
+
+        /// <summary>
         /// Loads field address on top of evaluation stack.
         /// </summary>
         public void EmitFieldAddress(FieldSymbol fld)
@@ -1607,7 +1646,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         void EmitVersionedTypeDeclaration(ImmutableArray<SourceTypeSymbol> versions)
         {
             Debug.Assert(versions.Length > 1);
-            
+
             // ensure all types are loaded into context and resolve version to declare
 
             // collect dependent types [name x symbols]

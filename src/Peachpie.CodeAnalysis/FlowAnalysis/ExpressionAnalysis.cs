@@ -792,6 +792,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Concat:
                     return TypeCtx.GetWritableStringTypeMask();
 
+                case Operations.Coalesce:   // Left ?? Right
+                    return x.Left.TypeRefMask | x.Right.TypeRefMask;
+
                 default:
                     throw ExceptionUtilities.Unreachable;
             }

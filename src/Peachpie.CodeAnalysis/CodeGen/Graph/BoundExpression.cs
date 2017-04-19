@@ -167,6 +167,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 #endregion
 
+                case Operations.Coalesce:
+                    returned_type = EmitCoalesce(cg);
+                    break;
+
                 default:
                     throw ExceptionUtilities.Unreachable;
             }
@@ -714,6 +718,51 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.Builder.EmitOpCode(op);
 
             return cg.CoreTypes.Long;
+        }
+
+        /// <summary>Emits <c>??</c> operator and returns the result type.</summary>
+        TypeSymbol EmitCoalesce(CodeGenerator cg)
+        {
+            object trueLbl = new object();
+            object endLbl = new object();
+
+            // Left ?? Right
+
+            var left_type = cg.Emit(this.Left);
+
+            if (!cg.CanBeNull(left_type)) // in case we truly believe in our type analysis: || !cg.CanBeNull(this.Left.TypeRefMask))
+            {
+                return left_type;
+            }
+
+            // <stack> = <left_var> = Left
+            var left_var = cg.GetTemporaryLocal(left_type);
+            cg.Builder.EmitOpCode(ILOpCode.Dup);
+            cg.Builder.EmitLocalStore(left_var);
+
+            cg.EmitNotNull(left_type, this.Left.TypeRefMask);
+            cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
+
+            // false:
+            var right_type = cg.Emit(this.Right);
+            var result_type = cg.DeclaringCompilation.Merge(left_type, right_type);
+            cg.EmitConvert(right_type, this.Right.TypeRefMask, result_type);
+            cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
+            cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+
+            // trueLbl:
+            cg.Builder.MarkLabel(trueLbl);
+            cg.Builder.EmitLocalLoad(left_var);
+            cg.EmitConvert(left_type, this.Left.TypeRefMask, result_type);
+
+            // endLbl:
+            cg.Builder.MarkLabel(endLbl);
+
+            //
+            cg.ReturnTemporaryLocal(left_var);
+
+            //
+            return result_type;
         }
 
         /// <summary>
@@ -3857,11 +3906,11 @@ namespace Pchp.CodeAnalysis.Semantics
             // yieldIndex is 1-based because zero is reserved for to-first-yield-run.
             var yieldEx = this.PhpSyntax;
             var yieldIndex = cg.Routine.ControlFlowGraph.Yields.IndexOf(this, EqualityComparer<BoundYieldEx>.Default) + 1;
-            Debug.Assert(yieldIndex >= 1); 
+            Debug.Assert(yieldIndex >= 1);
 
             var il = cg.Builder;
 
-            
+
             // sets currValue and currKey on generator object
             setAsPhpValueOnGenerator(cg, YieldedValue, cg.CoreMethods.Operators.SetGeneratorCurrValue_Generator_PhpValue);
             setAsPhpValueOnGenerator(cg, YieldedKey, cg.CoreMethods.Operators.SetGeneratorCurrKey_Generator_PhpValue);
