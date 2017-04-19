@@ -513,16 +513,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindBinaryEx(AST.BinaryEx expr)
         {
-            if (expr.Operation == AST.Operations.Concat)
+            switch (expr.Operation)
             {
-                return BindConcatEx(new[] { expr.LeftExpr, expr.RightExpr });
-            }
-            else
-            {
-                return new BoundBinaryEx(
-                    BindExpression(expr.LeftExpr, BoundAccess.Read),
-                    BindExpression(expr.RightExpr, BoundAccess.Read),
-                    expr.Operation);
+                case AST.Operations.Concat:     // Left . Right
+                    return BindConcatEx(new[] { expr.LeftExpr, expr.RightExpr });
+
+                default:
+                    return new BoundBinaryEx(
+                        BindExpression(expr.LeftExpr, BoundAccess.Read),
+                        BindExpression(expr.RightExpr, BoundAccess.Read),
+                        expr.Operation);
             }
         }
 

@@ -80,6 +80,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Gets value indicating the type can hold <c>null</c>.
+        /// </summary>
+        internal bool CanBeNull(TypeSymbol type)
+        {
+            Debug.Assert(!type.IsErrorTypeOrNull());
+
+            return
+                type.IsReferenceType ||
+                type == CoreTypes.PhpValue ||
+                type == CoreTypes.PhpAlias;
+        }
+
+        /// <summary>
         /// Determines whether the type needs to be copied when passing by value.
         /// </summary>
         internal bool IsCopiable(TypeSymbol t)
