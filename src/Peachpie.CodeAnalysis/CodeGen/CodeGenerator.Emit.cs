@@ -1572,19 +1572,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // ensure all types are loaded into context,
                 // autoloads if necessary
-                foreach (var d in dependent)
-                {
-                    if (ReferenceEquals(d.ContainingSymbol, t.ContainingSymbol) && !d.IsConditional)
-                    {
-                        // declared in same file unconditionally,
-                        // we don't have to check anything
-                        continue;
-                    }
-
-                    // Template: ctx.ExpectTypeDeclared<d>
-                    EmitLoadContext();
-                    EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(d));
-                }
+                dependent.ForEach(EmitExpectTypeDeclared);
 
                 // <ctx>.DeclareType<T>()
                 EmitLoadContext();
@@ -1593,6 +1581,23 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             Debug.Assert(_il.IsStackEmpty);
+        }
+
+        /// <summary>
+        /// If necessary, emits autoload and check the given type is loaded into context.
+        /// </summary>
+        void EmitExpectTypeDeclared(NamedTypeSymbol d)
+        {
+            if (this.Routine != null && ReferenceEquals((d as SourceTypeSymbol)?.ContainingFile, this.Routine.ContainingFile) && !d.IsConditional)
+            {
+                // declared in same file unconditionally,
+                // we don't have to check anything
+                return;
+            }
+
+            // Template: ctx.ExpectTypeDeclared<d>
+            EmitLoadContext();
+            EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(d));
         }
 
         /// <summary>
@@ -1629,15 +1634,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             // resolve dependent types:
             foreach (var d in dependent)
             {
+                var first = d.Value.First();
+
                 if (d.Value.Count == 1)
                 {
-                    // Template: ctx.ExpectTypeDeclared<d>
-                    EmitLoadContext();
-                    EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(d.Value.First()));
+                    EmitExpectTypeDeclared(first);
                 }
                 else
                 {
-                    var tname = ((IPhpTypeSymbol)d.Value.First()).FullName;
+                    var tname = ((IPhpTypeSymbol)first).FullName;
 
                     // Template: tmp_d = ctx.GetDeclaredTypeOrThrow(d_name, autoload: true).TypeHandle
                     EmitLoadContext();

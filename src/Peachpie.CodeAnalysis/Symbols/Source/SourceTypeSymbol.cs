@@ -232,7 +232,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (!diagnostics.HasAnyErrors())
             {
                 // collect variations of possible base types
-                var variations = Variations<NamedTypeSymbol>(tsignature.Select(t => t?.Item2).AsImmutable());
+                var variations = Variations<NamedTypeSymbol>(tsignature.Select(t => t?.Item2).AsImmutable(), this.ContainingFile);
 
                 // instantiate versions
                 bool self = true;
@@ -282,7 +282,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // ...
         }
 
-        static IEnumerable<ImmutableArray<T>> Variations<T>(ImmutableArray<T> types) where T : NamedTypeSymbol
+        static IEnumerable<ImmutableArray<T>> Variations<T>(ImmutableArray<T> types, SourceFileSymbol containingFile) where T : NamedTypeSymbol
         {
             if (types.Length == 0)
             {
@@ -307,9 +307,17 @@ namespace Pchp.CodeAnalysis.Symbols
                 ? ImmutableArray<T>.Empty
                 : ImmutableArray.CreateRange(types.Take(i));
 
-            var suffixvariations = Variations(types.RemoveRange(0, i + 1));
+            var suffixvariations = Variations(types.RemoveRange(0, i + 1), containingFile);
 
-            var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>();
+            var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>().ToList();
+
+            // in case there is an ambiguity that is declared in current scope unconditionally, pick this one and ignore the others
+            var best = ambiguity.FirstOrDefault(x => !x.IsConditional && ReferenceEquals((x as SourceTypeSymbol)?.ContainingFile, containingFile));
+            if (best != null)
+            {
+                ambiguity = new List<T>(1) { best };
+            }
+
             return ambiguity.SelectMany(t =>
             {
                 var list = new List<ImmutableArray<T>>();
@@ -502,6 +510,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _file.SourceModule;
 
+        /// <summary>
+        /// Gets value indicating the type is declared conditionally.
+        /// </summary>
+        internal override bool IsConditional => _syntax.IsConditional;
+
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
         public override string Name => FullName.Name.Value;
@@ -515,11 +528,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 var name = base.MetadataName;
 
                 // name'conditional#version
-
+                
                 // conditional suffix
-                if (_syntax.IsConditional)
+                if (IsConditional)
                 {
-                    var ambiguities = this.DeclaringCompilation.SourceSymbolCollection.GetTypes().Where(t => t.Name == this.Name && t.NamespaceName == this.NamespaceName);
+                    var ambiguities = this.DeclaringCompilation.SourceSymbolCollection.GetSourceTypes().Where(t => t.Name == this.Name && t.NamespaceName == this.NamespaceName);
                     name += "@" + ambiguities.TakeWhile(f => f != this).Count().ToString(); // index within types with the same name
                 }
 

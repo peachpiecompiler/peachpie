@@ -289,11 +289,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return
                 (alternatives != null) ? new AmbiguousErrorTypeSymbol(alternatives.AsImmutable())   // ambiguity
-                : (first != null) ? first   // single type
-                : new MissingMetadataTypeSymbol(name.ClrName(), 0, false);  // missing type
+                : first ?? new MissingMetadataTypeSymbol(name.ClrName(), 0, false);
         }
 
-        private IEnumerable<SourceTypeSymbol> GetSourceTypes() => _types.Symbols;
+        /// <summary>
+        /// Gets source declarations without versions.
+        /// </summary>
+        /// <returns></returns>
+        internal IEnumerable<SourceTypeSymbol> GetSourceTypes() => _types.Symbols;
 
         /// <summary>
         /// Gets all source types and their versions.
