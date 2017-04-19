@@ -312,7 +312,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>().ToList();
 
             // in case there is an ambiguity that is declared in current scope unconditionally, pick this one and ignore the others
-            var best = ambiguity.FirstOrDefault(x => !x.IsConditional && ReferenceEquals((x as SourceTypeSymbol)?.ContainingFile, containingFile));
+            var best = ambiguity.FirstOrDefault(x => ReferenceEquals((x as SourceTypeSymbol)?.ContainingFile, containingFile) && !(x as SourceTypeSymbol)._syntax.IsConditional);
             if (best != null)
             {
                 ambiguity = new List<T>(1) { best };
