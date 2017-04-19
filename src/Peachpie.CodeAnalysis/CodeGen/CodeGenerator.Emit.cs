@@ -339,7 +339,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol EmitLoadToken(TypeSymbol type, SyntaxNode syntaxNodeOpt)
         {
-            if (type != null)
+            if (!type.IsErrorTypeOrNull())
             {
                 _il.EmitLoadToken(_moduleBuilder, _diagnostics, type, syntaxNodeOpt);
             }

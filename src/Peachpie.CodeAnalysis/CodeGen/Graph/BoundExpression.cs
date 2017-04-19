@@ -2308,7 +2308,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
-        protected override BoundTypeRef RoutineTypeRef => (_typeRef.ResolvedType == null) ? _typeRef : null;    // in case the type has to be resolved in runtime and passed to callsite
+        protected override BoundTypeRef RoutineTypeRef => _typeRef.ResolvedType.IsErrorTypeOrNull() ? _typeRef : null;    // in case the type has to be resolved in runtime and passed to callsite
         protected override BoundTypeRef LateStaticTypeRef => _typeRef;  // used for direct routine call requiring late static type
         protected override bool IsVirtualCall => false;
 
@@ -2338,7 +2338,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                if (_typeref.ResolvedType != null && _typeref.ResolvedType.IsErrorType() == false)
+                if (!_typeref.ResolvedType.IsErrorTypeOrNull())
                 {
                     // context.Create<T>(caller, params)
                     var create_t = cg.CoreTypes.Context.Symbol.GetMembers("Create")
@@ -3603,7 +3603,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(type.IsReferenceType);
 
             //
-            if (AsType.ResolvedType != null)
+            if (!AsType.ResolvedType.IsErrorTypeOrNull())
             {
                 if (!isnull)
                 {

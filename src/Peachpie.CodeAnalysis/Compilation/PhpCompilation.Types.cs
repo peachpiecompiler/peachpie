@@ -510,6 +510,7 @@ namespace Pchp.CodeAnalysis
                     for (int i = 1; i < types.Count; i++)
                     {
                         var tdesc = GetTypeFromTypeRef(types[i]);
+                        Debug.Assert(!tdesc.IsErrorType());
                         result = (NamedTypeSymbol)Merge(result, GetTypeFromTypeRef(types[i]));
                     }
                 }
