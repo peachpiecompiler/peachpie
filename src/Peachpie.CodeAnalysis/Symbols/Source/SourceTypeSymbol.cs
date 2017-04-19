@@ -513,7 +513,16 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets value indicating the type is declared conditionally.
         /// </summary>
-        internal override bool IsConditional => _syntax.IsConditional;
+        internal override bool IsConditional => _syntax.IsConditional || _postponedDeclaration;
+
+        /// <summary>
+        /// Marks the symbol as its declaration should not be performed at the beginning of the file, since it mat depend on statements evaluated before the declaration.
+        /// </summary>
+        internal void PostponedDeclaration()
+        {
+            _postponedDeclaration = true;
+        }
+        bool _postponedDeclaration = false;
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
@@ -530,7 +539,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 // name'conditional#version
                 
                 // conditional suffix
-                if (IsConditional)
+                if (_syntax.IsConditional)
                 {
                     var ambiguities = this.DeclaringCompilation.SourceSymbolCollection.GetSourceTypes().Where(t => t.Name == this.Name && t.NamespaceName == this.NamespaceName);
                     name += "@" + ambiguities.TakeWhile(f => f != this).Count().ToString(); // index within types with the same name

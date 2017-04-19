@@ -1669,8 +1669,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitDeclareTypeByDependencies(versions, dependent_handles.ToArray(), 0, dependent, lblDone, lblFail);
 
             // Template: throw new Exception("Cannot declare {T}");
+            // TODO: compile type dynamically (eval of type declaration with actual base types)
             _il.MarkLabel(lblFail);
-            EmitThrowException($"Cannot declare {versions[0].FullName}.");
+            EmitThrowException(string.Format(ErrorStrings.ERR_UnknownTypeDependencies, versions[0].FullName));
 
             _il.MarkLabel(lblDone);
 

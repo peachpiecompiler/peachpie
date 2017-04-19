@@ -99,8 +99,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters))) { PhpSyntax = stmt };
             if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, BoundAccess.None)) { PhpSyntax = stmt };
             if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
-            if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());  // see SourceDeclarations.PopulatorVisitor
-            if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());  // see SourceDeclarations.PopulatorVisitor
+            if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());
+            if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());
             if (stmt is AST.GlobalStmt) return new BoundGlobalVariableStatement(
                 ((AST.GlobalStmt)stmt).VarList.Cast<AST.DirectVarUse>()
                     .Select(s => (BoundGlobalVariable)_locals.BindVariable(s.VarName, VariableKind.GlobalVariable, null))
