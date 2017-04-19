@@ -126,6 +126,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // Ignore indirect types (e.g. $foo = new $className())
             if (typeRef.IsDirect && (typeRef.ResolvedType == null || typeRef.ResolvedType.IsErrorType()))
             {
+                var errtype = typeRef.ResolvedType as ErrorTypeSymbol;
+                if (errtype != null && errtype.CandidateReason == CandidateReason.Ambiguous)
+                {
+                    // type is declared but ambiguously,
+                    // warning with declaration ambiguity was already reported, we may skip following
+                    return;
+                }
+
                 if (typeRef.TypeRef is ReservedTypeRef)
                 {
                     // unresolved parent, self ?

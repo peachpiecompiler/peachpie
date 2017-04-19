@@ -194,8 +194,11 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Contract.ThrowIfNull(type);
 
+
             _type = type;
             this.PhpSyntax = type.Syntax;
+
+            type.PostponedDeclaration();
         }
 
         public override void Accept(OperationVisitor visitor)

@@ -141,7 +141,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
             {
                 var peass = ass as PEAssemblySymbol;
-                if (peass != null && !peass.IsPchpCorLibrary && !peass.IsExtensionLibrary)
+                if (peass != null) // && !peass.IsPchpCorLibrary && !peass.IsExtensionLibrary)
                 {
                     var candidate = ass.GetTypeByMetadataName(clrName);
                     if (candidate != null && !candidate.IsErrorType())

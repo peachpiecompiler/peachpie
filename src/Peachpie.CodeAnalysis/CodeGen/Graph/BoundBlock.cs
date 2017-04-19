@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var locals = cg.Routine.LocalsTable;
 
             // in case of script, declare the script, functions and types
-            if (cg.Routine is Symbols.SourceGlobalMethodSymbol)
+            if (cg.Routine is SourceGlobalMethodSymbol)
             {
                 // <ctx>.OnInclude<TScript>()
                 cg.EmitLoadContext();
@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     .ForEach(cg.EmitDeclareFunction);
                 // <ctx>.DeclareType()
                 cg.Routine.ContainingFile.ContainedTypes
-                    .Where(t => !t.Syntax.IsConditional && !t.IsAnonymousType)   // non conditional declaration within this file
+                    .Where(t => !t.IsConditional && !t.IsAnonymousType)   // non conditional declaration within this file
                     .ForEach(cg.EmitDeclareType);
             }
             else

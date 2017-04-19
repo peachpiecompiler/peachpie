@@ -1154,6 +1154,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(from);
             Contract.ThrowIfNull(to);
 
+            Debug.Assert(!to.IsErrorType(), "Conversion to an error type.");
+
             // conversion is not needed:
             if (from.SpecialType == to.SpecialType &&
                 (from == to || (to.SpecialType != SpecialType.System_Object && from.IsOfType(to))))

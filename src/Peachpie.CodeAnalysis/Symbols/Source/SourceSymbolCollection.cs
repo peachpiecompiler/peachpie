@@ -81,32 +81,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            /// <summary>
-            /// Gets single visible symbol or null.
-            /// </summary>
-            public TSymbol SingleOrDefault(TKey key)
-            {
-                var single = default(TSymbol);
-                var values = this[key];
-
-                int n = 0;
-
-                foreach (var s in values)
-                {
-                    if (n++ == 0)
-                    {
-                        single = s;
-                    }
-                    else
-                    {
-                        single = default(TSymbol);
-                        break;
-                    }
-                }
-
-                return single;
-            }
-
             public IEnumerable<TSymbol> GetAll(TKey key)
             {
                 EnsureUpdated();
@@ -120,8 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 get
                 {
-                    EnsureUpdated();
-                    return _cacheDict[key].Where(_isVisible);
+                    return GetAll(key).Where(_isVisible);
                 }
             }
         }
@@ -274,7 +247,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return GetTypes().Cast<ILambdaContainerSymbol>().Concat(_files.Values).SelectMany(c => c.Lambdas);
         }
 
-
         /// <summary>
         /// Gets enumeration of all routines (global code, functions and methods) in source code.
         /// </summary>
@@ -292,8 +264,43 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public NamedTypeSymbol GetType(QualifiedName name) => _types.SingleOrDefault(name);
+        public NamedTypeSymbol GetType(QualifiedName name)
+        {
+            NamedTypeSymbol first = null;
+            List<NamedTypeSymbol> alternatives = null;
 
-        public IEnumerable<SourceTypeSymbol> GetTypes() => _types.Symbols;
+            var types = _types.GetAll(name).SelectMany(t => t.AllVersions());   // get all types with {name} and their versions
+            foreach (var t in types)
+            {
+                if (first == null)
+                {
+                    first = t;
+                }
+                else
+                {
+                    // ambiguity
+                    if (alternatives == null)
+                    {
+                        alternatives = new List<NamedTypeSymbol>() { first };
+                    }
+                    alternatives.Add(t);
+                }
+            }
+
+            return
+                (alternatives != null) ? new AmbiguousErrorTypeSymbol(alternatives.AsImmutable())   // ambiguity
+                : first ?? new MissingMetadataTypeSymbol(name.ClrName(), 0, false);
+        }
+
+        /// <summary>
+        /// Gets source declarations without versions.
+        /// </summary>
+        /// <returns></returns>
+        internal IEnumerable<SourceTypeSymbol> GetSourceTypes() => _types.Symbols;
+
+        /// <summary>
+        /// Gets all source types and their versions.
+        /// </summary>
+        public IEnumerable<SourceTypeSymbol> GetTypes() => GetSourceTypes().SelectMany(t => t.AllVersions());
     }
 }

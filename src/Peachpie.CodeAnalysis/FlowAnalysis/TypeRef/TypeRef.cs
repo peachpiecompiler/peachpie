@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
@@ -48,7 +49,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
         {
-            return compilation.GlobalSemantics.GetType(QualifiedName) ?? compilation.CoreTypes.Object.Symbol;
+            var resolved = (NamedTypeSymbol)compilation.GlobalSemantics.GetType(QualifiedName);
+            return (resolved != null && !resolved.IsErrorType()) ? resolved : compilation.CoreTypes.Object.Symbol;
         }
 
         public ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target) { return this; }   // there is nothing depending on the context
@@ -206,6 +208,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     case PhpTypeCode.WritableString:
                     case PhpTypeCode.String: return QualifiedName.String;
                     case PhpTypeCode.PhpArray: return QualifiedName.Array;
+                    case PhpTypeCode.Resource: return QualifiedName.Resource;
                     case PhpTypeCode.Null: return QualifiedName.Null;
                     default:
                         throw new ArgumentException();
@@ -247,6 +250,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case PhpTypeCode.String: return compilation.CoreTypes.String.Symbol;
                 case PhpTypeCode.WritableString: return compilation.CoreTypes.PhpString.Symbol;
                 case PhpTypeCode.PhpArray: return compilation.CoreTypes.PhpArray.Symbol;
+                case PhpTypeCode.Resource: return compilation.CoreTypes.PhpResource.Symbol;
                 case PhpTypeCode.Null: return compilation.CoreTypes.Object.Symbol; // object // when merging, NULL should be handled separatelly (e.g. PhpValue|NULL -> PhpValue)
                 default:
                     throw new NotImplementedException();

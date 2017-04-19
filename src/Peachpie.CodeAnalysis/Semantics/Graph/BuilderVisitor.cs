@@ -294,11 +294,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitTypeDecl(TypeDecl x)
         {
-            if (x.IsConditional)
+            var declarelazy = x.IsConditional || PostponeDeclaration();
+            if (declarelazy)
             {
                 Add(x);
             }
             // ignored
+        }
+
+        /// <summary>
+        /// Whether we can define types unconditionally in current state or the declaration should be postponed because some preceeding expressions may introduce new declarations conditionally.
+        /// </summary>
+        bool PostponeDeclaration()
+        {
+            if (ReferenceEquals(_current, this.Start))
+            {
+                return _current.Statements.Count() != 0;
+            }
+
+            return true;
         }
 
         public override void VisitMethodDecl(MethodDecl x)

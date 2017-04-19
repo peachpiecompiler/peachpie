@@ -52,9 +52,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         PhpArray,
 
         /// <summary>
-        /// A class type, including <c>NULL</c>, <c>resource</c>, <c>Closure</c> or a generic <c>Object</c>.
+        /// A class type, including <c>NULL</c>, <c>Closure</c> or a generic <c>Object</c>.
         /// </summary>
         Object,
+
+        /// <summary>
+        /// A PHP resource.
+        /// </summary>
+        Resource,
 
         /// <summary>
         /// Object that might be <c>NULL</c>.

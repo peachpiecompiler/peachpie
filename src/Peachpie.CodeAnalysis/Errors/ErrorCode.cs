@@ -84,6 +84,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_UndefinedType,
         WRN_UndefinedMethodCall,
         WRN_EvalDiscouraged,
+        /// <summary>The declaration of class, interface or trait is ambiguous since its base types cannot be resolved.</summary>
+        WRN_AmbiguousDeclaration,
 
         //
         // Visible information
