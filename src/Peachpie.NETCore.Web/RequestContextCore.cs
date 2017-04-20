@@ -84,7 +84,7 @@ namespace Peachpie.Web
         /// <summary>
         /// Gets or sets session handler for current context.
         /// </summary>
-        PhpSessionHandler IHttpPhpContext.SessionHandler { get; set; } // = new AspNetCoreSession
+        PhpSessionHandler IHttpPhpContext.SessionHandler { get; set; } = AspNetCoreSessionHandler.Default;
 
         /// <summary>
         /// Gets or sets session state.
@@ -199,6 +199,7 @@ namespace Peachpie.Web
         /// Reference to current <see cref="HttpContext"/>.
         /// Cannot be <c>null</c>.
         /// </summary>
+        public HttpContext HttpContext => _httpctx;
         readonly HttpContext _httpctx;
 
         /// <summary>

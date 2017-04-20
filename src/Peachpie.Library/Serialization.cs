@@ -17,7 +17,10 @@ namespace Pchp.Library
     {
         #region Serializer
 
-        internal abstract class Serializer
+        /// <summary>
+        /// Abstract serializer providing extension points for PHP value serialization and deserialization.
+        /// </summary>
+        public abstract class Serializer
         {
             /// <summary>
             /// Gets the serializer name.
@@ -130,7 +133,10 @@ namespace Pchp.Library
 
         #region PhpSerializer
 
-        internal sealed class PhpSerializer : Serializer
+        /// <summary>
+        /// <see cref="Serializer"/> implementation providing legacy PHP serialization and deserialization.
+        /// </summary>
+        public sealed class PhpSerializer : Serializer
         {
             #region Tokens
 

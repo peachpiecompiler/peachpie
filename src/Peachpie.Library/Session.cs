@@ -45,7 +45,14 @@ namespace Pchp.Library
         /// <summary>
         /// Discard session array changes and finish session
         /// </summary>
-        public static void session_abort() { throw new NotImplementedException(); }
+        public static void session_abort(Context ctx)
+        {
+            var webctx = EnsureHttpContext(ctx);
+            if (webctx != null)
+            {
+                webctx.SessionHandler.AbortSession(ctx, webctx);
+            }
+        }
 
         /// <summary>
         /// Return current cache expire
@@ -161,7 +168,15 @@ namespace Pchp.Library
         /// <summary>
         /// Re-initialize session array with original values
         /// </summary>
-        public static void session_reset() { throw new NotImplementedException(); }
+        public static void session_reset(Context ctx)
+        {
+            var webctx = EnsureHttpContext(ctx);
+            if (webctx != null)
+            {
+                webctx.SessionHandler.AbortSession(ctx, webctx);
+                webctx.SessionHandler.StartSession(ctx, webctx);
+            }
+        }
 
         /// <summary>
         /// Get and/or set the current session save path
@@ -203,7 +218,7 @@ namespace Pchp.Library
         public static int session_status(Context ctx)
         {
             var webctx = ctx.HttpPhpContext;
-            if (webctx == null)
+            if (webctx == null || webctx.SessionHandler == null)
             {
                 return PHP_SESSION_DISABLED;
             }

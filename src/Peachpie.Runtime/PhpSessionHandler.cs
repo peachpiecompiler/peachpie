@@ -55,7 +55,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets this handler name.
         /// </summary>
-        public abstract string HandlerName { get; set; }
+        public abstract string HandlerName { get; }
 
         /// <summary>
         /// Called when starting a session,
@@ -121,6 +121,24 @@ namespace Pchp.Core
 
             //
             return true;
+        }
+
+        /// <summary>
+        /// Discard session array changes and finish session.
+        /// </summary>
+        public virtual void AbortSession(Context ctx, IHttpPhpContext webctx)
+        {
+            if (webctx.SessionState != PhpSessionState.Started) return;
+            webctx.SessionState = PhpSessionState.InProgress;
+
+            try
+            {
+                // TODO: clear $_SESSION ? 
+            }
+            finally
+            {
+                webctx.SessionState = PhpSessionState.Closed;
+            }
         }
 
         /// <summary>
