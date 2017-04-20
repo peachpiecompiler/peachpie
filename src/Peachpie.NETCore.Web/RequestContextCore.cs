@@ -81,6 +81,16 @@ namespace Peachpie.Web
             _httpctx.Response.Body.Flush();
         }
 
+        /// <summary>
+        /// Gets or sets session handler for current context.
+        /// </summary>
+        PhpSessionHandler IHttpPhpContext.SessionHandler { get; set; } // = new AspNetCoreSession
+
+        /// <summary>
+        /// Gets or sets session state.
+        /// </summary>
+        PhpSessionState IHttpPhpContext.SessionState { get; set; }
+
         #endregion
 
         #region Request Lifecycle

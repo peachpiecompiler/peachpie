@@ -155,7 +155,7 @@ namespace Pchp.Core
             superglobals.cookie = InitCookieVariable();
             superglobals.server = InitServerVariable();
             superglobals.files = InitFilesVariable();
-            superglobals.session = new PhpArray();
+            superglobals.session = PhpArray.NewEmpty();
             superglobals.request = InitRequestVariable(superglobals.get, superglobals.post, superglobals.cookie, egpcs);   // after get, post, cookie
             superglobals.globals = InitGlobals(egpcs);
         }

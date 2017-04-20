@@ -43,5 +43,19 @@ namespace Pchp.Core
         /// Flushes the response stream of the HTTP server.
         /// </summary>
         void Flush();
+
+        #region session
+
+        /// <summary>
+        /// Gets or sets session handler for current context.
+        /// </summary>
+        PhpSessionHandler SessionHandler { get; set; }
+
+        /// <summary>
+        /// Gets or sets session state.
+        /// </summary>
+        PhpSessionState SessionState { get; set; }
+
+        #endregion
     }
 }

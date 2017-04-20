@@ -125,6 +125,16 @@ namespace Pchp.Core
             _httpctx.Response.Flush();
         }
 
+        /// <summary>
+        /// Gets or sets session handler for current context.
+        /// </summary>
+        PhpSessionHandler IHttpPhpContext.SessionHandler { get; set; } // = new AspNetSession
+
+        /// <summary>
+        /// Gets or sets session state.
+        /// </summary>
+        PhpSessionState IHttpPhpContext.SessionState { get; set; }
+
         #endregion
 
         public override IHttpPhpContext HttpPhpContext => this;
