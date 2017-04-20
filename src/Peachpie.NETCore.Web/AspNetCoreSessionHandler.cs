@@ -20,6 +20,8 @@ namespace Peachpie.Web
 
         static ISession GetSession(IHttpPhpContext webctx) => ((RequestContextCore)webctx).HttpContext.Session;
 
+        static PhpSerialization.Serializer Serializer => PhpSerialization.PhpSerializer.Instance;
+
         private AspNetCoreSessionHandler() { }
 
         public override string SessionName
@@ -42,6 +44,7 @@ namespace Peachpie.Web
             {
                 return isession.Id;
             }
+            else
             {
                 return string.Empty;
             }
@@ -49,16 +52,19 @@ namespace Peachpie.Web
 
         public override PhpArray Load(IHttpPhpContext webctx)
         {
-            var isession = GetSession(webctx);
+            var ctx = (RequestContextCore)webctx;
+            var isession = ctx.HttpContext.Session;
             if (isession != null && isession.IsAvailable)
             {
                 var result = new PhpArray();
 
                 foreach (var key in isession.Keys)
                 {
-                    if (isession.TryGetValue(key, out byte[] value))
+                    if (isession.TryGetValue(key, out byte[] bytes))
                     {
-                        throw new NotImplementedException();
+                        // try to deserialize bytes using php serializer
+                        // gets FALSE if bhytes are in incorrect format
+                        result[key] = Serializer.Deserialize(ctx, new PhpString(bytes), default(RuntimeTypeHandle));
                     }
                 }
 
@@ -84,7 +90,7 @@ namespace Peachpie.Web
                     {
                         // serialize value using php serializer
                         // and save to underlaying ISession
-                        var bytes = PhpSerialization.PhpSerializer.Instance.Serialize(ctx, enumerator.CurrentValue.GetValue(), default(RuntimeTypeHandle));
+                        var bytes = Serializer.Serialize(ctx, enumerator.CurrentValue.GetValue(), default(RuntimeTypeHandle));
                         isession.Set(enumerator.CurrentKey.ToString(), bytes.ToBytes(ctx));
                     }
                 }
