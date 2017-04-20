@@ -162,11 +162,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Visit((BoundInstanceOfEx)condition, branch);
                     return;
                 }
-                //if (condition is IssetEx)
-                //{
-                //    VisitIssetEx((IssetEx)condition, branch);
-                //    return;
-                //}
+                if (condition is BoundIsSetEx)
+                {
+                    Visit((BoundIsSetEx)condition, branch);
+                    return;
+                }
                 //if (condition is EmptyEx)
                 //{
                 //    VisitEmptyEx((EmptyEx)condition, branch);
@@ -197,6 +197,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void Visit(BoundInstanceOfEx x, ConditionBranch branch)
         {
             base.VisitInstanceOf(x);
+        }
+
+        public sealed override void VisitIsSet(BoundIsSetEx x) => Visit(x, ConditionBranch.Default);
+
+        protected virtual void Visit(BoundIsSetEx x, ConditionBranch branch)
+        {
+            base.VisitIsSet(x);
         }
 
         #endregion
