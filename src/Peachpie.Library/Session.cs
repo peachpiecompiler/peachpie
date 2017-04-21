@@ -275,10 +275,10 @@ namespace Pchp.Library
             }
         }
 
-        /// <summary>
-        /// Unregister a global variable from the current session
-        /// </summary>
-        public static void session_unregister() { throw new NotImplementedException(); }
+        ///// <summary>
+        ///// Unregister a global variable from the current session
+        ///// </summary>
+        //public static bool session_unregister(Context ctx, string name) { throw new NotImplementedException(); } // deprecated and removed
 
         /// <summary>
         /// Free all session variables
