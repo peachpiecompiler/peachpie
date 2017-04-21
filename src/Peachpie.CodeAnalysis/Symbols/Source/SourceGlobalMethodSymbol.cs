@@ -102,9 +102,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override IList<Statement> Statements => _file.SyntaxTree.Source.Ast.Statements;
+        internal override IList<Statement> Statements => _file.SyntaxTree.Root.Statements;
 
-        internal override AstNode Syntax => _file.SyntaxTree.Source.Ast;
+        internal override AstNode Syntax => _file.SyntaxTree.Root;
 
         internal override PHPDocBlock PHPDocBlock => null;
 
