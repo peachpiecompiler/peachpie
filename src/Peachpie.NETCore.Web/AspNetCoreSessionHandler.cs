@@ -31,6 +31,23 @@ namespace Peachpie.Web
         }
         public override string HandlerName => "AspNetCore";
 
+        /// <summary>
+        /// Checks if sessions were configured.
+        /// </summary>
+        public override bool IsEnabled(IHttpPhpContext webctx)
+        {
+            var ctx = (RequestContextCore)webctx;
+            try
+            {
+                var session = ctx.HttpContext.Session; // throws if session is not configured
+                return session != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public override void Abandon(IHttpPhpContext webctx)
         {
             // TODO: abandon asp.net core session
@@ -53,8 +70,8 @@ namespace Peachpie.Web
         public override PhpArray Load(IHttpPhpContext webctx)
         {
             var ctx = (RequestContextCore)webctx;
-            var isession = ctx.HttpContext.Session;
-            if (isession != null && isession.IsAvailable)
+            var isession = ctx.HttpContext.Session; // throws if session is not configured
+            if (isession.IsAvailable)
             {
                 var result = new PhpArray();
 
@@ -77,34 +94,29 @@ namespace Peachpie.Web
         public override bool Persist(IHttpPhpContext webctx, PhpArray session)
         {
             var ctx = (RequestContextCore)webctx;
-            var isession = ctx.HttpContext.Session;
-            if (isession != null)
-            {
-                isession.Clear();
+            var isession = ctx.HttpContext.Session; // throws if session is not configured
 
-                //
-                if (session != null && session.Count != 0)
+            //
+            isession.Clear();
+
+            //
+            if (session != null && session.Count != 0)
+            {
+                var enumerator = session.GetFastEnumerator();
+                while (enumerator.MoveNext())
                 {
-                    var enumerator = session.GetFastEnumerator();
-                    while (enumerator.MoveNext())
-                    {
-                        // serialize value using php serializer
-                        // and save to underlaying ISession
-                        var bytes = Serializer.Serialize(ctx, enumerator.CurrentValue.GetValue(), default(RuntimeTypeHandle));
-                        isession.Set(enumerator.CurrentKey.ToString(), bytes.ToBytes(ctx));
-                    }
+                    // serialize value using php serializer
+                    // and save to underlaying ISession
+                    var bytes = Serializer.Serialize(ctx, enumerator.CurrentValue.GetValue(), default(RuntimeTypeHandle));
+                    isession.Set(enumerator.CurrentKey.ToString(), bytes.ToBytes(ctx));
                 }
-
-                //
-                isession.CommitAsync();
-
-                //
-                return true;
             }
-            else
-            {
-                return false;
-            }
+
+            //
+            isession.CommitAsync();
+
+            //
+            return true;
         }
     }
 }

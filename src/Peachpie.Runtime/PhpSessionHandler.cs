@@ -85,6 +85,11 @@ namespace Pchp.Core
         public abstract string GetSessionId(IHttpPhpContext webctx);
 
         /// <summary>
+        /// Gets value indicating the sessions are configured and available to use.
+        /// </summary>
+        public virtual bool IsEnabled(IHttpPhpContext webctx) => true;
+
+        /// <summary>
         /// Starts the session if it is not started yet.
         /// </summary>
         public virtual bool StartSession(Context ctx, IHttpPhpContext webctx)
@@ -112,6 +117,11 @@ namespace Pchp.Core
                 {
                     throw new InvalidOperationException("SID already set.");    // TODO: allow overwriting
                 }
+            }
+            catch
+            {
+                webctx.SessionState = PhpSessionState.Closed;
+                return false;
             }
             finally
             {

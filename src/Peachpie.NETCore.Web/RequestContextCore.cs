@@ -84,7 +84,11 @@ namespace Peachpie.Web
         /// <summary>
         /// Gets or sets session handler for current context.
         /// </summary>
-        PhpSessionHandler IHttpPhpContext.SessionHandler { get; set; } = AspNetCoreSessionHandler.Default;
+        PhpSessionHandler IHttpPhpContext.SessionHandler
+        {
+            get => AspNetCoreSessionHandler.Default;
+            set => throw new NotSupportedException();
+        }
 
         /// <summary>
         /// Gets or sets session state.
