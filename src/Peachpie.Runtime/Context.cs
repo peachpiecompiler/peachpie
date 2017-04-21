@@ -392,13 +392,13 @@ namespace Pchp.Core
 
         #region Shutdown
 
-        List<Action> _lazyShutdownCallbacks = null;
+        List<Action<Context>> _lazyShutdownCallbacks = null;
 
         /// <summary>
         /// Enqueues a callback to be invoked at the end of request.
         /// </summary>
         /// <param name="action">Callback. Cannot be <c>null</c>.</param>
-        public void RegisterShutdownCallback(Action action)
+        public void RegisterShutdownCallback(Action<Context> action)
         {
             if (action == null)
             {
@@ -408,7 +408,7 @@ namespace Pchp.Core
             var callbacks = _lazyShutdownCallbacks;
             if (callbacks == null)
             {
-                _lazyShutdownCallbacks = callbacks = new List<Action>(1);
+                _lazyShutdownCallbacks = callbacks = new List<Action<Context>>(1);
             }
 
             callbacks.Add(action);
@@ -424,7 +424,7 @@ namespace Pchp.Core
             {
                 for (int i = 0; i < callbacks.Count; i++)
                 {
-                    callbacks[i]();
+                    callbacks[i](this);
                 }
 
                 //

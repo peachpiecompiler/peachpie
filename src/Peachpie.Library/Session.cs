@@ -106,7 +106,7 @@ namespace Pchp.Library
         /// <summary>
         /// Perform session data garbage collection
         /// </summary>
-        public static void session_gc() { throw new NotImplementedException(); }
+        public static int session_gc() => 0;
 
         /// <summary>
         /// Get the session cookie parameters
@@ -141,15 +141,30 @@ namespace Pchp.Library
             return id;
         }
 
-        /// <summary>
-        /// Find out whether a global variable is registered in a session
-        /// </summary>
-        public static void session_is_registered() { throw new NotImplementedException(); }
+        ///// <summary>
+        ///// Find out whether a global variable is registered in a session
+        ///// </summary>
+        //public static bool session_is_registered(Context ctx, string name) { throw new NotImplementedException(); }   // deprecated and removed
 
         /// <summary>
         /// Get and/or set the current session module
         /// </summary>
-        public static void session_module_name() { throw new NotImplementedException(); }
+        public static string session_module_name(Context ctx, string newmodule = null)
+        {
+            var module = string.Empty;
+            var webctx = EnsureHttpContext(ctx);
+            if (webctx != null)
+            {
+                module = webctx.SessionHandler.HandlerName;
+
+                if (newmodule != null)
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            return module;
+        }
 
         /// <summary>
         /// Get and/or set the current session name
@@ -179,14 +194,18 @@ namespace Pchp.Library
         public static void session_regenerate_id() { throw new NotImplementedException(); }
 
         /// <summary>
-        /// Session shutdown function
+        /// Session shutdown function,
+        /// registers <see cref="session_write_close"/> as a shutdown function.
         /// </summary>
-        public static void session_register_shutdown() { throw new NotImplementedException(); }
+        public static void session_register_shutdown(Context ctx)
+        {
+            ctx.RegisterShutdownCallback(session_write_close);
+        }
 
-        /// <summary>
-        /// Register one or more global variables with the current session
-        /// </summary>
-        public static void session_register() { throw new NotImplementedException(); }
+        ///// <summary>
+        ///// Register one or more global variables with the current session
+        ///// </summary>
+        //public static void session_register() { throw new NotImplementedException(); }    // deprecated and removed
 
         /// <summary>
         /// Re-initialize session array with original values

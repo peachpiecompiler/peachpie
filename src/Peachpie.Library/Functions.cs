@@ -178,7 +178,7 @@ namespace Pchp.Library
                 return;
             }
 
-            ctx.RegisterShutdownCallback(() => function.Invoke(ctx, arguments));
+            ctx.RegisterShutdownCallback((_ctx) => function.Invoke(_ctx, arguments));
         }
 
         #endregion
