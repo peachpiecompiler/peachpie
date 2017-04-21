@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.Emit
         public SynthesizedManager SynthesizedManager => _synthesized;
         readonly SynthesizedManager _synthesized;
 
-        Cci.ICustomAttribute _debuggableAttribute;
+        Cci.ICustomAttribute _debuggableAttribute, _phpextensionAttribute;
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly ConcurrentDictionary<Symbol, object> _genericInstanceMap = new ConcurrentDictionary<Symbol, object>();
@@ -141,6 +141,7 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
+                // [Debuggable(DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)]
                 if (_compilation.Options.DebugPlusMode)
                 {
                     if (_debuggableAttribute == null)
@@ -164,7 +165,18 @@ namespace Pchp.CodeAnalysis.Emit
 
                 //yield return targetfr;
 
-                yield break; // throw new NotImplementedException();
+                // [assembly: Pchp.Core.PhpExtension(new string[0])]
+                if (_phpextensionAttribute == null)
+                {
+                    var phpextensionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.PhpExtensionAttributeName).InstanceConstructors.First();
+                    _phpextensionAttribute = new SynthesizedAttributeData(phpextensionAttributeCtor,
+                        ImmutableArray.Create(new TypedConstant(Compilation.CreateArrayTypeSymbol(Compilation.CoreTypes.String.Symbol), ImmutableArray<TypedConstant>.Empty)),  // string[] { }
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                }
+                yield return _phpextensionAttribute;
+
+                //
+                yield break;
             }
         }
 

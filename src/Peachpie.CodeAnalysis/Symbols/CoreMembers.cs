@@ -887,6 +887,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IntStringKey_string = ct.IntStringKey.Ctor(ct.String);
                 ScriptAttribute_string = ct.ScriptAttribute.Ctor(ct.String);
                 PhpTraitAttribute = ct.PhpTraitAttribute.Ctor();
+                PhpTypeAttribute_string = ct.PhpTypeAttribute.Ctor(ct.String);
                 PhpFieldsOnlyCtorAttribute = ct.PhpFieldsOnlyCtorAttribute.Ctor();
 
                 ScriptDiedException = ct.ScriptDiedException.Ctor();
@@ -899,7 +900,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpArray, PhpArray_int,
                 PhpString, PhpString_string, PhpString_string_string,
                 IntStringKey_int, IntStringKey_string,
-                ScriptAttribute_string, PhpTraitAttribute, PhpFieldsOnlyCtorAttribute,
+                ScriptAttribute_string, PhpTraitAttribute, PhpTypeAttribute_string, PhpFieldsOnlyCtorAttribute,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;
         }
 

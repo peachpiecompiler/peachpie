@@ -631,7 +631,6 @@ namespace Pchp.CodeAnalysis.Symbols
             if (this.IsTrait)
             {
                 // [PhpTraitAttribute()]
-
                 if (_lazyPhpTraitAttribute == null)
                 {
                     _lazyPhpTraitAttribute = new SynthesizedAttributeData(
@@ -641,6 +640,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 attrs = attrs.Add(_lazyPhpTraitAttribute);
+            }
+            else
+            {
+                // [PhpTypeAttribute(FullName)]
+                attrs = attrs.Add(new SynthesizedAttributeData(
+                        DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string,
+                        ImmutableArray.Create(new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString())),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
             }
 
             return attrs;

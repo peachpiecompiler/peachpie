@@ -100,7 +100,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison,
-            ScriptAttribute, PhpTraitAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
+            ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             PhpTypeInfoExtension, PhpTypeInfo,
@@ -147,6 +147,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Convert = Create("Convert");
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create("PhpTraitAttribute");
+            PhpTypeAttribute = Create("PhpTypeAttribute");
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
             PhpFieldsOnlyCtorAttribute = CreateFromFullName(PhpFieldsOnlyCtorAttributeName);
             IStaticInit = Create("IStaticInit");
