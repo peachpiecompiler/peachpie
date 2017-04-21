@@ -103,11 +103,11 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());
             if (stmt is AST.GlobalStmt) return new BoundGlobalVariableStatement(
                 ((AST.GlobalStmt)stmt).VarList.Cast<AST.DirectVarUse>()
-                    .Select(s => (BoundGlobalVariable)_locals.BindVariable(s.VarName, VariableKind.GlobalVariable, null))
+                    .Select(s => _locals.BindVariable(s.VarName, VariableKind.GlobalVariable, s.Span.ToTextSpan(), null))
                     .ToImmutableArray());
             if (stmt is AST.StaticStmt) return new BoundStaticVariableStatement(
                 ((AST.StaticStmt)stmt).StVarList
-                    .Select(s => (BoundStaticLocal)_locals.BindVariable(s.Variable, VariableKind.StaticVariable,
+                    .Select(s => (BoundStaticLocal)_locals.BindVariable(s.Variable, VariableKind.StaticVariable, s.Span.ToTextSpan(),
                         () => (s.Initializer != null ? BindExpression(s.Initializer) : null)))
                     .ToImmutableArray())
             { PhpSyntax = stmt };

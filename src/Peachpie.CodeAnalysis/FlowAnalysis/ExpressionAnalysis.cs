@@ -333,7 +333,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var previoustype = State.GetLocalType(local);    // type of the variable in the previous state
 
                 // bind variable place
-                x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local));
+                x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local), x.PhpSyntax.Span.ToTextSpan());
                 
                 //
                 State.VisitLocal(local);
