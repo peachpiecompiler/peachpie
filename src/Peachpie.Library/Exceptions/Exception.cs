@@ -14,7 +14,8 @@ namespace Pchp.Library.Spl
         protected string file;
         protected int line;
 
-        public Exception() { }
+        [PhpFieldsOnlyCtor]
+        protected Exception() { }
 
         public Exception(string message = "", long code = 0, Throwable previous = null)
         {
@@ -53,6 +54,21 @@ namespace Pchp.Library.Spl
         public virtual string __toString()
         {
             throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Exception thrown if an error which can only be found on runtime occurs.
+    /// </summary>
+    [PhpType("[name]")]
+    public class RuntimeException : Spl.Exception
+    {
+        [PhpFieldsOnlyCtor]
+        protected RuntimeException() { }
+
+        public RuntimeException(string message = "", long code = 0, Throwable previous = null)
+        {
+            __construct(message, code, previous);
         }
     }
 }
