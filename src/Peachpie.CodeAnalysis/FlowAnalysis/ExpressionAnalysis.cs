@@ -1655,7 +1655,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
 
-                if (x.TargetType.ResolvedType != null)
+                if (x.TargetType.ResolvedType.IsErrorTypeOrNull() == false)
                 {
                     x.ConstantValue = new Optional<object>(((IPhpTypeSymbol)x.TargetType.ResolvedType).FullName.ToString());
                 }
