@@ -80,7 +80,17 @@ namespace Pchp.CodeAnalysis
             result.Types = factory.Types.AsImmutableSafe();
             result.Functions = factory.Functions.AsImmutableSafe();
             result.YieldNodes = factory.YieldNodes.AsImmutableSafe();
-            result.Root = factory.Root;
+
+            if (factory.Root != null)
+            {
+                result.Root = factory.Root;
+            }
+            else
+            {
+                // Parser leaves factory.Root to null in the case of syntax errors -> create a proxy syntax node
+                var fullSpan = new Devsense.PHP.Text.Span(0, unit.Code.Length);
+                result.Root = new GlobalCode(fullSpan, ImmutableArray<Statement>.Empty, unit);
+            }
 
             //
             return result;

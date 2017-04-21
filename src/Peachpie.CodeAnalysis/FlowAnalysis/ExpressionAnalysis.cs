@@ -958,6 +958,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 foreach (var refExpr in x.VarReferences)
                 {
+                    // Solve also $foo[0], $foo->bar and their combinations
                     var varRef = refExpr as BoundVariableRef;
                     if (varRef != null && varRef.Name.IsDirect)
                     {
@@ -1045,6 +1046,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                         {
                                             var local = State.GetLocalHandle(refvar.Name.NameValue.Value);
                                             State.SetLocalType(local, expectedparams[i].Type);
+                                            refvar.MaybeUninitialized = false;
                                             if (ep.IsAlias)
                                             {
                                                 State.MarkLocalByRef(local);
