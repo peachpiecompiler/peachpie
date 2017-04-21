@@ -442,9 +442,11 @@ namespace Pchp.CodeAnalysis.Emit
 
         protected IEnumerable<Cci.IAssemblyReference> GetAssemblyReferencesFromAddedModules(DiagnosticBag diagnostics)
         {
-            foreach (ModuleSymbol m in _sourceModule.ContainingAssembly.Modules)
+            ImmutableArray<ModuleSymbol> modules = SourceModule.ContainingAssembly.Modules;
+
+            for (int i = 1; i < modules.Length; i++)
             {
-                foreach (AssemblySymbol aRef in m.ReferencedAssemblySymbols)
+                foreach (AssemblySymbol aRef in modules[i].ReferencedAssemblySymbols)
                 {
                     yield return Translate(aRef, diagnostics);
                 }

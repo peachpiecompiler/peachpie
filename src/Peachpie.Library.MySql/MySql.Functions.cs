@@ -13,10 +13,10 @@ namespace Peachpie.Library.MySql
     /// <summary>
     /// MySql functions container.
     /// </summary>
-    [PhpExtension("mysql")]
+    [PhpExtension("mysql", Registrator = typeof(Registrator))]
     public static partial class MySql
     {
-        internal sealed class Registrator
+        sealed class Registrator
         {
             public Registrator()
             {

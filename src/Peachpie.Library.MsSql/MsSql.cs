@@ -29,7 +29,7 @@ namespace Peachpie.Library.MsSql
     [PhpExtension("mssql", Registrator = typeof(Registrator))]
     public static class MsSql
     {
-        class Registrator
+        sealed class Registrator
         {
             public Registrator()
             {

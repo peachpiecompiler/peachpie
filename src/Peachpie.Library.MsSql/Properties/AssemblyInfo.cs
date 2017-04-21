@@ -10,10 +10,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyProduct("Peachpie.Library.MsSql")]
 [assembly: AssemblyTrademark("")]
 
-// Setting ComVisible to false makes the types in this assembly not visible
-// to COM components.  If you need to access a type in this assembly from
-// COM, set the ComVisible attribute to true on that type.
-[assembly: ComVisible(false)]
-
-// The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b16eb9f6-cca5-4322-8dcf-07706c518600")]
+// annotates this library as a php extension,
+// all its public static methods with compatible signatures will be seen as global functions to php scope
+[assembly: Pchp.Core.PhpExtension("mssql")]
