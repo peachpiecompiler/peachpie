@@ -116,7 +116,30 @@ namespace Pchp.Library
         /// <summary>
         /// Get and/or set the current session id
         /// </summary>
-        public static void session_id() { throw new NotImplementedException(); }
+        public static string session_id(Context ctx, string newid = null)
+        {
+            string id = string.Empty;
+
+            var webctx = EnsureHttpContext(ctx);
+            if (webctx != null && webctx.SessionHandler != null)
+            {
+                id = webctx.SessionHandler.GetSessionId(webctx);
+
+                if (newid != null)
+                {
+                    if (webctx.SessionState != PhpSessionState.Closed)
+                    {
+                        // err
+                    }
+
+                    // change session id
+                    throw new NotSupportedException(nameof(newid));
+                }
+            }
+
+            //
+            return id;
+        }
 
         /// <summary>
         /// Find out whether a global variable is registered in a session
@@ -209,7 +232,8 @@ namespace Pchp.Library
         public static bool session_start(Context ctx, PhpArray options = null)
         {
             var webctx = EnsureHttpContext(ctx);
-            return webctx != null && webctx.SessionHandler.StartSession(ctx, webctx);
+            var handler = webctx?.SessionHandler;
+            return handler != null && handler.StartSession(ctx, webctx);
         }
 
         /// <summary>
@@ -218,7 +242,7 @@ namespace Pchp.Library
         public static int session_status(Context ctx)
         {
             var webctx = ctx.HttpPhpContext;
-            if (webctx == null || webctx.SessionHandler == null)
+            if (webctx == null || webctx.SessionHandler == null || !webctx.SessionHandler.IsEnabled(webctx))
             {
                 return PHP_SESSION_DISABLED;
             }
