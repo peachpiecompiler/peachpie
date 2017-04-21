@@ -144,7 +144,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundVariableRef BindCatchVariable(AST.CatchItem x)
         {
-            return new BoundVariableRef(new BoundVariableName(x.Variable.VarName))
+            return new BoundVariableRef(new BoundVariableName(x.Variable.VarName)) { PhpSyntax = x.Variable }
                 .WithAccess(BoundAccess.Write);
         }
 
