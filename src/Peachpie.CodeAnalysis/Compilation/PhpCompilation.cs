@@ -409,7 +409,16 @@ namespace Pchp.CodeAnalysis
 
                 //cancellationToken.ThrowIfCancellationRequested();
 
-                builder.AddRange(this.BindAndAnalyseTask().Result.AsImmutable());   // TODO: cancellationToken
+                try
+                {
+                    // TODO: cancellationToken
+                    builder.AddRange(this.BindAndAnalyseTask().Result.AsImmutable());
+                }
+                catch (AggregateException e) when (e.InnerException != null)
+                {
+                    // unwrap the aggregate exception, keep original stacktrace
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                }
 
                 cancellationToken.ThrowIfCancellationRequested();
 
