@@ -264,7 +264,20 @@ namespace Pchp.Library
         /// <summary>
         /// Free all session variables
         /// </summary>
-        public static void session_unset() { throw new NotImplementedException(); }
+        public static bool session_unset(Context ctx)
+        {
+            var webctx = EnsureHttpContext(ctx);
+            if (webctx == null || webctx.SessionState != PhpSessionState.Started)
+            {
+                return false;
+            }
+
+            //
+            ctx.Session.Clear();
+
+            //
+            return true;
+        }
 
         /// <summary>
         /// Write session data and end session
