@@ -213,7 +213,7 @@ namespace Pchp.Library
             else if (variable.IsObject)
             {
                 // PHP Countable
-                var countable = variable.Object as Countable;
+                var countable = variable.Object as Spl.Countable;
                 if (countable != null)
                 {
                     return countable.count();

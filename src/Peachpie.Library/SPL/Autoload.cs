@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Pchp.Core.Reflection;
 using System.Diagnostics;
 
-namespace Pchp.Library
+namespace Pchp.Library.Spl
 {
     public static class Autoload
     {
