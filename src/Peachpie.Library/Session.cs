@@ -29,7 +29,10 @@ namespace Pchp.Library
 
         #region Helpers
 
-        static IHttpPhpContext EnsureHttpContext(Context ctx)
+        /// <summary>
+        /// Gets <see cref="IHttpPhpContext"/> if available. Otherwise <c>null</c> is returned and warning throwed.
+        /// </summary>
+        static IHttpPhpContext GetHttpPhpContext(Context ctx)
         {
             var webctx = ctx.HttpPhpContext;
             if (webctx == null)
@@ -47,7 +50,7 @@ namespace Pchp.Library
         /// </summary>
         public static void session_abort(Context ctx)
         {
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             if (webctx != null)
             {
                 webctx.SessionHandler.AbortSession(ctx, webctx);
@@ -69,7 +72,7 @@ namespace Pchp.Library
         /// </summary>
         public static void session_commit(Context ctx)
         {
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             if (webctx != null)
             {
                 webctx.SessionHandler.CloseSession(ctx, webctx, abandon: false);
@@ -91,7 +94,7 @@ namespace Pchp.Library
         /// </summary>
         public static void session_destroy(Context ctx)
         {
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             if (webctx != null)
             {
                 webctx.SessionHandler.CloseSession(ctx, webctx, abandon: true);
@@ -120,7 +123,7 @@ namespace Pchp.Library
         {
             string id = string.Empty;
 
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             if (webctx != null && webctx.SessionHandler != null)
             {
                 id = webctx.SessionHandler.GetSessionId(webctx);
@@ -152,7 +155,7 @@ namespace Pchp.Library
         public static string session_module_name(Context ctx, string newmodule = null)
         {
             var module = string.Empty;
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             if (webctx != null)
             {
                 module = webctx.SessionHandler.HandlerName;
@@ -173,7 +176,7 @@ namespace Pchp.Library
         {
             string name = null;
 
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             if (webctx != null)
             {
                 name = webctx.SessionHandler.SessionName;
@@ -212,7 +215,7 @@ namespace Pchp.Library
         /// </summary>
         public static void session_reset(Context ctx)
         {
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             if (webctx != null)
             {
                 webctx.SessionHandler.AbortSession(ctx, webctx);
@@ -250,7 +253,7 @@ namespace Pchp.Library
         /// <returns>Whether succeeded.</returns>
         public static bool session_start(Context ctx, PhpArray options = null)
         {
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             var handler = webctx?.SessionHandler;
             return handler != null && handler.StartSession(ctx, webctx);
         }
@@ -285,7 +288,7 @@ namespace Pchp.Library
         /// </summary>
         public static bool session_unset(Context ctx)
         {
-            var webctx = EnsureHttpContext(ctx);
+            var webctx = GetHttpPhpContext(ctx);
             if (webctx == null || webctx.SessionState != PhpSessionState.Started)
             {
                 return false;
