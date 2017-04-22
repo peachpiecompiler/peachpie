@@ -5,7 +5,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Classes implementing Countable can be used with the <c>count()</c> function.
     /// </summary>
-    [PhpType]
+    [PhpType(PhpTypeAttribute.InheritName)]
     public interface Countable
     {
         /// <summary>
