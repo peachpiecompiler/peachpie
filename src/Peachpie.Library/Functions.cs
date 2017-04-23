@@ -168,7 +168,6 @@ namespace Pchp.Library
         /// <remarks>
         /// Although, there is explicitly written in the PHP manual that it is not possible 
         /// to send an output to a browser via echo or another output handling functions you can actually do so.
-        /// There is no such limitation with Phalanger.
         /// </remarks>
         public static void register_shutdown_function(Context ctx, IPhpCallable function, params PhpValue[] arguments)
         {

@@ -830,7 +830,7 @@ namespace Pchp.Library
             switch (code)
             {
                 case XmlParserError.XML_ERROR_GENERIC:
-                    return "Generic XML parser error - Phalanger does not currently support error strings.";
+                    return "Generic XML parser error - error strings are not supported yet.";
 
                 case XmlParserError.XML_ERROR_NONE:
                     return "No Error.";

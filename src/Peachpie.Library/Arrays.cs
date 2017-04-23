@@ -2942,7 +2942,6 @@ namespace Pchp.Library
         /// Retuns the specified array.
         /// see http://php.net/manual/en/function.array-filter.php
         /// </summary>
-        /// <remarks>The caller argument is here just because of the second Filter() method. Phalanger shares the function properties over the overloads.</remarks>
         public static PhpArray array_filter(PhpArray array)
         {
             if (array == null)

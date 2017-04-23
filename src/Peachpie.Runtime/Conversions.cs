@@ -554,7 +554,7 @@ namespace Pchp.Core
             // patterns and states:
             // [:white:]*[+-]?0?[0-9]*[.]?[0-9]*([eE][+-]?[0-9]+)?
             //  0000000   11  2  222   2   333    4444  55   666     
-            // [:white:]*[+-]?0(x|X)[0-9A-Fa-f]*    // TODO: PHP does not resolve [+-] at the beginning, however Phalanger does
+            // [:white:]*[+-]?0(x|X)[0-9A-Fa-f]*    // TODO: PHP does not resolve [+-] at the beginning, however we do
             //  0000000   11  2 777  888888888  
 
             while (p < limit)

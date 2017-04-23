@@ -369,7 +369,7 @@ namespace Pchp.Library
 
         /// <summary>
         /// Checks whether a dereferenced variable is long. 
-        /// TODO: Alias for is_int(). But not in Phalanger.
+        /// Alias for <see cref="is_int"/>.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is long.</returns>
