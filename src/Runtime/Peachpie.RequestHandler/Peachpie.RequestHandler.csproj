@@ -13,6 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
   </ItemGroup>
 

@@ -14,16 +14,16 @@ namespace Peachpie.Web
     /// <summary>
     /// Session handler for ASP.NET Core.
     /// </summary>
-    class AspNetCoreSessionHandler : PhpSessionHandler
+    sealed class AspNetCoreSessionHandler : PhpSessionHandler
     {
         public static readonly PhpSessionHandler Default = new AspNetCoreSessionHandler();
+
+        private AspNetCoreSessionHandler() { }
 
         static ISession GetSession(IHttpPhpContext webctx) => ((RequestContextCore)webctx).HttpContext.Session;
 
         static PhpSerialization.Serializer Serializer => PhpSerialization.PhpSerializer.Instance;
-
-        private AspNetCoreSessionHandler() { }
-
+        
         public override string SessionName
         {
             get => SessionDefaults.CookieName;
