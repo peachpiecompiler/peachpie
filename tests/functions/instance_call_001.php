@@ -18,7 +18,7 @@ class B extends A
 (new A)->bar();
 (new B)->bar();
 
-A::bar();
-B::bar();
+@A::bar();
+@B::bar();
 
 echo "Done.";
