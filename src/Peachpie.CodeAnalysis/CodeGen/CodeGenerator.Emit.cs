@@ -77,13 +77,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits reference to <c>this</c>.
         /// </summary>
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
-        public TypeSymbol EmitThis()
+        public NamedTypeSymbol EmitThis()
         {
             Contract.ThrowIfNull(_thisPlace);
             return EmitThisOrNull();
         }
 
-        public TypeSymbol EmitThisOrNull()
+        public NamedTypeSymbol EmitThisOrNull()
         {
             if (_thisPlace == null)
             {
@@ -92,7 +92,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                return _thisPlace.EmitLoad(_il);
+                return (NamedTypeSymbol)_thisPlace.EmitLoad(_il);
             }
         }
 
@@ -834,7 +834,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(method);
 
-            TypeSymbol thisType;
+            NamedTypeSymbol thisType;
 
             // <this>
             if (thisExpr != null)
@@ -868,7 +868,29 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        throw new ArgumentException();  // TODO: PHP would create temporary instance of class
+                        // $this is undefined
+                        // PHP would throw a notice when undefined $this is used
+                        thisType = method.ContainingType;
+
+                        // create dummy instance
+                        // TODO: when $this is accessed from PHP code, throw error
+                        // NOTE: we can't just pass NULL since the instance holds reference to Context that is needed by API internally
+
+                        var dummyctor = 
+                            (MethodSymbol)(thisType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly ??    // .ctor that only initializes fields with default values
+                            thisType.InstanceConstructors.Where(m => m.Parameters.All(p => p.IsImplicitlyDeclared)).FirstOrDefault();   // implicit ctor
+
+                        if (thisType.IsReferenceType && dummyctor != null)
+                        {
+                            // new T(Context)
+                            EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundExpression>.Empty, null)
+                                .Expect(thisType);
+                        }
+                        else
+                        {
+                            // TODO: empty struct addr
+                            throw new NotImplementedException();
+                        }
                     }
                 }
                 else
