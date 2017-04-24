@@ -66,27 +66,29 @@ namespace Peachpie.RequestHandler
 
             EnsureSessionId(httpContext);
 
-            // removes dummy item keeping the session alive:
-            if (httpContext.Session[AspNetSessionHandler.PhpNetSessionVars] as string == AspNetSessionHandler.DummySessionItem)
-            {
-                httpContext.Session.Remove(AspNetSessionHandler.PhpNetSessionVars);
-            }
+            //// removes dummy item keeping the session alive:
+            //if (httpContext.Session[AspNetSessionHandler.PhpNetSessionVars] as string == AspNetSessionHandler.DummySessionItem)
+            //{
+            //    httpContext.Session.Remove(AspNetSessionHandler.PhpNetSessionVars);
+            //}
 
             //
             var state = httpContext.Session;
 
             PhpArray result = null;
 
-            if (state.Mode == SessionStateMode.InProc)
-            {
-                result = new PhpArray();
+            //if (state.Mode == SessionStateMode.InProc)
+            //{
+            //    result = new PhpArray();
 
-                foreach (string name in state)
-                {
-                    result[name] = PhpValue.FromClr(state[name]);
-                }
-            }
-            else
+            //    foreach (string name in state)
+            //    {
+            //        var value = PhpValue.FromClr(state[name]);
+            //        // TODO: rebind value.Context
+            //        result[name] = value;
+            //    }
+            //}
+            //else
             {
                 var data = state[PhpNetSessionVars] as byte[];
                 if (data != null)
@@ -103,24 +105,24 @@ namespace Peachpie.RequestHandler
             var httpContext = GetHttpContext(webctx);
             var state = httpContext.Session;
 
-            if (state.Mode == SessionStateMode.InProc)
-            {
-                // removes all items (some could be changed or removed in PHP):
-                // TODO: some session variables could be added in ASP.NET application
-                state.Clear();
+            //if (state.Mode == SessionStateMode.InProc)
+            //{
+            //    // removes all items (some could be changed or removed in PHP):
+            //    // TODO: some session variables could be added in ASP.NET application
+            //    state.Clear();
 
-                // populates session collection from variables:
-                var enumerator = session.GetFastEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    // skips resources:
-                    if (!(enumerator.CurrentValue.Object is PhpResource))
-                    {
-                        state.Add(enumerator.CurrentKey.ToString(), enumerator.CurrentValue.ToClr());
-                    }
-                }
-            }
-            else
+            //    // populates session collection from variables:
+            //    var enumerator = session.GetFastEnumerator();
+            //    while (enumerator.MoveNext())
+            //    {
+            //        // skips resources:
+            //        if (!(enumerator.CurrentValue.Object is PhpResource))
+            //        {
+            //            state.Add(enumerator.CurrentKey.ToString(), enumerator.CurrentValue.ToClr());
+            //        }
+            //    }
+            //}
+            //else
             {
                 // if the session is maintained out-of-process, serialize the entire $_SESSION autoglobal
                 // add the serialized $_SESSION to ASP.NET session:
