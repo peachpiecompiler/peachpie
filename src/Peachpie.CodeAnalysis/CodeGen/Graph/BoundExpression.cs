@@ -2381,6 +2381,30 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            var t = EmitNewClass(cg);
+
+            // void
+            if (Access.IsNone)
+            {
+                cg.EmitPop(t);
+                return cg.CoreTypes.Void;
+            }
+
+            // &new // deprecated
+            if (Access.IsReadRef)
+            {
+                // new PhpAlias(PhpValue.FromClass(.newobj))
+                cg.EmitConvertToPhpValue(t, 0);
+                return cg.Emit_PhpValue_MakeAlias();
+            }
+
+            //
+            Debug.Assert(Access.IsRead);
+            return t;
+        }
+
+        private TypeSymbol EmitNewClass(CodeGenerator cg)
+        {
             if (!TargetMethod.IsErrorMethod())
             {
                 return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);
