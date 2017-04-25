@@ -123,7 +123,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        internal static ITypeSymbol EmitLoadPhpTypeInfo(CodeGenerator cg, ITypeSymbol t)
+        internal static TypeSymbol EmitLoadPhpTypeInfo(CodeGenerator cg, ITypeSymbol t)
         {
             Contract.ThrowIfNull(t);
 
