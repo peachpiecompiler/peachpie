@@ -145,7 +145,7 @@ namespace Pchp.Library.Spl
         {
             if (_underlayingArray != null)
             {
-                return _underlayingArray.ContainsKey(index.ToIntStringKey());
+                return index.TryToIntStringKey(out var iskey) && _underlayingArray.ContainsKey(iskey);
             }
             else
             {
@@ -156,7 +156,7 @@ namespace Pchp.Library.Spl
         {
             if (_underlayingArray != null)
             {
-                return _underlayingArray[index.ToIntStringKey()];
+                return _underlayingArray.GetItemValue(index);
             }
             else
             {
@@ -167,7 +167,10 @@ namespace Pchp.Library.Spl
         {
             if (_underlayingArray != null)
             {
-                _underlayingArray[index.ToIntStringKey()] = newval.DeepCopy();
+                if (newval.IsAlias)
+                    _underlayingArray.SetItemAlias(index, newval.Alias);
+                else
+                    _underlayingArray.SetItemValue(index, newval);
             }
             else
             {
@@ -178,7 +181,7 @@ namespace Pchp.Library.Spl
         {
             if (_underlayingArray != null)
             {
-                _underlayingArray.RemoveKey(index.ToIntStringKey());
+                _underlayingArray.RemoveKey(index);
             }
             else
             {
@@ -259,7 +262,10 @@ namespace Pchp.Library.Spl
             {
                 if ((_flags & ARRAY_AS_PROPS) != 0)
                 {
-                    _underlayingArray[prop.ToIntStringKey()] = value.DeepCopy();
+                    if (value.IsAlias)
+                        _underlayingArray.SetItemAlias(prop, value.Alias);
+                    else
+                        _underlayingArray.SetItemValue(prop, value.DeepCopy());
                 }
                 else
                 {
@@ -278,7 +284,7 @@ namespace Pchp.Library.Spl
             {
                 if ((_flags & ARRAY_AS_PROPS) != 0)
                 {
-                    return _underlayingArray[prop.ToIntStringKey()];
+                    return _underlayingArray.GetItemValue(prop);
                 }
             }
             else if (_underlayingObject != null)

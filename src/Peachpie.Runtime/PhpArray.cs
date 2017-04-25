@@ -26,8 +26,8 @@ namespace Pchp.Core
         public const string PrintablePhpTypeName = "Array";
 
         ///// <summary>
-		///// If this flag is <B>true</B> the array will be copied inplace by the immediate <see cref="Copy"/> call.
-		///// </summary>
+        ///// If this flag is <B>true</B> the array will be copied inplace by the immediate <see cref="Copy"/> call.
+        ///// </summary>
         //public bool InplaceCopyOnReturn { get { return this.table.InplaceCopyOnReturn; } set { this.table.InplaceCopyOnReturn = value; } }
 
         /// <summary>
@@ -296,7 +296,7 @@ namespace Pchp.Core
 
         public string ToStringOrThrow(Context ctx)
         {
-            PhpException.Throw(PhpError.Notice, ErrResources.array_to_string_conversion);            
+            PhpException.Throw(PhpError.Notice, ErrResources.array_to_string_conversion);
             return ToString(ctx);
         }
 
@@ -366,7 +366,7 @@ namespace Pchp.Core
             //
             PhpArray array_x, array_y;
             PhpArray sorted_x, sorted_y;
-            
+
             // if numbers of elements differs:
             int result = x.Count - y.Count;
             if (result != 0) return result;
@@ -522,7 +522,7 @@ namespace Pchp.Core
 
                     var child_x = iter_x.CurrentValue;
                     var child_y = iter_y.CurrentValue;
-                    
+
                     // compares values:
                     if ((array_x = child_x.ArrayOrNull()) != null)
                     {
@@ -626,6 +626,11 @@ namespace Pchp.Core
 
         public PhpValue GetItemValue(IntStringKey key) => table._get(ref key);
 
+        public PhpValue GetItemValue(PhpValue index)
+            => index.TryToIntStringKey(out IntStringKey key)
+                ? GetItemValue(key)
+                : throw new ArgumentException(nameof(index));
+
         public void SetItemValue(IntStringKey key, PhpValue value)
         {
             this.EnsureWritable();
@@ -633,11 +638,35 @@ namespace Pchp.Core
             this.KeyAdded(ref key);
         }
 
+        public void SetItemValue(PhpValue index, PhpValue value)
+        {
+            if (index.TryToIntStringKey(out IntStringKey key))
+            {
+                SetItemValue(key, value);
+            }
+            else
+            {
+                throw new ArgumentException(nameof(index));
+            }
+        }
+
         public void SetItemAlias(IntStringKey key, PhpAlias alias)
         {
             this.EnsureWritable();
             table._add_or_update(ref key, PhpValue.Create(alias));
             this.KeyAdded(ref key);
+        }
+
+        public void SetItemAlias(PhpValue index, PhpAlias alias)
+        {
+            if (index.TryToIntStringKey(out IntStringKey key))
+            {
+                SetItemAlias(key, alias);
+            }
+            else
+            {
+                throw new ArgumentException(nameof(index));
+            }
         }
 
         public void AddValue(PhpValue value) => Add(value);
@@ -649,6 +678,14 @@ namespace Pchp.Core
         public IPhpArray EnsureItemArray(IntStringKey key) => table._ensure_item_array(ref key, this);
 
         public void RemoveKey(IntStringKey key) => this.Remove(key);
+
+        public void RemoveKey(PhpValue index)
+        {
+            if (index.TryToIntStringKey(out IntStringKey key))
+            {
+                this.Remove(key);
+            }
+        }
 
         #endregion
     }

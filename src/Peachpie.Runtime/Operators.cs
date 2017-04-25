@@ -269,25 +269,21 @@ namespace Pchp.Core
                 return _array.offsetGet(PhpValue.Create(key)).EnsureObject();
             }
 
-            public PhpValue GetItemValue(IntStringKey key)
-            {
-                return _array.offsetGet(PhpValue.Create(key));
-            }
+            public PhpValue GetItemValue(IntStringKey key) => _array.offsetGet(PhpValue.Create(key));
 
-            public void RemoveKey(IntStringKey key)
-            {
-                _array.offsetUnset(PhpValue.Create(key));
-            }
+            public PhpValue GetItemValue(PhpValue index) => _array.offsetGet(index);
 
-            public void SetItemAlias(IntStringKey key, PhpAlias alias)
-            {
-                _array.offsetSet(PhpValue.Create(key), PhpValue.Create(alias));
-            }
+            public void RemoveKey(IntStringKey key) => _array.offsetUnset(PhpValue.Create(key));
 
-            public void SetItemValue(IntStringKey key, PhpValue value)
-            {
-                _array.offsetSet(PhpValue.Create(key), value);
-            }
+            public void RemoveKey(PhpValue index) => _array.offsetUnset(index);
+
+            public void SetItemAlias(IntStringKey key, PhpAlias alias) => _array.offsetSet(PhpValue.Create(key), PhpValue.Create(alias));
+
+            public void SetItemAlias(PhpValue index, PhpAlias alias) => _array.offsetSet(index, PhpValue.Create(alias));
+
+            public void SetItemValue(IntStringKey key, PhpValue value) => _array.offsetSet(PhpValue.Create(key), value);
+
+            public void SetItemValue(PhpValue index, PhpValue value) => _array.offsetSet(index, value);
         }
 
         public static IPhpArray EnsureArray(ArrayAccess obj)
@@ -331,14 +327,69 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Implements <c>[]</c> operator on <see cref="string"/>.
+        /// </summary>
+        public static string GetItemValue(string value, PhpValue index, bool quiet)
+        {
+            if (Convert.TryToIntStringKey(index, out IntStringKey key))
+            {
+                return GetItemValue(value, key);
+            }
+            else
+            {
+                if (!quiet) throw new ArgumentException();
+
+                return string.Empty;
+            }
+        }
+
+        public static object EnsureItemObject(IPhpArray array, PhpValue index)
+        {
+            if (Convert.TryToIntStringKey(index, out IntStringKey key))
+            {
+                return array.EnsureItemObject(key);
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
+        public static IPhpArray EnsureItemArray(IPhpArray array, PhpValue index)
+        {
+            if (Convert.TryToIntStringKey(index, out IntStringKey key))
+            {
+                return array.EnsureItemArray(key);
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
+        public static PhpAlias EnsureItemAlias(IPhpArray array, PhpValue index, bool quiet)
+        {
+            if (Convert.TryToIntStringKey(index, out IntStringKey key))
+            {
+                return array.EnsureItemAlias(key);
+            }
+            else
+            {
+                if (!quiet) throw new ArgumentException();
+
+                return new PhpAlias(PhpValue.Void);
+            }
+        }
+
+        /// <summary>
         /// Implements <c>[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
-        public static PhpValue GetItemValue(PhpValue value, IntStringKey key, bool quiet = false) => value.GetArrayItem(key, quiet);
+        public static PhpValue GetItemValue(PhpValue value, PhpValue index, bool quiet = false) => value.GetArrayItem(index, quiet);
 
         /// <summary>
         /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
-        public static PhpAlias EnsureItemAlias(PhpValue value, IntStringKey key, bool quiet = false) => value.EnsureItemAlias(key, quiet);
+        public static PhpAlias EnsureItemAlias(PhpValue value, PhpValue index, bool quiet = false) => value.EnsureItemAlias(index, quiet);
 
         #endregion
 

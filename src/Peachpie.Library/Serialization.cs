@@ -960,7 +960,14 @@ namespace Pchp.Library
                         var value = Parse();
 
                         //
-                        arr.Add(key.ToIntStringKey(), value);
+                        if (key.TryToIntStringKey(out var iskey))
+                        {
+                            arr.Add(iskey, value);
+                        }
+                        else
+                        {
+                            this.ThrowInvalidDataType();
+                        }
                     }
 
                     Consume(Tokens.BraceClose);

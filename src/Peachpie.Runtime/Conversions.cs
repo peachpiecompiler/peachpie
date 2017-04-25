@@ -334,32 +334,22 @@ namespace Pchp.Core
         /// <summary>
         /// Converts given value to an array key.
         /// </summary>
-        public static IntStringKey ToIntStringKey(PhpValue value) => value.ToIntStringKey();
+        public static IntStringKey ToIntStringKey(PhpValue value)
+        {
+            if (value.TryToIntStringKey(out IntStringKey key))
+            {
+                return key;
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
 
         /// <summary>
         /// Tries conversion to an array key.
         /// </summary>
-        public static bool TryToIntStringKey(PhpValue value, out IntStringKey key)
-        {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.Int32:
-                case PhpTypeCode.Long:
-                case PhpTypeCode.Double:
-                case PhpTypeCode.String:
-                case PhpTypeCode.WritableString:
-                case PhpTypeCode.Boolean:
-                    key = value.ToIntStringKey();
-                    return true;
-
-                case PhpTypeCode.Alias:
-                    return TryToIntStringKey(value.Alias.Value, out key);
-
-                default:
-                    key = default(IntStringKey);
-                    return false;
-            }
-        }
+        public static bool TryToIntStringKey(PhpValue value, out IntStringKey key) => value.TryToIntStringKey(out key);
 
         /// <summary>
 		/// Converts a string to an appropriate integer.

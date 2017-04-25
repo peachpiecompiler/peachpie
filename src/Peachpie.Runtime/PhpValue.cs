@@ -306,14 +306,24 @@ namespace Pchp.Core
         /// </summary>
         public PhpValue this[IntStringKey key]
         {
-            get { return GetArrayItem(key, false); }
+            get { return GetArrayItem(Create(key), false); }
         }
 
         public override bool Equals(object obj) => Equals((obj is PhpValue) ? (PhpValue)obj : FromClr(obj));
 
         public override int GetHashCode() => _obj.GetHashCode() ^ (int)_value.Long;
 
-        public IntStringKey ToIntStringKey() => _type.ToIntStringKey(ref this);
+        public bool TryToIntStringKey(out IntStringKey key) => _type.TryToIntStringKey(ref this, out key);
+
+        public IntStringKey ToIntStringKey()
+        {
+            if (TryToIntStringKey(out var iskey))
+            {
+                return iskey;
+            }
+
+            throw new ArgumentException();
+        }
 
         /// <summary>
         /// Gets enumerator object used within foreach statement.
@@ -374,12 +384,12 @@ namespace Pchp.Core
         /// Accesses the value as an array and gets item at given index.
         /// Gets <c>void</c> value in case the key is not found.
         /// </summary>
-        public PhpValue GetArrayItem(IntStringKey key, bool quiet = false) => _type.GetArrayItem(ref this, key, quiet);
+        public PhpValue GetArrayItem(PhpValue index, bool quiet = false) => _type.GetArrayItem(ref this, index, quiet);
 
         /// <summary>
         /// Accesses the value as an array and ensures the item at given index as alias.
         /// </summary>
-        public PhpAlias EnsureItemAlias(IntStringKey key, bool quiet = false) => _type.EnsureItemAlias(ref this, key, quiet);
+        public PhpAlias EnsureItemAlias(PhpValue index, bool quiet = false) => _type.EnsureItemAlias(ref this, index, quiet);
 
         /// <summary>
         /// Creates a deep copy of PHP value.

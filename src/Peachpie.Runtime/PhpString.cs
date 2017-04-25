@@ -829,6 +829,28 @@ namespace Pchp.Core
                 : PhpValue.Create(string.Empty);
         }
 
+        PhpValue IPhpArray.GetItemValue(PhpValue index)
+        {
+            if (index.TryToIntStringKey(out IntStringKey key))
+            {
+                return ((IPhpArray)this).GetItemValue(key);
+            }
+
+            return PhpValue.Create(string.Empty);
+        }
+
+        void IPhpArray.SetItemValue(PhpValue index, PhpValue value)
+        {
+            if (index.TryToIntStringKey(out IntStringKey key))
+            {
+                ((IPhpArray)this).SetItemValue(key, value);
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
         /// <summary>
         /// Sets value at specific index. Value must not be an alias.
         /// </summary>
@@ -866,6 +888,8 @@ namespace Pchp.Core
         /// </summary>
         void IPhpArray.SetItemAlias(IntStringKey key, PhpAlias alias) { throw new NotSupportedException(); }
 
+        void IPhpArray.SetItemAlias(PhpValue index, PhpAlias alias) { throw new NotSupportedException(); }
+
         /// <summary>
         /// Add a value to the end of array.
         /// Value can be an alias.
@@ -877,6 +901,11 @@ namespace Pchp.Core
         /// In case the value is not found, the method does nothing.
         /// </summary>
         void IPhpArray.RemoveKey(IntStringKey key) { throw new NotSupportedException(); }
+
+        void IPhpArray.RemoveKey(PhpValue index)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Ensures the item at given index is alias.

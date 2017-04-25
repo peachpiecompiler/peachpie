@@ -87,14 +87,30 @@ namespace Pchp.Core
         PhpValue GetItemValue(IntStringKey key);
 
         /// <summary>
+        /// Gets value at given index.
+        /// Gets <c>void</c> value in case the key is not found.
+        /// </summary>
+        PhpValue GetItemValue(PhpValue index);
+
+        /// <summary>
         /// Sets value at specific index. Value must not be an alias.
         /// </summary>
         void SetItemValue(IntStringKey key, PhpValue value);
 
         /// <summary>
+        /// Sets value at specific index. Value must not be an alias.
+        /// </summary>
+        void SetItemValue(PhpValue index, PhpValue value);
+
+        /// <summary>
         /// Writes aliased value at given index.
         /// </summary>
         void SetItemAlias(IntStringKey key, PhpAlias alias);
+
+        /// <summary>
+        /// Writes aliased value at given index.
+        /// </summary>
+        void SetItemAlias(PhpValue index, PhpAlias alias);
 
         /// <summary>
         /// Add a value to the end of array.
@@ -107,6 +123,12 @@ namespace Pchp.Core
         /// In case the value is not found, the method does nothing.
         /// </summary>
         void RemoveKey(IntStringKey key);
+
+        /// <summary>
+        /// Removes a value at given index.
+        /// In case the value is not found, the method does nothing.
+        /// </summary>
+        void RemoveKey(PhpValue index);
 
         /// <summary>
         /// Ensures the item at given index is alias.

@@ -296,7 +296,9 @@ namespace Pchp.Library.Spl
         public virtual PhpValue offsetGet(PhpValue index)
         {
             if (isArrayIterator)
-                return _array[index.ToIntStringKey()];
+            {
+                return _array.GetItemValue(index);
+            }
             //else if (isObjectIterator)
             //    return _dobj[index];
 
@@ -324,7 +326,9 @@ namespace Pchp.Library.Spl
         public virtual bool offsetExists(PhpValue index)
         {
             if (isArrayIterator)
-                return _array.ContainsKey(index.ToIntStringKey());
+            {
+                return index.TryToIntStringKey(out var iskey) && _array.ContainsKey(iskey);
+            }
             //else if (isObjectIterator)
             //    return _dobj.Contains(index);
 

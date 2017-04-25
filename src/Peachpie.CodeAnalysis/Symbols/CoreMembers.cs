@@ -384,9 +384,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureArray_IPhpArrayRef = ct.Operators.Method("EnsureArray", ct.IPhpArray);
                 EnsureArray_ArrayAccess = ct.Operators.Method("EnsureArray", ct.ArrayAccess);
                 GetItemValue_String_IntStringKey = ct.Operators.Method("GetItemValue", ct.String, ct.IntStringKey);
+                GetItemValue_String_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.String, ct.PhpValue, ct.Boolean);
                 GetItemValue_String_Int = ct.Operators.Method("GetItemValue", ct.String, ct.Int32);
-                GetItemValue_PhpValue_IntStringKey_Bool = ct.Operators.Method("GetItemValue", ct.PhpValue, ct.IntStringKey, ct.Boolean);
-                EnsureItemAlias_PhpValue_IntStringKey_Bool = ct.Operators.Method("EnsureItemAlias", ct.PhpValue, ct.IntStringKey, ct.Boolean);
+                GetItemValue_PhpValue_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.PhpValue, ct.PhpValue, ct.Boolean);
+                EnsureItemAlias_PhpValue_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.PhpValue, ct.PhpValue, ct.Boolean);
+                EnsureItemAlias_IPhpArray_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.IPhpArray, ct.PhpValue, ct.Boolean);
+                EnsureItemArray_IPhpArray_PhpValue = ct.Operators.Method("EnsureItemArray", ct.IPhpArray, ct.PhpValue);
+                EnsureItemObject_IPhpArray_PhpValue = ct.Operators.Method("EnsureItemObject", ct.IPhpArray, ct.PhpValue);
                 IsSet_PhpValue = ct.Operators.Method("IsSet", ct.PhpValue);
                 IsEmpty_PhpValue = ct.Operators.Method("IsEmpty", ct.PhpValue);
                 IsNullOrEmpty_String = ct.String.Method("IsNullOrEmpty", ct.String);
@@ -486,9 +490,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef, EnsureArray_ArrayAccess,
-                GetItemValue_String_IntStringKey, GetItemValue_String_Int,
-                GetItemValue_PhpValue_IntStringKey_Bool, EnsureItemAlias_PhpValue_IntStringKey_Bool,
+                SetValue_PhpValueRef_PhpValue,
+                EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef, EnsureArray_ArrayAccess,
+                GetItemValue_String_IntStringKey, GetItemValue_String_PhpValue_Bool, GetItemValue_String_Int, GetItemValue_PhpValue_PhpValue_Bool,
+                EnsureItemAlias_IPhpArray_PhpValue_Bool, EnsureItemAlias_PhpValue_PhpValue_Bool,
+                EnsureItemArray_IPhpArray_PhpValue,
+                EnsureItemObject_IPhpArray_PhpValue,
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object, ToBoolean_IPhpConvertible,
@@ -806,23 +813,36 @@ namespace Pchp.CodeAnalysis.Symbols
                 var arr = ct.IPhpArray;
 
                 RemoveKey_IntStringKey = arr.Method("RemoveKey", ct.IntStringKey);
+                RemoveKey_PhpValue = arr.Method("RemoveKey", ct.PhpValue);
+
                 GetItemValue_IntStringKey = arr.Method("GetItemValue", ct.IntStringKey);
+                GetItemValue_PhpValue = arr.Method("GetItemValue", ct.PhpValue);
+
                 SetItemValue_IntStringKey_PhpValue = arr.Method("SetItemValue", ct.IntStringKey, ct.PhpValue);
+                SetItemValue_PhpValue_PhpValue = arr.Method("SetItemValue", ct.PhpValue, ct.PhpValue);
+
                 SetItemAlias_IntStringKey_PhpAlias = arr.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
+                SetItemAlias_PhpValue_PhpAlias = arr.Method("SetItemAlias", ct.PhpValue, ct.PhpAlias);
+
                 AddValue_PhpValue = arr.Method("AddValue", ct.PhpValue);
+
                 EnsureItemObject_IntStringKey = arr.Method("EnsureItemObject", ct.IntStringKey);
                 EnsureItemArray_IntStringKey = arr.Method("EnsureItemArray", ct.IntStringKey);
                 EnsureItemAlias_IntStringKey = arr.Method("EnsureItemAlias", ct.IntStringKey);
 
-                get_Count = arr.Method("get_Count");
+                Count = arr.Property("Count");
             }
 
+            public readonly CoreProperty
+                Count;
+
             public readonly CoreMethod
-                RemoveKey_IntStringKey,
-                GetItemValue_IntStringKey,
-                SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
-                EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
-                get_Count;
+                RemoveKey_IntStringKey, RemoveKey_PhpValue,
+                GetItemValue_IntStringKey, GetItemValue_PhpValue,
+                SetItemValue_IntStringKey_PhpValue, SetItemValue_PhpValue_PhpValue,
+                SetItemAlias_IntStringKey_PhpAlias, SetItemAlias_PhpValue_PhpAlias,
+                AddValue_PhpValue,
+                EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey;
         }
 
         public struct PhpArrayHolder

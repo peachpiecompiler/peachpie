@@ -217,7 +217,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(long)) return Expression.New(Cache.IntStringKey.ctor_Int, Expression.Convert(expr, Cache.Types.Int[0]));
             if (source == typeof(string)) return Expression.New(Cache.IntStringKey.ctor_String, expr);
 
-            // TODO: following conversions may fail, we should report it failed and throw an error
+            // following conversions may throw an exception
             if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToIntStringKey);
 
             throw new NotImplementedException(source.FullName);
