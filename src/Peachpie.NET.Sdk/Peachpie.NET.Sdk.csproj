@@ -6,12 +6,12 @@
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
     <PackageId>Peachpie.NET.Sdk</PackageId>
     
-	<PackageTags>php;sdk;peachpie;msbuild</PackageTags>
-    
-	<IncludeBuildOutput>false</IncludeBuildOutput>
+    <PackageTags>php;sdk;peachpie;msbuild</PackageTags>
+
+    <IncludeBuildOutput>false</IncludeBuildOutput>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	
+    
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <Description>The MSBuild SDK containing build targets and runtime.</Description>
@@ -28,6 +28,10 @@
     </Content>
     <Content Include="build/Peachpie.NET.Sdk.props">
       <PackagePath>build/Peachpie.NET.Sdk.props</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="buildCrossTargeting/Peachpie.NET.Sdk.props">
+      <PackagePath>buildCrossTargeting/Peachpie.NET.Sdk.props</PackagePath>
       <Pack>true</Pack>
     </Content>
   </ItemGroup>
