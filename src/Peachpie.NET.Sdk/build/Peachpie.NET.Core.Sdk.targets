@@ -131,6 +131,7 @@
       <RspLine Include="--debug-type:$(DebugType)" />
       <RspLine Include="--define:DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
+      <RspLine Include="--main:$(StartupObject)" Condition=" '$(StartupObject)' != '' " />
       <RspLine Include="--pdb:$(PdbFile)" Condition=" '$(PdbFile)' != '' " />
       <RspLine Include="--target-framework:$(TargetFramework)" />
       <RspLine Include="--sdk-dir:$(NetFrameworkPath)" Condition=" '$(NetFrameworkPath)' != '' " />
