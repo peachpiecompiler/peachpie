@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
@@ -15,6 +16,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Full type name.
         /// </summary>
         QualifiedName QualifiedName { get; }
+
+        /// <summary>
+        /// In case of generic type reference, gets its bound type arguments.
+        /// </summary>
+        ImmutableArray<ITypeRef> TypeArguments { get; }
 
         /// <summary>
         /// Gets value indicating whether the type represents an object (class or interface) and not a primitive type.

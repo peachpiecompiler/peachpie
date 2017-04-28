@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
@@ -26,6 +27,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public QualifiedName QualifiedName { get { return _qname; } }
 
+        public virtual ImmutableArray<ITypeRef> TypeArguments { get { return ImmutableArray<ITypeRef>.Empty; } }
+
         public bool IsObject { get { return true; } }
 
         public bool IsArray { get { return false; } }
@@ -47,14 +50,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets corresponding CLR type for the type reference.
         /// </summary>
-        public INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
+        public virtual INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
         {
             var resolved = (NamedTypeSymbol)compilation.GlobalSemantics.GetType(QualifiedName);
             return (resolved != null && !resolved.IsErrorType()) ? resolved : compilation.CoreTypes.Object.Symbol;
         }
 
-        public ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target) { return this; }   // there is nothing depending on the context
-        
+        public virtual ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target) { return this; }   // there is nothing depending on the context
+
         #endregion
 
         #region IEquatable<ITypeRef> Members
@@ -78,12 +81,54 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region IEquatable<ClassTypeRef> Members
 
-        public bool Equals(ClassTypeRef other)
+        public virtual bool Equals(ClassTypeRef other)
         {
             return other != null && other._qname == _qname;
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// Represents a type reference with generic arguments.
+    /// </summary>
+    internal class GenericClassTypeRef : ClassTypeRef, IEquatable<GenericClassTypeRef>
+    {
+        readonly ImmutableArray<ITypeRef> _typeArguments;
+
+        public GenericClassTypeRef(QualifiedName qname, ImmutableArray<ITypeRef> typeArguments)
+            : base(qname)
+        {
+            Debug.Assert(!typeArguments.IsDefaultOrEmpty);
+            _typeArguments = typeArguments;
+        }
+
+        public override ImmutableArray<ITypeRef> TypeArguments => _typeArguments;
+
+        public override INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool Equals(ClassTypeRef other)
+        {
+            return Equals(other as GenericClassTypeRef);
+        }
+
+        public bool Equals(GenericClassTypeRef other)
+        {
+            if (other != null && other.QualifiedName == this.QualifiedName && other.TypeArguments.Length == this.TypeArguments.Length)
+            {
+                for (int i = 0; i < TypeArguments.Length; i++)
+                {
+                    if (!other.TypeArguments[i].Equals(this.TypeArguments[i])) return false;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -110,6 +155,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             get { return QualifiedName.Array; }
         }
+
+        public ImmutableArray<ITypeRef> TypeArguments { get { return ImmutableArray<ITypeRef>.Empty; } }
 
         public bool IsObject { get { return false; } }
 
@@ -216,6 +263,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        public ImmutableArray<ITypeRef> TypeArguments { get { return ImmutableArray<ITypeRef>.Empty; } }
+
         public bool IsObject { get { return _code == PhpTypeCode.Object; } }
 
         public bool IsArray { get { return _code == PhpTypeCode.PhpArray; } }
@@ -297,7 +346,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     {
         private readonly TypeRefMask _returnType;
         private readonly AST.Signature _signature;
-        
+
         public LambdaTypeRef(TypeRefMask returnType, AST.Signature signature)
         {
             _returnType = returnType;
@@ -313,6 +362,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             get { return NameUtils.SpecialNames.Closure; }
         }
+
+        public ImmutableArray<ITypeRef> TypeArguments { get { return ImmutableArray<ITypeRef>.Empty; } }
 
         /// <summary>
         /// Lambda function is an object of type <c>Closure</c>.
