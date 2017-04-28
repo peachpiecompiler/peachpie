@@ -52,6 +52,50 @@ namespace Pchp.CodeAnalysis
             _source = source;
         }
 
+        internal static LanguageFeatures ParseLanguageVersion(Version languageVersion)
+        {
+            if (languageVersion != null)
+            {
+                if (languageVersion.Major == 5)
+                {
+                    switch (languageVersion.Minor)
+                    {
+                        case 4: return LanguageFeatures.Php54Set;
+                        case 5: return LanguageFeatures.Php55Set;
+                        case 6: return LanguageFeatures.Php56Set;
+                    }
+                }
+                else if (languageVersion.Major == 7)
+                {
+                    switch (languageVersion.Minor)
+                    {
+                        case 0: return LanguageFeatures.Php70Set;
+                        case 1: return LanguageFeatures.Php71Set;
+                    }
+                }
+
+                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(languageVersion);
+            }
+            else
+            {
+                return LanguageFeatures.Basic; // latest
+            }
+        }
+
+        static LanguageFeatures GetLanguageFeatures(PhpParseOptions options)
+        {
+            var features = ParseLanguageVersion(options.LanguageVersion);
+
+            //
+            if (options.AllowShortOpenTags)
+            {
+                features |= LanguageFeatures.ShortOpenTags;
+            }
+
+            //
+            return features;
+        }
+
         public static PhpSyntaxTree ParseCode(
             string content,
             PhpParseOptions parseOptions,
@@ -63,7 +107,7 @@ namespace Pchp.CodeAnalysis
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
             var unit = new CodeSourceUnit(
                 content, fname, Encoding.UTF8,
-                (parseOptions.Kind == SourceCodeKind.Regular) ? Lexer.LexicalStates.INITIAL : Lexer.LexicalStates.ST_IN_SCRIPTING);
+                (parseOptions.Kind == SourceCodeKind.Regular) ? Lexer.LexicalStates.INITIAL : Lexer.LexicalStates.ST_IN_SCRIPTING, GetLanguageFeatures(parseOptions));
 
             var result = new PhpSyntaxTree(unit);
 
