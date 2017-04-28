@@ -360,9 +360,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                         if (x.Access.EnsureObject && !TypeCtx.IsObject(vartype))
                         {
-                            vartype |= TypeCtx.GetSystemObjectTypeMask();   // TODO: stdClass instead of System.Object
+                            vartype |= TypeCtx.GetSystemObjectTypeMask();
                         }
-                        if (x.Access.EnsureArray && TypeCtx.IsNull(vartype))
+                        if (x.Access.EnsureArray)
                         {
                             vartype |= TypeCtx.GetArrayTypeMask();
                         }
@@ -450,7 +450,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     State.FlowContext.SetAllUsed();
                 }
 
-                if (x.Access.IsWrite)
+                if (x.Access.IsWrite || x.Access.IsEnsure)
                 {
                     State.SetAllUnknown(x.Access.IsWriteRef);
                 }
