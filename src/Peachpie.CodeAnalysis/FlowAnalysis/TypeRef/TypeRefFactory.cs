@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
@@ -42,7 +44,7 @@ namespace Pchp.CodeAnalysis
                 default:
                     if (t is NamedTypeSymbol)
                     {
-                        return new ClassTypeRef(((NamedTypeSymbol)t).MakeQualifiedName());
+                        return CreateClassTypeRef(ctx, (NamedTypeSymbol)t);
                     }
                     else if (t is ArrayTypeSymbol)
                     {
@@ -58,6 +60,20 @@ namespace Pchp.CodeAnalysis
                     {
                         throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(t);
                     }
+            }
+        }
+
+        static ITypeRef CreateClassTypeRef(TypeRefContext ctx, NamedTypeSymbol t)
+        {
+            if (t.Arity <= 0)
+            {
+                return new ClassTypeRef(t.MakeQualifiedName());
+            }
+            else
+            {
+                return new GenericClassTypeRef(
+                    t.OriginalDefinition.MakeQualifiedName(),
+                    t.TypeArguments.SelectAsArray(targ => CreateTypeRef(ctx, targ)).AsImmutable());
             }
         }
 
