@@ -536,16 +536,26 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var name = base.MetadataName;
 
-                // name'conditional#version
-                
-                // conditional suffix
+                // count declarations with the same name
+                // to avoid duplicities in PE metadata
+                var decls = this.DeclaringCompilation.SourceSymbolCollection.GetDeclaredTypes(this.FullName).ToList();
+                Debug.Assert(decls.Count != 0);
+
+                // name<>`num#version
+
+                // <>
                 if (_syntax.IsConditional)
                 {
-                    var ambiguities = this.DeclaringCompilation.SourceSymbolCollection.GetSourceTypes().Where(t => t.Name == this.Name && t.NamespaceName == this.NamespaceName);
-                    name += "@" + ambiguities.TakeWhile(f => f != this).Count().ToString(); // index within types with the same name
+                    name += "<>";
                 }
 
-                // count version
+                // `order
+                if (decls.Count != 1)
+                {
+                    name += "`" + decls.TakeWhile(f => f.Syntax != this.Syntax).Count().ToString();   // index within types with the same name
+                }
+                
+                // #version
                 if (_version != 0)
                 {
                     name += "#" + _version;

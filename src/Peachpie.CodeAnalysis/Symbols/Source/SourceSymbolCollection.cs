@@ -295,12 +295,19 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets source declarations without versions.
         /// </summary>
-        /// <returns></returns>
-        internal IEnumerable<SourceTypeSymbol> GetSourceTypes() => _types.Symbols;
+        internal IEnumerable<SourceTypeSymbol> GetDeclaredTypes(QualifiedName name)
+        {
+            return _types.GetAll(name);
+        }
+
+        /// <summary>
+        /// Gets source declarations without versions.
+        /// </summary>
+        internal IEnumerable<SourceTypeSymbol> GetDeclaredTypes() => _types.Symbols;
 
         /// <summary>
         /// Gets all source types and their versions.
         /// </summary>
-        public IEnumerable<SourceTypeSymbol> GetTypes() => GetSourceTypes().SelectMany(t => t.AllVersions());
+        public IEnumerable<SourceTypeSymbol> GetTypes() => GetDeclaredTypes().SelectMany(t => t.AllVersions());
     }
 }
