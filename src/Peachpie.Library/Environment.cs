@@ -22,6 +22,7 @@ namespace Pchp.Library
 
         //_constants.Add("PHP_SAPI", (System.Web.HttpContext.Current == null) ? "cli" : "isapi", false);
         //_constants.Add("DIRECTORY_SEPARATOR", FullPath.DirectorySeparatorString, false);
+        public const string DIRECTORY_SEPARATOR = "/";
         //_constants.Add("PATH_SEPARATOR", Path.PathSeparator.ToString(), false);
 
         public const long PHP_INT_SIZE = sizeof(long);
