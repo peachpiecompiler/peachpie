@@ -152,11 +152,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Visit((BoundUnaryEx)condition, branch);
                     return;
                 }
-                //if (condition is DirectFcnCall)
-                //{
-                //    VisitDirectFcnCall((DirectFcnCall)condition, branch);
-                //    return;
-                //}
+                if (condition is BoundGlobalFunctionCall)
+                {
+                    VisitGlobalFunctionCall((BoundGlobalFunctionCall)condition, branch);
+                    return;
+                }
                 if (condition is BoundInstanceOfEx)
                 {
                     Visit((BoundInstanceOfEx)condition, branch);
@@ -183,6 +183,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected virtual void Visit(BoundBinaryEx x, ConditionBranch branch)
         {
             base.VisitBinaryExpression(x);
+        }
+
+        public sealed override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x) => VisitGlobalFunctionCall(x, ConditionBranch.Default);
+
+        public virtual void VisitGlobalFunctionCall(BoundGlobalFunctionCall x, ConditionBranch branch)
+        {
+            base.VisitGlobalFunctionCall(x);
         }
 
         public sealed override void VisitUnaryExpression(BoundUnaryEx x) => Visit(x, ConditionBranch.Default);
@@ -274,7 +281,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Accept(x.Variable);
             VisitTypeRef(x.TypeRef);
             State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue.Value), TypeCtx.GetTypeMask(x.TypeRef.TypeRef));
-            
+
             //
             x.Variable.ResultType = x.TypeRef.ResolvedType;
 

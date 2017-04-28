@@ -1118,7 +1118,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return new[] { method };
         }
 
-        public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x, ConditionBranch branch)
         {
             Accept(x.Name.NameExpression);
 
@@ -1136,6 +1136,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
                 x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, args, null);
+
+                //
+                x.ConstantValue = AnalysisFacts.TryResolve(x, _model);
             }
 
             VisitRoutineCallEpilogue(x);
