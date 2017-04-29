@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Utilities
 {
+    #region PathUtils
+
     public static class PathUtils
     {
         public const char DirectorySeparator = '\\';
@@ -14,6 +16,8 @@ namespace Pchp.Core.Utilities
 
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
     }
+    
+    #endregion
 
     #region FileSystemUtils
 

@@ -268,19 +268,7 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
         {
-            ScriptInfo script;
-
-            path = ScriptsMap.NormalizeSlashes(path);
-
-            if (path.StartsWith(this.RootPath, StringComparison.Ordinal)) // rooted
-            {
-                script = _scripts.GetScript(path.Substring(this.RootPath.Length + 1));
-            }
-            else
-            {
-                script = ScriptsMap.SearchForIncludedFile(path, IncludePaths, cd, _scripts.GetScript);
-            }
-
+            var script = ScriptsMap.ResolveInclude(path, RootPath, IncludePaths, WorkingDirectory, cd);
             if (script.IsValid)
             {
                 if (once && _scripts.IsIncluded(script.Index))
@@ -294,7 +282,7 @@ namespace Pchp.Core
             }
             else
             {
-                if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation)
+                if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation yet)
                 {
                     return PhpValue.Null;
                 }

@@ -24,6 +24,7 @@ namespace Pchp.Library
         //_constants.Add("DIRECTORY_SEPARATOR", FullPath.DirectorySeparatorString, false);
         public const string DIRECTORY_SEPARATOR = "/";
         //_constants.Add("PATH_SEPARATOR", Path.PathSeparator.ToString(), false);
+        public const string PATH_SEPARATOR = ";";
 
         public const long PHP_INT_SIZE = sizeof(long);
         public const long PHP_INT_MIN = long.MinValue;

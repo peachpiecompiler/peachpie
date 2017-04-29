@@ -97,6 +97,18 @@ namespace Pchp.Library
 
         static readonly GetSetDelegate EmptyGsr = new GetSetDelegate((s, name, value, action) => PhpValue.Null);
 
+        static PhpValue GsrCore(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+        {
+            switch (option.ToLowerInvariant())
+            {
+                case "include_path":
+                    return (PhpValue)GetSet(ref config.Core.IncludePaths, ".", value, action);
+
+                default:
+                    throw new ArgumentException();
+            }
+        }
+
         static PhpValue GsrMail(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
             switch (option.ToLowerInvariant())
@@ -185,7 +197,7 @@ namespace Pchp.Library
             Register("ignore_repeated_source", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
             Register("ignore_user_abort", IniFlags.Supported | IniFlags.Local | IniFlags.Http, EmptyGsr);
             Register("implicit_flush", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("include_path", IniFlags.Supported | IniFlags.Local, EmptyGsr);
+            Register("include_path", IniFlags.Supported | IniFlags.Local, GsrCore);
             Register("last_modified", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
             Register("log_errors", IniFlags.Supported | IniFlags.Local, EmptyGsr);
             Register("log_errors_max_len", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
@@ -505,7 +517,7 @@ namespace Pchp.Library
         public static string ini_set(Context ctx, string option, PhpValue value)
         {
             bool error;
-            var old = StandardPhpOptions.TryGetSet(ctx.Configuration, option, PhpValue.Void, StandardPhpOptions.IniAction.Set, out error);
+            var old = StandardPhpOptions.TryGetSet(ctx.Configuration, option, value, StandardPhpOptions.IniAction.Set, out error);
             if (error)
             {
                 return null;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -33,9 +34,27 @@ namespace Pchp.Core
         public virtual IHttpPhpContext HttpPhpContext => null;
 
         /// <summary>
-        /// Gets the initial script file.
+        /// Gets or sets the initial script file.
         /// </summary>
-        public ScriptInfo MainScriptFile { get; protected set; }
+        public ScriptInfo MainScriptFile
+        {
+            get
+            {
+                return _mainScriptFile;
+            }
+
+            protected set
+            {
+                Debug.Assert(_mainScriptFile.IsValid == false);
+                Debug.Assert(value.IsValid);
+
+                _mainScriptFile = value;
+
+                // cwd = entering script directory
+                this.WorkingDirectory = System.IO.Path.GetDirectoryName(System.IO.Path.Combine(RootPath, value.Path));
+            }
+        }
+        ScriptInfo _mainScriptFile;
 
         /// <summary>
         /// Root directory (web root or console app root) where loaded scripts are relative to.
@@ -43,18 +62,18 @@ namespace Pchp.Core
         /// </summary>
         /// <remarks>
         /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
+        /// - <see cref="WorkingDirectory"/> is initialized with this value upon context is created.
         /// </remarks>
         public virtual string RootPath { get; } = string.Empty;
 
         /// <summary>
         /// Current working directory.
         /// </summary>
-        public virtual string WorkingDirectory { get; set; } = string.Empty;
+        public virtual string WorkingDirectory { get; set; }
 
         /// <summary>
         /// Set of include paths to be used to resolve full file path.
         /// </summary>
-        public virtual string[] IncludePaths => _defaultIncludePaths;   // TODO:  => this.Config.FileSystem.IncludePaths
-        static readonly string[] _defaultIncludePaths = new[] { "." };
+        public virtual string[] IncludePaths => this.Configuration.Core.IncludePathsArray;
     }
 }
