@@ -29,7 +29,7 @@ namespace Pchp.Core
             #endregion
 
             public abstract PhpTypeCode Type { get; }
-            public abstract bool IsNull { get; }
+            public abstract bool IsNull(ref PhpValue me);
             public virtual bool IsEmpty(ref PhpValue me) => ToBoolean(ref me) == false;
             public abstract object ToClass(ref PhpValue me);
             public abstract string ToStringQuiet(ref PhpValue me);
@@ -151,7 +151,7 @@ namespace Pchp.Core
         class NullTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
-            public override bool IsNull => true;
+            public override bool IsNull(ref PhpValue me) => true;
             public override bool IsEmpty(ref PhpValue me) => true;
             public override object ToClass(ref PhpValue me) => new stdClass();
             public override string ToStringQuiet(ref PhpValue me) => string.Empty;
@@ -165,7 +165,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(0L);
                 return Convert.NumberInfo.LongInteger;
             }
-            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = default(IntStringKey); return false; }
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = IntStringKey.EmptyStringKey; return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.CompareNull(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsNull;
@@ -203,7 +203,7 @@ namespace Pchp.Core
         sealed class LongTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Long;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => me.Long.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => me.Long.ToString();
@@ -232,7 +232,7 @@ namespace Pchp.Core
         sealed class DoubleTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Double;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => Convert.ToString(me.Double);
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
@@ -261,7 +261,7 @@ namespace Pchp.Core
         sealed class BoolTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Boolean;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => Convert.ToString(me.Boolean);
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
@@ -308,7 +308,7 @@ namespace Pchp.Core
         sealed class StringTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.String;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => me.String;
             public override string ToString(ref PhpValue me, Context ctx) => me.String;
@@ -362,7 +362,7 @@ namespace Pchp.Core
         sealed class WritableStringTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.WritableString;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(DeepCopy(ref me));	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => me.WritableString.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => me.WritableString.ToString(ctx);
@@ -409,7 +409,7 @@ namespace Pchp.Core
         sealed class ClassTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override bool IsEmpty(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => me.Object;
             public override string ToStringQuiet(ref PhpValue me) => me.Object.ToString();
@@ -507,7 +507,7 @@ namespace Pchp.Core
         sealed class ArrayTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.PhpArray;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override bool IsEmpty(ref PhpValue me) => me.Array.Count == 0;
             public override object ToClass(ref PhpValue me) => me.Array.ToClass();
             public override string ToStringQuiet(ref PhpValue me) => PhpArray.PrintablePhpTypeName;
@@ -555,7 +555,7 @@ namespace Pchp.Core
         sealed class AliasTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Alias;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => me.Alias.Value.IsNull;
             public override bool IsEmpty(ref PhpValue me) => me.Alias.Value.IsEmpty;
             public override object ToClass(ref PhpValue me) => me.Alias.ToClass();
             public override string ToStringQuiet(ref PhpValue me) => me.Alias.Value.ToString();

@@ -1600,7 +1600,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             var constant = expr.ConstantValue;
             if (constant.HasValue)
             {
-                if (constant.Value is string)
+                if (constant.Value == null)
+                {
+                    EmitIntStringKey(string.Empty);
+                }
+                else if (constant.Value is string)
                 {
                     EmitIntStringKey((string)constant.Value);
                 }

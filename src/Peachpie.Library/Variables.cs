@@ -443,7 +443,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is a <B>null</B> reference.</returns>
-        public static bool is_null(PhpValue variable) => variable.IsNull || (variable.IsAlias && variable.Alias.Value.IsNull);
+        public static bool is_null(PhpValue variable) => variable.IsNull;
 
         #endregion
 

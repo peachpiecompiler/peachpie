@@ -84,7 +84,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the value is a <c>NULL</c> or undefined.
         /// </summary>
-        public bool IsNull => _type.IsNull;
+        public bool IsNull => _type.IsNull(ref this);
 
         /// <summary>
         /// Gets value indicating whether the value is considered to be empty.
