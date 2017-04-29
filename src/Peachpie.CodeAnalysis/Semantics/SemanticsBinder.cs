@@ -96,27 +96,27 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(stmt != null);
 
-            if (stmt is AST.EchoStmt) return new BoundExpressionStatement(new BoundEcho(BindArguments(((AST.EchoStmt)stmt).Parameters))) { PhpSyntax = stmt };
-            if (stmt is AST.ExpressionStmt) return new BoundExpressionStatement(BindExpression(((AST.ExpressionStmt)stmt).Expression, BoundAccess.None)) { PhpSyntax = stmt };
-            if (stmt is AST.JumpStmt) return BindJumpStmt((AST.JumpStmt)stmt);
+            if (stmt is AST.EchoStmt echoStm) return new BoundExpressionStatement(new BoundEcho(BindArguments((echoStm).Parameters))) { PhpSyntax = stmt };
+            if (stmt is AST.ExpressionStmt exprStm) return new BoundExpressionStatement(BindExpression((exprStm).Expression, BoundAccess.None)) { PhpSyntax = stmt };
+            if (stmt is AST.JumpStmt jmpStm) return BindJumpStmt(jmpStm);
             if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());
             if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());
             if (stmt is AST.GlobalStmt) return new BoundGlobalVariableStatement(
                 ((AST.GlobalStmt)stmt).VarList.Cast<AST.DirectVarUse>()
                     .Select(s => _locals.BindVariable(s.VarName, VariableKind.GlobalVariable, s.Span.ToTextSpan(), null))
                     .ToImmutableArray());
-            if (stmt is AST.StaticStmt) return new BoundStaticVariableStatement(
-                ((AST.StaticStmt)stmt).StVarList
+            if (stmt is AST.StaticStmt staticStm) return new BoundStaticVariableStatement(
+                staticStm.StVarList
                     .Select(s => (BoundStaticLocal)_locals.BindVariable(s.Variable, VariableKind.StaticVariable, s.Span.ToTextSpan(),
                         () => (s.Initializer != null ? BindExpression(s.Initializer) : null)))
                     .ToImmutableArray())
             { PhpSyntax = stmt };
-            if (stmt is AST.UnsetStmt) return new BoundUnset(
-                ((AST.UnsetStmt)stmt).VarList
+            if (stmt is AST.UnsetStmt unsetStm) return new BoundUnset(
+                unsetStm.VarList
                     .Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Unset))
                     .ToImmutableArray())
             { PhpSyntax = stmt };
-            if (stmt is AST.ThrowStmt) return new BoundThrowStatement(BindExpression(((AST.ThrowStmt)stmt).Expression, BoundAccess.Read)) { PhpSyntax = stmt };
+            if (stmt is AST.ThrowStmt throwStm) return new BoundThrowStatement(BindExpression(throwStm.Expression, BoundAccess.Read)) { PhpSyntax = stmt };
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement() { PhpSyntax = stmt };
 
             //
@@ -160,24 +160,24 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(expr != null);
 
-            if (expr is AST.Literal) return BindLiteral((AST.Literal)expr).WithAccess(access);
-            if (expr is AST.ConstantUse) return BindConstUse((AST.ConstantUse)expr).WithAccess(access);
-            if (expr is AST.VarLikeConstructUse) return BindVarLikeConstructUse((AST.VarLikeConstructUse)expr, access);
-            if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
-            if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
-            if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr, access);
-            if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
-            if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
-            if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
-            if (expr is AST.IncludingEx) return BindIncludeEx((AST.IncludingEx)expr).WithAccess(access);
-            if (expr is AST.InstanceOfEx) return BindInstanceOfEx((AST.InstanceOfEx)expr).WithAccess(access);
-            if (expr is AST.PseudoConstUse) return BindPseudoConst((AST.PseudoConstUse)expr).WithAccess(access);
-            if (expr is AST.IssetEx) return BindIsSet((AST.IssetEx)expr).WithAccess(access);
-            if (expr is AST.ExitEx) return BindExitEx((AST.ExitEx)expr).WithAccess(access);
-            if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
-            if (expr is AST.LambdaFunctionExpr) return BindLambda((AST.LambdaFunctionExpr)expr).WithAccess(access);
-            if (expr is AST.EvalEx) return BindEval((AST.EvalEx)expr).WithAccess(access);
-            if (expr is AST.YieldEx) return BindYieldEx((AST.YieldEx)expr).WithAccess(access);
+            if (expr is AST.Literal literal) return BindLiteral(literal).WithAccess(access);
+            if (expr is AST.ConstantUse constUse) return BindConstUse(constUse).WithAccess(access);
+            if (expr is AST.VarLikeConstructUse varLikeConstructUse) return BindVarLikeConstructUse(varLikeConstructUse, access);
+            if (expr is AST.BinaryEx binEx) return BindBinaryEx(binEx).WithAccess(access);
+            if (expr is AST.AssignEx assignEx) return BindAssignEx(assignEx, access);
+            if (expr is AST.UnaryEx unaryEx) return BindUnaryEx(unaryEx, access);
+            if (expr is AST.IncDecEx incDecEx) return BindIncDec(incDecEx).WithAccess(access);
+            if (expr is AST.ConditionalEx condEx) return BindConditionalEx(condEx).WithAccess(access);
+            if (expr is AST.ConcatEx concatEx) return BindConcatEx(concatEx).WithAccess(access);
+            if (expr is AST.IncludingEx includingEx) return BindIncludeEx(includingEx).WithAccess(access);
+            if (expr is AST.InstanceOfEx instanceOfEx) return BindInstanceOfEx(instanceOfEx).WithAccess(access);
+            if (expr is AST.PseudoConstUse pseudoConstUse) return BindPseudoConst(pseudoConstUse).WithAccess(access);
+            if (expr is AST.IssetEx issetEx) return BindIsSet(issetEx).WithAccess(access);
+            if (expr is AST.ExitEx exitEx) return BindExitEx(exitEx).WithAccess(access);
+            if (expr is AST.EmptyEx emptyEx) return BindIsEmptyEx(emptyEx).WithAccess(access);
+            if (expr is AST.LambdaFunctionExpr lambFuncEx) return BindLambda(lambFuncEx).WithAccess(access);
+            if (expr is AST.EvalEx evalEx) return BindEval(evalEx).WithAccess(access);
+            if (expr is AST.YieldEx yieldEx) return BindYieldEx(yieldEx).WithAccess(access);
 
             //
             _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
@@ -274,8 +274,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // flattern concat arguments
             for (int i = 0; i < boundargs.Count; i++)
             {
-                var c = boundargs[i].Value as BoundConcatEx;
-                if (c != null)
+                if (boundargs[i].Value is BoundConcatEx c)
                 {
                     var subargs = c.ArgumentsInSourceOrder;
                     boundargs.RemoveAt(i);
@@ -297,9 +296,9 @@ namespace Pchp.CodeAnalysis.Semantics
             var boundinstance = (x.IsMemberOf != null) ? BindExpression(x.IsMemberOf, BoundAccess.Read/*Object?*/) : null;
             var boundargs = BindArguments(x.CallSignature.Parameters);
 
-            if (x is AST.DirectFcnCall)
+            if (x is AST.DirectFcnCall dirFcnCall)
             {
-                var f = (AST.DirectFcnCall)x;
+                var f = dirFcnCall;
                 var fname = f.FullName;
 
                 if (f.IsMemberOf == null)
@@ -315,18 +314,18 @@ namespace Pchp.CodeAnalysis.Semantics
                         .WithAccess(access);
                 }
             }
-            else if (x is AST.IndirectFcnCall)
+            else if (x is AST.IndirectFcnCall indFcnCall)
             {
-                var f = (AST.IndirectFcnCall)x;
+                var f = indFcnCall;
                 var nameExpr = BindExpression(f.NameExpr);
                 return ((f.IsMemberOf == null)
                     ? (BoundRoutineCall)new BoundGlobalFunctionCall(nameExpr, boundargs)
                     : new BoundInstanceFunctionCall(boundinstance, new BoundUnaryEx(nameExpr, AST.Operations.StringCast), boundargs))
                         .WithAccess(access);
             }
-            else if (x is AST.StaticMtdCall)
+            else if (x is AST.StaticMtdCall staticMtdCall)
             {
-                var f = (AST.StaticMtdCall)x;
+                var f = staticMtdCall;
                 Debug.Assert(f.IsMemberOf == null);
 
                 var boundname = (f is AST.DirectStMtdCall)
@@ -379,13 +378,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, BoundAccess access)
         {
-            if (expr is AST.SimpleVarUse) return BindSimpleVarUse((AST.SimpleVarUse)expr, access);
-            if (expr is AST.FunctionCall) return BindFunctionCall((AST.FunctionCall)expr, access);
-            if (expr is AST.NewEx) return BindNew((AST.NewEx)expr, access);
-            if (expr is AST.ArrayEx) return BindArrayEx((AST.ArrayEx)expr, access);
-            if (expr is AST.ItemUse) return BindItemUse((AST.ItemUse)expr, access);
-            if (expr is AST.StaticFieldUse) return BindFieldUse((AST.StaticFieldUse)expr, access);
-            if (expr is AST.ListEx) return BindListEx((AST.ListEx)expr).WithAccess(access);
+            if (expr is AST.SimpleVarUse simpleVarUse) return BindSimpleVarUse(simpleVarUse, access);
+            if (expr is AST.FunctionCall funcCall) return BindFunctionCall(funcCall, access);
+            if (expr is AST.NewEx newEx) return BindNew(newEx, access);
+            if (expr is AST.ArrayEx arrayEx) return BindArrayEx(arrayEx, access);
+            if (expr is AST.ItemUse itemUse) return BindItemUse(itemUse, access);
+            if (expr is AST.StaticFieldUse staticFieldUse) return BindFieldUse(staticFieldUse, access);
+            if (expr is AST.ListEx listEx) return BindListEx(listEx).WithAccess(access);
 
             throw new NotImplementedException(expr.GetType().FullName);
         }
@@ -414,9 +413,11 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             foreach (var x in items)
             {
+                Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
+
                 var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
-                var boundValue = (x is AST.RefItem)
-                    ? BindExpression(((AST.RefItem)x).RefToGet, BoundAccess.ReadRef)
+                var boundValue = (x is AST.RefItem refItem)
+                    ? BindExpression(refItem.RefToGet, BoundAccess.ReadRef)
                     : BindExpression(((AST.ValueItem)x).ValueExpr, BoundAccess.Read);
 
                 yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
@@ -550,16 +551,20 @@ namespace Pchp.CodeAnalysis.Semantics
             BoundExpression value;
 
             // bind value (read as value or as ref)
-            if (expr is AST.ValueAssignEx)
+            if (expr is AST.ValueAssignEx assignEx)
             {
-                value = BindExpression(((AST.ValueAssignEx)expr).RValue, BoundAccess.Read.WithReadCopy());
+                value = BindExpression(assignEx.RValue, BoundAccess.Read.WithReadCopy());
+            }
+            else if (expr is AST.RefAssignEx refAssignEx)
+            {
+                Debug.Assert(expr.Operation == AST.Operations.AssignRef);
+                target.Access = target.Access.WithWriteRef(0); // note: analysis will write the write type
+                value = BindExpression(refAssignEx.RValue, BoundAccess.ReadRef);
             }
             else
             {
-                Debug.Assert(expr is AST.RefAssignEx);
-                Debug.Assert(expr.Operation == AST.Operations.AssignRef);
-                target.Access = target.Access.WithWriteRef(0); // note: analysis will write the write type
-                value = BindExpression(((AST.RefAssignEx)expr).RValue, BoundAccess.ReadRef);
+                ExceptionUtilities.UnexpectedValue(expr);
+                return null;
             }
 
             //
@@ -591,12 +596,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         static BoundExpression BindLiteral(AST.Literal expr)
         {
-            if (expr is AST.LongIntLiteral) return new BoundLiteral(((AST.LongIntLiteral)expr).Value);
-            if (expr is AST.StringLiteral) return new BoundLiteral(((AST.StringLiteral)expr).Value);
-            if (expr is AST.DoubleLiteral) return new BoundLiteral(((AST.DoubleLiteral)expr).Value);
-            if (expr is AST.BoolLiteral) return new BoundLiteral(((AST.BoolLiteral)expr).Value);
-            if (expr is AST.NullLiteral) return new BoundLiteral(null);
-            if (expr is AST.BinaryStringLiteral) return new BoundLiteral(((AST.BinaryStringLiteral)expr).Value);
+            if (expr is AST.LongIntLiteral longIntLit) return new BoundLiteral(longIntLit.Value);
+            if (expr is AST.StringLiteral stringLit) return new BoundLiteral(stringLit.Value);
+            if (expr is AST.DoubleLiteral doubleLit) return new BoundLiteral(doubleLit.Value);
+            if (expr is AST.BoolLiteral boolLit) return new BoundLiteral(boolLit.Value);
+            if (expr is AST.NullLiteral nullLit) return new BoundLiteral(null);
+            if (expr is AST.BinaryStringLiteral binStringLit) return new BoundLiteral(binStringLit.Value);
 
             throw new NotImplementedException();
         }
