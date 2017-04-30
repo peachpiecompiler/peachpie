@@ -139,66 +139,66 @@ namespace Pchp.Library.DateTime
 
 		#region GetUnixTimeStamp
 
-		private long GetUnixTimeStamp(Context ctx, System.DateTime utcStart, out string error)
-		{
+        public System.DateTime GetDateTime(Context ctx, System.DateTime utcStart)
+        {
             var zone = PhpTimeZone.GetCurrentTimeZone(ctx);
             var start = TimeZoneInfo.ConvertTime(utcStart, TimeZoneInfo.Utc, zone);// zone.ToLocalTime(utcStart);
 
             // following operates on local time defined by the parsed info or by the current time zone //
 
-			if (have_date > 0 && have_time == 0)
-			{
-				h = 0;
-				i = 0;
-				s = 0;
-			}
-			else
-			{
-				if (h == -1) h = start.Hour;
+            if (have_date > 0 && have_time == 0)
+            {
+                h = 0;
+                i = 0;
+                s = 0;
+            }
+            else
+            {
+                if (h == -1) h = start.Hour;
                 if (i == -1) i = start.Minute;
-				if (s == -1) s = start.Second;
-			}
+                if (s == -1) s = start.Second;
+            }
 
-			if (y == -1) y = start.Year;
-			if (m == -1) m = start.Month;
-            else if (m == 0) { m = 1; --relative.m;}
-			if (d == -1) d = start.Day;
+            if (y == -1) y = start.Year;
+            if (m == -1) m = start.Month;
+            else if (m == 0) { m = 1; --relative.m; }
+            if (d == -1) d = start.Day;
             else if (d == 0) { d = 1; --relative.d; }
 
             int days_overflow;
             CheckOverflows(y, m, ref d, ref h, out days_overflow);
-            
-			var result = new System.DateTime(y, m, d, h, i, s, DateTimeKind.Unspecified);
 
-			result = result.AddDays(relative.d + days_overflow);
-			result = result.AddMonths(relative.m);
-			result = result.AddYears(relative.y);
-			result = result.AddHours(relative.h);
-			result = result.AddMinutes(relative.i);
-			result = result.AddSeconds(relative.s);
+            var result = new System.DateTime(y, m, d, h, i, s, DateTimeKind.Unspecified);
 
-			// adds relative weekday:
-			if (have_weekday_relative > 0)
-			{
-				int dow = (int)result.DayOfWeek;
-				int difference = relative.weekday - dow;
+            result = result.AddDays(relative.d + days_overflow);
+            result = result.AddMonths(relative.m);
+            result = result.AddYears(relative.y);
+            result = result.AddHours(relative.h);
+            result = result.AddMinutes(relative.i);
+            result = result.AddSeconds(relative.s);
 
-				if ((relative.d < 0 && difference < 0) || (relative.d >= 0 && difference <= -relative.weekday_behavior))
-					difference += 7;
+            // adds relative weekday:
+            if (have_weekday_relative > 0)
+            {
+                int dow = (int)result.DayOfWeek;
+                int difference = relative.weekday - dow;
 
-				if (relative.weekday >= 0)
-					result = result.AddDays(difference);
-				else
-					result = result.AddDays(dow - relative.weekday - 7);
+                if ((relative.d < 0 && difference < 0) || (relative.d >= 0 && difference <= -relative.weekday_behavior))
+                    difference += 7;
+
+                if (relative.weekday >= 0)
+                    result = result.AddDays(difference);
+                else
+                    result = result.AddDays(dow - relative.weekday - 7);
             }
 
-			// convert to UTC:
-			if (have_zone > 0)
-			{
-				result = result.AddMinutes(-z);
-			}
-			else
-			{
+            // convert to UTC:
+            if (have_zone > 0)
+            {
+                result = result.AddMinutes(-z);
+            }
+            else
+            {
                 if (zone.IsInvalidTime(result))
                 {
                     // We ended up in an invalid time. This time was skipped because of day-light saving change.
@@ -212,7 +212,15 @@ namespace Pchp.Library.DateTime
                 }
 
                 result = TimeZoneInfo.ConvertTime(result, zone, TimeZoneInfo.Utc);// zone.ToUniversalTime(result);
-			}
+            }
+
+            //
+            return result;
+        }
+
+		private long GetUnixTimeStamp(Context ctx, System.DateTime utcStart, out string error)
+		{
+            var result = GetDateTime(ctx, utcStart);
 
 			error = null;
 			return DateTimeUtils.UtcToUnixTimeStamp(result);
