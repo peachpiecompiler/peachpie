@@ -144,7 +144,7 @@ namespace Pchp.CodeAnalysis
             var compilation = new PhpCompilation(
                 assemblyName ?? this.AssemblyName,
                 options ?? _options,
-                this.ExternalReferences.AddRange((references == null) ? ImmutableArray<MetadataReference>.Empty : references),
+                references != null ? references.AsImmutable() : this.ExternalReferences,
                 //this.PreviousSubmission,
                 //this.SubmissionReturnType,
                 //this.HostObjectType,
