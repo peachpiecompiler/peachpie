@@ -284,11 +284,23 @@ namespace Pchp.Library
                 var result = new PhpArray();
                 var callerType = Type.GetTypeFromHandle(caller);
 
+                // the class has to be instantiated in order to discover default instance property values
+                // (the constructor will initialize default properties, user defined constructor will not be called)
+                var instanceOpt = tinfo.GetUninitializedInstance(ctx);
+
                 foreach (var prop in tinfo.GetDeclaredProperties())
                 {
                     if (prop.IsVisible(callerType))
                     {
-                        result[prop.PropertyName] = PhpValue.Null;  // TODO: default value
+                        // resolve the property value using temporary class instance
+                        var value = prop.IsStatic
+                            ? prop.GetValue(ctx, null)
+                            : (instanceOpt != null)
+                                ? prop.GetValue(ctx, instanceOpt)
+                                : PhpValue.Void;
+
+                        //
+                        result[prop.PropertyName] = value.DeepCopy();
                     }
                 }
 
