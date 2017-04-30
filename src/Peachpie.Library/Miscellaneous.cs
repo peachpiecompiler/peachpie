@@ -466,5 +466,10 @@ namespace Pchp.Library
         {
             return true;    // status of the circular reference collector
         }
+
+        /// <summary>
+        /// Returns a unique identifier for the current thread.
+        /// </summary>
+        public static int zend_thread_id() => System.Threading.Thread.CurrentThread.ManagedThreadId;
     }
 }
