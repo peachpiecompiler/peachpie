@@ -139,6 +139,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (value.VariableKind != kind)
                 {
+                    // it's a source variable -> has non-default span
+                    Debug.Assert(span != default(TextSpan));
+
                     // variable redeclared with a different kind
                     _routine.DeclaringCompilation.DeclarationDiagnostics.Add(_routine, span, Errors.ErrorCode.ERR_NotYetImplemented, $"Combination of {value.VariableKind} and {kind} kinds of the same variable.");
                 }
