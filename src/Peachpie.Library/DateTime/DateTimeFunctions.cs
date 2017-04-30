@@ -1470,19 +1470,19 @@ namespace Pchp.Library.DateTime
 
             var result = new PhpArray(12);
             //[year] => 2006
-            result["year"] = (PhpValue)datetime.Year;
+            result["year"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Year : PhpValue.False;
             //[month] => 12
-            result["month"] = (PhpValue)datetime.Month;
+            result["month"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Month : PhpValue.False;
             //[day] => 12
-            result["day"] = (PhpValue)datetime.Day;
+            result["day"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Day : PhpValue.False;
             //[hour] => 10
-            result["hour"] = (PhpValue)datetime.Hour;
+            result["hour"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Hour : PhpValue.False;
             //[minute] => 0
-            result["minute"] = (PhpValue)datetime.Minute;
+            result["minute"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Minute : PhpValue.False;
             //[second] => 0
-            result["second"] = (PhpValue)datetime.Second;
+            result["second"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Second : PhpValue.False;
             //[fraction] => 0.5
-            result["fraction"] = (PhpValue)dateinfo.f;
+            result["fraction"] = dateinfo.have_time != 0 ? (PhpValue)dateinfo.f : PhpValue.False;
             //[warning_count] => 0
             result["warning_count"] = (PhpValue)0;
             //[warnings] => Array()
