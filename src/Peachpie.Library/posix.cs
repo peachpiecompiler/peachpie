@@ -443,6 +443,7 @@ namespace Pchp.Library
             /// <summary>
             /// Takes endpoints of a range and returns string containing appropriate characters.
             /// </summary>
+            /// <param name="ctx">Runtime context.</param>
             /// <param name="firstCharacter">First endpoint of a range.</param>
             /// <param name="secondCharacter">Second endpoint of a range.</param>
             /// <param name="characters">String containing all characters that are to be in the range.</param>
