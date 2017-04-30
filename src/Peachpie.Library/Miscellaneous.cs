@@ -338,8 +338,7 @@ namespace Pchp.Library
         /// <returns>The PID.</returns>
         public static int getmypid()
         {
-            // return System.Diagnostics.Process.GetCurrentProcess().Id;
-            throw new NotImplementedException("System.Diagnostics.Process");
+            return System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
 
