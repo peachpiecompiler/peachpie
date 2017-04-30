@@ -271,6 +271,36 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Get the default properties of the given class.
+        /// </summary>
+        /// <returns>Returns an associative array of declared properties visible from the current scope, with their default value. The resulting array elements are in the form of varname => value.
+        /// In case of an error, it returns <c>FALSE</c>.</returns>
+        [return: CastToFalse]
+        public static PhpArray get_class_vars(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, string class_name)
+        {
+            var tinfo = ctx.GetDeclaredType(class_name, true);
+            if (tinfo != null)
+            {
+                var result = new PhpArray();
+                var callerType = Type.GetTypeFromHandle(caller);
+
+                foreach (var prop in tinfo.GetDeclaredProperties())
+                {
+                    if (prop.IsVisible(callerType))
+                    {
+                        result[prop.PropertyName] = PhpValue.Null;  // TODO: default value
+                    }
+                }
+
+                return result;
+            }
+            else
+            {
+                return null; // false
+            }
+        }
+
+        /// <summary>
         /// Checks if the class method exists in the given object.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
