@@ -42,17 +42,9 @@ namespace Pchp.Core.Utilities
     /// </summary>
     public static class CurrentPlatform
     {
-        /// <summary>
-        /// Determines the guest operating system is windows.
-        /// </summary>
-        static bool DetermineIsWindows()
-        {
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        }
-
         static CurrentPlatform()
         {
-            if (IsWindows = DetermineIsWindows())
+            if (IsWindows)
             {
                 DirectorySeparator = '\\';
                 AltDirectorySeparator = '/';
@@ -67,9 +59,19 @@ namespace Pchp.Core.Utilities
         }
 
         /// <summary>
-        /// Gets value indicating the guest operating system is Windows.
+        /// Gets value indicating the guest operating.
         /// </summary>
-        public static readonly bool IsWindows;
+        public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        
+        /// <summary>
+        /// Gets value indicating the guest operating.
+        /// </summary>
+        public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        
+        /// <summary>
+        /// Gets value indicating the guest operating.
+        /// </summary>
+        public static bool IsOsx => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
         public static readonly char DirectorySeparator;
 
