@@ -420,7 +420,7 @@ namespace Pchp.Library
         public static bool is_array(PhpValue variable) => variable.IsArray || (variable.IsAlias && variable.Alias.Value.IsArray);
 
         /// <summary>
-        /// Checks whether a dereferenced variable is <see cref="Core.Reflection.DObject"/>.
+        /// Checks whether a dereferenced variable is an instance of class.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is <see cref="object"/>.</returns>
