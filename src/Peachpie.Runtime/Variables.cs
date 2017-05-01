@@ -374,13 +374,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpResource AsResource(this PhpValue value)
         {
-            var resource = value.Object as PhpResource;
-            if (resource == null && value.IsAlias)
-            {
-                resource = value.Alias.Value.Object as PhpResource;
-            }
-
-            return resource;
+            return value.AsObject() as PhpResource;
         }
 
         /// <summary>

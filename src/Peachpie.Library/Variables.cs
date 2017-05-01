@@ -427,7 +427,7 @@ namespace Pchp.Library
         public static bool is_object(PhpValue variable)
         {
             var obj = variable.AsObject();
-            return obj != null && !(obj is __PHP_Incomplete_Class);
+            return obj != null && !(obj is __PHP_Incomplete_Class) && !(obj is PhpResource);
         }
 
         /// <summary>
