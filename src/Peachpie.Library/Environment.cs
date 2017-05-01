@@ -23,9 +23,9 @@ namespace Pchp.Library
 
         //_constants.Add("PHP_SAPI", (System.Web.HttpContext.Current == null) ? "cli" : "isapi", false);
         //_constants.Add("DIRECTORY_SEPARATOR", FullPath.DirectorySeparatorString, false);
-        public static string DIRECTORY_SEPARATOR = CurrentPlatform.DirectorySeparator.ToString();
+        public static readonly string DIRECTORY_SEPARATOR = CurrentPlatform.DirectorySeparator.ToString();
         //_constants.Add("PATH_SEPARATOR", Path.PathSeparator.ToString(), false);
-        public static string PATH_SEPARATOR = CurrentPlatform.PathSeparator.ToString();
+        public static readonly string PATH_SEPARATOR = CurrentPlatform.PathSeparator.ToString();
 
         public const long PHP_INT_SIZE = sizeof(long);
         public const long PHP_INT_MIN = long.MinValue;
