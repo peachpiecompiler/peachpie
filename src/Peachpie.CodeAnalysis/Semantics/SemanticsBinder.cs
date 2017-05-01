@@ -85,9 +85,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Helpers
 
-        IEnumerable<BoundStatement> BindStatements(IEnumerable<AST.Statement> statements)
+        ImmutableArray<BoundStatement> BindStatements(IEnumerable<AST.Statement> statements)
         {
-            return statements.Select(BindStatement);
+            return statements.Select(BindStatement).ToImmutableArray();
         }
 
         ImmutableArray<BoundExpression> BindExpressions(IEnumerable<AST.Expression> expressions)
