@@ -111,7 +111,7 @@ namespace Peachpie.Web
             var isfile = path.Last() != '/';
 
             // trim slashes
-            path = ScriptsMap.NormalizeSlashes(ArrayUtils.Trim(path, '/'));
+            path = CurrentPlatform.NormalizeSlashes(path).TrimEndSeparator();
 
             if (isfile)
             {
@@ -194,12 +194,6 @@ namespace Peachpie.Web
         readonly Encoding _encoding;
 
         /// <summary>
-        /// Application physical root directory including trailing slash.
-        /// </summary>
-        public override string RootPath => _rootPath;
-        readonly string _rootPath;
-
-        /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
         /// Cannot be <c>null</c>.
         /// </summary>
@@ -214,14 +208,12 @@ namespace Peachpie.Web
         public RequestContextCore(HttpContext httpcontext, string rootPath, Encoding encoding)
         {
             Debug.Assert(httpcontext != null);
-            Debug.Assert(rootPath != null);
-            Debug.Assert(rootPath == ScriptsMap.NormalizeSlashes(rootPath));
-            Debug.Assert(rootPath.Length != 0 && rootPath[rootPath.Length - 1] != '/');
             Debug.Assert(encoding != null);
 
             _httpctx = httpcontext;
-            _rootPath = rootPath;
             _encoding = encoding;
+
+            this.RootPath = rootPath;
 
             this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();

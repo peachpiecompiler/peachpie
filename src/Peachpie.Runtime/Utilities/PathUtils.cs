@@ -16,6 +16,21 @@ namespace Pchp.Core.Utilities
         public const char AltDirectorySeparator = '/';
 
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
+        
+        public static string TrimEndSeparator(this string path)
+        {
+            return IsDirectorySeparator(path.LastChar())
+                ? path.Remove(path.Length - 1)
+                : path;
+        }
+
+        public static string DirectoryName(string path)
+        {
+            var sepindex = path.LastIndexOfAny(new char[] { DirectorySeparator, AltDirectorySeparator });
+            return (sepindex < 0)
+                ? string.Empty
+                : path.Remove(sepindex);
+        }
     }
 
     #endregion
@@ -61,6 +76,11 @@ namespace Pchp.Core.Utilities
         public static readonly char AltDirectorySeparator;
 
         public static readonly char PathSeparator;
+
+        /// <summary>
+        /// Replaces <see cref="AltDirectorySeparator"/> to <see cref="DirectorySeparator"/>.
+        /// </summary>
+        public static string NormalizeSlashes(string path) => path.Replace(AltDirectorySeparator, DirectorySeparator);
     }
 
     #endregion

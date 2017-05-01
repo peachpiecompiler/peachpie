@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -51,7 +52,7 @@ namespace Pchp.Core
                 _mainScriptFile = value;
 
                 // cwd = entering script directory
-                this.WorkingDirectory = System.IO.Path.GetDirectoryName(System.IO.Path.Combine(RootPath, value.Path));
+                this.WorkingDirectory = string.Concat(RootPath, CurrentPlatform.DirectorySeparator.ToString(), PathUtils.DirectoryName(value.Path));
             }
         }
         ScriptInfo _mainScriptFile;
@@ -64,7 +65,19 @@ namespace Pchp.Core
         /// - <c>__FILE__</c> and <c>__DIR__</c> magic constants are resolved as concatenation with this value.
         /// - <see cref="WorkingDirectory"/> is initialized with this value upon context is created.
         /// </remarks>
-        public virtual string RootPath { get; } = string.Empty;
+        public string RootPath
+        {
+            get
+            {
+                return _rootPath;
+            }
+            set
+            {
+                if (value == null) throw new ArgumentNullException();
+                _rootPath = CurrentPlatform.NormalizeSlashes(value).TrimEndSeparator();
+            }
+        }
+        string _rootPath = string.Empty;
 
         /// <summary>
         /// Current working directory.

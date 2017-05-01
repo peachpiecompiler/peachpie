@@ -92,7 +92,7 @@ namespace Pchp.Core
             public ScriptInfo(int index, string path, TypeInfo script)
             {
                 Index = index;
-                Path = path;
+                Path = CurrentPlatform.NormalizeSlashes(path);
                 MainMethod = CreateMain(script);
             }
         }
@@ -133,7 +133,7 @@ namespace Pchp.Core
                 GetScriptIndex(path, mainmethod.DeclaringType.GetTypeInfo());
             }
 
-            public static string NormalizeSlashes(string path) => path.Replace('\\', '/').Replace("//", "/");
+            static string NormalizeSlashes(string path) => CurrentPlatform.NormalizeSlashes(path);
 
             public void SetIncluded<TScript>() => array.SetTrue(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 
@@ -155,8 +155,10 @@ namespace Pchp.Core
 
                 lock (_scriptsMap)  // TODO: R lock
                 {
-                    if (!_scriptsMap.TryGetValue(path, out index))
+                    if (!_scriptsMap.TryGetValue(NormalizeSlashes(path), out index))
+                    {
                         return default(ScriptInfo);
+                    }
                 }
 
                 return _scripts[index];
@@ -229,7 +231,7 @@ namespace Pchp.Core
                 if (Path.IsPathRooted(path))
                 {
                     // normalize, check it is within root_path
-                    path = NormalizeSlashes(path);
+                    path = NormalizeSlashes(Path.GetFullPath(path));
                     if (path.StartsWith(root_path))
                     {
                         script = GetDeclaredScript(path.Substring(root_path.Length + 1));

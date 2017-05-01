@@ -147,19 +147,14 @@ namespace Peachpie.RequestHandler
         public HttpContext HttpContext => _httpctx;
         readonly HttpContext _httpctx;
 
-        /// <summary>
-        /// Application physical root directory including trailing slash.
-        /// </summary>
-        public override string RootPath => _rootPath;
-        readonly string _rootPath;
-
         public RequestContextAspNet(HttpContext httpcontext)
         {
             Debug.Assert(httpcontext != null);
             Debug.Assert(HttpRuntime.UsingIntegratedPipeline);
 
             _httpctx = httpcontext;
-            _rootPath = ScriptsMap.NormalizeSlashes(HttpRuntime.AppDomainAppPath).TrimEnd(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
+
+            this.RootPath = HttpRuntime.AppDomainAppPath;
 
             this.InitOutput(httpcontext.Response.OutputStream);
             this.InitSuperglobals();
@@ -283,7 +278,7 @@ namespace Peachpie.RequestHandler
         /// </summary>
         public bool Include(HttpRequest req)
         {
-            var relative_path = ScriptsMap.NormalizeSlashes(req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length));
+            var relative_path = req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length);
             var script = ScriptsMap.GetDeclaredScript(relative_path);
             if (script.IsValid)
             {
