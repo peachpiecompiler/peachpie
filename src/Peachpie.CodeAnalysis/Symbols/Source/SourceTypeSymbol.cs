@@ -441,7 +441,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         CreateLocation(f.NameSpan.ToTextSpan()),
                         flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
                         fkind,
-                        (f.Initializer != null) ? binder.BindExpression(f.Initializer, BoundAccess.Read) : null);
+                        (f.Initializer != null) ? binder.HandleExpression(f.Initializer, BoundAccess.Read).GetOnlyBoundElement() : null);
                 }
             }
 
@@ -454,7 +454,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         CreateLocation(c.Name.Span.ToTextSpan()),
                         Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
                         SourceFieldSymbol.KindEnum.ClassConstant,
-                        binder.BindExpression(c.Initializer, BoundAccess.Read));
+                        binder.HandleExpression(c.Initializer, BoundAccess.Read).GetOnlyBoundElement());
                 }
             }
         }

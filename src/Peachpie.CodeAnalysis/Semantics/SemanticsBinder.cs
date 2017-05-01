@@ -16,6 +16,37 @@ using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
+
+    /// <summary>
+    /// Holds currently bound item and optionally statements that are supposed to be go before it. 
+    /// </summary>
+    /// <typeparam name="T">Either <c>BoundExpression</c> or <c>BoundStatement</c>.</typeparam>
+    internal struct BoundItemsBag<T> where T : IPhpOperation
+    {
+        public ImmutableArray<BoundStatement> PreBoundStatements { get; private set; }
+        public T BoundElement { get; private set; }
+
+        public BoundItemsBag(ImmutableArray<BoundStatement> preBound, T bound)
+        {
+            PreBoundStatements = preBound;
+            BoundElement = bound;
+        }
+
+        public BoundItemsBag(T bound) : this(ImmutableArray<BoundStatement>.Empty, bound) { }
+
+        /// <summary>
+        /// Returns bound elemenent and asserts that there are no <c>PreBoundStatements</c>.
+        /// </summary>
+        public T GetOnlyBoundElement()
+        {
+            Debug.Assert(PreBoundStatements.IsEmpty);
+            return BoundElement;
+        }
+
+        public static implicit operator BoundItemsBag<T>(T item) => new BoundItemsBag<T>(item);
+        
+    }
+
     /// <summary>
     /// Binds syntax nodes (<see cref="AST.LangElement"/>) to semantic nodes (<see cref="IOperation"/>).
     /// Creates unbound nodes.
@@ -54,12 +85,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Helpers
 
-        public IEnumerable<BoundStatement> BindStatements(IEnumerable<AST.Statement> statements)
+        IEnumerable<BoundStatement> BindStatements(IEnumerable<AST.Statement> statements)
         {
             return statements.Select(BindStatement);
         }
 
-        public ImmutableArray<BoundExpression> BindExpressions(IEnumerable<AST.Expression> expressions)
+        ImmutableArray<BoundExpression> BindExpressions(IEnumerable<AST.Expression> expressions)
         {
             return expressions.Select(BindExpression).ToImmutableArray();
         }
@@ -97,7 +128,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
-        public BoundStatement BindStatement(AST.Statement stmt)
+        public BoundItemsBag<BoundStatement> HandleStatement(AST.Statement stmt) 
+            => new BoundItemsBag<BoundStatement>(BindStatement(stmt));       
+
+        BoundStatement BindStatement(AST.Statement stmt)
         {
             Debug.Assert(stmt != null);
 
@@ -153,7 +187,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 .WithAccess(BoundAccess.Write);
         }
 
-        public BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
+        public BoundItemsBag<BoundExpression> HandleExpression(AST.Expression expr, BoundAccess access) 
+            => new BoundItemsBag<BoundExpression>(BindExpression(expr, access));
+
+        BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
             var bound = BindExpressionCore(expr, access);
             bound.PhpSyntax = expr;
