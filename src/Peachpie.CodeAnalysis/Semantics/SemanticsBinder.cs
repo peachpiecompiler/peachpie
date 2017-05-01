@@ -29,6 +29,11 @@ namespace Pchp.CodeAnalysis.Semantics
         readonly LocalsTable _locals;
 
         /// <summary>
+        /// Gets corresponding routine.
+        /// </summary>
+        public SourceRoutineSymbol Routine => _locals?.Routine;
+
+        /// <summary>
         /// Found yields (needed for ControlFlowGraph)
         /// </summary>
         public BoundYieldEx[] Yields { get => _yields.ToArray(); }

@@ -152,6 +152,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current = WithOpenScope(this.Start);
 
             statements.ForEach(this.VisitElement);
+            FinalizeRoutine();
             _current = Connect(_current, this.Exit);
 
             //
@@ -189,6 +190,24 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private void Add(BoundStatement stmt)
         {
             _current.Add(stmt);
+        }
+
+        private void FinalizeRoutine()
+        {
+            if (_binder.Routine.IsGlobalScope)
+            {
+                if (!_deadBlocks.Contains(_current))
+                {
+                    // global code returns 1 by default if no other value is specified
+                    AddReturn1();
+                }
+            }
+        }
+
+        private void AddReturn1()
+        {
+            // return (int)1;
+            _current.Add(new BoundReturnStatement(new BoundLiteral(1).WithAccess(BoundAccess.Read)));
         }
 
         private BoundBlock/*!*/NewBlock()
