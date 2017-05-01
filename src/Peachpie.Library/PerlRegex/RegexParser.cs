@@ -598,6 +598,7 @@ namespace Pchp.Library.PerlRegex
         {
             int c;
             int startpos;
+            bool backslashref;
 
             _concatenation = new RegexNode(RegexNode.Concatenate, _options);
 
@@ -608,9 +609,18 @@ namespace Pchp.Library.PerlRegex
                     break;
 
                 startpos = Textpos();
+                backslashref = false;
 
                 while (c > 0 && RightChar() != '$')
                 {
+                    // \ref
+                    if (c >= 2 && RightChar() == '\\' && char.IsDigit(RightChar(1)))
+                    {
+                        backslashref = true;
+                        break;
+                    }
+
+                    //
                     MoveRight();
                     c--;
                 }
@@ -619,8 +629,15 @@ namespace Pchp.Library.PerlRegex
 
                 if (c > 0)
                 {
-                    if (MoveRightGetChar() == '$')
+                    if (backslashref)
+                    {
+                        AddUnitNode(ScanBackslashRef());
+                    }
+                    else if (MoveRightGetChar() == '$')
+                    {
                         AddUnitNode(ScanDollar());
+                    }
+
                     AddConcatenate();
                 }
             }
@@ -1328,6 +1345,29 @@ namespace Pchp.Library.PerlRegex
                 ch = _culture.TextInfo.ToLower(ch);
 
             return new RegexNode(RegexNode.One, _options, ch);
+        }
+
+        /// <summary>
+        /// Scans \digits, expecting \digits to the right.
+        /// </summary>
+        private RegexNode ScanBackslashRef()
+        {
+            Debug.Assert(RightChar() == '\\');
+            Debug.Assert(char.IsDigit(RightChar(1)));
+
+            int backpos = Textpos();
+
+            MoveRight();
+
+            int capnum = ScanDecimal();
+            if (IsCaptureSlot(capnum))
+            {
+                return new RegexNode(RegexNode.Ref, _options, capnum);
+            }
+
+            //
+            Textto(backpos);
+            return new RegexNode(RegexNode.One, _options, MoveRightGetChar());
         }
 
         /*
