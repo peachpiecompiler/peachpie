@@ -417,6 +417,5 @@ namespace Pchp.Library
 
             return false;
         }
-
     }
 }

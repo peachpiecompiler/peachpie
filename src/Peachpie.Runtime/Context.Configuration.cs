@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -179,7 +180,7 @@ namespace Pchp.Core
                 if (_includePathCache != IncludePaths)
                 {
                     _includePathCache = IncludePaths;
-                    _includePathsArray = IncludePaths.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                    _includePathsArray = IncludePaths.Split(new char[] { CurrentPlatform.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
                 }
 
                 return _includePathsArray;

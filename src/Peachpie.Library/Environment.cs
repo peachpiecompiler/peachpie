@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -18,13 +19,13 @@ namespace Pchp.Library
         public static readonly string PHP_VERSION = PHP_MAJOR_VERSION + "." + PHP_MINOR_VERSION + "." + PHP_RELEASE_VERSION + PHP_EXTRA_VERSION;
 
         public const string PHP_EXTRA_VERSION = "-peach";
-        public static readonly string PHP_OS = "WinNT"; //Environment.OSVersion.Platform == PlatformID.Win32NT? "WINNT" : "WIN32", false); // TODO: GENERICS (Unix)
+        public static readonly string PHP_OS = CurrentPlatform.IsWindows ? "WINNT" : "WIN32"; // TODO
 
         //_constants.Add("PHP_SAPI", (System.Web.HttpContext.Current == null) ? "cli" : "isapi", false);
         //_constants.Add("DIRECTORY_SEPARATOR", FullPath.DirectorySeparatorString, false);
-        public const string DIRECTORY_SEPARATOR = "/";
+        public static string DIRECTORY_SEPARATOR = CurrentPlatform.DirectorySeparator.ToString();
         //_constants.Add("PATH_SEPARATOR", Path.PathSeparator.ToString(), false);
-        public const string PATH_SEPARATOR = ";";
+        public static string PATH_SEPARATOR = CurrentPlatform.PathSeparator.ToString();
 
         public const long PHP_INT_SIZE = sizeof(long);
         public const long PHP_INT_MIN = long.MinValue;

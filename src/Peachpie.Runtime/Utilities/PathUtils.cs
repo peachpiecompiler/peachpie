@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,7 +17,52 @@ namespace Pchp.Core.Utilities
 
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
     }
-    
+
+    #endregion
+
+    #region CurrentPlatform
+
+    /// <summary>
+    /// Platform specific constants.
+    /// </summary>
+    public static class CurrentPlatform
+    {
+        /// <summary>
+        /// Determines the guest operating system is windows.
+        /// </summary>
+        static bool DetermineIsWindows()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        }
+
+        static CurrentPlatform()
+        {
+            if (IsWindows = DetermineIsWindows())
+            {
+                DirectorySeparator = '\\';
+                AltDirectorySeparator = '/';
+                PathSeparator = ';';
+            }
+            else
+            {
+                DirectorySeparator = '/';
+                AltDirectorySeparator = '\\';
+                PathSeparator = ':';
+            }
+        }
+
+        /// <summary>
+        /// Gets value indicating the guest operating system is Windows.
+        /// </summary>
+        public static readonly bool IsWindows;
+
+        public static readonly char DirectorySeparator;
+
+        public static readonly char AltDirectorySeparator;
+
+        public static readonly char PathSeparator;
+    }
+
     #endregion
 
     #region FileSystemUtils
