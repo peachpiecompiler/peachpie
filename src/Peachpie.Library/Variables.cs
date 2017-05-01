@@ -425,7 +425,10 @@ namespace Pchp.Library
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is <see cref="object"/>.</returns>
         public static bool is_object(PhpValue variable)
-            => variable.IsObject && variable.Object != null && !(variable.Object is __PHP_Incomplete_Class);
+        {
+            var obj = variable.AsObject();
+            return obj != null && !(obj is __PHP_Incomplete_Class);
+        }
 
         /// <summary>
         /// Checks whether a dereferenced variable is a valid <see cref="PhpResource"/>.

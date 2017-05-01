@@ -775,10 +775,10 @@ namespace Pchp.Library
         {
             IEnumerable enumerable;
 
-            if (pieces.IsObject && (enumerable = pieces.Object as IEnumerable) != null)
+            if ((enumerable = pieces.AsObject() as IEnumerable) != null)
                 return ImplodeInternal(ctx, glue, new PhpArray(enumerable));
 
-            if (glue.IsObject && (enumerable = glue.Object as IEnumerable) != null)
+            if ((enumerable = glue.AsObject() as IEnumerable) != null)
                 return ImplodeInternal(ctx, pieces, new PhpArray(enumerable));
 
             ////
