@@ -186,10 +186,9 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
 
-        public virtual void VisitYield(BoundYieldEx boundYieldEx)
+        public virtual void VisitYieldEx(BoundYieldEx boundYieldEx)
         {
-            Accept(boundYieldEx.YieldedValue);
-            Accept(boundYieldEx.YieldedKey);
+
         }
 
         #endregion
@@ -239,6 +238,12 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual void VisitStaticStatement(BoundStaticVariableStatement x)
         {
             
+        }
+
+        public virtual void VisitYieldStatement(BoundYieldStatement boundYieldStatement)
+        {
+            Accept(boundYieldStatement.YieldedValue);
+            Accept(boundYieldStatement.YieldedKey);
         }
 
         #endregion

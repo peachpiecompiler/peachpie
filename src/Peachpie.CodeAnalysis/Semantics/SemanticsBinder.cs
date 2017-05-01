@@ -65,9 +65,9 @@ namespace Pchp.CodeAnalysis.Semantics
         public SourceRoutineSymbol Routine => _locals?.Routine;
 
         /// <summary>
-        /// Found yields (needed for ControlFlowGraph)
+        /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
-        public virtual BoundYieldEx[] Yields { get => EmptyArray<BoundYieldEx>.Instance; }
+        public virtual BoundYieldStatement[] Yields { get => EmptyArray<BoundYieldStatement>.Instance; }
         protected readonly DiagnosticBag _diagnostics;
 
         #region Construction
@@ -670,28 +670,45 @@ namespace Pchp.CodeAnalysis.Semantics
 
     internal class GeneratorSemanticsBinder : SemanticsBinder
     {
+
+        // statements that are supposed to go before the item that is currenlty being binded
+        readonly List<BoundStatement> _preCurrentlyBinded;
+
         /// <summary>
-        /// Found yields (needed for ControlFlowGraph)
+        /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
-        public override BoundYieldEx[] Yields { get => _yields.ToArray(); }
-        readonly List<BoundYieldEx> _yields;
+        public override BoundYieldStatement[] Yields { get => _yields.ToArray(); }
+        readonly List<BoundYieldStatement> _yields;
 
         #region Construction
 
         public GeneratorSemanticsBinder(LocalsTable locals = null, DiagnosticBag diagnostics = null)
             : base(locals, diagnostics)
         {
-            _yields = new List<BoundYieldEx>();
+            _yields = new List<BoundYieldStatement>();
+            _preCurrentlyBinded = new List<BoundStatement>();
         }
 
         public override BoundItemsBag<BoundExpression> HandleExpression(AST.Expression expr, BoundAccess access)
         {
-            return base.HandleExpression(expr, access);
+            Debug.Assert(_preCurrentlyBinded.Count == 0);
+
+            var boundItem = BindExpression(expr, access);
+            var boundBag = new BoundItemsBag<BoundExpression>(_preCurrentlyBinded.ToImmutableArray(), boundItem);
+            _preCurrentlyBinded.Clear();
+
+            return boundBag;
         }
 
         public override BoundItemsBag<BoundStatement> HandleStatement(AST.Statement stmt)
         {
-            return base.HandleStatement(stmt);
+            Debug.Assert(_preCurrentlyBinded.Count == 0);
+
+            var boundItem = BindStatement(stmt);
+            var boundBag = new BoundItemsBag<BoundStatement>(_preCurrentlyBinded.ToImmutableArray(), boundItem);
+            _preCurrentlyBinded.Clear();
+
+            return boundBag;
         }
 
         protected override BoundYieldEx BindYieldEx(AST.YieldEx expr)
@@ -703,13 +720,17 @@ namespace Pchp.CodeAnalysis.Semantics
                     ? BoundAccess.ReadRef
                     : BoundAccess.Read;
 
+            // bind value and key expressions
             var boundValueExpr = (expr.ValueExpr != null) ? BindExpression(expr.ValueExpr, access) : null;
             var boundKeyExpr = (expr.KeyExpr != null) ? BindExpression(expr.KeyExpr) : null;
 
-            var boundYieldEx = new BoundYieldEx(boundValueExpr, boundKeyExpr);
-            _yields.Add(boundYieldEx);
+            // bind yield statement (represents return & continuation)
+            var boundYieldStatement = new BoundYieldStatement(boundValueExpr, boundKeyExpr);
+            _yields.Add(boundYieldStatement);
+            _preCurrentlyBinded.Add(boundYieldStatement);
 
-            return boundYieldEx;
+            // return BoundYieldEx representing a reference to a value sent to the generator
+            return new BoundYieldEx();
         }
 
         #endregion

@@ -1475,38 +1475,19 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundYieldEx
     /// <summary>
-    /// BoundYieldEx
+    /// Represents a reference to an item sent to the generator.
     /// </summary>
-    /// <remarks>
-    /// Instances used for continuation labels in emit.
-    /// </remarks>
-    public partial class BoundYieldEx : BoundExpression, IReturnStatement
+    public partial class BoundYieldEx : BoundExpression
     {
-        //Not sure about BoundYieldEx being IReturnStatement but yield is statement in C# and
-        // ..BoundYieldReturnStatement from Roslyn implements it this way, it also enables us
-        // ..use the same visitor's accepts as Roslyn 
-
-        public override OperationKind Kind => OperationKind.YieldReturnStatement;
-
-        public BoundExpression YieldedValue { get; private set; }
-        public BoundExpression YieldedKey { get; private set; }
-
-        public IExpression Returned => YieldedValue;
-
-        public BoundYieldEx(BoundExpression valueExpression, BoundExpression keyExpression)
-        {
-            YieldedValue = valueExpression;
-            YieldedKey = keyExpression;
-        }
-
+        public override OperationKind Kind => OperationKind.FieldReferenceExpression;
         public override void Accept(PhpOperationVisitor visitor)
-            => visitor.VisitYield(this);
+            => visitor.VisitYieldEx(this);
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitReturnStatement(this);
+            => visitor.DefaultVisit(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitReturnStatement(this, argument);
+            => visitor.DefaultVisit(this, argument);
     }
     #endregion
 }
