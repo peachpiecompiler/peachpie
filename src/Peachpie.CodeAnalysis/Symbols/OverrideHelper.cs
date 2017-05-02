@@ -89,10 +89,19 @@ namespace Pchp.CodeAnalysis.Symbols
             // enumerate types in descending order and
             // find best candidate to be overriden
 
+            // once a type defines method with same name, we have to ignore all its overriden methods (they are overriden already)
+
+            var overriden = new HashSet<MethodSymbol>();    // set of methods we will ignore, they are already overriden
+
             foreach (var t in EnumerateOverridableTypes(method.ContainingType))
             {
                 foreach (var m in t.GetMembers(method.Name).OfType<MethodSymbol>())
                 {
+                    if (overriden.Contains(m))
+                    {
+                        continue;
+                    }
+
                     var cost = OverrideCost(method, m);
                     if (cost < bestCost && IsAllowedCost(cost))
                     {
@@ -103,6 +112,13 @@ namespace Pchp.CodeAnalysis.Symbols
                         {
                             return bestCandidate;
                         }
+                    }
+
+                    // remember m's base declaration cannot be overriden again
+                    var mbase = m.OverriddenMethod;
+                    if (mbase != null)
+                    {
+                        overriden.Add((MethodSymbol)mbase);
                     }
                 }
             }
@@ -130,7 +146,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        static bool IsAllowedCost(ConversionCost cost) => cost < ConversionCost.MissingArgs;
+        static bool IsAllowedCost(ConversionCost cost) => cost < ConversionCost.NoConversion;
 
         /// <summary>
         /// Calculates override cost, i.e. whether the override is possible and its value.
