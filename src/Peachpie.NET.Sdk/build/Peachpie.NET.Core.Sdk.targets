@@ -147,6 +147,20 @@
 
   <!--End Required Task by .Common.target-->
 
+  <!-- Helper target for outputing references to the outer build in multitargeting projects -->
+  <Target
+    Name="ReturnReferences"
+    DependsOnTargets="ResolveReferences"
+    Returns="@(ReferencePath)"
+  >
+    <!-- The output of all the frameworks is merged; therefore, we add metadata to distinguish them -->
+    <ItemGroup>
+      <ReferencePath>
+        <TargetFramework>$(TargetFramework)</TargetFramework>
+      </ReferencePath>
+    </ItemGroup>
+  </Target>
+
   <PropertyGroup Condition="'$(PackProjectInputFile)' == ''">
     <PackProjectInputFile>$(MSBuildProjectFullPath)</PackProjectInputFile>
   </PropertyGroup>
