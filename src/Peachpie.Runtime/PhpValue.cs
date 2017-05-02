@@ -613,7 +613,7 @@ namespace Pchp.Core
             var result = new PhpValue[values.Length];
             for (int i = 0; i < values.Length; i++)
             {
-                result[i] = FromClass(values[i]);
+                result[i] = FromClr(values[i]);
             }
 
             //
