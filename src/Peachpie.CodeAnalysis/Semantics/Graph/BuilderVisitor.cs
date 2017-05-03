@@ -244,16 +244,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private CaseBlock/*!*/NewBlock(SwitchItem item)
         {
-            BoundExpression caseValue = null;  // null => DefaultItem
-            if(item is CaseItem caseItem)
-            {
-                var caseValueBag = _binder.HandleExpression(caseItem.CaseVal, BoundAccess.Read);
+            BoundItemsBag<BoundExpression> caseValueBag = item is CaseItem caseItem
+                ? _binder.HandleExpression(caseItem.CaseVal, BoundAccess.Read)
+                : BoundItemsBag<BoundExpression>.Empty; // BoundItem -eq null => DefaultItem
 
-                // TODO: fix GetOnlyBoundElement() call binding caseValue can create preBoundElements (e.g. it can be yield) -> assert fails
-                caseValue = caseValueBag.GetOnlyBoundElement();
-            }
-  
-            return WithNewOrdinal(new CaseBlock(caseValue) { PhpSyntax = item, Naming = _naming });
+            return WithNewOrdinal(new CaseBlock(caseValueBag) { PhpSyntax = item, Naming = _naming });
         }
 
         private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition, bool isloop = false)
