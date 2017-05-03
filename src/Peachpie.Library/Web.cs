@@ -412,6 +412,12 @@ namespace Pchp.Library
                 if (!string.IsNullOrEmpty(name))
                 {
                     webctx.SetHeader(name, str.Substring(i + 1).Trim());
+
+                    // specific cases:
+                    if (name.EqualsOrdinalIgnoreCase("location"))
+                    {
+                        webctx.StatusCode = (int)HttpStatusCode.Redirect; // 302
+                    }
                 }
             }
         }
