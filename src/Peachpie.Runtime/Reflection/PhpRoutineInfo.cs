@@ -225,7 +225,7 @@ namespace Pchp.Core.Reflection
         {
             get
             {
-                Debug.Assert(_methods.All(m => m.IsStatic));
+                Debug.Assert(_methods.All(TypeMembersUtils.IsStatic));
                 return (ctx, args) => Invoke(ctx, null, args);
             }
         }
