@@ -168,7 +168,7 @@ namespace Pchp.CodeAnalysis.Emit
                 // [assembly: Pchp.Core.PhpExtension(new string[0])]
                 if (_phpextensionAttribute == null)
                 {
-                    var phpextensionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.PhpExtensionAttributeName).InstanceConstructors.First();
+                    var phpextensionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.PhpExtensionAttributeFullName).InstanceConstructors.First();
                     _phpextensionAttribute = new SynthesizedAttributeData(phpextensionAttributeCtor,
                         ImmutableArray.Create(new TypedConstant(Compilation.CreateArrayTypeSymbol(Compilation.CoreTypes.String.Symbol), ImmutableArray<TypedConstant>.Empty)),  // string[] { }
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);

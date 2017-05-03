@@ -53,11 +53,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal static bool IsFieldsOnlyConstructor(this MethodSymbol m)
         {
-            // [PhpFieldsOnlyCtorAttribute] protected .ctor(...)
-            if (m != null && m.MethodKind == MethodKind.Constructor && !m.IsStatic && m.DeclaredAccessibility == Accessibility.Protected)
+            // [PhpFieldsOnlyCtorAttribute] protected or internal .ctor(...)
+            if (m != null && m.MethodKind == MethodKind.Constructor && !m.IsStatic && m.DeclaredAccessibility == Accessibility.ProtectedOrInternal)
             {
                 var attrs = m.GetAttributes();
-                return !attrs.IsEmpty && attrs.Any(attr => attr.AttributeClass.MetadataName == "PhpFieldsOnlyCtorAttribute");
+                return !attrs.IsEmpty && attrs.Any(attr => attr.AttributeClass.MetadataName == CoreTypes.PhpFieldsOnlyCtorAttributeName);
             }
 
             return false;
