@@ -78,6 +78,7 @@ namespace Pchp.Core.Dynamic
         public static bool EnsureAlias(this AccessMask flags) => (flags & AccessMask.ReadRef) == AccessMask.ReadRef;
         public static bool Quiet(this AccessMask flags) => (flags & AccessMask.ReadQuiet) != 0;
         public static bool Read(this AccessMask flags) => (flags & AccessMask.Read) != 0;
+        public static bool ReadCopy(this AccessMask flags) => (flags & AccessMask.ReadCopy) == AccessMask.ReadCopy;
         public static bool WriteAlias(this AccessMask flags) => (flags & AccessMask.WriteRef) == AccessMask.WriteRef;
         public static bool Write(this AccessMask flags) => (flags & AccessMask.Write) != 0;
         public static bool Unset(this AccessMask flags) => (flags & AccessMask.Unset) == AccessMask.Unset;

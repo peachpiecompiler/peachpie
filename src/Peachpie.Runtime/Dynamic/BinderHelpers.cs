@@ -271,6 +271,19 @@ namespace Pchp.Core.Dynamic
                     expr = Expression.Assign(expr, ConvertExpression.Bind(rvalue, expr.Type, ctx));
                 }
             }
+            else if (access.ReadCopy())
+            {
+                // dereference & copy
+                if (expr.Type == typeof(PhpValue))
+                {
+                    // Template: value.GetValue().DeepCopy()
+                    expr = Expression.Call(Expression.Call(expr, Cache.Operators.PhpValue_GetValue), Cache.Operators.PhpValue_DeepCopy);
+                }
+                else if (expr.Type == typeof(PhpAlias))
+                {
+
+                }
+            }
 
             //
             return expr;
