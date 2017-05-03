@@ -192,10 +192,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current.Add(stmtBag.BoundElement);
         }
 
-        private void AddPreBoundElements<T>(BoundItemsBag<T> bag) where T : IPhpOperation
+        private void AddPreBoundElements<T>(BoundItemsBag<T> bag) where T : class, IPhpOperation
             => AddPreBoundElements(bag, _current);
 
-        private void AddPreBoundElements<T>(BoundItemsBag<T> bag, BoundBlock block) where T : IPhpOperation
+        private void AddPreBoundElements<T>(BoundItemsBag<T> bag, BoundBlock block) where T : class, IPhpOperation
         {
             var preBoundElements = bag.PreBoundStatements;
             if (!preBoundElements.IsEmpty) { preBoundElements.Foreach(block.Add); }

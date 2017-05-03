@@ -21,16 +21,19 @@ namespace Pchp.CodeAnalysis.Semantics
     /// Holds currently bound item and optionally statements that are supposed to be go before it. 
     /// </summary>
     /// <typeparam name="T">Either <c>BoundExpression</c> or <c>BoundStatement</c>.</typeparam>
-    internal struct BoundItemsBag<T> where T : IPhpOperation
+    public struct BoundItemsBag<T> where T : class, IPhpOperation
     {
         public ImmutableArray<BoundStatement> PreBoundStatements { get; private set; }
         public T BoundElement { get; private set; }
 
         public BoundItemsBag(ImmutableArray<BoundStatement> preBound, T bound)
         {
+            Debug.Assert(bound != null || preBound.IsDefaultOrEmpty);
+
             PreBoundStatements = preBound;
             BoundElement = bound;
         }
+        public static BoundItemsBag<T> Empty => new BoundItemsBag<T>(null);
 
         public BoundItemsBag(T bound) : this(ImmutableArray<BoundStatement>.Empty, bound) { }
 
@@ -39,12 +42,15 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public T GetOnlyBoundElement()
         {
-            Debug.Assert(PreBoundStatements.IsEmpty);
+            Debug.Assert(IsOnlyBoundElement);
             return BoundElement;
         }
 
         public static implicit operator BoundItemsBag<T>(T item) => new BoundItemsBag<T>(item);
-        
+
+        public bool IsEmpty => IsOnlyBoundElement && BoundElement == null;
+        public bool IsOnlyBoundElement => PreBoundStatements.IsDefaultOrEmpty;
+
     }
 
     /// <summary>
