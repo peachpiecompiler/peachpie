@@ -682,11 +682,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Construction
 
-        public GeneratorSemanticsBinder(LocalsTable locals = null, DiagnosticBag diagnostics = null)
+        public GeneratorSemanticsBinder(ImmutableArray<AST.YieldEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
             : base(locals, diagnostics)
         {
             _yields = new List<BoundYieldStatement>();
             _preCurrentlyBinded = new List<BoundStatement>();
+
+            // TODO: Do something with yields
         }
 
         public override BoundItemsBag<BoundExpression> HandleExpression(AST.Expression expr, BoundAccess access)
