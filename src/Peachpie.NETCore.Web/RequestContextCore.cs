@@ -108,20 +108,21 @@ namespace Peachpie.Web
         {
             var script = default(ScriptInfo);
             var path = req.Path.Value;
-            var isfile = path.Last() != '/';
 
-            // trim slashes
-            path = CurrentPlatform.NormalizeSlashes(path).TrimEndSeparator();
-
+            var isfile = !path.Last().IsDirectorySeparator();
             if (isfile)
             {
+                // path
                 script = ScriptsMap.GetDeclaredScript(path);
             }
 
             if (!script.IsValid)
             {
                 // path/defaultdocument
-                path = (path.Length != 0) ? (path + ('/' + DefaultDocument)) : DefaultDocument;
+                path = path.TrimEndSeparator();
+                path = path.Length != 0 ? (path + ('/' + DefaultDocument)) : DefaultDocument;
+
+                //
                 script = ScriptsMap.GetDeclaredScript(path);
             }
 

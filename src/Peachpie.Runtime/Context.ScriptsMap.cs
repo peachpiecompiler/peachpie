@@ -151,8 +151,14 @@ namespace Pchp.Core
 
             public static ScriptInfo GetDeclaredScript(string path)
             {
-                int index;
+                // trim leading slash
+                if (path[0].IsDirectorySeparator())
+                {
+                    path = path.Substring(1);
+                }
 
+                //
+                int index;
                 lock (_scriptsMap)  // TODO: R lock
                 {
                     if (!_scriptsMap.TryGetValue(NormalizeSlashes(path), out index))
