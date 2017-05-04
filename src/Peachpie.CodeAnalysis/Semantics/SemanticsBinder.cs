@@ -687,7 +687,6 @@ namespace Pchp.CodeAnalysis.Semantics
         readonly List<BoundYieldStatement> _yields;
 
         #region Construction
-
         public GeneratorSemanticsBinder(ImmutableArray<AST.YieldEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
             : base(locals, diagnostics)
         {
@@ -696,6 +695,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // TODO: Do something with yields
         }
+        #endregion
 
         public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
         {
@@ -741,6 +741,6 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundYieldEx();
         }
 
-        #endregion
+
     }
 }
