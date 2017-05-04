@@ -183,7 +183,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         private void Add(Statement stmt)
-           => Add(_binder.HandleStatement(stmt));
+           => Add(_binder.BindWholeStatement(stmt));
         
 
         private void Add(BoundItemsBag<BoundStatement> stmtBag)
@@ -245,7 +245,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private CaseBlock/*!*/NewBlock(SwitchItem item)
         {
             BoundItemsBag<BoundExpression> caseValueBag = item is CaseItem caseItem
-                ? _binder.HandleExpression(caseItem.CaseVal, BoundAccess.Read)
+                ? _binder.BindWholeExpression(caseItem.CaseVal, BoundAccess.Read)
                 : BoundItemsBag<BoundExpression>.Empty; // BoundItem -eq null => DefaultItem
 
             return WithNewOrdinal(new CaseBlock(caseValueBag) { PhpSyntax = item, Naming = _naming });
@@ -256,7 +256,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (condition != null)
             {
                 // bind condition expression & potential pre-statements to source block
-                var boundConditionBag = _binder.HandleExpression(condition, BoundAccess.Read);
+                var boundConditionBag = _binder.BindWholeExpression(condition, BoundAccess.Read);
                 AddPreBoundElements(boundConditionBag, source);
 
                 new ConditionalEdge(source, ifTarget, elseTarget, boundConditionBag.BoundElement)
@@ -468,7 +468,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // _current -> move -> body -> move -> ...
 
             // binds enumeree expression & potential pre-statements
-            var boundEnumereeBag = _binder.HandleExpression(x.Enumeree, BoundAccess.Read);
+            var boundEnumereeBag = _binder.BindWholeExpression(x.Enumeree, BoundAccess.Read);
             AddPreBoundElements(boundEnumereeBag);
 
             // ForeachEnumereeEdge : SimpleEdge
@@ -480,12 +480,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // bind reference expression for foreach key variable
             BoundReferenceExpression keyVar = (x.KeyVariable != null) ? 
-                (BoundReferenceExpression)_binder.HandleExpression(x.KeyVariable.Variable, BoundAccess.Write).GetOnlyBoundElement()
+                (BoundReferenceExpression)_binder.BindWholeExpression(x.KeyVariable.Variable, BoundAccess.Write).GetOnlyBoundElement()
                 : null;
  
 
             // bind reference expression for foreach value variable 
-            var valueVar = (BoundReferenceExpression)(_binder.HandleExpression(
+            var valueVar = (BoundReferenceExpression)(_binder.BindWholeExpression(
                     (Expression)x.ValueVariable.Variable ?? x.ValueVariable.List,
                     x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write
                     ).GetOnlyBoundElement());
@@ -689,7 +689,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // get bound item for switch value & potential pre-statements
-            var boundBagForSwitchValue = _binder.HandleExpression(x.SwitchValue, BoundAccess.Read);
+            var boundBagForSwitchValue = _binder.BindWholeExpression(x.SwitchValue, BoundAccess.Read);
             AddPreBoundElements(boundBagForSwitchValue);
             
             // SwitchEdge // Connects _current to cases

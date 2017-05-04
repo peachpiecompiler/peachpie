@@ -131,7 +131,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
-        public virtual BoundItemsBag<BoundStatement> HandleStatement(AST.Statement stmt) 
+        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) 
             => new BoundItemsBag<BoundStatement>(BindStatement(stmt));       
 
         protected BoundStatement BindStatement(AST.Statement stmt)
@@ -190,7 +190,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 .WithAccess(BoundAccess.Write);
         }
 
-        public virtual BoundItemsBag<BoundExpression> HandleExpression(AST.Expression expr, BoundAccess access) 
+        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access) 
             => new BoundItemsBag<BoundExpression>(BindExpression(expr, access));
 
         protected BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
@@ -697,7 +697,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // TODO: Do something with yields
         }
 
-        public override BoundItemsBag<BoundExpression> HandleExpression(AST.Expression expr, BoundAccess access)
+        public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
         {
             Debug.Assert(_preCurrentlyBinded.Count == 0);
 
@@ -708,7 +708,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return boundBag;
         }
 
-        public override BoundItemsBag<BoundStatement> HandleStatement(AST.Statement stmt)
+        public override BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt)
         {
             Debug.Assert(_preCurrentlyBinded.Count == 0);
 
