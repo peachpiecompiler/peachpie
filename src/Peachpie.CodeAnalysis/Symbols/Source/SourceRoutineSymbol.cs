@@ -47,8 +47,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (Syntax.Properties.TryGetProperty(typeof(ImmutableArray<YieldEx>), out object tmpYields))
                     { yields = (ImmutableArray<YieldEx>)tmpYields; }
 
+                    var isGeneratorMethod = !yields.IsDefaultOrEmpty;
+                    if (isGeneratorMethod) { this.Flags |= RoutineFlags.IsGenerator; }
+
                     //
-                    var binder = (!yields.IsDefaultOrEmpty)
+                    var binder = isGeneratorMethod
                         ? new GeneratorSemanticsBinder(yields, this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics)
                         : new SemanticsBinder(this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics);
 

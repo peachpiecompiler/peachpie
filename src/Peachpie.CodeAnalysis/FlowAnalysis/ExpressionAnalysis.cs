@@ -1568,9 +1568,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region VisitYield
         public override void VisitYieldStatement(BoundYieldStatement x)
         {
-
-            //Might want to move it to SemanticsBinder on BindYieldEx(...)
-            this.Routine.Flags |= RoutineFlags.IsGenerator;
             base.VisitYieldStatement(x);
         }
         #endregion
