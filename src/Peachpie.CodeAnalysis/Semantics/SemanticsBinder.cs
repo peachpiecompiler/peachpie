@@ -134,7 +134,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) 
             => new BoundItemsBag<BoundStatement>(BindStatement(stmt));       
 
-        protected BoundStatement BindStatement(AST.Statement stmt)
+        protected virtual BoundStatement BindStatement(AST.Statement stmt)
         {
             Debug.Assert(stmt != null);
 
@@ -193,7 +193,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access) 
             => new BoundItemsBag<BoundExpression>(BindExpression(expr, access));
 
-        protected BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
+        protected virtual BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
             var bound = BindExpressionCore(expr, access);
             bound.PhpSyntax = expr;
@@ -686,14 +686,31 @@ namespace Pchp.CodeAnalysis.Semantics
         public override BoundYieldStatement[] Yields { get => _yields.ToArray(); }
         readonly List<BoundYieldStatement> _yields;
 
+        readonly HashSet<AST.LangElement> _yieldsToStatementRootPath;
+        int _rewriterVariableIndex = 0; 
+        int _underYieldLikeExLevel = -1;
+
         #region Construction
         public GeneratorSemanticsBinder(ImmutableArray<AST.YieldEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
             : base(locals, diagnostics)
         {
             _yields = new List<BoundYieldStatement>();
             _preCurrentlyBinded = new List<BoundStatement>();
+            _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
 
-            // TODO: Do something with yields
+            // save all parents of all yieldLikeEx in current routine -> will need to realocate all expressions in their children
+            //  - the ones to the left from yieldLikeEx<>root path need to get moved in statements before yieldLikeEx
+            //  - the ones to the right could be left alone but it's easier to move them as well; need to go after yieldLikeStatement
+            foreach (var yieldLikeEx in yields)
+            {
+                var parent = yieldLikeEx.ContainingElement;
+                // add all parents until reaching the top of current statement tree
+                while (!(parent is AST.MethodDecl || parent is AST.FunctionDecl || parent is AST.ExpressionStmt))
+                {
+                    _yieldsToStatementRootPath.Add(parent);
+                    parent = parent.ContainingElement;
+                }
+            }
         }
         #endregion
 
@@ -717,6 +734,59 @@ namespace Pchp.CodeAnalysis.Semantics
             _preCurrentlyBinded.Clear();
 
             return boundBag;
+        }
+
+        protected override BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
+        {
+            var _underYieldLikeExLevelOnEnter = _underYieldLikeExLevel;
+
+            // update _underYieldLikeExLevel
+            // can't use only AST to determine whether we're under yield<>root route 
+            //  -> there're expressions (such as foreach variable) outside in terms of semantics tree
+            //  -> for those we don't want to do any moving (can actually be a problem for those)
+            if (_underYieldLikeExLevel >= 0) { _underYieldLikeExLevel++; }
+            if (_yieldsToStatementRootPath.Contains(expr)) { _underYieldLikeExLevel = 0; }
+
+            var boundExpr = base.BindExpression(expr, access);
+
+            if (_underYieldLikeExLevel == 1)
+            {
+                // determine whether the temp variable should be by ref (ror readRef and writes) or normal PHP copy
+                var readAsRef = (access.IsReadRef || access.IsWrite);
+                // increase used tmp variables counter
+                var currTmpIndex = _rewriterVariableIndex++;
+
+                // bind target tmp varible with an appropriate access
+                var targetTmpVariable = new BoundVariableRef(new BoundVariableName(new VariableName($"<yieldRewriter>tmp{currTmpIndex}")));
+                targetTmpVariable.Access = (readAsRef) ? targetTmpVariable.Access.WithWriteRef(0) : targetTmpVariable.Access.WithWrite(0);
+
+                // bind original value expression with an appropriate access
+                var valueBeingMoved = (readAsRef) ? boundExpr.WithAccess(BoundAccess.ReadRef) : boundExpr.WithAccess(BoundAccess.Read);
+
+                // $<yieldRewriter>tmp{currTmpIndex} = <originalValue> & prepend the assignment before current expression
+                var assigment = new BoundAssignEx(targetTmpVariable, valueBeingMoved);
+                _preCurrentlyBinded.Add(new BoundExpressionStatement(assigment));
+
+                // return read from $<yieldRewriter>tmp{currTmpIndex}
+                boundExpr = new BoundVariableRef(new BoundVariableName(new VariableName($"<yieldRewriter>tmp{currTmpIndex}"))).WithAccess(access);
+            }
+
+            _underYieldLikeExLevel = _underYieldLikeExLevelOnEnter;
+            return boundExpr;
+        }
+
+        protected override BoundStatement BindStatement(AST.Statement stmt)
+        {
+            var _underYieldLikeExLevelOnEnter = _underYieldLikeExLevel;
+
+            // update _underYieldLikeExLevel
+            if (_underYieldLikeExLevel >= 0) { _underYieldLikeExLevel++; };
+            if (_yieldsToStatementRootPath.Contains(stmt)) { _underYieldLikeExLevel = 0; }
+
+            var boundStatement = base.BindStatement(stmt);
+
+            _underYieldLikeExLevel = _underYieldLikeExLevelOnEnter;
+            return boundStatement;
         }
 
         protected override BoundYieldEx BindYieldEx(AST.YieldEx expr)
