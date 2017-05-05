@@ -2358,20 +2358,14 @@ namespace Pchp.Library
             {
                 // dereferences value:
                 var val = iterator.CurrentValue.GetValue();
-                
-                switch (val.TypeCode)
+                if (val.TryToIntStringKey(out IntStringKey key))
                 {
-                    case PhpTypeCode.Int32:
-                    case PhpTypeCode.Long:
-                    case PhpTypeCode.String:
-                    case PhpTypeCode.WritableString:
-                        var askey = val.ToIntStringKey();
-                        var countval = result[askey].ToLong();  // 0 for nonexisting entry
-                        result[askey] = PhpValue.Create(countval + 1L);
-                        break;
-                    default:
-                        PhpException.Throw(PhpError.Warning, LibResources.neither_string_nor_integer_value, "count");
-                        break;
+                    var countval = result[key].ToLong();  // 0 for nonexisting entry
+                    result[key] = PhpValue.Create(countval + 1L);
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, LibResources.neither_string_nor_integer_value, "count");
                 }
             }
 
@@ -2476,18 +2470,13 @@ namespace Pchp.Library
                 var entry = iterator.Current;
                 // dereferences value:
                 var val = entry.Value.GetValue();
-                switch (val.TypeCode)
+                if (val.TryToIntStringKey(out IntStringKey key))
                 {
-                    case PhpTypeCode.Int32:
-                    case PhpTypeCode.Long:
-                    case PhpTypeCode.String:
-                    case PhpTypeCode.WritableString:
-                        var askey = val.ToIntStringKey();
-                        result[askey] = PhpValue.Create(entry.Key);
-                        break;
-                    default:
-                        // PhpException.Throw(PhpError.Warning, LibResources.GetString("neither_string_nor_integer_value", "flip"));
-                        throw new ArgumentException();
+                    result[key] = PhpValue.Create(entry.Key);
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, LibResources.neither_string_nor_integer_value, "flip");
                 }
             }
 
@@ -2942,7 +2931,6 @@ namespace Pchp.Library
         /// Retuns the specified array.
         /// see http://php.net/manual/en/function.array-filter.php
         /// </summary>
-        /// <remarks>The caller argument is here just because of the second Filter() method. Phalanger shares the function properties over the overloads.</remarks>
         public static PhpArray array_filter(PhpArray array)
         {
             if (array == null)

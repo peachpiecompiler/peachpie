@@ -171,11 +171,21 @@ namespace Pchp.Core
         /// <param name="typename">Type name alias, can differ from <see cref="PhpTypeInfo.Name"/>.</param>
         public void DeclareType(PhpTypeInfo tinfo, string typename) => _types.DeclareTypeAlias(tinfo, typename);
 
-        public void AssertTypeDeclared<T>()
+        /// <summary>
+        /// Called by runtime when it expects that given type is declared.
+        /// If not, autoload is invoked and if the type mismatches or cannot be declared, an exception is thrown.
+        /// </summary>
+        /// <typeparam name="T">Type which is expected to be declared.</typeparam>
+        public void ExpectTypeDeclared<T>()
         {
-            if (!_types.IsDeclared(TypeInfoHolder<T>.TypeInfo))
+            var tinfo = TypeInfoHolder<T>.TypeInfo;
+            if (!_types.IsDeclared(tinfo))
             {
-                // TODO: autoload, ErrCode
+                // perform regular load with autoload
+                if (GetDeclaredTypeOrThrow(tinfo.Name, true) != tinfo)
+                {
+                    throw new InvalidOperationException();
+                }
             }
         }
 
@@ -258,19 +268,7 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
         {
-            ScriptInfo script;
-
-            path = ScriptsMap.NormalizeSlashes(path);
-
-            if (path.StartsWith(this.RootPath, StringComparison.Ordinal)) // rooted
-            {
-                script = _scripts.GetScript(path.Substring(this.RootPath.Length + 1));
-            }
-            else
-            {
-                script = ScriptsMap.SearchForIncludedFile(path, IncludePaths, cd, _scripts.GetScript);
-            }
-
+            var script = ScriptsMap.ResolveInclude(path, RootPath, IncludePaths, WorkingDirectory, cd);
             if (script.IsValid)
             {
                 if (once && _scripts.IsIncluded(script.Index))
@@ -284,7 +282,7 @@ namespace Pchp.Core
             }
             else
             {
-                if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation)
+                if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation yet)
                 {
                     return PhpValue.Null;
                 }
@@ -382,13 +380,13 @@ namespace Pchp.Core
 
         #region Shutdown
 
-        List<Action> _lazyShutdownCallbacks = null;
+        List<Action<Context>> _lazyShutdownCallbacks = null;
 
         /// <summary>
         /// Enqueues a callback to be invoked at the end of request.
         /// </summary>
         /// <param name="action">Callback. Cannot be <c>null</c>.</param>
-        public void RegisterShutdownCallback(Action action)
+        public void RegisterShutdownCallback(Action<Context> action)
         {
             if (action == null)
             {
@@ -398,7 +396,7 @@ namespace Pchp.Core
             var callbacks = _lazyShutdownCallbacks;
             if (callbacks == null)
             {
-                _lazyShutdownCallbacks = callbacks = new List<Action>(1);
+                _lazyShutdownCallbacks = callbacks = new List<Action<Context>>(1);
             }
 
             callbacks.Add(action);
@@ -414,7 +412,7 @@ namespace Pchp.Core
             {
                 for (int i = 0; i < callbacks.Count; i++)
                 {
-                    callbacks[i]();
+                    callbacks[i](this);
                 }
 
                 //

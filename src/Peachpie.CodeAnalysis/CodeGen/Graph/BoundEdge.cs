@@ -166,7 +166,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Debug.Assert(catchBlock.Variable.Variable != null);
 
-            if (catchBlock.TypeRef.ResolvedType == null)
+            if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull())
             {
                 Debug.WriteLine("Handle unknown exception types dynamically."); // TODO: if (ex is ctx.ResolveType(ExceptionTypeName)) { ... }
                 return;

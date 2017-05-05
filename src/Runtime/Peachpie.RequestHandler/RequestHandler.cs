@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web;
 using System.Web.SessionState;
+using Pchp.Core;
 
-namespace Pchp.Core
+namespace Peachpie.RequestHandler
 {
     /// <summary>
 	/// Process a request and stores references to objects associated with it.
@@ -26,7 +23,7 @@ namespace Pchp.Core
             Debug.Assert(context != null);
 #if DEBUG
             // disables ASP.NET timeout if possible:
-            try { context.Server.ScriptTimeout = Int32.MaxValue; } catch (HttpException) { }
+            try { context.Server.ScriptTimeout = int.MaxValue; } catch (HttpException) { }
 #endif
             var phpctx = new RequestContextAspNet(context);
 

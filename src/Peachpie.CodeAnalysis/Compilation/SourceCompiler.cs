@@ -289,10 +289,10 @@ namespace Pchp.CodeAnalysis
             Debug.Assert(moduleBuilder != null);
 
             // ensure flow analysis and collect diagnostics
-            var declarationDiagnostics = compilation.GetDeclarationDiagnostics();
+            var declarationDiagnostics = compilation.GetDeclarationDiagnostics(cancellationToken);
             diagnostics.AddRange(declarationDiagnostics);
 
-            if (hasDeclarationErrors |= declarationDiagnostics.HasAnyErrors())
+            if (hasDeclarationErrors |= declarationDiagnostics.HasAnyErrors() || cancellationToken.IsCancellationRequested)
             {
                 // cancel the operation if there are errors
                 return;

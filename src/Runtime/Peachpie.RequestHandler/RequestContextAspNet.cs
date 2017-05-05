@@ -1,17 +1,14 @@
-﻿using Pchp.Core;
-using Pchp.Core.Utilities;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web;
+using Pchp.Core;
+using Pchp.Core.Utilities;
 
-namespace Pchp.Core
+namespace Peachpie.RequestHandler
 {
     sealed class RequestContextAspNet : Context, IHttpPhpContext
     {
@@ -125,6 +122,20 @@ namespace Pchp.Core
             _httpctx.Response.Flush();
         }
 
+        /// <summary>
+        /// Gets or sets session handler for current context.
+        /// </summary>
+        PhpSessionHandler IHttpPhpContext.SessionHandler
+        {
+            get => AspNetSessionHandler.Default;
+            set => throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets or sets session state.
+        /// </summary>
+        PhpSessionState IHttpPhpContext.SessionState { get; set; }
+
         #endregion
 
         public override IHttpPhpContext HttpPhpContext => this;
@@ -133,13 +144,8 @@ namespace Pchp.Core
         /// Reference to current <see cref="HttpContext"/>.
         /// Cannot be <c>null</c>.
         /// </summary>
+        public HttpContext HttpContext => _httpctx;
         readonly HttpContext _httpctx;
-
-        /// <summary>
-        /// Application physical root directory including trailing slash.
-        /// </summary>
-        public override string RootPath => _rootPath;
-        readonly string _rootPath;
 
         public RequestContextAspNet(HttpContext httpcontext)
         {
@@ -147,7 +153,8 @@ namespace Pchp.Core
             Debug.Assert(HttpRuntime.UsingIntegratedPipeline);
 
             _httpctx = httpcontext;
-            _rootPath = ScriptsMap.NormalizeSlashes(HttpRuntime.AppDomainAppPath).TrimEnd(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
+
+            this.RootPath = HttpRuntime.AppDomainAppPath;
 
             this.InitOutput(httpcontext.Response.OutputStream);
             this.InitSuperglobals();
@@ -213,7 +220,7 @@ namespace Pchp.Core
 
             array["SERVER_ADDR"] = (PhpValue)serverVariables["LOCAL_ADDR"];
             array["REQUEST_URI"] = (PhpValue)request.RawUrl;
-            array["REQUEST_TIME"] = (PhpValue)Utilities.DateTimeUtils.UtcToUnixTimeStamp(_httpctx.Timestamp.ToUniversalTime());
+            array["REQUEST_TIME"] = (PhpValue)Pchp.Core.Utilities.DateTimeUtils.UtcToUnixTimeStamp(_httpctx.Timestamp.ToUniversalTime());
             array["SCRIPT_FILENAME"] = (PhpValue)request.PhysicalPath;
 
             //IPv6 is the default in IIS7, convert to an IPv4 address (store the IPv6 as well)
@@ -271,7 +278,7 @@ namespace Pchp.Core
         /// </summary>
         public bool Include(HttpRequest req)
         {
-            var relative_path = ScriptsMap.NormalizeSlashes(req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length));
+            var relative_path = req.PhysicalPath.Substring(req.PhysicalApplicationPath.Length);
             var script = ScriptsMap.GetDeclaredScript(relative_path);
             if (script.IsValid)
             {

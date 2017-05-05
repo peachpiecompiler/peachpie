@@ -224,7 +224,7 @@ namespace Peachpie.Library.MsSql
 
                 case "image": return "image";
 
-                // Unicode types (Phalanger specific):
+                // Unicode types (dotnet specific):
 
                 case "nvarchar":
                 case "nchar": return "nchar";

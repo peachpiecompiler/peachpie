@@ -7,16 +7,17 @@ using System.Diagnostics;
 using System.Text;
 using static Pchp.Library.StandardPhpOptions;
 using Pchp.Library.Resources;
+using System.Linq;
 
 namespace Peachpie.Library.MySql
 {
     /// <summary>
     /// MySql functions container.
     /// </summary>
-    [PhpExtension("mysql")]
+    [PhpExtension("mysql", Registrator = typeof(Registrator))]
     public static partial class MySql
     {
-        internal sealed class Registrator
+        sealed class Registrator
         {
             public Registrator()
             {
@@ -26,6 +27,9 @@ namespace Peachpie.Library.MySql
         }
 
         const string EquivalentNativeLibraryVersion = "7.0.6";
+        const string DefaultProtocolVersion = "10";
+        const string DefaultClientCharset = "latin1";
+
 
         #region Enums
 
@@ -834,6 +838,75 @@ namespace Peachpie.Library.MySql
             }
 
             return new PhpString(sb.ToString());
+        }
+
+        #endregion
+
+        #region mysql_client_encoding, mysql_set_charset
+
+        /// <summary>
+        /// Gets the name of the client character set.
+        /// </summary>
+        /// <returns>Character set name.</returns>
+        public static string mysql_client_encoding(Context ctx, PhpResource linkIdentifier = null)
+        {
+            var connection = ValidConnection(ctx, linkIdentifier);
+            if (connection == null) return null;
+
+            object value = connection.QueryGlobalVariable("character_set_client");
+            return (value != null) ? value.ToString() : DefaultClientCharset;
+        }
+
+        /// <summary>
+        /// Sets the client character set.
+        /// </summary>
+        /// <param name="charset">New character set. Must be valid SQL character set.</param>
+        /// <param name="ctx"></param>
+        /// <param name="linkIdentifier"></param>
+        /// <returns>True if successful.</returns>
+        public static bool mysql_set_charset(Context ctx, string charset, PhpResource linkIdentifier = null)
+        {
+            var connection = ValidConnection(ctx, linkIdentifier);
+            if (connection == null) return false;
+
+            // validate the charset (only a-z, 0-9, _ allowed, see mysqlnd_find_charset_name):
+            if (string.IsNullOrEmpty(charset) || !charset.All(c =>
+                (c >= 'a' && c <= 'z') ||
+                (c >= 'A' && c <= 'Z') ||
+                (c >= '0' && c <= '9') ||
+                (c == '_')))
+            {
+                PhpException.InvalidArgument(nameof(charset));
+                return false;
+            }
+
+            // set the charset:
+            var result = connection.ExecuteCommand("SET NAMES " + charset, CommandType.Text, false, null, true);
+            if (result != null) result.Dispose();
+
+            // success if there were no errors:
+            return connection.LastException != null;
+        }
+
+        #endregion
+
+        #region mysql_ping
+
+        /// <summary>
+        /// Ping a server connection or reconnect if there is no connection.
+        /// </summary>
+        /// <returns>Whether the connection to the server MySQL server is working.</returns>
+        public static bool mysql_ping(Context ctx, PhpResource linkIdentifier = null)
+        {
+            var connection = ValidConnection(ctx, linkIdentifier);
+            try
+            {
+                return connection != null && connection.Ping();
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         #endregion

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -18,11 +19,20 @@ namespace Pchp.Library
         public static readonly string PHP_VERSION = PHP_MAJOR_VERSION + "." + PHP_MINOR_VERSION + "." + PHP_RELEASE_VERSION + PHP_EXTRA_VERSION;
 
         public const string PHP_EXTRA_VERSION = "-peach";
-        public static readonly string PHP_OS = "WinNT"; //Environment.OSVersion.Platform == PlatformID.Win32NT? "WINNT" : "WIN32", false); // TODO: GENERICS (Unix)
+        public static readonly string PHP_OS = CurrentPlatform.IsWindows ? "WINNT" : CurrentPlatform.IsLinux ? "Linux" : CurrentPlatform.IsOsx ? "Darwin" : "Unix";
+
+        /// <summary>
+        /// The operating system family PHP was built for.
+        /// Either of 'Windows', 'BSD', 'OSX', 'Solaris', 'Linux' or 'Unknown'.
+        /// </summary>
+        /// <remarks>Available as of PHP 7.2.0.</remarks>
+        public static readonly string PHP_OS_FAMILY = CurrentPlatform.IsWindows ? "Windows" : CurrentPlatform.IsLinux ? "Linux" : CurrentPlatform.IsOsx ? "OSX" : "Unknown";
 
         //_constants.Add("PHP_SAPI", (System.Web.HttpContext.Current == null) ? "cli" : "isapi", false);
         //_constants.Add("DIRECTORY_SEPARATOR", FullPath.DirectorySeparatorString, false);
+        public static readonly string DIRECTORY_SEPARATOR = CurrentPlatform.DirectorySeparator.ToString();
         //_constants.Add("PATH_SEPARATOR", Path.PathSeparator.ToString(), false);
+        public static readonly string PATH_SEPARATOR = CurrentPlatform.PathSeparator.ToString();
 
         public const long PHP_INT_SIZE = sizeof(long);
         public const long PHP_INT_MIN = long.MinValue;

@@ -29,7 +29,7 @@ namespace Pchp.Core
             #endregion
 
             public abstract PhpTypeCode Type { get; }
-            public abstract bool IsNull { get; }
+            public abstract bool IsNull(ref PhpValue me);
             public virtual bool IsEmpty(ref PhpValue me) => ToBoolean(ref me) == false;
             public abstract object ToClass(ref PhpValue me);
             public abstract string ToStringQuiet(ref PhpValue me);
@@ -40,7 +40,7 @@ namespace Pchp.Core
             public abstract bool ToBoolean(ref PhpValue me);
             public abstract Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number);
 
-            public abstract IntStringKey ToIntStringKey(ref PhpValue me);
+            public abstract bool TryToIntStringKey(ref PhpValue me, out IntStringKey key);
 
             /// <summary>
             /// Gets enumerator object used within foreach statement.
@@ -99,13 +99,13 @@ namespace Pchp.Core
             /// Accesses the value as an array and gets item at given index.
             /// Gets <c>void</c> value in case the key is not found.
             /// </summary>
-            public virtual PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => PhpValue.Null;
+            public virtual PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => PhpValue.Null;
 
             /// <summary>
             /// Accesses the value as an array and gets item at given index.
             /// Gets empty value in case the key is not found.
             /// </summary>
-            public virtual PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
+            public virtual PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => new PhpAlias(PhpValue.Null);
 
             /// <summary>
             /// Converts value to an array.
@@ -151,7 +151,7 @@ namespace Pchp.Core
         class NullTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
-            public override bool IsNull => true;
+            public override bool IsNull(ref PhpValue me) => true;
             public override bool IsEmpty(ref PhpValue me) => true;
             public override object ToClass(ref PhpValue me) => new stdClass();
             public override string ToStringQuiet(ref PhpValue me) => string.Empty;
@@ -165,7 +165,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(0L);
                 return Convert.NumberInfo.LongInteger;
             }
-            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey(0); // { throw new NotImplementedException(); }
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = IntStringKey.EmptyStringKey; return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.CompareNull(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsNull;
@@ -182,11 +182,11 @@ namespace Pchp.Core
                 me = PhpValue.Create(arr);
                 return arr;
             }
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet)
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet)
             {
                 var arr = new PhpArray();
                 me = PhpValue.Create(arr);
-                return arr.EnsureItemAlias(key);
+                return Operators.EnsureItemAlias(arr, index, quiet);
             }
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.NewEmpty();
             public override void Output(ref PhpValue me, Context ctx) { }
@@ -203,7 +203,7 @@ namespace Pchp.Core
         sealed class LongTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Long;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => me.Long.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => me.Long.ToString();
@@ -216,13 +216,13 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Long);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
-            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey((int)me.Long);
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = new IntStringKey((int)me.Long); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Long, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Long && right.Long == me.Long;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => new PhpAlias(PhpValue.Null);
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Long.ToString();
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Long);
@@ -232,7 +232,7 @@ namespace Pchp.Core
         sealed class DoubleTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Double;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => Convert.ToString(me.Double);
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Double, ctx);
@@ -245,13 +245,13 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Double);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.Double;
             }
-            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey((int)me.Double);
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = new IntStringKey((int)me.Double); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Double, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Double && right.Double == me.Double;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => new PhpAlias(PhpValue.Null);
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Double.ToString();
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Double);
@@ -261,7 +261,7 @@ namespace Pchp.Core
         sealed class BoolTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Boolean;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => Convert.ToString(me.Boolean);
             public override string ToString(ref PhpValue me, Context ctx) => Convert.ToString(me.Boolean);
@@ -274,7 +274,7 @@ namespace Pchp.Core
                 number = PhpNumber.Create(me.Boolean ? 1L : 0L);
                 return Convert.NumberInfo.IsNumber | Convert.NumberInfo.LongInteger;
             }
-            public override IntStringKey ToIntStringKey(ref PhpValue me) => new IntStringKey(me.Boolean ? 1 : 0);
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = new IntStringKey(me.Boolean ? 1 : 0); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Boolean, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Boolean && right.Boolean == me.Boolean;
@@ -298,7 +298,7 @@ namespace Pchp.Core
 
                 return arr;
             }
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => new PhpAlias(PhpValue.Null);
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => new PhpAlias(PhpValue.Null);
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override string DisplayString(ref PhpValue me) => me.Boolean ? PhpVariable.True : PhpVariable.False;
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Boolean);
@@ -308,7 +308,7 @@ namespace Pchp.Core
         sealed class StringTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.String;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(me);	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => me.String;
             public override string ToString(ref PhpValue me, Context ctx) => me.String;
@@ -317,7 +317,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => Convert.StringToDouble(me.String);
             public override bool ToBoolean(ref PhpValue me) => Convert.ToBoolean(me.String);
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => Convert.ToNumber(me.String, out number);
-            public override IntStringKey ToIntStringKey(ref PhpValue me) => Core.Convert.StringToArrayKey(me.String);
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = Core.Convert.StringToArrayKey(me.String); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.String, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right)
@@ -350,8 +350,8 @@ namespace Pchp.Core
 
                 return arr;
             }
-            public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => PhpValue.Create(Operators.GetItemValue(me.String, key));
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) { throw new NotSupportedException(); } // TODO: Err
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => PhpValue.Create(Operators.GetItemValue(me.String, index, quiet));
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.String);
             public override string DisplayString(ref PhpValue me) => $"'{me.String}'";
@@ -362,7 +362,7 @@ namespace Pchp.Core
         sealed class WritableStringTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.WritableString;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(DeepCopy(ref me));	// new stdClass(){ $scalar = VALUE }
             public override string ToStringQuiet(ref PhpValue me) => me.WritableString.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => me.WritableString.ToString(ctx);
@@ -371,7 +371,7 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.WritableString.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.WritableString.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.WritableString.ToNumber(out number);
-            public override IntStringKey ToIntStringKey(ref PhpValue me) => Core.Convert.StringToArrayKey(me.WritableString.ToString());
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = Core.Convert.StringToArrayKey(me.WritableString.ToString()); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.WritableString.ToString(), right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right)
@@ -396,8 +396,8 @@ namespace Pchp.Core
                 throw new NotImplementedException();
             }
             public override IPhpArray EnsureArray(ref PhpValue me) => me.WritableString;
-            public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => ((IPhpArray)me.WritableString).GetItemValue(key);
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) { throw new NotSupportedException(); } // TODO: Err
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.WritableString).GetItemValue(index); // quiet);
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me.DeepCopy());
             public override IPhpCallable AsCallable(ref PhpValue me) => PhpCallback.Create(me.WritableString.ToString());
@@ -409,7 +409,7 @@ namespace Pchp.Core
         sealed class ClassTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override bool IsEmpty(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => me.Object;
             public override string ToStringQuiet(ref PhpValue me) => me.Object.ToString();
@@ -453,37 +453,37 @@ namespace Pchp.Core
                     return Convert.NumberInfo.LongInteger;
                 }
             }
-            public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = default(IntStringKey); return false; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetForeachEnumerator(me.Object, aliasedValues, caller);
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Object, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Object && right.Object == me.Object;
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override IPhpArray EnsureArray(ref PhpValue me) => Operators.EnsureArray(me.Object);
-            public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet)
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet)
             {
-                // IPhpArray[]
+                // IPhpArray.GetItemValue
                 var arr = me.Object as IPhpArray;
                 if (arr != null)
                 {
-                    return arr.GetItemValue(key);
+                    return arr.GetItemValue(index); // , quiet);
                 }
 
                 // ArrayAccess.offsetGet()
                 var arracces = me.Object as ArrayAccess;
                 if (arracces != null)
                 {
-                    return arracces.offsetGet(PhpValue.Create(key));
+                    return arracces.offsetGet(index);
                 }
 
-                // TODO
+                // TODO: ERR
                 throw new NotImplementedException();
             }
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet)
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet)
             {
                 var arr = me.Object as IPhpArray;
                 if (arr != null)
                 {
-                    return arr.EnsureItemAlias(key);
+                    return Operators.EnsureItemAlias(arr, index, quiet);
                 }
 
                 // TODO: Err
@@ -507,7 +507,7 @@ namespace Pchp.Core
         sealed class ArrayTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.PhpArray;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => false;
             public override bool IsEmpty(ref PhpValue me) => me.Array.Count == 0;
             public override object ToClass(ref PhpValue me) => me.Array.ToClass();
             public override string ToStringQuiet(ref PhpValue me) => PhpArray.PrintablePhpTypeName;
@@ -517,14 +517,14 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.Array.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Array.ToNumber(out number);
-            public override IntStringKey ToIntStringKey(ref PhpValue me) { throw new NotImplementedException(); }
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = default(IntStringKey); return false; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => me.Array.GetForeachEnumerator(aliasedValues);
             public override int Compare(ref PhpValue me, PhpValue right) => me.Array.Compare(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Array.StrictCompareEq(right.ArrayOrNull());
             public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Array;
-            public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => me.Array.GetItemValue(key);
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => me.Array.EnsureItemAlias(key);
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Array.GetItemValue(index); // , quiet);
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => Operators.EnsureItemAlias(me.Array, index, quiet);
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
             public override PhpArray ToArray(ref PhpValue me) => me.Array;
             public override IPhpCallable AsCallable(ref PhpValue me)
@@ -555,7 +555,7 @@ namespace Pchp.Core
         sealed class AliasTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Alias;
-            public override bool IsNull => false;
+            public override bool IsNull(ref PhpValue me) => me.Alias.Value.IsNull;
             public override bool IsEmpty(ref PhpValue me) => me.Alias.Value.IsEmpty;
             public override object ToClass(ref PhpValue me) => me.Alias.ToClass();
             public override string ToStringQuiet(ref PhpValue me) => me.Alias.Value.ToString();
@@ -565,15 +565,15 @@ namespace Pchp.Core
             public override double ToDouble(ref PhpValue me) => me.Alias.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Alias.ToBoolean();
             public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Alias.ToNumber(out number);
-            public override IntStringKey ToIntStringKey(ref PhpValue me) => me.Alias.Value.ToIntStringKey();
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) => me.Alias.Value.TryToIntStringKey(out key);
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => me.Alias.Value.GetForeachEnumerator(aliasedValues, caller);
             public override int Compare(ref PhpValue me, PhpValue right) => me.Alias.Value.Compare(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Alias.Value.StrictEquals(right);
             public override object EnsureObject(ref PhpValue me) => me.Alias.Value.EnsureObject();
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
-            public override PhpValue GetArrayItem(ref PhpValue me, IntStringKey key, bool quiet) => me.Alias.Value.GetArrayItem(key, quiet);
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, IntStringKey key, bool quiet) => me.Alias.Value.EnsureItemAlias(key, quiet);
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.GetArrayItem(index, quiet);
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.EnsureItemAlias(index, quiet);
             public override PhpArray ToArray(ref PhpValue me) => me.Alias.Value.AsArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
             public override IPhpCallable AsCallable(ref PhpValue me) => me.Alias.Value.AsCallable();

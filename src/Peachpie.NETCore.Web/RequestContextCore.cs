@@ -81,6 +81,20 @@ namespace Peachpie.Web
             _httpctx.Response.Body.Flush();
         }
 
+        /// <summary>
+        /// Gets or sets session handler for current context.
+        /// </summary>
+        PhpSessionHandler IHttpPhpContext.SessionHandler
+        {
+            get => AspNetCoreSessionHandler.Default;
+            set => throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets or sets session state.
+        /// </summary>
+        PhpSessionState IHttpPhpContext.SessionState { get; set; }
+
         #endregion
 
         #region Request Lifecycle
@@ -94,20 +108,21 @@ namespace Peachpie.Web
         {
             var script = default(ScriptInfo);
             var path = req.Path.Value;
-            var isfile = path.Last() != '/';
 
-            // trim slashes
-            path = ScriptsMap.NormalizeSlashes(ArrayUtils.Trim(path, '/'));
-
+            var isfile = !path.Last().IsDirectorySeparator();
             if (isfile)
             {
+                // path
                 script = ScriptsMap.GetDeclaredScript(path);
             }
 
             if (!script.IsValid)
             {
                 // path/defaultdocument
-                path = (path.Length != 0) ? (path + ('/' + DefaultDocument)) : DefaultDocument;
+                path = path.TrimEndSeparator();
+                path = path.Length != 0 ? (path + ('/' + DefaultDocument)) : DefaultDocument;
+
+                //
                 script = ScriptsMap.GetDeclaredScript(path);
             }
 
@@ -180,15 +195,10 @@ namespace Peachpie.Web
         readonly Encoding _encoding;
 
         /// <summary>
-        /// Application physical root directory including trailing slash.
-        /// </summary>
-        public override string RootPath => _rootPath;
-        readonly string _rootPath;
-
-        /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
         /// Cannot be <c>null</c>.
         /// </summary>
+        public HttpContext HttpContext => _httpctx;
         readonly HttpContext _httpctx;
 
         /// <summary>
@@ -199,14 +209,12 @@ namespace Peachpie.Web
         public RequestContextCore(HttpContext httpcontext, string rootPath, Encoding encoding)
         {
             Debug.Assert(httpcontext != null);
-            Debug.Assert(rootPath != null);
-            Debug.Assert(rootPath == ScriptsMap.NormalizeSlashes(rootPath));
-            Debug.Assert(rootPath.Length != 0 && rootPath[rootPath.Length - 1] != '/');
             Debug.Assert(encoding != null);
 
             _httpctx = httpcontext;
-            _rootPath = rootPath;
             _encoding = encoding;
+
+            this.RootPath = rootPath;
 
             this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, encoding));
             this.InitSuperglobals();

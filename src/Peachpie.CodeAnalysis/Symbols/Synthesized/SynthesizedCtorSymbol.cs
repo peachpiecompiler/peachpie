@@ -171,7 +171,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             else
             {
-                var fieldsinitctor = new SynthesizedPhpCtorSymbol(type, Accessibility.Protected, true, basector, null);
+                var fieldsinitctor = new SynthesizedPhpCtorSymbol(type, Accessibility.ProtectedOrInternal, true, basector, null);
                 yield return fieldsinitctor;
 
                 // generate .ctor(s) calling PHP __construct with optional overloads in case there is an optional parameter

@@ -1,0 +1,17 @@
+﻿<!--
+This file is loaded only during multitargeting ("crosstargeting") scenario:
+when TargetFrameworks is set and TargetFramework unset.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Load correct targets from the SDK, e.g. "Build". It will launch another fork of MSBuild for
+       each target with the TargetFramework property set accordingly. -->
+  <PropertyGroup>
+    <LanguageTargets>$(MSBuildToolsPath)\Microsoft.Common.CrossTargeting.targets</LanguageTargets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PackProjectInputFile)' == ''">
+    <PackProjectInputFile>$(MSBuildProjectFullPath)</PackProjectInputFile>
+  </PropertyGroup>
+
+</Project>

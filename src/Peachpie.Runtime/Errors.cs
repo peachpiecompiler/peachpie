@@ -205,6 +205,17 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Called function is not supported.
+        /// </summary>
+        /// <param name="function">Not supported function name.</param>
+        public static void FunctionDeprecated(string/*!*/function)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(function));
+
+            Throw(PhpError.E_DEPRECATED, ErrResources.function_is_deprecated, function);
+        }
+
+        /// <summary>
         /// Call to a member function <paramref name="methodName"/>() on a non-object.
         /// </summary>
         /// <param name="methodName">The method name.</param>

@@ -1075,7 +1075,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Debug.Assert(_access.IsWrite);
 
-                cg.EmitConvertToPhpValue(valueType, 0);
+                cg.EmitConvertToPhpValue(cg.EmitDereference(valueType), 0);
 
                 // .SetItemValue(key, value)
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.SetItemValue_IntStringKey_PhpValue);

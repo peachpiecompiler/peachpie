@@ -17,8 +17,10 @@
 
   <ItemGroup>
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
+    <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
     <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
 	<PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
+	<PackageReference Include="System.Threading.Thread" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">

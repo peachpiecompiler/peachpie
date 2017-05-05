@@ -384,7 +384,9 @@ namespace Pchp.Core
 
         public int Compare(PhpValue x, PhpValue y)
         {
-            return x.ToIntStringKey().CompareTo(y.ToIntStringKey());
+            x.TryToIntStringKey(out IntStringKey xkey);
+            y.TryToIntStringKey(out IntStringKey ykey);
+            return Compare(xkey, ykey);
         }
 
         #endregion

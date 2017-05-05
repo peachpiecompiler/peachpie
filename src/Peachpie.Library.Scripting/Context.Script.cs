@@ -184,13 +184,22 @@ namespace Peachpie.Library.Scripting
                 // list of scripts that were eval'ed in the context already,
                 // our compilation may depend on them
                 var dependingSubmissions = previousSubmissions.Where(s => !s.Image.IsDefaultOrEmpty);
+                IEnumerable<MetadataReference> metadatareferences
+                    = dependingSubmissions.Select(s => MetadataReference.CreateFromImage(s.Image));
+
+                if (options.AdditionalReferences != null)
+                {
+                    // add additional script references
+                    metadatareferences
+                        = metadatareferences.Concat(options.AdditionalReferences.Select(r => MetadataReference.CreateFromFile(r)));
+                }
 
                 // create the compilation object
                 // TODO: add conditionally declared types into the compilation tables
                 var compilation = (PhpCompilation)builder.CoreCompilation
                     .WithAssemblyName(name.Name)
                     .AddSyntaxTrees(tree)
-                    .AddReferences(dependingSubmissions.Select(s => MetadataReference.CreateFromImage(s.Image)));
+                    .AddReferences(metadatareferences);
 
                 if (options.EmitDebugInformation)
                 {

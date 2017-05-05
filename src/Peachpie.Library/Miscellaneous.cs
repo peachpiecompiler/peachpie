@@ -320,7 +320,7 @@ namespace Pchp.Library
         //}
 
         /// <summary>
-        /// Returns the type of interface between web server and Phalanger. 
+        /// Returns the type of web server interface.
         /// </summary>
         /// <returns>The "isapi" string if runned under webserver (ASP.NET works via ISAPI) or "cli" otherwise.</returns>
         public static string php_sapi_name(Context ctx)
@@ -338,8 +338,7 @@ namespace Pchp.Library
         /// <returns>The PID.</returns>
         public static int getmypid()
         {
-            // return System.Diagnostics.Process.GetCurrentProcess().Id;
-            throw new NotImplementedException("System.Diagnostics.Process");
+            return System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
 
@@ -466,5 +465,10 @@ namespace Pchp.Library
         {
             return true;    // status of the circular reference collector
         }
+
+        /// <summary>
+        /// Returns a unique identifier for the current thread.
+        /// </summary>
+        public static int zend_thread_id() => System.Threading.Thread.CurrentThread.ManagedThreadId;
     }
 }

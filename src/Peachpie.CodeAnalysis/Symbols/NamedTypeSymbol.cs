@@ -148,12 +148,9 @@ namespace Pchp.CodeAnalysis.Symbols
         internal abstract bool ShouldAddWinRTMembers { get; }
 
         /// <summary>
-        /// Returns a flag indicating whether this symbol has at least one applied/inherited conditional attribute.
+        /// Returns a flag indicating whether this symbol is declared conditionally.
         /// </summary>
-        /// <remarks>
-        /// Forces binding and decoding of attributes.
-        /// </remarks>
-        internal bool IsConditional
+        internal virtual bool IsConditional
         {
             get
             {
@@ -162,9 +159,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 //    return true;
                 //}
 
-                // Conditional attributes are inherited by derived types.
-                var baseType = this.BaseType;// NoUseSiteDiagnostics;
-                return (object)baseType != null ? baseType.IsConditional : false;
+                //// Conditional attributes are inherited by derived types.
+                //var baseType = this.BaseType;// NoUseSiteDiagnostics;
+                //return (object)baseType != null ? baseType.IsConditional : false;
+
+                return false;
             }
         }
         

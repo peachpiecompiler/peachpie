@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Symbols
     internal class SourceGlobalNamespaceSymbol : NamespaceSymbol
     {
         readonly SourceModuleSymbol _sourceModule;
-        
+
         public SourceGlobalNamespaceSymbol(SourceModuleSymbol module)
         {
             _sourceModule = module;
@@ -134,7 +134,23 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)
         {
             var x = _sourceModule.SymbolCollection.GetType(NameUtils.MakeQualifiedName(name, true));
-            return (x != null) ? ImmutableArray.Create(x) : ImmutableArray<NamedTypeSymbol>.Empty;
+            if (x != null)
+            {
+                if (x.IsErrorType())
+                {
+                    var candidates = ((ErrorTypeSymbol)x).CandidateSymbols;
+                    if (candidates.Length != 0)
+                    {
+                        return candidates.OfType<NamedTypeSymbol>().AsImmutable();
+                    }
+                }
+                else
+                {
+                    return ImmutableArray.Create(x);
+                }
+            }
+
+            return ImmutableArray<NamedTypeSymbol>.Empty;
         }
     }
 }

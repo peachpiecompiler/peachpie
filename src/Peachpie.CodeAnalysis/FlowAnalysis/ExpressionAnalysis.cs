@@ -333,7 +333,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var previoustype = State.GetLocalType(local);    // type of the variable in the previous state
 
                 // bind variable place
-                x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local));
+                x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local), x.PhpSyntax.Span.ToTextSpan());
                 
                 //
                 State.VisitLocal(local);
@@ -360,9 +360,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                         if (x.Access.EnsureObject && !TypeCtx.IsObject(vartype))
                         {
-                            vartype |= TypeCtx.GetSystemObjectTypeMask();   // TODO: stdClass instead of System.Object
+                            vartype |= TypeCtx.GetSystemObjectTypeMask();
                         }
-                        if (x.Access.EnsureArray && TypeCtx.IsNull(vartype))
+                        if (x.Access.EnsureArray)
                         {
                             vartype |= TypeCtx.GetArrayTypeMask();
                         }
@@ -450,7 +450,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     State.FlowContext.SetAllUsed();
                 }
 
-                if (x.Access.IsWrite)
+                if (x.Access.IsWrite || x.Access.IsEnsure)
                 {
                     State.SetAllUnknown(x.Access.IsWriteRef);
                 }
@@ -792,6 +792,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Concat:
                     return TypeCtx.GetWritableStringTypeMask();
 
+                case Operations.Coalesce:   // Left ?? Right
+                    return x.Left.TypeRefMask | x.Right.TypeRefMask;
+
                 default:
                     throw ExceptionUtilities.Unreachable;
             }
@@ -1115,7 +1118,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return new[] { method };
         }
 
-        public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x, ConditionBranch branch)
         {
             Accept(x.Name.NameExpression);
 
@@ -1133,6 +1136,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
                 x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, args, null);
+
+                //
+                x.ConstantValue = AnalysisFacts.TryResolve(x, _model);
             }
 
             VisitRoutineCallEpilogue(x);
@@ -1654,7 +1660,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
 
-                if (x.TargetType.ResolvedType != null)
+                if (x.TargetType.ResolvedType.IsErrorTypeOrNull() == false)
                 {
                     x.ConstantValue = new Optional<object>(((IPhpTypeSymbol)x.TargetType.ResolvedType).FullName.ToString());
                 }

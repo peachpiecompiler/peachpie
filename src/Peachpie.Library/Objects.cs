@@ -271,6 +271,48 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Get the default properties of the given class.
+        /// </summary>
+        /// <returns>Returns an associative array of declared properties visible from the current scope, with their default value. The resulting array elements are in the form of varname => value.
+        /// In case of an error, it returns <c>FALSE</c>.</returns>
+        [return: CastToFalse]
+        public static PhpArray get_class_vars(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, string class_name)
+        {
+            var tinfo = ctx.GetDeclaredType(class_name, true);
+            if (tinfo != null)
+            {
+                var result = new PhpArray();
+                var callerType = Type.GetTypeFromHandle(caller);
+
+                // the class has to be instantiated in order to discover default instance property values
+                // (the constructor will initialize default properties, user defined constructor will not be called)
+                var instanceOpt = tinfo.GetUninitializedInstance(ctx);
+
+                foreach (var prop in tinfo.GetDeclaredProperties())
+                {
+                    if (prop.IsVisible(callerType))
+                    {
+                        // resolve the property value using temporary class instance
+                        var value = prop.IsStatic
+                            ? prop.GetValue(ctx, null)
+                            : (instanceOpt != null)
+                                ? prop.GetValue(ctx, instanceOpt)
+                                : PhpValue.Void;
+
+                        //
+                        result[prop.PropertyName] = value.DeepCopy();
+                    }
+                }
+
+                return result;
+            }
+            else
+            {
+                return null; // false
+            }
+        }
+
+        /// <summary>
         /// Checks if the class method exists in the given object.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
@@ -375,6 +417,5 @@ namespace Pchp.Library
 
             return false;
         }
-
     }
 }

@@ -194,8 +194,11 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Contract.ThrowIfNull(type);
 
+
             _type = type;
             this.PhpSyntax = type.Syntax;
+
+            type.PostponedDeclaration();
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -215,11 +218,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ImmutableArray<IVariable> IVariableDeclarationStatement.Variables { get { throw new InvalidOperationException(); } }   // global variable does not have a symbol (yet?)
 
-        public ImmutableArray<BoundGlobalVariable> Variables => _variables;
+        public ImmutableArray<BoundVariable> Variables => _variables;
 
-        readonly ImmutableArray<BoundGlobalVariable> _variables;
+        readonly ImmutableArray<BoundVariable> _variables;
 
-        public BoundGlobalVariableStatement(ImmutableArray<BoundGlobalVariable> variables)
+        public BoundGlobalVariableStatement(ImmutableArray<BoundVariable> variables)
         {
             _variables = variables;
         }

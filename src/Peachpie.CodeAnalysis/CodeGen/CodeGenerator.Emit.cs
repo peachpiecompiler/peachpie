@@ -77,13 +77,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits reference to <c>this</c>.
         /// </summary>
         /// <returns>Type of <c>this</c> in current context, pushed on top of the evaluation stack.</returns>
-        public TypeSymbol EmitThis()
+        public NamedTypeSymbol EmitThis()
         {
             Contract.ThrowIfNull(_thisPlace);
             return EmitThisOrNull();
         }
 
-        public TypeSymbol EmitThisOrNull()
+        public NamedTypeSymbol EmitThisOrNull()
         {
             if (_thisPlace == null)
             {
@@ -92,7 +92,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                return _thisPlace.EmitLoad(_il);
+                return (NamedTypeSymbol)_thisPlace.EmitLoad(_il);
             }
         }
 
@@ -339,7 +339,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol EmitLoadToken(TypeSymbol type, SyntaxNode syntaxNodeOpt)
         {
-            if (type != null)
+            if (!type.IsErrorTypeOrNull())
             {
                 _il.EmitLoadToken(_moduleBuilder, _diagnostics, type, syntaxNodeOpt);
             }
@@ -379,6 +379,45 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
             _il.EmitOpCode(ILOpCode.Ceq);
+        }
+
+        /// <summary>
+        /// Emits check if type on top of the stack is null.
+        /// Results in boolean (<c>i4</c>) with value of <c>0</c> or <c>1</c> on top of the stack.
+        /// </summary>
+        public void EmitNotNull(TypeSymbol t, TypeRefMask tmask)
+        {
+            // CanBeNull(tmask)
+            // CanBeNull(t)
+
+            // t != null
+            if (t.IsReferenceType)
+            {
+                // != null
+                _il.EmitNullConstant();
+                _il.EmitOpCode(ILOpCode.Cgt_un);
+                return;
+            }
+
+            // PhpAlias.Value
+            if (t == CoreTypes.PhpAlias)
+            {
+                // dereference
+                t = Emit_PhpAlias_GetValue();
+                // continue ->
+            }
+
+            // IsSet(PhpValue) ~ !IsNull
+            if (t == CoreTypes.PhpValue)
+            {
+                EmitCall(ILOpCode.Call, CoreMethods.Operators.IsSet_PhpValue);
+                return;
+            }
+
+            // cannot be null:
+            Debug.Assert(!CanBeNull(t));
+            EmitPop(t);
+            _il.EmitBoolConstant(false);
         }
 
         /// <summary>
@@ -582,13 +621,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits array of <paramref name="elementType"/> containing all current routine PHP arguments value.
         /// </summary>
-        void Emit_ArgsArray(TypeSymbol elementType)
+        TypeSymbol Emit_ArgsArray(TypeSymbol elementType)
         {
             var routine = this.Routine;
             if (routine == null)
             {
                 throw new InvalidOperationException("Routine is null!");
             }
+
+            TypeSymbol arrtype;
 
             var ps = routine.Parameters;
             var last = ps.LastOrDefault();
@@ -601,10 +642,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (ps.Length == 0 && variadic_element == elementType)
             {
                 // == params
-                variadic_place.EmitLoad(_il);
+                arrtype = variadic_place.EmitLoad(_il);
             }
             else
             {
+                arrtype = ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType);
+                
                 // COUNT: (N + params.Length)
                 _il.EmitIntConstant(ps.Length);
 
@@ -621,7 +664,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 EmitSymbolToken(elementType, null);
 
                 // tmparr = <array>
-                var tmparr = this.GetTemporaryLocal(ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType));
+                var tmparr = this.GetTemporaryLocal(arrtype);
                 _il.EmitLocalStore(tmparr);
 
                 // { p1, .., pN }
@@ -692,6 +735,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 ReturnTemporaryLocal(tmparr);
                 tmparr = null;
             }
+
+            //
+            return arrtype;
         }
 
         /// <summary>
@@ -791,56 +837,174 @@ namespace Pchp.CodeAnalysis.CodeGen
             return _il.EmitCall(_moduleBuilder, _diagnostics, code, method);
         }
 
-        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundExpression> arguments, BoundTypeRef staticType = null)
+        /// <summary>
+        /// Emits <c>this</c> instance for a method call.
+        /// </summary>
+        NamedTypeSymbol LoadMethodThisArgument(MethodSymbol method, BoundExpression thisExpr)
         {
-            Contract.ThrowIfNull(method);
+            var containingType = method.ContainingType;
 
-            TypeSymbol thisType;
-
-            // <this>
             if (thisExpr != null)
             {
                 if (method.HasThis)
                 {
                     // <thisExpr> -> <TObject>
-                    EmitConvert(thisExpr, thisType = method.ContainingType);
+                    EmitConvert(thisExpr, containingType);
 
-                    if (thisType.IsValueType)
+                    if (containingType.IsValueType)
                     {
-                        EmitStructAddr(thisType);   // value -> valueaddr
+                        EmitStructAddr(containingType);   // value -> valueaddr
                     }
+
+                    //
+                    return containingType;
                 }
                 else
                 {
                     // POP <thisExpr>
                     EmitPop(Emit(thisExpr));
-                    thisType = null;
+                    return null;
                 }
             }
             else
             {
-                if (method.HasThis && code != ILOpCode.Newobj)
+                if (method.HasThis)
                 {
                     if (ThisPlaceOpt != null && ThisPlaceOpt.TypeOpt != null &&
                         ThisPlaceOpt.TypeOpt.IsEqualToOrDerivedFrom(method.ContainingType))
                     {
                         // implicit $this instance
-                        thisType = EmitThis();
+                        return EmitThis();
                     }
                     else
                     {
-                        throw new ArgumentException();  // TODO: PHP would create temporary instance of class
+                        // $this is undefined
+                        // PHP would throw a notice when undefined $this is used
+                        
+                        // create dummy instance
+                        // TODO: when $this is accessed from PHP code, throw error
+                        // NOTE: we can't just pass NULL since the instance holds reference to Context that is needed by API internally
+
+                        var dummyctor =
+                            (MethodSymbol)(containingType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly ??    // .ctor that only initializes fields with default values
+                            containingType.InstanceConstructors.Where(m => m.Parameters.All(p => p.IsImplicitlyDeclared)).FirstOrDefault();   // implicit ctor
+
+                        if (containingType.IsReferenceType && dummyctor != null)
+                        {
+                            // new T(Context)
+                            EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundExpression>.Empty, null)
+                                .Expect(containingType);
+                        }
+                        else
+                        {
+                            // TODO: empty struct addr
+                            throw new NotImplementedException();
+                        }
+
+                        //
+                        return containingType;
                     }
                 }
                 else
                 {
-                    thisType = null;
+                    return null;
                 }
             }
+        }
+
+        TypeSymbol LoadMethodSpecialArgument(ParameterSymbol p, TypeSymbol thisType, BoundTypeRef staticType)
+        {
+            // Context
+            if (SpecialParameterSymbol.IsContextParameter(p))
+            {
+                Debug.Assert(p.Type == CoreTypes.Context);
+                return EmitLoadContext();
+            }
+            // <locals>
+            else if (SpecialParameterSymbol.IsLocalsParameter(p))
+            {
+                Debug.Assert(p.Type == CoreTypes.PhpArray);
+                if (!this.HasUnoptimizedLocals)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return LocalsPlaceOpt.EmitLoad(Builder)
+                    .Expect(CoreTypes.PhpArray);
+            }
+            // arguments
+            else if (SpecialParameterSymbol.IsCallerArgsParameter(p))
+            {
+                // ((NamedTypeSymbol)p.Type).TypeParameters // TODO: IList<T>
+                return Emit_ArgsArray(CoreTypes.PhpValue); // TODO: T
+            }
+            // class context
+            else if (SpecialParameterSymbol.IsCallerClassParameter(p))
+            {
+                if (p.Type == CoreTypes.PhpTypeInfo)
+                {
+                    if (this.CallerType != null)
+                        BoundTypeRef.EmitLoadPhpTypeInfo(this, this.CallerType);
+                    else
+                        Builder.EmitNullConstant();
+                }
+                else if (p.Type.SpecialType == SpecialType.System_String)
+                {
+                    Builder.EmitStringConstant(this.CallerType != null
+                        ? ((IPhpTypeSymbol)this.CallerType).FullName.ToString()
+                        : null);
+                }
+                else
+                {
+                    if (p.Type == CoreTypes.RuntimeTypeHandle)
+                    {
+                        // LOAD <RuntimeTypeHandle>
+                        return this.EmitLoadToken(this.CallerType, null);
+                    }
+                    else
+                    {
+                        throw ExceptionUtilities.UnexpectedValue(p.Type);
+                    }
+                }
+                return p.Type;
+            }
+            // late static
+            else if (SpecialParameterSymbol.IsLateStaticParameter(p))
+            {
+                // PhpTypeInfo
+                if (staticType != null)
+                {
+                    // LOAD <statictype>
+                    return staticType.EmitLoadTypeInfo(this);
+                }
+                else if (thisType != null)
+                {
+                    // LOAD PhpTypeInfo<thisType>
+                    return BoundTypeRef.EmitLoadPhpTypeInfo(this, thisType);
+                }
+                else
+                {
+                    throw ExceptionUtilities.Unreachable;
+                }
+            }
+            // unhandled
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundExpression> arguments, BoundTypeRef staticType = null)
+        {
+            Contract.ThrowIfNull(method);
+
+            // {this}
+            var thisType = (code != ILOpCode.Newobj) ? LoadMethodThisArgument(method, thisExpr) : null;
 
             // .callvirt -> .call
             if (code == ILOpCode.Callvirt && (!method.HasThis || !method.IsMetadataVirtual()))
             {
+                // ignores null check in method call
                 code = ILOpCode.Call;
             }
 
@@ -855,78 +1019,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var p = parameters[param_index];
 
                 // special implicit parameters
-                if (arg_index == 0 && p.IsImplicitlyDeclared && !p.IsParams)
+                if (arg_index == 0 &&           // no source parameter were loaded yet
+                    p.IsImplicitlyDeclared &&   // implicitly declared parameter
+                    !p.IsParams)
                 {
-                    if (SpecialParameterSymbol.IsContextParameter(p))
-                    {
-                        // <ctx>
-                        Debug.Assert(p.Type == CoreTypes.Context);
-                        EmitLoadContext();
-                    }
-                    else if (SpecialParameterSymbol.IsLocalsParameter(p))
-                    {
-                        // <locals>
-                        Debug.Assert(p.Type == CoreTypes.PhpArray);
-                        if (!this.HasUnoptimizedLocals) throw new InvalidOperationException();
-                        LocalsPlaceOpt.EmitLoad(Builder)
-                            .Expect(CoreTypes.PhpArray);
-                    }
-                    else if (SpecialParameterSymbol.IsCallerArgsParameter(p))
-                    {
-                        // ((NamedTypeSymbol)p.Type).TypeParameters // TODO: IList<T>
-                        Emit_ArgsArray(CoreTypes.PhpValue); // TODO: T
-                    }
-                    else if (SpecialParameterSymbol.IsCallerClassParameter(p))
-                    {
-                        if (p.Type == CoreTypes.PhpTypeInfo)
-                        {
-                            if (this.CallerType != null)
-                                BoundTypeRef.EmitLoadPhpTypeInfo(this, this.CallerType);
-                            else
-                                Builder.EmitNullConstant();
-                        }
-                        else if (p.Type.SpecialType == SpecialType.System_String)
-                        {
-                            Builder.EmitStringConstant(this.CallerType != null
-                                ? ((IPhpTypeSymbol)this.CallerType).FullName.ToString()
-                                : null);
-                        }
-                        else
-                        {
-                            if (p.Type == CoreTypes.RuntimeTypeHandle)
-                            {
-                                // LOAD <RuntimeTypeHandle>
-                                this.EmitLoadToken(this.CallerType, null);
-                            }
-                            else
-                            {
-                                throw ExceptionUtilities.UnexpectedValue(p.Type);
-                            }
-                        }
-                    }
-                    else if (SpecialParameterSymbol.IsLateStaticParameter(p))
-                    {
-                        // PhpTypeInfo
-                        if (staticType != null)
-                        {
-                            // LOAD <statictype>
-                            staticType.EmitLoadTypeInfo(this);
-                        }
-                        else if (thisType != null)
-                        {
-                            // LOAD PhpTypeInfo<thisType>
-                            BoundTypeRef.EmitLoadPhpTypeInfo(this, thisType);
-                        }
-                        else
-                        {
-                            throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
-                        }
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-
+                    LoadMethodSpecialArgument(p, thisType, staticType);
                     continue;
                 }
 
@@ -961,7 +1058,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // call the method
             var result = EmitCall(code, method);
 
-            //
+            // write ref parameters back if necessary
             WriteBackInfo.WriteBackAndFree(this, writebacks);
 
             //
@@ -1503,7 +1600,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             var constant = expr.ConstantValue;
             if (constant.HasValue)
             {
-                if (constant.Value is string)
+                if (constant.Value == null)
+                {
+                    EmitIntStringKey(string.Empty);
+                }
+                else if (constant.Value is string)
                 {
                     EmitIntStringKey((string)constant.Value);
                 }
@@ -1550,18 +1651,211 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits declaring type into the context.
+        /// Emits type declaration into the context.
         /// </summary>
         public void EmitDeclareType(SourceTypeSymbol t)
         {
-            Debug.Assert(t != null);
+            Contract.ThrowIfNull(t);
+            Debug.Assert(!t.IsErrorType(), "Cannot declare an error type.");
 
             // 
             this.EmitSequencePoint(t.Syntax.HeadingSpan);
 
-            // <ctx>.DeclareType<T>()
+            // autoload base types or throw an error
+            if (t.HasVersions)
+            {
+                // emit declaration of type that has ambiguous versions
+                EmitVersionedTypeDeclaration(t.AllVersions());
+            }
+            else
+            {
+                var dependent = t.GetDependentSourceTypeSymbols();
+
+                // ensure all types are loaded into context,
+                // autoloads if necessary
+                dependent.ForEach(EmitExpectTypeDeclared);
+
+                // <ctx>.DeclareType<T>()
+                EmitLoadContext();
+                EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));
+            }
+
+            //
+            Debug.Assert(_il.IsStackEmpty);
+        }
+
+        /// <summary>
+        /// If necessary, emits autoload and check the given type is loaded into context.
+        /// </summary>
+        void EmitExpectTypeDeclared(NamedTypeSymbol d)
+        {
+            if (this.Routine != null && ReferenceEquals((d as SourceTypeSymbol)?.ContainingFile, this.Routine.ContainingFile) && !d.IsConditional)
+            {
+                // declared in same file unconditionally,
+                // we don't have to check anything
+                return;
+            }
+
+            // Template: ctx.ExpectTypeDeclared<d>
             EmitLoadContext();
-            EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));
+            EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(d));
+        }
+
+        /// <summary>
+        /// Emit declaration of one of given versions (of the same source type) based on actually declared types that versions depend on.
+        /// </summary>
+        /// <param name="versions">Array of multiple versions of a source type declaration.</param>
+        void EmitVersionedTypeDeclaration(ImmutableArray<SourceTypeSymbol> versions)
+        {
+            Debug.Assert(versions.Length > 1);
+
+            // ensure all types are loaded into context and resolve version to declare
+
+            // collect dependent types [name x symbols]
+            var dependent = new Dictionary<QualifiedName, HashSet<NamedTypeSymbol>>();
+            foreach (var v in versions)
+            {
+                var deps = v.GetDependentSourceTypeSymbols();
+                foreach (var d in deps.OfType<IPhpTypeSymbol>())
+                {
+                    if (dependent.ContainsKey(d.FullName))
+                    {
+                        dependent[d.FullName].Add((NamedTypeSymbol)d);
+                    }
+                    else
+                    {
+                        dependent[d.FullName] = new HashSet<NamedTypeSymbol>() { (NamedTypeSymbol)d };
+                    }
+                }
+            }
+
+            //
+            var dependent_handles = new Dictionary<QualifiedName, LocalDefinition>();
+
+            // resolve dependent types:
+            foreach (var d in dependent)
+            {
+                var first = d.Value.First();
+
+                if (d.Value.Count == 1)
+                {
+                    EmitExpectTypeDeclared(first);
+                }
+                else
+                {
+                    var tname = ((IPhpTypeSymbol)first).FullName;
+
+                    // Template: tmp_d = ctx.GetDeclaredTypeOrThrow(d_name, autoload: true).TypeHandle
+                    EmitLoadContext();
+                    _il.EmitStringConstant(tname.ToString());
+                    _il.EmitBoolConstant(true);
+                    EmitCall(ILOpCode.Call, CoreMethods.Context.GetDeclaredTypeOrThrow_string_bool);
+                    var thandle = EmitCall(ILOpCode.Call, CoreMethods.Operators.GetTypeHandle_PhpTypeInfo.Getter);
+
+                    var tmp_handle = GetTemporaryLocal(thandle);
+                    _il.EmitLocalStore(tmp_handle);
+
+                    //
+                    dependent_handles.Add(tname, tmp_handle);
+                }
+            }
+
+            Debug.Assert(dependent_handles.Count != 0);
+
+            // At this point, all dependant types are loaded, otherwise runtime would throw an exception
+
+            // find out version to declare:
+            var lblFail = new NamedLabel("declare_fail");
+            var lblDone = new NamedLabel("declare_done");
+            EmitDeclareTypeByDependencies(versions, dependent_handles.ToArray(), 0, dependent, lblDone, lblFail);
+
+            // Template: throw new Exception("Cannot declare {T}");
+            // TODO: compile type dynamically (eval of type declaration with actual base types)
+            _il.MarkLabel(lblFail);
+            EmitThrowException(string.Format(ErrorStrings.ERR_UnknownTypeDependencies, versions[0].FullName));
+
+            _il.MarkLabel(lblDone);
+
+            // return tmp variables
+            dependent_handles.Values.ForEach(ReturnTemporaryLocal);
+        }
+
+        /// <summary>
+        /// Emits decision tree.
+        /// </summary>
+        /// <param name="versions">Versions to decide of.</param>
+        /// <param name="dependency_handle">Map of dependant types and associated local variable holding resolved real type handle.</param>
+        /// <param name="index">Index to <paramref name="dependency_handle"/> where to decide from.</param>
+        /// <param name="dependencies">Map of type names and possible real types.</param>
+        /// <param name="lblDone">Label where to jump upon decision is done.</param>
+        /// <param name="lblFail">Label where to jump when dependy does not match.</param>
+        void EmitDeclareTypeByDependencies(
+            ImmutableArray<SourceTypeSymbol> versions,
+            KeyValuePair<QualifiedName, LocalDefinition>[] dependency_handle, int index,
+            Dictionary<QualifiedName, HashSet<NamedTypeSymbol>> dependencies,
+            NamedLabel lblDone, NamedLabel lblFail)
+        {
+            if (index == dependency_handle.Length || versions.Length == 1)
+            {
+                Debug.Assert(versions.Length == 1);
+
+                // <ctx>.DeclareType<T>();
+                // goto DONE;
+                EmitLoadContext();
+                EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(versions[0]));
+                _il.EmitBranch(ILOpCode.Br, lblDone);
+                return;
+            }
+
+            var thandle = dependency_handle[index];
+            var types = dependencies[thandle.Key];
+            Debug.Assert(types.Count > 1);
+
+            /* [A, B]:
+             * if (A == A1) {
+             *   if (B == B1) Declare(X11); goto Done;
+             *   if (B == B2) Declare(X12); goto Done;
+             *   goto Fail;
+             * }
+             * if (A == A2) {
+             *   if (B == B1) Declare(X21); goto Done;
+             *   if (B == B2) Declare(X22); goto Done;
+             *   goto Fail;
+             * }
+             * Fail: throw;
+             * Done:
+             */
+
+            object lblElse = null;
+
+            foreach (var h in types)
+            {
+                if (lblElse != null) _il.MarkLabel(lblElse);
+
+                // Template: if (thandle.Equals(h)) { ... } else goto lblElse;
+                _il.EmitLocalAddress(thandle.Value);
+                EmitLoadToken(h, null);
+                EmitCall(ILOpCode.Call, CoreTypes.RuntimeTypeHandle.Method("Equals", CoreTypes.RuntimeTypeHandle));
+                _il.EmitBranch(ILOpCode.Brfalse, lblElse = new object());
+
+                // Template: *recursion*
+                // h == thandle: filter versions depending on thandle
+                var filtered_versions = versions.Where(v => v.GetDependentSourceTypeSymbols().Contains(h));
+                EmitDeclareTypeByDependencies(filtered_versions.AsImmutable(), dependency_handle, index + 1, dependencies, lblDone, lblFail);
+            }
+            _il.MarkLabel(lblElse);
+            _il.EmitBranch(ILOpCode.Br, lblFail);
+        }
+
+        /// <summary>
+        /// Emits <code>throw new Exception(message)</code>
+        /// </summary>
+        public void EmitThrowException(string message)
+        {
+            var exception_ctor = CoreTypes.Exception.Ctor(CoreTypes.String);
+            _il.EmitStringConstant(message);
+            EmitCall(ILOpCode.Newobj, exception_ctor);
+            _il.EmitThrow(false);
         }
 
         /// <summary>

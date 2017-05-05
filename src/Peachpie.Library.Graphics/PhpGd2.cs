@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Pchp.Core;
-using ImageSharp;
-using System.IO;
-using ImageSharp.Formats;
 using System.Diagnostics;
-using Pchp.Library.Streams;
+using System.IO;
 using System.Runtime.InteropServices;
+using ImageSharp;
+using ImageSharp.Formats;
+using Pchp.Core;
+using Pchp.Library.Streams;
 
 namespace Peachpie.Library.Graphics
 {

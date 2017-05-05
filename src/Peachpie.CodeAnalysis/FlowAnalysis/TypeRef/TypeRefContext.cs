@@ -475,7 +475,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetResourceTypeMask()
         {
-            return GetTypeMask(NameUtils.SpecialNames.Core_Resource, true);
+            return GetPrimitiveTypeRefMask(TypeRefFactory.ResourceTypeRef);
         }
 
         /// <summary>

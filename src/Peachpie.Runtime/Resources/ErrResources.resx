@@ -339,9 +339,6 @@
   <data name="class_has_no_unserializer" xml:space="preserve">
     <value>Class {0} has no unserializer</value>
   </data>
-  <data name="invalid_script_assembly" xml:space="preserve">
-    <value>The assembly '{0}' is not a valid Phalanger compiled script assembly</value>
-  </data>
   <data name="unable_to_resolve_script_type" xml:space="preserve">
     <value>Unable to resolve script type (source path '{0}', referential type '{1}')</value>
   </data>
@@ -368,9 +365,6 @@
   </data>
   <data name="invalid_dynamic_wrapper_format" xml:space="preserve">
     <value>Invalid format of dynamic wrapper '{0}'.</value>
-  </data>
-  <data name="invalid_class_library" xml:space="preserve">
-    <value>The library '{0}' is not a valid Phalanger Class Library.</value>
   </data>
   <data name="invalid_class_library_wrapper" xml:space="preserve">
     <value>The dynamic wrapper for the library, file '{0}', is invalid. Delete the wrapper file so that it could be regenerated automatically during the next request.</value>
@@ -950,7 +944,7 @@ Stack trace:
     <value>Unable to open {0} for writing</value>
   </data>
   <data name="ambiguous_file_mode" xml:space="preserve">
-    <value>Ambiguous file access mode (binary mode assumed). Specify either '{0}b' or '{0}t' or set Phalanger configuration option DefaultFileOpenMode in file-system section of .config file.</value>
+    <value>Ambiguous file access mode (binary mode assumed). Specify either '{0}b' or '{0}t' or set configuration option DefaultFileOpenMode.</value>
   </data>
   <data name="empty_file_mode" xml:space="preserve">
     <value>Supplied file access mode is empty</value>
@@ -1262,9 +1256,6 @@ Stack trace:
   </data>
   <data name="interface_bodyful_method" xml:space="preserve">
     <value>Interface method {0}::{1}() cannot contain body</value>
-  </data>
-  <data name="abstract_method_name_not_matching_implementation" xml:space="preserve">
-    <value>Names of the abstract method {0}::{1}() and its implementation {2}::{3}() must be the same (case sensitively) in the current version of Phalanger</value>
   </data>
   <data name="conflicting_type_aliases" xml:space="preserve">
     <value>Type '{0}' has already been imported</value>

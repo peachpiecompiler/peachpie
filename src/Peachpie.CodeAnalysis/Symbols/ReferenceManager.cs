@@ -109,18 +109,22 @@ namespace Pchp.CodeAnalysis
                     }
 
                     //
-                    string keytoken = string.Join("", identity.PublicKeyToken.Select(b => b.ToString("x2")));
-                    var pes = resolver.ResolveReference(identity.Name + ".dll", basePath, MetadataReferenceProperties.Assembly)
-                        .Concat(resolver.ResolveReference($"{identity.Name}/v4.0_{identity.Version}__{keytoken}/{identity.Name}.dll", basePath, MetadataReferenceProperties.Assembly));
-
-                    var pe = pes.FirstOrDefault();
-                    if (pe != null)
+                    if (resolver != null)
                     {
-                        _observedMetadata[identity] = ass = PEAssemblySymbol.Create(pe, isLinked: false);
-                        ass.SetCorLibrary(_lazyCorLibrary);
-                        modules.AddRange(ass.Modules.Cast<PEModuleSymbol>());
+                        string keytoken = string.Join("", identity.PublicKeyToken.Select(b => b.ToString("x2")));
+                        var pes = resolver.ResolveReference(identity.Name + ".dll", basePath, MetadataReferenceProperties.Assembly)
+                            .Concat(resolver.ResolveReference($"{identity.Name}/v4.0_{identity.Version}__{keytoken}/{identity.Name}.dll", basePath, MetadataReferenceProperties.Assembly));
+
+                        var pe = pes.FirstOrDefault();
+                        if (pe != null)
+                        {
+                            _observedMetadata[identity] = ass = PEAssemblySymbol.Create(pe, isLinked: false);
+                            ass.SetCorLibrary(_lazyCorLibrary);
+                            modules.AddRange(ass.Modules.Cast<PEModuleSymbol>());
+                        }
                     }
-                    else
+
+                    if (ass == null)
                     {
                         //_diagnostics.Add(Location.None, Errors.ErrorCode.ERR_MetadataFileNotFound, identity);
                         return new MissingAssemblySymbol(identity);

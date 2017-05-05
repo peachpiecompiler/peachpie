@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -130,7 +131,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets local variable or create local if not yet.
         /// </summary>
-        public BoundVariable BindVariable(VariableName varname, VariableKind kind, Func<BoundExpression> initializer = null)
+        public BoundVariable BindVariable(VariableName varname, VariableKind kind, TextSpan span, Func<BoundExpression> initializer = null)
         {
             BoundVariable value;
 
@@ -139,7 +140,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (value.VariableKind != kind)
                 {
                     // variable redeclared with a different kind
-                    throw new ArgumentException("", nameof(kind));
+                    _routine.DeclaringCompilation.DeclarationDiagnostics.Add(_routine, span, Errors.ErrorCode.ERR_NotYetImplemented, $"Combination of {value.VariableKind} and {kind} kinds of the same variable.");
                 }
             }
             else

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System_DateTime = System.DateTime;
+using System.IO;
 
 namespace Pchp.Library.DateTime
 {
@@ -1386,7 +1387,7 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region strtotime
+        #region strtotime, date_parse
 
         /// <summary>
         /// Parses a string containing an English date format into a UNIX timestamp relative to the current time.
@@ -1394,6 +1395,7 @@ namespace Pchp.Library.DateTime
         /// <param name="ctx">Runtime context.</param>
         /// <param name="time">String containing time definition</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
+        [return: CastToFalse]
         public static long strtotime(Context ctx, string time)
         {
             return StringToTime(ctx, time, System_DateTime.UtcNow);
@@ -1406,6 +1408,7 @@ namespace Pchp.Library.DateTime
         /// <param name="time">String containing time definition.</param>
         /// <param name="start">Timestamp (seconds from 1970) to which is the new timestamp counted.</param>
         /// <returns>Number of seconds since 1/1/1970 or -1 on failure.</returns>
+        [return: CastToFalse]
         public static long strtotime(Context ctx, string time, long start)
         {
             return StringToTime(ctx, time, DateTimeUtils.UnixTimeStampToUtc(start));
@@ -1426,6 +1429,88 @@ namespace Pchp.Library.DateTime
             {
                 PhpException.Throw(PhpError.Warning, error);
                 return -1;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns associative array with detailed info about given date.
+        /// </summary>
+        /// <returns>Returns array with information about the parsed date on success.</returns>
+        //[return: CastToFalse]
+        public static PhpArray date_parse(Context ctx, string time)
+        {
+            if (time == null) return null;
+            time = time.Trim();
+            if (time.Length == 0) return null;
+
+            //
+            var errors = PhpArray.NewEmpty();
+
+            var scanner = new Scanner(new StringReader(time.ToLowerInvariant()));
+            while (true)
+            {
+                var token = scanner.GetNextToken();
+                if (token == Tokens.ERROR || scanner.Errors > 0)
+                {
+                    errors.Add(string.Format(Resources.LibResources.parse_error, scanner.Position.ToString(), time.Substring(scanner.Position)));
+                    break;
+                }
+
+                if (token == Tokens.EOF)
+                {
+                    break;
+                }
+            }
+
+            //
+            var dateinfo = scanner.Time;
+            var datetime = dateinfo.GetDateTime(ctx, System_DateTime.UtcNow);
+
+            var result = new PhpArray(12);
+            //[year] => 2006
+            result["year"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Year : PhpValue.False;
+            //[month] => 12
+            result["month"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Month : PhpValue.False;
+            //[day] => 12
+            result["day"] = dateinfo.have_date != 0 ? (PhpValue)datetime.Day : PhpValue.False;
+            //[hour] => 10
+            result["hour"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Hour : PhpValue.False;
+            //[minute] => 0
+            result["minute"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Minute : PhpValue.False;
+            //[second] => 0
+            result["second"] = dateinfo.have_time != 0 ? (PhpValue)datetime.Second : PhpValue.False;
+            //[fraction] => 0.5
+            result["fraction"] = dateinfo.have_time != 0 ? (PhpValue)dateinfo.f : PhpValue.False;
+            //[warning_count] => 0
+            result["warning_count"] = (PhpValue)0;
+            //[warnings] => Array()
+            result["warnings"] = (PhpValue)PhpArray.NewEmpty();
+            //[error_count] => 0
+            result["error_count"] = (PhpValue)errors.Count;
+            //[errors] => Array()
+            result["errors"] = (PhpValue)errors;
+            //[is_localtime] => 
+            result["is_localtime"] = (PhpValue)(false); // ???
+
+            if (dateinfo.have_relative != 0)
+            {
+                result["relative"] = (PhpValue)new PhpArray(6)
+                {
+                    //[year] => 0
+                    { "year", dateinfo.relative.y },
+                    //[month] => 0
+                    { "month", dateinfo.relative.m },
+                    //[day] => 7
+                    { "day", dateinfo.relative.d },
+                    //[hour] => 1
+                    { "hour", dateinfo.relative.h },
+                    //[minute] => 0
+                    { "minute", dateinfo.relative.i },
+                    //[second] => 0
+                    { "second", dateinfo.relative.s },
+                };
             }
 
             return result;

@@ -144,7 +144,7 @@ namespace Pchp.CodeAnalysis
             var compilation = new PhpCompilation(
                 assemblyName ?? this.AssemblyName,
                 options ?? _options,
-                this.ExternalReferences.AddRange((references == null) ? ImmutableArray<MetadataReference>.Empty : references),
+                references != null ? references.AsImmutable() : this.ExternalReferences,
                 //this.PreviousSubmission,
                 //this.SubmissionReturnType,
                 //this.HostObjectType,
@@ -409,7 +409,16 @@ namespace Pchp.CodeAnalysis
 
                 //cancellationToken.ThrowIfCancellationRequested();
 
-                builder.AddRange(this.BindAndAnalyseTask().Result.AsImmutable());   // TODO: cancellationToken
+                try
+                {
+                    // TODO: cancellationToken
+                    builder.AddRange(this.BindAndAnalyseTask().Result.AsImmutable());
+                }
+                catch (AggregateException e) when (e.InnerException != null)
+                {
+                    // unwrap the aggregate exception, keep original stacktrace
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                }
 
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -573,7 +582,7 @@ namespace Pchp.CodeAnalysis
                 }
 
                 var type = this.SourceSymbolCollection.GetType(qname);
-                if (type != null)
+                if (type.IsErrorType() == false)
                 {
                     var mains = type.GetMembers(methodname).OfType<SourceMethodSymbol>().AsImmutable();
                     if (mains.Length == 1)

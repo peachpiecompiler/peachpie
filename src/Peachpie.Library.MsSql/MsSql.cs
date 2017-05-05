@@ -29,7 +29,7 @@ namespace Peachpie.Library.MsSql
     [PhpExtension("mssql", Registrator = typeof(Registrator))]
     public static class MsSql
     {
-        class Registrator
+        sealed class Registrator
         {
             public Registrator()
             {
@@ -180,7 +180,7 @@ namespace Peachpie.Library.MsSql
 		/// <param name="server">Server (host). A <b>null</b> reference means the default value.</param>
 		/// <param name="user">User name. A <b>null</b> reference means the default value.</param>
 		/// <param name="password">Password. A <b>null</b> reference means the default value.</param>
-		/// <param name="newLink">Whether to create a new link (ignored by Phalanger).</param>
+		/// <param name="newLink">Whether to create a new link.</param>
 		/// <returns>
 		/// Resource representing the connection or a <B>null</B> reference (<B>false</B> in PHP) on failure.
 		/// </returns>
@@ -200,7 +200,7 @@ namespace Peachpie.Library.MsSql
 		/// <param name="server">Server (host). A <b>null</b> reference means the default value.</param>
 		/// <param name="user">User name. A <b>null</b> reference means the default value.</param>
 		/// <param name="password">Password. A <b>null</b> reference means the default value.</param>
-		/// <param name="newLink">Whether to create a new link (ignored by Phalanger).</param>
+		/// <param name="newLink">Whether to create a new link.</param>
 		/// <returns>
 		/// Resource representing the connection or a <B>null</B> reference (<B>false</B> in PHP) on failure.
 		/// </returns>

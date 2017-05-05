@@ -45,6 +45,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 typeof(HashSet<>).Assembly,         // System.Core
                 typeof(Core.Context).Assembly,      // Peachpie.Runtime
                 typeof(Library.Strings).Assembly,   // Peachpie.Library
+                typeof(Peachpie.Library.Scripting.PhpFunctions).Assembly,   // Peachpie.Library.Scripting
                 typeof(Peachpie.Library.MySql.MySql).Assembly,  // MySql
                 typeof(Peachpie.Library.MsSql.MsSql).Assembly,  // MsSql
             };

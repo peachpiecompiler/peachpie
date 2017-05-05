@@ -374,7 +374,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     if (from.IsOfType(CoreTypes.IPhpArray))
                     {
                         // IPhpArray.Count
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.Count.Getter);
                     }
                     else
                     {
@@ -432,7 +432,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (from.IsOfType(CoreTypes.IPhpArray))
                     {
                         // (long)IPhpArray.Count
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.Count.Getter);
                         _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
                         return;
                     }
@@ -494,7 +494,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (from.IsOfType(CoreTypes.IPhpArray))
                     {
                         // (double)IPhpArray.Count
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.Count.Getter);
                         _il.EmitOpCode(ILOpCode.Conv_r8);   // Int32 -> Double
                         return dtype;
                     }
@@ -1153,6 +1153,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(from);
             Contract.ThrowIfNull(to);
+
+            Debug.Assert(!to.IsErrorType(), "Conversion to an error type.");
 
             // conversion is not needed:
             if (from.SpecialType == to.SpecialType &&

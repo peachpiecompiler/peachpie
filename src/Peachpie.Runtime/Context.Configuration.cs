@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -164,10 +165,34 @@ namespace Pchp.Core
         public string AnonymousFtpPassword = null;
 
         /// <summary>
-        /// A list of semicolon-separated separated by ';' where file system functions and dynamic 
+        /// A list of semicolon-separated separated by ';' (<c>PATH_SEPARATOR</c>) where file system functions and dynamic 
         /// inclusion constructs searches for files. A <B>null</B> or an empty string means empty list.
         /// </summary>
         public string IncludePaths = ".";
+
+        /// <summary>
+        /// Gets <see cref="IncludePaths"/> split into array.
+        /// </summary>
+        internal string[] IncludePathsArray
+        {
+            get
+            {
+                if (_includePathCache != IncludePaths)
+                {
+                    _includePathCache = IncludePaths;
+                    _includePathsArray = IncludePaths.Split(new char[] { CurrentPlatform.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
+                }
+
+                return _includePathsArray;
+            }
+            set
+            {
+                _includePathsArray = value;
+                IncludePaths = _includePathCache = string.Join(";", value);
+            }
+        }
+        string[] _includePathsArray;
+        string _includePathCache;
 
         #endregion
 

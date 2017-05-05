@@ -559,7 +559,7 @@ namespace Pchp.Library
         /// and arguments (optionally) components. The target path must not contain '..' substring.
         /// A file name is extracted from the target path and combined with 
         /// <see cref="GlobalConfiguration.SafeModeSection.ExecutionDirectory"/>.
-        /// The resulting path is checked for invalid path characters (Phalanger specific).
+        /// The resulting path is checked for invalid path characters (dotnet specific).
         /// Finally, arguments are escaped by <see cref="EscapeCommand"/> and appended to the path.
         /// If safe mode is disabled, the command remains unchanged.
         /// </remarks>

@@ -52,5 +52,13 @@ namespace Pchp.Core.Utilities
 
             return result.ToString();
         }
+
+        /// <summary>
+        /// Gets last string character or <c>\0</c>.
+        /// </summary>
+        public static char LastChar(this string str)
+        {
+            return (str != null && str.Length != 0) ? str[str.Length - 1] : '\0';
+        }
     }
 }

@@ -384,9 +384,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureArray_IPhpArrayRef = ct.Operators.Method("EnsureArray", ct.IPhpArray);
                 EnsureArray_ArrayAccess = ct.Operators.Method("EnsureArray", ct.ArrayAccess);
                 GetItemValue_String_IntStringKey = ct.Operators.Method("GetItemValue", ct.String, ct.IntStringKey);
+                GetItemValue_String_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.String, ct.PhpValue, ct.Boolean);
                 GetItemValue_String_Int = ct.Operators.Method("GetItemValue", ct.String, ct.Int32);
-                GetItemValue_PhpValue_IntStringKey_Bool = ct.Operators.Method("GetItemValue", ct.PhpValue, ct.IntStringKey, ct.Boolean);
-                EnsureItemAlias_PhpValue_IntStringKey_Bool = ct.Operators.Method("EnsureItemAlias", ct.PhpValue, ct.IntStringKey, ct.Boolean);
+                GetItemValue_PhpValue_PhpValue_Bool = ct.Operators.Method("GetItemValue", ct.PhpValue, ct.PhpValue, ct.Boolean);
+                EnsureItemAlias_PhpValue_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.PhpValue, ct.PhpValue, ct.Boolean);
+                EnsureItemAlias_IPhpArray_PhpValue_Bool = ct.Operators.Method("EnsureItemAlias", ct.IPhpArray, ct.PhpValue, ct.Boolean);
+                EnsureItemArray_IPhpArray_PhpValue = ct.Operators.Method("EnsureItemArray", ct.IPhpArray, ct.PhpValue);
+                EnsureItemObject_IPhpArray_PhpValue = ct.Operators.Method("EnsureItemObject", ct.IPhpArray, ct.PhpValue);
                 IsSet_PhpValue = ct.Operators.Method("IsSet", ct.PhpValue);
                 IsEmpty_PhpValue = ct.Operators.Method("IsEmpty", ct.PhpValue);
                 IsNullOrEmpty_String = ct.String.Method("IsNullOrEmpty", ct.String);
@@ -434,6 +438,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 BuildClosure_RoutineInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
                 Eval_Context_PhpArray_object_string_string_int_int = ct.Operators.Method("Eval", ct.Context, ct.PhpArray, ct.Object, ct.String, ct.String, ct.Int32, ct.Int32);
                 GetName_PhpTypeInfo = ct.PhpTypeInfo.Property("Name");
+                GetTypeHandle_PhpTypeInfo = ct.PhpTypeInfo.Property("TypeHandle");
 
                 BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.GeneratorStateMachineDelegate);
                 GetGeneratorState_Generator = ct.Operators.Method("GetGeneratorState", ct.Generator);
@@ -485,9 +490,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                SetValue_PhpValueRef_PhpValue, EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef, EnsureArray_ArrayAccess,
-                GetItemValue_String_IntStringKey, GetItemValue_String_Int,
-                GetItemValue_PhpValue_IntStringKey_Bool, EnsureItemAlias_PhpValue_IntStringKey_Bool,
+                SetValue_PhpValueRef_PhpValue,
+                EnsureObject_ObjectRef, EnsureArray_PhpArrayRef, EnsureArray_IPhpArrayRef, EnsureArray_ArrayAccess,
+                GetItemValue_String_IntStringKey, GetItemValue_String_PhpValue_Bool, GetItemValue_String_Int, GetItemValue_PhpValue_PhpValue_Bool,
+                EnsureItemAlias_IPhpArray_PhpValue_Bool, EnsureItemAlias_PhpValue_PhpValue_Bool,
+                EnsureItemArray_IPhpArray_PhpValue,
+                EnsureItemObject_IPhpArray_PhpValue,
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object, ToBoolean_IPhpConvertible,
@@ -522,7 +530,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue;
 
             public readonly CoreProperty
-                GetName_PhpTypeInfo;
+                GetName_PhpTypeInfo, GetTypeHandle_PhpTypeInfo;
         }
 
         public struct PhpValueHolder
@@ -805,23 +813,36 @@ namespace Pchp.CodeAnalysis.Symbols
                 var arr = ct.IPhpArray;
 
                 RemoveKey_IntStringKey = arr.Method("RemoveKey", ct.IntStringKey);
+                RemoveKey_PhpValue = arr.Method("RemoveKey", ct.PhpValue);
+
                 GetItemValue_IntStringKey = arr.Method("GetItemValue", ct.IntStringKey);
+                GetItemValue_PhpValue = arr.Method("GetItemValue", ct.PhpValue);
+
                 SetItemValue_IntStringKey_PhpValue = arr.Method("SetItemValue", ct.IntStringKey, ct.PhpValue);
+                SetItemValue_PhpValue_PhpValue = arr.Method("SetItemValue", ct.PhpValue, ct.PhpValue);
+
                 SetItemAlias_IntStringKey_PhpAlias = arr.Method("SetItemAlias", ct.IntStringKey, ct.PhpAlias);
+                SetItemAlias_PhpValue_PhpAlias = arr.Method("SetItemAlias", ct.PhpValue, ct.PhpAlias);
+
                 AddValue_PhpValue = arr.Method("AddValue", ct.PhpValue);
+
                 EnsureItemObject_IntStringKey = arr.Method("EnsureItemObject", ct.IntStringKey);
                 EnsureItemArray_IntStringKey = arr.Method("EnsureItemArray", ct.IntStringKey);
                 EnsureItemAlias_IntStringKey = arr.Method("EnsureItemAlias", ct.IntStringKey);
 
-                get_Count = arr.Method("get_Count");
+                Count = arr.Property("Count");
             }
 
+            public readonly CoreProperty
+                Count;
+
             public readonly CoreMethod
-                RemoveKey_IntStringKey,
-                GetItemValue_IntStringKey,
-                SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, AddValue_PhpValue,
-                EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
-                get_Count;
+                RemoveKey_IntStringKey, RemoveKey_PhpValue,
+                GetItemValue_IntStringKey, GetItemValue_PhpValue,
+                SetItemValue_IntStringKey_PhpValue, SetItemValue_PhpValue_PhpValue,
+                SetItemAlias_IntStringKey_PhpAlias, SetItemAlias_PhpValue_PhpAlias,
+                AddValue_PhpValue,
+                EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey;
         }
 
         public struct PhpArrayHolder
@@ -886,6 +907,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IntStringKey_string = ct.IntStringKey.Ctor(ct.String);
                 ScriptAttribute_string = ct.ScriptAttribute.Ctor(ct.String);
                 PhpTraitAttribute = ct.PhpTraitAttribute.Ctor();
+                PhpTypeAttribute_string = ct.PhpTypeAttribute.Ctor(ct.String);
                 PhpFieldsOnlyCtorAttribute = ct.PhpFieldsOnlyCtorAttribute.Ctor();
 
                 ScriptDiedException = ct.ScriptDiedException.Ctor();
@@ -898,7 +920,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpArray, PhpArray_int,
                 PhpString, PhpString_string, PhpString_string_string,
                 IntStringKey_int, IntStringKey_string,
-                ScriptAttribute_string, PhpTraitAttribute, PhpFieldsOnlyCtorAttribute,
+                ScriptAttribute_string, PhpTraitAttribute, PhpTypeAttribute_string, PhpFieldsOnlyCtorAttribute,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;
         }
 
@@ -919,7 +941,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 OnInclude_TScript = ct.Context.Method("OnInclude");
                 Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
 
-                AssertTypeDeclared_PhpTypeInfo_string = ct.Context.Method("AssertTypeDeclared", ct.PhpTypeInfo, ct.String);
+                ExpectTypeDeclared_T = ct.Context.Method("ExpectTypeDeclared");
 
                 GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
 
@@ -946,7 +968,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 DeclareFunction_RoutineInfo, DeclareType_T,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
-                AssertTypeDeclared_PhpTypeInfo_string,
+                ExpectTypeDeclared_T,
                 GetConstant_string_int32,
                 GetStatic_T,
                 GetDeclaredType_string_bool, GetDeclaredTypeOrThrow_string_bool,

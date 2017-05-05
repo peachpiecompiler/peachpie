@@ -334,32 +334,22 @@ namespace Pchp.Core
         /// <summary>
         /// Converts given value to an array key.
         /// </summary>
-        public static IntStringKey ToIntStringKey(PhpValue value) => value.ToIntStringKey();
+        public static IntStringKey ToIntStringKey(PhpValue value)
+        {
+            if (value.TryToIntStringKey(out IntStringKey key))
+            {
+                return key;
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
 
         /// <summary>
         /// Tries conversion to an array key.
         /// </summary>
-        public static bool TryToIntStringKey(PhpValue value, out IntStringKey key)
-        {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.Int32:
-                case PhpTypeCode.Long:
-                case PhpTypeCode.Double:
-                case PhpTypeCode.String:
-                case PhpTypeCode.WritableString:
-                case PhpTypeCode.Boolean:
-                    key = value.ToIntStringKey();
-                    return true;
-
-                case PhpTypeCode.Alias:
-                    return TryToIntStringKey(value.Alias.Value, out key);
-
-                default:
-                    key = default(IntStringKey);
-                    return false;
-            }
-        }
+        public static bool TryToIntStringKey(PhpValue value, out IntStringKey key) => value.TryToIntStringKey(out key);
 
         /// <summary>
 		/// Converts a string to an appropriate integer.
@@ -554,7 +544,7 @@ namespace Pchp.Core
             // patterns and states:
             // [:white:]*[+-]?0?[0-9]*[.]?[0-9]*([eE][+-]?[0-9]+)?
             //  0000000   11  2  222   2   333    4444  55   666     
-            // [:white:]*[+-]?0(x|X)[0-9A-Fa-f]*    // TODO: PHP does not resolve [+-] at the beginning, however Phalanger does
+            // [:white:]*[+-]?0(x|X)[0-9A-Fa-f]*    // TODO: PHP does not resolve [+-] at the beginning, however we do
             //  0000000   11  2 777  888888888  
 
             while (p < limit)

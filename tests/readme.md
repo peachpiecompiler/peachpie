@@ -11,7 +11,11 @@ Example:
 2. `dotnet restore`
 3. `dotnet test`
 
-Optionally, the test runner will try to run the `php` command locally. If you have PHP installed, ensure your  `php` command corresponds to PHP version 7 or newer or the version you would like to compare with Peachpie.
+## Comparing with PHP
+
+Optionally, the test runner will try to run the `php` command locally. If you have PHP installed, ensure your  `php` command corresponds to *PHP version 7* or newer or the version you would like to compare with Peachpie.
+
+In case an older version of PHP is installed on your system, some PHP7 specific tests will *fail*.
 
 ## Guidelines
 

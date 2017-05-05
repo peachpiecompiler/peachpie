@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
@@ -17,6 +19,7 @@ namespace Pchp.CodeAnalysis
         internal static readonly PrimitiveTypeRef/*!*/StringTypeRef = new PrimitiveTypeRef(PhpTypeCode.String);
         internal static readonly PrimitiveTypeRef/*!*/WritableStringRef = new PrimitiveTypeRef(PhpTypeCode.WritableString);
         internal static readonly PrimitiveTypeRef/*!*/ArrayTypeRef = new PrimitiveTypeRef(PhpTypeCode.PhpArray);
+        internal static readonly PrimitiveTypeRef/*!*/ResourceTypeRef = new PrimitiveTypeRef(PhpTypeCode.Resource);
 
         #endregion
 
@@ -41,7 +44,7 @@ namespace Pchp.CodeAnalysis
                 default:
                     if (t is NamedTypeSymbol)
                     {
-                        return new ClassTypeRef(((NamedTypeSymbol)t).MakeQualifiedName());
+                        return CreateClassTypeRef(ctx, (NamedTypeSymbol)t);
                     }
                     else if (t is ArrayTypeSymbol)
                     {
@@ -57,6 +60,20 @@ namespace Pchp.CodeAnalysis
                     {
                         throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(t);
                     }
+            }
+        }
+
+        static ITypeRef CreateClassTypeRef(TypeRefContext ctx, NamedTypeSymbol t)
+        {
+            if (t.Arity <= 0)
+            {
+                return new ClassTypeRef(t.MakeQualifiedName());
+            }
+            else
+            {
+                return new GenericClassTypeRef(
+                    t.OriginalDefinition.MakeQualifiedName(),
+                    t.TypeArguments.SelectAsArray(targ => CreateTypeRef(ctx, targ)).AsImmutable());
             }
         }
 
@@ -98,6 +115,7 @@ namespace Pchp.CodeAnalysis
                         if (t.Name == "PhpString") return ctx.GetWritableStringTypeMask() | ctx.GetNullTypeMask();
                         if (t.Name == "PhpArray") return ctx.GetArrayTypeMask() | ctx.GetNullTypeMask();
                         if (t.Name == "IPhpCallable") return ctx.GetCallableTypeMask() | ctx.GetNullTypeMask();
+                        if (t.Name == "PhpResource") return ctx.GetResourceTypeMask();
                     }
 
                     break;

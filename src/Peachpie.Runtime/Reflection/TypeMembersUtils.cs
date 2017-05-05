@@ -344,6 +344,8 @@ namespace Pchp.Core.Reflection
             return true;
         }
 
+        public static bool IsStatic(MethodInfo method) => method.IsStatic;
+
         #region PhpPropertyInfo
 
         /// <summary>

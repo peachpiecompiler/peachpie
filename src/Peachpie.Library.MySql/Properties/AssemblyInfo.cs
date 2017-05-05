@@ -9,4 +9,4 @@ using System.Runtime.InteropServices;
 
 // annotates this library as a php extension,
 // all its public static methods with compatible signatures will be seen as global functions to php scope
-[assembly: Pchp.Core.PhpExtension("mysql", Registrator = typeof(Peachpie.Library.MySql.MySql.Registrator))]
+[assembly: Pchp.Core.PhpExtension("mysql")]

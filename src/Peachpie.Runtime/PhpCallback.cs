@@ -198,7 +198,25 @@ namespace Pchp.Core
                     var routine = (PhpMethodInfo)tinfo.RuntimeMethods[method];
                     if (routine != null)
                     {
-                        return routine.PhpInvokable.Bind(target);
+                        if (target != null)
+                        {
+                            return routine.PhpInvokable.Bind(target);
+                        }
+                        else
+                        {
+                            // calling the method statically
+                            if (routine.Methods.All(TypeMembersUtils.IsStatic))
+                            {
+                                return routine.PhpCallable;
+                            }
+                            else
+                            {
+                                // consider: compiler (and this binder) creates dummy instance of self;
+                                // can we create a special singleton instance marked as "null" so use of $this inside the method will fail ?
+                                // TODO: warning - calling instance method statically
+                                return routine.PhpInvokable.Bind(tinfo.GetUninitializedInstance(ctx));
+                            }
+                        }
                     }
                     else
                     {

@@ -2,18 +2,90 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Pchp.Core.Utilities
 {
+    #region PathUtils
+
     public static class PathUtils
     {
         public const char DirectorySeparator = '\\';
         public const char AltDirectorySeparator = '/';
 
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
+        
+        public static string TrimEndSeparator(this string path)
+        {
+            return IsDirectorySeparator(path.LastChar())
+                ? path.Remove(path.Length - 1)
+                : path;
+        }
+
+        public static string DirectoryName(string path)
+        {
+            var sepindex = path.LastIndexOfAny(new char[] { DirectorySeparator, AltDirectorySeparator });
+            return (sepindex < 0)
+                ? string.Empty
+                : path.Remove(sepindex);
+        }
     }
+
+    #endregion
+
+    #region CurrentPlatform
+
+    /// <summary>
+    /// Platform specific constants.
+    /// </summary>
+    public static class CurrentPlatform
+    {
+        static CurrentPlatform()
+        {
+            if (IsWindows)
+            {
+                DirectorySeparator = '\\';
+                AltDirectorySeparator = '/';
+                PathSeparator = ';';
+            }
+            else
+            {
+                DirectorySeparator = '/';
+                AltDirectorySeparator = '\\';
+                PathSeparator = ':';
+            }
+        }
+
+        /// <summary>
+        /// Gets value indicating the guest operating.
+        /// </summary>
+        public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        
+        /// <summary>
+        /// Gets value indicating the guest operating.
+        /// </summary>
+        public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        
+        /// <summary>
+        /// Gets value indicating the guest operating.
+        /// </summary>
+        public static bool IsOsx => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+        public static readonly char DirectorySeparator;
+
+        public static readonly char AltDirectorySeparator;
+
+        public static readonly char PathSeparator;
+
+        /// <summary>
+        /// Replaces <see cref="AltDirectorySeparator"/> to <see cref="DirectorySeparator"/>.
+        /// </summary>
+        public static string NormalizeSlashes(string path) => path.Replace(AltDirectorySeparator, DirectorySeparator);
+    }
+
+    #endregion
 
     #region FileSystemUtils
 

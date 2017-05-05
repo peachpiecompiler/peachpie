@@ -86,21 +86,21 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Name of attribute class representing an extension library.
         /// </summary>
-        public const string PhpExtensionAttributeName = "Pchp.Core.PhpExtensionAttribute";
+        public const string PhpExtensionAttributeFullName = "Pchp.Core.PhpExtensionAttribute";
 
         /// <summary>
         /// Name of attribute class annotating trait declaration.
         /// </summary>
-        public const string PhpTraitAttributeName = "Pchp.Core.PhpTraitAttribute";
+        public const string PhpTraitAttributeName = "PhpTraitAttribute";
 
         /// <summary>
         /// Full name of <c>PhpFieldsOnlyCtorAttribute</c> class.
         /// </summary>
-        public const string PhpFieldsOnlyCtorAttributeName = "Pchp.Core.PhpFieldsOnlyCtorAttribute";
+        public const string PhpFieldsOnlyCtorAttributeName = "PhpFieldsOnlyCtorAttribute";
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison,
-            ScriptAttribute, PhpTraitAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
+            ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
             CallBinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             PhpTypeInfoExtension, PhpTypeInfo,
@@ -146,9 +146,10 @@ namespace Pchp.CodeAnalysis.Symbols
             StrictComparison = Create("StrictComparison");
             Convert = Create("Convert");
             ScriptAttribute = Create("ScriptAttribute");
-            PhpTraitAttribute = Create("PhpTraitAttribute");
+            PhpTraitAttribute = Create(PhpTraitAttributeName);
+            PhpTypeAttribute = Create("PhpTypeAttribute");
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
-            PhpFieldsOnlyCtorAttribute = CreateFromFullName(PhpFieldsOnlyCtorAttributeName);
+            PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");

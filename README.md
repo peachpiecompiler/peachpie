@@ -53,7 +53,7 @@ There are currently two ways of using Peachpie through `msbuild`: in your favori
 We have a custom [VSCode extension](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode) to make working with Peachpie compiler as comfortable as possible. The extension automatically installs all required dependencies, enables the `Peachpie: Create project` command, syntax error underlining and Peachpie analytics:
 
 <p align="center">
-<a href="https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode" target="_blank"><img src="https://github.com/iolevel/peachpie-vscode/blob/master/src/Peachpie.VSCode/images/tEDLQt.gif" 
+<a href="https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode" target="_blank"><img src="https://raw.githubusercontent.com/iolevel/peachpie-vscode/master/src/Peachpie.VSCode/images/tEDLQt.gif" 
 alt="Peachpie Extension" border="10" /></a> 
 </p>
 

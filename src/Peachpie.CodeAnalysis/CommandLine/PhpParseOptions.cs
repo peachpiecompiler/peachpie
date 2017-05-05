@@ -20,35 +20,54 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public static PhpParseOptions Default { get; } = new PhpParseOptions();
 
-        private ImmutableDictionary<string, string> _features;
+        ImmutableDictionary<string, string> _features;
+
+        /// <summary>
+        /// Gets required language version.
+        /// <c>null</c> value respects the parser's default which is always the latest version.
+        /// </summary>
+        public Version LanguageVersion => _languageVersion;
+        readonly Version _languageVersion;
+
+        /// <summary>
+        /// Whether to allow the deprecated short open tag syntax.
+        /// </summary>
+        public bool AllowShortOpenTags => _allowShortOpenTags;
+        readonly bool _allowShortOpenTags;
 
         public PhpParseOptions(
             DocumentationMode documentationMode = DocumentationMode.Parse,
-            SourceCodeKind kind = SourceCodeKind.Regular)
+            SourceCodeKind kind = SourceCodeKind.Regular,
+            Version languageVersion = null,
+            bool shortOpenTags = false)
             :base(kind, documentationMode)
         {
             if (!kind.IsValid())
             {
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
+
+            _languageVersion = languageVersion;
+            _allowShortOpenTags = shortOpenTags;
         }
 
         internal PhpParseOptions(
             DocumentationMode documentationMode,
             SourceCodeKind kind,
+            Version languageVersion,
+            bool shortOpenTags,
             ImmutableDictionary<string, string> features)
-            : this(documentationMode, kind)
+            : this(documentationMode, kind, languageVersion, shortOpenTags)
         {
-            if (features == null)
-            {
-                throw new ArgumentNullException(nameof(features));
-            }
-
-            _features = features;
+            _features = features ?? throw new ArgumentNullException(nameof(features));
         }
 
         private PhpParseOptions(PhpParseOptions other)
-            : this(documentationMode: other.DocumentationMode, kind: other.Kind)
+            : this(
+                  documentationMode: other.DocumentationMode,
+                  kind: other.Kind,
+                  languageVersion: other.LanguageVersion,
+                  shortOpenTags: other.AllowShortOpenTags)
         {
         }
         

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -14,11 +15,10 @@ namespace Pchp.Core
         /// </summary>
 		sealed class ConsoleContext : Context
         {
-            readonly string _rootPath;
-
             public ConsoleContext(params string[] args)
             {
-                _rootPath = ScriptsMap.NormalizeSlashes(Directory.GetCurrentDirectory());
+                RootPath = Directory.GetCurrentDirectory();
+                WorkingDirectory = RootPath;
 
                 //
                 InitOutput(Console.OpenStandardOutput(), Console.Out);
@@ -27,10 +27,6 @@ namespace Pchp.Core
                 InitSuperglobals();
                 IntializeArgvArgc(args);
             }
-
-            public override string RootPath => _rootPath;
-
-            public override string WorkingDirectory => Directory.GetCurrentDirectory();
         }
 
         /// <summary>Initializes global $argv and $argc variables.</summary>

@@ -30,6 +30,11 @@ namespace Pchp.Core
             /// Value indicating the script is a submission (without opening PHP tag).
             /// </summary>
             public bool IsSubmission { get; set; }
+
+            /// <summary>
+            /// Optional. Collection of additional metadata references.
+            /// </summary>
+            public string[] AdditionalReferences { get; set; }
         }
 
         /// <summary>

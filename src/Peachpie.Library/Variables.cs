@@ -213,7 +213,7 @@ namespace Pchp.Library
             else if (variable.IsObject)
             {
                 // PHP Countable
-                var countable = variable.Object as Countable;
+                var countable = variable.Object as Spl.Countable;
                 if (countable != null)
                 {
                     return countable.count();
@@ -369,7 +369,7 @@ namespace Pchp.Library
 
         /// <summary>
         /// Checks whether a dereferenced variable is long. 
-        /// TODO: Alias for is_int(). But not in Phalanger.
+        /// Alias for <see cref="is_int"/>.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is long.</returns>
@@ -420,12 +420,15 @@ namespace Pchp.Library
         public static bool is_array(PhpValue variable) => variable.IsArray || (variable.IsAlias && variable.Alias.Value.IsArray);
 
         /// <summary>
-        /// Checks whether a dereferenced variable is <see cref="Core.Reflection.DObject"/>.
+        /// Checks whether a dereferenced variable is an instance of class.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is <see cref="object"/>.</returns>
         public static bool is_object(PhpValue variable)
-            => variable.IsObject && variable.Object != null && !(variable.Object is __PHP_Incomplete_Class);
+        {
+            var obj = variable.AsObject();
+            return obj != null && !(obj is __PHP_Incomplete_Class) && !(obj is PhpResource);
+        }
 
         /// <summary>
         /// Checks whether a dereferenced variable is a valid <see cref="PhpResource"/>.
@@ -443,7 +446,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is a <B>null</B> reference.</returns>
-        public static bool is_null(PhpValue variable) => variable.IsNull || (variable.IsAlias && variable.Alias.Value.IsNull);
+        public static bool is_null(PhpValue variable) => variable.IsNull;
 
         #endregion
 

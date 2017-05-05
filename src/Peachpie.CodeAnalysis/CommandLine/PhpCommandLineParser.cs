@@ -139,6 +139,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool displayHelp = false, displayLogo = true;
             bool emitPdb = true, debugPlus = false;
             string mainTypeName = null, pdbPath = null;
+            Version languageVersion = null;
             DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
             List<string> referencePaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
@@ -243,6 +244,23 @@ namespace Pchp.CodeAnalysis.CommandLine
                             break;
 
                         concurrentBuild = false;
+                        continue;
+
+                    case "langversion":
+                        value = RemoveQuotesAndSlashes(value);
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            throw new ArgumentException("langversion");
+                            //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, MessageID.IDS_Text.Localize(), "/langversion:");
+                        }
+                        else if (!Version.TryParse(value, out languageVersion))
+                        {
+                            throw new ArgumentException("langversion");
+                            //AddDiagnostic(diagnostics, ErrorCode.ERR_BadCompatMode, value);
+                        }
+
+                        PhpSyntaxTree.ParseLanguageVersion(languageVersion);    // throws if value not supported
+
                         continue;
 
                     case "nologo":
@@ -379,7 +397,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             var parseOptions = new PhpParseOptions
             (
-                //languageVersion: languageVersion,
+                languageVersion: languageVersion,
                 //preprocessorSymbols: defines.ToImmutableAndFree(),
                 documentationMode: DocumentationMode.Diagnose, // always diagnose
                 kind: SourceCodeKind.Regular//,

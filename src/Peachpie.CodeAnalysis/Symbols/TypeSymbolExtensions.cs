@@ -287,6 +287,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.Kind == SymbolKind.ErrorType;
         }
 
+        public static bool IsErrorTypeOrNull(this TypeSymbol type)
+        {
+            return type == null || type.Kind == SymbolKind.ErrorType;
+        }
+
         //public static bool IsMethodTypeParameter(this TypeParameterSymbol p)
         //{
         //    return p.ContainingSymbol.Kind == SymbolKind.Method;

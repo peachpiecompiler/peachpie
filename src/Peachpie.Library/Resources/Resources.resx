@@ -163,7 +163,7 @@
     <value>{0}::serialize() must return a string or NULL</value>
   </data>
   <data name="web_server_not_available" xml:space="preserve">
-    <value />
+    <value>Web server is required for this feature.</value>
   </data>
   <data name="headers_has_been_sent" xml:space="preserve">
     <value>Headers has already been sent; modification of cookies or other HTTP headers are not allowed</value>
