@@ -698,8 +698,9 @@ namespace Pchp.CodeAnalysis.Semantics
             _preCurrentlyBinded = new List<BoundStatement>();
             _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
 
-            // save all parents of all yieldLikeEx in current routine -> will need to realocate all expressions in their children
+            // save all parents of all yieldLikeEx in current routine -> will need to realocate all expressions on path and in its children
             //  - the ones to the left from yieldLikeEx<>root path need to get moved in statements before yieldLikeEx
+            //  - the ones on the path could be left alone but if we prepend the ones on the right we must also move the ones on the path as they should get executed before the right ones
             //  - the ones to the right could be left alone but it's easier to move them as well; need to go after yieldLikeStatement
             foreach (var yieldLikeEx in yields)
             {
@@ -740,16 +741,18 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var _underYieldLikeExLevelOnEnter = _underYieldLikeExLevel;
 
-            // update _underYieldLikeExLevel
             // can't use only AST to determine whether we're under yield<>root route 
             //  -> there're expressions (such as foreach variable) outside in terms of semantics tree
             //  -> for those we don't want to do any moving (can actually be a problem for those)
+
+            // update _underYieldLikeExLevel
             if (_underYieldLikeExLevel >= 0) { _underYieldLikeExLevel++; }
             if (_yieldsToStatementRootPath.Contains(expr)) { _underYieldLikeExLevel = 0; }
 
             var boundExpr = base.BindExpression(expr, access);
 
-            if (_underYieldLikeExLevel == 1)
+            // move expressions on and directly under yieldLikeEx<>root path
+            if (_underYieldLikeExLevel == 1 || _underYieldLikeExLevel == 0)
             {
                 // determine whether the temp variable should be by ref (ror readRef and writes) or normal PHP copy
                 var readAsRef = (access.IsReadRef || access.IsWrite);
