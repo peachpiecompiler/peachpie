@@ -86,6 +86,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitVariableRef(x);
         }
 
+        public override void VisitSynthesizedVariableRef(BoundSynthesizedVariableRef x)
+        {
+            // do not make diagnostics on syntesized variables
+        }
+
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
         {
             if (x.Name.IsDirect && x.TargetMethod.IsErrorMethod())

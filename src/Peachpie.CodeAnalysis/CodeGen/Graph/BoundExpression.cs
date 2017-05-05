@@ -2061,6 +2061,15 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
     }
 
+    partial class BoundSynthesizedVariableRef
+    {
+        internal virtual IBoundReference BindPlace(CodeGenerator cg) => BackingVariable.BindPlace(cg);
+
+        internal virtual IPlace Place(ILBuilder il) => BackingVariable.Place(il);
+
+        internal override TypeSymbol Emit(CodeGenerator cg) => BackingVariable.Emit(cg);
+    }
+
     partial class BoundListEx : IBoundReference
     {
         internal override IBoundReference BindPlace(CodeGenerator cg) => this;

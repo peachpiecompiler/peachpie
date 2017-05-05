@@ -1073,6 +1073,46 @@ namespace Pchp.CodeAnalysis.Semantics
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitVariableRef(this);
     }
 
+    /// <summary>
+    /// A non-source synthesized variable reference that can be read or written to. 
+    /// </summary>
+    public partial class BoundSynthesizedVariableRef : BoundExpression, ILocalReferenceExpression
+    {
+        /// <summary>
+        /// Backing variable. Do NOT take dependence on this, will be removed in the future.
+        /// </summary>
+        internal readonly BoundVariableRef BackingVariable; // TODO: Remove & make BoundSyntesizedVariable a standalone temp variable symbol that lives outside normal locals.
+
+        /// <summary>
+        /// Resolved variable source.
+        /// </summary>
+        public BoundVariable Variable { get => BackingVariable.Variable; set {BackingVariable.Variable = value; } }
+
+        public override OperationKind Kind => BackingVariable.Kind;
+
+        /// <summary>
+        /// Local in case of the variable is resolved local variable.
+        /// </summary>
+        ILocalSymbol ILocalReferenceExpression.Local => (BackingVariable as ILocalReferenceExpression).Local;
+
+        public override void Accept(OperationVisitor visitor)
+            => BackingVariable.Accept(visitor);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => BackingVariable.Accept(visitor, argument);
+
+        public BoundSynthesizedVariableRef(string name)
+        {
+            Debug.Assert(name != null);
+            var boundName = new BoundVariableName(new VariableName(name));
+            BackingVariable = new BoundVariableRef(boundName);
+        }
+
+        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
+        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitSynthesizedVariableRef(this);
+    }
+
     #endregion
 
     #region BoundListEx

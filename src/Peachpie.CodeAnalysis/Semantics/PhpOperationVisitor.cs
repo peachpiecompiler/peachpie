@@ -117,6 +117,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         }
 
+        public virtual void VisitSynthesizedVariableRef(BoundSynthesizedVariableRef x)
+        {
+            x.BackingVariable.Accept(this);
+        }
+
         public virtual void VisitList(BoundListEx x)
         {
             x.Variables.ForEach(Accept);
