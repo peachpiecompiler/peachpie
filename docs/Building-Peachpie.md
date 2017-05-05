@@ -27,11 +27,11 @@ Visual Studio should automatically restore NuGet packages. If this feature is di
 
 ## Developing with Peachpie from sources
 
-Peachpie is distributed as NuGet packages (`Peachpie.*`). After building Peachpie from sources, all the packages have by default suffix `-dev`. The full version of the packages are the for example `0.7.0-dev`. When building a project on top of Peachpie, you have to:
+Peachpie is distributed as NuGet packages (`Peachpie.*`). After building Peachpie from sources, all the packages are located in `/.nugs` directory with the suffix `-dev` by default. When building a project on top of Peachpie, you have to:
 
-1. In  `.msbuildproj` (https://github.com/iolevel/peachpie/wiki/msbuild) change versions of Peachpie packages to `0.7.0-dev` explicitly.
+1. In `.msbuildproj` (https://github.com/iolevel/peachpie/wiki/msbuild) change versions of Peachpie packages to `0.7.0-dev` explicitly.
 2. There are two options how to make the restore process to use your development packages
-   a. create `MyGet.Config` and specify `/.nugs` as the first NuGet packages source.
-   b. in `/build` directory, run `.\update-packages.ps1 0.7.0` which copies packages from `/.nugs` to your local NuGet packages cache.
+   a. create `MyGet.Config` and specify local path to `/.nugs` as the first NuGet packages source.
+   b. or in `/build` directory, run `.\update-packages.ps1 0.7.0` which copies packages from `/.nugs` to your local NuGet packages cache.
    
    
