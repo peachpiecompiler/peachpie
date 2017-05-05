@@ -33,5 +33,5 @@ Peachpie is distributed as NuGet packages (`Peachpie.*`). After building Peachpi
 2. There are two options how to make the restore process to use your development packages
    a. create `MyGet.Config` and specify local path to `/.nugs` as the first NuGet packages source.
    b. or in `/build` directory, run `.\update-packages.ps1 0.7.0` which copies packages from `/.nugs` to your local NuGet packages cache.
-   c. or instaed of `Peachpie.App` package reference, specify `Peachpie.App.csproj` project reference, in case you contribute to a Peachpie library and not the compiler itself.
+   c. or instead of `Peachpie.App` package reference, specify `Peachpie.App.csproj` project reference, in case you contribute to a Peachpie library and not the compiler itself.
    
