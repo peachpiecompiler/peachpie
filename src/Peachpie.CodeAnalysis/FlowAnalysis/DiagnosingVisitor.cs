@@ -40,6 +40,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             _visitedColor = x.NewColor();
             base.VisitCFG(x);
+
+            // TODO: Properly analyse the flow of all unreachable blocks to make while, do while etc. work
+            // TODO: Report also unreachable code caused by situations like if (false) { ... }
+            CheckUnreachableCode(x);
         }
 
         public override void VisitEval(BoundEvalEx x)
@@ -143,6 +147,52 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var name = typeRef.TypeRef.QualifiedName?.ToString();
                     _diagnostics.Add(this._routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
                 }
+            }
+        }
+
+        private void CheckUnreachableCode(ControlFlowGraph graph)
+        {
+            foreach (var block in graph.UnreachableBlocks)
+            {
+                var syntax = PickFirstSyntaxNode(block);
+                if (syntax == null)
+                {
+                    // Such empty blocks can appear for example after return statements
+                    continue;
+                }
+
+                _diagnostics.Add(this._routine, syntax, ErrorCode.WRN_UnreachableCode);
+            }
+        }
+
+        private static LangElement PickFirstSyntaxNode(BoundBlock block)
+        {
+            var syntax = block.Statements.FirstOrDefault(st => st.PhpSyntax != null)?.PhpSyntax;
+            if (syntax != null)
+            {
+                return syntax;
+            }
+
+            // TODO: Mark the first keyword (if, switch, foreach,...) instead
+            switch (block.NextEdge)
+            {
+                case ForeachEnumereeEdge edge:
+                    return edge.Enumeree.PhpSyntax;
+
+                case SimpleEdge edge:
+                    return edge.PhpSyntax;
+
+                case ConditionalEdge edge:
+                    return edge.Condition.PhpSyntax;
+
+                case TryCatchEdge edge:
+                    return PickFirstSyntaxNode(edge.BodyBlock);
+
+                case SwitchEdge edge:
+                    return edge.SwitchValue.PhpSyntax;
+
+                default:
+                    return null;
             }
         }
 

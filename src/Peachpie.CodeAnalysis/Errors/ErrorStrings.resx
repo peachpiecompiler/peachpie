@@ -153,4 +153,7 @@
   <data name="WRN_UninitializedVariableUse" xml:space="preserve">
     <value>Undefined variable: ${0}</value>
   </data>
+  <data name="WRN_UnreachableCode" xml:space="preserve">
+    <value>Unreachable code detected</value>
+  </data>
 </root>
