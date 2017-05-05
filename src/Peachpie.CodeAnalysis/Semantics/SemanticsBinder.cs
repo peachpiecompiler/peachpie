@@ -754,24 +754,11 @@ namespace Pchp.CodeAnalysis.Semantics
             // move expressions on and directly under yieldLikeEx<>root path
             if (_underYieldLikeExLevel == 1 || _underYieldLikeExLevel == 0)
             {
-                // determine whether the temp variable should be by ref (ror readRef and writes) or normal PHP copy
-                var readAsRef = (access.IsReadRef || access.IsWrite);
-                // increase used tmp variables counter
                 var currTmpIndex = _rewriterVariableIndex++;
+                var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, $"<yieldRewriter>tmp{currTmpIndex}"); 
 
-                // bind target tmp varible with an appropriate access
-                var targetTmpVariable = new BoundVariableRef(new BoundVariableName(new VariableName($"<yieldRewriter>tmp{currTmpIndex}")));
-                targetTmpVariable.Access = (readAsRef) ? targetTmpVariable.Access.WithWriteRef(0) : targetTmpVariable.Access.WithWrite(0);
-
-                // bind original value expression with an appropriate access
-                var valueBeingMoved = (readAsRef) ? boundExpr.WithAccess(BoundAccess.ReadRef) : boundExpr.WithAccess(BoundAccess.Read);
-
-                // $<yieldRewriter>tmp{currTmpIndex} = <originalValue> & prepend the assignment before current expression
-                var assigment = new BoundAssignEx(targetTmpVariable, valueBeingMoved);
-                _preCurrentlyBinded.Add(new BoundExpressionStatement(assigment));
-
-                // return read from $<yieldRewriter>tmp{currTmpIndex}
-                boundExpr = new BoundVariableRef(new BoundVariableName(new VariableName($"<yieldRewriter>tmp{currTmpIndex}"))).WithAccess(access);
+                _preCurrentlyBinded.Add(new BoundExpressionStatement(assignVarTouple.Item2));
+                boundExpr = assignVarTouple.Item1;
             }
 
             _underYieldLikeExLevel = _underYieldLikeExLevelOnEnter;

@@ -1076,41 +1076,44 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// A non-source synthesized variable reference that can be read or written to. 
     /// </summary>
-    public partial class BoundSynthesizedVariableRef : BoundExpression, ILocalReferenceExpression
+    /// <remarks>
+    /// Inheriting from <c>BoundVariableRef</c> is just a temporary measure. Do NOT take dependencies on anything but <c>IReferenceExpression</c>.
+    /// </remarks>
+    public partial class BoundSynthesizedVariableRef : BoundVariableRef
     {
-        /// <summary>
-        /// Backing variable. Do NOT take dependence on this, will be removed in the future.
-        /// </summary>
-        internal readonly BoundVariableRef BackingVariable; // TODO: Remove & make BoundSyntesizedVariable a standalone temp variable symbol that lives outside normal locals.
 
-        /// <summary>
-        /// Resolved variable source.
-        /// </summary>
-        public BoundVariable Variable { get => BackingVariable.Variable; set {BackingVariable.Variable = value; } }
-
-        public override OperationKind Kind => BackingVariable.Kind;
-
-        /// <summary>
-        /// Local in case of the variable is resolved local variable.
-        /// </summary>
-        ILocalSymbol ILocalReferenceExpression.Local => (BackingVariable as ILocalReferenceExpression).Local;
-
+        // TODO: Maybe change to visitor.VisitSyntheticLocalReferenceExpression
         public override void Accept(OperationVisitor visitor)
-            => BackingVariable.Accept(visitor);
+            => base.Accept(visitor);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => BackingVariable.Accept(visitor, argument);
-
-        public BoundSynthesizedVariableRef(string name)
-        {
-            Debug.Assert(name != null);
-            var boundName = new BoundVariableName(new VariableName(name));
-            BackingVariable = new BoundVariableRef(boundName);
-        }
+            => base.Accept(visitor, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitSynthesizedVariableRef(this);
+
+        public BoundSynthesizedVariableRef(string name) : base(new BoundVariableName(new VariableName(name))) { }
+
+        // TODO: Change to new dotnet's System.ValueType
+        internal static Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx> CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
+        {
+            // determine whether the synthesized variable should be by ref (for readRef and writes) or a normal PHP copy
+            var refAccess = (access.IsReadRef || access.IsWrite);
+
+            // bind assigment target variable with appropriate access
+            var targetVariable = new BoundSynthesizedVariableRef(name);
+            targetVariable.Access = (refAccess) ? targetVariable.Access.WithWriteRef(0) : targetVariable.Access.WithWrite(0);
+
+            // set appropriate access of the original value expression
+            var valueBeingMoved = (refAccess) ? expr.WithAccess(BoundAccess.ReadRef) : expr.WithAccess(BoundAccess.Read);
+
+            // bind assigment and reference to the created synthesized variable
+            var assigment = new BoundAssignEx(targetVariable, valueBeingMoved);
+            var boundExpr = new BoundSynthesizedVariableRef(name).WithAccess(access);
+
+            return new Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx>(boundExpr, assigment);
+        }
     }
 
     #endregion
