@@ -63,5 +63,26 @@ namespace Pchp.CodeAnalysis
 
             return true;
         }
+
+        public static bool TryConvertToBool(this ConstantValue value, out bool result)
+        {
+            // TODO: Convert also strings
+            if (value.IsBoolean)
+            {
+                result = value.BooleanValue;
+                return true;
+            }
+            else if (value.IsNumeric)
+            {
+                // False if zero, true otherwise
+                result = !value.IsDefaultValue;
+                return true;
+            }
+            else
+            {
+                result = false;
+                return false;
+            }
+        }
     }
 }
