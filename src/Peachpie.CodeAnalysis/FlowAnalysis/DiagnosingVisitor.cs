@@ -15,7 +15,7 @@ using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    internal class DiagnosingVisitor : GraphVisitor
+    internal partial class DiagnosingVisitor : GraphVisitor
     {
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
@@ -25,8 +25,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         int inFinallyLevel = 0;
 
         Stack<BoundBlock> endOfTryBlocks = new Stack<BoundBlock>();
-
-        private int _visitedColor;
 
         public DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
         {
@@ -38,8 +36,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Debug.Assert(x == _routine.ControlFlowGraph);
 
-            _visitedColor = x.NewColor();
+            InitializeReachabilityInfo(x);
+
             base.VisitCFG(x);
+
+            // TODO: Report also unreachable code caused by situations like if (false) { ... }
+            CheckUnreachableCode(x);
         }
 
         public override void VisitEval(BoundEvalEx x)
@@ -82,15 +84,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             CheckUninitializedVariableUse(x);
             base.VisitVariableRef(x);
-        }
-
-        protected override void VisitCFGBlockInternal(BoundBlock x)
-        {
-            if (x.Tag != _visitedColor)
-            {
-                x.Tag = _visitedColor;
-                base.VisitCFGBlockInternal(x); 
-            }
         }
 
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
