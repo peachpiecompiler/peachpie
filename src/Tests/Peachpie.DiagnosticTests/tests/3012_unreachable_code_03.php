@@ -21,9 +21,9 @@ function infinite_goto($x) {
 
   start:
 
-  goto end;
+  goto end;/*!PHP3012!*/
 
   end:
 
-  goto start;
+  goto start;/*!PHP3012!*/
 }

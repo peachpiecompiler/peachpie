@@ -27,3 +27,14 @@ function unreachable_switch($x) {
       break;
   }
 }
+
+function unreachable_after_switch($x) {
+  switch ($x) {
+    case 0:
+      return;
+    default:
+      return;
+  }
+
+  echo "unreachable";/*!PHP3012!*/
+}

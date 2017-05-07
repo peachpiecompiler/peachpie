@@ -1,5 +1,21 @@
 <?php
 
+function unreachable_while($x) {
+
+  return;
+
+  while ($x == 0/*!PHP3012!*/) { }
+}
+
+function unreachable_do_while($x) {
+
+  return;
+
+  do {
+    echo "unreachable";/*!PHP3012!*/
+  } while ($x == 0);
+}
+
 function unreachable_for($x) {
 
   return;
