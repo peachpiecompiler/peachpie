@@ -76,4 +76,28 @@ echo "k:".$gen->key()."v:".$gen->current()."\n";
 echo "s:".$gen->send("AAAAA\n")."\n";
 echo "s:".$gen->send(100)."\n";
 
+echo "--------------------------\n";
+
+function i()
+{
+    switch(bar("Just once\n"))
+    {
+        case yield 1:
+            echo "5N\n";
+            break;
+        case yield 2:
+            echo "3Y\n";
+            break;
+        default:
+            echo "8N\n";
+            break;
+    } 
+}
+
+$gen = i();
+echo "k:".$gen->key()."v:".$gen->current()."\n";
+echo "s:".$gen->send(0)."\n";
+echo "s:".$gen->send(1)."\n";
+
+
 

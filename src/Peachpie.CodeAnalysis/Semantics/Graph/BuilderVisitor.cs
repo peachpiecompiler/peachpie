@@ -691,9 +691,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // get bound item for switch value & potential pre-statements
             var boundBagForSwitchValue = _binder.BindWholeExpression(x.SwitchValue, BoundAccess.Read);
             AddPreBoundElements(boundBagForSwitchValue);
+            var switchValue = boundBagForSwitchValue.BoundElement;
+
+            // if switch value isn't a constant & there're case values with preBoundStatements 
+            // -> the switch value might get evaluated multiple times (see SwitchEdge.Generate) -> preemptively evaluate and cache it
+            if (!switchValue.ConstantValue.HasValue && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
+            {
+                var result = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(switchValue, BoundAccess.Read, $"<switchValueCacher>{x.Span}");
+                switchValue = result.Item1;
+                _current.Add(new BoundExpressionStatement(result.Item2));
+            }
             
             // SwitchEdge // Connects _current to cases
-            var edge = new SwitchEdge(_current, boundBagForSwitchValue.BoundElement, cases.ToArray(), end);
+            var edge = new SwitchEdge(_current, switchValue, cases.ToArray(), end);
             _current = WithNewOrdinal(cases[0]);
 
             OpenBreakScope(end, end); // NOTE: inside switch, Continue ~ Break
