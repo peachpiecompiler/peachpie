@@ -755,7 +755,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (_underYieldLikeExLevel == 1 || _underYieldLikeExLevel == 0)
             {
                 var currTmpIndex = _rewriterVariableIndex++;
-                var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, $"<yieldRewriter>tmp{currTmpIndex}"); 
+                var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, $"<yieldRewriter>{currTmpIndex}_{expr.Span}"); 
 
                 _preCurrentlyBinded.Add(new BoundExpressionStatement(assignVarTouple.Item2));
                 boundExpr = assignVarTouple.Item1;
