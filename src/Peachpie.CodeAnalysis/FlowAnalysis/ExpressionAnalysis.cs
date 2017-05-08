@@ -333,6 +333,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var previoustype = State.GetLocalType(local);    // type of the variable in the previous state
 
                 // bind variable place either with a PHPSyntax span (from source) or with an emepty one (for non-source variables)
+                Debug.Assert(x is BoundSynthesizedVariableRef || x.PhpSyntax != null);
                 var varSpan = (x.PhpSyntax != null) ? x.PhpSyntax.Span.ToTextSpan() : default(Microsoft.CodeAnalysis.Text.TextSpan);
                 x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local), varSpan);
                 
