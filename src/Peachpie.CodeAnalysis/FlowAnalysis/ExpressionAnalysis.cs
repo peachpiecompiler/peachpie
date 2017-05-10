@@ -332,8 +332,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var local = State.GetLocalHandle(x.Name.NameValue.Value);
                 var previoustype = State.GetLocalType(local);    // type of the variable in the previous state
 
-                // bind variable place
-                x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local), x.PhpSyntax.Span.ToTextSpan());
+                // bind variable place either with a PHPSyntax span (from source) or with an emepty one (for non-source variables)
+                Debug.Assert(x is BoundSynthesizedVariableRef || x.PhpSyntax != null);
+                var varSpan = (x.PhpSyntax != null) ? x.PhpSyntax.Span.ToTextSpan() : default(Microsoft.CodeAnalysis.Text.TextSpan);
+                x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local), varSpan);
                 
                 //
                 State.VisitLocal(local);
@@ -1565,12 +1567,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #endregion
 
         #region VisitYield
-        public override void VisitYield(BoundYieldEx x)
+        public override void VisitYieldStatement(BoundYieldStatement x)
         {
-
-            //Might want to move it to SemanticsBinder on BindYieldEx(...)
-            this.Routine.Flags |= RoutineFlags.IsGenerator;
-            base.VisitYield(x);
+            base.VisitYieldStatement(x);
         }
         #endregion
 

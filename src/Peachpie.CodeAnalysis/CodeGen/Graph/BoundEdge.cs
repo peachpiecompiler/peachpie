@@ -481,8 +481,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 // CIL Switch:
-                bool allconsts = this.CaseBlocks.All(c => c.IsDefault || c.CaseValue.ConstantValue.HasValue);
-                bool allconstints = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsInt32(c.CaseValue.ConstantValue.Value));
+                bool allConst = this.CaseBlocks.All(c => c.IsDefault || (c.CaseValue.IsOnlyBoundElement && c.CaseValue.BoundElement.ConstantValue.HasValue));
+                bool allIntConst = allConst && this.CaseBlocks.All(c => c.IsDefault || IsInt32(c.CaseValue.BoundElement.ConstantValue.Value));
                 //bool allconststrings = allconsts && this.CaseBlocks.All(c => c.IsDefault || IsString(c.CaseValue.ConstantValue.Value));
 
                 var default_block = this.DefaultBlock;
@@ -492,7 +492,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 LocalDefinition switch_loc;
 
                 // Switch Header
-                if (allconstints)
+                if (allIntConst)
                 {
                     switch_type = cg.CoreTypes.Int32;
                     cg.EmitSequencePoint(this.SwitchValue.PhpSyntax);
@@ -518,19 +518,33 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     cg.Builder.EmitLocalStore(switch_loc);
 
                     //
-                    for (int i = 0; i < this.CaseBlocks.Length; i++)
+                    foreach(var this_block in this.CaseBlocks)
                     {
-                        var this_block = this.CaseBlocks[i];
-                        if (this_block.CaseValue != null)
+                        var caseValueBag = this_block.CaseValue;
+                        if (caseValueBag.IsEmpty) { continue; }
+
+                        // pre bound statements could return (e.g. yieldStatement) & destroy stack-local switch_loc variable -> be defensive
+                        if (!caseValueBag.IsOnlyBoundElement) { cg.ReturnTemporaryLocal(switch_loc); }
+
+                        // emit all statements that have to go before condition
+                        caseValueBag.PreBoundStatements.ForEach(stm => stm.Emit(cg));
+
+                        // reininiaze switch_loc if destroyed previously
+                        if (!caseValueBag.IsOnlyBoundElement)
                         {
-                            // <CaseValue>:
-                            cg.EmitSequencePoint(this_block.CaseValue.PhpSyntax);
-                            
-                            // if (<switch_loc> == c.CaseValue) goto this_block;
-                            cg.Builder.EmitLocalLoad(switch_loc);
-                            BoundBinaryEx.EmitEquality(cg, switch_type, this_block.CaseValue);
-                            cg.Builder.EmitBranch(ILOpCode.Brtrue, this_block);
+                            cg.Emit(this.SwitchValue);
+                            switch_loc = cg.GetTemporaryLocal(switch_type);
+                            cg.Builder.EmitLocalStore(switch_loc);
                         }
+
+                        // <CaseValue>:
+                        var caseValue = caseValueBag.BoundElement;
+                        cg.EmitSequencePoint(caseValue.PhpSyntax);
+
+                        // if (<switch_loc> == c.CaseValue) goto this_block;
+                        cg.Builder.EmitLocalLoad(switch_loc);
+                        BoundBinaryEx.EmitEquality(cg, switch_type, caseValue);
+                        cg.Builder.EmitBranch(ILOpCode.Brtrue, this_block);
                     }
 
                     // default:
@@ -569,7 +583,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
                 else
                 {
-                    labelsBuilder.Add(new KeyValuePair<ConstantValue, object>(Int32Constant(section.CaseValue.ConstantValue.Value), section));
+                    labelsBuilder.Add(new KeyValuePair<ConstantValue, object>(Int32Constant(section.CaseValue.BoundElement.ConstantValue.Value), section));
                 }
             }
 

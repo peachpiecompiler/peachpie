@@ -183,13 +183,23 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         private void Add(Statement stmt)
+           => Add(_binder.BindWholeStatement(stmt));
+        
+
+        private void Add(BoundItemsBag<BoundStatement> stmtBag)
         {
-            Add(_binder.BindStatement(stmt));
+            AddPreBoundElements(stmtBag);
+            _current.Add(stmtBag.BoundElement);
         }
 
-        private void Add(BoundStatement stmt)
+        private void AddPreBoundElements<T>(BoundItemsBag<T> bag) where T : class, IPhpOperation
+            => AddPreBoundElements(bag, _current);
+
+        private void AddPreBoundElements<T>(BoundItemsBag<T> bag, BoundBlock block) where T : class, IPhpOperation
         {
-            _current.Add(stmt);
+            var preBoundElements = bag.PreBoundStatements;
+            if (!preBoundElements.IsEmpty) { preBoundElements.Foreach(block.Add); }
+
         }
 
         private void FinalizeRoutine()
@@ -234,17 +244,22 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private CaseBlock/*!*/NewBlock(SwitchItem item)
         {
-            var caseitem = item as CaseItem;
-            BoundExpression caseValue =  // null => DefaultItem
-                (caseitem != null) ? _binder.BindExpression(caseitem.CaseVal, BoundAccess.Read) : null;
-            return WithNewOrdinal(new CaseBlock(caseValue) { PhpSyntax = item, Naming = _naming });
+            BoundItemsBag<BoundExpression> caseValueBag = item is CaseItem caseItem
+                ? _binder.BindWholeExpression(caseItem.CaseVal, BoundAccess.Read)
+                : BoundItemsBag<BoundExpression>.Empty; // BoundItem -eq null => DefaultItem
+
+            return WithNewOrdinal(new CaseBlock(caseValueBag) { PhpSyntax = item, Naming = _naming });
         }
 
         private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition, bool isloop = false)
         {
             if (condition != null)
             {
-                new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition, BoundAccess.Read))
+                // bind condition expression & potential pre-statements to source block
+                var boundConditionBag = _binder.BindWholeExpression(condition, BoundAccess.Read);
+                AddPreBoundElements(boundConditionBag, source);
+
+                new ConditionalEdge(source, ifTarget, elseTarget, boundConditionBag.BoundElement)
                 {
                     IsLoop = isloop,
                 };
@@ -452,19 +467,32 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // _current -> move -> body -> move -> ...
 
+            // binds enumeree expression & potential pre-statements
+            var boundEnumereeBag = _binder.BindWholeExpression(x.Enumeree, BoundAccess.Read);
+            AddPreBoundElements(boundEnumereeBag);
+
             // ForeachEnumereeEdge : SimpleEdge
             // x.Enumeree.GetEnumerator();
-            var enumereeEdge = new ForeachEnumereeEdge(_current, move, _binder.BindExpression(x.Enumeree, BoundAccess.Read), x.ValueVariable.Alias);
+            var enumereeEdge = new ForeachEnumereeEdge(_current, move, boundEnumereeBag.BoundElement, x.ValueVariable.Alias);
 
             // ContinueTarget:
             OpenBreakScope(end, move);
-            
+
+            // bind reference expression for foreach key variable
+            BoundReferenceExpression keyVar = (x.KeyVariable != null) ? 
+                (BoundReferenceExpression)_binder.BindWholeExpression(x.KeyVariable.Variable, BoundAccess.Write).GetOnlyBoundElement()
+                : null;
+ 
+
+            // bind reference expression for foreach value variable 
+            var valueVar = (BoundReferenceExpression)(_binder.BindWholeExpression(
+                    (Expression)x.ValueVariable.Variable ?? x.ValueVariable.List,
+                    x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write
+                    ).GetOnlyBoundElement());
+
             // ForeachMoveNextEdge : ConditionalEdge
             var moveEdge = new ForeachMoveNextEdge(move, body, end, enumereeEdge,
-                (x.KeyVariable != null) ? (BoundReferenceExpression)_binder.BindExpression(x.KeyVariable.Variable, BoundAccess.Write) : null,
-                (BoundReferenceExpression)_binder.BindExpression(
-                    (Expression)x.ValueVariable.Variable ?? x.ValueVariable.List,
-                    x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write),
+                keyVar, valueVar,
                 Span.FromBounds(x.Enumeree.Span.End + 1, (x.KeyVariable ?? x.ValueVariable).Span.Start - 1).ToTextSpan() /*"as" between enumeree and variables*/);
             // while (enumerator.MoveNext()) {
             //   var value = enumerator.Current.Value
@@ -660,8 +688,22 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cases.Add(NewBlock(new DefaultItem(x.Span, EmptyArray<Statement>.Instance)));
             }
 
+            // get bound item for switch value & potential pre-statements
+            var boundBagForSwitchValue = _binder.BindWholeExpression(x.SwitchValue, BoundAccess.Read);
+            AddPreBoundElements(boundBagForSwitchValue);
+            var switchValue = boundBagForSwitchValue.BoundElement;
+
+            // if switch value isn't a constant & there're case values with preBoundStatements 
+            // -> the switch value might get evaluated multiple times (see SwitchEdge.Generate) -> preemptively evaluate and cache it
+            if (!switchValue.ConstantValue.HasValue && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
+            {
+                var result = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(switchValue, BoundAccess.Read, $"<switchValueCacher>{x.Span}");
+                switchValue = result.Item1;
+                _current.Add(new BoundExpressionStatement(result.Item2));
+            }
+            
             // SwitchEdge // Connects _current to cases
-            var edge = new SwitchEdge(_current, _binder.BindExpression(x.SwitchValue, BoundAccess.Read), cases.ToArray(), end);
+            var edge = new SwitchEdge(_current, switchValue, cases.ToArray(), end);
             _current = WithNewOrdinal(cases[0]);
 
             OpenBreakScope(end, end); // NOTE: inside switch, Continue ~ Break

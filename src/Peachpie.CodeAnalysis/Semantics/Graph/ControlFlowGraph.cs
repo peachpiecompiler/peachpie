@@ -100,10 +100,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         readonly LabelBlockState[] _labels;
 
         /// <summary>
-        /// Array of yield expressions within routine. Can be <c>null</c>.
+        /// Array of yield statements within routine. Can be <c>null</c>.
         /// </summary>
-        public BoundYieldEx[] Yields { get => _yields; }
-        readonly BoundYieldEx[] _yields;
+        public BoundYieldStatement[] Yields { get => _yields; }
+        readonly BoundYieldStatement[] _yields;
 
         /// <summary>
         /// List of blocks that are unreachable syntactically (statements after JumpStmt etc.).
@@ -125,12 +125,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
         }
 
-        private ControlFlowGraph(BuilderVisitor/*!*/builder, BoundYieldEx[] yields)
+        private ControlFlowGraph(BuilderVisitor/*!*/builder, BoundYieldStatement[] yields)
             : this(builder.Start, builder.Exit, /*builder.Exception*/null, builder.Labels, yields, builder.DeadBlocks)
         {
         }
 
-        private ControlFlowGraph(BoundBlock/*!*/start, BoundBlock/*!*/exit, BoundBlock exception, LabelBlockState[] labels, BoundYieldEx[] yields, List<BoundBlock> unreachable)
+        private ControlFlowGraph(BoundBlock/*!*/start, BoundBlock/*!*/exit, BoundBlock exception, LabelBlockState[] labels, BoundYieldStatement[] yields, List<BoundBlock> unreachable)
         {
             Contract.ThrowIfNull(start);
             Contract.ThrowIfNull(exit);

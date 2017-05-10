@@ -269,7 +269,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitCFGCaseBlock(CaseBlock x)
         {
             VisitCFGBlockInit(x);
-            Accept(x.CaseValue);
+            if (!x.CaseValue.IsOnlyBoundElement) { x.CaseValue.PreBoundStatements.ForEach(Accept); }
+            if (!x.CaseValue.IsEmpty) { Accept(x.CaseValue.BoundElement); }
             VisitCFGBlockInternal(x);
         }
 

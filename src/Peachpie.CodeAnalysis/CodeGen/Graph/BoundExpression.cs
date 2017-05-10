@@ -2061,6 +2061,11 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
     }
 
+    partial class BoundSynthesizedVariableRef
+    {
+        // Empty because everything is ihnerited from BoundVariableRef at the moment
+    }
+
     partial class BoundListEx : IBoundReference
     {
         internal override IBoundReference BindPlace(CodeGenerator cg) => this;
@@ -4057,58 +4062,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            Debug.Assert(cg.Routine.ControlFlowGraph.Yields != null);
-
-            // yieldIndex is 1-based because zero is reserved for to-first-yield-run.
-            var yieldEx = this.PhpSyntax;
-            var yieldIndex = cg.Routine.ControlFlowGraph.Yields.IndexOf(this, EqualityComparer<BoundYieldEx>.Default) + 1;
-            Debug.Assert(yieldIndex >= 1);
-
             var il = cg.Builder;
-
-
-            // sets currValue and currKey on generator object
-            setAsPhpValueOnGenerator(cg, YieldedValue, cg.CoreMethods.Operators.SetGeneratorCurrValue_Generator_PhpValue);
-            setAsPhpValueOnGenerator(cg, YieldedKey, cg.CoreMethods.Operators.SetGeneratorCurrKey_Generator_PhpValue);
-
-
-            // generator._userKeyReturned = (YieldedKey != null)
-            var userKeyReturned = (YieldedKey != null);
-            il.EmitLoadArgumentOpcode(3);
-            cg.EmitLoadConstant(userKeyReturned, cg.CoreTypes.Boolean);
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedUserKey_Generator_bool);
-
-
-            //generator._state = yieldIndex
-            il.EmitLoadArgumentOpcode(3);
-            cg.EmitLoadConstant(yieldIndex, cg.CoreTypes.Int32);
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
-
-
-            // return & set continuation point just after that
-            il.EmitRet(true);
-            il.MarkLabel(this);
-
-            // if(generator._currException != null) throw ex;
-            il.EmitLoadArgumentOpcode(3);
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
-
-            var excNotNull = new NamedLabel("generator._currException == null");
-            il.EmitBranch(ILOpCode.Brfalse, excNotNull);
-
-            // load the exception to be thrown on stack (so it can be nulled)
-            il.EmitLoadArgumentOpcode(3);
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
-
-            //g._curException = null : clear the field after throwing the exception
-            il.EmitLoadArgumentOpcode(3);
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.NullGeneratorThrownException_Generator);
-
-            il.EmitThrow(false);
-
-            il.MarkLabel(excNotNull);
-
-
+            
             // leave result of yield expr. (sent value) on eval stack
             il.EmitLoadArgumentOpcode(3);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorSentItem_Generator);
@@ -4118,19 +4073,5 @@ namespace Pchp.CodeAnalysis.Semantics
 
         }
 
-        private void setAsPhpValueOnGenerator(CodeGenerator cg, BoundExpression valueExpr, CoreMethod setMethod)
-        {
-            var il = cg.Builder;
-            il.EmitLoadArgumentOpcode(3);
-
-            if (valueExpr == null) { cg.Emit_PhpValue_Null(); }
-            else
-            {
-                cg.Emit(valueExpr);
-                cg.EmitConvertToPhpValue(valueExpr.ResultType, valueExpr.TypeRefMask);
-            }
-
-            cg.EmitCall(ILOpCode.Call, setMethod);
-        }
     }
 }
