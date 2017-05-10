@@ -6,6 +6,7 @@ OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp1.0"
 PHP_TMP_FILE=$OUTPUT_DIR/php.out
 PEACH_TMP_FILE=$OUTPUT_DIR/peach.out
 
+COLOR_YELLOW="\033[1;33m"
 COLOR_GREEN="\033[1;32m"
 COLOR_RED="\033[1;31m"
 COLOR_RESET="\033[0m"
@@ -18,6 +19,11 @@ dotnet restore $TOOL_DIR
 for PHP_FILE in $(find $PWD/tests -name *.php)
 do
   echo -n "Testing $PHP_FILE..."
+  echo "$PHP_FILE" | grep -Eq ".*skip(_)|(\\([^)/]*\\))[^/]*$"
+  if [ $? -eq 0 ];then
+    echo -e $COLOR_YELLOW"SKIPPED"$COLOR_RESET
+    continue;
+  fi
   COMPILE_OUTPUT="$(dotnet build $TOOL_DIR /p:TestFile=$PHP_FILE)"
   if [ $PIPESTATUS != 0 ] ; then
     echo -e $COLOR_RED"Compilation error"$COLOR_RESET
