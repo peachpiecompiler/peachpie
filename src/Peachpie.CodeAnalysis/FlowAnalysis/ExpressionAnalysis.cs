@@ -123,17 +123,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        void Eq(BoundReferenceExpression r, Optional<object> value)
+        void Eq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
         {
-            var varname = AsVariableName(r);
-            if (varname != null && value.IsNull())
+            if (isStrict)
             {
-                // varname == NULL
-                State.SetLocalType(State.GetLocalHandle(varname), TypeCtx.GetNullTypeMask());
+                var varname = AsVariableName(r);
+                if (varname != null && value.IsNull())
+                {
+                    // varname === NULL
+
+                    // Intersect the possible types with NULL, keeping the flags
+                    var varHandle = State.GetLocalHandle(varname);
+                    var mask = State.GetLocalType(varHandle);
+                    mask = (mask & TypeCtx.GetNullTypeMask()) | (mask & TypeRefMask.FlagsMask);
+
+                    State.SetLocalType(varHandle, mask);
+                }
             }
         }
 
-        void NotEq(BoundReferenceExpression r, Optional<object> value)
+        void NotEq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
         {
             var varname = AsVariableName(r);
             if (varname != null && TypeCtx.IsNull(r.TypeRefMask) && value.IsNull())
@@ -771,15 +780,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             LTInt64Max(x.Left as BoundReferenceExpression, true);
                         }
 
-                        if (x.Operation == Operations.Equal)
+                        if (x.Operation == Operations.Equal || x.Operation == Operations.Identical)
                         {
-                            Eq(x.Left as BoundReferenceExpression, x.Right.ConstantValue);
-                            Eq(x.Right as BoundReferenceExpression, x.Left.ConstantValue);
+                            bool isStrict = x.Operation == Operations.Identical;
+                            Eq(x.Left as BoundReferenceExpression, x.Right.ConstantValue, isStrict);
+                            Eq(x.Right as BoundReferenceExpression, x.Left.ConstantValue, isStrict);
                         }
-                        else if (x.Operation == Operations.NotEqual)
+                        else if (x.Operation == Operations.NotEqual || x.Operation == Operations.NotIdentical)
                         {
-                            NotEq(x.Left as BoundReferenceExpression, x.Right.ConstantValue);
-                            NotEq(x.Right as BoundReferenceExpression, x.Left.ConstantValue);
+                            bool isStrict = x.Operation == Operations.NotIdentical;
+                            NotEq(x.Left as BoundReferenceExpression, x.Right.ConstantValue, isStrict);
+                            NotEq(x.Right as BoundReferenceExpression, x.Left.ConstantValue, isStrict);
                         }
                     }
 
@@ -956,7 +967,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 foreach (var refExpr in x.VarReferences)
                 {
-                    // Solve also $foo[0], $foo->bar and their combinations
+                    // TODO: Solve also $foo[0], $foo->bar and their combinations
                     var varRef = refExpr as BoundVariableRef;
                     if (varRef != null && varRef.Name.IsDirect)
                     {
