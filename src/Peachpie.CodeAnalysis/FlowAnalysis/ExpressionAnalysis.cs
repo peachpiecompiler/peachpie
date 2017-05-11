@@ -125,14 +125,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         void Eq(BoundReferenceExpression r, Optional<object> value)
         {
-            //var varname = AsVariableName(r);
-            //if (varname != null)
-            //{
-            //    if (value.IsNull())
-            //    {
-
-            //    }
-            //}
+            var varname = AsVariableName(r);
+            if (varname != null && value.IsNull())
+            {
+                // varname == NULL
+                State.SetLocalType(State.GetLocalHandle(varname), TypeCtx.GetNullTypeMask());
+            }
         }
 
         void NotEq(BoundReferenceExpression r, Optional<object> value)
