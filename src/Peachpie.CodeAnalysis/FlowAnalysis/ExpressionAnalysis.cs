@@ -1166,15 +1166,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // Intersect the possible types with those checked by the function, keeping the flags
                     var restrictionMask = functionInfo.RestrictIfTrue(this.TypeCtx);
                     mask = (mask & restrictionMask) | (mask & TypeRefMask.FlagsMask);
+                    State.SetLocalType(varHandle, mask);
                 }
-                else // ConditionBranch.ToFalse
+                else if (!mask.IsAnyType)
                 {
+                    Debug.Assert(branch == ConditionBranch.ToFalse);
+                    // TODO: Consider using it also in IsAnyType case (by listing all the types currently available?)
+
                     // Remove the types excluded by the fact that the function returned false
                     var removeMask = functionInfo.RemoveIfFalse(this.TypeCtx);
                     mask = mask & ~removeMask;
+                    State.SetLocalType(varHandle, mask);
                 }
-
-                State.SetLocalType(varHandle, mask);
             }
         }
 
