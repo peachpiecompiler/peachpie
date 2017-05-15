@@ -128,7 +128,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _tryTargets.Push(edge);
         }
 
-        private void CloeTryScope()
+        private void CloseTryScope()
         {
             Debug.Assert(_tryTargets != null && _tryTargets.Count != 0);
             _tryTargets.Pop();
@@ -788,7 +788,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current = WithNewOrdinal(body);
             VisitElement(x.Body);
             CloseScope();
-            CloeTryScope();
+            CloseTryScope();
             _current = Leave(_current, finallyBlock ?? end);
 
             // built catches

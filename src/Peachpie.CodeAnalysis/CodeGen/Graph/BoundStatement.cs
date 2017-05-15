@@ -302,7 +302,6 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(cg.Routine.ControlFlowGraph.Yields != null);
 
             // yieldIndex is 1-based because zero is reserved for to-first-yield-run.
-            var yieldEx = this.PhpSyntax;
             var yieldIndex = Array.IndexOf(cg.Routine.ControlFlowGraph.Yields, this) + 1;
             Debug.Assert(yieldIndex >= 1);
 
