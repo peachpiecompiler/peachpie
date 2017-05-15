@@ -794,6 +794,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // bind yield statement (represents return & continuation)
             var boundYieldStatement = new BoundYieldStatement(boundValueExpr, boundKeyExpr);
+            boundYieldStatement.PhpSyntax = expr; // need to explicitly set PhpSyntax because this element doesn't go trough BindExpression (BoundYieldEx gets returned instead)
+
             _yields.Add(boundYieldStatement);
             _preCurrentlyBinded.Add(boundYieldStatement);
 
