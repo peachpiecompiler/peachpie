@@ -751,11 +751,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var boundExpr = base.BindExpression(expr, access);
 
-            // move expressions on and directly under yieldLikeEx<>root path
-            if (_underYieldLikeExLevel == 1 || _underYieldLikeExLevel == 0)
+            // move expressions on and directly under yieldLikeEx<>root path (unless it's a constant, no need to extract then)
+            if ((_underYieldLikeExLevel == 1 || _underYieldLikeExLevel == 0) && !boundExpr.ConstantValue.HasValue)
             {
                 var currTmpIndex = _rewriterVariableIndex++;
-                var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, $"<yieldRewriter>{currTmpIndex}_{expr.Span}"); 
+                var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, $"<yieldRewriter>{currTmpIndex}_{expr.Span}");
 
                 _preCurrentlyBinded.Add(new BoundExpressionStatement(assignVarTouple.Item2));
                 boundExpr = assignVarTouple.Item1;
