@@ -693,9 +693,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             AddPreBoundElements(boundBagForSwitchValue);
             var switchValue = boundBagForSwitchValue.BoundElement;
 
-            // if switch value isn't safe to evaluate multiple times ref & there're case values with preBoundStatements 
+            // if switch value isn't a constant & there're case values with preBoundStatements 
             // -> the switch value might get evaluated multiple times (see SwitchEdge.Generate) -> preemptively evaluate and cache it
-            if (!switchValue.IsSafeToEvalMultipleTimes() && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
+            if (!switchValue.IsConstant() && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
             {
                 var result = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(switchValue, BoundAccess.Read, $"<switchValueCacher>{x.Span}");
                 switchValue = result.Item1;
