@@ -677,8 +677,11 @@ namespace Pchp.CodeAnalysis.Semantics
     internal class GeneratorSemanticsBinder : SemanticsBinder
     {
 
-        // statements that are supposed to go before the item that is currenlty being binded
-        readonly List<BoundStatement> _preCurrentlyBinded;
+        /// <summary>
+        /// Statements that need to go before the one that is currently being binded. Should be empty in between separate statements bindings.
+        /// </summary>
+        protected List<BoundStatement> _preCurrentlyBinded;
+        protected bool AnyPreBoundItems => _preCurrentlyBinded.Count > 0;
 
         /// <summary>
         /// Found yield statements (needed for ControlFlowGraph)
@@ -717,23 +720,28 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
         {
-            Debug.Assert(_preCurrentlyBinded.Count == 0);
+            Debug.Assert(!AnyPreBoundItems);
 
             var boundItem = BindExpression(expr, access);
-            var boundBag = new BoundItemsBag<BoundExpression>(_preCurrentlyBinded.ToImmutableArray(), boundItem);
-            _preCurrentlyBinded.Clear();
+            var boundBag = AnyPreBoundItems
+                ? new BoundItemsBag<BoundExpression>(_preCurrentlyBinded.ToImmutableArray(), boundItem)
+                : new BoundItemsBag<BoundExpression>(boundItem);
+
+            if (AnyPreBoundItems) { _preCurrentlyBinded.Clear(); }
 
             return boundBag;
         }
 
         public override BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt)
         {
-            Debug.Assert(_preCurrentlyBinded.Count == 0);
+            Debug.Assert(!AnyPreBoundItems);
 
             var boundItem = BindStatement(stmt);
-            var boundBag = new BoundItemsBag<BoundStatement>(_preCurrentlyBinded.ToImmutableArray(), boundItem);
-            _preCurrentlyBinded.Clear();
+            var boundBag = AnyPreBoundItems
+                ? new BoundItemsBag<BoundStatement>(_preCurrentlyBinded.ToImmutableArray(), boundItem)
+                : new BoundItemsBag<BoundStatement>(boundItem);
 
+            if (AnyPreBoundItems) { _preCurrentlyBinded.Clear(); }
             return boundBag;
         }
 
@@ -751,14 +759,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var boundExpr = base.BindExpression(expr, access);
 
-            // move expressions on and directly under yieldLikeEx<>root path (unless it's a constant, no need to extract then)
-            if ((_underYieldLikeExLevel == 1 || _underYieldLikeExLevel == 0) && !boundExpr.ConstantValue.HasValue)
+            // move expressions on and directly under yieldLikeEx<>root path
+            if (_underYieldLikeExLevel == 1 || _underYieldLikeExLevel == 0)
             {
-                var currTmpIndex = _rewriterVariableIndex++;
-                var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, $"<yieldRewriter>{currTmpIndex}_{expr.Span}");
-
-                _preCurrentlyBinded.Add(new BoundExpressionStatement(assignVarTouple.Item2));
-                boundExpr = assignVarTouple.Item1;
+                boundExpr = MakeTmpCopyAndPrependAssigment(boundExpr, access);
             }
 
             _underYieldLikeExLevel = _underYieldLikeExLevelOnEnter;
@@ -770,7 +774,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var _underYieldLikeExLevelOnEnter = _underYieldLikeExLevel;
 
             // update _underYieldLikeExLevel
-            if (_underYieldLikeExLevel >= 0) { _underYieldLikeExLevel++; };
+            if (_underYieldLikeExLevel >= 0) { _underYieldLikeExLevel++; }
             if (_yieldsToStatementRootPath.Contains(stmt)) { _underYieldLikeExLevel = 0; }
 
             var boundStatement = base.BindStatement(stmt);
@@ -803,6 +807,21 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundYieldEx();
         }
 
+        /// <summary>
+        /// Assigns an expression to a temp variable, puts the assigment to <c>_preCurrentlyBinded</c>, and returns reference to the temp variable.
+        /// </summary>
+        private BoundExpression MakeTmpCopyAndPrependAssigment(BoundExpression boundExpr, BoundAccess access)
+        {
+            // no need to do anything if the expression is constant because neither multiple evaluation nor different order of eval is a problem
+            if (boundExpr.IsConstant()) { return boundExpr; }
+
+            var tmpVarName = $"<yieldRewriter>{_rewriterVariableIndex++}";
+            var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
+
+            _preCurrentlyBinded.Add(new BoundExpressionStatement(assignVarTouple.Item2)); // assigment
+            return assignVarTouple.Item1; // temp variable ref
+
+        }
 
     }
 }
