@@ -252,6 +252,12 @@ namespace Pchp.CodeAnalysis.Semantics
             Accept(boundYieldStatement.YieldedKey);
         }
 
+        public virtual void VisitConditedStatement(BoundConditionedStatement x)
+        {
+            Accept(x.Condition);
+            Accept(x.Statement);
+        }
+
         #endregion
     }
 }

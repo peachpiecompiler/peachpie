@@ -314,4 +314,38 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitReturnStatement(this, argument);
     }
+
+    /// <summary>
+    /// Represents a statement that is evaluated only if the condition is true.
+    /// </summary>
+    public partial class BoundConditionedStatement : BoundStatement, IIfStatement
+    {
+        public override OperationKind Kind =>  OperationKind.IfStatement;
+
+        IExpression IIfStatement.Condition => Condition;
+        IStatement IIfStatement.IfTrue => Statement;
+
+        public IStatement IfFalse => null;
+
+        public BoundConditionedStatement(BoundStatement statement, BoundExpression condition)
+        {
+            Contract.ThrowIfNull(condition);
+            Contract.ThrowIfNull(statement);
+
+            Statement = statement;
+            Condition = condition;
+        }
+
+        public BoundStatement Statement { get; private set; }
+        public BoundExpression Condition { get; private set; }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitIfStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitIfStatement(this, argument);
+
+        public override void Accept(PhpOperationVisitor visitor)
+            => visitor.VisitConditedStatement(this);
+    }
 }

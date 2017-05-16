@@ -366,4 +366,20 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitCall(ILOpCode.Call, setMethod);
         }
     }
+
+    partial class BoundConditionedStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            var endLbl = new object();
+
+            // Cond ? True : jump to the end
+            cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);   // i4
+            cg.Builder.EmitBranch(ILOpCode.Brfalse, endLbl);
+
+            Statement.Emit(cg);
+
+            cg.Builder.MarkLabel(endLbl);     
+        }
+    }
 }
