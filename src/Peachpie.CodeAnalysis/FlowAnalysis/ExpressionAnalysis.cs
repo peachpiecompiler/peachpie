@@ -1712,6 +1712,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = trueExpr.TypeRefMask | x.IfFalse.TypeRefMask;
         }
 
+        public override void VisitConditedStatement(BoundConditionedStatement x)
+        {
+            var state = State;
+            var trueExpr = x.Statement;
+
+            // true branch
+            var trueState = State = state.Clone();
+            VisitCondition(x.Condition, ConditionBranch.ToTrue);
+            Accept(trueExpr);
+
+            // merge both states (false state is the original state)
+            State = trueState.Merge(state);
+        }
+
         public override void VisitExpressionStatement(BoundExpressionStatement x)
         {
             Accept(x.Expression);

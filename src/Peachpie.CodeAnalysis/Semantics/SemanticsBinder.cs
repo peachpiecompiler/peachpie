@@ -385,7 +385,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return bound;
         }
 
-        protected BoundExpression BindConditionalEx(AST.ConditionalEx expr)
+        protected virtual BoundExpression BindConditionalEx(AST.ConditionalEx expr)
         {
             return new BoundConditionalEx(
                 BindExpression(expr.CondExpr),
@@ -545,7 +545,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundGlobalConst(expr.Name.ToString());
         }
 
-        protected BoundExpression BindBinaryEx(AST.BinaryEx expr)
+        protected virtual BoundExpression BindBinaryEx(AST.BinaryEx expr)
         {
             switch (expr.Operation)
             {
@@ -676,9 +676,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
     internal class GeneratorSemanticsBinder : SemanticsBinder
     {
-
-        // statements that are supposed to go before the item that is currenlty being binded
-        readonly List<BoundStatement> _preCurrentlyBinded;
+        #region FieldsAndProperties
+        /// <summary>
+        /// Statements that need to go before the one that is currently being binded. Should be empty in between separate statements bindings.
+        /// </summary>
+        protected List<BoundStatement> _preCurrentlyBinded;
+        protected bool AnyPreBoundItems => _preCurrentlyBinded.Count > 0;
 
         /// <summary>
         /// Found yield statements (needed for ControlFlowGraph)
@@ -689,6 +692,7 @@ namespace Pchp.CodeAnalysis.Semantics
         readonly HashSet<AST.LangElement> _yieldsToStatementRootPath;
         int _rewriterVariableIndex = 0; 
         int _underYieldLikeExLevel = -1;
+        #endregion
 
         #region Construction
         public GeneratorSemanticsBinder(ImmutableArray<AST.YieldEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
@@ -715,25 +719,31 @@ namespace Pchp.CodeAnalysis.Semantics
         }
         #endregion
 
+        #region GeneralOverrides
         public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
         {
-            Debug.Assert(_preCurrentlyBinded.Count == 0);
+            Debug.Assert(!AnyPreBoundItems);
 
             var boundItem = BindExpression(expr, access);
-            var boundBag = new BoundItemsBag<BoundExpression>(_preCurrentlyBinded.ToImmutableArray(), boundItem);
-            _preCurrentlyBinded.Clear();
+            var boundBag = AnyPreBoundItems
+                ? new BoundItemsBag<BoundExpression>(_preCurrentlyBinded.ToImmutableArray(), boundItem)
+                : new BoundItemsBag<BoundExpression>(boundItem);
+
+            if (AnyPreBoundItems) { _preCurrentlyBinded.Clear(); }
 
             return boundBag;
         }
 
         public override BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt)
         {
-            Debug.Assert(_preCurrentlyBinded.Count == 0);
+            Debug.Assert(!AnyPreBoundItems);
 
             var boundItem = BindStatement(stmt);
-            var boundBag = new BoundItemsBag<BoundStatement>(_preCurrentlyBinded.ToImmutableArray(), boundItem);
-            _preCurrentlyBinded.Clear();
+            var boundBag = AnyPreBoundItems
+                ? new BoundItemsBag<BoundStatement>(_preCurrentlyBinded.ToImmutableArray(), boundItem)
+                : new BoundItemsBag<BoundStatement>(boundItem);
 
+            if (AnyPreBoundItems) { _preCurrentlyBinded.Clear(); }
             return boundBag;
         }
 
@@ -754,11 +764,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // move expressions on and directly under yieldLikeEx<>root path
             if (_underYieldLikeExLevel == 1 || _underYieldLikeExLevel == 0)
             {
-                var currTmpIndex = _rewriterVariableIndex++;
-                var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, $"<yieldRewriter>{currTmpIndex}_{expr.Span}"); 
-
-                _preCurrentlyBinded.Add(new BoundExpressionStatement(assignVarTouple.Item2));
-                boundExpr = assignVarTouple.Item1;
+                boundExpr = MakeTmpCopyAndPrependAssigment(boundExpr, access);
             }
 
             _underYieldLikeExLevel = _underYieldLikeExLevelOnEnter;
@@ -770,13 +776,96 @@ namespace Pchp.CodeAnalysis.Semantics
             var _underYieldLikeExLevelOnEnter = _underYieldLikeExLevel;
 
             // update _underYieldLikeExLevel
-            if (_underYieldLikeExLevel >= 0) { _underYieldLikeExLevel++; };
+            if (_underYieldLikeExLevel >= 0) { _underYieldLikeExLevel++; }
             if (_yieldsToStatementRootPath.Contains(stmt)) { _underYieldLikeExLevel = 0; }
 
             var boundStatement = base.BindStatement(stmt);
 
             _underYieldLikeExLevel = _underYieldLikeExLevelOnEnter;
             return boundStatement;
+        }
+        #endregion
+
+        #region SpecificExOverrides
+        protected override BoundExpression BindBinaryEx(AST.BinaryEx expr)
+        {
+            // if not a short-circuit operator -> use normal logic for binding
+            if (!(expr.Operation == AST.Operations.And || expr.Operation == AST.Operations.Or || expr.Operation == AST.Operations.Coalesce))
+            { return base.BindBinaryEx(expr); }
+
+            // left operand is always evaluated -> handle normally
+            var leftExpr = BindExpression(expr.LeftExpr, BoundAccess.Read);
+
+            // right operand & its pre-bound statements might not be evaluated due to short-circuit evaluation
+            // get all of the pre-bound statements and convert them to statemenets conditioned by short-cirtuit-eval logic
+            var rightExprBag = BindExpressionWithSeparatePreBoundStatements(expr.RightExpr, BoundAccess.Read);
+
+            if (!rightExprBag.IsOnlyBoundElement)
+            {
+                // make a defensive copy if multiple evaluations could be a problem for left expr (which serves as the condition)
+                leftExpr = MakeTmpCopyAndPrependAssigment(leftExpr, BoundAccess.Read);
+
+                // create a condition expr. that is true only when right operand would have to be evaluated
+                BoundExpression condition = null;
+                switch (expr.Operation)
+                {
+                    case AST.Operations.And:
+                        condition = leftExpr; // left is true
+                        break;
+                    case AST.Operations.Or:
+                        condition = new BoundUnaryEx(leftExpr, AST.Operations.LogicNegation); // left is false
+                        break;
+                    case AST.Operations.Coalesce:
+                        if(leftExpr is BoundReferenceExpression leftRef) // left is not set or null
+                        {
+                            condition = new BoundUnaryEx(
+                                new BoundIsSetEx(leftRef.EncapsulateInImmutableArray()), 
+                                AST.Operations.LogicNegation
+                                );
+                        }
+                        else
+                        {
+                            condition = new BoundGlobalFunctionCall(
+                                new QualifiedName(new Name("is_null")), 
+                                null, 
+                                (new BoundArgument(leftExpr)).EncapsulateInImmutableArray()
+                                );
+                        }
+                        break;
+                    default:
+                        throw ExceptionUtilities.Unreachable;
+                }
+
+                rightExprBag.PreBoundStatements.ForEach(stm => _preCurrentlyBinded.Add(new BoundConditionedStatement(stm, condition)));
+            }
+
+            return new BoundBinaryEx(
+                leftExpr,
+                rightExprBag.BoundElement,
+                expr.Operation);
+        }
+
+        protected override BoundExpression BindConditionalEx(AST.ConditionalEx expr)
+        {
+            var condExpr = BindExpression(expr.CondExpr);
+
+            // get expressions and their pre-bound elements for both branches
+            var trueExprBag = BindExpressionWithSeparatePreBoundStatements(expr.TrueExpr, BoundAccess.Read);
+            var falseExprBag = BindExpressionWithSeparatePreBoundStatements(expr.FalseExpr, BoundAccess.Read);
+
+            // if at least branch has any pre-bound statements we need to condition them
+            if (!trueExprBag.IsOnlyBoundElement || !falseExprBag.IsOnlyBoundElement)
+            {
+                condExpr = MakeTmpCopyAndPrependAssigment(condExpr, BoundAccess.Read);
+
+                trueExprBag.PreBoundStatements.ForEach(stm => _preCurrentlyBinded.Add(new BoundConditionedStatement(stm, condExpr)));
+                falseExprBag.PreBoundStatements.ForEach(stm => _preCurrentlyBinded.Add(new BoundConditionedStatement(stm, new BoundUnaryEx(condExpr, AST.Operations.LogicNegation))));
+            }
+
+            return new BoundConditionalEx(
+                condExpr,
+                trueExprBag.BoundElement,
+                falseExprBag.BoundElement);
         }
 
         protected override BoundYieldEx BindYieldEx(AST.YieldEx expr)
@@ -794,13 +883,45 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // bind yield statement (represents return & continuation)
             var boundYieldStatement = new BoundYieldStatement(boundValueExpr, boundKeyExpr);
+            boundYieldStatement.PhpSyntax = expr; // need to explicitly set PhpSyntax because this element doesn't go trough BindExpression (BoundYieldEx gets returned instead)
+
             _yields.Add(boundYieldStatement);
             _preCurrentlyBinded.Add(boundYieldStatement);
 
             // return BoundYieldEx representing a reference to a value sent to the generator
             return new BoundYieldEx();
         }
+        #endregion
 
+        #region Helpers
+        /// <summary>
+        /// Assigns an expression to a temp variable, puts the assigment to <c>_preCurrentlyBinded</c>, and returns reference to the temp variable.
+        /// </summary>
+        private BoundExpression MakeTmpCopyAndPrependAssigment(BoundExpression boundExpr, BoundAccess access)
+        {
+            // no need to do anything if the expression is constant because neither multiple evaluation nor different order of eval is a problem
+            if (boundExpr.IsConstant()) { return boundExpr; }
+
+            var tmpVarName = $"<yieldRewriter>{_rewriterVariableIndex++}";
+            var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
+
+            _preCurrentlyBinded.Add(new BoundExpressionStatement(assignVarTouple.Item2)); // assigment
+            return assignVarTouple.Item1; // temp variable ref
+
+        }
+
+        private BoundItemsBag<BoundExpression> BindExpressionWithSeparatePreBoundStatements(AST.Expression expr, BoundAccess access)
+        {
+            if (expr == null) { return BoundItemsBag<BoundExpression>.Empty; }
+
+            var original = _preCurrentlyBinded;
+            _preCurrentlyBinded = new List<BoundStatement>();
+            var currExprBag = BindWholeExpression(expr, access);
+            _preCurrentlyBinded = original;
+
+            return currExprBag;
+        }
+        #endregion
 
     }
 }

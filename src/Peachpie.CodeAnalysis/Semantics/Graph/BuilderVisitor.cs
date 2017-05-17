@@ -128,7 +128,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _tryTargets.Push(edge);
         }
 
-        private void CloeTryScope()
+        private void CloseTryScope()
         {
             Debug.Assert(_tryTargets != null && _tryTargets.Count != 0);
             _tryTargets.Pop();
@@ -695,7 +695,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // if switch value isn't a constant & there're case values with preBoundStatements 
             // -> the switch value might get evaluated multiple times (see SwitchEdge.Generate) -> preemptively evaluate and cache it
-            if (!switchValue.ConstantValue.HasValue && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
+            if (!switchValue.IsConstant() && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
             {
                 var result = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(switchValue, BoundAccess.Read, $"<switchValueCacher>{x.Span}");
                 switchValue = result.Item1;
@@ -788,7 +788,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current = WithNewOrdinal(body);
             VisitElement(x.Body);
             CloseScope();
-            CloeTryScope();
+            CloseTryScope();
             _current = Leave(_current, finallyBlock ?? end);
 
             // built catches
