@@ -819,7 +819,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         if(leftExpr is BoundReferenceExpression leftRef) // left is not set or null
                         {
                             condition = new BoundUnaryEx(
-                                new BoundIsSetEx(leftRef.EncapsulateInImmutableArray()), 
+                                new BoundIsSetEx(ImmutableArray.Create(leftRef)), 
                                 AST.Operations.LogicNegation
                                 );
                         }
@@ -828,7 +828,7 @@ namespace Pchp.CodeAnalysis.Semantics
                             condition = new BoundGlobalFunctionCall(
                                 new QualifiedName(new Name("is_null")), 
                                 null, 
-                                (new BoundArgument(leftExpr)).EncapsulateInImmutableArray()
+                                ImmutableArray.Create(new BoundArgument(leftExpr))
                                 );
                         }
                         break;
