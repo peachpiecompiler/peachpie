@@ -216,7 +216,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 this.ContainingType,
                 contextPlace: null,
                 thisPlace: null,
-                routine: null,
+                routine: this, // needed to support static variables (they need enclosing routine while binding)
                 locals: new LocalPlace(generatorsLocals),
                 localsInitialized: false
                     ))
