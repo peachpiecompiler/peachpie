@@ -193,10 +193,5 @@ namespace Pchp.CodeAnalysis
                 return list.ToImmutableArray();
             }
         }
-
-        public static ImmutableArray<T> EncapsulateInImmutableArray<T>(this T item)
-        {
-            return ImmutableArray<T>.Empty.Add(item);
-        }
     }
 }

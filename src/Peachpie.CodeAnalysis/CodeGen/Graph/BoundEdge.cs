@@ -523,11 +523,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                         var caseValueBag = this_block.CaseValue;
                         if (caseValueBag.IsEmpty) { continue; }
 
-                        // pre bound statements could return (e.g. yieldStatement) & destroy stack-local switch_loc variable -> be defensive
-                        if (!caseValueBag.IsOnlyBoundElement) { cg.ReturnTemporaryLocal(switch_loc); }
-
-                        // emit all statements that have to go before condition
-                        caseValueBag.PreBoundStatements.ForEach(stm => stm.Emit(cg));
+                        if (!caseValueBag.IsOnlyBoundElement)
+                        {
+                            cg.ReturnTemporaryLocal(switch_loc); // statements in pre-bound-blocks could return (e.g. yieldStatement) & destroy stack-local switch_loc variable -> be defensive
+                            caseValueBag.PreBoundBlockFirst.Emit(cg); // emit all blocks that have to go before case value emit
+                        }
 
                         // reininiaze switch_loc if destroyed previously
                         if (!caseValueBag.IsOnlyBoundElement)

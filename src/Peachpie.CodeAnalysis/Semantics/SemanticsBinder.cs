@@ -18,24 +18,29 @@ namespace Pchp.CodeAnalysis.Semantics
 {
 
     /// <summary>
-    /// Holds currently bound item and optionally statements that are supposed to be go before it. 
+    /// Holds currently bound item and optionally the first and the last BoundBlock containing all the statements that are supposed to go before the BoundElement. 
     /// </summary>
     /// <typeparam name="T">Either <c>BoundExpression</c> or <c>BoundStatement</c>.</typeparam>
     public struct BoundItemsBag<T> where T : class, IPhpOperation
     {
-        public ImmutableArray<BoundStatement> PreBoundStatements { get; private set; }
+        public BoundBlock PreBoundBlockFirst { get; private set; }
+        public BoundBlock PreBoundBlockLast { get; private set; }
+
         public T BoundElement { get; private set; }
 
-        public BoundItemsBag(ImmutableArray<BoundStatement> preBound, T bound)
+        public BoundItemsBag(T bound, BoundBlock preBoundFirst, BoundBlock preBoundLast)
         {
-            Debug.Assert(bound != null || preBound.IsDefaultOrEmpty);
+            Debug.Assert(bound != null || (preBoundFirst == null && preBoundLast == null));
+            Debug.Assert(preBoundFirst != null || preBoundLast == null);
 
-            PreBoundStatements = preBound;
+            PreBoundBlockFirst = preBoundFirst;
+            PreBoundBlockLast = preBoundLast ?? preBoundFirst;
             BoundElement = bound;
         }
         public static BoundItemsBag<T> Empty => new BoundItemsBag<T>(null);
 
-        public BoundItemsBag(T bound) : this(ImmutableArray<BoundStatement>.Empty, bound) { }
+        public BoundItemsBag(T bound) : this(bound, null) { }
+        public BoundItemsBag(T bound, BoundBlock preBound) : this(bound, preBound, null) { }
 
         /// <summary>
         /// Returns bound elemenent and asserts that there are no <c>PreBoundStatements</c>.
@@ -49,7 +54,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public static implicit operator BoundItemsBag<T>(T item) => new BoundItemsBag<T>(item);
 
         public bool IsEmpty => IsOnlyBoundElement && BoundElement == null;
-        public bool IsOnlyBoundElement => PreBoundStatements.IsDefaultOrEmpty;
+        public bool IsOnlyBoundElement => (PreBoundBlockFirst == null);
 
     }
 
@@ -678,12 +683,6 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         #region FieldsAndProperties
         /// <summary>
-        /// Statements that need to go before the one that is currently being binded. Should be empty in between separate statements bindings.
-        /// </summary>
-        protected List<BoundStatement> _preCurrentlyBinded;
-        protected bool AnyPreBoundItems => _preCurrentlyBinded.Count > 0;
-
-        /// <summary>
         /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
         public override BoundYieldStatement[] Yields { get => _yields.ToArray(); }
@@ -694,12 +693,40 @@ namespace Pchp.CodeAnalysis.Semantics
         int _underYieldLikeExLevel = -1;
         #endregion
 
+        #region PreBoundBlocks
+        private BoundBlock _preBoundBlockFirst;
+        private BoundBlock _preBoundBlockLast;
+
+        // TODO: Replace with a better mechanism to get a new Block with correct ord number from BuilderVisitor
+        internal Func<BoundBlock> GetNewBlock;
+
+        private void InitPreBoundBlocks()
+        {
+            _preBoundBlockFirst = _preBoundBlockFirst ?? GetNewBlock();
+            _preBoundBlockLast = _preBoundBlockLast ?? _preBoundBlockFirst;
+        }
+
+        protected BoundBlock CurrentPreBoundBlock
+        {
+            get { InitPreBoundBlocks(); return _preBoundBlockLast; }
+            set { _preBoundBlockLast = value; }
+        }
+
+        protected bool AnyPreBoundItems
+        {
+            get
+            {
+                Debug.Assert((_preBoundBlockFirst == null) == (_preBoundBlockLast == null));
+                return _preBoundBlockFirst != null;
+            }
+        }
+        #endregion
+
         #region Construction
         public GeneratorSemanticsBinder(ImmutableArray<AST.YieldEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
             : base(locals, diagnostics)
         {
-            _yields = new List<BoundYieldStatement>();
-            _preCurrentlyBinded = new List<BoundStatement>();
+            _yields = new List<BoundYieldStatement>();      
             _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
 
             // save all parents of all yieldLikeEx in current routine -> will need to realocate all expressions on path and in its children
@@ -725,11 +752,9 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(!AnyPreBoundItems);
 
             var boundItem = BindExpression(expr, access);
-            var boundBag = AnyPreBoundItems
-                ? new BoundItemsBag<BoundExpression>(_preCurrentlyBinded.ToImmutableArray(), boundItem)
-                : new BoundItemsBag<BoundExpression>(boundItem);
+            var boundBag = new BoundItemsBag<BoundExpression>(boundItem, _preBoundBlockFirst, _preBoundBlockLast);
 
-            if (AnyPreBoundItems) { _preCurrentlyBinded.Clear(); }
+            ClearPreBoundBlocks();
 
             return boundBag;
         }
@@ -739,11 +764,9 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(!AnyPreBoundItems);
 
             var boundItem = BindStatement(stmt);
-            var boundBag = AnyPreBoundItems
-                ? new BoundItemsBag<BoundStatement>(_preCurrentlyBinded.ToImmutableArray(), boundItem)
-                : new BoundItemsBag<BoundStatement>(boundItem);
+            var boundBag = new BoundItemsBag<BoundStatement>(boundItem, _preBoundBlockFirst, _preBoundBlockLast);
 
-            if (AnyPreBoundItems) { _preCurrentlyBinded.Clear(); }
+            ClearPreBoundBlocks();
             return boundBag;
         }
 
@@ -793,6 +816,9 @@ namespace Pchp.CodeAnalysis.Semantics
             if (!(expr.Operation == AST.Operations.And || expr.Operation == AST.Operations.Or || expr.Operation == AST.Operations.Coalesce))
             { return base.BindBinaryEx(expr); }
 
+            // create/get a source block defensively before potential rightExprBag.PreBoundBlocks (it needs to have a smaller Ordinal)
+            var currBlock = CurrentPreBoundBlock;
+
             // left operand is always evaluated -> handle normally
             var leftExpr = BindExpression(expr.LeftExpr, BoundAccess.Read);
 
@@ -819,7 +845,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         if(leftExpr is BoundReferenceExpression leftRef) // left is not set or null
                         {
                             condition = new BoundUnaryEx(
-                                new BoundIsSetEx(leftRef.EncapsulateInImmutableArray()), 
+                                new BoundIsSetEx(ImmutableArray.Create(leftRef)), 
                                 AST.Operations.LogicNegation
                                 );
                         }
@@ -828,7 +854,7 @@ namespace Pchp.CodeAnalysis.Semantics
                             condition = new BoundGlobalFunctionCall(
                                 new QualifiedName(new Name("is_null")), 
                                 null, 
-                                (new BoundArgument(leftExpr)).EncapsulateInImmutableArray()
+                                ImmutableArray.Create(new BoundArgument(leftExpr))
                                 );
                         }
                         break;
@@ -836,7 +862,8 @@ namespace Pchp.CodeAnalysis.Semantics
                         throw ExceptionUtilities.Unreachable;
                 }
 
-                rightExprBag.PreBoundStatements.ForEach(stm => _preCurrentlyBinded.Add(new BoundConditionedStatement(stm, condition)));
+                // create a conditional edge and set the last (current) pre-bound block to the conditional edge's end block
+                CurrentPreBoundBlock = CreateConditionalEdge(currBlock, condition, rightExprBag.PreBoundBlockFirst, null);
             }
 
             return new BoundBinaryEx(
@@ -849,6 +876,9 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var condExpr = BindExpression(expr.CondExpr);
 
+            // create/get a source block defensively before potential true/falseExprBag.PreBoundBlocks (it needs to have a smaller Ordinal)
+            var currBlock = CurrentPreBoundBlock;
+
             // get expressions and their pre-bound elements for both branches
             var trueExprBag = BindExpressionWithSeparatePreBoundStatements(expr.TrueExpr, BoundAccess.Read);
             var falseExprBag = BindExpressionWithSeparatePreBoundStatements(expr.FalseExpr, BoundAccess.Read);
@@ -857,9 +887,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (!trueExprBag.IsOnlyBoundElement || !falseExprBag.IsOnlyBoundElement)
             {
                 condExpr = MakeTmpCopyAndPrependAssigment(condExpr, BoundAccess.Read);
-
-                trueExprBag.PreBoundStatements.ForEach(stm => _preCurrentlyBinded.Add(new BoundConditionedStatement(stm, condExpr)));
-                falseExprBag.PreBoundStatements.ForEach(stm => _preCurrentlyBinded.Add(new BoundConditionedStatement(stm, new BoundUnaryEx(condExpr, AST.Operations.LogicNegation))));
+                // create a conditional edge and set the last (current) pre-bound block to the conditional edge's end block
+                CurrentPreBoundBlock = CreateConditionalEdge(currBlock, condExpr, trueExprBag.PreBoundBlockFirst, falseExprBag.PreBoundBlockFirst);
             }
 
             return new BoundConditionalEx(
@@ -886,7 +915,7 @@ namespace Pchp.CodeAnalysis.Semantics
             boundYieldStatement.PhpSyntax = expr; // need to explicitly set PhpSyntax because this element doesn't go trough BindExpression (BoundYieldEx gets returned instead)
 
             _yields.Add(boundYieldStatement);
-            _preCurrentlyBinded.Add(boundYieldStatement);
+            CurrentPreBoundBlock.Add(boundYieldStatement);
 
             // return BoundYieldEx representing a reference to a value sent to the generator
             return new BoundYieldEx();
@@ -894,6 +923,13 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         #region Helpers
+
+        private void ClearPreBoundBlocks()
+        {
+            _preBoundBlockFirst = null;
+            _preBoundBlockLast = null;
+        }
+
         /// <summary>
         /// Assigns an expression to a temp variable, puts the assigment to <c>_preCurrentlyBinded</c>, and returns reference to the temp variable.
         /// </summary>
@@ -905,19 +941,42 @@ namespace Pchp.CodeAnalysis.Semantics
             var tmpVarName = $"<yieldRewriter>{_rewriterVariableIndex++}";
             var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
 
-            _preCurrentlyBinded.Add(new BoundExpressionStatement(assignVarTouple.Item2)); // assigment
+            CurrentPreBoundBlock.Add(new BoundExpressionStatement(assignVarTouple.Item2)); // assigment
             return assignVarTouple.Item1; // temp variable ref
 
+        }
+
+        /// <summary>
+        /// Creates a conditional edge and returns its endBlock.
+        /// </summary>
+        private BoundBlock CreateConditionalEdge(BoundBlock sourceBlock, BoundExpression condExpr, BoundBlock trueBlock, BoundBlock falseBlock)
+        {
+            object _; // discard
+
+            var endBlock = GetNewBlock();
+            falseBlock = falseBlock ?? endBlock;
+
+            _ = new ConditionalEdge(sourceBlock, trueBlock, falseBlock, condExpr);
+            _ = new SimpleEdge(trueBlock, endBlock);
+            if (falseBlock != endBlock) { _ = new SimpleEdge(falseBlock, endBlock); }
+
+            return endBlock;
         }
 
         private BoundItemsBag<BoundExpression> BindExpressionWithSeparatePreBoundStatements(AST.Expression expr, BoundAccess access)
         {
             if (expr == null) { return BoundItemsBag<BoundExpression>.Empty; }
 
-            var original = _preCurrentlyBinded;
-            _preCurrentlyBinded = new List<BoundStatement>();
+            // save original preBoundBlocks
+            var originalPreBoundFirst = _preBoundBlockFirst;
+            var originalPreBoundLast = _preBoundBlockLast;
+
+            ClearPreBoundBlocks(); // clean state
             var currExprBag = BindWholeExpression(expr, access);
-            _preCurrentlyBinded = original;
+
+            // restore original preBoundBlocks
+            _preBoundBlockFirst = originalPreBoundFirst;
+            _preBoundBlockLast = originalPreBoundLast;
 
             return currExprBag;
         }
