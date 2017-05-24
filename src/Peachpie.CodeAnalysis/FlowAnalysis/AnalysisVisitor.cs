@@ -269,7 +269,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitCFGCaseBlock(CaseBlock x)
         {
             VisitCFGBlockInit(x);
-            if (!x.CaseValue.IsOnlyBoundElement) { x.CaseValue.PreBoundStatements.ForEach(Accept); }
+            if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); } 
             if (!x.CaseValue.IsEmpty) { Accept(x.CaseValue.BoundElement); }
             VisitCFGBlockInternal(x);
         }
@@ -362,6 +362,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             foreach (var c in x.CaseBlocks)
             {
+                if (!c.CaseValue.IsOnlyBoundElement) { TraverseToBlock(x, state, c.CaseValue.PreBoundBlockFirst); }
                 TraverseToBlock(x, state, c);
             }
         }

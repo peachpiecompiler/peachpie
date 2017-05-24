@@ -143,6 +143,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Contract.ThrowIfNull(statements);
             Contract.ThrowIfNull(binder);
 
+            // TODO: Implement a cleaner way to enable SemanticsBinder to create BoundBlocks trough BuilderVisitor
+            if(binder is GeneratorSemanticsBinder gsb)
+            {
+                gsb.GetNewBlock = this.NewBlock;
+            }
+
             _binder = binder;
             _naming = naming;
 
@@ -188,18 +194,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void Add(BoundItemsBag<BoundStatement> stmtBag)
         {
-            AddPreBoundElements(stmtBag);
+            ConnectBoundItemsBagBlocksToCurrentBlock(stmtBag);
             _current.Add(stmtBag.BoundElement);
         }
 
-        private void AddPreBoundElements<T>(BoundItemsBag<T> bag) where T : class, IPhpOperation
-            => AddPreBoundElements(bag, _current);
+        private void ConnectBoundItemsBagBlocksToCurrentBlock<T>(BoundItemsBag<T> bag) where T : class, IPhpOperation
+            => _current = ConnectBoundItemsBagBlocks(bag, _current);
 
-        private void AddPreBoundElements<T>(BoundItemsBag<T> bag, BoundBlock block) where T : class, IPhpOperation
+        private BoundBlock ConnectBoundItemsBagBlocks<T>(BoundItemsBag<T> bag, BoundBlock block) where T : class, IPhpOperation
         {
-            var preBoundElements = bag.PreBoundStatements;
-            if (!preBoundElements.IsEmpty) { preBoundElements.Foreach(block.Add); }
+            if (bag.IsOnlyBoundElement) { return block; }
 
+            Connect(block, bag.PreBoundBlockFirst);
+            return bag.PreBoundBlockLast;
         }
 
         private void FinalizeRoutine()
@@ -255,9 +262,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             if (condition != null)
             {
-                // bind condition expression & potential pre-statements to source block
+                // bind condition expression & connect pre-condition blocks to source
                 var boundConditionBag = _binder.BindWholeExpression(condition, BoundAccess.Read);
-                AddPreBoundElements(boundConditionBag, source);
+                source = ConnectBoundItemsBagBlocks(boundConditionBag, source);
 
                 new ConditionalEdge(source, ifTarget, elseTarget, boundConditionBag.BoundElement)
                 {
@@ -461,15 +468,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitForeachStmt(ForeachStmt x)
         {
+            // binds enumeree expression & connect pre-enumeree-expr blocks
+            var boundEnumereeBag = _binder.BindWholeExpression(x.Enumeree, BoundAccess.Read);
+            ConnectBoundItemsBagBlocksToCurrentBlock(boundEnumereeBag);
+            
             var end = NewBlock();
             var move = NewBlock();
             var body = NewBlock();
 
             // _current -> move -> body -> move -> ...
-
-            // binds enumeree expression & potential pre-statements
-            var boundEnumereeBag = _binder.BindWholeExpression(x.Enumeree, BoundAccess.Read);
-            AddPreBoundElements(boundEnumereeBag);
 
             // ForeachEnumereeEdge : SimpleEdge
             // x.Enumeree.GetEnumerator();
@@ -673,6 +680,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (items == null || items.Length == 0)
                 return;
 
+            // get bound item for switch value & connect potential pre-switch-value blocks
+            var boundBagForSwitchValue = _binder.BindWholeExpression(x.SwitchValue, BoundAccess.Read);
+            ConnectBoundItemsBagBlocksToCurrentBlock(boundBagForSwitchValue);
+            var switchValue = boundBagForSwitchValue.BoundElement;
+
             var end = NewBlock();
 
             bool hasDefault = false;
@@ -687,11 +699,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // create implicit default:
                 cases.Add(NewBlock(new DefaultItem(x.Span, EmptyArray<Statement>.Instance)));
             }
-
-            // get bound item for switch value & potential pre-statements
-            var boundBagForSwitchValue = _binder.BindWholeExpression(x.SwitchValue, BoundAccess.Read);
-            AddPreBoundElements(boundBagForSwitchValue);
-            var switchValue = boundBagForSwitchValue.BoundElement;
 
             // if switch value isn't a constant & there're case values with preBoundStatements 
             // -> the switch value might get evaluated multiple times (see SwitchEdge.Generate) -> preemptively evaluate and cache it
