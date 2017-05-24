@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Switches <see cref="ConditionBranch.ToTrue"/> and <see cref="ConditionBranch.ToFalse"/>.
         /// </summary>
-        public static ConditionBranch NegativeBranch(ConditionBranch branch)
+        public static ConditionBranch NegativeBranch(this ConditionBranch branch)
         {
             return (ConditionBranch)(-((int)branch));
         }
