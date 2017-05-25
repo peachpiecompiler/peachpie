@@ -12,9 +12,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     static class AnalysisFacts
     {
         /// <summary>
-        /// Resolves value of the function call in compile time if possible.
+        /// Resolves value of the function call in compile time if possible and updates the variable type if necessary
         /// </summary>
-        public static Optional<object> TryResolve(BoundGlobalFunctionCall x, ISymbolProvider model)
+        public static void HandleFunctionCall(BoundGlobalFunctionCall x, ExpressionAnalysis analysis, ConditionBranch branch)
         {
             if (x.Name.IsDirect && x.ArgumentsInSourceOrder.All(arg => arg.Value.ConstantValue.HasValue))
             {
@@ -34,10 +34,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 var str = args[0].Value.ConstantValue.Value as string;
                                 if (str != null)
                                 {
-                                    var tmp = model.ResolveFunction(NameUtils.MakeQualifiedName(str, true));
+                                    var tmp = analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(str, true));
                                     if (tmp is PEMethodSymbol || (tmp is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)tmp).Ambiguities.All(f => f is PEMethodSymbol)))
                                     {
-                                        return new Optional<object>(true);
+                                        x.ConstantValue = new Optional<object>(true);
+                                        return;
                                     }
                                 }
                             }
@@ -47,7 +48,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             //
-            return default(Optional<object>);
+            x.ConstantValue = default(Optional<object>);
         }
     }
 }

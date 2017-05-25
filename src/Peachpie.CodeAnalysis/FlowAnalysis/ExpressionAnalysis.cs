@@ -26,6 +26,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         readonly ISymbolProvider _model;
 
+        internal ISymbolProvider Model => _model;
+
         /// <summary>
         /// Reference to corresponding source routine.
         /// </summary>
@@ -1136,7 +1138,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, args, null);
 
                 //
-                x.ConstantValue = AnalysisFacts.TryResolve(x, _model);
+                AnalysisFacts.HandleFunctionCall(x, this, branch);
 
                 // is_int, is_bool, is_numeric, ... - update type information
                 if (branch != ConditionBranch.AnyResult 
