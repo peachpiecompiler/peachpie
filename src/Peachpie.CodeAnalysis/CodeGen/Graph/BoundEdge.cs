@@ -50,6 +50,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Contract.ThrowIfNull(Condition);
 
+            // if the cndition was resolved in compile-time,
+            // generate only the positive branch
+            if (!cg.IsDebug && this.Condition.ConstantValue.TryConvertToBool(out bool evaluated))
+            {
+                cg.Scope.ContinueWith(evaluated ? TrueTarget : FalseTarget);
+                return;
+            }
+
+            //
+
             if (IsLoop) // perf
             {
                 cg.Builder.DefineHiddenSequencePoint();

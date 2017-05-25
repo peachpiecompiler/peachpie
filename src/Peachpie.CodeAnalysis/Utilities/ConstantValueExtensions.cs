@@ -44,7 +44,7 @@ namespace Pchp.CodeAnalysis
         {
             return value.HasValue && value.Value == null;
         }
-            
+
         /// <summary>
         /// PHP safe implicit conversion to <c>long</c> (null|long|double to long).
         /// </summary>
@@ -62,6 +62,46 @@ namespace Pchp.CodeAnalysis
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// PHP safe implicit conversion to <c>bool</c> if the value is known.
+        /// </summary>
+        public static bool TryConvertToBool(this Optional<object> value, out bool result)
+        {
+            if (!value.HasValue)
+            {
+                result = false;
+                return false;
+            }
+
+            var obj = value.Value;
+
+            if (obj == null) result = false;
+            else if (obj is bool) result = (bool)obj;
+            else if (obj is int) result = (int)obj != 0;
+            else if (obj is long) result = (long)obj != 0;
+            else if (obj is string) result = StringToBoolean((string)obj);
+            else if (obj is double) result = (double)obj != 0.0;
+            else if (obj is float) result = (float)obj != 0;
+            else if (obj is decimal) result = (decimal)obj != 0;
+            else if (obj is ulong) result = (ulong)obj != 0;
+            else if (obj is uint) result = (uint)obj != 0;
+            else if (obj is sbyte) result = (sbyte)obj != 0;
+            else if (obj is short) result = (short)obj != 0;
+            else
+            {
+                result = false;
+                return false;
+            }
+
+            //
+            return true;
+        }
+
+        static bool StringToBoolean(string value)
+        {
+            return !string.IsNullOrEmpty(value) && value != "0";
         }
     }
 }
