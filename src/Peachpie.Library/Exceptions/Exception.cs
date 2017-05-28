@@ -71,4 +71,32 @@ namespace Pchp.Library.Spl
             __construct(message, code, previous);
         }
     }
+
+    /// <summary>
+    /// An Error Exception.
+    /// </summary>
+    [PhpType("[name]")]
+    public class ErrorException : Spl.Exception
+    {
+        protected long severity;
+
+        [PhpFieldsOnlyCtor]
+        protected ErrorException() { }
+
+        public ErrorException(string message = "", long code = 0, int severity = (int)PhpError.E_ERROR, string filename = null, int lineno = -1, Exception previous = null)
+        {
+            __construct(message, code, severity, filename, lineno, previous);
+        }
+
+        public virtual void __construct(string message = "", long code = 0, int severity = (int)PhpError.E_ERROR, string filename = null, int lineno = -1, Exception previous = null)
+        {
+            base.__construct(message, code, previous);
+
+            this.severity = severity;
+            this.file = filename;
+            this.line = lineno;
+        }
+
+        public long getSeverity() => severity;
+    }
 }
