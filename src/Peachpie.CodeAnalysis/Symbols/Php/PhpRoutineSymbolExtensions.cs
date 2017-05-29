@@ -11,14 +11,14 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal static class PhpRoutineSymbolExtensions
+    public static class PhpRoutineSymbolExtensions
     {
         /// <summary>
         /// Constructs most appropriate CLR return type of given routine.
         /// The method handles returning by alias, PHP7 return type, PHPDoc @return tag and result of flow analysis.
         /// In case the routine is an override or can be overriden, the CLR type is a value.
         /// </summary>
-        public static TypeSymbol ConstructClrReturnType(SourceRoutineSymbol routine)
+        internal static TypeSymbol ConstructClrReturnType(SourceRoutineSymbol routine)
         {
             var compilation = routine.DeclaringCompilation;
 
@@ -232,6 +232,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         /// <param name="routine">The analysed routine.</param>
         /// <returns>Value indicating the routine gets a generator.</returns>
-        public static bool IsGeneratorMethod(this SourceRoutineSymbol routine) => (routine.Flags & RoutineFlags.IsGenerator) != 0;
+        internal static bool IsGeneratorMethod(this SourceRoutineSymbol routine) => (routine.Flags & RoutineFlags.IsGenerator) != 0;
     }
 }

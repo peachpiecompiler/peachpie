@@ -20,6 +20,7 @@ using Microsoft.CodeAnalysis.Collections;
 using System.Collections.Concurrent;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.DocumentationComments;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis
 {
@@ -94,6 +95,20 @@ namespace Pchp.CodeAnalysis
         /// Gets enumeration of all user declared routines (global code, functions, methods and lambdas) in the compilation.
         /// </summary>
         public IEnumerable<IPhpRoutineSymbol> UserDeclaredRoutines => this.SourceSymbolCollection.AllRoutines;
+
+        /// <summary>
+        /// Gets enumeration of user declared routines (global code, functions, methods and lambdas) in the specified file
+        /// identified by its syntax tree.
+        /// </summary>
+        public IEnumerable<IPhpRoutineSymbol> GetUserDeclaredRoutinesInFile(PhpSyntaxTree syntaxTree)
+        {
+            string relativePath = PhpFileUtilities.GetRelativePath(
+                PhpFileUtilities.NormalizeSlashes(syntaxTree.Source.FilePath),
+                PhpFileUtilities.NormalizeSlashes(_options.BaseDirectory));
+            var fileSymbol = _tables.GetFile(relativePath);
+
+            return fileSymbol?.AllRoutines ?? ImmutableArray<SourceRoutineSymbol>.Empty;
+        }
 
         /// <summary>
         /// Gets enumeration of all user declared types (classes, interfaces and traits) in the compilation.
