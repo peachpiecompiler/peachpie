@@ -811,8 +811,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         TypeRefMask ResolveUnaryOperatorExpression(BoundUnaryEx x, ConditionBranch branch)
         {
-            //
-            Accept(x.Operand);
+            if (branch != ConditionBranch.AnyResult && x.Operation == Operations.LogicNegation)
+            {
+                // Negation swaps the branches
+                VisitCondition(x.Operand, branch.NegativeBranch());
+            }
+            else
+            {
+                Accept(x.Operand);
+            }
 
             //
             switch (x.Operation)

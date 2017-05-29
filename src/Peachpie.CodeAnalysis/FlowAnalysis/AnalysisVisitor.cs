@@ -150,15 +150,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
                 if (condition is BoundUnaryEx unaryEx)
                 {
-                    if (unaryEx.Operation == Operations.LogicNegation)
-                    {
-                        // Negation swaps the branches
-                        VisitCondition(unaryEx.Operand, branch.NegativeBranch());
-                    }
-                    else
-                    {
-                        Visit(unaryEx, branch);
-                    }
+                    Visit(unaryEx, branch);
                     return;
                 }
                 if (condition is BoundGlobalFunctionCall)
