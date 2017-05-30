@@ -44,7 +44,35 @@ namespace Pchp.CodeAnalysis
         {
             return value.HasValue && value.Value == null;
         }
-            
+
+        /// <summary>
+        /// Determines whether the specified optional value is equal to the current one. If <see cref="Optional{T}.HasValue"/>
+        /// of both is set to false, they are considered equal.
+        /// </summary>
+        public static bool EqualsOptional(this Optional<object> value, Optional<object> other)
+        {
+            if (value.HasValue != other.HasValue)
+            {
+                return false;
+            }
+            else if (!value.HasValue)
+            {
+                return true;
+            }
+            else if (value.Value == null)
+            {
+                return other.Value == null;
+            }
+            else if (other.Value == null)
+            {
+                return false;
+            }
+            else
+            {
+                return value.Value.Equals(other.Value);
+            }
+        }
+
         /// <summary>
         /// PHP safe implicit conversion to <c>long</c> (null|long|double to long).
         /// </summary>

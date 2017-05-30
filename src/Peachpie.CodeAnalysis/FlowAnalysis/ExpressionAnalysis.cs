@@ -125,21 +125,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        void Eq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
+        Optional<object> Eq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
         {
             if (isStrict && value.IsNull() && r is BoundVariableRef varRef)
             {
                 // True branch of $v === NULL implies the type must be null
-                AnalysisFacts.EnsureType(varRef, TypeCtx.GetNullTypeMask(), ConditionBranch.ToTrue, State);
+                return AnalysisFacts.EnsureType(varRef, TypeCtx.GetNullTypeMask(), ConditionBranch.ToTrue, State);
+            }
+            else
+            {
+                return default(Optional<object>);
             }
         }
 
-        void NotEq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
+        Optional<object> NotEq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
         {
             if (value.IsNull() && r is BoundVariableRef varRef)
             {
                 // $v != NULL (or $v !== NULL) implies that $v is certainly not NULL -> same semantics as !is_null($v)
-                AnalysisFacts.EnsureType(varRef, TypeCtx.GetNullTypeMask(), ConditionBranch.ToFalse, State);
+                return AnalysisFacts.EnsureType(varRef, TypeCtx.GetNullTypeMask(), ConditionBranch.ToFalse, State);
+            }
+            else
+            {
+                return default(Optional<object>);
             }
         }
 
@@ -774,14 +782,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         if (x.Operation == Operations.Equal || x.Operation == Operations.Identical)
                         {
                             bool isStrict = x.Operation == Operations.Identical;
-                            Eq(x.Left as BoundReferenceExpression, x.Right.ConstantValue, isStrict);
-                            Eq(x.Right as BoundReferenceExpression, x.Left.ConstantValue, isStrict);
+
+                            if (x.Right.ConstantValue.HasValue && x.Left is BoundReferenceExpression boundLeft)
+                            {
+                                x.ConstantValue = Eq(boundLeft, x.Right.ConstantValue, isStrict);
+                            }
+                            else if (x.Left.ConstantValue.HasValue && x.Right is BoundReferenceExpression boundRight)
+                            {
+                                x.ConstantValue = Eq(boundRight, x.Left.ConstantValue, isStrict);
+                            }
                         }
                         else if (x.Operation == Operations.NotEqual || x.Operation == Operations.NotIdentical)
                         {
                             bool isStrict = x.Operation == Operations.NotIdentical;
-                            NotEq(x.Left as BoundReferenceExpression, x.Right.ConstantValue, isStrict);
-                            NotEq(x.Right as BoundReferenceExpression, x.Left.ConstantValue, isStrict);
+
+                            if (x.Right.ConstantValue.HasValue && x.Left is BoundReferenceExpression boundLeft)
+                            {
+                                x.ConstantValue = NotEq(boundLeft, x.Right.ConstantValue, isStrict);
+                            }
+                            else if (x.Left.ConstantValue.HasValue && x.Right is BoundReferenceExpression boundRight)
+                            {
+                                x.ConstantValue = NotEq(boundRight, x.Left.ConstantValue, isStrict);
+                            }
                         }
                     }
 

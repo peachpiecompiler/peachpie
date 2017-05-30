@@ -18,141 +18,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public static void HandleFunctionCall(BoundGlobalFunctionCall call, ExpressionAnalysis analysis, ConditionBranch branch)
         {
+            // Only direct function names
             if (!HasSimpleName(call, out string name))
             {
                 return;
             }
 
-            // Clear out the constant value result from the previous run of this method (if it was valid, it will be reassigned below)
-            call.ConstantValue = default(Optional<object>);
-
             // Type checking functions
             if (branch != ConditionBranch.AnyResult && CanBeTypeCheckingFunction(call, name, out var arg))
             {
-                var typeCtx = analysis.TypeCtx;
-                // Type checking function
-                switch (name)
+                if (HandleTypeCheckingFunctions(call, name, arg, analysis, branch))
                 {
-                    case "is_int":
-                    case "is_integer":
-                    case "is_long":
-                        EnsureType(arg, typeCtx.GetLongTypeMask(), branch, analysis.State);
-                        return;
-
-                    case "is_bool":
-                        EnsureType(arg, typeCtx.GetBooleanTypeMask(), branch, analysis.State);
-                        return;
-
-                    case "is_float":
-                    case "is_double":
-                    case "is_real":
-                        EnsureType(arg, typeCtx.GetDoubleTypeMask(), branch, analysis.State);
-                        return;
-
-                    case "is_string":
-                        var stringMask = typeCtx.GetStringTypeMask() | typeCtx.GetWritableStringTypeMask();
-                        EnsureType(arg, stringMask, branch, analysis.State);
-                        return;
-
-                    case "is_resource":
-                        EnsureType(arg, typeCtx.GetResourceTypeMask(), branch, analysis.State);
-                        return;
-
-                    case "is_null":
-                        EnsureType(arg, typeCtx.GetNullTypeMask(), branch, analysis.State);
-                        return;
-
-                    case "is_array":
-                        EnsureType(
-                            arg,
-                            currentType => typeCtx.GetArraysFromMask(currentType),
-                            branch,
-                            analysis.State,
-                            skipTrueIfAnyType: true);
-                        return;
-
-                    case "is_object":
-                        // Keep IncludesSubclasses flag in the true branch and clear it in the false branch
-                        EnsureType(
-                            arg,
-                            currentType => typeCtx.GetObjectsFromMask(currentType).WithIncludesSubclasses,
-                            branch,
-                            analysis.State,
-                            skipTrueIfAnyType: true);
-                        return;
-
-                    // TODO
-                    //case "is_scalar":
-                    //    return;
-
-                    case "is_numeric":
-                        EnsureType(
-                            arg,
-                            currentType =>
-                            {
-                                // Specify numeric types if they are present 
-                                var targetType = typeCtx.IsLong(currentType) ? typeCtx.GetLongTypeMask() : 0;
-                                targetType |= typeCtx.IsDouble(currentType) ? typeCtx.GetDoubleTypeMask() : 0;
-
-                                if (branch == ConditionBranch.ToTrue)
-                                {
-                                    // Also string types can make is_numeric return true, but not anything else
-                                    targetType |= typeCtx.IsReadonlyString(currentType) ? typeCtx.GetStringTypeMask() : 0;
-                                    targetType |= typeCtx.IsWritableString(currentType) ? typeCtx.GetWritableStringTypeMask() : 0;
-
-                                    return targetType;
-                                }
-                                else
-                                {
-                                    // For number, is_numeric always returns true -> remove numeric types from false branch
-                                    return targetType;
-                                }
-                            },
-                            branch,
-                            analysis.State,
-                            skipTrueIfAnyType: true);
-                        return;
-
-                    case "is_callable":
-                        EnsureType(
-                            arg,
-                            currentType =>
-                            {
-                                // Closure is specified in both branches
-                                TypeRefMask targetType = 0;
-                                AddTypeIfInContext(typeCtx, NameUtils.SpecialNames.Closure, false, ref targetType);
-
-                                if (branch == ConditionBranch.ToTrue)
-                                {
-                                    // Also string types, arrays and object can make is_callable return true, but not anything else
-                                    targetType |= typeCtx.IsReadonlyString(currentType) ? typeCtx.GetStringTypeMask() : 0;
-                                    targetType |= typeCtx.IsWritableString(currentType) ? typeCtx.GetWritableStringTypeMask() : 0;
-                                    targetType |= typeCtx.GetArraysFromMask(currentType);
-                                    AddTypeIfInContext(typeCtx, NameUtils.SpecialNames.System_Object, true, ref targetType);
-
-                                    return targetType;
-                                }
-                                else
-                                {
-                                    // For closure, is_callable always returns true -> remove the closure type from false branch,
-                                    // don't remove IncludeSubclasses flag
-                                    return targetType;
-                                }
-                            },
-                            branch,
-                            analysis.State,
-                            skipTrueIfAnyType: true);
-                        return;
-
-                        // TODO
-                        //case "is_iterable":
-                        //    return;
+                    return;
                 }
             }
 
-            // Direct func name with all arguments resolved
+            // Functions with all arguments resolved
             if (call.ArgumentsInSourceOrder.All(a => a.Value.ConstantValue.HasValue))
             {
+                // Clear out the constant value result from the previous run of this method (if it was valid, it will be reassigned below)
+                call.ConstantValue = default(Optional<object>);
+
                 var args = call.ArgumentsInSourceOrder;
                 switch (name)
                 {
@@ -208,6 +94,172 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        /// <summary>
+        /// Processes functions such as is_int, is_bool etc. Returns whether the function was one of these.
+        /// </summary>
+        private static bool HandleTypeCheckingFunctions(
+            BoundGlobalFunctionCall call,
+            string name,
+            BoundVariableRef arg,
+            ExpressionAnalysis analysis,
+            ConditionBranch branch)
+        {
+            var typeCtx = analysis.TypeCtx;
+            var flowState = analysis.State;
+            Optional<object> resultConstVal;
+            bool wasHandled;
+
+            switch (name)
+            {
+                case "is_int":
+                case "is_integer":
+                case "is_long":
+                    resultConstVal = EnsureType(arg, typeCtx.GetLongTypeMask(), branch, flowState);
+                    wasHandled = true;
+                    break;
+
+                case "is_bool":
+                    resultConstVal = EnsureType(arg, typeCtx.GetBooleanTypeMask(), branch, flowState);
+                    wasHandled = true;
+                    break;
+
+                case "is_float":
+                case "is_double":
+                case "is_real":
+                    resultConstVal = EnsureType(arg, typeCtx.GetDoubleTypeMask(), branch, flowState);
+                    wasHandled = true;
+                    break;
+
+                case "is_string":
+                    var stringMask = typeCtx.GetStringTypeMask() | typeCtx.GetWritableStringTypeMask();
+                    resultConstVal = EnsureType(arg, stringMask, branch, flowState);
+                    wasHandled = true;
+                    break;
+
+                case "is_resource":
+                    resultConstVal = EnsureType(arg, typeCtx.GetResourceTypeMask(), branch, flowState);
+                    wasHandled = true;
+                    break;
+
+                case "is_null":
+                    resultConstVal = EnsureType(arg, typeCtx.GetNullTypeMask(), branch, flowState);
+                    wasHandled = true;
+                    break;
+
+                case "is_array":
+                    resultConstVal = EnsureType(
+                        arg,
+                        currentType => typeCtx.GetArraysFromMask(currentType),
+                        branch,
+                        flowState,
+                        skipTrueIfAnyType: true);
+                    wasHandled = true;
+                    break;
+
+                case "is_object":
+                    // Keep IncludesSubclasses flag in the true branch and clear it in the false branch
+                    resultConstVal = EnsureType(
+                        arg,
+                        currentType => typeCtx.GetObjectsFromMask(currentType).WithIncludesSubclasses,
+                        branch,
+                        flowState,
+                        skipTrueIfAnyType: true);
+                    wasHandled = true;
+                    break;
+
+                // TODO
+                //case "is_scalar":
+                //    return;
+
+                case "is_numeric":
+                    resultConstVal = EnsureType(
+                        arg,
+                        currentType =>
+                        {
+                            // Specify numeric types if they are present 
+                            var targetType = typeCtx.IsLong(currentType) ? typeCtx.GetLongTypeMask() : 0;
+                            targetType |= typeCtx.IsDouble(currentType) ? typeCtx.GetDoubleTypeMask() : 0;
+
+                            if (branch == ConditionBranch.ToTrue)
+                            {
+                                // Also string types can make is_numeric return true, but not anything else
+                                targetType |= typeCtx.IsReadonlyString(currentType) ? typeCtx.GetStringTypeMask() : 0;
+                                targetType |= typeCtx.IsWritableString(currentType) ? typeCtx.GetWritableStringTypeMask() : 0;
+
+                                return targetType;
+                            }
+                            else
+                            {
+                                // For number, is_numeric always returns true -> remove numeric types from false branch
+                                return targetType;
+                            }
+                        },
+                        branch,
+                        flowState,
+                        skipTrueIfAnyType: true);
+                    wasHandled = true;
+                    break;
+
+                case "is_callable":
+                    resultConstVal = EnsureType(
+                        arg,
+                        currentType =>
+                        {
+                            // Closure is specified in both branches
+                            TypeRefMask targetType = 0;
+                            AddTypeIfInContext(typeCtx, NameUtils.SpecialNames.Closure, false, ref targetType);
+
+                            if (branch == ConditionBranch.ToTrue)
+                            {
+                                // Also string types, arrays and object can make is_callable return true, but not anything else
+                                targetType |= typeCtx.IsReadonlyString(currentType) ? typeCtx.GetStringTypeMask() : 0;
+                                targetType |= typeCtx.IsWritableString(currentType) ? typeCtx.GetWritableStringTypeMask() : 0;
+                                targetType |= typeCtx.GetArraysFromMask(currentType);
+                                AddTypeIfInContext(typeCtx, NameUtils.SpecialNames.System_Object, true, ref targetType);
+
+                                return targetType;
+                            }
+                            else
+                            {
+                                // For closure, is_callable always returns true -> remove the closure type from false branch,
+                                // don't remove IncludeSubclasses flag
+                                return targetType;
+                            }
+                        },
+                        branch,
+                        flowState,
+                        skipTrueIfAnyType: true);
+                    wasHandled = true;
+                    break;
+
+                // TODO
+                //case "is_iterable":
+                //    return;
+
+                default:
+                    resultConstVal = default(Optional<object>);
+                    wasHandled = false;
+                    break;
+            }
+
+            if (!wasHandled)
+            {
+                return false;
+            }
+
+            // Each branch can clean only the constant value it produced during its analysis (in order not to loose result
+            // of the other branch): true branch can produce false value and vice versa
+            if (!resultConstVal.EqualsOptional(call.ConstantValue)
+                && (resultConstVal.HasValue
+                    || call.ConstantValue.Value is false && branch == ConditionBranch.ToTrue
+                    || call.ConstantValue.Value is true && branch == ConditionBranch.ToFalse))
+            {
+                call.ConstantValue = resultConstVal;
+            }
+
+            return true;
+        }
+
         private static void AddTypeIfInContext(TypeRefContext typeCtx, QualifiedName name, bool includeSubclasses, ref TypeRefMask mask)
         {
             var closureTypeRef = typeCtx.Types.FirstOrDefault(t => t.QualifiedName == NameUtils.SpecialNames.Closure);
@@ -222,7 +274,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// not of this type in the false branch. If <paramref name="skipTrueIfAnyType"/> is true, the IsAnyType variant
         /// is skipped in the true branch. In the false branch, it is always skipped.
         /// </summary>
-        public static void EnsureType(
+        /// <returns>
+        /// Returns optional constant value of a comparison of the variable against the type(s).
+        /// </returns>
+        public static Optional<object> EnsureType(
             BoundVariableRef varRef,
             TypeRefMask targetType,
             ConditionBranch branch,
@@ -231,12 +286,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (!TryGetVariableHandle(varRef, flowState, out VariableHandle handle))
             {
-                return;
+                return default(Optional<object>);
             }
 
             var currentType = flowState.GetLocalType(handle);
 
-            EnsureTypeImpl(currentType, targetType, branch, flowState, handle, skipTrueIfAnyType);
+            return EnsureTypeImpl(currentType, targetType, branch, flowState, handle, skipTrueIfAnyType);
         }
 
         /// <summary>
@@ -244,7 +299,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// current type) in the true branch and not of this type in the false branch. If <paramref name="skipTrueIfAnyType"/>
         /// is true, the IsAnyType variant is skipped in the true branch. In the false branch, it is always skipped.
         /// </summary>
-        public static void EnsureType(
+        /// <returns>
+        /// Returns optional constant value of a comparison of the variable against the type(s).
+        /// </returns>
+        public static Optional<object> EnsureType(
             BoundVariableRef varRef,
             Func<TypeRefMask, TypeRefMask> targetTypeCallback,
             ConditionBranch branch,
@@ -253,13 +311,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (!TryGetVariableHandle(varRef, flowState, out VariableHandle handle))
             {
-                return;
+                return default(Optional<object>);
             }
 
             var currentType = flowState.GetLocalType(handle);
             var targetType = targetTypeCallback(currentType);
 
-            EnsureTypeImpl(currentType, targetType, branch, flowState, handle, skipTrueIfAnyType);
+            return EnsureTypeImpl(currentType, targetType, branch, flowState, handle, skipTrueIfAnyType);
         }
 
         private static bool TryGetVariableHandle(BoundVariableRef varRef, FlowState state, out VariableHandle varHandle)
@@ -276,7 +334,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        private static void EnsureTypeImpl(
+        private static Optional<object> EnsureTypeImpl(
             TypeRefMask currentType,
             TypeRefMask targetType,
             ConditionBranch branch,
@@ -284,12 +342,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             VariableHandle handle,
             bool skipTrueIfAnyType)
         {
+            Optional<object> result = default(Optional<object>);
+
             if (branch == ConditionBranch.ToTrue)
             {
                 // In the true branch the IsAnyType case can be optionally skipped
                 if (skipTrueIfAnyType && currentType.IsAnyType)
                 {
-                    return;
+                    return result;
                 }
 
                 // Intersect the possible types with those checked by the function, always keeping the IsRef flag.
@@ -302,7 +362,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // In order to prevent errors in analysis and code generation, set the type to the one specified.
                     resultType = targetType | (currentType & TypeRefMask.IsRefMask);
 
-                    // TODO: Make this function always return false
+                    // Make this function always return false
+                    result = new Optional<object>(false);
                 }
 
                 flowState.SetLocalType(handle, resultType);
@@ -314,25 +375,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // In the false branch we cannot handle the IsAnyType case
                 if (currentType.IsAnyType)
                 {
-                    return;
+                    return result;
                 }
 
-                // Remove the types excluded by the fact that the function returned false
-                ////(all the flags are kept)
-                TypeRefMask resultType = currentType & (~targetType /*| TypeRefMask.FlagsMask*/);
+                // Remove the types and flags excluded by the fact that the function returned false
+                TypeRefMask resultType = currentType & (~targetType);
 
                 if (resultType.IsVoid)
                 {
                     // Clearing the type out in this branch means the function will always return true.
                     // In order to prevent errors in analysis and code generation, do not alter the type in this case.
 
-                    // TODO: Make this function always return true
+                    // Make this function always return true
+                    result = new Optional<object>(true);
                 }
                 else
                 {
                     flowState.SetLocalType(handle, resultType);
                 }
             }
+
+            return result;
         }
     }
 }
