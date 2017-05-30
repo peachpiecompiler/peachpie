@@ -127,19 +127,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         void Eq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
         {
-            if (isStrict && value.IsNull())
+            if (isStrict && value.IsNull() && r is BoundVariableRef varRef)
             {
-                // $varname === NULL is the same as is_null($varname)
-                ProcessTypeCheckFunction(TypeCheckFunctionsInfo.IsNull, r, ConditionBranch.ToTrue);
+                // True branch of $v === NULL implies the type must be null
+                AnalysisFacts.EnsureType(varRef, TypeCtx.GetNullTypeMask(), ConditionBranch.ToTrue, State);
             }
         }
 
         void NotEq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
         {
-            if (value.IsNull())
+            if (value.IsNull() && r is BoundVariableRef varRef)
             {
-                // $varname != NULL implies that $varname is certainly not NULL, we mimic this by !is_null($varname) to avoid code repetition
-                ProcessTypeCheckFunction(TypeCheckFunctionsInfo.IsNull, r, ConditionBranch.ToFalse);
+                // $v != NULL (or $v !== NULL) implies that $v is certainly not NULL -> same semantics as !is_null($v)
+                AnalysisFacts.EnsureType(varRef, TypeCtx.GetNullTypeMask(), ConditionBranch.ToFalse, State);
             }
         }
 
@@ -1146,48 +1146,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 //
                 AnalysisFacts.HandleFunctionCall(x, this, branch);
-
-                // is_int, is_bool, is_numeric, ... - update type information
-                if (branch != ConditionBranch.AnyResult 
-                    && x.ArgumentsInSourceOrder.Length == 1
-                    && x.ArgumentsInSourceOrder[0].Value is BoundVariableRef varRef
-                    && TypeCheckFunctionsInfo.TryGetByName(x.Name.NameValue.ToString(), out var functionInfo))
-                {
-                    ProcessTypeCheckFunction(functionInfo, varRef, branch);
-                }
             }
 
             VisitRoutineCallEpilogue(x);
-        }
-
-        private void ProcessTypeCheckFunction(TypeCheckFunctionInfo functionInfo, BoundReferenceExpression varRef, ConditionBranch branch)
-        {
-            Debug.Assert(branch != ConditionBranch.AnyResult);
-
-            string varName = AsVariableName(varRef);
-            if (varName != null)
-            {
-                var varHandle = State.GetLocalHandle(varName);
-                var mask = State.GetLocalType(varHandle);
-
-                if (branch == ConditionBranch.ToTrue)
-                {
-                    // Intersect the possible types with those checked by the function, keeping the flags
-                    var restrictionMask = functionInfo.RestrictIfTrue(this.TypeCtx);
-                    mask = (mask & restrictionMask) | (mask & TypeRefMask.FlagsMask);
-                    State.SetLocalType(varHandle, mask);
-                }
-                else if (!mask.IsAnyType)
-                {
-                    Debug.Assert(branch == ConditionBranch.ToFalse);
-                    // TODO: Consider using it also in IsAnyType case (by listing all the types currently available?)
-
-                    // Remove the types excluded by the fact that the function returned false
-                    var removeMask = functionInfo.RemoveIfFalse(this.TypeCtx);
-                    mask = mask & ~removeMask;
-                    State.SetLocalType(varHandle, mask);
-                }
-            }
         }
 
         public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
