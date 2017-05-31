@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis;
+using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 using Peachpie.Library.Scripting;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,6 +21,7 @@ namespace Peachpie.DiagnosticTests
         private readonly PhpCompilation _emptyCompilation;
 
         private static readonly Regex DiagnosticAnnotationRegex = new Regex(@"/\*!([A-Z]*[0-9]*)!\*/");
+        private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/");
 
         public DiagnosticTest(ITestOutputHelper output)
         {
@@ -36,18 +39,34 @@ namespace Peachpie.DiagnosticTests
 
             string code = File.ReadAllText(path);
             var syntaxTree = PhpSyntaxTree.ParseCode(code, PhpParseOptions.Default, PhpParseOptions.Default, path);
+            var compilation = (PhpCompilation)_emptyCompilation.AddSyntaxTrees(syntaxTree);
 
-            var compilation = _emptyCompilation.AddSyntaxTrees(syntaxTree);
-            var actual = compilation.GetDiagnostics()
+            bool isCorrect = true;
+
+            // Gather and check diagnostics
+            var expectedDiags = DiagnosticAnnotationRegex.Matches(code);
+            var actualDiags = compilation.GetDiagnostics()
                 .OrderBy(diag => diag.Location.SourceSpan.Start)
                 .ToArray();
+            isCorrect &= CheckDiagnostics(syntaxTree, actualDiags, expectedDiags);
 
-            var expected = DiagnosticAnnotationRegex.Matches(code);
+            // Gather and check types if there are any annotations
+            var expectedTypes = TypeAnnotationRegex.Matches(code);
+            if (expectedTypes.Count > 0)
+            {
+                var symbolsInfo = compilation.UserDeclaredRoutines
+                        .Where(routine => routine.ControlFlowGraph != null)
+                        .Select(routine => SymbolsSelector.Select(routine.ControlFlowGraph))
+                        .Concat(compilation.UserDeclaredRoutines.Select(routine => SymbolsSelector.Select(routine)))    // routine declarations
+                        .Concat(compilation.UserDeclaredTypes.Select(type => SymbolsSelector.Select(type)))    // type declarations
+                        .SelectMany(enumerators => enumerators);    // IEnumerable<IEnumerable<T>> => IEnumerable<T>
+                isCorrect &= CheckTypes(syntaxTree, symbolsInfo, expectedTypes);
+            }
 
-            CheckDiagnostics(syntaxTree, actual, expected);
+            Assert.True(isCorrect);
         }
 
-        private void CheckDiagnostics(PhpSyntaxTree syntaxTree, Diagnostic[] actual, MatchCollection expected)
+        private bool CheckDiagnostics(PhpSyntaxTree syntaxTree, Diagnostic[] actual, MatchCollection expected)
         {
             // Compare in ascending order to systematically find all discrepancies
             bool isCorrect = true;
@@ -109,7 +128,7 @@ namespace Peachpie.DiagnosticTests
                 }
             }
 
-            Assert.True(isCorrect);
+            return isCorrect;
         }
 
         private void ReportUnexpectedDiagnostic(Diagnostic diagnostic)
@@ -137,6 +156,72 @@ namespace Peachpie.DiagnosticTests
             // It is zero-based both for line and character, therefore we must add 1
             var originalPos = span.StartLinePosition;
             return new LinePosition(originalPos.Line + 1, originalPos.Character + 1);
+        }
+
+        private bool CheckTypes(PhpSyntaxTree syntaxTree, IEnumerable<SymbolsSelector.SymbolStat> symbolStats, MatchCollection expectedTypes)
+        {
+            var positionSymbolMap = symbolStats.ToDictionary(info => info.Span.Start);
+
+            // Type annotation is voluntary; therefore, check only the specified types
+            bool isCorrect = true;
+            foreach (Match match in expectedTypes)
+            {
+                // The text of symbol should start where the annotation ends
+                int expectedPos = match.Index + match.Length;
+                if (!positionSymbolMap.TryGetValue(expectedPos, out var symbolStat))
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
+                    _output.WriteLine($"Cannot get type information for type annotation on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                    continue;
+                }
+
+                // Obtain the type of the given symbol or expression
+                string actualType = GetTypeString(symbolStat);
+                if (string.IsNullOrEmpty(actualType))
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(symbolStat.Span.ToTextSpan()));
+                    _output.WriteLine($"Unable to get the type of the symbol on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                    continue;
+                }
+
+                // Reorder expected types alphabetically
+                string expectedType = string.Join("|", match.Groups[1].Value.Split('|').OrderBy(s => s));
+
+                // Report any problem
+                if (actualType != expectedType)
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(symbolStat.Span.ToTextSpan()));
+                    _output.WriteLine(
+                        $"Wrong type {actualType} instead of {expectedType} of the expression on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                }
+            }
+
+            return isCorrect;
+        }
+
+        private string GetTypeString(SymbolsSelector.SymbolStat symbolStat)
+        {
+            if (symbolStat.TypeCtx == null)
+            {
+                return null;
+            }
+
+            if (symbolStat.BoundExpression != null)
+            {
+                return symbolStat.TypeCtx.ToString(symbolStat.BoundExpression.TypeRefMask);
+            }
+            else if (symbolStat.Symbol is IPhpValue typedValue)
+            {
+                TypeRefMask typeMask = typedValue.GetResultType(symbolStat.TypeCtx);
+                return symbolStat.TypeCtx.ToString(typeMask);
+            }
+            else
+	        {
+                return null;
+            }
         }
 
         private static PhpCompilation CreateEmptyCompilation()
