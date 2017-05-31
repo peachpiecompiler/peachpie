@@ -262,7 +262,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private static void AddTypeIfInContext(TypeRefContext typeCtx, QualifiedName name, bool includeSubclasses, ref TypeRefMask mask)
         {
-            var closureTypeRef = typeCtx.Types.FirstOrDefault(t => t.QualifiedName == NameUtils.SpecialNames.Closure);
+            var closureTypeRef = typeCtx.Types.FirstOrDefault(t => t.QualifiedName == name);
             if (closureTypeRef != null)
             {
                 mask |= typeCtx.GetTypeMask(closureTypeRef, includeSubclasses);
