@@ -1,4 +1,4 @@
-<php
+<?php
 
 function unreachable_null_comparison(bool $a, bool $b, bool $c, bool $d) {
   if (/*|boolean|*/$a === null) {
